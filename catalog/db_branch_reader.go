@@ -1,8 +1,6 @@
 package catalog
 
 import (
-	"fmt"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
@@ -16,6 +14,8 @@ type DBBranchReader struct {
 	EOF      bool
 	after    string
 	commitID CommitID
+	err      error
+	value    *DBReaderEntry
 }
 
 func NewDBBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) *DBBranchReader {
@@ -34,37 +34,53 @@ func (r *DBBranchReader) shouldAlignMaxCommit() bool {
 	return r.commitID != CommittedID && r.commitID != UncommittedID
 }
 
-func (r *DBBranchReader) Next() (*DBReaderEntry, error) {
-	if r.EOF {
-		return nil, nil
+func (r *DBBranchReader) Next() bool {
+	if r.EOF || r.err != nil {
+		return false
 	}
-	if r.idx >= len(r.buf) {
-		q := sqBranchReaderSelectWithCommitID(r.branchID, r.commitID).
-			Limit(uint64(r.bufSize)).
-			Where("path > ?", r.after)
-		sql, args, err := q.PlaceholderFormat(sq.Dollar).ToSql()
-		if err != nil {
-			return nil, fmt.Errorf("next query format: %w", err)
-		}
-		r.idx = 0
-		r.buf = r.buf[:0]
-		err = r.tx.Select(&r.buf, sql, args...)
-		if err != nil {
-			return nil, fmt.Errorf("next select: %w", err)
-		}
+	if !r.readBuffer() {
+		return false
+	}
+	r.value = r.buf[r.idx]
+	// if entry was deleted after the max commit that can be read, it must be set to undeleted
+	if r.shouldAlignMaxCommit() && r.value.MaxCommit >= r.commitID {
+		r.value.MaxCommit = MaxCommitID
+	}
+	r.after = r.value.Path
+	r.idx++
+	return true
+}
+
+func (r *DBBranchReader) Err() error {
+	return r.err
+}
+
+func (r *DBBranchReader) Value() *DBReaderEntry {
+	if r.EOF || r.err != nil {
+		return nil
+	}
+	return r.value
+}
+
+func (r *DBBranchReader) readBuffer() bool {
+	if r.idx < len(r.buf) {
+		return true
+	}
+	r.idx = 0
+	r.buf = r.buf[:0]
+	q := sqBranchReaderSelectWithCommitID(r.branchID, r.commitID).
+		Limit(uint64(r.bufSize)).
+		Where("path > ?", r.after)
+	if sql, args, err := q.PlaceholderFormat(sq.Dollar).ToSql(); err != nil {
+		r.err = err
+	} else {
+		r.err = r.tx.Select(&r.buf, sql, args...)
 	}
 	if len(r.buf) == 0 {
 		r.EOF = true
-		return nil, nil
+		return false
 	}
-	nextPk := r.buf[r.idx]
-	r.idx++
-	// if entry was deleted after the max commit that can be read, it must be set to undeleted
-	if r.shouldAlignMaxCommit() && nextPk.MaxCommit >= r.commitID {
-		nextPk.MaxCommit = MaxCommitID
-	}
-	r.after = nextPk.Path
-	return nextPk, nil
+	return r.err == nil
 }
 
 func sqBranchReaderSelectWithCommitID(branchID int64, commitID CommitID) sq.SelectBuilder {

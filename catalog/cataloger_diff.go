@@ -27,10 +27,18 @@ const (
 	DiffMaxLimit = 1000
 
 	diffResultsTableNamePrefix = "catalog_diff_results"
-	diffReaderBufferSize       = 32
+	diffResultsInsertBatchSize = 64
+	diffReaderBufferSize       = 1024
 
 	contextDiffResultsKey contextKey = "diff_results_key"
 )
+
+type diffResultRecord struct {
+	SourceBranch int64
+	DiffType     DifferenceType
+	Path         string
+	EntryCtid    string
+}
 
 var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 
@@ -204,34 +212,24 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	}
 
 	childReader := NewDBBranchReader(tx, childID, CommittedID, diffReaderBufferSize, "")
-	parentReader, err := NewDBLineageReader(tx, parentID, UncommittedID, diffReaderBufferSize, "")
-	if err != nil {
-		return err
-	}
+	parentReader := NewDBLineageReader(tx, parentID, UncommittedID, diffReaderBufferSize, "")
 
+	batch := make([]*diffResultRecord, 0, diffResultsInsertBatchSize)
 	var parentEnt *DBReaderEntry
-	for {
-		// get next child record
-		childEnt, err := childReader.Next()
-		if err != nil {
-			return err
-		}
-		if childEnt == nil {
-			break
-		}
+	for childReader.Next() {
+		childEnt := childReader.Value()
 		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
 			continue
 		}
 
 		// get next parent - next parentEnt that path >= child
-		for parentReader != nil && (parentEnt == nil || parentEnt.Path < childEnt.Path) {
+		for parentEnt == nil || parentEnt.Path < childEnt.Path {
 			parentEnt, err = parentReader.Next()
 			if err != nil {
 				return err
 			}
 			if parentEnt == nil {
-				// no reader at end of iteration
-				parentReader = nil
+				break
 			}
 		}
 
@@ -261,14 +259,48 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 			}
 		}
 
-		// insert record based on diff type
-		if diffType != DifferenceTypeNone {
-			_, err = tx.Exec(`INSERT INTO `+diffResultsTableName+` VALUES ($1,$2,$3,$4)`,
-				childID, diffType, childEnt.Path, childEnt.RowCtid)
-			if err != nil {
-				return err
-			}
+		// skip to next record if no diff was found
+		if diffType == DifferenceTypeNone {
+			continue
 		}
+		// batch diff results
+		batch = append(batch, &diffResultRecord{
+			SourceBranch: childID,
+			DiffType:     diffType,
+			Path:         childEnt.Path,
+			EntryCtid:    childEnt.RowCtid,
+		})
+		if len(batch) < diffResultsInsertBatchSize {
+			continue
+		}
+
+		// insert and clear batch
+		if err := insertDiffResultsBatch(tx, diffResultsTableName, batch); err != nil {
+			return err
+		}
+		batch = batch[:0]
+	}
+	if childReader.Err() != nil {
+		return childReader.Err()
+	}
+	if len(batch) > 0 {
+		return insertDiffResultsBatch(tx, diffResultsTableName, batch)
+	}
+	return nil
+}
+
+func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diffResultRecord) error {
+	ins := psql.Insert(tableName).Columns("source_branch", "diff_type", "path", "entry_ctid")
+	for _, rec := range batch {
+		ins = ins.Values(rec.SourceBranch, rec.DiffType, rec.Path, rec.EntryCtid)
+	}
+	query, args, err := ins.ToSql()
+	if err != nil {
+		return fmt.Errorf("query for diff results insert: %w", err)
+	}
+	_, err = exerciser.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("insert query diff results: %w", err)
 	}
 	return nil
 }

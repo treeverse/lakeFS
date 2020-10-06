@@ -91,8 +91,8 @@ func (j *Metadata) Scan(src interface{}) error {
 type DBReaderEntry struct {
 	BranchID int64  `db:"branch_id"`
 	Path     string `db:"path"`
+	RowCtid  string `db:"ctid"`
 	MinMaxCommit
-	RowCtid string `db:"ctid"`
 }
 
 type MinMaxCommit struct {

@@ -13,40 +13,51 @@ type DBLineageReader struct {
 	commitID     CommitID
 	readers      []*DBBranchReader
 	nextRow      []*DBReaderEntry
-	firstTime    bool
 	returnedRows int
+	bufSize      int
+	after        string
 }
 
-func NewDBLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) (*DBLineageReader, error) {
-	lineage, err := getLineage(tx, branchID, commitID)
+func NewDBLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) *DBLineageReader {
+	return &DBLineageReader{
+		tx:       tx,
+		branchID: branchID,
+		commitID: commitID,
+		bufSize:  bufSize,
+		after:    after,
+	}
+}
+
+func (r *DBLineageReader) ensureReaders() error {
+	if r.readers != nil {
+		return nil
+	}
+	lineage, err := getLineage(r.tx, r.branchID, r.commitID)
 	if err != nil {
-		return nil, fmt.Errorf("error getting lineage: %w", err)
+		return fmt.Errorf("error getting lineage: %w", err)
 	}
-	lr := &DBLineageReader{
-		tx:        tx,
-		branchID:  branchID,
-		commitID:  commitID,
-		firstTime: true,
-		readers:   make([]*DBBranchReader, len(lineage)+1),
-	}
-	lr.readers[0] = NewDBBranchReader(tx, branchID, commitID, bufSize, after)
+	r.readers = make([]*DBBranchReader, len(lineage)+1)
+	r.readers[0] = NewDBBranchReader(r.tx, r.branchID, r.commitID, r.bufSize, r.after)
 	for i, bl := range lineage {
-		lr.readers[i+1] = NewDBBranchReader(tx, bl.BranchID, bl.CommitID, bufSize, after)
+		r.readers[i+1] = NewDBBranchReader(r.tx, bl.BranchID, bl.CommitID, r.bufSize, r.after)
 	}
-	lr.nextRow = make([]*DBReaderEntry, len(lr.readers))
-	for i, reader := range lr.readers {
-		e, err := reader.Next()
-		if err != nil {
-			return nil, fmt.Errorf("getting entry from branch ID %d: %w", reader.branchID, err)
+	r.nextRow = make([]*DBReaderEntry, len(r.readers))
+	for i, reader := range r.readers {
+		if reader.Next() {
+			r.nextRow[i] = reader.Value()
+		} else if reader.Err() != nil {
+			return fmt.Errorf("getting entry from branch ID %d: %w", reader.branchID, reader.Err())
 		}
-		lr.nextRow[i] = e
 	}
-	return lr, nil
+	return nil
 }
 
 func (r *DBLineageReader) Next() (*DBReaderEntry, error) {
 	if r.EOF {
 		return nil, nil
+	}
+	if err := r.ensureReaders(); err != nil {
+		return nil, err
 	}
 
 	// indirection array, to skip lineage branches that reached end
@@ -64,9 +75,8 @@ func (r *DBLineageReader) Next() (*DBReaderEntry, error) {
 	// find lowest Path
 	selectedEntry := r.nextRow[nonNilNextRow[0]]
 	for i := 1; i < len(nonNilNextRow); i++ {
-		branchIdx := nonNilNextRow[i]
-		if selectedEntry.Path > r.nextRow[branchIdx].Path {
-			selectedEntry = r.nextRow[branchIdx]
+		if selectedEntry.Path > r.nextRow[nonNilNextRow[i]].Path {
+			selectedEntry = r.nextRow[nonNilNextRow[i]]
 		}
 	}
 	r.returnedRows++
@@ -75,11 +85,14 @@ func (r *DBLineageReader) Next() (*DBReaderEntry, error) {
 	for i := 0; i < len(nonNilNextRow); i++ {
 		branchIdx := nonNilNextRow[i]
 		if r.nextRow[branchIdx].Path == selectedEntry.Path {
-			n, err := r.readers[branchIdx].Next()
-			if err != nil {
-				return nil, fmt.Errorf("entry on branch : %w", err)
+			var ent *DBReaderEntry
+			reader := r.readers[branchIdx]
+			if reader.Next() {
+				ent = reader.Value()
+			} else if reader.Err() != nil {
+				return nil, fmt.Errorf("getting entry on branch: %w", reader.Err())
 			}
-			r.nextRow[branchIdx] = n
+			r.nextRow[branchIdx] = ent
 		}
 	}
 	return selectedEntry, nil

@@ -23,12 +23,12 @@ func TestCataloger_DBBranchReader(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 			reader := NewDBBranchReader(tx, 1, UncommittedID, 64, "")
-			first, err := reader.Next()
-			if err != nil {
-				t.Fatalf("first entry should not get error, got=%s", err)
+			firstNext := reader.Next()
+			if firstNext {
+				t.Fatalf("first entry should be false")
 			}
-			if first != nil {
-				t.Fatalf("first entry should be nil, got=%v", first)
+			if reader.Err() != nil {
+				t.Fatalf("first entry should not get error, got=%s", reader.Err())
 			}
 			return nil, nil
 		})
@@ -37,38 +37,36 @@ func TestCataloger_DBBranchReader(t *testing.T) {
 	objSkip := []int{1, 2, 3, 5, 7, 11}
 	testSetupDBReaderData(t, ctx, c, repository, numberOfObjects, baseBranchName, objSkip)
 
-	bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
-	for _, bufSize := range bufferSizes {
-		testName := fmt.Sprintf("buffer_size_%d", bufSize)
-		t.Run(testName, func(t *testing.T) {
+	t.Run("buffer_sizes", func(t *testing.T) {
+		bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
+		for _, bufSize := range bufferSizes {
 			for branchNo, objSkipNo := range objSkip {
-				testBatchReaderWithBuffSize(t, conn, branchNo, bufSize, objSkipNo, numberOfObjects)
+				testDBBranchReader(t, conn, branchNo, bufSize, objSkipNo, numberOfObjects)
 			}
-		})
-	}
+		}
+	})
 }
 
-func testBatchReaderWithBuffSize(t *testing.T, conn db.Database, branchNo int, bufSize int, objSkipNo int, numberOfObjects int) {
+func testDBBranchReader(t *testing.T, conn db.Database, branchNo int, bufSize int, objSkipNo int, numberOfObjects int) {
 	branchID := int64(branchNo + 1)
 	branchName := "b" + strconv.Itoa(branchNo)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		// test single branch reader
 		branchReader := NewDBBranchReader(tx, branchID, UncommittedID, bufSize, "")
-		for i := 0; ; i += objSkipNo {
-			o, err := branchReader.Next()
-			testutil.MustDo(t, "read from branch "+branchName, err)
-			if o == nil {
-				if !(i-objSkipNo < numberOfObjects && i >= numberOfObjects) {
-					t.Fatalf("terminated at i=%d", i)
-				}
-				break
-			}
+		i := 0
+		for branchReader.Next() {
+			o := branchReader.Value()
 
 			objNum, err := strconv.Atoi(o.Path[4:])
 			testutil.MustDo(t, "convert obj number "+o.Path, err)
 			if objNum != i {
-				t.Errorf("objNum=%d, i=%d\n", objNum, i)
+				t.Errorf("objNum=%d, i=%d", objNum, i)
 			}
+
+			i += objSkipNo
+		}
+		testutil.MustDo(t, "read from branch "+branchName, branchReader.Err())
+		if !(i-objSkipNo < numberOfObjects && i >= numberOfObjects) {
+			t.Fatalf("terminated at i=%d", i)
 		}
 		return nil, nil
 	})
