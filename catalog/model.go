@@ -113,7 +113,7 @@ func (m MinMaxCommit) IsCommitted() bool {
 
 func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
 	// needed for diff, to check if an entry changed after the lineage commit id
-	return m.MinCommit > commitID || (m.MaxCommit != MaxCommitID && m.MaxCommit > commitID)
+	return m.MinCommit > commitID || (m.MaxCommit != MaxCommitID && m.MaxCommit >= commitID)
 }
 
 type entryPathPrefixInfo struct {

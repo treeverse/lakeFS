@@ -700,11 +700,16 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{}); diff != nil {
+
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeChanged: 1,
+	}); diff != nil {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//expectedDifferences = Differences{}
+	//expectedDifferences := Differences{
+	//	Difference{Type: DifferenceTypeModified, Path: "/file0"},
+	//}
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
@@ -1004,7 +1009,9 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
 	//}
 
-	//identical entries created in child and grandparent do not create conflict - even when grandparent is uncommitted
+	// identical entries created in child and grandparent do create conflict
+	// TODO(barak): discuss changes in metadata are part of diff - do we like to keep this conflict or take into consideration
+	//   the entry checksum
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "empty updates", nil)
 	testutil.MustDo(t, "merge branch2 to branch1", err)
 
@@ -1019,8 +1026,24 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "pushing /file111 down", nil)
 	testutil.MustDo(t, "merge branch2 to branch1", err)
 
-	_, err = c.Merge(ctx, repository, "branch1", "master", "tester", "pushing /file111 down", nil)
-	testutil.MustDo(t, "merge branch1 to master", err)
+	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "pushing /file111 down", nil)
+	if !errors.Is(err, ErrConflictFound) {
+		t.Fatalf("Merge err=%s, expected conflict", err)
+	}
+	if res == nil {
+		t.Fatal("Expected merge result, got none")
+	} else if res.Reference != "" {
+		t.Fatalf("Expected empty reference, got %s", res.Reference)
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeConflict: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
+
+	// delete the file to resolve conflict
+	testutil.MustDo(t, "delete the conflict file on master",
+		c.DeleteEntry(ctx, repository, "master", "/file111"))
 
 	// push file111 delete
 	_, err = c.Merge(ctx, repository, "branch1", "branch2", "tester", "delete /file111 up", nil)
@@ -1049,30 +1072,6 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{
 	//	Difference{Type: DifferenceTypeRemoved, Path: "/file111"},
-	//}
-	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
-	//testutil.MustDo(t, "diff merge changes", err)
-	//if !differences.Equal(expectedDifferences) {
-	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
-	//}
-
-	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "try delete /file111 . get conflict", nil)
-	if !errors.Is(err, ErrConflictFound) {
-		t.Fatalf("Expected to get conflict error, got err=%+v", err)
-	}
-	if res == nil {
-		t.Fatal("Expected merge result, got none")
-	} else if res.Reference != "" {
-		t.Fatalf("Expected empty reference, got %s", res.Reference)
-	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeConflict: 1,
-	}); diff != nil {
-		t.Fatal("Merge Summary", diff)
-	}
-	// TODO(barak): enable test after diff between commits is supported
-	//expectedDifferences = Differences{
-	//	Difference{Type: DifferenceTypeConflict, Path: "/file111"},
 	//}
 	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
