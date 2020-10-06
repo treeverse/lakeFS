@@ -1,7 +1,7 @@
 package aws
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -34,6 +34,8 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		m.logger.Warnf("%v: failed to get AWS account ID for BI", err)
 		return nil
 	}
-	hashedAccountID := fmt.Sprintf("%x", md5.Sum([]byte(*identity.Account)))
-	return map[string]string{cloud.IDKey: hashedAccountID, cloud.IDTypeKey: "aws_account_id"}
+	return map[string]string{
+		cloud.IDKey:     fmt.Sprintf("%x", md5.Sum([]byte(*identity.Account))), //nolint:gosec
+		cloud.IDTypeKey: "aws_account_id",
+	}
 }

@@ -1,7 +1,7 @@
 package gcp
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"fmt"
 
 	"cloud.google.com/go/compute/metadata"
@@ -23,6 +23,8 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		m.logger.Warnf("%v: failed to get Google numeric project ID from instance metadata", err)
 		return nil
 	}
-	hashedProjectID := fmt.Sprintf("%x", md5.Sum([]byte(projectID)))
-	return map[string]string{cloud.IDKey: hashedProjectID, cloud.IDTypeKey: "gcp_project_numerical_id"}
+	return map[string]string{
+		cloud.IDKey:     fmt.Sprintf("%x", md5.Sum([]byte(projectID))), //nolint:gosec
+		cloud.IDTypeKey: "gcp_project_numerical_id",
+	}
 }
