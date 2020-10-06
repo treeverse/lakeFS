@@ -16,7 +16,7 @@ func NewMetadataProvider(logger logging.Logger) *MetadataProvider {
 func (m *MetadataProvider) GetMetadata() map[string]string {
 	projectID, err := metadata.NumericProjectID()
 	if err != nil {
-		m.logger.Errorf("%v: failed to get Google numeric project ID from instance metadata", err)
+		m.logger.Warnf("%v: failed to get Google numeric project ID from instance metadata", err)
 		return nil
 	}
 	return map[string]string{"google_numeric_project_id": projectID}

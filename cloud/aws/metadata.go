@@ -20,14 +20,14 @@ func NewMetadataProvider(logger logging.Logger, awsConfig *aws.Config) *Metadata
 func (m *MetadataProvider) GetMetadata() map[string]string {
 	sess, err := session.NewSession(m.awsConfig)
 	if err != nil {
-		m.logger.Errorf("%v: failed to create AWS session for BI", err)
+		m.logger.Warnf("%v: failed to create AWS session for BI", err)
 		return nil
 	}
 	sess.ClientConfig(s3.ServiceName)
 	stsClient := sts.New(sess)
 	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		m.logger.Errorf("%v: failed to get AWS account ID for BI", err)
+		m.logger.Warnf("%v: failed to get AWS account ID for BI", err)
 		return nil
 	}
 	return map[string]string{"aws_account_id": *identity.Account}
