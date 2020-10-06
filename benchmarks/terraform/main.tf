@@ -10,6 +10,24 @@ variable "tag" {
   default = "dev"
 }
 
+variable "build" {
+  type        = number
+  description = "Benchmark Github action build number"
+  default = 0
+}
+
+variable "grafana-username" {
+  type        = string
+  description = "Grafana Cloud collector username"
+  default = "treeverse"
+}
+
+variable "grafana-password" {
+  type        = string
+  description = "Grafana Cloud collector password"
+  default = "notThePassw0rd"
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -67,6 +85,22 @@ resource "aws_security_group" "benchmark_sg" {
     description = "lakeFS"
     from_port   = 8000
     to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = [for s in data.aws_subnet.all : s.cidr_block]
+  }
+
+  ingress {
+    description = "NFS for EFS volume"
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = [for s in data.aws_subnet.all : s.cidr_block]
+  }
+
+  ingress {
+    description = "DNS for NFS resolution"
+    from_port   = 53
+    to_port     = 53
     protocol    = "tcp"
     cidr_blocks = [for s in data.aws_subnet.all : s.cidr_block]
   }
