@@ -9,6 +9,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	CloudIDTypeKey = "cloud_id_type"
+	CloudIDKey     = "cloud_id"
+)
+
 type MetadataProvider interface {
 	GetMetadata() map[string]string
 }

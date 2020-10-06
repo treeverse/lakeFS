@@ -1,10 +1,14 @@
 package aws
 
 import (
+	"crypto/md5"
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/treeverse/lakefs/cloud"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -30,5 +34,6 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		m.logger.Warnf("%v: failed to get AWS account ID for BI", err)
 		return nil
 	}
-	return map[string]string{"aws_account_id": *identity.Account}
+	hashedAccountID := fmt.Sprintf("%x", md5.Sum([]byte(*identity.Account)))
+	return map[string]string{cloud.CloudIDKey: hashedAccountID, cloud.CloudIDTypeKey: "aws_account_id"}
 }
