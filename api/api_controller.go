@@ -53,32 +53,32 @@ const (
 )
 
 type Dependencies struct {
-	ctx          context.Context
-	Cataloger    catalog.Cataloger
-	Auth         auth.Service
-	BlockAdapter block.Adapter
-	Stats        stats.Collector
-	Retention    retention.Service
-	Dedup        *dedup.Cleaner
-	Meta         auth.MetadataManager
-	Migrator     db.Migrator
-	Collector    stats.Collector
-	logger       logging.Logger
+	ctx             context.Context
+	Cataloger       catalog.Cataloger
+	Auth            auth.Service
+	BlockAdapter    block.Adapter
+	Stats           stats.Collector
+	Retention       retention.Service
+	Dedup           *dedup.Cleaner
+	MetadataManager auth.MetadataManager
+	Migrator        db.Migrator
+	Collector       stats.Collector
+	logger          logging.Logger
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 	return &Dependencies{
-		ctx:          ctx,
-		Cataloger:    d.Cataloger,
-		Auth:         d.Auth,
-		BlockAdapter: d.BlockAdapter.WithContext(ctx),
-		Stats:        d.Stats,
-		Retention:    d.Retention,
-		Dedup:        d.Dedup,
-		Meta:         d.Meta,
-		Migrator:     d.Migrator,
-		Collector:    d.Collector,
-		logger:       d.logger.WithContext(ctx),
+		ctx:             ctx,
+		Cataloger:       d.Cataloger,
+		Auth:            d.Auth,
+		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
+		Stats:           d.Stats,
+		Retention:       d.Retention,
+		Dedup:           d.Dedup,
+		MetadataManager: d.MetadataManager,
+		Migrator:        d.Migrator,
+		Collector:       d.Collector,
+		logger:          d.logger.WithContext(ctx),
 	}
 }
 
@@ -95,20 +95,20 @@ type Controller struct {
 }
 
 func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service,
-	dedupCleaner *dedup.Cleaner, meta auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
+	dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
-			ctx:          context.Background(),
-			Cataloger:    cataloger,
-			Auth:         auth,
-			BlockAdapter: blockAdapter,
-			Stats:        stats,
-			Retention:    retention,
-			Dedup:        dedupCleaner,
-			Meta:         meta,
-			Migrator:     migrator,
-			Collector:    collector,
-			logger:       logger,
+			ctx:             context.Background(),
+			Cataloger:       cataloger,
+			Auth:            auth,
+			BlockAdapter:    blockAdapter,
+			Stats:           stats,
+			Retention:       retention,
+			Dedup:           dedupCleaner,
+			MetadataManager: metadataManager,
+			Migrator:        migrator,
+			Collector:       collector,
+			logger:          logger,
 		},
 	}
 	return c
@@ -235,7 +235,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// check if previous setup completed
-		if ts, _ := c.deps.Meta.SetupTimestamp(); !ts.IsZero() {
+		if ts, _ := c.deps.MetadataManager.SetupTimestamp(); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
 					Message: "lakeFS already initialized",
@@ -269,7 +269,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// update setup completed timestamp
-		if err := c.deps.Meta.UpdateSetupTimestamp(time.Now()); err != nil {
+		if err := c.deps.MetadataManager.UpdateSetupTimestamp(time.Now()); err != nil {
 			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
 		}
 

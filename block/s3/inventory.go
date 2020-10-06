@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
-	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
+	"github.com/treeverse/lakefs/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -33,10 +33,10 @@ type inventoryFile struct {
 }
 
 func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool) (block.Inventory, error) {
-	return GenerateInventory(logger, manifestURL, a.s3, inventorys3.NewReader(ctx, a.s3, logger), shouldSort)
+	return GenerateInventory(logger, manifestURL, a.s3, s3inventory.NewReader(ctx, a.s3, logger), shouldSort)
 }
 
-func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader inventorys3.IReader, shouldSort bool) (block.Inventory, error) {
+func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader s3inventory.IReader, shouldSort bool) (block.Inventory, error) {
 	if logger == nil {
 		logger = logging.Default()
 	}
@@ -57,7 +57,7 @@ type Inventory struct {
 	Manifest   *Manifest
 	logger     logging.Logger
 	shouldSort bool
-	reader     inventorys3.IReader
+	reader     s3inventory.IReader
 }
 
 func (inv *Inventory) Iterator() block.InventoryIterator {
@@ -86,8 +86,8 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	if m.Format != inventorys3.OrcFormatName && m.Format != inventorys3.ParquetFormatName {
-		return nil, fmt.Errorf("%w. got format: %s", inventorys3.ErrUnsupportedInventoryFormat, m.Format)
+	if m.Format != s3inventory.OrcFormatName && m.Format != s3inventory.ParquetFormatName {
+		return nil, fmt.Errorf("%w. got format: %s", s3inventory.ErrUnsupportedInventoryFormat, m.Format)
 	}
 	m.URL = manifestURL
 	inventoryBucketArn, err := arn.Parse(m.InventoryBucketArn)
@@ -98,7 +98,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	return &m, nil
 }
 
-func sortManifest(m *Manifest, logger logging.Logger, reader inventorys3.IReader) error {
+func sortManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader) error {
 	firstKeyByInventoryFile := make(map[string]string)
 	lastKeyByInventoryFile := make(map[string]string)
 	for _, f := range m.Files {

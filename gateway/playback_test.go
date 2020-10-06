@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -93,7 +94,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
+func (m *mockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(class, action string) {}
 
