@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cloud"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
@@ -76,7 +77,8 @@ var runCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
-		metadata := stats.NewMetadata(logger, cfg, authMetadataManager)
+		cloudMetadataProvider := cloud.BuildMetadataProvider(logger, cfg)
+		metadata := stats.NewMetadata(logger, cfg, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)

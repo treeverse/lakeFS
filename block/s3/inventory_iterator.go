@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
-	inventorys3 "github.com/treeverse/lakefs/cloud/s3/inventory"
+	inventorys3 "github.com/treeverse/lakefs/cloud/aws/s3_inventory"
 	"github.com/treeverse/lakefs/cmdutils"
 )
 

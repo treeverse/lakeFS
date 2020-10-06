@@ -15,7 +15,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/s3"
-	inventorys3 "github.com/treeverse/lakefs/cloud/s3/inventory"
+	inventorys3 "github.com/treeverse/lakefs/cloud/aws/s3_inventory"
 	"github.com/treeverse/lakefs/logging"
 )
 
