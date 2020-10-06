@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	CloudIDTypeKey = "cloud_id_type"
-	CloudIDKey     = "cloud_id"
+	IDTypeKey = "cloud_id_type"
+	IDKey     = "cloud_id"
 )
 
 type MetadataProvider interface {

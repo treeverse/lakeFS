@@ -35,5 +35,5 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		return nil
 	}
 	hashedAccountID := fmt.Sprintf("%x", md5.Sum([]byte(*identity.Account)))
-	return map[string]string{cloud.CloudIDKey: hashedAccountID, cloud.CloudIDTypeKey: "aws_account_id"}
+	return map[string]string{cloud.IDKey: hashedAccountID, cloud.IDTypeKey: "aws_account_id"}
 }

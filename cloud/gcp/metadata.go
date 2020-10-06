@@ -24,5 +24,5 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		return nil
 	}
 	hashedProjectID := fmt.Sprintf("%x", md5.Sum([]byte(projectID)))
-	return map[string]string{cloud.CloudIDKey: hashedProjectID, cloud.CloudIDTypeKey: "gcp_project_numerical_id"}
+	return map[string]string{cloud.IDKey: hashedProjectID, cloud.IDTypeKey: "gcp_project_numerical_id"}
 }
