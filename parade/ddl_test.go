@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/stdlib"
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/treeverse/lakefs/parade"
 
 	"github.com/jmoiron/sqlx"
@@ -234,6 +234,10 @@ func (w wrapper) deleteTasks(ids []parade.TaskID) error {
 
 func (w wrapper) returnTask(taskID parade.TaskID, token parade.PerformanceToken, resultStatus string, resultStatusCode parade.TaskStatusCodeValue) error {
 	return parade.ReturnTask(w.db, w.prefixTask(taskID), token, resultStatus, resultStatusCode)
+}
+
+func (w wrapper) extendTaskOwnership(taskID parade.TaskID, token parade.PerformanceToken, maxDuration time.Duration) error {
+	return parade.ExtendTaskDeadline(w.db, w.prefixTask(taskID), token, maxDuration)
 }
 
 func (w wrapper) ownTasks(actorID parade.ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]parade.OwnedTaskData, error) {
@@ -516,6 +520,79 @@ func TestReturnTask_RetryMulti(t *testing.T) {
 	if len(tasks) != 0 {
 		t.Errorf("expected not to receive any tasks (maxRetries)  but got tasks %+v", tasks)
 	}
+}
+
+func TestExtendTaskDuration(t *testing.T) {
+	w := wrapper{t, db}
+
+	cleanup := w.insertTasks([]parade.TaskData{
+		{ID: "111", Action: "frob"},
+		{ID: "222", Action: "broz"},
+	})
+	defer cleanup()
+
+	var invalidUUID pgtype.UUID
+	if err := invalidUUID.DecodeText(nil, []byte("123e4567-e89b-12d3-a456-426614174000")); err != nil {
+		t.Fatalf("generate fake performance token: %s", err)
+	}
+	invalidToken := parade.PerformanceToken(invalidUUID)
+
+	shortLifetime := 100 * time.Millisecond
+	longLifetime := time.Second
+
+	t.Run("ExtendUnowned", func(t *testing.T) {
+		if err := w.extendTaskOwnership("111", invalidToken, time.Hour); !errors.Is(err, parade.ErrInvalidToken) {
+			t.Errorf("expected to fail with invalid token, got %s", err)
+		}
+	})
+	t.Run("ExtendOwned", func(t *testing.T) {
+		ownedTasks, err := w.ownTasks(parade.ActorID("extend"), 1, []string{"frob"}, &shortLifetime)
+		if err != nil {
+			t.Fatalf("failed to own task 111 to frob: %s", err)
+		}
+		if len(ownedTasks) != 1 {
+			t.Fatalf("expected to own single task, got %v", ownedTasks)
+		}
+		err = w.extendTaskOwnership(ownedTasks[0].ID, ownedTasks[0].Token, longLifetime)
+		if err != nil {
+			t.Errorf("couldn't extend task ownership of %v: %s", ownedTasks[0], err)
+		}
+		time.Sleep(3 * shortLifetime)
+		moreOwnedTasks, err := w.ownTasks(parade.ActorID("steal"), 1, []string{"frob"}, nil)
+		if err != nil {
+			t.Fatalf("failed to try to own tasks: %s", err)
+		}
+		if len(moreOwnedTasks) != 0 {
+			t.Errorf("expected task 111 to still be owned, managed to own %v", moreOwnedTasks)
+		}
+	})
+	t.Run("ExtendFailsWhenAnotherActorSteals", func(t *testing.T) {
+		ownedTasks, err := w.ownTasks(parade.ActorID("first"), 1, []string{"broz"}, &shortLifetime)
+		if err != nil {
+			t.Fatalf("failed to own task 222 to broz: %s", err)
+		}
+		if len(ownedTasks) != 1 {
+			t.Fatalf("expected to own single task, got %v", ownedTasks)
+		}
+
+		// Wait for it to expire, grab the task by another actor
+		var moreOwnedTasks []parade.OwnedTaskData
+		for i := 0; i < 5 && len(moreOwnedTasks) == 0; i++ {
+			time.Sleep(shortLifetime)
+			moreOwnedTasks, err = w.ownTasks(parade.ActorID("second"), 1, []string{"broz"}, &shortLifetime)
+			if err != nil {
+				t.Fatalf("failed to re-own task 222 to broz: %s", err)
+			}
+		}
+		if len(moreOwnedTasks) != 1 {
+			t.Fatalf("task 222 never expired, got just %v", moreOwnedTasks)
+		}
+
+		err = w.extendTaskOwnership(ownedTasks[0].ID, ownedTasks[0].Token, shortLifetime)
+		if !errors.Is(err, parade.ErrInvalidToken) {
+			t.Fatalf("expected ownership of %v to have expired, got %s", ownedTasks[0], err)
+		}
+	})
 }
 
 func TestDependencies(t *testing.T) {
