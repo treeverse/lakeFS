@@ -23,7 +23,7 @@ resource "aws_ecs_task_definition" "executor" {
         "logConfiguration": {
           "logDriver": "awslogs",
           "options": {
-            "awslogs-group": "/ecs/benchmark/${var.tag}",
+            "awslogs-group": "${aws_cloudwatch_log_group.benchmark.name}",
             "awslogs-region": "us-east-1",
             "awslogs-stream-prefix": "executor"
           }
