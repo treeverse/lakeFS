@@ -138,7 +138,7 @@ resource "aws_ecs_cluster" "benchmark" {
 }
 
 resource "aws_cloudwatch_log_group" "benchmark" {
-  name = "/ecs/benchmark/${var.tag}"
+  name = "/ecs/benchmark/${var.build}"
 
   retention_in_days = 14
   tags = {
