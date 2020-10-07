@@ -153,7 +153,7 @@ const EntryRowActions = ({repo, refId, entry, onDelete}) => {
                     </Dropdown.Item>
                 </Dropdown.Menu>
             </Dropdown>
-            <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={onSubmit}></ConfirmationModal>
+            <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={onSubmit}/>
         </>
     );
 };

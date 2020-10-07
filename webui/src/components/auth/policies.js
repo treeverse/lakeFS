@@ -88,7 +88,7 @@ export const PoliciesPage = connect(
                             <SyncIcon/>
                         </Button>
                     </ButtonToolbar>
-                    <ConfirmationModal show={show} onHide={handleClose} msg={confirmDeleteMsg} onConfirm={deleteSelectedPolicies}></ConfirmationModal>
+                    <ConfirmationModal show={show} onHide={handleClose} msg={confirmDeleteMsg} onConfirm={deleteSelectedPolicies}/>
                 </div>
             </div>
 
