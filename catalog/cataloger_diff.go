@@ -205,8 +205,8 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		effectiveCommits.ChildEffectiveCommit = 1 // we need all commits from the child. so any small number will do
 		parentEffectiveQuery, args, err := psql.Select("commit_id as parent_effective_commit").
 			From("catalog_commits").
-			Where("branch_id = ? AND merge_source_branch = ?", childID, parentID).
-			OrderBy("commit_id").
+			Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_parent'", childID, parentID).
+			OrderBy("commit_id desc").
 			Limit(1).
 			ToSql()
 		if err != nil {

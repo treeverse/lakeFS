@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -1145,5 +1146,60 @@ func TestCataloger_MergeWitoutDiff(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
 	if err.Error() != "no difference was found" {
 		t.Fatal("did not get 'nothing to commit' error")
+	}
+}
+
+func TestCataloger_MergeFromChildAfterMergeFromFather(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	// first entry creation
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master")
+	_, err := c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit file first time on master", err)
+	_, err = c.CreateBranch(ctx, repository, "b1", "master")
+	testutil.MustDo(t, "create branch b1", err)
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
+	if err.Error() != "no difference was found" {
+		t.Fatal("did not get 'nothing to commit' error")
+	}
+	// two entries on master
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileY", nil, "master1")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "master", "fileY and fileZ", "tester", nil)
+	testutil.MustDo(t, "commit fileY  master", err)
+	// merge them into child
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge fileY from master to b1", nil)
+	testutil.MustDo(t, "merge into branch b1", err)
+	// delete one of those files in b1
+	err = c.DeleteEntry(ctx, repository, "b1", "fileY")
+	testutil.MustDo(t, "delete fileY on b1", err)
+	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "fileZ", nil, "ftft")
+	_, err = c.Commit(ctx, repository, "b1", "fileY and fileZ", "tester", nil)
+	testutil.MustDo(t, "commit fileZ and fileY  b1", err)
+	diff, err := c.Merge(ctx, repository, "b1", "master", "tester", "merge nothing from master to b1", nil)
+	if err != nil {
+		t.Fatalf("error on merge with no changes:%+v", err)
+	}
+	fmt.Print(diff)
+	// PART II
+	// two entries on master
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileYY", nil, "master1")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileZZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "master", "fileYY and fileZZ", "tester", nil)
+	testutil.MustDo(t, "commit fileYY  master", err)
+	// merge them into child
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge fileYY from master to b1", nil)
+	testutil.MustDo(t, "merge into branch b1", err)
+	// delete one of those files in b1
+	//err = c.DeleteEntry(ctx, repository, "b1", "fileYY")
+	//testutil.MustDo(t, "delete fileYY on b1", err)
+	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "fileZZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "b1", "fileYY and fileZZ", "tester", nil)
+	testutil.MustDo(t, "commit fileYY b1", err)
+	diff, err = c.Merge(ctx, repository, "b1", "master", "tester", "merge from b1 to master", nil)
+	if err != nil {
+		t.Fatalf("Merge err=%s, expected none", err)
 	}
 }
