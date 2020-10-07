@@ -200,25 +200,14 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) 
 }
 
 func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
-	// effectiveLineage, err := c.selectFromChildEffectiveLineage(tx, childID, parentID)
 	effectiveCommits, err := c.selectChildEffectiveCommits(tx, childID, parentID)
 	if err != nil {
 		return err
 	}
 
-	// create diff output table
-	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	diffResultsTableName, err := createDiffResultsTable(ctx, tx)
 	if err != nil {
 		return err
-	}
-	_, err = tx.Exec("CREATE UNLOGGED TABLE " + diffResultsTableName + ` (
-		source_branch bigint NOT NULL,
-		diff_type integer NOT NULL,
-		path character varying COLLATE "C" NOT NULL,
-		entry_ctid tid NOT NULL
-	)`)
-	if err != nil {
-		return fmt.Errorf("diff from child diff result table: %w", err)
 	}
 
 	childReader := NewDBBranchScanner(tx, childID, CommittedID, nil)
@@ -236,8 +225,8 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		for parentEnt == nil || parentEnt.Path < childEnt.Path {
 			_ = parentReader.Next()
 			parentEnt = parentReader.Value()
-			if parentReader.Err() != nil {
-				return parentReader.Err()
+			if err := parentReader.Err(); err != nil {
+				return err
 			}
 			if parentEnt == nil {
 				break
@@ -264,10 +253,27 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		}
 		batch = batch[:0]
 	}
-	if childReader.Err() != nil {
-		return childReader.Err()
+	if err := childReader.Err(); err != nil {
+		return err
 	}
 	return insertDiffResultsBatch(tx, diffResultsTableName, batch)
+}
+
+func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, error) {
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	_, err = executor.Exec("CREATE UNLOGGED TABLE " + diffResultsTableName + ` (
+		source_branch bigint NOT NULL,
+		diff_type integer NOT NULL,
+		path character varying COLLATE "C" NOT NULL,
+		entry_ctid tid NOT NULL
+	)`)
+	if err != nil {
+		return "", fmt.Errorf("diff from child diff result table: %w", err)
+	}
+	return diffResultsTableName, nil
 }
 
 func evaluateFromChildElementDiffType(effectiveCommits *diffEffectiveCommits, parentBranchID int64, childEnt *DBScannerEntry, parentEnt *DBScannerEntry) DifferenceType {
@@ -379,54 +385,6 @@ func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentI
 	effectiveCommits.ParentEffectiveLineage = effectiveLineage
 	return &effectiveCommits, nil
 }
-
-/*
-func lookupLineageByBranchID(lineage []lineageCommit, branchID int64) CommitID {
-	for _, l := range lineage {
-		if l.BranchID == branchID {
-			return l.CommitID
-		}
-	}
-	return UncommittedID
-}
-
-func (c *cataloger) selectFromChildEffectiveLineage(tx db.Tx, childID int64, parentID int64) ([]lineageCommit, error) {
-	var commitID CommitID
-	query, args, err := psql.
-		Select("merge_source_commit").
-		From("catalog_commits").
-		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
-		OrderBy(`commit_id DESC`).
-		Limit(1).
-		ToSql()
-	if err != nil {
-		return nil, err
-	}
-	err = tx.Get(&commitID, query, args...)
-	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
-	if err != nil && !effectiveCommitsNotFound {
-		return nil, err
-	}
-	if effectiveCommitsNotFound {
-		// we need all commits from the child. so any small number will do
-		query, args, err = psql.
-			Select("commit_id").
-			From("catalog_commits").
-			Where("branch_id = ? merge_type = 'from_parent'", childID).
-			OrderBy(`commit_id`).
-			Limit(1).
-			ToSql()
-		if err != nil {
-			return nil, err
-		}
-		err = tx.Get(&commitID, query, args...)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return getLineage(tx, childID, commitID)
-}
-*/
 
 // withDiffResultsContext generate diff results id used for temporary table name
 func (c *cataloger) withDiffResultsContext(ctx context.Context) (context.Context, context.CancelFunc) {
