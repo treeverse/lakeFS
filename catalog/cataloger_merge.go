@@ -39,7 +39,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
-		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
+		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID, 0, "")
 		if err != nil {
 			return nil, err
 		}

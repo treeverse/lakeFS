@@ -12,27 +12,6 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type diffEffectiveCommits struct {
-	ParentEffectiveCommit  CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
-	ChildEffectiveCommit   CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
-	ParentEffectiveLineage []lineageCommit
-}
-
-func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) CommitID {
-	for _, l := range c.ParentEffectiveLineage {
-		if l.BranchID == branchID {
-			return l.CommitID
-		}
-	}
-	return c.ParentEffectiveCommit
-}
-
-type contextKey string
-
-func (k contextKey) String() string {
-	return string(k)
-}
-
 const (
 	DiffMaxLimit = 1000
 
@@ -41,6 +20,14 @@ const (
 
 	contextDiffResultsKey contextKey = "diff_results_key"
 )
+
+type diffEffectiveCommits struct {
+	ParentEffectiveCommit  CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
+	ChildEffectiveCommit   CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
+	ParentEffectiveLineage []lineageCommit
+}
+
+type contextKey string
 
 type diffResultRecord struct {
 	SourceBranch int64
@@ -53,6 +40,86 @@ type diffResultsBatchWriter struct {
 	tx                   db.Tx
 	DiffResultsTableName string
 	Records              []*diffResultRecord
+}
+
+var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
+
+func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
+	}); err != nil {
+		return nil, false, err
+	}
+
+	if limit < 0 || limit > DiffMaxLimit {
+		limit = DiffMaxLimit
+	}
+
+	ctx, cancel := c.withDiffResultsContext(ctx)
+	defer cancel()
+
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
+		if err != nil {
+			return nil, fmt.Errorf("left branch: %w", err)
+		}
+		rightID, err := c.getBranchIDCache(tx, repository, rightBranch)
+		if err != nil {
+			return nil, fmt.Errorf("right branch: %w", err)
+		}
+		err = c.doDiff(ctx, tx, leftID, rightID, limit+1, after)
+		if err != nil {
+			return nil, err
+		}
+		return getDiffDifferences(ctx, tx, limit+1, after)
+	}, c.txOpts(ctx)...)
+	if err != nil {
+		return nil, false, err
+	}
+	differences := res.(Differences)
+	hasMore := paginateSlice(&differences, limit)
+	return differences, hasMore, nil
+}
+
+func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, leftID, rightID int64, limit int, after string) error {
+	relation, err := getBranchesRelationType(tx, leftID, rightID)
+	if err != nil {
+		return err
+	}
+	return c.doDiffByRelation(ctx, tx, relation, leftID, rightID, limit, after)
+}
+
+func (c *cataloger) doDiffByRelation(ctx context.Context, tx db.Tx, relation RelationType, leftID, rightID int64, limit int, after string) error {
+	switch relation {
+	case RelationTypeFromParent:
+		return c.diffFromParent(ctx, tx, leftID, rightID, limit, after)
+	case RelationTypeFromChild:
+		return c.diffFromChild(ctx, tx, leftID, rightID, limit, after)
+	case RelationTypeNotDirect:
+		return c.diffNonDirect(ctx, tx, leftID, rightID, limit, after)
+	default:
+		c.log.WithFields(logging.Fields{
+			"relation_type": relation,
+			"left_id":       leftID,
+			"right_id":      rightID,
+		}).Debug("Diff by relation - unsupported type")
+		return ErrFeatureNotSupported
+	}
+}
+
+func (k contextKey) String() string {
+	return string(k)
+}
+
+func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) CommitID {
+	for _, l := range c.ParentEffectiveLineage {
+		if l.BranchID == branchID {
+			return l.CommitID
+		}
+	}
+	return c.ParentEffectiveCommit
 }
 
 func newDiffResultsBatchWriter(tx db.Tx, tableName string) *diffResultsBatchWriter {
@@ -83,73 +150,6 @@ func (d *diffResultsBatchWriter) Flush() error {
 	return nil
 }
 
-var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
-
-func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
-		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
-	}); err != nil {
-		return nil, false, err
-	}
-
-	if limit < 0 || limit > DiffMaxLimit {
-		limit = DiffMaxLimit
-	}
-
-	ctx, cancel := c.withDiffResultsContext(ctx)
-	defer cancel()
-
-	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
-		if err != nil {
-			return nil, fmt.Errorf("left branch: %w", err)
-		}
-		rightID, err := c.getBranchIDCache(tx, repository, rightBranch)
-		if err != nil {
-			return nil, fmt.Errorf("right branch: %w", err)
-		}
-		err = c.doDiff(ctx, tx, leftID, rightID)
-		if err != nil {
-			return nil, err
-		}
-		return getDiffDifferences(ctx, tx, limit+1, after)
-	}, c.txOpts(ctx)...)
-	if err != nil {
-		return nil, false, err
-	}
-	differences := res.(Differences)
-	hasMore := paginateSlice(&differences, limit)
-	return differences, hasMore, nil
-}
-
-func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, leftID, rightID int64) error {
-	relation, err := getBranchesRelationType(tx, leftID, rightID)
-	if err != nil {
-		return err
-	}
-	return c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
-}
-
-func (c *cataloger) doDiffByRelation(ctx context.Context, tx db.Tx, relation RelationType, leftID, rightID int64) error {
-	switch relation {
-	case RelationTypeFromParent:
-		return c.diffFromParent(ctx, tx, leftID, rightID)
-	case RelationTypeFromChild:
-		return c.diffFromChild(ctx, tx, leftID, rightID)
-	case RelationTypeNotDirect:
-		return c.diffNonDirect(ctx, tx, leftID, rightID)
-	default:
-		c.log.WithFields(logging.Fields{
-			"relation_type": relation,
-			"left_id":       leftID,
-			"right_id":      rightID,
-		}).Debug("Diff by relation - unsupported type")
-		return ErrFeatureNotSupported
-	}
-}
-
 func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[DifferenceType]int, error) {
 	var results []struct {
 		DiffType int `db:"diff_type"`
@@ -170,7 +170,9 @@ func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[Differenc
 	return m, nil
 }
 
-func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64) error {
+func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64, limit int, after string) error {
+	_ = limit
+	_ = after
 	// get the last child commit number of the last parent merge
 	// if there is none - then it is the first merge
 	var maxChildMerge CommitID
@@ -233,7 +235,7 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) 
 	return result, nil
 }
 
-func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
+func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64, limit int, after string) error {
 	effectiveCommits, err := c.selectChildEffectiveCommits(tx, childID, parentID)
 	if err != nil {
 		return err
@@ -244,12 +246,21 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		return err
 	}
 
-	childReader := NewDBBranchScanner(tx, childID, CommittedID, nil)
-	parentReader := NewDBLineageScanner(tx, parentID, UncommittedID, nil)
-
+	scannerOpts := DBScannerOptions{
+		After: after,
+	}
+	childReader := NewDBBranchScanner(tx, childID, CommittedID, &scannerOpts)
+	parentReader := NewDBLineageScanner(tx, parentID, UncommittedID, &scannerOpts)
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
 	var parentEnt *DBScannerEntry
+	records := 0
 	for childReader.Next() {
+		// stop on limit
+		if limit > -1 && records >= limit {
+			break
+		}
+
+		// is child element is relevant
 		childEnt := childReader.Value()
 		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
 			continue
@@ -281,6 +292,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		if err != nil {
 			return err
 		}
+		records++
 	}
 	if err := childReader.Err(); err != nil {
 		return err
@@ -439,7 +451,7 @@ func diffResultsTableNameFormat(id string) string {
 	return diffResultsTableNamePrefix + "_" + id
 }
 
-func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, leftID, rightID int64) error {
+func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, leftID, rightID int64, _ int, _ string) error {
 	c.log.WithFields(logging.Fields{
 		"left_id":  leftID,
 		"right_id": rightID,
