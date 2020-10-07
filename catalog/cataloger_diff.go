@@ -49,6 +49,40 @@ type diffResultRecord struct {
 	EntryCtid    string
 }
 
+type diffResultsBatchWriter struct {
+	tx                   db.Tx
+	DiffResultsTableName string
+	Records              []*diffResultRecord
+}
+
+func newDiffResultsBatchWriter(tx db.Tx, tableName string) *diffResultsBatchWriter {
+	return &diffResultsBatchWriter{
+		tx:                   tx,
+		DiffResultsTableName: tableName,
+		Records:              make([]*diffResultRecord, 0, diffResultsInsertBatchSize),
+	}
+}
+
+func (d *diffResultsBatchWriter) Write(r *diffResultRecord) error {
+	// batch and/or insert results
+	d.Records = append(d.Records, r)
+	if len(d.Records) < diffResultsInsertBatchSize {
+		return nil
+	}
+	return d.Flush()
+}
+
+func (d *diffResultsBatchWriter) Flush() error {
+	if len(d.Records) == 0 {
+		return nil
+	}
+	if err := insertDiffResultsBatch(d.tx, d.DiffResultsTableName, d.Records); err != nil {
+		return err
+	}
+	d.Records = d.Records[:0]
+	return nil
+}
+
 var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
@@ -213,7 +247,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	childReader := NewDBBranchScanner(tx, childID, CommittedID, nil)
 	parentReader := NewDBLineageScanner(tx, parentID, UncommittedID, nil)
 
-	batch := make([]*diffResultRecord, 0, diffResultsInsertBatchSize)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
 	var parentEnt *DBScannerEntry
 	for childReader.Next() {
 		childEnt := childReader.Value()
@@ -238,25 +272,20 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 			continue
 		}
 
-		// batch and/or insert results
-		batch = append(batch, &diffResultRecord{
+		err = batch.Write(&diffResultRecord{
 			SourceBranch: childID,
 			DiffType:     diffType,
 			Path:         childEnt.Path,
 			EntryCtid:    childEnt.RowCtid,
 		})
-		if len(batch) < diffResultsInsertBatchSize {
-			continue
-		}
-		if err := insertDiffResultsBatch(tx, diffResultsTableName, batch); err != nil {
+		if err != nil {
 			return err
 		}
-		batch = batch[:0]
 	}
 	if err := childReader.Err(); err != nil {
 		return err
 	}
-	return insertDiffResultsBatch(tx, diffResultsTableName, batch)
+	return batch.Flush()
 }
 
 func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, error) {
