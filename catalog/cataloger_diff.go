@@ -91,6 +91,7 @@ func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, leftID, rightID int64,
 	return c.doDiffByRelation(ctx, tx, relation, leftID, rightID, limit, after)
 }
 
+// doDiffByRelation underlying diff between two branches, called by diff and merge
 func (c *cataloger) doDiffByRelation(ctx context.Context, tx db.Tx, relation RelationType, leftID, rightID int64, limit int, after string) error {
 	switch relation {
 	case RelationTypeFromParent:
