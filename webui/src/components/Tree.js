@@ -24,6 +24,7 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import {connect} from "react-redux";
 import {listBranches} from "../actions/branches";
+import ConfirmationModal from "./ConfirmationModal";
 
 
 const humanSize = (bytes) => {
@@ -120,31 +121,40 @@ const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({repo, refId, entry, onDelete}) => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`;
+    const onSubmit = () => onDelete(entry);
     return (
-        <Dropdown alignRight onToggle={setDropdownOpen}>
-            <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
-                return (
-                    <Button variant="link" onClick={e => {
-                        e.preventDefault();
-                        onClick(e);
-                    }} ref={ref}>
-                        {children}
-                    </Button>
-                );
-            })}>
-                {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-            </Dropdown.Toggle>
+        <>
+            <Dropdown alignRight onToggle={setDropdownOpen}>
+                <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
+                    return (
+                        <Button variant="link" onClick={e => {
+                            e.preventDefault();
+                            onClick(e);
+                        }} ref={ref}>
+                            {children}
+                        </Button>
+                    );
+                })}>
+                    {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+                </Dropdown.Toggle>
 
-            <Dropdown.Menu>
-                <PathLink path={entry.path} refId={refId} repoId={repo.id}
-                          as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                <Dropdown.Item onClick={(e) => {
-                    e.preventDefault();
-                    if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
-                }}><TrashcanIcon/> {' '} Delete
-                </Dropdown.Item>
-            </Dropdown.Menu>
-        </Dropdown>
+                <Dropdown.Menu>
+                    <PathLink path={entry.path} refId={refId} repoId={repo.id}
+                            as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+                    <Dropdown.Item onClick={(e) => {
+                        e.preventDefault();
+                        handleShow();
+                    }}>
+                        <TrashcanIcon/> {' '} Delete
+                    </Dropdown.Item>
+                </Dropdown.Menu>
+            </Dropdown>
+            <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={onSubmit}/>
+        </>
     );
 };
 
