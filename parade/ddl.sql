@@ -8,7 +8,7 @@ CREATE TYPE task_status_code_value AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-    id VARCHAR(64) NOT NULL PRIMARY KEY, -- nanoid
+    id VARCHAR(64) NOT NULL, -- nanoid
 
     action VARCHAR(128) NOT NULL, -- name (type) of action to perform
     body TEXT,                  -- data used by action
@@ -30,8 +30,14 @@ CREATE TABLE IF NOT EXISTS tasks (
     --     tasks.  Or at least add triggers that perform ON DELETE
     --     CASCADE.
     to_signal_after VARCHAR(64) ARRAY, -- IDs to signal after performing this task
-    notify_channel_after VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
-);
+    notify_channel_after VARCHAR(64), -- (if non-NULL) name of a channel to NOTIFY when this task ends
+
+     PRIMARY KEY (status_code, id)
+) PARTITION BY list(status_code);
+
+CREATE TABLE tasks_pending PARTITION OF tasks FOR VALUES IN ('pending');
+CREATE TABLE tasks_in_progress PARTITION OF tasks FOR VALUES IN ('in-progress');
+CREATE TABLE tasks_done PARTITION OF tasks FOR VALUES IN ('aborted', 'completed');
 
 -- Returns true if task with this id, code and deadline can
 -- be allocated.
