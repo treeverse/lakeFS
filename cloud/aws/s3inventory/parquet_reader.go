@@ -39,12 +39,15 @@ func (p *ParquetInventoryFileReader) Read(n int) ([]InventoryObject, error) {
 		fieldName := fieldName
 		go func() {
 			defer wg.Done()
-			columnRes, _, _, err := p.ReadColumnByPath(path, int64(n))
+			columnRes, _, dls, err := p.ReadColumnByPath(path, int64(n))
 			if err != nil {
 				errChan <- fmt.Errorf("failed to read parquet column %s: %w", fieldName, err)
 				return
 			}
 			for i, v := range columnRes {
+				if dls[i] == 0 && fieldName != "key" && fieldName != "bucket" {
+					continue
+				}
 				err := set(&res[i], fieldName, v)
 				if err != nil {
 					errChan <- fmt.Errorf("failed to read parquet column %s: %w", fieldName, err)
