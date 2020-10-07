@@ -1163,6 +1163,8 @@ func TestCataloger_MergeFromChildAfterMergeFromFather(t *testing.T) {
 	if !errors.Is(err, ErrNoDifferenceWasFound) {
 		t.Fatalf("merge err=%s, expected ErrNoDifferenceWasFound", err)
 	}
+
+	// PART I
 	// two entries on master
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileY", nil, "master1")
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileZ", nil, "master1")
@@ -1177,6 +1179,26 @@ func TestCataloger_MergeFromChildAfterMergeFromFather(t *testing.T) {
 	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "fileZ", nil, "master1")
 	_, err = c.Commit(ctx, repository, "b1", "fileY and fileZ", "tester", nil)
 	testutil.MustDo(t, "commit fileY b1", err)
+	_, err = c.Merge(ctx, repository, "b1", "master", "tester", "merge nothing from master to b1", nil)
+	if err != nil {
+		t.Fatalf("Merge err=%s, expected none", err)
+	}
+
+	// PART II
+	// two entries on master
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileYY", nil, "master1")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileZZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "master", "fileYY and fileZZ", "tester", nil)
+	testutil.MustDo(t, "commit fileYY  master", err)
+	// merge them into child
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge fileYY from master to b1", nil)
+	testutil.MustDo(t, "merge into branch b1", err)
+	// delete one of those files in b1
+	err = c.DeleteEntry(ctx, repository, "b1", "fileYY")
+	testutil.MustDo(t, "delete fileYY on b1", err)
+	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "fileZZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "b1", "fileYY and fileZZ", "tester", nil)
+	testutil.MustDo(t, "commit fileYY b1", err)
 	_, err = c.Merge(ctx, repository, "b1", "master", "tester", "merge nothing from master to b1", nil)
 	if err != nil {
 		t.Fatalf("Merge err=%s, expected none", err)
