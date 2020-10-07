@@ -123,15 +123,9 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 
 func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList []pathRequest) ([]*Entry, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// get branch
 		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
 			return nil, err
-		}
-		// get lineage
-		//lineage, err := getLineage(tx, branchID, ref.CommitID)
-		if err != nil {
-			return nil, fmt.Errorf("get lineage: %w", err)
 		}
 		// prepare list of paths
 		p := make([]string, len(pathReqList))
@@ -140,9 +134,6 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 		}
 		// prepare query
 		readExpr := LineageSelect(branchID, p, ref.CommitID, tx)
-		//readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
-		//	FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
-		//	Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
 		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
