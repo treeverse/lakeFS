@@ -24,6 +24,7 @@ import * as moment from "moment";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
+import ConfirmationModal from "../ConfirmationModal";
 
 
 export const GroupsPage = connect(
@@ -46,6 +47,7 @@ export const GroupsPage = connect(
 
     const deleteSelectedGroups = () => {
         deleteGroups(checkedGroups);
+        handleClose();
     }
 
     useEffect(() => {
@@ -55,6 +57,11 @@ export const GroupsPage = connect(
             listGroups();
         }
     }, [deletionStatus, resetDeleteGroups, listGroups]);
+
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const deleteConfirmMsg = `are you sure you'd like to delete groups: ${checkedGroups.join(', ')}?`;
 
     return (
         <Col lg={9}>
@@ -75,11 +82,7 @@ export const GroupsPage = connect(
                                 <Form.Control type="text" name="id" placeholder="Group ID (i.e. 'Developers')"/>
                             </Form.Group>
                         </EntityCreateButton>
-                        <Button variant="danger" disabled={checkedGroups.length < 1} onClick={() => {
-                            if (window.confirm(`are you sure you'd like to delete groups: ${checkedGroups.join(', ')}?`)) {
-                                deleteSelectedGroups()
-                            }
-                        }}>
+                        <Button variant="danger" disabled={checkedGroups.length < 1} onClick={handleShow}>
                             Delete Selected
                         </Button>
                     </ButtonToolbar>
@@ -88,6 +91,7 @@ export const GroupsPage = connect(
                             <SyncIcon/>
                         </Button>
                     </ButtonToolbar>
+                    <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={deleteSelectedGroups}/>
                 </div>
             </div>
 
@@ -220,8 +224,8 @@ const GroupMembersPane = connect(
     }, [groupId, listGroupMembers]);
 
     const detachUserFn = useCallback((userId) => {
-        if (window.confirm(`are you sure you'd like to remove user '${userId}' from group '${groupId}'?`))
-            removeUserFromGroup(userId, groupId)
+        removeUserFromGroup(userId, groupId);
+        handleClose();
     }, [removeUserFromGroup, groupId])
 
 
@@ -232,10 +236,14 @@ const GroupMembersPane = connect(
         }
     }, [groupMembershipDeletion, resetRemoveUserFromGroup, listMembersFn, groupId])
 
-
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [entityId , setEntityId] = useState('');
+    const detachConfirmMsg  = `are you sure you'd like to remove user '${entityId}' from group '${groupId}'?`;
+ 
     return (
         <>
-
             <div className="action-bar borderless">
                 <ButtonToolbar className="float-left mb-2 pl-1">
                     <GroupMembershipModalButton groupId={groupId} onDone={() => { listMembersFn() }}/>
@@ -257,13 +265,21 @@ const GroupMembersPane = connect(
                         return [
                             (<Link to={`/auth/users/${entity.id}`}>{entity.id}</Link>),
                             moment.unix(entity.creation_date).toISOString(),
-                            (<Button size={"sm"} variant="outline-danger" onClick={() => {
-                                detachUserFn(entity.id)
-                            }}>Remove</Button>)
+                            (<Button size={"sm"} variant="outline-danger" 
+                            onClick={() => {
+                                handleShow();
+                                setEntityId(entity.id);
+                            }}>
+                            Remove</Button>)
                         ]
                     }}
                 />
             </Form>
+            <ConfirmationModal show={show} onHide={handleClose} 
+                                msg={detachConfirmMsg }
+                                onConfirm = {() => {
+                                detachUserFn(entityId);
+                            }}/>
         </>
     );
 });
@@ -281,8 +297,8 @@ const GroupPoliciesPane = connect(
     }, [groupId, listGroupPolicies]);
 
     const detachPolicyFn = useCallback((policyId) => {
-        if (window.confirm(`are you sure you'd like to detach policy '${policyId}' from group '${groupId}'?`))
-            detachPolicyFromGroup(groupId, policyId)
+        detachPolicyFromGroup(groupId, policyId);
+        handleClose();
     },[detachPolicyFromGroup, groupId])
 
     useEffect(() => {
@@ -291,6 +307,13 @@ const GroupPoliciesPane = connect(
             listPoliciesFn()
         }
     }, [policyGroupDetachment, resetDetachPolicyFromGroup, listPoliciesFn, groupId])
+
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [entityId , setEntityId] = useState('');
+    
+    const detachConfirmMsg = `are you sure you'd like to detach policy '${entityId}' from group '${groupId}'?`;
 
     return (
         <>
@@ -314,12 +337,20 @@ const GroupPoliciesPane = connect(
                     return [
                         (<Link to={`/auth/policies/${entity.id}`}>{entity.id}</Link>),
                         moment.unix(entity.creation_date).toISOString(),
-                        (<Button size={"sm"} variant="outline-danger" onClick={() => {
-                            detachPolicyFn(entity.id)
-                        }}>Detach</Button>)
+                        (<Button size={"sm"} variant="outline-danger" 
+                        onClick={() => {
+                            handleShow();
+                            setEntityId(entity.id);
+                        }}>
+                        Detach</Button>)
                     ]
                 }}
             />
+            <ConfirmationModal show={show} onHide={handleClose} 
+                            msg={detachConfirmMsg} 
+                            onConfirm = {() => {
+                            detachPolicyFn(entityId);
+                        }}/>
         </>
 
 
