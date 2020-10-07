@@ -41,9 +41,8 @@ module "db" {
   # DB option group
   major_engine_version = "11"
 
-  # Snapshot name upon DB deletion
-  final_snapshot_identifier = "demodb"
-
+  skip_final_snapshot = true
+  
   # Database Deletion Protection
   deletion_protection = false
 }
