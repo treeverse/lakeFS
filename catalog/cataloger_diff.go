@@ -13,8 +13,18 @@ import (
 )
 
 type diffEffectiveCommits struct {
-	ParentEffectiveCommit CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
-	ChildEffectiveCommit  CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
+	ParentEffectiveCommit  CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
+	ChildEffectiveCommit   CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
+	ParentEffectiveLineage []lineageCommit
+}
+
+func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) CommitID {
+	for _, l := range c.ParentEffectiveLineage {
+		if l.BranchID == branchID {
+			return l.CommitID
+		}
+	}
+	return c.ParentEffectiveCommit
 }
 
 type contextKey string
@@ -128,7 +138,7 @@ func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[Differenc
 
 func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64) error {
 	// get the last child commit number of the last parent merge
-	// if there is none - then it is  the first merge
+	// if there is none - then it is the first merge
 	var maxChildMerge CommitID
 	childLineage, err := getLineage(tx, childID, UncommittedID)
 	if err != nil {
@@ -190,7 +200,8 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) 
 }
 
 func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
-	effectiveCommits, err := c.selectChildEffectiveCommits(childID, parentID, tx)
+	// effectiveLineage, err := c.selectFromChildEffectiveLineage(tx, childID, parentID)
+	effectiveCommits, err := c.selectChildEffectiveCommits(tx, childID, parentID)
 	if err != nil {
 		return err
 	}
@@ -233,7 +244,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 			}
 		}
 
-		diffType := evaluateFromChildElementDiffType(parentEnt, childEnt, effectiveCommits)
+		diffType := evaluateFromChildElementDiffType(effectiveCommits, parentID, childEnt, parentEnt)
 		if diffType == DifferenceTypeNone {
 			continue
 		}
@@ -259,32 +270,48 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	return insertDiffResultsBatch(tx, diffResultsTableName, batch)
 }
 
-func evaluateFromChildElementDiffType(parentEnt *DBScannerEntry, childEnt *DBScannerEntry, effectiveCommits *diffEffectiveCommits) DifferenceType {
+func evaluateFromChildElementDiffType(effectiveCommits *diffEffectiveCommits, parentBranchID int64, childEnt *DBScannerEntry, parentEnt *DBScannerEntry) DifferenceType {
 	var matchedParent *DBScannerEntry
 	if parentEnt != nil && parentEnt.Path == childEnt.Path {
 		matchedParent = parentEnt
 	}
-	diffType := DifferenceTypeAdded
+	// when the entry was deleted
 	if childEnt.IsDeleted() {
-		switch {
-		case matchedParent == nil || matchedParent.IsDeleted():
-			diffType = DifferenceTypeNone
-		case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
-			diffType = DifferenceTypeConflict
-		default:
-			diffType = DifferenceTypeRemoved
+		if matchedParent == nil || matchedParent.IsDeleted() {
+			return DifferenceTypeNone
 		}
-	} else if matchedParent != nil {
-		switch {
-		case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
-			diffType = DifferenceTypeConflict
-		case matchedParent.IsDeleted():
-			diffType = DifferenceTypeAdded
-		default:
-			diffType = DifferenceTypeChanged
+		if matchedParent.BranchID == parentBranchID {
+			// check if parent did any change to the entity
+			if matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit {
+				return DifferenceTypeConflict
+			}
+			return DifferenceTypeRemoved
 		}
+		// check if the parent saw this entry at the time
+		if matchedParent.MinCommit >= effectiveCommits.ParentEffectiveCommitByBranchID(matchedParent.BranchID) {
+			return DifferenceTypeRemoved
+		}
+		return DifferenceTypeNone
 	}
-	return diffType
+	// when the entry was not deleted
+	if matchedParent != nil {
+		if matchedParent.IsDeleted() {
+			return DifferenceTypeAdded
+		}
+		if matchedParent.BranchID == parentBranchID {
+			// check if parent did any change to the entity
+			if matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit {
+				return DifferenceTypeConflict
+			}
+			return DifferenceTypeChanged
+		}
+		if matchedParent.MinCommit >= effectiveCommits.ParentEffectiveCommitByBranchID(matchedParent.BranchID) {
+			return DifferenceTypeChanged
+		}
+		return DifferenceTypeAdded
+	}
+
+	return DifferenceTypeAdded
 }
 
 func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diffResultRecord) error {
@@ -311,7 +338,7 @@ func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diff
 // the child is 0, as any change in the child was never merged to the parent.
 // the parent is the effective commit number of the first lineage record of the child that points to the parent
 // it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
-func (c *cataloger) selectChildEffectiveCommits(childID int64, parentID int64, tx db.Tx) (*diffEffectiveCommits, error) {
+func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentID int64) (*diffEffectiveCommits, error) {
 	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
@@ -332,7 +359,7 @@ func (c *cataloger) selectChildEffectiveCommits(childID int64, parentID int64, t
 		effectiveCommits.ChildEffectiveCommit = 1 // we need all commits from the child. so any small number will do
 		parentEffectiveQuery, args, err := psql.Select("commit_id as parent_effective_commit").
 			From("catalog_commits").
-			Where("branch_id = ? AND merge_source_branch = ?", childID, parentID).
+			Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_parent'", childID, parentID).
 			OrderBy("commit_id").
 			Limit(1).
 			ToSql()
@@ -344,8 +371,62 @@ func (c *cataloger) selectChildEffectiveCommits(childID int64, parentID int64, t
 			return nil, err
 		}
 	}
+
+	effectiveLineage, err := getLineage(tx, parentID, effectiveCommits.ParentEffectiveCommit)
+	if err != nil {
+		return nil, err
+	}
+	effectiveCommits.ParentEffectiveLineage = effectiveLineage
 	return &effectiveCommits, nil
 }
+
+/*
+func lookupLineageByBranchID(lineage []lineageCommit, branchID int64) CommitID {
+	for _, l := range lineage {
+		if l.BranchID == branchID {
+			return l.CommitID
+		}
+	}
+	return UncommittedID
+}
+
+func (c *cataloger) selectFromChildEffectiveLineage(tx db.Tx, childID int64, parentID int64) ([]lineageCommit, error) {
+	var commitID CommitID
+	query, args, err := psql.
+		Select("merge_source_commit").
+		From("catalog_commits").
+		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
+		OrderBy(`commit_id DESC`).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+	err = tx.Get(&commitID, query, args...)
+	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
+	if err != nil && !effectiveCommitsNotFound {
+		return nil, err
+	}
+	if effectiveCommitsNotFound {
+		// we need all commits from the child. so any small number will do
+		query, args, err = psql.
+			Select("commit_id").
+			From("catalog_commits").
+			Where("branch_id = ? merge_type = 'from_parent'", childID).
+			OrderBy(`commit_id`).
+			Limit(1).
+			ToSql()
+		if err != nil {
+			return nil, err
+		}
+		err = tx.Get(&commitID, query, args...)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return getLineage(tx, childID, commitID)
+}
+*/
 
 // withDiffResultsContext generate diff results id used for temporary table name
 func (c *cataloger) withDiffResultsContext(ctx context.Context) (context.Context, context.CancelFunc) {
