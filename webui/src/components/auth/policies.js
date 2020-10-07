@@ -16,6 +16,7 @@ import * as moment from "moment";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
+import ConfirmationModal from "../ConfirmationModal";
 
 
 export const PoliciesPage = connect(
@@ -39,6 +40,7 @@ export const PoliciesPage = connect(
 
     const deleteSelectedPolicies = () => {
         deletePolicies(checkedPolicies);
+        handleClose();
     }
 
     useEffect(() => {
@@ -48,6 +50,11 @@ export const PoliciesPage = connect(
             listPolicies();
         }
     }, [deletionStatus, resetDeletePolicies, listPolicies]);
+
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const confirmDeleteMsg = `are you sure you'd like to delete policies: ${checkedPolicies.join(', ')}?`;
 
     return (
         <Col lg={9}>
@@ -71,11 +78,7 @@ export const PoliciesPage = connect(
                                 <Form.Control as="textarea" rows="15" name="policy" placeholder="Policy JSON Document" className="policy-document"/>
                             </Form.Group>
                         </EntityCreateButton>
-                        <Button variant="danger" disabled={checkedPolicies.length < 1} onClick={() => {
-                                if (window.confirm(`are you sure you'd like to delete policies: ${checkedPolicies.join(', ')}?`)) {
-                                    deleteSelectedPolicies()
-                                }
-                            }}>
+                        <Button variant="danger" disabled={checkedPolicies.length < 1} onClick={handleShow}>
                             Delete Selected
                         </Button>
                     </ButtonToolbar>
@@ -85,6 +88,7 @@ export const PoliciesPage = connect(
                             <SyncIcon/>
                         </Button>
                     </ButtonToolbar>
+                    <ConfirmationModal show={show} onHide={handleClose} msg={confirmDeleteMsg} onConfirm={deleteSelectedPolicies}></ConfirmationModal>
                 </div>
             </div>
 

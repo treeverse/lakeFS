@@ -18,6 +18,7 @@ import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import ClipboardButton from "../ClipboardButton";
+import ConfirmationModal from "../ConfirmationModal";
 
 
 export const UsersPage = connect(
@@ -40,6 +41,7 @@ export const UsersPage = connect(
 
     const deleteSelectedUsers = () => {
         deleteUsers(checkedUsers);
+        handleClose();
     }
 
     useEffect(() => {
@@ -49,6 +51,11 @@ export const UsersPage = connect(
             listUsers();
         }
     }, [deletionStatus, resetDeleteUsers, listUsers]);
+
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const deleteConfirmMsg = `are you sure you'd like to delete users: ${checkedUsers.join(', ')}?`;
 
     return (
         <Col lg={9}>
@@ -70,11 +77,7 @@ export const UsersPage = connect(
                                 <Form.Control type="text" name="id" placeholder="Username (e.g. 'jane.doe')"/>
                             </Form.Group>
                         </EntityCreateButton>
-                        <Button variant="danger" disabled={checkedUsers.length < 1} onClick={() => {
-                            if (window.confirm(`are you sure you'd like to delete users: ${checkedUsers.join(', ')}?`)) {
-                                deleteSelectedUsers()
-                            }
-                        }}>
+                        <Button variant="danger" disabled={checkedUsers.length < 1} onClick={handleShow}>
                             Delete Selected
                         </Button>
                     </ButtonToolbar>
@@ -83,6 +86,8 @@ export const UsersPage = connect(
                             <SyncIcon/>
                         </Button>
                     </ButtonToolbar>
+                    <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={deleteSelectedUsers}>
+                    </ConfirmationModal>
                 </div>
             </div>
 
@@ -216,8 +221,8 @@ const UserGroupPane = connect(
     }, [listUserGroups, userId]);
 
     const detachGroupFn = useCallback((groupId) => {
-        if (window.confirm(`are you sure you'd like to remove user '${userId}' from group '${groupId}'?`))
-            removeUserFromGroup(userId, groupId)
+        removeUserFromGroup(userId, groupId);
+        handleClose();
     }, [removeUserFromGroup, userId])
 
     useEffect(() => {
@@ -227,6 +232,11 @@ const UserGroupPane = connect(
         }
     }, [groupMembershipDeletion, resetRemoveUserFromGroup, listGroupsFn, userId])
 
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [entityId,setEntityId] = useState('');
+    const detachConfirmMsg = `are you sure you'd like to remove user '${userId}' from group '${entityId}'?`;
 
     return (
         <>
@@ -252,12 +262,18 @@ const UserGroupPane = connect(
                             (<Link to={`/auth/groups/${entity.id}`}>{entity.id}</Link>),
                             (moment.unix(entity.creation_date).toISOString()),
                             (<Button size={"sm"} variant="outline-danger" onClick={() => {
-                                detachGroupFn(entity.id)
+                                setEntityId(entity.id);
+                                handleShow();
                             }}>Remove</Button>)
                         ]
                     }}
                 />
             </Form>
+            <ConfirmationModal show={show} onHide={handleClose} msg={detachConfirmMsg} 
+                onConfirm={() => {
+                    detachGroupFn(entityId);
+                }}>     
+            </ConfirmationModal>
         </>
     );
 });
@@ -272,8 +288,8 @@ const UserAttachedPoliciesPane = connect(
 )(({ userId, listUserPolicies, detachPolicyFromUser, resetDetachPolicyFromUser, policies, policyUserDetachment }) => {
 
     const detachPolicyFn = useCallback((policyId) => {
-        if (window.confirm(`are you sure you'd like to detach policy '${policyId}' from user '${userId}'?`))
-            detachPolicyFromUser(userId, policyId)
+        detachPolicyFromUser(userId, policyId);
+        handleClose();
     },[detachPolicyFromUser, userId])
 
     const listPoliciesFn = useCallback((after, amount) => {
@@ -287,6 +303,11 @@ const UserAttachedPoliciesPane = connect(
         }
     }, [policyUserDetachment, resetDetachPolicyFromUser, listPoliciesFn, userId])
 
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [entityId,setEntityId] = useState('');
+    const detachConfirmMsg = `are you sure you'd like to detach policy '${entityId}' from user '${userId}'?`;
     return (
         <>
             <div className="action-bar borderless">
@@ -310,11 +331,17 @@ const UserAttachedPoliciesPane = connect(
                         (<Link to={`/auth/policies/${entity.id}`}>{entity.id}</Link>),
                         (moment.unix(entity.creation_date).toISOString()),
                         (<Button size={"sm"} variant="outline-danger" onClick={() => {
-                            detachPolicyFn(entity.id)
+                            setEntityId(entity.id);
+                            handleShow();
                         }}>Detach</Button>)
                     ]
                 }}
             />
+            <ConfirmationModal show={show} onHide={handleClose} msg={detachConfirmMsg} 
+                onConfirm={() => {
+                    detachPolicyFn(entityId);
+                }}>     
+            </ConfirmationModal>
         </>
     );
 });
@@ -430,8 +457,8 @@ export const UserCredentialsPane = connect(
     }, [userId, listCredentials]);
 
     const deleteCredentialsFn = useCallback((accessKeyId) => {
-        if (window.confirm(`Are you sure you'd like to delete access key '${accessKeyId}?'`))
-            deleteCredentials(userId, accessKeyId);
+        deleteCredentials(userId, accessKeyId);
+        handleClose();
     }, [deleteCredentials, userId]);
 
     useEffect(() => {
@@ -440,6 +467,11 @@ export const UserCredentialsPane = connect(
             listCredentialsFn()
         }
     }, [userId, listCredentialsFn, credentialsDeletionStatus, resetDeleteCredentials])
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [entityId,setEntityId] = useState('');
+    const deleteConfirmMsg = `Are you sure you'd like to delete access key '${entityId}?'`;
 
     return (
         <>
@@ -471,12 +503,18 @@ export const UserCredentialsPane = connect(
                         (<Button
                             size={"sm"}
                             variant="outline-danger"
-                            onClick={() => { deleteCredentialsFn(entity.access_key_id); }}
+                            onClick={() => { setEntityId(entity.access_key_id);
+                                             handleShow(); }}
                             disabled={(currentUser.accessKeyId === entity.access_key_id)}
                         >Revoke</Button>)
                     ]
                 }}
             />
+            <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} 
+                onConfirm={() => {
+                    deleteCredentialsFn(entityId);
+                }}>     
+            </ConfirmationModal>
         </>
     )
 });

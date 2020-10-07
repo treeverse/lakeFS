@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
 import {
@@ -15,25 +15,33 @@ import {connect} from "react-redux";
 import {listBranches} from "../actions/branches";
 import Card from "react-bootstrap/Card";
 import {resetRevertBranch, revertBranch} from "../actions/branches";
+import ConfirmationModal from "./ConfirmationModal";
 
 const ChangeRowActions = connect(
     ({ branches }) => ({ revert: branches.revert }),
     ({ revertBranch, resetRevertBranch })
 )(({repo, refId, entry, revertBranch, revert}) => {
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const revertConfirmMsg = `are you sure you wish to revert "${entry.path}" (${entry.type})?`
+    const onSubmit = () => revertBranch(repo.id, refId.id, {type: "object", path: entry.path});
+
     return (
-        <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>revert change</Tooltip>)}>
-            <Button variant="link" disabled={revert.inProgress} onClick={(e) => {
-                    e.preventDefault();
-                    if (revert.inProgress) {
-                        return;
-                    }
-                    if (window.confirm(`are you sure you wish to revert "${entry.path}" (${entry.type})?`)) {
-                        revertBranch(repo.id, refId.id, {type: "object", path: entry.path});
-                    }
-                }} >
-                <HistoryIcon/>
-            </Button>
-        </OverlayTrigger>
+        <>
+            <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>revert change</Tooltip>)}>
+                <Button variant="link" disabled={revert.inProgress} onClick={(e) => {
+                        e.preventDefault();
+                        if (revert.inProgress) {
+                            return;
+                        }
+                        handleShow();
+                    }} >
+                    <HistoryIcon/>
+                </Button>
+            </OverlayTrigger>
+        <ConfirmationModal show={show} onHide={handleClose} msg={revertConfirmMsg} onConfirm={onSubmit}></ConfirmationModal>
+        </>
     );
 });
 
