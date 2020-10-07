@@ -28,7 +28,6 @@ const (
 
 	diffResultsTableNamePrefix = "catalog_diff_results"
 	diffResultsInsertBatchSize = 64
-	diffReaderBufferSize       = 1024
 
 	contextDiffResultsKey contextKey = "diff_results_key"
 )
@@ -211,11 +210,11 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		return fmt.Errorf("diff from child diff result table: %w", err)
 	}
 
-	childReader := NewDBBranchReader(tx, childID, CommittedID, diffReaderBufferSize, "")
-	parentReader := NewDBLineageReader(tx, parentID, UncommittedID, diffReaderBufferSize, "")
+	childReader := NewDBBranchScanner(tx, childID, CommittedID, nil)
+	parentReader := NewDBLineageScanner(tx, parentID, UncommittedID, nil)
 
 	batch := make([]*diffResultRecord, 0, diffResultsInsertBatchSize)
-	var parentEnt *DBReaderEntry
+	var parentEnt *DBScannerEntry
 	for childReader.Next() {
 		childEnt := childReader.Value()
 		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
@@ -224,46 +223,22 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 
 		// get next parent - next parentEnt that path >= child
 		for parentEnt == nil || parentEnt.Path < childEnt.Path {
-			parentEnt, err = parentReader.Next()
-			if err != nil {
-				return err
+			_ = parentReader.Next()
+			parentEnt = parentReader.Value()
+			if parentReader.Err() != nil {
+				return parentReader.Err()
 			}
 			if parentEnt == nil {
 				break
 			}
 		}
 
-		// diff
-		var matchedParent *DBReaderEntry
-		if parentEnt != nil && parentEnt.Path == childEnt.Path {
-			matchedParent = parentEnt
-		}
-		diffType := DifferenceTypeAdded
-		if childEnt.IsDeleted() {
-			switch {
-			case matchedParent == nil || matchedParent.IsDeleted():
-				diffType = DifferenceTypeNone
-			case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
-				diffType = DifferenceTypeConflict
-			default:
-				diffType = DifferenceTypeRemoved
-			}
-		} else if matchedParent != nil {
-			switch {
-			case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
-				diffType = DifferenceTypeConflict
-			case matchedParent.IsDeleted():
-				diffType = DifferenceTypeAdded
-			default:
-				diffType = DifferenceTypeChanged
-			}
-		}
-
-		// skip to next record if no diff was found
+		diffType := evaluateFromChildElementDiffType(parentEnt, childEnt, effectiveCommits)
 		if diffType == DifferenceTypeNone {
 			continue
 		}
-		// batch diff results
+
+		// batch and/or insert results
 		batch = append(batch, &diffResultRecord{
 			SourceBranch: childID,
 			DiffType:     diffType,
@@ -273,8 +248,6 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		if len(batch) < diffResultsInsertBatchSize {
 			continue
 		}
-
-		// insert and clear batch
 		if err := insertDiffResultsBatch(tx, diffResultsTableName, batch); err != nil {
 			return err
 		}
@@ -283,13 +256,41 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	if childReader.Err() != nil {
 		return childReader.Err()
 	}
-	if len(batch) > 0 {
-		return insertDiffResultsBatch(tx, diffResultsTableName, batch)
+	return insertDiffResultsBatch(tx, diffResultsTableName, batch)
+}
+
+func evaluateFromChildElementDiffType(parentEnt *DBScannerEntry, childEnt *DBScannerEntry, effectiveCommits *diffEffectiveCommits) DifferenceType {
+	var matchedParent *DBScannerEntry
+	if parentEnt != nil && parentEnt.Path == childEnt.Path {
+		matchedParent = parentEnt
 	}
-	return nil
+	diffType := DifferenceTypeAdded
+	if childEnt.IsDeleted() {
+		switch {
+		case matchedParent == nil || matchedParent.IsDeleted():
+			diffType = DifferenceTypeNone
+		case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
+			diffType = DifferenceTypeConflict
+		default:
+			diffType = DifferenceTypeRemoved
+		}
+	} else if matchedParent != nil {
+		switch {
+		case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
+			diffType = DifferenceTypeConflict
+		case matchedParent.IsDeleted():
+			diffType = DifferenceTypeAdded
+		default:
+			diffType = DifferenceTypeChanged
+		}
+	}
+	return diffType
 }
 
 func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diffResultRecord) error {
+	if len(batch) == 0 {
+		return nil
+	}
 	ins := psql.Insert(tableName).Columns("source_branch", "diff_type", "path", "entry_ctid")
 	for _, rec := range batch {
 		ins = ins.Values(rec.SourceBranch, rec.DiffType, rec.Path, rec.EntryCtid)
