@@ -40,7 +40,7 @@ const ChangeRowActions = connect(
                     <HistoryIcon/>
                 </Button>
             </OverlayTrigger>
-        <ConfirmationModal show={show} onHide={handleClose} msg={revertConfirmMsg} onConfirm={onSubmit}></ConfirmationModal>
+        <ConfirmationModal show={show} onHide={handleClose} msg={revertConfirmMsg} onConfirm={onSubmit}/>
         </>
     );
 });

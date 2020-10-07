@@ -86,8 +86,7 @@ export const UsersPage = connect(
                             <SyncIcon/>
                         </Button>
                     </ButtonToolbar>
-                    <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={deleteSelectedUsers}>
-                    </ConfirmationModal>
+                    <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={deleteSelectedUsers}/>
                 </div>
             </div>
 
@@ -272,8 +271,7 @@ const UserGroupPane = connect(
             <ConfirmationModal show={show} onHide={handleClose} msg={detachConfirmMsg} 
                 onConfirm={() => {
                     detachGroupFn(entityId);
-                }}>     
-            </ConfirmationModal>
+                }}/>     
         </>
     );
 });
@@ -340,8 +338,7 @@ const UserAttachedPoliciesPane = connect(
             <ConfirmationModal show={show} onHide={handleClose} msg={detachConfirmMsg} 
                 onConfirm={() => {
                     detachPolicyFn(entityId);
-                }}>     
-            </ConfirmationModal>
+                }}/>
         </>
     );
 });
@@ -513,8 +510,7 @@ export const UserCredentialsPane = connect(
             <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} 
                 onConfirm={() => {
                     deleteCredentialsFn(entityId);
-                }}>     
-            </ConfirmationModal>
+                }}/>
         </>
     )
 });
