@@ -27,13 +27,13 @@ type IReader interface {
 }
 
 type InventoryObject struct {
-	Bucket             string  `parquet:"name=bucket, type=UTF8"`
-	Key                string  `parquet:"name=key, type=UTF8"`
-	IsLatest           *bool   `parquet:"name=is_latest, type=BOOLEAN"`
-	IsDeleteMarker     *bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
-	Size               *int64  `parquet:"name=size, type=INT_64"`
-	LastModifiedMillis *int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
-	Checksum           *string `parquet:"name=e_tag, type=UTF8"`
+	Bucket             string
+	Key                string
+	IsLatest           *bool
+	IsDeleteMarker     *bool
+	Size               *int64
+	LastModifiedMillis *int64
+	Checksum           *string
 }
 
 func (o *InventoryObject) GetPhysicalAddress() string {
@@ -55,7 +55,7 @@ type MetadataReader interface {
 
 type FileReader interface {
 	MetadataReader
-	Read(dstInterface interface{}) error
+	Read(n int) ([]InventoryObject, error)
 }
 
 func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
@@ -87,8 +87,7 @@ func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
-	var rawObject InventoryObject
-	pr, err := reader.NewParquetReader(pf, &rawObject, 4)
+	pr, err := reader.NewParquetReader(pf, nil, 4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}

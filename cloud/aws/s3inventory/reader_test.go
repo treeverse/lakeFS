@@ -167,11 +167,13 @@ func TestInventoryReader(t *testing.T) {
 			t.Fatalf("unexpected result from LastObjectKey. expected=%s, got=%s", test.ExpectedMaxValue, maxValueResult)
 		}
 		readBatchSize := 1000
-		res := make([]InventoryObject, readBatchSize)
 		offset := 0
 		readCount := 0
 		for {
-			err = fileReader.Read(&res)
+			res, err := fileReader.Read(readBatchSize)
+			if err != nil {
+				t.Fatal(err)
+			}
 			for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {
 				if res[i-offset].Key != fmt.Sprintf("f%05d", i) {
 					t.Fatalf("result in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", i, fmt.Sprintf("f%05d", i), res[i-offset].Key, offset/readBatchSize, i-offset)
@@ -183,9 +185,6 @@ func TestInventoryReader(t *testing.T) {
 			}
 			offset += len(res)
 			readCount += len(res)
-			if err != nil {
-				t.Fatal(err)
-			}
 			if len(res) != readBatchSize {
 				break
 			}

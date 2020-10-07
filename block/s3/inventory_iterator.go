@@ -94,8 +94,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
 		}
 	}()
-	it.buffer = make([]s3inventory.InventoryObject, rdr.GetNumRows())
-	err = rdr.Read(&it.buffer)
+	it.buffer, err = rdr.Read(int(rdr.GetNumRows()))
 	if err != nil {
 		it.err = err
 		return false

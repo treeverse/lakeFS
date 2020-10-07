@@ -246,18 +246,16 @@ func (m *mockInventoryFileReader) Close() error {
 	return nil
 }
 
-func (m *mockInventoryFileReader) Read(dstInterface interface{}) error {
+func (m *mockInventoryFileReader) Read(n int) ([]s3inventory.InventoryObject, error) {
 	res := make([]s3inventory.InventoryObject, 0, len(m.rows))
-	dst := dstInterface.(*[]s3inventory.InventoryObject)
-	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
+	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+n; i++ {
 		if m.rows[i] == nil {
-			return ErrReadFile // for test - simulate file with error
+			return nil, ErrReadFile // for test - simulate file with error
 		}
 		res = append(res, *m.rows[i])
 	}
 	m.nextIdx = m.nextIdx + len(res)
-	*dst = res
-	return nil
+	return res, nil
 }
 
 func (m *mockInventoryFileReader) GetNumRows() int64 {

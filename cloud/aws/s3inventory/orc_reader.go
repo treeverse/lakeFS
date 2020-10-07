@@ -2,7 +2,6 @@ package s3inventory
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -30,7 +29,6 @@ type OrcSelect struct {
 }
 
 func getOrcSelect(typeDescription *orc.TypeDescription) *OrcSelect {
-	relevantFields := []string{"bucket", "key", "size", "last_modified_date", "e_tag", "is_delete_marker", "is_latest"}
 	res := &OrcSelect{
 		SelectFields:  nil,
 		IndexInFile:   make(map[string]int),
@@ -40,7 +38,7 @@ func getOrcSelect(typeDescription *orc.TypeDescription) *OrcSelect {
 		res.IndexInFile[field] = i
 	}
 	j := 0
-	for _, field := range relevantFields {
+	for _, field := range inventoryFields {
 		if _, ok := res.IndexInFile[field]; ok {
 			res.SelectFields = append(res.SelectFields, field)
 			res.IndexInSelect[field] = j
@@ -82,13 +80,12 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) I
 	}
 }
 
-func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
-	num := reflect.ValueOf(dstInterface).Elem().Len()
-	res := make([]InventoryObject, 0, num)
+func (r *OrcInventoryFileReader) Read(n int) ([]InventoryObject, error) {
+	res := make([]InventoryObject, 0, n)
 	for {
 		select {
 		case <-r.ctx.Done():
-			return r.ctx.Err()
+			return nil, r.ctx.Err()
 		default:
 		}
 		if !r.cursor.Next() {
@@ -100,13 +97,11 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 			}
 		}
 		res = append(res, r.inventoryObjectFromRow(r.cursor.Row()))
-		if len(res) == num {
+		if len(res) == n {
 			break
 		}
 	}
-
-	reflect.ValueOf(dstInterface).Elem().Set(reflect.ValueOf(res))
-	return nil
+	return res, nil
 }
 
 func (r *OrcInventoryFileReader) GetNumRows() int64 {
