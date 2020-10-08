@@ -7,19 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-type pk struct {
-	MinMaxCommit
-}
-
 func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) sq.SelectBuilder {
-	//var topCommitId CommitID
-	//if commitID == UncommittedID {
-	//	topCommitId = MinCommitUncommittedIndicator
-	//} else if commitID == CommittedID {
-	//	topCommitId = MinCommitUncommittedIndicator - 1
-	//} else {
-	//	topCommitId = commitID
-	//}
 	lineage, err := getLineage(tx, branchID, commitID)
 	panicIfErr(err)
 	queries := make([]sq.SelectBuilder, len(lineage)+1)
@@ -33,17 +21,12 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) 
 		unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
 			queries[i], ")"))
 	}
-	//s := sq.DebugSqlizer(unionSelect)
-	//fmt.Print(s)
-	// for each path - select the CTID of the entry that is closest to the branch by lineage
 	distinctSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		FromSelect(unionSelect, "c").
 		Distinct().Options("ON (path)").
 		OrderBy("path", "lineage_order")
-	// select entries matching the ctid list
-	//s := sq.DebugSqlizer(distinctSelect)
-	//fmt.Print(s)
-	return distinctSelect
+	nonDeletedSelect := distinctSelect.Where("max_commit = ?", MaxCommitID)
+	return nonDeletedSelect
 }
 
 func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.SelectBuilder {
