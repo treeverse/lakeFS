@@ -44,8 +44,14 @@ func (c *cataloger) getBranchIDCache(tx db.Tx, repository string, branch string)
 		}
 		return branchID, nil
 	})
-	if errors.Is(err, cache.ErrCacheItemNotFound) {
-		return branchID, ErrBranchNotFound
+
+	if !(errors.Is(err, cache.ErrCacheItemNotFound) || errors.Is(err, db.ErrNotFound)) {
+		return branchID, err
 	}
-	return branchID, err
+
+	if _, err := c.getRepositoryIDCache(tx, repository); err != nil {
+		return 0, ErrRepositoryNotFound
+	}
+
+	return 0, ErrBranchNotFound
 }
