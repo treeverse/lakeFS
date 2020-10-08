@@ -109,6 +109,7 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			ent, ok := entMap[pathReq.path]
 			switch {
 			case ok:
+
 				response.entry = ent
 			case err != nil:
 				response.err = err
@@ -134,6 +135,8 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 		}
 		// prepare query
 		readExpr := LineageSelect(branchID, p, ref.CommitID, tx)
+		s := sq.DebugSqlizer(readExpr)
+		_ = s
 		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)

@@ -25,12 +25,11 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) 
 		FromSelect(unionSelect, "c").
 		Distinct().Options("ON (path)").
 		OrderBy("path", "lineage_order")
-	nonDeletedSelect := distinctSelect.Where("max_commit = ?", MaxCommitID)
-	return nonDeletedSelect
+	return distinctSelect
 }
 
 func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.SelectBuilder {
-	rawSelect := sq.Select("*").
+	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired", "min_commit").
 		Distinct().Options("ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
@@ -42,9 +41,13 @@ func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.Se
 		rawSelect = rawSelect.Where(sq.Eq{"path": paths})
 	}
 	if commitID == CommittedID {
-		rawSelect = rawSelect.Where("min_commit < ?", MaxCommitID)
+		rawSelect = rawSelect.Where("min_commit < ?", MaxCommitID).
+			Column("max_commit")
 	} else if commitID > 0 {
-		rawSelect = rawSelect.Where("min_commit between 1 and ?", commitID)
+		rawSelect = rawSelect.Where("min_commit between 1 and ?", commitID).
+			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", commitID, MaxCommitID)
+	} else {
+		rawSelect = rawSelect.Column("max_commit")
 	}
 	return rawSelect
 }
