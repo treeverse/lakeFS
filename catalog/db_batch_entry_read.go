@@ -109,7 +109,6 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			ent, ok := entMap[pathReq.path]
 			switch {
 			case ok:
-
 				response.entry = ent
 			case err != nil:
 				response.err = err
@@ -134,7 +133,7 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 			p[i] = s.path
 		}
 		// prepare query
-		readExpr := LineageSelect(branchID, p, ref.CommitID, tx)
+		readExpr := LineageSelect(branchID, p, ref.CommitID, tx, true)
 		s := sq.DebugSqlizer(readExpr)
 		_ = s
 		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()

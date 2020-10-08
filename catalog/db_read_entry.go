@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) sq.SelectBuilder {
+func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx, filterDeleted bool) sq.SelectBuilder {
 	lineage, err := getLineage(tx, branchID, commitID)
 	panicIfErr(err)
 	queries := make([]sq.SelectBuilder, len(lineage)+1)
@@ -21,15 +21,20 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) 
 		unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
 			queries[i], ")"))
 	}
-	distinctSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+	distinctSelect := sq.Select("*").
 		FromSelect(unionSelect, "c").
 		Distinct().Options("ON (path)").
 		OrderBy("path", "lineage_order")
-	return distinctSelect
+	finalSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+		FromSelect(distinctSelect, "t")
+	if filterDeleted {
+		finalSelect = finalSelect.Where("max_commit = ?", MaxCommitID)
+	}
+	return finalSelect
 }
 
 func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.SelectBuilder {
-	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired", "min_commit").
+	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		Distinct().Options("ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
