@@ -7,9 +7,11 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx, filterDeleted bool) sq.SelectBuilder {
+func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx, filterDeleted bool) (sq.SelectBuilder, error) {
 	lineage, err := getLineage(tx, branchID, commitID)
-	panicIfErr(err)
+	if err != nil {
+		return sq.Select(), err
+	}
 	queries := make([]sq.SelectBuilder, len(lineage)+1)
 	queries[0] = singleBranchSelect(branchID, paths, commitID).Column("? as lineage_order", "0")
 	for i, branch := range lineage {
@@ -30,7 +32,7 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx, 
 	if filterDeleted {
 		finalSelect = finalSelect.Where("max_commit = ?", MaxCommitID)
 	}
-	return finalSelect
+	return finalSelect, nil
 }
 
 func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.SelectBuilder {
@@ -55,10 +57,4 @@ func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.Se
 		rawSelect = rawSelect.Column("max_commit")
 	}
 	return rawSelect
-}
-
-func panicIfErr(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
