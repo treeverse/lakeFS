@@ -1009,9 +1009,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
 	//}
 
-	// identical entries created in child and grandparent do create conflict
-	// TODO(barak): discuss changes in metadata are part of diff - do we like to keep this conflict or take into consideration
-	//   the entry checksum
+	//identical entries created in child and grandparent do not create conflict - even when grandparent is uncommitted
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "empty updates", nil)
 	testutil.MustDo(t, "merge branch2 to branch1", err)
 

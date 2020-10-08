@@ -7,12 +7,6 @@ import (
 
 const DBScannerDefaultBufferSize = 1024
 
-type DBScannerOptions struct {
-	BufferSize       int
-	After            string
-	AdditionalFields []string
-}
-
 type DBBranchScanner struct {
 	tx               db.Tx
 	branchID         int64

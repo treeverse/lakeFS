@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestCataloger_DBBranchScanner(t *testing.T) {
+func TestDBBranchScanner(t *testing.T) {
 	const numberOfObjects = 100
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)

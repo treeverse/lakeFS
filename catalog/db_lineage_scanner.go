@@ -92,13 +92,17 @@ func (s *DBLineageScanner) hasEnded() bool {
 	return s.ended || s.err != nil
 }
 
+func (s *DBLineageScanner) ReadLineage() ([]lineageCommit, error) {
+	return getLineage(s.tx, s.branchID, s.commitID)
+}
+
 func (s *DBLineageScanner) ensureBranchScanners() bool {
 	if s.scanners != nil {
 		return true
 	}
-	lineage, err := getLineage(s.tx, s.branchID, s.commitID)
+	lineage, err := s.ReadLineage()
 	if err != nil {
-		s.err = fmt.Errorf("error getting lineage: %w", err)
+		s.err = fmt.Errorf("getting lineage: %w", err)
 		return false
 	}
 	s.scanners = make([]*DBBranchScanner, len(lineage)+1)

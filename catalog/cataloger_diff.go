@@ -32,8 +32,8 @@ type contextKey string
 type diffResultRecord struct {
 	SourceBranch int64
 	DiffType     DifferenceType
-	Path         string
-	EntryCtid    string
+	Entry        Entry
+	EntryCtid    *string
 }
 
 type diffResultsBatchWriter struct {
@@ -172,20 +172,9 @@ func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[Differenc
 }
 
 func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64, limit int, after string) error {
-	_ = limit
-	_ = after
-	// get the last child commit number of the last parent merge
-	// if there is none - then it is the first merge
-	var maxChildMerge CommitID
-	childLineage, err := getLineage(tx, childID, UncommittedID)
-	if err != nil {
-		return fmt.Errorf("child lineage failed: %w", err)
-	}
-	parentLineage, err := getLineage(tx, parentID, CommittedID)
-	if err != nil {
-		return fmt.Errorf("parent lineage failed: %w", err)
-	}
-	maxChildQuery, args, err := sq.Select("MAX(commit_id) as max_child_commit").
+	// get child last commit of merge from parent
+	var childLastFromParentCommitID CommitID
+	query, args, err := sq.Select("MAX(commit_id) as max_child_commit").
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_type = 'from_parent'", childID).
 		PlaceholderFormat(sq.Dollar).
@@ -193,25 +182,119 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, chil
 	if err != nil {
 		return fmt.Errorf("get child last commit sql: %w", err)
 	}
-	err = tx.Get(&maxChildMerge, maxChildQuery, args...)
+	err = tx.Get(&childLastFromParentCommitID, query, args...)
 	if err != nil {
 		return fmt.Errorf("get child last commit failed: %w", err)
 	}
-	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+
+	diffResultsTableName, err := createDiffResultsTable(ctx, tx)
 	if err != nil {
 		return err
 	}
-	diffFromParentSQL, args, err := sqDiffFromParentV(parentID, childID, maxChildMerge, parentLineage, childLineage).
-		Prefix(`CREATE UNLOGGED TABLE ` + diffResultsTableName + " AS ").
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+
+	scannerOpts := DBScannerOptions{
+		After:            after,
+		AdditionalFields: []string{DBEntryFieldChecksum},
+	}
+	parentScanner := NewDBLineageScanner(tx, parentID, CommittedID, &scannerOpts)
+	childScanner := NewDBLineageScanner(tx, childID, UncommittedID, &scannerOpts)
+	childLineage, err := childScanner.ReadLineage()
 	if err != nil {
-		return fmt.Errorf("diff from parent sql: %w", err)
+		return err
 	}
-	if _, err := tx.Exec(diffFromParentSQL, args...); err != nil {
-		return fmt.Errorf("select diff from parent: %w", err)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+	var childEnt *DBScannerEntry
+	records := 0
+	for parentScanner.Next() {
+		// stop on limit
+		if limit > -1 && records >= limit {
+			break
+		}
+
+		// is parent element is relevant
+		parentEnt := parentScanner.Value()
+
+		// get next parent - next parentEnt that path >= child
+		childEnt, err = ScanDBEntryUntil(childScanner, childEnt, parentEnt.Path)
+		if err != nil {
+			return err
+		}
+
+		// point to matched child based on path
+		var matchedChild *DBScannerEntry
+		if childEnt != nil && childEnt.Path == parentEnt.Path {
+			matchedChild = childEnt
+		}
+		// diff between entries
+		diffType := evaluateFromParentElementDiffType(childID, childLastFromParentCommitID, childLineage, parentEnt, matchedChild)
+		if diffType == DifferenceTypeNone {
+			continue
+		}
+
+		diffRec := &diffResultRecord{
+			SourceBranch: parentID,
+			DiffType:     diffType,
+			Entry:        parentEnt.Entry,
+		}
+		if matchedChild != nil && matchedChild.BranchID == childID && diffType != DifferenceTypeConflict && diffType != DifferenceTypeRemoved {
+			diffRec.EntryCtid = &parentEnt.RowCtid
+		}
+		err = batch.Write(diffRec)
+		if err != nil {
+			return err
+		}
+		records++
 	}
-	return nil
+	if err := parentScanner.Err(); err != nil {
+		return err
+	}
+	return batch.Flush()
+}
+
+func lineageCommitIDByBranchID(lineage []lineageCommit, branchID int64) CommitID {
+	for _, l := range lineage {
+		if l.BranchID == branchID {
+			return l.CommitID
+		}
+	}
+	return UncommittedID
+}
+
+func evaluateFromParentElementDiffType(childBranchID int64, childLastFromParentCommitID CommitID, childLineage []lineageCommit, parentEnt *DBScannerEntry, matchedChild *DBScannerEntry) DifferenceType {
+	// both deleted - none
+	if parentEnt.IsDeleted() && (matchedChild == nil || matchedChild.IsDeleted()) {
+		return DifferenceTypeNone
+	}
+
+	// same entry - none
+	if matchedChild != nil && parentEnt.IsDeleted() == matchedChild.IsDeleted() && parentEnt.Checksum == matchedChild.Checksum {
+		return DifferenceTypeNone
+	}
+
+	// parent not changed - none
+	commitIDByChildLineage := lineageCommitIDByBranchID(childLineage, parentEnt.BranchID)
+	parentChangedAfterChild := parentEnt.ChangedAfterCommit(commitIDByChildLineage)
+	if !parentChangedAfterChild {
+		return DifferenceTypeNone
+	}
+
+	// child entry is uncommitted or updated after merge from parent - conflict
+	if matchedChild != nil && matchedChild.BranchID == childBranchID &&
+		(!matchedChild.IsCommitted() || matchedChild.ChangedAfterCommit(childLastFromParentCommitID)) {
+		return DifferenceTypeConflict
+	}
+
+	// parent deleted - removed
+	if parentEnt.IsDeleted() {
+		return DifferenceTypeRemoved
+	}
+
+	// child delete - add
+	if matchedChild == nil || matchedChild.IsDeleted() {
+		return DifferenceTypeAdded
+	}
+	// child exists - change
+	return DifferenceTypeChanged
 }
 
 func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) (Differences, error) {
@@ -248,35 +331,30 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	}
 
 	scannerOpts := DBScannerOptions{
-		After: after,
+		After:            after,
+		AdditionalFields: []string{DBEntryFieldChecksum},
 	}
-	childReader := NewDBBranchScanner(tx, childID, CommittedID, &scannerOpts)
-	parentReader := NewDBLineageScanner(tx, parentID, UncommittedID, &scannerOpts)
+	childScanner := NewDBBranchScanner(tx, childID, CommittedID, &scannerOpts)
+	parentScanner := NewDBLineageScanner(tx, parentID, UncommittedID, &scannerOpts)
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
 	var parentEnt *DBScannerEntry
 	records := 0
-	for childReader.Next() {
+	for childScanner.Next() {
 		// stop on limit
 		if limit > -1 && records >= limit {
 			break
 		}
 
 		// is child element is relevant
-		childEnt := childReader.Value()
+		childEnt := childScanner.Value()
 		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
 			continue
 		}
 
 		// get next parent - next parentEnt that path >= child
-		for parentEnt == nil || parentEnt.Path < childEnt.Path {
-			_ = parentReader.Next()
-			parentEnt = parentReader.Value()
-			if err := parentReader.Err(); err != nil {
-				return err
-			}
-			if parentEnt == nil {
-				break
-			}
+		parentEnt, err = ScanDBEntryUntil(parentScanner, parentEnt, childEnt.Path)
+		if err != nil {
+			return err
 		}
 
 		diffType := evaluateFromChildElementDiffType(effectiveCommits, parentID, childEnt, parentEnt)
@@ -287,15 +365,15 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		err = batch.Write(&diffResultRecord{
 			SourceBranch: childID,
 			DiffType:     diffType,
-			Path:         childEnt.Path,
-			EntryCtid:    childEnt.RowCtid,
+			Entry:        childEnt.Entry,
+			EntryCtid:    &childEnt.RowCtid,
 		})
 		if err != nil {
 			return err
 		}
 		records++
 	}
-	if err := childReader.Err(); err != nil {
+	if err := childScanner.Err(); err != nil {
 		return err
 	}
 	return batch.Flush()
@@ -310,7 +388,7 @@ func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, er
 		source_branch bigint NOT NULL,
 		diff_type integer NOT NULL,
 		path character varying COLLATE "C" NOT NULL,
-		entry_ctid tid NOT NULL
+		entry_ctid tid
 	)`)
 	if err != nil {
 		return "", fmt.Errorf("diff from child diff result table: %w", err)
@@ -368,7 +446,7 @@ func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diff
 	}
 	ins := psql.Insert(tableName).Columns("source_branch", "diff_type", "path", "entry_ctid")
 	for _, rec := range batch {
-		ins = ins.Values(rec.SourceBranch, rec.DiffType, rec.Path, rec.EntryCtid)
+		ins = ins.Values(rec.SourceBranch, rec.DiffType, rec.Entry.Path, rec.EntryCtid)
 	}
 	query, args, err := ins.ToSql()
 	if err != nil {
