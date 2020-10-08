@@ -467,7 +467,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		case errors.Is(err, catalog.ErrBranchNotFound):
 			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
 		case errors.Is(err, catalog.ErrRepositoryNotFound):
-			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("repo '%s' not found.", params.Repository))
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -653,7 +653,7 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		case errors.Is(err, catalog.ErrBranchNotFound):
 			return branches.NewGetBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
 		case errors.Is(err, catalog.ErrRepositoryNotFound):
-			return branches.NewGetBranchNotFound().WithPayload(responseError("repo '%s' not found.", params.Repository))
+			return branches.NewGetBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -704,7 +704,7 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		case errors.Is(err, catalog.ErrBranchNotFound):
 			return branches.NewDeleteBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
 		case errors.Is(err, catalog.ErrRepositoryNotFound):
-			return branches.NewDeleteBranchNotFound().WithPayload(responseError("repo '%s' not found.", params.Repository))
+			return branches.NewDeleteBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1184,7 +1184,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 
 		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return objects.NewUploadObjectNotFound().WithPayload(responseError("repo not found"))
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
