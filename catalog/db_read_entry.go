@@ -17,7 +17,7 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx, 
 	for i, branch := range lineage {
 		queries[i+1] = singleBranchSelect(branch.BranchID, paths, branch.CommitID).Column("? as lineage_order", strconv.Itoa(i+1))
 	}
-	//from each branch in the lineage,  select the most current entry for the path
+	// from each branch in the lineage,  select the most current entry for the path
 	unionSelect := queries[0].Prefix("(").Suffix(")")
 	for i := 1; i < len(queries); i++ {
 		unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
@@ -47,14 +47,15 @@ func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.Se
 	} else {
 		rawSelect = rawSelect.Where(sq.Eq{"path": paths})
 	}
-	if commitID == CommittedID {
+	switch commitID {
+	case CommittedID:
 		rawSelect = rawSelect.Where("min_commit < ?", MaxCommitID).
 			Column("max_commit")
-	} else if commitID > 0 {
+	case UncommittedID:
+		rawSelect = rawSelect.Column("max_commit")
+	default:
 		rawSelect = rawSelect.Where("min_commit between 1 and ?", commitID).
 			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", commitID, MaxCommitID)
-	} else {
-		rawSelect = rawSelect.Column("max_commit")
 	}
 	return rawSelect
 }
