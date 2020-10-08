@@ -35,8 +35,13 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-      - name: install UI dependencies
+      - name: Install UI dependencies
         run: npm install
+        working-directory: ./webui
+      - name: Run UI tests
+        run: npm test
+        env:
+          CI: true
         working-directory: ./webui
       - name: Setup Go
         uses: actions/setup-go@v2
