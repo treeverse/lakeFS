@@ -135,7 +135,7 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 		// prepare query
 		readExpr, err := LineageSelect(branchID, p, ref.CommitID, tx, true)
 		if err != nil {
-			return nil, fmt.Errorf("LineageSelect error : %w", err)
+			return nil, fmt.Errorf("lineage select: %w", err)
 		}
 		s := sq.DebugSqlizer(readExpr)
 		_ = s
