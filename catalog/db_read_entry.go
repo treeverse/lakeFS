@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx, filterDeleted bool) (sq.SelectBuilder, error) {
+func LineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDeleted bool, paths []string) (sq.SelectBuilder, error) {
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
 		return sq.Select(), err
