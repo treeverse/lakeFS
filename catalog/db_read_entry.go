@@ -10,7 +10,7 @@ import (
 func LineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDeleted bool, paths []string) (sq.SelectBuilder, error) {
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
-		return sq.Select(), err
+		return sq.SelectBuilder{}, err
 	}
 	queries := make([]sq.SelectBuilder, len(lineage)+1)
 	queries[0] = singleBranchSelect(branchID, paths, commitID).Column("? as lineage_order", "0")
