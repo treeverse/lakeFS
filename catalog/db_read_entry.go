@@ -12,16 +12,13 @@ func LineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDeleted bo
 	if err != nil {
 		return sq.SelectBuilder{}, err
 	}
-	queries := make([]sq.SelectBuilder, len(lineage)+1)
-	queries[0] = singleBranchSelect(branchID, paths, commitID).Column("? as lineage_order", "0")
+	unionSelect := singleBranchSelect(branchID, paths, commitID).Column("? as lineage_order", "0").
+		Prefix("(").Suffix(")")
 	for i, branch := range lineage {
-		queries[i+1] = singleBranchSelect(branch.BranchID, paths, branch.CommitID).Column("? as lineage_order", strconv.Itoa(i+1))
-	}
-	// from each branch in the lineage,  select the most current entry for the path
-	unionSelect := queries[0].Prefix("(").Suffix(")")
-	for i := 1; i < len(queries); i++ {
-		unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
-			queries[i], ")"))
+		unionSelect.SuffixExpr(sq.ConcatExpr(
+			" UNION ALL (",
+			singleBranchSelect(branch.BranchID, paths, branch.CommitID).Column("? as lineage_order", strconv.Itoa(i+1)),
+			")"))
 	}
 	distinctSelect := sq.Select("*").
 		FromSelect(unionSelect, "c").
