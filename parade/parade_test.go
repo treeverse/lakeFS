@@ -634,7 +634,7 @@ func TestDeleteTasks(t *testing.T) {
 	tasks := []parade.TaskData{
 		{ID: parade.TaskID("a0"), Action: "root", ToSignalAfter: []parade.TaskID{"a1", "a3"}},
 		{ID: parade.TaskID("a1"), Action: "dep", ToSignalAfter: []parade.TaskID{"a2"}, TotalDependencies: intAddr(1)},
-		{ID: parade.TaskID("a2"), Action: "dep", ToSignalAfter: []parade.TaskID{"a3"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("a2"), Action: "dep", ToSignalAfter: []parade.TaskID{"a3"}, NumSignals: 1, TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("a3"), Action: "leaf", TotalDependencies: intAddr(2)},
 
 		{ID: parade.TaskID("b0"), Action: "root", ToSignalAfter: []parade.TaskID{"b2"}},
@@ -648,6 +648,12 @@ func TestDeleteTasks(t *testing.T) {
 		{ID: parade.TaskID("c4"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("c5"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("c6"), Action: "leaf", TotalDependencies: intAddr(1)},
+
+		{ID: parade.TaskID("d0"), Action: "done", StatusCode: parade.TaskCompleted, ToSignalAfter: []parade.TaskID{"d1"}},
+		{ID: parade.TaskID("d1"), Action: "new", NumSignals: 1, TotalDependencies: intAddr(2)},
+
+		{ID: parade.TaskID("e0"), Action: "done", ToSignalAfter: []parade.TaskID{"e1"}},
+		{ID: parade.TaskID("e1"), Action: "new", NumSignals: 1, TotalDependencies: intAddr(2)},
 	}
 
 	testutil.MustDo(t, "InsertTasks", pp.InsertTasks(ctx, tasks))
@@ -663,6 +669,8 @@ func TestDeleteTasks(t *testing.T) {
 		{title: "chain with extra link", casePrefix: "a", toDelete: []parade.TaskID{"a0"}},
 		{title: "delete only one dep", casePrefix: "b", toDelete: []parade.TaskID{"b0"}, expectedRemaining: []parade.TaskID{"b1", "b2"}},
 		{title: "treelike", casePrefix: "c", toDelete: []parade.TaskID{"c0"}},
+		{title: "delete done", casePrefix: "d", toDelete: []parade.TaskID{"d0"}, expectedRemaining: []parade.TaskID{"d1"}},
+		{title: "delete in-progress", casePrefix: "e", toDelete: []parade.TaskID{"e0"}},
 	}
 	prefix := t.Name()
 	for _, c := range cases {
