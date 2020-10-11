@@ -182,7 +182,7 @@ func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	}
 	qualifiedSourceKey, err := resolveNamespace(sourceObj)
 	if err != nil {
-		fmt.Errorf("resolve source: %w", err)
+		return fmt.Errorf("resolve source: %w", err)
 	}
 	destinationObjectHandle := a.client.Bucket(qualifiedDestinationKey.StorageNamespace).Object(qualifiedDestinationKey.Key)
 	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
