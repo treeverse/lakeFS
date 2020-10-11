@@ -11,6 +11,8 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const MaxMergeCopySize = 1_000_000
+
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
@@ -190,6 +192,10 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	if err != nil {
 		return err
 	}
+	insertSizeLimiter, err := ctidModulu(tx, diffResultsTableName)
+	if err != nil {
+		return err
+	}
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
@@ -198,14 +204,18 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 		return err
 	}
 
-	// DifferenceTypeChanged or DifferenceTypeAdded - create entries into this commit based on parent branch
-	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
+	// DifferenceTypeChanged or DifferenceTypeAdded - create entries into this commit based on child branch
+	insertSizeLimiterStr := strconv.Itoa(insertSizeLimiter)
+	for moduluNum := 0; moduluNum < insertSizeLimiter; moduluNum++ {
+		moduluNumStr := strconv.Itoa(moduluNum)
+		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
-				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
-		parentID, nextCommitID, DifferenceTypeAdded, DifferenceTypeChanged)
-	if err != nil {
-		return err
+				WHERE e.ctid IN (SELECT entry_ctid FROM ` + diffResultsTableName + ` WHERE diff_type IN ($3,$4) AND (ctid::text::point)[0]::bigint% ` + insertSizeLimiterStr + " = " + moduluNumStr + ")"
+		_, err = tx.Exec(sql, parentID, nextCommitID, DifferenceTypeAdded, DifferenceTypeChanged)
+		if err != nil {
+			return err
+		}
 	}
 	// DifferenceTypeRemoved - create tombstones if parent "sees" those entries from lineage branches
 	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
@@ -236,4 +246,13 @@ func (c *cataloger) mergeNonDirect(_ context.Context, _ sqlx.Execer, previousMax
 		"msg":            msg,
 	}).Debug("Merge non direct - feature not supported")
 	return ErrFeatureNotSupported
+}
+
+func ctidModulu(tx db.Tx, tableName string) (int, error) {
+	var tableCount int64
+	err := tx.Get(&tableCount, "SELECT COUNT(*) FROM "+tableName+" WHERE entry_ctid IS NOT NULL")
+	if err != nil {
+		return 0, err
+	}
+	return int(tableCount/MaxMergeCopySize + 1), nil
 }
