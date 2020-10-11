@@ -13,12 +13,35 @@ import (
 )
 
 const (
+	bucketFieldName           = "bucket"
+	keyFieldName              = "key"
+	sizeFieldName             = "size"
+	lastModifiedDateFieldName = "last_modified_date"
+	eTagFieldName             = "e_tag"
+	isDeleteMarkerFieldName   = "is_delete_marker"
+	isLatestFieldName         = "is_latest"
+)
+
+var inventoryFields = []string{
+	bucketFieldName,
+	keyFieldName,
+	sizeFieldName,
+	lastModifiedDateFieldName,
+	eTagFieldName,
+	isDeleteMarkerFieldName,
+	isLatestFieldName,
+}
+
+var requiredFields = []string{bucketFieldName, keyFieldName}
+
+const (
 	OrcFormatName     = "ORC"
 	ParquetFormatName = "Parquet"
 )
 
 var (
 	ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
+	ErrRequiredFieldNotFound      = errors.New("required field not found in inventory")
 )
 
 type IReader interface {
@@ -55,7 +78,7 @@ type MetadataReader interface {
 
 type FileReader interface {
 	MetadataReader
-	Read(n int) ([]InventoryObject, error)
+	Read(n int) ([]*InventoryObject, error)
 }
 
 func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
@@ -91,7 +114,7 @@ func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
-	return &ParquetInventoryFileReader{ParquetReader: *pr}, nil
+	return NewParquetInventoryFileReader(pr)
 }
 
 func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileReader, error) {
@@ -111,4 +134,13 @@ func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileRea
 		orcSelect: orcSelect,
 		cursor:    orcReader.Select(orcSelect.SelectFields...),
 	}, nil
+}
+
+func isRequired(field string) bool {
+	for _, f := range requiredFields {
+		if f == field {
+			return true
+		}
+	}
+	return false
 }

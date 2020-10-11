@@ -50,28 +50,28 @@ func getOrcSelect(typeDescription *orc.TypeDescription) *OrcSelect {
 
 func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) InventoryObject {
 	var size *int64
-	if sizeIdx, ok := r.orcSelect.IndexInSelect["size"]; ok && rowData[sizeIdx] != nil {
+	if sizeIdx, ok := r.orcSelect.IndexInSelect[sizeFieldName]; ok && rowData[sizeIdx] != nil {
 		size = swag.Int64(rowData[sizeIdx].(int64))
 	}
 	var lastModifiedMillis *int64
-	if lastModifiedIdx, ok := r.orcSelect.IndexInSelect["last_modified_date"]; ok && rowData[lastModifiedIdx] != nil {
+	if lastModifiedIdx, ok := r.orcSelect.IndexInSelect[lastModifiedDateFieldName]; ok && rowData[lastModifiedIdx] != nil {
 		lastModifiedMillis = swag.Int64(rowData[lastModifiedIdx].(time.Time).UnixNano() / int64(time.Millisecond))
 	}
 	var eTag *string
-	if eTagIdx, ok := r.orcSelect.IndexInSelect["e_tag"]; ok && rowData[eTagIdx] != nil {
+	if eTagIdx, ok := r.orcSelect.IndexInSelect[eTagFieldName]; ok && rowData[eTagIdx] != nil {
 		eTag = swag.String(rowData[eTagIdx].(string))
 	}
 	var isLatest *bool
-	if isLatestIdx, ok := r.orcSelect.IndexInSelect["is_latest"]; ok && rowData[isLatestIdx] != nil {
+	if isLatestIdx, ok := r.orcSelect.IndexInSelect[isLatestFieldName]; ok && rowData[isLatestIdx] != nil {
 		isLatest = swag.Bool(rowData[isLatestIdx].(bool))
 	}
 	var isDeleteMarker *bool
-	if isDeleteMarkerIdx, ok := r.orcSelect.IndexInSelect["is_delete_marker"]; ok && rowData[isDeleteMarkerIdx] != nil {
+	if isDeleteMarkerIdx, ok := r.orcSelect.IndexInSelect[isDeleteMarkerFieldName]; ok && rowData[isDeleteMarkerIdx] != nil {
 		isDeleteMarker = swag.Bool(rowData[isDeleteMarkerIdx].(bool))
 	}
 	return InventoryObject{
-		Bucket:             rowData[r.orcSelect.IndexInSelect["bucket"]].(string),
-		Key:                rowData[r.orcSelect.IndexInSelect["key"]].(string),
+		Bucket:             rowData[r.orcSelect.IndexInSelect[bucketFieldName]].(string),
+		Key:                rowData[r.orcSelect.IndexInSelect[keyFieldName]].(string),
 		Size:               size,
 		LastModifiedMillis: lastModifiedMillis,
 		Checksum:           eTag,
@@ -80,8 +80,8 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) I
 	}
 }
 
-func (r *OrcInventoryFileReader) Read(n int) ([]InventoryObject, error) {
-	res := make([]InventoryObject, 0, n)
+func (r *OrcInventoryFileReader) Read(n int) ([]*InventoryObject, error) {
+	res := make([]*InventoryObject, 0, n)
 	for {
 		select {
 		case <-r.ctx.Done():
@@ -96,7 +96,8 @@ func (r *OrcInventoryFileReader) Read(n int) ([]InventoryObject, error) {
 				break
 			}
 		}
-		res = append(res, r.inventoryObjectFromRow(r.cursor.Row()))
+		obj := r.inventoryObjectFromRow(r.cursor.Row())
+		res = append(res, &obj)
 		if len(res) == n {
 			break
 		}
@@ -123,9 +124,9 @@ func (r *OrcInventoryFileReader) Close() error {
 }
 
 func (r *OrcInventoryFileReader) FirstObjectKey() string {
-	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.orcSelect.IndexInFile["key"]+1].StringStatistics.Minimum
+	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.orcSelect.IndexInFile[keyFieldName]+1].StringStatistics.Minimum
 }
 
 func (r *OrcInventoryFileReader) LastObjectKey() string {
-	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.orcSelect.IndexInFile["key"]+1].StringStatistics.Maximum
+	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.orcSelect.IndexInFile[keyFieldName]+1].StringStatistics.Maximum
 }

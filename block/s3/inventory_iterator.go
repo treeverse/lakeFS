@@ -17,7 +17,7 @@ type InventoryIterator struct {
 	*Inventory
 	err                   error
 	val                   *block.InventoryObject
-	buffer                []s3inventory.InventoryObject
+	buffer                []*s3inventory.InventoryObject
 	inventoryFileIndex    int
 	valIndexInBuffer      int
 	inventoryFileProgress *cmdutils.Progress
