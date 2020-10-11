@@ -173,6 +173,25 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	return nil
 }
 
+func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
+	var err error
+	defer reportMetrics("Copy", time.Now(), nil, &err)
+	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
+	if err != nil {
+		return err
+	}
+	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	if err != nil {
+		return err
+	}
+	destinationObjectHandle := a.client.Bucket(qualifiedDestinationKey.StorageNamespace).Object(qualifiedDestinationKey.Key)
+	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
+	_, err = destinationObjectHandle.CopierFrom(sourceObjectHandle).Run(a.ctx)
+	if err != nil {
+		return fmt.Errorf("Copy: %w", err)
+	}
+	return nil
+}
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
