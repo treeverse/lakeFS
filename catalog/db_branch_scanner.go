@@ -8,17 +8,16 @@ import (
 const DBScannerDefaultBufferSize = 1024
 
 type DBBranchScanner struct {
-	tx               db.Tx
-	branchID         int64
-	commitID         CommitID
-	bufSize          int
-	buf              []*DBScannerEntry
-	idx              int
-	after            string
-	additionalFields []string
-	ended            bool
-	err              error
-	value            *DBScannerEntry
+	opts     DBScannerOptions
+	tx       db.Tx
+	branchID int64
+	commitID CommitID
+	buf      []*DBScannerEntry
+	idx      int
+	after    string
+	ended    bool
+	err      error
+	value    *DBScannerEntry
 }
 
 func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBScannerOptions) *DBBranchScanner {
@@ -27,16 +26,15 @@ func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBSca
 		branchID: branchID,
 		idx:      0,
 		commitID: commitID,
-		bufSize:  DBScannerDefaultBufferSize,
 	}
 	if opts != nil {
+		s.opts = *opts
 		s.after = opts.After
-		if opts.BufferSize > 0 {
-			s.bufSize = opts.BufferSize
-		}
-		s.additionalFields = opts.AdditionalFields
 	}
-	s.buf = make([]*DBScannerEntry, 0, s.bufSize)
+	if s.opts.BufferSize == 0 {
+		s.opts.BufferSize = DBScannerDefaultBufferSize
+	}
+	s.buf = make([]*DBScannerEntry, 0, s.opts.BufferSize)
 	return s
 }
 
@@ -109,7 +107,7 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 		From("catalog_entries").
 		Where("branch_id = ?", s.branchID).
 		OrderBy("branch_id", "path", "min_commit desc").
-		Limit(uint64(s.bufSize))
+		Limit(uint64(s.opts.BufferSize))
 	if s.after != "" {
 		q = q.Where("path > ?", s.after)
 	}
@@ -118,8 +116,11 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 	} else if s.commitID > 0 {
 		q = q.Where("min_commit between 1 and ?", s.commitID)
 	}
-	if len(s.additionalFields) > 0 {
-		q = q.Columns(s.additionalFields...)
+	if s.opts.FilterDeleted {
+		q = q.Where("max_commit = ?", MaxCommitID)
+	}
+	if len(s.opts.AdditionalFields) > 0 {
+		q = q.Columns(s.opts.AdditionalFields...)
 	}
 	return q
 }

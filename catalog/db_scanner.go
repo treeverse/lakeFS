@@ -2,6 +2,7 @@ package catalog
 
 type DBScannerOptions struct {
 	BufferSize       int
+	FilterDeleted    bool
 	After            string
 	AdditionalFields []string
 }
