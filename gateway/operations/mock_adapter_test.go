@@ -58,7 +58,9 @@ func (a *mockAdapter) GetProperties(_ block.ObjectPointer) (block.Properties, er
 func (a *mockAdapter) Remove(_ block.ObjectPointer) error {
 	return errors.New(" remove method not implemented in mock adapter")
 }
-
+func (a *mockAdapter) Copy(_, _ block.ObjectPointer) error {
+	return errors.New(" copy method not implemented in mock adapter")
+}
 func (a *mockAdapter) CreateMultiPartUpload(_ block.ObjectPointer, r *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
 	panic("try to create multipart in mock adaptor")
 }
