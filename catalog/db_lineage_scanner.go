@@ -11,7 +11,6 @@ type DBLineageScanner struct {
 	branchID int64
 	commitID CommitID
 	scanners []*DBBranchScanner
-	nextRow  []*DBScannerEntry
 	ended    bool
 	err      error
 	value    *DBScannerEntry
@@ -38,39 +37,28 @@ func (s *DBLineageScanner) Next() bool {
 		return false
 	}
 
-	// indirection array, to skip lineage branches that reached end
-	nonNilNextRow := make([]int, 0, len(s.nextRow))
-	for i, ent := range s.nextRow {
-		if ent != nil {
-			nonNilNextRow = append(nonNilNextRow, i)
+	// select lowest entry based on path
+	var selectedEntry *DBScannerEntry
+	for _, scanner := range s.scanners {
+		ent := scanner.Value()
+		if ent != nil && (selectedEntry == nil || selectedEntry.Path > ent.Path) {
+			selectedEntry = ent
 		}
 	}
-	if len(nonNilNextRow) == 0 {
+	if selectedEntry == nil {
 		s.ended = true
 		return false
 	}
 
-	// find lowest Path
-	selectedEntry := s.nextRow[nonNilNextRow[0]]
-	for i := 1; i < len(nonNilNextRow); i++ {
-		if selectedEntry.Path > s.nextRow[nonNilNextRow[i]].Path {
-			selectedEntry = s.nextRow[nonNilNextRow[i]]
-		}
-	}
-
 	// advance next row for all branches that have this Path
-	for i := 0; i < len(nonNilNextRow); i++ {
-		branchIdx := nonNilNextRow[i]
-		if s.nextRow[branchIdx].Path == selectedEntry.Path {
-			var ent *DBScannerEntry
-			branchScanner := s.scanners[branchIdx]
-			if branchScanner.Next() {
-				ent = branchScanner.Value()
-			} else if branchScanner.Err() != nil {
-				s.err = fmt.Errorf("getting entry on branch: %w", branchScanner.Err())
+	for _, scanner := range s.scanners {
+		ent := scanner.Value()
+		if ent != nil && ent.Path == selectedEntry.Path {
+			_ = scanner.Next()
+			if err := scanner.Err(); err != nil {
+				s.err = fmt.Errorf("getting entry on branch: %w", err)
 				return false
 			}
-			s.nextRow[branchIdx] = ent
 		}
 	}
 	s.value = selectedEntry
@@ -110,12 +98,12 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 	for i, bl := range lineage {
 		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, &s.opts)
 	}
-	s.nextRow = make([]*DBScannerEntry, len(s.scanners))
-	for i, branchScanner := range s.scanners {
+	for _, branchScanner := range s.scanners {
 		if branchScanner.Next() {
-			s.nextRow[i] = branchScanner.Value()
-		} else if branchScanner.Err() != nil {
-			s.err = fmt.Errorf("getting entry from branch ID %d: %w", branchScanner.branchID, branchScanner.Err())
+			continue
+		}
+		if err := branchScanner.Err(); err != nil {
+			s.err = fmt.Errorf("getting entry from branch ID %d: %w", branchScanner.branchID, err)
 			return false
 		}
 	}
