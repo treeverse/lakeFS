@@ -208,6 +208,40 @@ func TestTaskDataIterator_Values(t *testing.T) {
 	}
 }
 
+func TestTaskStatusCodeValueScan(t *testing.T) {
+	cases := []struct {
+		name string
+		in   interface{}
+		err  error
+		out  parade.TaskStatusCodeValue
+	}{
+		{"emptyString", "", nil, parade.TaskInvalid},
+		{"int", -17, parade.ErrBadTypeConversion, ""},
+		{"nil", nil, parade.ErrBadTypeConversion, ""},
+		{"pending", "pending", nil, parade.TaskPending},
+		{"PENdiNG", "PENdiNG", nil, parade.TaskPending},
+		{"in-progress", "in-progress", nil, parade.TaskInProgress},
+		{"IN-ProgRESS", "IN-ProgRESS", nil, parade.TaskInProgress},
+		{"completed", "completed", nil, parade.TaskCompleted},
+		{"COMPLETED", "COMPLETED", nil, parade.TaskCompleted},
+		{"invalid", "huh?", nil, parade.TaskInvalid},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var dst parade.TaskStatusCodeValue
+			if err := dst.Scan(c.in); err != nil {
+				if !errors.Is(err, c.err) {
+					t.Errorf("got err %v, expected %v", err, c.err)
+				}
+			} else {
+				if dst != c.out {
+					t.Errorf("expected %s, got %s", c.out, dst)
+				}
+			}
+		})
+	}
+}
+
 func makeParadePrefix(t testing.TB) *parade.ParadePrefix {
 	return &parade.ParadePrefix{parade.NewParadeDB(db), t.Name()}
 }
