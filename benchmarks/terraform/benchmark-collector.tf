@@ -21,7 +21,7 @@ resource "aws_ecs_task_definition" "collector" {
         "logConfiguration": {
           "logDriver": "awslogs",
           "options": {
-            "awslogs-group": "${aws_cloudwatch_log_group.benchmark.name}",
+            "awslogs-group": "${aws_cloudwatch_log_group.benchmark.id}",
             "awslogs-region": "us-east-1",
             "awslogs-stream-prefix": "collector"
           }
