@@ -10,7 +10,7 @@ import (
 )
 
 func TestDBLineageScanner(t *testing.T) {
-	const numberOfObjects = 10
+	const numberOfObjects = 16
 
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)
@@ -23,8 +23,8 @@ func TestDBLineageScanner(t *testing.T) {
 	objSkip := []int{1, 2, 3, 5, 7, 11}
 	testSetupDBScannerData(t, ctx, c, repository, numberOfObjects, baseBranchName, objSkip)
 
+	// bufferSizes - keep buffer size samples less and more then numberOfObjects
 	bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
-
 	for _, bufSize := range bufferSizes {
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 			// test lineage scanner
@@ -37,7 +37,7 @@ func TestDBLineageScanner(t *testing.T) {
 					if o == nil {
 						t.Fatal("Value() return nil, expected value")
 					}
-					// check item read from might branch
+					// check item read from the right branch
 					var expectedBranch int64
 					for j := branchNo; j >= 0; j-- {
 						if i%objSkip[j] == 0 {

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 
+	sq "github.com/Masterminds/squirrel"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
@@ -59,6 +61,26 @@ func TestDBBranchScanner(t *testing.T) {
 			testutil.MustDo(t, "read from branch for additional fields", scanner.Err())
 			if !testedSomething {
 				t.Fatal("Not tested something with additional fields")
+			}
+			return nil, nil
+		})
+	})
+
+	t.Run("additional_where", func(t *testing.T) {
+		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
+			p := fmt.Sprintf("Obj-%04d", numberOfObjects-5)
+			scanner := NewDBBranchScanner(tx, 1, UncommittedID, &DBScannerOptions{
+				AdditionalWhere: sq.Expr("path=?", p),
+			})
+			var ent *DBScannerEntry
+			for scanner.Next() {
+				ent = scanner.Value()
+			}
+			testutil.MustDo(t, "read from branch for additional fields", scanner.Err())
+			if ent == nil {
+				t.Fatal("missing entry")
+			} else if ent.Path != p {
+				t.Fatalf("Read entry with path=%s, expected=%s", ent.Path, p)
 			}
 			return nil, nil
 		})

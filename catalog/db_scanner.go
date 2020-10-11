@@ -1,10 +1,12 @@
 package catalog
 
+import sq "github.com/Masterminds/squirrel"
+
 type DBScannerOptions struct {
 	BufferSize       int
-	FilterDeleted    bool
 	After            string
 	AdditionalFields []string
+	AdditionalWhere  sq.Sqlizer
 }
 
 type DBScanner interface {

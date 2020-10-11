@@ -116,11 +116,11 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 	} else if s.commitID > 0 {
 		q = q.Where("min_commit between 1 and ?", s.commitID)
 	}
-	if s.opts.FilterDeleted {
-		q = q.Where("max_commit = ?", MaxCommitID)
-	}
 	if len(s.opts.AdditionalFields) > 0 {
 		q = q.Columns(s.opts.AdditionalFields...)
+	}
+	if s.opts.AdditionalWhere != nil {
+		q = q.Where(s.opts.AdditionalWhere)
 	}
 	return q
 }
