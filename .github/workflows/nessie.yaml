@@ -50,8 +50,12 @@ jobs:
           ECR_REPOSITORY_LAKEFS: lakefs
           ECR_REPOSITORY_LAKECTL: lakectl
         run: |
-          describe_image="$( aws ecr describe-images --repository-name=$ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS --image-ids=imageTag=${{ steps.version.outputs.tag }} 2> /dev/null )"
-          if [[ $? == 0 ]]; then
+          set +e
+          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
+          if [ $? -eq 0 ]; then
+            echo "Image exists"
+          else
+            echo "Image doesnt exist"
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
