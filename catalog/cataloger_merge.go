@@ -196,22 +196,25 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
+	insertSizeLimiterStr := strconv.Itoa(insertSizeLimiter)
+	for moduluNum := 0; moduluNum < insertSizeLimiter; moduluNum++ {
+		moduluNumStr := strconv.Itoa(moduluNum)
+		sql := `UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
-				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
-		parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged, MaxCommitID)
-	if err != nil {
-		return err
+				AND path in (SELECT path FROM ` + diffResultsTableName + ` WHERE diff_type IN ($3,$4) AND (ctid::text::point)[0]::bigint% ` + insertSizeLimiterStr + " = " + moduluNumStr + ")"
+		_, err = tx.Exec(sql, parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged, MaxCommitID)
+		if err != nil {
+			return err
+		}
 	}
 
 	// DifferenceTypeChanged or DifferenceTypeAdded - create entries into this commit based on child branch
-	insertSizeLimiterStr := strconv.Itoa(insertSizeLimiter)
 	for moduluNum := 0; moduluNum < insertSizeLimiter; moduluNum++ {
 		moduluNumStr := strconv.Itoa(moduluNum)
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
-				WHERE e.ctid IN (SELECT entry_ctid FROM ` + diffResultsTableName + ` WHERE diff_type IN ($3,$4) AND (ctid::text::point)[0]::bigint% ` + insertSizeLimiterStr + " = " + moduluNumStr + ")"
+				WHERE e.ctid IN (SELECT entry_ctid FROM ` + diffResultsTableName + ` WHERE diff_type IN ($3,$4) AND (entry_ctid::text::point)[0]::bigint% ` + insertSizeLimiterStr + " = " + moduluNumStr + ")"
 		_, err = tx.Exec(sql, parentID, nextCommitID, DifferenceTypeAdded, DifferenceTypeChanged)
 		if err != nil {
 			return err
