@@ -2,32 +2,32 @@ package s3inventory
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/cznic/mathutil"
-
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cast"
+	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/reader"
+	"github.com/xitongsys/parquet-go/schema"
 )
 
 type ParquetInventoryFileReader struct {
 	*reader.ParquetReader
-	nextRow      int64
-	actualFields map[string]string
+	nextRow            int64
+	fieldToParquetPath map[string]string
 }
 
 func NewParquetInventoryFileReader(parquetReader *reader.ParquetReader) (*ParquetInventoryFileReader, error) {
-	res := &ParquetInventoryFileReader{
-		ParquetReader: parquetReader,
-	}
-	res.actualFields = res.getActualFields()
+	fieldToParquetPath := getParquetPaths(parquetReader.SchemaHandler)
 	for _, required := range requiredFields {
-		if _, ok := res.actualFields[required]; !ok {
+		if _, ok := fieldToParquetPath[required]; !ok {
 			return nil, fmt.Errorf("%w: %s", ErrRequiredFieldNotFound, required)
 		}
 	}
-	return res, nil
+	return &ParquetInventoryFileReader{
+		ParquetReader:      parquetReader,
+		fieldToParquetPath: fieldToParquetPath,
+	}, nil
 }
 
 func (p *ParquetInventoryFileReader) Close() error {
@@ -35,34 +35,27 @@ func (p *ParquetInventoryFileReader) Close() error {
 	return p.PFile.Close()
 }
 
-func (p *ParquetInventoryFileReader) FirstObjectKey() string {
+func (p *ParquetInventoryFileReader) getKeyColumnStatistics() *parquet.Statistics {
 	for i, c := range p.Footer.RowGroups[0].Columns {
 		if c.MetaData.PathInSchema[len(c.GetMetaData().GetPathInSchema())-1] == "Key" {
-			return string(p.Footer.RowGroups[0].Columns[i].GetMetaData().GetStatistics().GetMin())
+			return p.Footer.RowGroups[0].Columns[i].GetMetaData().GetStatistics()
 		}
 	}
-	return string(p.Footer.RowGroups[0].Columns[1].GetMetaData().GetStatistics().GetMin())
+	return p.Footer.RowGroups[0].Columns[1].GetMetaData().GetStatistics()
+}
+func (p *ParquetInventoryFileReader) FirstObjectKey() string {
+	return string(p.getKeyColumnStatistics().GetMin())
 }
 
 func (p *ParquetInventoryFileReader) LastObjectKey() string {
-	for i, c := range p.Footer.RowGroups[0].Columns {
-		if c.MetaData.PathInSchema[len(c.MetaData.PathInSchema)-1] == "Key" {
-			return string(p.Footer.RowGroups[0].Columns[i].GetMetaData().GetStatistics().GetMax())
-		}
-	}
-	return string(p.Footer.RowGroups[0].Columns[1].GetMetaData().GetStatistics().GetMax())
+	return string(p.getKeyColumnStatistics().GetMax())
 }
 
 func (p *ParquetInventoryFileReader) Read(n int) ([]*InventoryObject, error) {
-	var wg sync.WaitGroup
 	num := mathutil.MinInt64(int64(n), p.GetNumRows()-p.nextRow)
 	p.nextRow += num
 	res := make([]*InventoryObject, num)
-	for fieldName, path := range p.actualFields {
-		wg.Add(1)
-		path := path
-		fieldName := fieldName
-
+	for fieldName, path := range p.fieldToParquetPath {
 		columnRes, _, dls, err := p.ReadColumnByPath(path, num)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read parquet column %s: %w", fieldName, err)
@@ -119,14 +112,14 @@ func set(o *InventoryObject, f string, v interface{}) error {
 	return err
 }
 
-// getActualFields returns parquet schema fields as a mapping from their base column name to their path in ParquetReader
+// getParquetPaths returns parquet schema fields as a mapping from their base column name to their path in ParquetReader
 // only known inventory fields are returned
-func (p *ParquetInventoryFileReader) getActualFields() map[string]string {
+func getParquetPaths(schemaHandler *schema.SchemaHandler) map[string]string {
 	res := make(map[string]string)
-	for i, fieldInfo := range p.SchemaHandler.Infos {
+	for i, fieldInfo := range schemaHandler.Infos {
 		for _, field := range inventoryFields {
 			if fieldInfo.ExName == field {
-				res[field] = p.SchemaHandler.IndexMap[int32(i)]
+				res[field] = schemaHandler.IndexMap[int32(i)]
 			}
 		}
 	}
