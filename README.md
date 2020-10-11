@@ -24,7 +24,7 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 
 
 <p align="center">
-  <img src="docs/assets/img/wrapper.png" width="500px"/>
+  <img src="docs/assets/img/wrapper.png" width="550px"/>
 </p>
 
 For more information see the [Official Documentation](https://docs.lakefs.io).
