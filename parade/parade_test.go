@@ -159,9 +159,9 @@ func TestTaskDataIterator_Values(t *testing.T) {
 		{ID: "111", Action: "frob", Body: stringAddr("1"), Status: stringAddr("state"),
 			StatusCode: "pending",
 			NumTries:   11, MaxTries: intAddr(17),
-			TotalDependencies: intAddr(9),
-			ToSignalAfter:     []parade.TaskID{parade.TaskID("foo"), parade.TaskID("bar")},
-			ActorID:           parade.ActorID("actor"), ActionDeadline: &now,
+			NumSignals: 7, TotalDependencies: intAddr(9),
+			ToSignalAfter: []parade.TaskID{parade.TaskID("foo"), parade.TaskID("bar")},
+			ActorID:       parade.ActorID("actor"), ActionDeadline: &now,
 			PerformanceToken:   performanceTokenAddr(parade.PerformanceToken{}),
 			NotifyChannelAfter: stringAddr("done"),
 		},
@@ -187,9 +187,9 @@ func TestTaskDataIterator_Values(t *testing.T) {
 			[]interface{}{
 				task.ID, task.Action, task.Body, task.Status, task.StatusCode,
 				task.NumTries, task.MaxTries,
-				task.TotalDependencies, toSignalAfter,
+				task.NumSignals, task.TotalDependencies,
 				task.ActorID, task.ActionDeadline,
-				task.PerformanceToken, task.NotifyChannelAfter,
+				task.PerformanceToken, toSignalAfter, task.NotifyChannelAfter,
 			}, values); diffs != nil {
 			t.Errorf("got other values at index %d than expected: %s", index, diffs)
 		}
