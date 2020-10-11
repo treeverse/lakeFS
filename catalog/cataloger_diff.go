@@ -63,6 +63,8 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 	if limit < 0 || limit > DiffMaxLimit {
 		limit = DiffMaxLimit
 	}
+	// we request additional one (without returning it) for pagination (hasMore)
+	diffResultsLimit := limit + 1
 
 	ctx, cancel := c.withDiffResultsContext(ctx)
 	defer cancel()
@@ -76,11 +78,11 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-		err = c.doDiff(ctx, tx, leftID, rightID, limit+1, after)
+		err = c.doDiff(ctx, tx, leftID, rightID, diffResultsLimit, after)
 		if err != nil {
 			return nil, err
 		}
-		return getDiffDifferences(ctx, tx, limit+1, after)
+		return getDiffDifferences(ctx, tx, diffResultsLimit, after)
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, false, err
