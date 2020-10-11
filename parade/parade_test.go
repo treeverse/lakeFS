@@ -133,6 +133,29 @@ func intAddr(i int) *int {
 	return &i
 }
 
+func scanIDs(t *testing.T, prefix string) []parade.TaskID {
+	t.Helper()
+	rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
+	if err != nil {
+		t.Errorf("[I] select remaining IDs for prefix %s: %s", prefix, err)
+	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			t.Fatalf("[I] remaining ids iterator close: %s", err)
+		}
+	}()
+	gotIDs := make([]parade.TaskID, 0)
+	for rows.Next() {
+		var id parade.TaskID
+		if err = rows.Scan(&id); err != nil {
+			t.Errorf("[I] scan ID value: %s", err)
+		}
+		gotIDs = append(gotIDs, id)
+	}
+	return gotIDs
+}
+
 func TestTaskDataIterator_Empty(t *testing.T) {
 	it := parade.TaskDataIterator{Data: []parade.TaskData{}}
 	if it.Err() != nil {
@@ -649,24 +672,7 @@ func TestDeleteTasks(t *testing.T) {
 				t.Errorf("DeleteTasks failed: %s", err)
 			}
 
-			rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
-			if err != nil {
-				t.Errorf("[I] select remaining IDs for prefix %s: %s", casePrefix, err)
-			}
-
-			defer func() {
-				if err := rows.Close(); err != nil {
-					t.Fatalf("[I] remaining ids iterator close: %s", err)
-				}
-			}()
-			gotRemaining := make([]parade.TaskID, 0, len(c.expectedRemaining))
-			for rows.Next() {
-				var id parade.TaskID
-				if err = rows.Scan(&id); err != nil {
-					t.Errorf("[I] scan ID value: %s", err)
-				}
-				gotRemaining = append(gotRemaining, id)
-			}
+			gotRemaining := scanIDs(t, casePrefix)
 			sort.Sort(taskIDSlice(gotRemaining))
 			expectedRemaining := c.expectedRemaining
 			if expectedRemaining == nil {
