@@ -178,7 +178,7 @@ func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	defer reportMetrics("Copy", time.Now(), nil, &err)
 	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve destination: %w", err)
 	}
 	qualifiedSourceKey, err := resolveNamespace(sourceObj)
 	if err != nil {
