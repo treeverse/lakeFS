@@ -78,6 +78,33 @@ const (
 	TaskInvalid TaskStatusCodeValue = "[invalid]"
 )
 
+var ErrBadTypeConversion = errors.New("bad type")
+
+// nolint: stylecheck
+func (dst *TaskStatusCodeValue) Scan(src interface{}) error {
+	var sc TaskStatusCodeValue
+	switch s := src.(type) {
+	case string:
+		sc = TaskStatusCodeValue(strings.ToLower(s))
+	case []byte:
+		sc = TaskStatusCodeValue(strings.ToLower(string(s)))
+	default:
+		return fmt.Errorf("cannot convert %T to TaskStatusCodeValue: %w", src, ErrBadTypeConversion)
+	}
+
+	if !(sc == TaskPending || sc == TaskInProgress || sc == TaskAborted || sc == TaskCompleted) {
+		// not a failure, "just" be a newer enum value than known
+		*dst = TaskInvalid
+		return nil
+	}
+	*dst = sc
+	return nil
+}
+
+func (src TaskStatusCodeValue) Value() (driver.Value, error) {
+	return string(src), nil
+}
+
 // TaskData is a row in table "tasks".  It describes a task to perform.
 type TaskData struct {
 	ID     TaskID `db:"task_id"`
