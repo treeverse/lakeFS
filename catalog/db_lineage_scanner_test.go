@@ -34,6 +34,9 @@ func TestDBLineageScanner(t *testing.T) {
 				scanner := NewDBLineageScanner(tx, branchID, UncommittedID, &DBScannerOptions{BufferSize: bufSize})
 				for i := 0; scanner.Next(); i++ {
 					o := scanner.Value()
+					if o == nil {
+						t.Fatal("Value() return nil, expected value")
+					}
 					// check item read from might branch
 					var expectedBranch int64
 					for j := branchNo; j >= 0; j-- {
@@ -46,6 +49,10 @@ func TestDBLineageScanner(t *testing.T) {
 						t.Fatalf("fetch branchID=%d, expected=%d (branch=%s, number=%d)",
 							o.BranchID, expectedBranch, branchName, i)
 					}
+				}
+				v := scanner.Value()
+				if v != nil {
+					t.Fatalf("Value() returned %+v, expected nil after iteration", v)
 				}
 				testutil.MustDo(t, "next from lineage scanner", scanner.Err())
 			}
