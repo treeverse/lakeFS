@@ -148,6 +148,16 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	return nil
 }
 
+func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	destinationKey := getKey(destinationObj)
+	sourceKey := getKey(sourceObj)
+	a.data[destinationKey] = a.data[sourceKey]
+	a.properties[destinationKey] = a.properties[sourceKey]
+	return nil
+}
+
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
