@@ -16,14 +16,21 @@ const (
 	DiffMaxLimit = 1000
 
 	diffResultsTableNamePrefix = "catalog_diff_results"
-	diffResultsInsertBatchSize = 64
+	diffResultsInsertBatchSize = 1024
 
 	contextDiffResultsKey contextKey = "diff_results_key"
 )
 
 type diffEffectiveCommits struct {
-	ParentEffectiveCommit  CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
-	ChildEffectiveCommit   CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
+	// ParentEffectiveCommit last commit parent synchronized with child.
+	// When no sync commit is found - set the commit ID to the point child's branch was created.
+	ParentEffectiveCommit CommitID `db:"parent_effective_commit"`
+
+	// ChildEffectiveCommit last commit child synchronized to parent.
+	// If the child never synced with parent, the commit ID is set to 1.
+	ChildEffectiveCommit CommitID `db:"child_effective_commit"`
+
+	// ParentEffectiveLineage lineage at the ParentEffectiveCommit
 	ParentEffectiveLineage []lineageCommit
 }
 
@@ -214,10 +221,10 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, chil
 		// is parent element is relevant
 		parentEnt := parentScanner.Value()
 
-		// get next parent - next parentEnt that path >= child
+		// get next child entry - scan until we match child's path to parent (or bigger)
 		childEnt, err = ScanDBEntryUntil(childScanner, childEnt, parentEnt.Path)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan next child element: %w", err)
 		}
 
 		// point to matched child based on path
@@ -354,7 +361,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		// get next parent - next parentEnt that path >= child
 		parentEnt, err = ScanDBEntryUntil(parentScanner, parentEnt, childEnt.Path)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan next parent element: %w", err)
 		}
 
 		diffType := evaluateFromChildElementDiffType(effectiveCommits, parentID, childEnt, parentEnt)
