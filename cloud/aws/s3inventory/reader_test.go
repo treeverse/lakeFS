@@ -117,6 +117,26 @@ func orcSchema(fieldToRemove string) string {
 	return orcSchema.String()
 }
 
+func getOrcValues(o *TestObject, fieldToRemove string) []interface{} {
+	fieldValues := map[string]interface{}{
+		bucketFieldName:           o.Bucket,
+		keyFieldName:              o.Key,
+		isLatestFieldName:         o.IsLatest == nil || swag.BoolValue(o.IsLatest),
+		isDeleteMarkerFieldName:   swag.BoolValue(o.IsDeleteMarker),
+		sizeFieldName:             swag.Int64Value(o.Size),
+		lastModifiedDateFieldName: time.Unix(swag.Int64Value(o.LastModifiedMillis)/1000, 0),
+		eTagFieldName:             swag.StringValue(o.Checksum),
+	}
+	values := make([]interface{}, 0, len(fieldValues))
+	for _, field := range inventoryFields {
+		if fieldToRemove == field {
+			continue
+		}
+		values = append(values, fieldValues[field])
+	}
+	return values
+}
+
 func generateOrc(t *testing.T, objs <-chan *TestObject, fieldToRemove string) *os.File {
 	f, err := ioutil.TempFile("", "orctest")
 	if err != nil {
@@ -135,23 +155,7 @@ func generateOrc(t *testing.T, objs <-chan *TestObject, fieldToRemove string) *o
 		t.Fatalf("failed to create orc writer: %v", err)
 	}
 	for o := range objs {
-		fieldValues := map[string]interface{}{
-			bucketFieldName:           o.Bucket,
-			keyFieldName:              o.Key,
-			isLatestFieldName:         o.IsLatest == nil || swag.BoolValue(o.IsLatest),
-			isDeleteMarkerFieldName:   swag.BoolValue(o.IsDeleteMarker),
-			sizeFieldName:             swag.Int64Value(o.Size),
-			lastModifiedDateFieldName: time.Unix(swag.Int64Value(o.LastModifiedMillis)/1000, 0),
-			eTagFieldName:             swag.StringValue(o.Checksum),
-		}
-		values := make([]interface{}, 0, len(fieldValues))
-		for _, field := range inventoryFields {
-			if fieldToRemove == field {
-				continue
-			}
-			values = append(values, fieldValues[field])
-		}
-		err = w.Write(values...)
+		err = w.Write(getOrcValues(o, fieldToRemove)...)
 		if err != nil {
 			t.Fatalf("failed to write object to orc: %v", err)
 		}
