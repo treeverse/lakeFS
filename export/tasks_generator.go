@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	rinqueue "github.com/erikdubbelboer/ringqueue"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/parade"
 )
@@ -48,18 +49,41 @@ func dirname(path string) string {
 	return path[0:i]
 }
 
-type matchCounter struct {
-	pred func(s string) bool
-	m    map[string]int
+type dirMatchCache struct {
+	pred         func(path string) bool
+	upMatchCache map[string]*string
 }
 
-// matchAndCount tests s and returns true and increments its counter if it matches.
-func (mc *matchCounter) matchAndCount(s string) bool {
-	if !mc.pred(s) {
-		return false
+func (dmc *dirMatchCache) lookup(filename string) (string, bool) {
+	dir := filename
+	var ret *string
+	for {
+		dir = dirname(dir)
+		var ok bool
+		if ret, ok = dmc.upMatchCache[dir]; ok {
+			break
+		}
+		if dmc.pred(dir) {
+			copy := dir
+			ret = &copy
+			break
+		}
+		if dir == "" {
+			break
+		}
 	}
-	mc.m[s]++
-	return true
+	for dir = dirname(filename); dir != "" && (ret == nil || dir != *ret); dir = dirname(dir) {
+		dmc.upMatchCache[dir] = ret
+	}
+
+	if ret == nil {
+		return "", false
+	}
+	return *ret, true
+}
+
+func makeDirMatchCache(pred func(path string) bool) *dirMatchCache {
+	return &dirMatchCache{pred: pred, upMatchCache: make(map[string]*string)}
 }
 
 // generateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
@@ -90,7 +114,11 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 	}
 	totalTasks := 0
 
-	successForDirectory := matchCounter{pred: generateSuccessFor, m: make(map[string]int)}
+	successDirectoriesCache := makeDirMatchCache(generateSuccessFor)
+	successForDirectory := make(map[string]struct {
+		count    int
+		toSignal []parade.TaskID
+	})
 
 	makeTaskForDiff := func(diff *catalog.Difference) (parade.TaskData, error) {
 		var (
@@ -101,11 +129,16 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 			err      error
 		)
 
-		d := dirname(diff.Path)
-		if successForDirectory.matchAndCount(d) {
+		if d, ok := successDirectoriesCache.lookup(diff.Path); ok {
+			s := successForDirectory[d]
+			s.count++
+			successForDirectory[d] = s
+
 			toSignal = append(toSignal, makeSuccessTaskID(d))
 		}
-		toSignal = append(toSignal, finishedTaskID)
+		if len(toSignal) == 0 {
+			toSignal = []parade.TaskID{finishedTaskID}
+		}
 
 		switch diff.Type {
 		case catalog.DifferenceTypeAdded:
@@ -163,8 +196,26 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		ret = append(ret, task)
 	}
 
+	// Add higher-level success directories, e.g. "a/b-success" for "a/b-success/c/d-success/x".
+	q := rinqueue.NewRingqueue()
+	for successDirectory := range successForDirectory {
+		q.Add(successDirectory)
+	}
+	for d, ok := q.Remove(); ok; d, ok = q.Remove() {
+		if upD, ok := successDirectoriesCache.lookup(d.(string)); ok {
+			s := successForDirectory[upD]
+			s.count++
+			successForDirectory[upD] = s
+
+			s = successForDirectory[d.(string)]
+			s.toSignal = append(s.toSignal, makeSuccessTaskID(upD))
+			successForDirectory[d.(string)] = s
+		}
+	}
+
 	// Create any needed "success file" tasks
-	for successDirectory, td := range successForDirectory.m {
+	for successDirectory, td := range successForDirectory {
+		fmt.Println("[DEBUG] success directory", successDirectory, td)
 		successPath := fmt.Sprintf("%s/%s", successDirectory, successFilename)
 		data := SuccessData{
 			File: makeDestination(successPath),
@@ -176,13 +227,19 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		bodyStr := string(body)
 		totalDependencies := td // copy to get new address each time
 
+		toSignal := totalDependencies.toSignal
+		if len(toSignal) == 0 {
+			toSignal = []parade.TaskID{finishedTaskID}
+		}
+
 		ret = append(ret, parade.TaskData{
-			ID:                parade.TaskID(makeSuccessTaskID(successPath)),
+			ID:                parade.TaskID(makeSuccessTaskID(successDirectory)),
 			Action:            TouchAction,
 			Body:              &bodyStr,
 			StatusCode:        parade.TaskPending,
 			MaxTries:          &numTries,
-			TotalDependencies: &totalDependencies,
+			TotalDependencies: &totalDependencies.count,
+			ToSignalAfter:     toSignal,
 		})
 		totalTasks++
 	}

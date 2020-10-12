@@ -261,6 +261,12 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 		Entry: catalog.Entry{Path: "a/plain/1", PhysicalAddress: "/remove2"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
+		Entry: catalog.Entry{Path: "a/success/sub/success/11", PhysicalAddress: "/remove11"},
+	}, {
+		Type:  catalog.DifferenceTypeRemoved,
+		Entry: catalog.Entry{Path: "a/success/sub/success/12", PhysicalAddress: "/remove12"},
+	}, {
+		Type:  catalog.DifferenceTypeRemoved,
 		Entry: catalog.Entry{Path: "b/success/1", PhysicalAddress: "/remove3"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
@@ -276,7 +282,18 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 	}{
 		{before: "foo:delete:/remove1", after: "foo:make-success:a/success"},
 		{before: "foo:delete:/remove1", after: "foo:finished"},
-		{before: "foo:delete:/remove2", after: "foo:make-success/a/plain", avoid: true},
+
+		{before: "foo:delete:/remove2", after: "foo:make-success:a/plain", avoid: true},
+		{before: "foo:delete:/remove2", after: "foo:finished"},
+
+		{before: "foo:delete:/remove11", after: "foo:make-success:a/success/sub/success"},
+		{before: "foo:delete:/remove11", after: "foo:finished"},
+
+		{before: "foo:delete:/remove12", after: "foo:make-success:a/success/sub/success"},
+		{before: "foo:delete:/remove12", after: "foo:finished"},
+
+		{before: "foo:make-success:a/success/sub/success", after: "foo:make-success:a/success"},
+
 		{before: "foo:delete:/remove3", after: "foo:make-success:b/success"},
 		{before: "foo:delete:/remove3", after: "foo:finished"},
 		{before: "foo:delete:/remove4", after: "foo:make-success:a/success"},
@@ -311,5 +328,15 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 		}
 	}
 
-	// TODO(ariels): Verify no _other_ deps?
+	// Verify the right number of dependencies appeared.  Above we verified all indirect
+	// dependencies.  Direct dependencies exactly form a tree, so every task signals one
+	// other task... except for the finishing task.
+	for _, task := range tasksWithIDs {
+		if task.Action != export.DoneAction && len(task.ToSignalAfter) != 1 {
+			t.Errorf("expected single task to signal after %+v", task)
+		}
+		if task.Action == export.DoneAction && len(task.ToSignalAfter) != 0 {
+			t.Errorf("expected no tasks to signal after %+v", task)
+		}
+	}
 }

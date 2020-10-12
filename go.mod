@@ -16,6 +16,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
+	github.com/erikdubbelboer/ringqueue v0.0.0-20160827083827-3b6233a3f71d
 	github.com/go-openapi/errors v0.19.6
 	github.com/go-openapi/loads v0.19.5
 	github.com/go-openapi/runtime v0.19.20
