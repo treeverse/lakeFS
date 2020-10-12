@@ -183,174 +183,123 @@ func TestReaders(t *testing.T) {
 		ExpectedMaxValue    string
 		ExpectedMinValue    string
 		ExcludeField        string
-		Format              string
 	}{
-		"parquet with 2 objects": {
+		"2 objects": {
 			ObjectNum:           2,
 			ExpectedReadObjects: 2,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f00001",
-			Format:              "Parquet",
 		},
-		"parquet with 12500 objects": {
+		"12500 objects": {
 			ObjectNum:           12500,
 			ExpectedReadObjects: 12500,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f12499",
-			Format:              "Parquet",
 		},
-		"parquet with 100 objects": {
+		"100 objects": {
 			ObjectNum:           100,
 			ExpectedReadObjects: 100,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f00099",
-			Format:              "Parquet",
 		},
-		"parquet without size field": {
+		"without size field": {
 			ObjectNum:           12500,
 			ExpectedReadObjects: 12500,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f12499",
 			ExcludeField:        "size",
-			Format:              "Parquet",
 		},
-		"parquet without is_latest field": {
+		"without is_latest field": {
 			ObjectNum:           12500,
 			ExpectedReadObjects: 12500,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f12499",
 			ExcludeField:        "is_latest",
-			Format:              "Parquet",
 		},
-		"parquet without is_delete_marker field": {
+		"without is_delete_marker field": {
 			ObjectNum:           12500,
 			ExpectedReadObjects: 12500,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f12499",
 			ExcludeField:        "is_delete_marker",
-			Format:              "Parquet",
 		},
-		"parquet without e_tag field": {
+		"without e_tag field": {
 			ObjectNum:           100,
 			ExpectedReadObjects: 100,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f00099",
 			ExcludeField:        "e_tag",
-			Format:              "Parquet",
-		},
-		"orc with 2 objects": {
-			ObjectNum:           2,
-			ExpectedReadObjects: 2,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f00001",
-			Format:              "ORC",
-		},
-		"orc with 12500 objects": {
-			ObjectNum:           12500,
-			ExpectedReadObjects: 12500,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f12499",
-			Format:              "ORC",
-		},
-		"orc with 100 objects": {
-			ObjectNum:           100,
-			ExpectedReadObjects: 100,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f00099",
-			Format:              "ORC",
-		},
-		"orc without size field": {
-			ObjectNum:           100,
-			ExpectedReadObjects: 100,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f00099",
-			Format:              "ORC",
-			ExcludeField:        "size",
-		},
-		"orc without is_latest field": {
-			ObjectNum:           100,
-			ExpectedReadObjects: 100,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f00099",
-			Format:              "ORC",
-			ExcludeField:        "is_latest",
-		},
-		"orc without is_delete_marker field": {
-			ObjectNum:           100,
-			ExpectedReadObjects: 100,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f00099",
-			Format:              "ORC",
-			ExcludeField:        "is_delete_marker",
 		},
 	}
-	for testName, test := range testdata {
-		t.Run(testName, func(t *testing.T) {
-			now := time.Now()
-			lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour), now.Add(-3 * time.Hour)}
-			var localFile *os.File
-			if test.Format == "ORC" {
-				localFile = generateOrc(t, objs(test.ObjectNum, lastModified), test.ExcludeField)
-			} else if test.Format == "Parquet" {
-				localFile = generateParquet(t, objs(test.ObjectNum, lastModified), test.ExcludeField)
-			}
-			uploadFile(t, svc, inventoryBucketName, "myFile.inv", localFile)
-			reader := NewReader(context.Background(), svc, logging.Default())
-			fileReader, err := reader.GetFileReader(test.Format, inventoryBucketName, "myFile.inv")
-			if err != nil {
-				t.Fatalf("failed to create file reader: %v", err)
-			}
-			numRowsResult := int(fileReader.GetNumRows())
-			if test.ObjectNum != numRowsResult {
-				t.Fatalf("unexpected result from GetNumRows. expected=%d, got=%d", test.ObjectNum, numRowsResult)
-			}
-			minValueResult := fileReader.FirstObjectKey()
-			if test.ExpectedMinValue != minValueResult {
-				t.Fatalf("unexpected result from FirstObjectKey. expected=%s, got=%s", test.ExpectedMinValue, minValueResult)
-			}
-			maxValueResult := fileReader.LastObjectKey()
-			if test.ExpectedMaxValue != maxValueResult {
-				t.Fatalf("unexpected result from LastObjectKey. expected=%s, got=%s", test.ExpectedMaxValue, maxValueResult)
-			}
-			readBatchSize := 1000
-			offset := 0
-			readCount := 0
-			for {
-				res, err := fileReader.Read(readBatchSize)
+	for _, format := range []string{"ORC", "Parquet"} {
+		for testName, test := range testdata {
+			t.Run(fmt.Sprintf("%s %s", strings.ToLower(format), testName), func(t *testing.T) {
+				now := time.Now()
+				lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour), now.Add(-3 * time.Hour)}
+				var localFile *os.File
+				if format == "ORC" {
+					localFile = generateOrc(t, objs(test.ObjectNum, lastModified), test.ExcludeField)
+				} else if format == "Parquet" {
+					localFile = generateParquet(t, objs(test.ObjectNum, lastModified), test.ExcludeField)
+				}
+				uploadFile(t, svc, inventoryBucketName, "myFile.inv", localFile)
+				reader := NewReader(context.Background(), svc, logging.Default())
+				fileReader, err := reader.GetFileReader(format, inventoryBucketName, "myFile.inv")
 				if err != nil {
-					t.Fatalf("failed to read from file reader: %v", err)
+					t.Fatalf("failed to create file reader: %v", err)
 				}
-				expectedSize := swag.Int64(500)
-				if test.ExcludeField == "size" {
-					expectedSize = nil
+				numRowsResult := int(fileReader.GetNumRows())
+				if test.ObjectNum != numRowsResult {
+					t.Fatalf("unexpected result from GetNumRows. expected=%d, got=%d", test.ObjectNum, numRowsResult)
 				}
-				expectedChecksum := swag.String("abcdefg")
-				if test.ExcludeField == "e_tag" {
-					expectedChecksum = nil
+				minValueResult := fileReader.FirstObjectKey()
+				if test.ExpectedMinValue != minValueResult {
+					t.Fatalf("unexpected result from FirstObjectKey. expected=%s, got=%s", test.ExpectedMinValue, minValueResult)
 				}
-				for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {
-					verifyObject(t, res[i-offset], &TestObject{
-						Bucket:             inventoryBucketName,
-						Key:                fmt.Sprintf("f%05d", i),
-						IsLatest:           swag.Bool(true),
-						IsDeleteMarker:     swag.Bool(false),
-						Size:               expectedSize,
-						LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].Unix() * 1000),
-						Checksum:           expectedChecksum,
-					}, i, offset/readBatchSize, i-offset)
+				maxValueResult := fileReader.LastObjectKey()
+				if test.ExpectedMaxValue != maxValueResult {
+					t.Fatalf("unexpected result from LastObjectKey. expected=%s, got=%s", test.ExpectedMaxValue, maxValueResult)
 				}
-				offset += len(res)
-				readCount += len(res)
-				if len(res) != readBatchSize {
-					break
+				readBatchSize := 1000
+				offset := 0
+				readCount := 0
+				for {
+					res, err := fileReader.Read(readBatchSize)
+					if err != nil {
+						t.Fatalf("failed to read from file reader: %v", err)
+					}
+					expectedSize := swag.Int64(500)
+					if test.ExcludeField == "size" {
+						expectedSize = nil
+					}
+					expectedChecksum := swag.String("abcdefg")
+					if test.ExcludeField == "e_tag" {
+						expectedChecksum = nil
+					}
+					for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {
+						verifyObject(t, res[i-offset], &TestObject{
+							Bucket:             inventoryBucketName,
+							Key:                fmt.Sprintf("f%05d", i),
+							IsLatest:           swag.Bool(true),
+							IsDeleteMarker:     swag.Bool(false),
+							Size:               expectedSize,
+							LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].Unix() * 1000),
+							Checksum:           expectedChecksum,
+						}, i, offset/readBatchSize, i-offset)
+					}
+					offset += len(res)
+					readCount += len(res)
+					if len(res) != readBatchSize {
+						break
+					}
 				}
-			}
-			if test.ExpectedReadObjects != readCount {
-				t.Fatalf("read unexpected number of keys from inventory. expected=%d, got=%d", test.ExpectedReadObjects, readCount)
-			}
-			if fileReader.Close() != nil {
-				t.Fatalf("failed to close file reader")
-			}
-		})
+				if test.ExpectedReadObjects != readCount {
+					t.Fatalf("read unexpected number of keys from inventory. expected=%d, got=%d", test.ExpectedReadObjects, readCount)
+				}
+				if fileReader.Close() != nil {
+					t.Fatalf("failed to close file reader")
+				}
+			})
+		}
 	}
 }
