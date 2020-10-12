@@ -6,8 +6,23 @@ on:
       - master
 
 jobs:
+  check-secrets:
+    name: Check if secrets are available.
+    outputs:
+      secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: enablejobs
+        env:
+          ENABLE_NEXT_JOBS: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
+          echo "::set-output name=secretsavailable::${{ env.ENABLE_NEXT_JOBS != '' }}"
+
   deploy-image:
     name: Build and push Docker image
+    needs: check-secrets
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

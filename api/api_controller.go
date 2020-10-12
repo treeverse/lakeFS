@@ -466,10 +466,12 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
-		if errors.Is(err, db.ErrNotFound) {
-			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found", params.Branch))
-		}
-		if err != nil {
+		switch {
+		case errors.Is(err, catalog.ErrBranchNotFound):
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
+		case errors.Is(err, catalog.ErrRepositoryNotFound):
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
@@ -649,13 +651,14 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		}
 		deps.LogAction("get_branch")
 		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
-		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewGetBranchNotFound().
-				WithPayload(responseError("branch '%s' not found", params.Branch))
-		}
-		if err != nil {
-			return branches.NewGetBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching branch: %s", err))
+
+		switch {
+		case errors.Is(err, catalog.ErrBranchNotFound):
+			return branches.NewGetBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
+		case errors.Is(err, catalog.ErrRepositoryNotFound):
+			return branches.NewGetBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
+			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		return branches.NewGetBranchOK().WithPayload(reference)
@@ -700,13 +703,13 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		deps.LogAction("delete_branch")
 		cataloger := deps.Cataloger
 		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
-		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewDeleteBranchNotFound().
-				WithPayload(responseError("branch '%s' not found", params.Branch))
-		}
-		if err != nil {
-			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching branch: %s", err))
+		switch {
+		case errors.Is(err, catalog.ErrBranchNotFound):
+			return branches.NewDeleteBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
+		case errors.Is(err, catalog.ErrRepositoryNotFound):
+			return branches.NewDeleteBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
+			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		return branches.NewDeleteBranchNoContent()
@@ -1184,7 +1187,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 
 		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))

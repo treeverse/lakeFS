@@ -323,6 +323,30 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	return err
 }
 
+func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
+	var err error
+	defer reportMetrics("Copy", time.Now(), nil, &err)
+
+	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
+	if err != nil {
+		return err
+	}
+	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	if err != nil {
+		return err
+	}
+	copyObjectParams := &s3.CopyObjectInput{
+		Bucket:     aws.String(qualifiedDestinationKey.StorageNamespace),
+		Key:        aws.String(qualifiedDestinationKey.Key),
+		CopySource: aws.String(qualifiedSourceKey.StorageNamespace + "/" + qualifiedSourceKey.Key),
+	}
+	_, err = a.s3.CopyObject(copyObjectParams)
+	if err != nil {
+		a.log().WithError(err).Error("failed to copy S3 object")
+	}
+	return err
+}
+
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)

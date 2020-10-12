@@ -79,6 +79,15 @@ To merge the changes to your main branch, run:
 	$ lakectl merge lakefs://example-repo@import-from-inventory lakefs://goo@master
 ```
 
+#### Merging imported data to the main branch
+
+As previously mentioned, the above command imports data to the dedicated `import-from-inventory` branch.
+By adding the `--with-merge` flag to the import command, this branch will be automatically merged to your main branch immediately after the import.
+
+```bash
+lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json --config config.yaml
+```
+
 #### Notes for using the import CLI
 {: .no_toc }
 1. Perform the import from a machine with access to your database, and on the same region of your destination bucket.
