@@ -19,28 +19,27 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-func verifyObject(t *testing.T, actual *InventoryObject, expected *TestObject, index int, batchId int, indexInBatch int) {
+func verifyObject(t *testing.T, actual *InventoryObject, expected *InventoryObject, index int, batchId int, indexInBatch int) {
 	if expected.Bucket != actual.Bucket {
 		t.Fatalf("bucket in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", index, expected.Bucket, actual.Bucket, batchId, indexInBatch)
 	}
 	if expected.Key != actual.Key {
 		t.Fatalf("object key in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", index, expected.Key, actual.Key, batchId, indexInBatch)
 	}
-	if swag.Int64Value(expected.Size) != actual.Size {
-		t.Fatalf("size in index %d different than expected. expected=%d, got=%d (batch #%d, index %d)", index, swag.Int64Value(expected.Size), actual.Size, batchId, indexInBatch)
+	if expected.Size != actual.Size {
+		t.Fatalf("size in index %d different than expected. expected=%d, got=%d (batch #%d, index %d)", index, expected.Size, actual.Size, batchId, indexInBatch)
 	}
-	if swag.StringValue(expected.Checksum) != actual.Checksum {
-		t.Fatalf("e_tag in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", index, swag.StringValue(expected.Checksum), actual.Checksum, batchId, indexInBatch)
+	if expected.Checksum != actual.Checksum {
+		t.Fatalf("e_tag in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", index, expected.Checksum, actual.Checksum, batchId, indexInBatch)
 	}
-	actualLastModifiedMillis := actual.LastModified.Unix() * int64(time.Second/time.Millisecond)
-	if *expected.LastModifiedMillis != actualLastModifiedMillis {
-		t.Fatalf("last_modified_time in index %d different than expected. expected=%d, got=%d (batch #%d, index %d)", index, *expected.LastModifiedMillis, actualLastModifiedMillis, batchId, indexInBatch)
+	if !expected.LastModified.Equal(*actual.LastModified) {
+		t.Fatalf("last_modified_time in index %d different than expected. expected=%v, got=%v (batch #%d, index %d)", index, expected.LastModified, actual.LastModified, batchId, indexInBatch)
 	}
-	if *expected.IsDeleteMarker != actual.IsDeleteMarker {
-		t.Fatalf("is_delete_marker in index %d different than expected. expected=%v, got=%v (batch #%d, index %d)", index, *expected.IsDeleteMarker, actual.IsDeleteMarker, batchId, indexInBatch)
+	if expected.IsDeleteMarker != actual.IsDeleteMarker {
+		t.Fatalf("is_delete_marker in index %d different than expected. expected=%v, got=%v (batch #%d, index %d)", index, expected.IsDeleteMarker, actual.IsDeleteMarker, batchId, indexInBatch)
 	}
-	if actual.IsLatest != *expected.IsLatest {
-		t.Fatalf("is_latest in index %d different than expected. expected=%v, got=%v (batch #%d, index %d)", index, *expected.IsLatest, actual.IsLatest, batchId, indexInBatch)
+	if actual.IsLatest != expected.IsLatest {
+		t.Fatalf("is_latest in index %d different than expected. expected=%v, got=%v (batch #%d, index %d)", index, expected.IsLatest, actual.IsLatest, batchId, indexInBatch)
 	}
 }
 
@@ -53,7 +52,7 @@ func objs(num int, lastModified []time.Time) <-chan *TestObject {
 				Bucket:             inventoryBucketName,
 				Key:                fmt.Sprintf("f%05d", i),
 				Size:               swag.Int64(500),
-				LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].Unix() * 1000),
+				LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].UnixNano() / 1_000_000),
 				Checksum:           swag.String("abcdefg"),
 			}
 		}

@@ -94,7 +94,9 @@ func set(o *InventoryObject, f string, v interface{}) error {
 	case lastModifiedDateFieldName:
 		var lastModifiedMillis int64
 		lastModifiedMillis, err = cast.ToInt64E(v)
-		o.LastModified = swag.Time(time.Unix(lastModifiedMillis/int64(time.Second/time.Millisecond), 0))
+		seconds := lastModifiedMillis / int64(time.Second/time.Millisecond)
+		ns := (lastModifiedMillis % 1000) * int64(time.Millisecond/time.Nanosecond)
+		o.LastModified = swag.Time(time.Unix(seconds, ns))
 	case eTagFieldName:
 		o.Checksum, err = cast.ToStringE(v)
 	default:

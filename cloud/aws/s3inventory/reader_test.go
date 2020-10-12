@@ -119,13 +119,14 @@ func orcSchema(fieldToRemove string) string {
 
 func getOrcValues(o *TestObject, fieldToRemove string) []interface{} {
 	fieldValues := map[string]interface{}{
-		bucketFieldName:           o.Bucket,
-		keyFieldName:              o.Key,
-		isLatestFieldName:         o.IsLatest == nil || swag.BoolValue(o.IsLatest),
-		isDeleteMarkerFieldName:   swag.BoolValue(o.IsDeleteMarker),
-		sizeFieldName:             swag.Int64Value(o.Size),
-		lastModifiedDateFieldName: time.Unix(swag.Int64Value(o.LastModifiedMillis)/1000, 0),
-		eTagFieldName:             swag.StringValue(o.Checksum),
+		bucketFieldName:         o.Bucket,
+		keyFieldName:            o.Key,
+		isLatestFieldName:       o.IsLatest == nil || swag.BoolValue(o.IsLatest),
+		isDeleteMarkerFieldName: swag.BoolValue(o.IsDeleteMarker),
+		sizeFieldName:           swag.Int64Value(o.Size),
+		lastModifiedDateFieldName: time.Unix(swag.Int64Value(o.LastModifiedMillis)/1000,
+			(swag.Int64Value(o.LastModifiedMillis)%1000)*1_000_000),
+		eTagFieldName: swag.StringValue(o.Checksum),
 	}
 	values := make([]interface{}, 0, len(fieldValues))
 	for _, field := range inventoryFields {
@@ -234,7 +235,7 @@ func TestReaders(t *testing.T) {
 	for _, format := range []string{"ORC", "Parquet"} {
 		for testName, test := range testdata {
 			t.Run(fmt.Sprintf("%s %s", strings.ToLower(format), testName), func(t *testing.T) {
-				now := time.Now()
+				now := time.Now().Truncate(time.Millisecond)
 				lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour), now.Add(-3 * time.Hour)}
 				var localFile *os.File
 				if format == "ORC" {
@@ -268,23 +269,23 @@ func TestReaders(t *testing.T) {
 					if err != nil {
 						t.Fatalf("failed to read from file reader: %v", err)
 					}
-					expectedSize := swag.Int64(500)
+					expectedSize := 500
 					if test.ExcludeField == "size" {
-						expectedSize = nil
+						expectedSize = 0
 					}
-					expectedChecksum := swag.String("abcdefg")
+					expectedChecksum := "abcdefg"
 					if test.ExcludeField == "e_tag" {
-						expectedChecksum = nil
+						expectedChecksum = ""
 					}
 					for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {
-						verifyObject(t, res[i-offset], &TestObject{
-							Bucket:             inventoryBucketName,
-							Key:                fmt.Sprintf("f%05d", i),
-							IsLatest:           swag.Bool(true),
-							IsDeleteMarker:     swag.Bool(false),
-							Size:               expectedSize,
-							LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].Unix() * 1000),
-							Checksum:           expectedChecksum,
+						verifyObject(t, res[i-offset], &InventoryObject{
+							Bucket:         inventoryBucketName,
+							Key:            fmt.Sprintf("f%05d", i),
+							IsLatest:       true,
+							IsDeleteMarker: false,
+							Size:           int64(expectedSize),
+							LastModified:   &lastModified[i%len(lastModified)],
+							Checksum:       expectedChecksum,
 						}, i, offset/readBatchSize, i-offset)
 					}
 					offset += len(res)
