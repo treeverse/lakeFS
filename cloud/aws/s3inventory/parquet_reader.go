@@ -2,6 +2,7 @@ package s3inventory
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cznic/mathutil"
 	"github.com/go-openapi/swag"
@@ -66,7 +67,7 @@ func (p *ParquetInventoryFileReader) Read(n int) ([]*InventoryObject, error) {
 				continue
 			}
 			if res[i] == nil {
-				res[i] = new(InventoryObject)
+				res[i] = NewInventoryObject()
 			}
 			err := set(res[i], fieldName, v)
 			if err != nil {
@@ -81,33 +82,21 @@ func set(o *InventoryObject, f string, v interface{}) error {
 	var err error
 	switch f {
 	case bucketFieldName:
-		var bucket string
-		bucket, err = cast.ToStringE(v)
-		o.Bucket = bucket
+		o.Bucket, err = cast.ToStringE(v)
 	case keyFieldName:
-		var key string
-		key, err = cast.ToStringE(v)
-		o.Key = key
+		o.Key, err = cast.ToStringE(v)
 	case isLatestFieldName:
-		var isLatest bool
-		isLatest, err = cast.ToBoolE(v)
-		o.IsLatest = swag.Bool(isLatest)
+		o.IsLatest, err = cast.ToBoolE(v)
 	case isDeleteMarkerFieldName:
-		var isDeleteMarker bool
-		isDeleteMarker, err = cast.ToBoolE(v)
-		o.IsDeleteMarker = swag.Bool(isDeleteMarker)
+		o.IsDeleteMarker, err = cast.ToBoolE(v)
 	case sizeFieldName:
-		var size int64
-		size, err = cast.ToInt64E(v)
-		o.Size = swag.Int64(size)
+		o.Size, err = cast.ToInt64E(v)
 	case lastModifiedDateFieldName:
 		var lastModifiedMillis int64
 		lastModifiedMillis, err = cast.ToInt64E(v)
-		o.LastModifiedMillis = swag.Int64(lastModifiedMillis)
+		o.LastModified = swag.Time(time.Unix(lastModifiedMillis/int64(time.Second/time.Millisecond), 0))
 	case eTagFieldName:
-		var checksum string
-		checksum, err = cast.ToStringE(v)
-		o.Checksum = swag.String(checksum)
+		o.Checksum, err = cast.ToStringE(v)
 	}
 	return err
 }

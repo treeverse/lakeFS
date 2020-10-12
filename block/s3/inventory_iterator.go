@@ -105,23 +105,16 @@ func (it *InventoryIterator) fillBuffer() bool {
 func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
 		obj := it.buffer[i]
-		if (obj.IsLatest != nil && !*obj.IsLatest) ||
-			(obj.IsDeleteMarker != nil && *obj.IsDeleteMarker) {
+		if !obj.IsLatest || obj.IsDeleteMarker {
 			continue
 		}
 		res := block.InventoryObject{
 			Bucket:          obj.Bucket,
 			Key:             obj.Key,
 			PhysicalAddress: obj.GetPhysicalAddress(),
-		}
-		if obj.Size != nil {
-			res.Size = *obj.Size
-		}
-		if obj.LastModifiedMillis != nil {
-			res.LastModified = time.Unix(*obj.LastModifiedMillis/int64(time.Second/time.Millisecond), 0)
-		}
-		if obj.Checksum != nil {
-			res.Checksum = *obj.Checksum
+			Size:            obj.Size,
+			LastModified:    obj.LastModified,
+			Checksum:        obj.Checksum,
 		}
 		it.valIndexInBuffer = i
 		return &res

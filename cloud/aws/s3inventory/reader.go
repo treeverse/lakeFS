@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/scritchley/orc"
@@ -50,13 +51,17 @@ type IReader interface {
 }
 
 type InventoryObject struct {
-	Bucket             string
-	Key                string
-	IsLatest           *bool
-	IsDeleteMarker     *bool
-	Size               *int64
-	LastModifiedMillis *int64
-	Checksum           *string
+	Bucket         string
+	Key            string
+	IsLatest       bool
+	IsDeleteMarker bool
+	Size           int64
+	LastModified   *time.Time
+	Checksum       string
+}
+
+func NewInventoryObject() *InventoryObject {
+	return &InventoryObject{IsLatest: true}
 }
 
 func (o *InventoryObject) GetPhysicalAddress() string {

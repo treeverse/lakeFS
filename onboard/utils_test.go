@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
@@ -66,7 +67,7 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	}
 	for i, key := range m.keys {
 
-		res = append(res, block.InventoryObject{Key: key, LastModified: m.lastModified[i%len(m.lastModified)], Checksum: m.checksum(key)})
+		res = append(res, block.InventoryObject{Key: key, LastModified: swag.Time(m.lastModified[i%len(m.lastModified)]), Checksum: m.checksum(key)})
 	}
 	return res
 }

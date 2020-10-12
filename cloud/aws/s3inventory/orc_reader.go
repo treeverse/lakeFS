@@ -48,36 +48,26 @@ func getOrcSelect(typeDescription *orc.TypeDescription) *OrcSelect {
 	return res
 }
 
-func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) InventoryObject {
-	var size *int64
+func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) *InventoryObject {
+	obj := NewInventoryObject()
+	obj.Bucket = rowData[r.orcSelect.IndexInSelect[bucketFieldName]].(string)
+	obj.Key = rowData[r.orcSelect.IndexInSelect[keyFieldName]].(string)
 	if sizeIdx, ok := r.orcSelect.IndexInSelect[sizeFieldName]; ok && rowData[sizeIdx] != nil {
-		size = swag.Int64(rowData[sizeIdx].(int64))
+		obj.Size = rowData[sizeIdx].(int64)
 	}
-	var lastModifiedMillis *int64
 	if lastModifiedIdx, ok := r.orcSelect.IndexInSelect[lastModifiedDateFieldName]; ok && rowData[lastModifiedIdx] != nil {
-		lastModifiedMillis = swag.Int64(rowData[lastModifiedIdx].(time.Time).UnixNano() / int64(time.Millisecond))
+		obj.LastModified = swag.Time(rowData[lastModifiedIdx].(time.Time))
 	}
-	var eTag *string
 	if eTagIdx, ok := r.orcSelect.IndexInSelect[eTagFieldName]; ok && rowData[eTagIdx] != nil {
-		eTag = swag.String(rowData[eTagIdx].(string))
+		obj.Checksum = rowData[eTagIdx].(string)
 	}
-	var isLatest *bool
 	if isLatestIdx, ok := r.orcSelect.IndexInSelect[isLatestFieldName]; ok && rowData[isLatestIdx] != nil {
-		isLatest = swag.Bool(rowData[isLatestIdx].(bool))
+		obj.IsLatest = rowData[isLatestIdx].(bool)
 	}
-	var isDeleteMarker *bool
 	if isDeleteMarkerIdx, ok := r.orcSelect.IndexInSelect[isDeleteMarkerFieldName]; ok && rowData[isDeleteMarkerIdx] != nil {
-		isDeleteMarker = swag.Bool(rowData[isDeleteMarkerIdx].(bool))
+		obj.IsDeleteMarker = rowData[isDeleteMarkerIdx].(bool)
 	}
-	return InventoryObject{
-		Bucket:             rowData[r.orcSelect.IndexInSelect[bucketFieldName]].(string),
-		Key:                rowData[r.orcSelect.IndexInSelect[keyFieldName]].(string),
-		Size:               size,
-		LastModifiedMillis: lastModifiedMillis,
-		Checksum:           eTag,
-		IsLatest:           isLatest,
-		IsDeleteMarker:     isDeleteMarker,
-	}
+	return obj
 }
 
 func (r *OrcInventoryFileReader) Read(n int) ([]*InventoryObject, error) {
@@ -97,7 +87,7 @@ func (r *OrcInventoryFileReader) Read(n int) ([]*InventoryObject, error) {
 			}
 		}
 		obj := r.inventoryObjectFromRow(r.cursor.Row())
-		res = append(res, &obj)
+		res = append(res, obj)
 		if len(res) == n {
 			break
 		}
