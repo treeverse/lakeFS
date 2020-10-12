@@ -4,6 +4,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jedib0t/go-pretty/text"
+
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
 )
@@ -24,9 +26,10 @@ type ProgressReporter interface {
 }
 
 type Progress struct {
-	label   string
-	current *int64
-	total   *int64
+	label     string
+	current   *int64
+	total     *int64
+	completed bool
 }
 
 type MultiBar struct {
@@ -72,6 +75,14 @@ func (p *Progress) SetTotal(n int64) {
 	atomic.StoreInt64(p.total, n)
 }
 
+func (p *Progress) Completed() bool {
+	return p.completed
+}
+
+func (p *Progress) SetCompleted(completed bool) {
+	p.completed = completed
+}
+
 func NewMultiBar(r ProgressReporter) *MultiBar {
 	ticker := time.NewTicker(progressRefreshRate)
 	m := mpb.New(mpb.WithWidth(progressBarWidth))
@@ -102,12 +113,13 @@ func (b *MultiBar) refresh(isCompleted bool) {
 			bar = createBar(b.mpb, p, total)
 			b.mpbBars[p.label] = bar
 		}
-		bar.SetTotal(total, isCompleted)
 		if !isCompleted {
-			bar.SetCurrent(p.Current())
+			bar.SetTotal(total, false)
 		} else {
-			bar.SetCurrent(total)
+			p.SetCompleted(true)
+			bar.SetTotal(p.Current(), true)
 		}
+		bar.SetCurrent(p.Current())
 	}
 }
 
@@ -118,7 +130,12 @@ func createBar(m *mpb.Progress, p *Progress, total int64) *mpb.Bar {
 		isSpinner = true
 	}
 	labelDecorator := decor.Name(p.label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
-	suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
+	suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix), decor.Any(func(statistics decor.Statistics) string {
+		if p.Completed() {
+			return text.FgGreen.Sprintf(" done")
+		}
+		return ""
+	}))
 	if isSpinner {
 		// unknown total, render a spinner
 		bar = m.AddSpinner(total, mpb.SpinnerOnMiddle, suffixOption,

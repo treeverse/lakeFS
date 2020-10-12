@@ -52,7 +52,7 @@ func (it *InventoryIterator) Next() bool {
 				it.err = ErrInventoryNotSorted
 				return false
 			}
-			it.currentFileProgress.Incr()
+			it.currentFileProgress.SetCurrent(int64(it.valIndexInBuffer + 1))
 			it.val = val
 			return true
 		}

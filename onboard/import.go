@@ -98,6 +98,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	}
 	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +109,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	}
 	if !dryRun {
 		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
+		s.progress = append(s.progress, cmdutils.NewProgress("Commit Changes", -1))
 		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
 			return nil, err
