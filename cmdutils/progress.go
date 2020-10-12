@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/text"
-
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
 )
