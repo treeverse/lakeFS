@@ -17,7 +17,7 @@ type InventoryIterator struct {
 	*Inventory
 	err                   error
 	val                   *block.InventoryObject
-	buffer                []s3inventory.InventoryObject
+	buffer                []*s3inventory.InventoryObject
 	inventoryFileIndex    int
 	valIndexInBuffer      int
 	inventoryFileProgress *cmdutils.Progress
@@ -98,8 +98,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
 		}
 	}()
-	it.buffer = make([]s3inventory.InventoryObject, rdr.GetNumRows())
-	err = rdr.Read(&it.buffer)
+	it.buffer, err = rdr.Read(int(rdr.GetNumRows()))
 	if err != nil {
 		it.err = err
 		return false
@@ -110,23 +109,16 @@ func (it *InventoryIterator) fillBuffer() bool {
 func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
 		obj := it.buffer[i]
-		if (obj.IsLatest != nil && !*obj.IsLatest) ||
-			(obj.IsDeleteMarker != nil && *obj.IsDeleteMarker) {
+		if !obj.IsLatest || obj.IsDeleteMarker {
 			continue
 		}
 		res := block.InventoryObject{
 			Bucket:          obj.Bucket,
 			Key:             obj.Key,
 			PhysicalAddress: obj.GetPhysicalAddress(),
-		}
-		if obj.Size != nil {
-			res.Size = *obj.Size
-		}
-		if obj.LastModifiedMillis != nil {
-			res.LastModified = time.Unix(*obj.LastModifiedMillis/int64(time.Second/time.Millisecond), 0)
-		}
-		if obj.Checksum != nil {
-			res.Checksum = *obj.Checksum
+			Size:            obj.Size,
+			LastModified:    obj.LastModified,
+			Checksum:        obj.Checksum,
 		}
 		it.valIndexInBuffer = i
 		return &res
