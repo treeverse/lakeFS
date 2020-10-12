@@ -7,21 +7,21 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// EntryLineageSelect select path/s from a branch, including lineage
+// sqEntryLineageSelect select path/s from a branch, including lineage
 // 1. Union all the branches in the lineage.
 // 2. if multiple branches have this path - select the one closest to the requested branch
 // 3. filterDeleted param = true will remove results that were deleted
-func EntryLineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDeleted bool, paths []string) (sq.SelectBuilder, error) {
+func sqEntryLineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDeleted bool, paths []string) (sq.SelectBuilder, error) {
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
 		return sq.SelectBuilder{}, err
 	}
-	unionSelect := EntryBranchSelect(branchID, commitID, paths).Column("? as lineage_order", "0").
+	unionSelect := sqEntryBranchSelect(branchID, commitID, paths).Column("? as lineage_order", "0").
 		Prefix("(").Suffix(")")
 	for i, branch := range lineage {
 		unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr(
 			" UNION ALL (",
-			EntryBranchSelect(branch.BranchID, branch.CommitID, paths).Column("? as lineage_order", strconv.Itoa(i+1)),
+			sqEntryBranchSelect(branch.BranchID, branch.CommitID, paths).Column("? as lineage_order", strconv.Itoa(i+1)),
 			")"))
 	}
 	distinctSelect := sq.Select("*").
@@ -36,11 +36,11 @@ func EntryLineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDelet
 	return finalSelect, nil
 }
 
-//  EntryBranchSelect select path/s from a single branch.
+//  sqEntryBranchSelect select path/s from a single branch.
 //  1. Get the requested commit
-//  2. If a path have multiple versions in various commits- Select only the relevant one -  with Highest min commit
-//	3. if the version was deleted after the requested commit - the row will be set to uncommitted
-func EntryBranchSelect(branchID int64, commitID CommitID, paths []string) sq.SelectBuilder {
+//  2. If a path has multiple versions in various commits - Return the row with highest min commit
+//	3. if the version was deleted after the requested commit - the row max-commit will be set to uncommitted
+func sqEntryBranchSelect(branchID int64, commitID CommitID, paths []string) sq.SelectBuilder {
 	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		Distinct().Options("ON (branch_id,path)").
 		From("catalog_entries").
