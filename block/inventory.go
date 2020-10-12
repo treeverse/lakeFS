@@ -23,7 +23,7 @@ type InventoryObject struct {
 	Bucket          string
 	Key             string
 	Size            int64
-	LastModified    time.Time
+	LastModified    *time.Time
 	Checksum        string
 	PhysicalAddress string
 }

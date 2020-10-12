@@ -30,10 +30,10 @@ func rows(keys []string, lastModified map[string]time.Time) []*s3inventory.Inven
 		if key != "" {
 			res[i] = new(s3inventory.InventoryObject)
 			res[i].Key = key
-			res[i].IsLatest = swag.Bool(!strings.Contains(key, "_expired"))
-			res[i].IsDeleteMarker = swag.Bool(strings.Contains(key, "_del"))
+			res[i].IsLatest = !strings.Contains(key, "_expired")
+			res[i].IsDeleteMarker = strings.Contains(key, "_del")
 			if lastModified != nil {
-				res[i].LastModifiedMillis = swag.Int64(lastModified[key].Unix() * 1000)
+				res[i].LastModified = swag.Time(lastModified[key])
 			}
 		}
 	}
@@ -196,9 +196,8 @@ func TestIterator(t *testing.T) {
 			if obj.Key != test.ExpectedObjects[i] {
 				t.Fatalf("at index %d: expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
 			}
-			expectedLastModified := lastModified[obj.Key].Truncate(time.Second)
-			if obj.LastModified != expectedLastModified {
-				t.Fatalf("last modified for object in index %d different than expected. expected=%v, got=%v", i, expectedLastModified, obj.LastModified)
+			if *obj.LastModified != lastModified[obj.Key] {
+				t.Fatalf("last modified for object in index %d different than expected. expected=%v, got=%v", i, lastModified[obj.Key], obj.LastModified)
 			}
 		}
 	}
@@ -246,18 +245,16 @@ func (m *mockInventoryFileReader) Close() error {
 	return nil
 }
 
-func (m *mockInventoryFileReader) Read(dstInterface interface{}) error {
-	res := make([]s3inventory.InventoryObject, 0, len(m.rows))
-	dst := dstInterface.(*[]s3inventory.InventoryObject)
-	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
+func (m *mockInventoryFileReader) Read(n int) ([]*s3inventory.InventoryObject, error) {
+	res := make([]*s3inventory.InventoryObject, 0, len(m.rows))
+	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+n; i++ {
 		if m.rows[i] == nil {
-			return ErrReadFile // for test - simulate file with error
+			return nil, ErrReadFile // for test - simulate file with error
 		}
-		res = append(res, *m.rows[i])
+		res = append(res, m.rows[i])
 	}
 	m.nextIdx = m.nextIdx + len(res)
-	*dst = res
-	return nil
+	return res, nil
 }
 
 func (m *mockInventoryFileReader) GetNumRows() int64 {
