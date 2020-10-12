@@ -84,8 +84,8 @@ func Diff(iterA, iterB Collection) (catalog.Differences, error) {
 	var diff catalog.Differences
 	err := DiffIterable(iterA, iterB, func(diffType catalog.DifferenceType, _ interface{}, name string) error {
 		diff = append(diff, catalog.Difference{
-			Type: diffType,
-			Path: name,
+			Type:  diffType,
+			Entry: catalog.Entry{Path: name},
 		})
 		return nil
 	})
