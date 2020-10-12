@@ -120,7 +120,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		toSignal []parade.TaskID
 	})
 
-	makeTaskForDiff := func(diff *catalog.Difference) (parade.TaskData, error) {
+	makeTaskForDiff := func(diff catalog.Difference) (parade.TaskData, error) {
 		var (
 			body     []byte
 			action   string
@@ -187,7 +187,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 			return nil, fmt.Errorf("no \"Path\" in %+v: %w", diff, ErrMissingColumns)
 		}
 
-		task, err := makeTaskForDiff(&diff)
+		task, err := makeTaskForDiff(diff)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +233,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		}
 
 		ret = append(ret, parade.TaskData{
-			ID:                parade.TaskID(makeSuccessTaskID(successDirectory)),
+			ID:                makeSuccessTaskID(successDirectory),
 			Action:            TouchAction,
 			Body:              &bodyStr,
 			StatusCode:        parade.TaskPending,
