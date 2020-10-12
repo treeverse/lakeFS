@@ -33,10 +33,11 @@ type CatalogRepoActions struct {
 	logger          logging.Logger
 	deletedProgress *cmdutils.Progress
 	addedProgress   *cmdutils.Progress
+	commitProgress  *cmdutils.Progress
 }
 
 func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
-	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress}
+	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress, c.commitProgress}
 }
 
 func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) *CatalogRepoActions {
@@ -45,8 +46,9 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer
 		repository:      repository,
 		committer:       committer,
 		logger:          logger,
-		addedProgress:   cmdutils.NewProgress("Objects Added or Changed", -1),
-		deletedProgress: cmdutils.NewProgress("Objects Deleted", -1),
+		addedProgress:   cmdutils.NewActiveProgress("Objects Added or Changed", cmdutils.Spinner),
+		deletedProgress: cmdutils.NewActiveProgress("Objects Deleted", cmdutils.Spinner),
+		commitProgress:  cmdutils.NewProgress("Committing Changes", cmdutils.SpinnerNoCounter),
 	}
 }
 
@@ -137,6 +139,8 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		}
 	}
 	c.addedProgress.Add(int64(len(currentBatch)))
+	c.addedProgress.SetCompleted(true)
+	c.deletedProgress.SetCompleted(true)
 	return &stats, nil
 }
 
@@ -159,8 +163,13 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 }
 
 func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
-	return c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
+	c.commitProgress.Activate()
+	res, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
 		c.committer,
 		metadata)
+	if err == nil {
+		c.commitProgress.SetCompleted(true)
+	}
+	return res, err
 }

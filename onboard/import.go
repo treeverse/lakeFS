@@ -45,7 +45,10 @@ type Stats struct {
 	PreviousImportDate   time.Time
 }
 
-var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")
+var (
+	ErrNoInventoryURL           = errors.New("no inventory_url in commit Metadata")
+	ErrInventoryAlreadyImported = errors.New("given inventory was already imported")
+)
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
 	res := &Importer{
@@ -74,6 +77,9 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	if previousInventoryURL == "" {
 		return nil, fmt.Errorf("%w. commit_ref=%s", ErrNoInventoryURL, commit.Reference)
 	}
+	if previousInventoryURL == s.inventory.InventoryURL() {
+		return nil, fmt.Errorf("%w. commit_ref=%s", ErrInventoryAlreadyImported, commit.Reference)
+	}
 	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
@@ -98,7 +104,6 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	}
 	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
-	time.Sleep(10 * time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +114,6 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	}
 	if !dryRun {
 		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
-		s.progress = append(s.progress, cmdutils.NewProgress("Commit Changes", -1))
 		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
 			return nil, err

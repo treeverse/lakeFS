@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	progressCounterFormat         = "%d / %d ["
-	spinnerCounterFormat          = "%d ["
+	progressCounterFormat         = "%d / %d "
+	spinnerCounterFormat          = "%d "
+	spinnerNoCounterFormat        = ""
 	progressSuffix                = "]"
+	progressPrefix                = "["
 	progressBarWidth              = 60
 	progressBarNameColumnWidth    = 40
 	progressBarCounterColumnWidth = 20
@@ -21,15 +23,23 @@ const (
 	progressRefreshRate           = 50 * time.Millisecond
 )
 
+const (
+	Bar = iota
+	Spinner
+	SpinnerNoCounter
+)
+
 type ProgressReporter interface {
 	Progress() []*Progress
 }
 
 type Progress struct {
-	label     string
-	current   *int64
-	total     *int64
-	completed bool
+	label        string
+	current      *int64
+	total        *int64
+	completed    bool
+	active       bool
+	progressType int
 }
 
 type MultiBar struct {
@@ -39,12 +49,23 @@ type MultiBar struct {
 	ticker   *time.Ticker
 }
 
-func NewProgress(label string, total int64) *Progress {
-	return &Progress{
-		label:   label,
-		current: new(int64),
-		total:   &total,
+func NewProgress(label string, progressType int) *Progress {
+	total := int64(0)
+	if progressType == Spinner || progressType == SpinnerNoCounter {
+		total = int64(-1)
 	}
+	return &Progress{
+		label:        label,
+		current:      new(int64),
+		total:        &total,
+		progressType: progressType,
+	}
+}
+
+func NewActiveProgress(label string, progressType int) *Progress {
+	res := NewProgress(label, progressType)
+	res.Activate()
+	return res
 }
 
 func (p *Progress) Label() string {
@@ -83,6 +104,10 @@ func (p *Progress) SetCompleted(completed bool) {
 	p.completed = completed
 }
 
+func (p *Progress) Activate() {
+	p.active = true
+}
+
 func NewMultiBar(r ProgressReporter) *MultiBar {
 	ticker := time.NewTicker(progressRefreshRate)
 	m := mpb.New(mpb.WithWidth(progressBarWidth))
@@ -104,19 +129,21 @@ func (b *MultiBar) Stop() {
 	b.mpb.Wait()
 }
 
-func (b *MultiBar) refresh(isCompleted bool) {
+func (b *MultiBar) refresh(isStop bool) {
 	progress := b.reporter.Progress()
 	for _, p := range progress {
+		if p == nil || !p.active {
+			continue
+		}
 		total := p.Total()
 		bar, ok := b.mpbBars[p.label]
 		if !ok {
 			bar = createBar(b.mpb, p, total)
 			b.mpbBars[p.label] = bar
 		}
-		if !isCompleted {
-			bar.SetTotal(total, false)
+		if !isStop {
+			bar.SetTotal(total, p.Completed())
 		} else {
-			p.SetCompleted(true)
 			bar.SetTotal(p.Current(), true)
 		}
 		bar.SetCurrent(p.Current())
@@ -125,26 +152,22 @@ func (b *MultiBar) refresh(isCompleted bool) {
 
 func createBar(m *mpb.Progress, p *Progress, total int64) *mpb.Bar {
 	var bar *mpb.Bar
-	isSpinner := false
-	if total < 0 {
-		isSpinner = true
-	}
 	labelDecorator := decor.Name(p.label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
-	suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix), decor.Any(func(statistics decor.Statistics) string {
-		if p.Completed() {
-			return text.FgGreen.Sprintf(" done")
-		}
-		return ""
-	}))
-	if isSpinner {
+	suffixOption := mpb.AppendDecorators(decor.OnComplete(decor.Name(progressSuffix), text.FgGreen.Sprintf(" done")))
+	if p.progressType == Spinner || p.progressType == SpinnerNoCounter {
 		// unknown total, render a spinner
-		bar = m.AddSpinner(total, mpb.SpinnerOnMiddle, suffixOption,
+		var counterDecorator decor.Decorator
+		if p.progressType == Spinner {
+			counterDecorator = decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})
+		} else {
+			counterDecorator = decor.Name(spinnerNoCounterFormat, decor.WC{W: progressBarCounterColumnWidth})
+		}
+		bar = m.AddSpinner(total, mpb.SpinnerOnMiddle, mpb.BarFillerClearOnComplete(), suffixOption, mpb.PrependDecorators(labelDecorator, counterDecorator, decor.OnComplete(decor.Name(progressPrefix), "")))
+	} else { // type == Bar
+		bar = m.AddBar(total, mpb.BarStyle(progressBarStyle), mpb.BarFillerClearOnComplete(), suffixOption,
 			mpb.PrependDecorators(labelDecorator,
-				decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
-	} else {
-		bar = m.AddBar(total, mpb.BarStyle(progressBarStyle), suffixOption,
-			mpb.PrependDecorators(labelDecorator,
-				decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
+				decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth}),
+				decor.OnComplete(decor.Name(progressPrefix), "")))
 	}
 	return bar
 }
