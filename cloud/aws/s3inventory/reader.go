@@ -43,6 +43,7 @@ const (
 var (
 	ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
 	ErrRequiredFieldNotFound      = errors.New("required field not found in inventory")
+	ErrUnknownField               = errors.New("unknown field")
 )
 
 type IReader interface {

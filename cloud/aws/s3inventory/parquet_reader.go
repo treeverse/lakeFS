@@ -97,6 +97,8 @@ func set(o *InventoryObject, f string, v interface{}) error {
 		o.LastModified = swag.Time(time.Unix(lastModifiedMillis/int64(time.Second/time.Millisecond), 0))
 	case eTagFieldName:
 		o.Checksum, err = cast.ToStringE(v)
+	default:
+		return fmt.Errorf("%w: %s", ErrUnknownField, f)
 	}
 	return err
 }
