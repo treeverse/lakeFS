@@ -55,7 +55,7 @@ jobs:
           if [ $? -eq 0 ]; then
             echo "Image exists"
           else
-            echo "Image doesnt exist"
+            echo "Image doesn't exist"
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
