@@ -192,7 +192,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	if err != nil {
 		return err
 	}
-	insertSizeLimiter, err := ctidModulu(tx, diffResultsTableName)
+	insertSizeLimiter, err := dbDiffResultsCtidModulus(tx, diffResultsTableName)
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (c *cataloger) mergeNonDirect(_ context.Context, _ sqlx.Execer, previousMax
 	return ErrFeatureNotSupported
 }
 
-func ctidModulu(tx db.Tx, tableName string) (int, error) {
+func dbDiffResultsCtidModulus(tx db.Tx, tableName string) (int, error) {
 	var tableCount int64
 	err := tx.Get(&tableCount, "SELECT COUNT(*) FROM "+tableName+" WHERE entry_ctid IS NOT NULL")
 	if err != nil {
