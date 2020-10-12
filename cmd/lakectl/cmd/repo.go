@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -93,10 +94,11 @@ var repoCreateCmd = &cobra.Command{
 			DefaultBranch:    defaultBranch,
 			ID:               &u.Repository,
 		})
-		if err != nil {
+		if err != nil && strings.Contains(err.Error(), "duplicate") {
+			DieFmt("Repository '%s' already exists.\n", u.Repository)
+		} else if err != nil {
 			DieErr(err)
 		}
-
 		repo, err := clt.GetRepository(context.Background(), u.Repository)
 		if err != nil {
 			DieErr(err)
