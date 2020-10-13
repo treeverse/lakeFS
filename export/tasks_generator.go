@@ -51,12 +51,12 @@ func dirname(path string) string {
 	return path[0:i]
 }
 
-type dirMatchCache struct {
+type DirMatchCache struct {
 	pred         func(path string) bool
 	upMatchCache map[string]*string
 }
 
-func (dmc *dirMatchCache) lookup(filename string) (string, bool) {
+func (dmc *DirMatchCache) Lookup(filename string) (string, bool) {
 	dir := filename
 	var ret *string
 	for {
@@ -74,8 +74,15 @@ func (dmc *dirMatchCache) lookup(filename string) (string, bool) {
 			break
 		}
 	}
-	for dir = dirname(filename); dir != "" && (ret == nil || dir != *ret); dir = dirname(dir) {
+	for dir = dirname(filename); dir != ""; dir = dirname(dir) {
 		dmc.upMatchCache[dir] = ret
+		if ret != nil && dir == *ret {
+			break
+		}
+	}
+	if dir == "" {
+		// Cache empty result at top of tree
+		dmc.upMatchCache[""] = ret
 	}
 
 	if ret == nil {
@@ -84,8 +91,8 @@ func (dmc *dirMatchCache) lookup(filename string) (string, bool) {
 	return *ret, true
 }
 
-func makeDirMatchCache(pred func(path string) bool) *dirMatchCache {
-	return &dirMatchCache{pred: pred, upMatchCache: make(map[string]*string)}
+func MakeDirMatchCache(pred func(path string) bool) *DirMatchCache {
+	return &DirMatchCache{pred: pred, upMatchCache: make(map[string]*string)}
 }
 
 // generateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
@@ -116,7 +123,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 	}
 	totalTasks := 0
 
-	successDirectoriesCache := makeDirMatchCache(generateSuccessFor)
+	successDirectoriesCache := MakeDirMatchCache(generateSuccessFor)
 	successForDirectory := make(map[string]struct {
 		count    int
 		toSignal []parade.TaskID
@@ -131,7 +138,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 			err      error
 		)
 
-		if d, ok := successDirectoriesCache.lookup(diff.Path); ok {
+		if d, ok := successDirectoriesCache.Lookup(diff.Path); ok {
 			s := successForDirectory[d]
 			s.count++
 			successForDirectory[d] = s
@@ -204,7 +211,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		q.Add(successDirectory)
 	}
 	for d, ok := q.Remove(); ok; d, ok = q.Remove() {
-		if upD, ok := successDirectoriesCache.lookup(d.(string)); ok {
+		if upD, ok := successDirectoriesCache.Lookup(d.(string)); ok {
 			s := successForDirectory[upD]
 			s.count++
 			successForDirectory[upD] = s
@@ -217,7 +224,6 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 
 	// Create any needed "success file" tasks
 	for successDirectory, td := range successForDirectory {
-		fmt.Println("[DEBUG] success directory", successDirectory, td)
 		successPath := fmt.Sprintf("%s/%s", successDirectory, successFilename)
 		data := SuccessData{
 			File: makeDestination(successPath),

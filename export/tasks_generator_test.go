@@ -11,6 +11,76 @@ import (
 	"github.com/treeverse/lakefs/parade"
 )
 
+func TestDirMatchCache(t *testing.T) {
+	type L struct {
+		path            string
+		expectedDirName string
+		expectedOK      bool
+	}
+	cases := []struct {
+		name     string
+		pred     func(path string) bool
+		lookups  []L
+		numCalls int
+	}{
+		{
+			name: "leaves",
+			pred: func(path string) bool { return strings.HasSuffix(path, "match") },
+			lookups: []L{
+				{"/a/b/match", "", false},                    // +3 calls
+				{"/a/b/match/c", "/a/b/match", true},         // +1 call
+				{"/a/b/match/c/d/e/f/g", "/a/b/match", true}, // +4 calls
+				{"", "", false},                              // +0 calls
+				{"/a/match/b/match", "/a/match", true},       // +2 calls
+			},
+			numCalls: 10,
+		},
+		{
+			name: "repeat",
+			pred: func(path string) bool { return strings.HasSuffix(path, "match") },
+			lookups: []L{
+				{"a/b/match/c", "a/b/match", true}, // +1 call
+				{"a/b/match/c", "a/b/match", true}, // +0 calls
+				{"a/b/match/d", "a/b/match", true}, // +0 calls
+			},
+			numCalls: 1,
+		},
+		{
+			name: "empty-matches",
+			pred: func(path string) bool {
+				// Always match, if only at the top-level
+				return strings.HasSuffix(path, "x") || path == ""
+			},
+			lookups: []L{
+				{"", "", true},              // +1 call
+				{"/a/b/c/file", "", true},   // +3 calls
+				{"/a/x/file", "/a/x", true}, // +1 call
+			},
+			numCalls: 5,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			calls := make([]string, 0)
+			dmc := export.MakeDirMatchCache(func(path string) bool {
+				calls = append(calls, path)
+				return c.pred(path)
+			})
+			for _, l := range c.lookups {
+				dir, ok := dmc.Lookup(l.path)
+				if l.expectedOK != ok || ok && l.expectedDirName != dir {
+					t.Errorf("expected %s, %v but got %s, %v",
+						l.expectedDirName, l.expectedOK, dir, ok)
+				}
+			}
+			if c.numCalls > 0 && c.numCalls != len(calls) {
+				t.Errorf("expected %d calls but performed these %d: %s", c.numCalls, len(calls), strings.Join(calls, ", "))
+			}
+		})
+	}
+}
+
 // directDependencies describes the direct dependencies of task IDs.
 type directDependencies interface {
 	getDependencies(id parade.TaskID) []parade.TaskID
