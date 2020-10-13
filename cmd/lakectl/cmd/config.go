@@ -39,6 +39,7 @@ var configCmd = &cobra.Command{
 				_, err := url.ParseRequestURI(rawurl)
 				return err
 			}}},
+			{Key: ConfigDefaultStorageNamespace, Prompt: &promptui.Prompt{Label: "Default storage namespace"}},
 		}
 		for _, question := range questions {
 			question.Prompt.Default = viper.GetString(question.Key)

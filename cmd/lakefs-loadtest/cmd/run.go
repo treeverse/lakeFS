@@ -62,6 +62,7 @@ var runCmd = &cobra.Command{
 				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
 			},
 			ServerAddress: viper.GetString(ConfigServerEndpointURL),
+			DefaultStorageNamespace: viper.GetString(ConfigDefaultStorageNamespace),
 		}
 		loader := loadtest.NewLoader(testConfig)
 		err = loader.Run()

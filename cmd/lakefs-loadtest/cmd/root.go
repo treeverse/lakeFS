@@ -15,6 +15,7 @@ const (
 	ConfigAccessKeyID       = "credentials.access_key_id"
 	ConfigSecretAccessKey   = "credentials.secret_access_key"
 	ConfigServerEndpointURL = "server.endpoint_url"
+	ConfigDefaultStorageNamespace = "server.default_storage_namespace"
 )
 
 var (
