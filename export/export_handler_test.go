@@ -29,6 +29,24 @@ func TestExportHandler_Handle(t *testing.T) {
 			},
 			blockstoreType: mem.BlockstoreType,
 		},
+		{
+			name:   "delete on mem",
+			Action: actionDelete,
+			Body: TaskBody{
+				DestinationNamespace: "local://external-bucket",
+				DestinationID:        "one/two",
+			},
+			blockstoreType: mem.BlockstoreType,
+		},
+		{
+			name:   "touch on mem",
+			Action: actionTouch,
+			Body: TaskBody{
+				DestinationNamespace: "local://external-bucket",
+				DestinationID:        "one/two",
+			},
+			blockstoreType: mem.BlockstoreType,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -44,11 +62,13 @@ func TestExportHandler_Handle(t *testing.T) {
 			// add to
 			testData := "this is the test Data"
 			testReader := strings.NewReader(testData)
-
-			err := adapter.Put(sourcePointer, testReader.Size(), testReader, block.PutOpts{})
-			if err != nil {
-				t.Fatal(err)
+			if tt.Action == actionCopy {
+				err := adapter.Put(sourcePointer, testReader.Size(), testReader, block.PutOpts{})
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
+
 			h := NewHandler(adapter)
 			taskBody, err := json.Marshal(tt.Body)
 			if err != nil {
@@ -62,20 +82,29 @@ func TestExportHandler_Handle(t *testing.T) {
 			if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
 				t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 			}
-
 			// read Destination
 			reader, err := adapter.Get(destinationPointer, testReader.Size())
+
 			if err != nil {
-				t.Error(err)
+				if tt.Action == actionDelete {
+					return
+				}
+				t.Fatal(err)
+			}
+			if tt.Action == actionDelete {
+				t.Fatalf("expected to get error on get in action delete")
 			}
 			val, err := ioutil.ReadAll(reader)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
-			if string(val) != testData {
+			expect := testData
+			if tt.Action == actionTouch {
+				expect = ""
+			}
+			if string(val) != expect {
 				t.Errorf("expected %s, got %s\n", testData, string(val))
 			}
-			// todo(guys): add tests delete
 		})
 	}
 }
