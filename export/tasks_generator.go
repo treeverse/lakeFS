@@ -91,7 +91,7 @@ func (dmc *DirMatchCache) Lookup(filename string) (string, bool) {
 	return *ret, true
 }
 
-func MakeDirMatchCache(pred func(path string) bool) *DirMatchCache {
+func NewDirMatchCache(pred func(path string) bool) *DirMatchCache {
 	return &DirMatchCache{pred: pred, upMatchCache: make(map[string]*string)}
 }
 
@@ -123,7 +123,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 	}
 	totalTasks := 0
 
-	successDirectoriesCache := MakeDirMatchCache(generateSuccessFor)
+	successDirectoriesCache := NewDirMatchCache(generateSuccessFor)
 	successForDirectory := make(map[string]struct {
 		count    int
 		toSignal []parade.TaskID

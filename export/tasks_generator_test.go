@@ -63,7 +63,7 @@ func TestDirMatchCache(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			calls := make([]string, 0)
-			dmc := export.MakeDirMatchCache(func(path string) bool {
+			dmc := export.NewDirMatchCache(func(path string) bool {
 				calls = append(calls, path)
 				return c.pred(path)
 			})
