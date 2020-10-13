@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	rinqueue "github.com/erikdubbelboer/ringqueue"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/parade"
 )
@@ -206,19 +205,21 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 	}
 
 	// Add higher-level success directories, e.g. "a/b-success" for "a/b-success/c/d-success/x".
-	q := rinqueue.NewRingqueue()
+	todoDirs := make([]string, 0, len(successForDirectory))
 	for successDirectory := range successForDirectory {
-		q.Add(successDirectory)
+		todoDirs = append(todoDirs, successDirectory)
 	}
-	for d, ok := q.Remove(); ok; d, ok = q.Remove() {
-		if upD, ok := successDirectoriesCache.Lookup(d.(string)); ok {
+	for len(todoDirs) > 0 {
+		var d string
+		todoDirs, d = todoDirs[:len(todoDirs)-1], todoDirs[len(todoDirs)-1]
+		if upD, ok := successDirectoriesCache.Lookup(d); ok {
 			s := successForDirectory[upD]
 			s.count++
 			successForDirectory[upD] = s
 
-			s = successForDirectory[d.(string)]
+			s = successForDirectory[d]
 			s.toSignal = append(s.toSignal, makeSuccessTaskID(upD))
-			successForDirectory[d.(string)] = s
+			successForDirectory[d] = s
 		}
 	}
 
