@@ -94,11 +94,11 @@ func NewDirMatchCache(pred func(path string) bool) *DirMatchCache {
 	return &DirMatchCache{pred: pred, upMatchCache: make(map[string]*string)}
 }
 
-// generateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
+// GenerateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
 // "generate success" task after generating all files in each directory that matches
 // generateSuccessFor.
 func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Differences, generateSuccessFor func(path string) bool) ([]parade.TaskData, error) {
-	const initialSize = 100000
+	const initialSize = 1_000
 
 	one := 1 // Number of dependencies of many tasks.  This will *not* change.
 	numTries := 5
@@ -149,9 +149,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		}
 
 		switch diff.Type {
-		case catalog.DifferenceTypeAdded:
-			fallthrough // Same handling as "change"
-		case catalog.DifferenceTypeChanged:
+		case catalog.DifferenceTypeAdded, catalog.DifferenceTypeChanged:
 			data := CopyData{
 				From: diff.PhysicalAddress,
 				To:   makeDestination(diff.Path),
