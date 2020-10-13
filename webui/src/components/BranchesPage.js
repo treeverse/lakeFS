@@ -26,8 +26,8 @@ const CreateBranchButton = connect(
     ({ createBranch, resetBranch })
 )(({ repo, status, createBranch, resetBranch }) => {
     const [show, setShow] = useState(false);
-    const masterBranch = { id: repo.default_branch, type: "branch"};
-    const [selectedBranch, setSelectedBranch] = useState(masterBranch);
+    const defaultBranch = { id: repo.default_branch, type: "branch"};
+    const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
     const textRef = useRef(null);
 
     const disabled = (status.inProgress);
@@ -35,7 +35,7 @@ const CreateBranchButton = connect(
     const onHide = () => {
         if (disabled) return;
         setShow(false);
-        setSelectedBranch(masterBranch);
+        setSelectedBranch(defaultBranch);
     };
 
     const onSubmit = () => {
@@ -46,7 +46,7 @@ const CreateBranchButton = connect(
     useEffect(() => {
         if (status.done) {
             setShow(false);
-            setSelectedBranch(masterBranch);
+            setSelectedBranch(defaultBranch);
             resetBranch();
         }
     }, [resetBranch, status.done]);
