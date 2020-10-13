@@ -91,7 +91,10 @@ var importCmd = &cobra.Command{
 
 		repo, err := prepareRepo(ctx, dryRun, cataloger, createRepo, repoName, storageNamespace)
 		if err != nil {
-			fmt.Printf("Error - %s\n", err)
+			fmt.Printf("Error %s\n", err)
+			if errors.Is(err, catalog.ErrBranchNotFound) {
+				fmt.Println("Import will operate only on repositories created by import --create-repo")
+			}
 			os.Exit(1)
 		}
 
@@ -184,7 +187,6 @@ func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName st
 	if !importBranchExists {
 		return nil, fmt.Errorf("import %w in repository: %s", catalog.ErrBranchNotFound, repoName)
 	}
-	// TODO(barak): verify that default branch is a child of import branch
 	return repo, nil
 }
 
