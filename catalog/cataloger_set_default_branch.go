@@ -24,7 +24,7 @@ func (c *cataloger) SetDefaultBranch(ctx context.Context, repository, branch str
 		var branchID int64
 		if err := tx.Get(&branchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
 			repoID, branch); err != nil {
-			return nil, fmt.Errorf("source branch id: %w", err)
+			return nil, fmt.Errorf("get default branch id: %w", err)
 		}
 
 		_, err = tx.Exec(`UPDATE catalog_repositories SET default_branch=$2 WHERE id=$1`, repoID, branchID)

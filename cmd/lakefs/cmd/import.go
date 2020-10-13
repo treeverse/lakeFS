@@ -53,6 +53,11 @@ var importCmd = &cobra.Command{
 		createRepo, _ := flags.GetBool(CreateRepoFlagName)
 		storageNamespace, _ := flags.GetString(StorageNamespaceFlagName)
 
+		if createRepo && storageNamespace == "" {
+			fmt.Printf("when specifying the --create-repo flag, --storage-namespace must also be specified\n")
+			os.Exit(1)
+		}
+
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
@@ -84,17 +89,7 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var repo *catalog.Repository
-		if dryRun {
-			repo = &catalog.Repository{
-				Name:          repoName,
-				DefaultBranch: catalog.DefaultBranchName,
-			}
-		} else if createRepo {
-			repo, err = createRepository(ctx, cataloger, repoName, storageNamespace)
-		} else {
-			repo, err = getRepository(ctx, cataloger, repoName)
-		}
+		repo, err := prepareRepo(ctx, dryRun, cataloger, createRepo, repoName, storageNamespace)
 		if err != nil {
 			fmt.Printf("Error - %s\n", err)
 			os.Exit(1)
@@ -159,6 +154,23 @@ var importCmd = &cobra.Command{
 	},
 }
 
+func prepareRepo(ctx context.Context, dryRun bool, cataloger catalog.Cataloger, createRepo bool, repoName string, storageNamespace string) (*catalog.Repository, error) {
+	if dryRun {
+		return &catalog.Repository{
+			Name:          repoName,
+			DefaultBranch: catalog.DefaultBranchName,
+		}, nil
+	}
+	var err error
+	if createRepo {
+		err = createRepository(ctx, cataloger, repoName, storageNamespace)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return getRepository(ctx, cataloger, repoName)
+}
+
 func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string) (*catalog.Repository, error) {
 	repo, err := cataloger.GetRepository(ctx, repoName)
 	if err != nil {
@@ -176,31 +188,27 @@ func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName st
 	return repo, nil
 }
 
-func createRepository(ctx context.Context, cataloger catalog.Cataloger, repoName, storageNamespace string) (*catalog.Repository, error) {
-	if storageNamespace == "" {
-		return nil, fmt.Errorf("%w storage namespace (--%s)", ErrRequired, StorageNamespaceFlagName)
-	}
+func createRepository(ctx context.Context, cataloger catalog.Cataloger, repoName, storageNamespace string) error {
 	// make sure the repo does not exists
 	_, err := cataloger.GetRepository(ctx, repoName)
 	if err == nil {
-		return nil, fmt.Errorf("%w: %s", ErrRepositoryAlreadyExists, repoName)
+		return fmt.Errorf("%w: %s", ErrRepositoryAlreadyExists, repoName)
 	}
 	// create repository with import branch
-	repo, err := cataloger.CreateRepository(ctx, repoName, storageNamespace, onboard.DefaultBranchName)
+	_, err = cataloger.CreateRepository(ctx, repoName, storageNamespace, onboard.DefaultBranchName)
 	if err != nil {
-		return nil, fmt.Errorf("create repository %s: %w", repoName, err)
+		return fmt.Errorf("create repository %s: %w", repoName, err)
 	}
 	// create default branch and make it default
 	_, err = cataloger.CreateBranch(ctx, repoName, catalog.DefaultBranchName, onboard.DefaultBranchName)
 	if err != nil {
-		return nil, fmt.Errorf("create default branch on repository %s: %w", repoName, err)
+		return fmt.Errorf("create default branch on repository %s: %w", repoName, err)
 	}
 	err = cataloger.SetDefaultBranch(ctx, repoName, catalog.DefaultBranchName)
 	if err != nil {
-		return nil, fmt.Errorf("set default branch to %s on %s: %w", catalog.DefaultBranchName, repoName, err)
+		return fmt.Errorf("set default branch to %s on %s: %w", catalog.DefaultBranchName, repoName, err)
 	}
-	repo.DefaultBranch = catalog.DefaultBranchName
-	return repo, nil
+	return nil
 }
 
 //nolint:gochecknoinits
