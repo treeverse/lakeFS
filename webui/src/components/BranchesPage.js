@@ -49,7 +49,7 @@ const CreateBranchButton = connect(
             setSelectedBranch(defaultBranch);
             resetBranch();
         }
-    }, [resetBranch, status.done]);
+    }, [resetBranch, status.done, defaultBranch]);
 
     return (
         <>
