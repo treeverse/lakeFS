@@ -45,7 +45,10 @@ type Stats struct {
 	PreviousImportDate   time.Time
 }
 
-var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")
+var (
+	ErrNoInventoryURL           = errors.New("no inventory_url in commit Metadata")
+	ErrInventoryAlreadyImported = errors.New("given inventory was already imported")
+)
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
 	res := &Importer{
@@ -73,6 +76,9 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	previousInventoryURL := ExtractInventoryURL(commit.Metadata)
 	if previousInventoryURL == "" {
 		return nil, fmt.Errorf("%w. commit_ref=%s", ErrNoInventoryURL, commit.Reference)
+	}
+	if previousInventoryURL == s.inventory.InventoryURL() {
+		return nil, fmt.Errorf("%w. commit_ref=%s", ErrInventoryAlreadyImported, commit.Reference)
 	}
 	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true)
 	if err != nil {
