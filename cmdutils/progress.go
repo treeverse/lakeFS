@@ -34,8 +34,8 @@ type ProgressReporter interface {
 
 type Progress struct {
 	label        string
-	current      *int64
-	total        *int64
+	current      int64
+	total        int64
 	completed    bool
 	active       bool
 	progressType int
@@ -49,14 +49,13 @@ type MultiBar struct {
 }
 
 func NewProgress(label string, progressType int) *Progress {
-	total := int64(0)
+	total := 0
 	if progressType == Spinner || progressType == SpinnerNoCounter {
-		total = int64(-1)
+		total = -1
 	}
 	return &Progress{
 		label:        label,
-		current:      new(int64),
-		total:        &total,
+		total:        int64(total),
 		progressType: progressType,
 	}
 }
@@ -72,27 +71,27 @@ func (p *Progress) Label() string {
 }
 
 func (p *Progress) Current() int64 {
-	return atomic.LoadInt64(p.current)
+	return atomic.LoadInt64(&p.current)
 }
 
 func (p *Progress) Total() int64 {
-	return atomic.LoadInt64(p.total)
+	return atomic.LoadInt64(&p.total)
 }
 
 func (p *Progress) Incr() {
-	atomic.AddInt64(p.current, 1)
+	atomic.AddInt64(&p.current, 1)
 }
 
 func (p *Progress) Add(n int64) {
-	atomic.AddInt64(p.current, n)
+	atomic.AddInt64(&p.current, n)
 }
 
 func (p *Progress) SetCurrent(n int64) {
-	atomic.StoreInt64(p.current, n)
+	atomic.StoreInt64(&p.current, n)
 }
 
 func (p *Progress) SetTotal(n int64) {
-	atomic.StoreInt64(p.total, n)
+	atomic.StoreInt64(&p.total, n)
 }
 
 func (p *Progress) Completed() bool {
