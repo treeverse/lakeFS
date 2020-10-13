@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect} from "react";
 import {
     useParams,
     useLocation,
@@ -23,7 +23,6 @@ import Alert from "react-bootstrap/Alert";
 import BranchesPage from "./BranchesPage";
 import ComparePage from "./ComparePage";
 import RepoSettingsPage from "./RepoSettingsPage";
-import {Modal} from "react-bootstrap";
 
 
 function useQuery() {
