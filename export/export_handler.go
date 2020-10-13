@@ -6,12 +6,14 @@ import (
 	act "github.com/treeverse/lakefs/action"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/parade"
+	"strings"
 )
 
 const actorName parade.ActorID = "EXPORT"
 const (
 	actionCopy   = "export-copy"
 	actionDelete = "export-delete"
+	actionTouch  = "export-touch"
 	actionNext   = "next-export"
 	actionStart  = "start-export"
 	actionDone   = "done-export"
@@ -70,6 +72,9 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 				StatusCode: parade.TaskInvalid,
 			}
 		}
+	case actionTouch:
+		err = h.adapter.Put(destinationPointer, 0, strings.NewReader(""), block.PutOpts{})
+	//todo(guys): add cases for other actions or remove them from Actions function
 	default:
 		return act.HandlerResult{
 			Status:     "UNKNOWN ACTION",
@@ -83,7 +88,7 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 }
 
 func (h *Handler) Actions() []string {
-	return []string{actionCopy, actionDelete}
+	return []string{actionCopy, actionDelete, actionNext, actionStart, actionDone}
 }
 
 func (h *Handler) Actor() parade.ActorID {
