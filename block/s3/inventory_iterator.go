@@ -31,11 +31,13 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 		creationTimestamp = 0
 	}
 	t := time.Unix(creationTimestamp/int64(time.Second/time.Millisecond), 0)
+	inventoryFileProgress := cmdutils.NewActiveProgress(fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), cmdutils.Bar)
+	inventoryFileProgress.SetTotal(int64(len(inv.Manifest.Files)))
 	return &InventoryIterator{
 		Inventory:             inv,
 		inventoryFileIndex:    -1,
-		inventoryFileProgress: cmdutils.NewProgress(fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), int64(len(inv.Manifest.Files))),
-		currentFileProgress:   cmdutils.NewProgress(fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02")), 0),
+		inventoryFileProgress: inventoryFileProgress,
+		currentFileProgress:   cmdutils.NewActiveProgress(fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02")), cmdutils.Bar),
 	}
 }
 
@@ -52,7 +54,7 @@ func (it *InventoryIterator) Next() bool {
 				it.err = ErrInventoryNotSorted
 				return false
 			}
-			it.currentFileProgress.Incr()
+			it.currentFileProgress.SetCurrent(int64(it.valIndexInBuffer + 1))
 			it.val = val
 			return true
 		}
@@ -60,6 +62,8 @@ func (it *InventoryIterator) Next() bool {
 		it.valIndexInBuffer = -1
 		if !it.moveToNextInventoryFile() {
 			// no more files left
+			it.inventoryFileProgress.SetCompleted(true)
+			it.currentFileProgress.SetCompleted(true)
 			return false
 		}
 		if !it.fillBuffer() {
