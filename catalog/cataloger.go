@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	CatalogerCommitter = ""
-
+	CatalogerCommitter   = ""
+	DefaultBranchName    = "master"
 	DefaultPathDelimiter = "/"
 
 	dedupBatchSize         = 10
@@ -58,7 +58,7 @@ type ExpireResult struct {
 }
 
 type RepositoryCataloger interface {
-	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
+	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
 	DeleteRepository(ctx context.Context, repository string) error
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
@@ -71,6 +71,7 @@ type BranchCataloger interface {
 	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
 	GetBranchReference(ctx context.Context, repository, branch string) (string, error)
 	ResetBranch(ctx context.Context, repository, branch string) error
+	SetDefaultBranch(ctx context.Context, repository, defaultBranch string) error
 }
 
 var ErrExpired = errors.New("expired from storage")

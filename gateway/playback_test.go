@@ -127,7 +127,9 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	if storageNamespace == "" {
 		storageNamespace = "replay"
 	}
-	testutil.Must(t, cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master"))
+
+	_, err := cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
+	testutil.Must(t, err)
 	handler := gateway.NewHandler(
 		authService.Region,
 		cataloger,

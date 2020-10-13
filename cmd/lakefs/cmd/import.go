@@ -22,12 +22,19 @@ import (
 )
 
 const (
-	DryRunFlagName      = "dry-run"
-	WithMergeFlagName   = "with-merge"
-	ManifestURLFlagName = "manifest"
-	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
-	ImportCmdNumArgs    = 1
-	CommitterName       = "lakefs"
+	DryRunFlagName           = "dry-run"
+	CreateRepoFlagName       = "create-repo"
+	StorageNamespaceFlagName = "storage-namespace"
+	WithMergeFlagName        = "with-merge"
+	ManifestURLFlagName      = "manifest"
+	ManifestURLFormat        = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
+	ImportCmdNumArgs         = 1
+	CommitterName            = "lakefs"
+)
+
+var (
+	ErrRequired                = errors.New("required")
+	ErrRepositoryAlreadyExists = errors.New("repository already exists")
 )
 
 var importCmd = &cobra.Command{
@@ -39,9 +46,12 @@ var importCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
-		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
-		withMerge, _ := cmd.Flags().GetBool(WithMergeFlagName)
+		flags := cmd.Flags()
+		dryRun, _ := flags.GetBool(DryRunFlagName)
+		manifestURL, _ := flags.GetString(ManifestURLFlagName)
+		withMerge, _ := flags.GetBool(WithMergeFlagName)
+		createRepo, _ := flags.GetBool(CreateRepoFlagName)
+		storageNamespace, _ := flags.GetString(StorageNamespaceFlagName)
 
 		ctx := context.Background()
 		conf := config.NewConfig()
@@ -73,18 +83,24 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
 			os.Exit(1)
 		}
-		repo, err := cataloger.GetRepository(ctx, repoName)
+
+		var repo *catalog.Repository
+		if dryRun {
+			repo = &catalog.Repository{
+				Name:          repoName,
+				DefaultBranch: catalog.DefaultBranchName,
+			}
+		} else if createRepo {
+			repo, err = createRepository(ctx, cataloger, repoName, storageNamespace)
+		} else {
+			repo, err = getRepository(ctx, cataloger, repoName)
+		}
 		if err != nil {
-			fmt.Printf("Failed to read repository %s: %s\n", repoName, err)
+			fmt.Printf("Error - %s\n", err)
 			os.Exit(1)
 		}
-		if !dryRun {
-			err = prepareBranch(ctx, cataloger, repo, onboard.DefaultBranchName)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		} else {
+
+		if dryRun {
 			fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
 		}
 		importConfig := &onboard.Config{
@@ -143,22 +159,47 @@ var importCmd = &cobra.Command{
 	},
 }
 
-func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catalog.Repository, branch string) error {
-	repoName := repo.Name
-	_, err := cataloger.GetBranchReference(ctx, repoName, branch)
+func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string) (*catalog.Repository, error) {
+	repo, err := cataloger.GetRepository(ctx, repoName)
+	if err != nil {
+		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
+	}
+	// check we have import branch on this repo
+	importBranchExists, err := cataloger.BranchExists(ctx, repoName, onboard.DefaultBranchName)
+	if err != nil {
+		return nil, fmt.Errorf("read branch (%s) information from repository %s: %w", onboard.DefaultBranchName, repoName, err)
+	}
+	if !importBranchExists {
+		return nil, fmt.Errorf("import %w in repository: %s", catalog.ErrBranchNotFound, repoName)
+	}
+	// TODO(barak): verify that default branch is a child of import branch
+	return repo, nil
+}
+
+func createRepository(ctx context.Context, cataloger catalog.Cataloger, repoName, storageNamespace string) (*catalog.Repository, error) {
+	if storageNamespace == "" {
+		return nil, fmt.Errorf("%w storage namespace (--%s)", ErrRequired, StorageNamespaceFlagName)
+	}
+	// make sure the repo does not exists
+	_, err := cataloger.GetRepository(ctx, repoName)
 	if err == nil {
-		fmt.Printf("Branch %s already exists, no need to create it.\n\n", branch)
-		return nil
+		return nil, fmt.Errorf("%w: %s", ErrRepositoryAlreadyExists, repoName)
 	}
-	if errors.Is(err, db.ErrNotFound) {
-		fmt.Printf("Branch %s does not exist, creating.\n\n", branch)
-		_, err = cataloger.CreateBranch(ctx, repoName, branch, repo.DefaultBranch)
-		if err != nil {
-			return fmt.Errorf("failed to create branch %s in repo %s: %w", branch, repoName, err)
-		}
-		return nil
+	// create repository with import branch
+	repo, err := cataloger.CreateRepository(ctx, repoName, storageNamespace, onboard.DefaultBranchName)
+	if err != nil {
+		return nil, fmt.Errorf("create repository %s: %w", repoName, err)
 	}
-	return fmt.Errorf("error when fetching branches for repo %s: %w", repoName, err)
+	// create default branch and make it default
+	_, err = cataloger.CreateBranch(ctx, repoName, catalog.DefaultBranchName, onboard.DefaultBranchName)
+	if err != nil {
+		return nil, fmt.Errorf("create default branch on repository %s: %w", repoName, err)
+	}
+	err = cataloger.SetDefaultBranch(ctx, repoName, catalog.DefaultBranchName)
+	if err != nil {
+		return nil, fmt.Errorf("set default branch to %s on %s: %w", catalog.DefaultBranchName, repoName, err)
+	}
+	return repo, nil
 }
 
 //nolint:gochecknoinits
@@ -168,4 +209,6 @@ func init() {
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
 	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
+	importCmd.Flags().Bool(CreateRepoFlagName, false, "Create repository for initial import")
+	importCmd.Flags().String(StorageNamespaceFlagName, "", "Storage namespace used for new repository")
 }

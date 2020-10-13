@@ -11,7 +11,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
-	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
+	if _, err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
 		t.Fatal("create repository for testing", err)
 	}
 	const numOfBranches = 3

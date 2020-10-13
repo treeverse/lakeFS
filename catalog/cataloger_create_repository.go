@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -11,16 +12,16 @@ const (
 	createRepositoryCommitMessage = "Repository created"
 )
 
-func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error {
+func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "storageNamespace", IsValid: ValidateStorageNamespace(storageNamespace)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for branch
 		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
@@ -49,13 +50,23 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		}
 
 		// create initial commit
-		_, err := tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
-			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0)`,
+		var creationDate time.Time
+		err := tx.Get(&creationDate, `INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
+			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0)
+			RETURNING creation_date`,
 			branchID, CatalogerCommitter, createRepositoryCommitMessage)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}
-		return repoID, nil
+		return &Repository{
+			Name:             repository,
+			StorageNamespace: storageNamespace,
+			DefaultBranch:    branch,
+			CreationDate:     creationDate,
+		}, nil
 	}, c.txOpts(ctx)...)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return res.(*Repository), nil
 }

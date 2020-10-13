@@ -51,7 +51,7 @@ func TestCataloger_CreateRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := c.CreateRepository(ctx, tt.args.name, tt.args.storage, tt.args.branch)
+			repo, err := c.CreateRepository(ctx, tt.args.name, tt.args.storage, tt.args.branch)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("CreateRepository() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -60,6 +60,15 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			}
 			if err != nil {
 				return
+			}
+			if repo.Name != tt.args.name {
+				t.Fatalf("CreateRepository() repo name=%s, expected=%s", repo.Name, tt.args.name)
+			}
+			if repo.DefaultBranch != tt.args.branch {
+				t.Fatalf("CreateRepository() repo default branch=%s, expected=%s", repo.DefaultBranch, tt.args.branch)
+			}
+			if repo.StorageNamespace != tt.args.storage {
+				t.Fatalf("CreateRepository() repo storage=%s, expected=%s", repo.StorageNamespace, tt.args.storage)
 			}
 			// get repository information and verify we got what we created
 			rep, err := c.GetRepository(ctx, tt.args.name)
