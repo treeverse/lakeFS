@@ -39,7 +39,7 @@ func sqEntryLineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDel
 //  sqEntryBranchSelect select path/s from a single branch.
 //  1. Get the requested commit
 //  2. If a path has multiple versions in various commits - Return the row with highest min commit
-//	3. if the version was deleted after the requested commit - the row max-commit will be set to uncommitted
+//	3. If the version was deleted after the requested commit - the row max-commit will be set to uncommitted
 func sqEntryBranchSelect(branchID int64, commitID CommitID, paths []string) sq.SelectBuilder {
 	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		Distinct().Options("ON (branch_id,path)").
