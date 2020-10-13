@@ -20,10 +20,12 @@ var (
 
 const successFilename = "_lakefs_success"
 
-const CopyActipn = "export:copy"
-const DeleteAction = "export:delete"
-const TouchAction = "export:touch"
-const DoneAction = "export:done"
+const (
+	CopyAction   = "export:copy"
+	DeleteAction = "export:delete"
+	TouchAction  = "export:touch"
+	DoneAction   = "export:done"
+)
 
 type CopyData struct {
 	From string `json:"from"`
@@ -153,7 +155,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 				return parade.TaskData{}, fmt.Errorf("%+v: failed to serialize %+v: %w", diff, data, err)
 			}
 			taskID = parade.TaskID(fmt.Sprintf("%s:copy:%s", exportID, diff.PhysicalAddress))
-			action = CopyActipn
+			action = CopyAction
 		case catalog.DifferenceTypeRemoved:
 			data := DeleteData{
 				File: makeDestination(diff.Path),

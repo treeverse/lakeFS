@@ -111,7 +111,7 @@ func isDone(t *parade.TaskData) bool {
 }
 
 func isCopy(t *parade.TaskData) bool {
-	return t.Action == export.CopyActipn
+	return t.Action == export.CopyAction
 }
 
 func isDelete(t *parade.TaskData) bool {
@@ -198,7 +198,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
 			ID:     "simple:copy:/add1",
-			Action: export.CopyActipn,
+			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
 				From: "/add1",
 				To:   "testfs://prefix/add1",
@@ -209,7 +209,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 		},
 		&parade.TaskData{
 			ID:     "simple:copy:/change1",
-			Action: export.CopyActipn,
+			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
 				From: "/change1",
 				To:   "testfs://prefix/change1",
