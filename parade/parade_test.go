@@ -137,7 +137,7 @@ func scanIDs(t *testing.T, prefix string) []parade.TaskID {
 	t.Helper()
 	rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
 	if err != nil {
-		t.Errorf("[I] select remaining IDs for prefix %s: %s", prefix, err)
+		t.Fatalf("[I] select remaining IDs for prefix %s: %s", prefix, err)
 	}
 
 	defer func() {
@@ -152,6 +152,9 @@ func scanIDs(t *testing.T, prefix string) []parade.TaskID {
 			t.Errorf("[I] scan ID value: %s", err)
 		}
 		gotIDs = append(gotIDs, id)
+	}
+	if err = rows.Err(); err != nil {
+		t.Fatalf("[I] scan rows: %s", err)
 	}
 	return gotIDs
 }
@@ -252,14 +255,12 @@ func TestTaskStatusCodeValueScan(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			var dst parade.TaskStatusCodeValue
-			if err := dst.Scan(c.in); err != nil {
-				if !errors.Is(err, c.err) {
-					t.Errorf("got err %v, expected %v", err, c.err)
-				}
-			} else {
-				if dst != c.out {
-					t.Errorf("expected %s, got %s", c.out, dst)
-				}
+			err := dst.Scan(c.in)
+			if !errors.Is(err, c.err) {
+				t.Errorf("got err %v, expected %v", err, c.err)
+			}
+			if err == nil && dst != c.out {
+				t.Errorf("expected %s, got %s", c.out, dst)
 			}
 		})
 	}
