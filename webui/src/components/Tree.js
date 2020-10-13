@@ -322,7 +322,7 @@ const merge = (path, entriesAtPath, diffResults) => {
 
 };
 
-const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal, setShowImportModal}) => {
+const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal }) => {
     let body;
     const refreshData = useCallback(() => {
         if (refId.type === 'branch') {
@@ -343,7 +343,7 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
         body = <Alert variant="danger" className="tree-error">{list.error}</Alert>
     } else if (showGetStarted) {
         body = <GetStarted repo={repo} list={list} listBranchesState={listBranchesState}
-                           setShowUploadModal={setShowUploadModal} setShowImportModal={setShowImportModal}/>
+                           setShowUploadModal={setShowUploadModal}/>
     } else {
         const results = merge(path, list.payload.results, diffResults);
         body = (
@@ -372,15 +372,11 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
 };
 
 
-const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowImportModal}) => {
+const GetStarted = ({repo, list, listBranchesState, setShowUploadModal}) => {
     useEffect(() => {
     }, [repo, list, listBranchesState])
     return <>{(
         <Container className="m-3"><h3>To get started with this repository, you can:</h3>
-            <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {
-                e.preventDefault();
-                setShowImportModal(true)
-            }}>Import</a>&nbsp;data from S3 without copying it.</Row>
             <Row className="pt-2 ml-2"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {
                 e.preventDefault();
                 setShowUploadModal(true)

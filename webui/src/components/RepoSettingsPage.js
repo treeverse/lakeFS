@@ -6,7 +6,7 @@ import {Container} from "react-bootstrap";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
-const RepoSettingsPage = ({repo, setShowImportModal}) => {
+const RepoSettingsPage = ({repo}) => {
     const body = (
         <>
             <div className="section-title"><h4>General</h4></div>
@@ -24,11 +24,6 @@ const RepoSettingsPage = ({repo, setShowImportModal}) => {
                     <Col md={{span:4}}><Form.Control readOnly value={repo.default_branch} type="text"/></Col>
                 </Row>
             </Container>
-            <div className="section-title"><h4>Import Data</h4></div>
-            <Container><Row>
-                <Col md={{span:5}}>Bring your data into a dedicated lakeFS branch using S3 Inventory</Col>
-                <Col md={{span:1}}><Button onClick={() => setShowImportModal(true)}>Import</Button></Col>
-            </Row></Container>
         </>
     );
     return (
