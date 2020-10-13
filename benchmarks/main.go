@@ -11,13 +11,17 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/client/commits"
+
 	retry "github.com/avast/retry-go"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/thanhpk/randstr"
 	genclient "github.com/treeverse/lakefs/api/gen/client"
+	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
+	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/logging"
@@ -52,6 +56,8 @@ func main() {
 const (
 	contentSuffixLength = 32
 	contentLength       = 1 * 1024
+	branchName          = "branch-1"
+	repoName            = "benchmarks"
 )
 
 func testBenchmarkLakeFS() error {
@@ -59,13 +65,12 @@ func testBenchmarkLakeFS() error {
 	defer cancel()
 
 	ns := viper.GetString("storage_namespace")
-	repoName := strings.ToLower("benchmarks")
 	logger.WithFields(logging.Fields{
 		"repository":        repoName,
 		"storage_namespace": ns,
 		"name":              repoName,
 	}).Debug("Create repository for test")
-	_, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
+	repo, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
 		WithRepository(&models.RepositoryCreation{
 			DefaultBranch:    "master",
 			ID:               swag.String(repoName),
@@ -73,6 +78,18 @@ func testBenchmarkLakeFS() error {
 		}), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create repository, storage '%s': %w", ns, err)
+	}
+
+	_, err = client.Branches.CreateBranch(&branches.CreateBranchParams{
+		Branch: &models.BranchCreation{
+			Source: swag.String("master"),
+			Name:   swag.String(branchName),
+		},
+		Repository: repo.Payload.ID,
+		Context:    ctx,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create a branch from master: %w", err)
 	}
 
 	parallelism := viper.GetInt("parallelism_level")
@@ -84,6 +101,20 @@ func testBenchmarkLakeFS() error {
 
 	failed = doInParallel(ctx, repoName, parallelism, filesAmount, "", reader)
 	logger.WithField("failedCount", failed).Info("Finished reading files")
+
+	_, err = client.Commits.Commit(&commits.CommitParams{
+		Branch: branchName,
+		Commit: &models.CommitCreation{
+			Message: swag.String("commit before merge"),
+		},
+		Repository: repoName,
+		Context:    ctx,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	merge(ctx)
 
 	return nil
 }
@@ -137,7 +168,7 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 				_, err := client.Objects.UploadObject(
 					objects.NewUploadObjectParamsWithContext(ctx).
 						WithRepository(repoName).
-						WithBranch("master").
+						WithBranch(branchName).
 						WithPath(file).
 						WithContent(contentReader), nil)
 				return err
@@ -149,6 +180,27 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 				logger.WithField("fileNum", file).Error("Failed uploading file")
 			}
 		}
+	}
+}
+
+func merge(ctx context.Context) {
+	err := retry.Do(func() error {
+		_, err := client.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
+			DestinationRef: "master",
+			Merge: &models.Merge{
+				Message: "merging all objects to master",
+			},
+			Repository: repoName,
+			SourceRef:  branchName,
+			Context:    ctx,
+		}, nil)
+		return err
+	}, retry.Attempts(retryAttempts),
+		retry.Delay(retryDelay),
+		retry.LastErrorOnly(true),
+		retry.DelayType(retry.FixedDelay))
+	if err != nil {
+		logger.WithError(err).Error("Failed merging branch to master")
 	}
 }
 
@@ -169,7 +221,7 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 				_, err := client.Objects.GetObject(
 					objects.NewGetObjectParamsWithContext(ctx).
 						WithRepository(repoName).
-						WithRef("master").
+						WithRef(branchName).
 						WithPath(file), nil, &b)
 				return err
 			}, retry.Attempts(retryAttempts),
