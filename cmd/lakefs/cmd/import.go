@@ -199,6 +199,7 @@ func createRepository(ctx context.Context, cataloger catalog.Cataloger, repoName
 	if err != nil {
 		return nil, fmt.Errorf("set default branch to %s on %s: %w", catalog.DefaultBranchName, repoName, err)
 	}
+	repo.DefaultBranch = catalog.DefaultBranchName
 	return repo, nil
 }
 
