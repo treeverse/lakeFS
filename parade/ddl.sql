@@ -122,11 +122,17 @@ $$;
 CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR(64))
 RETURNS SETOF VARCHAR(64)
 LANGUAGE sql AS $$
-WITH signalled_ids AS (
-    UPDATE tasks
-    SET total_dependencies = tasks.total_dependencies-1
-    WHERE tasks.id IN (SELECT UNNEST(to_signal_after) FROM tasks WHERE id=task_id)
-    RETURNING (CASE WHEN tasks.total_dependencies = 0 THEN tasks.id ELSE NULL END) id
+WITH updates AS (
+        SELECT UNNEST(to_signal_after) effect_id,
+            (CASE WHEN status_code IN ('aborted', 'completed') THEN 0 ELSE 1 END) delta
+        FROM tasks
+        WHERE id=task_id),
+    signalled_ids AS (
+        UPDATE tasks
+        SET total_dependencies = total_dependencies-updates.delta
+        FROM updates
+        WHERE id=updates.effect_id
+	RETURNING (CASE WHEN total_dependencies = num_signals THEN tasks.id ELSE NULL END) id
 )
 SELECT id FROM signalled_ids WHERE id IS NOT NULL;
 $$;

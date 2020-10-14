@@ -10,15 +10,14 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
-
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
+	"github.com/treeverse/lakefs/uri"
 )
 
 const (
