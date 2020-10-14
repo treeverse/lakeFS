@@ -10,19 +10,18 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
-	"github.com/treeverse/lakefs/uri"
-
 	"github.com/google/uuid"
-
-	"github.com/treeverse/lakefs/config"
-
 	"github.com/jamiealquiza/tachymeter"
+	nanoid "github.com/matoous/go-nanoid"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/uri"
 )
+
+const createEntryPathLength = 120
 
 // entryCmd represents the repo command
 var entryCmd = &cobra.Command{
@@ -83,15 +82,18 @@ var entryCmd = &cobra.Command{
 				<-startingLine
 				createEntryParams := catalog.CreateEntryParams{}
 				for reqID := 0; reqID < requests; reqID++ {
+					entryPath, err := nanoid.ID(createEntryPathLength)
+					if err != nil {
+						atomic.AddInt64(&errCount, 1)
+					}
+					addr := strings.ReplaceAll(uuid.New().String(), "-", "")
 					startTime := time.Now()
-					gen := strings.ReplaceAll(uuid.New().String(), "-", "")
-					err := c.CreateEntry(ctx, u.Repository, u.Ref,
+					err = c.CreateEntry(ctx, u.Repository, u.Ref,
 						catalog.Entry{
-							Path:            gen,
-							PhysicalAddress: gen,
+							Path:            entryPath,
 							CreationDate:    time.Now(),
-							Size:            42,
-							Checksum:        gen,
+							Checksum:        addr,
+							PhysicalAddress: addr,
 						},
 						createEntryParams)
 					if err != nil {
