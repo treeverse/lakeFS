@@ -153,7 +153,7 @@ func (s *SuccessTasksTreeGenerator) AddFor(path string) (parade.TaskID, error) {
 			// Initialize a new task
 			task.ID = s.idGen.makeSuccessTaskID(d)
 			task.Action = TouchAction
-			data := SuccessData{File: s.makeDestination(d)}
+			data := SuccessData{File: s.makeDestination(d + "/" + successFilename)}
 			body, err := json.Marshal(data)
 			if err != nil {
 				return "", fmt.Errorf("failed to serialize %+v: %w", data, err)
