@@ -183,23 +183,21 @@ func (s *SuccessTasksTreeGenerator) AddFor(path string) (parade.TaskID, error) {
 // GenerateTasksTo generates and appends all success tasks and the finished task to tasks,
 // returning a new tasks slice.
 func (s *SuccessTasksTreeGenerator) GenerateTasksTo(tasks []parade.TaskData) []parade.TaskData {
-	off := len(tasks)
-	tasks = tasks[:off+1+len(s.successTaskForDirectory)]
+	l := len(tasks)
+	ret := make([]parade.TaskData, l, l+1+len(s.successTaskForDirectory))
+	copy(ret, tasks)
+	tasks = ret
 	for _, task := range s.successTaskForDirectory {
-		tasks[off] = task
-		off++
+		tasks = append(tasks, task)
 	}
-	tasks[off] = s.finishedTask
+	tasks = append(tasks, s.finishedTask)
 	return tasks
 }
 
 // makeDiffTaskBody fills TaskData *out with id, action and a body to make it a task to
 // perform diff.
 func makeDiffTaskBody(out *parade.TaskData, idGen taskIDGenerator, diff catalog.Difference, makeDestination func(string) string) error {
-	var (
-		data interface{}
-		err  error
-	)
+	var data interface{}
 	switch diff.Type {
 	case catalog.DifferenceTypeAdded, catalog.DifferenceTypeChanged:
 		data = CopyData{
