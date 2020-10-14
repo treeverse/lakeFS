@@ -9,8 +9,8 @@ import (
 
 const (
 	defaultWorkers     = 5
-	defaultChannelSize = 10000
-	defaultMaxTasks    = 100000
+	defaultChannelSize = 1000
+	defaultMaxTasks    = 500
 	defaultWaitTime    = time.Millisecond * 10
 	defaultMaxDuration = time.Minute * 30 // Todo(guys): change this
 )
