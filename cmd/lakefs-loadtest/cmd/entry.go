@@ -21,7 +21,7 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
-const createEntryPathLength = 120
+const createEntryPathLength = 110
 
 // entryCmd represents the repo command
 var entryCmd = &cobra.Command{
@@ -51,6 +51,10 @@ var entryCmd = &cobra.Command{
 
 		ctx := context.Background()
 		database := connectToDB(connectionString)
+		defer func() {
+			_ = database.Close()
+		}()
+
 		conf := config.NewConfig()
 		c := catalog.NewCataloger(database, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 
@@ -66,27 +70,30 @@ var entryCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		totalRequests := requests * concurrency
 		fmt.Printf("Concurrency: %d\n", concurrency)
-		fmt.Printf("Requests: %d\n", requests)
+		fmt.Printf("Requests: %d per worker (%d total)\n", requests, totalRequests)
 
-		bar := progressbar.New(requests * concurrency)
-		t := tachymeter.New(&tachymeter.Config{Size: int(float64(requests) * sampleRatio)})
+		bar := progressbar.New(totalRequests)
+		t := tachymeter.New(&tachymeter.Config{Size: int(float64(totalRequests) * sampleRatio)})
 		var wg sync.WaitGroup
 		wg.Add(concurrency)
 
 		var errCount int64
 		startingLine := make(chan bool)
 		for i := 0; i < concurrency; i++ {
+			wid := fmt.Sprintf("-%02d", i)
 			go func() {
 				defer wg.Done()
 				<-startingLine
 				createEntryParams := catalog.CreateEntryParams{}
 				for reqID := 0; reqID < requests; reqID++ {
-					entryPath, err := nanoid.ID(createEntryPathLength)
+					id, err := nanoid.ID(createEntryPathLength)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
 					}
 					addr := strings.ReplaceAll(uuid.New().String(), "-", "")
+					entryPath := strings.ReplaceAll(id, "-", "") + wid
 					startTime := time.Now()
 					err = c.CreateEntry(ctx, u.Repository, u.Ref,
 						catalog.Entry{
@@ -113,9 +120,12 @@ var entryCmd = &cobra.Command{
 		wg.Wait()
 		_ = bar.Finish()
 		t.SetWallTime(time.Since(wallTimeStart))
-		fmt.Printf("\n%s\n", t.Calc())
+		fmt.Printf("\n\n%s\n", t.Calc())
 		if errCount > 0 {
-			fmt.Printf("%d requests failed!\n", errCount)
+			fmt.Printf("\n%d requests FAILED!\n", errCount)
+		}
+		if err := c.Close(); err != nil {
+			fmt.Printf("Catalog close with error: %s", err)
 		}
 	},
 }
