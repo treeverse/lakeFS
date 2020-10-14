@@ -68,9 +68,9 @@ const (
 	// TaskPending indicates a task is waiting for an actor to perform it (new or being
 	// retried)
 	TaskPending TaskStatusCodeValue = "pending"
-	// IN_PROGRESS indicates a task is being performed by an actor.
+	// TaskInProgress indicates a task is being performed by an actor.
 	TaskInProgress TaskStatusCodeValue = "in-progress"
-	// ABORTED indicates an actor has aborted this task with message, will not be reissued
+	// TaskAborted indicates an actor has aborted this task with message, will not be reissued
 	TaskAborted TaskStatusCodeValue = "aborted"
 	// TaskCompleted indicates an actor has completed this task with message, will not reissued
 	TaskCompleted TaskStatusCodeValue = "completed"
