@@ -38,5 +38,4 @@ func init() {
 	dbCmd.PersistentFlags().Int("requests", 1000, "Number of requests to performs")
 	dbCmd.PersistentFlags().Float64("sample", 0.5, "Measure sample ratio (between 0 and 1)")
 	dbCmd.PersistentFlags().Int("concurrency", 1, "Number of concurrent workers")
-	dbCmd.PersistentFlags().String("repository", "", "Name of the repository (empty will create random one)")
 }
