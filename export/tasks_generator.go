@@ -193,6 +193,39 @@ func (s *SuccessTasksTreeGenerator) GenerateTasksTo(tasks []parade.TaskData) []p
 	return tasks
 }
 
+// makeDiffTaskBody fills TaskData *out with id, action and a body to make it a task to
+// perform diff.
+func makeDiffTaskBody(out *parade.TaskData, idGen taskIdGenerator, diff catalog.Difference, makeDestination func(string) string) error {
+	var (
+		data interface{}
+		err  error
+	)
+	switch diff.Type {
+	case catalog.DifferenceTypeAdded, catalog.DifferenceTypeChanged:
+		data = CopyData{
+			From: diff.PhysicalAddress,
+			To:   makeDestination(diff.Path),
+		}
+		out.ID = idGen.copyTaskID(diff.PhysicalAddress)
+		out.Action = CopyAction
+	case catalog.DifferenceTypeRemoved:
+		data = DeleteData{
+			File: makeDestination(diff.Path),
+		}
+		out.ID = idGen.deleteTaskID(diff.PhysicalAddress)
+		out.Action = DeleteAction
+	case catalog.DifferenceTypeConflict:
+		return fmt.Errorf("%+v: %w", diff, ErrConflict)
+	}
+	body, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("%+v: failed to serialize %+v: %w", diff, data, err)
+	}
+	bodyStr := string(body)
+	out.Body = &bodyStr
+	return nil
+}
+
 // GenerateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
 // "generate success" task after generating all files in each directory that matches
 // generateSuccessFor.
@@ -212,57 +245,6 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 	successTasksGenerator := NewSuccessTasksTreeGenerator(
 		exportID, generateSuccessFor, makeDestination)
 
-	makeTaskForDiff := func(diff catalog.Difference) (parade.TaskData, error) {
-		var (
-			body   []byte
-			action string
-			taskID parade.TaskID
-			err    error
-		)
-
-		id, err := successTasksGenerator.AddFor(diff.Path)
-		if err != nil {
-			return parade.TaskData{}, fmt.Errorf("generate tasks after %+v: %w", diff, err)
-		}
-		toSignal := []parade.TaskID{id}
-
-		switch diff.Type {
-		case catalog.DifferenceTypeAdded, catalog.DifferenceTypeChanged:
-			data := CopyData{
-				From: diff.PhysicalAddress,
-				To:   makeDestination(diff.Path),
-			}
-			body, err = json.Marshal(data)
-			if err != nil {
-				return parade.TaskData{}, fmt.Errorf("%+v: failed to serialize %+v: %w", diff, data, err)
-			}
-			taskID = idGen.copyTaskID(diff.PhysicalAddress)
-			action = CopyAction
-		case catalog.DifferenceTypeRemoved:
-			data := DeleteData{
-				File: makeDestination(diff.Path),
-			}
-			body, err = json.Marshal(data)
-			if err != nil {
-				return parade.TaskData{}, fmt.Errorf("%+v: failed to serialize %+v: %w", diff, data, err)
-			}
-			taskID = idGen.deleteTaskID(diff.PhysicalAddress)
-			action = DeleteAction
-		case catalog.DifferenceTypeConflict:
-			return parade.TaskData{}, fmt.Errorf("%+v: %w", diff, ErrConflict)
-		}
-		bodyStr := string(body)
-		return parade.TaskData{
-			ID:                taskID,
-			Action:            action,
-			Body:              &bodyStr,
-			StatusCode:        parade.TaskPending,
-			MaxTries:          &numTries,
-			TotalDependencies: &one, // Depends only on a start task
-			ToSignalAfter:     toSignal,
-		}, nil
-	}
-
 	ret := make([]parade.TaskData, 0, initialSize)
 
 	// Create the file operation tasks
@@ -271,10 +253,21 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 			return nil, fmt.Errorf("no \"Path\" in %+v: %w", diff, ErrMissingColumns)
 		}
 
-		task, err := makeTaskForDiff(diff)
-		if err != nil {
-			return nil, err
+		task := parade.TaskData{
+			StatusCode:        parade.TaskPending,
+			MaxTries:          &numTries,
+			TotalDependencies: &one, // Depends only on a start task
 		}
+		err := makeDiffTaskBody(&task, idGen, diff, makeDestination)
+		if err != nil {
+			return ret, err
+		}
+		id, err := successTasksGenerator.AddFor(diff.Path)
+		if err != nil {
+			return ret, fmt.Errorf("generate tasks after %+v: %w", diff, err)
+		}
+		task.ToSignalAfter = []parade.TaskID{id}
+
 		ret = append(ret, task)
 	}
 
