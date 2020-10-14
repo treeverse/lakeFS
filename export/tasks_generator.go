@@ -95,28 +95,28 @@ func NewDirMatchCache(pred func(path string) bool) *DirMatchCache {
 }
 
 // taskIdGenerator generates IDs for export tasks based on its exportID.
-type taskIdGenerator string
+type taskIDGenerator string
 
-func (exportID taskIdGenerator) makeSuccessTaskID(path string) parade.TaskID {
+func (exportID taskIDGenerator) makeSuccessTaskID(path string) parade.TaskID {
 	return parade.TaskID(fmt.Sprintf("%s:make-success:%s", exportID, path))
 }
 
-func (exportID taskIdGenerator) finishedTaskID() parade.TaskID {
+func (exportID taskIDGenerator) finishedTaskID() parade.TaskID {
 	return parade.TaskID(fmt.Sprintf("%s:finished", exportID))
 }
 
-func (exportID taskIdGenerator) copyTaskID(physicalAddress string) parade.TaskID {
+func (exportID taskIDGenerator) copyTaskID(physicalAddress string) parade.TaskID {
 	return parade.TaskID(fmt.Sprintf("%s:copy:%s", exportID, physicalAddress))
 }
 
-func (exportID taskIdGenerator) deleteTaskID(physicalAddress string) parade.TaskID {
+func (exportID taskIDGenerator) deleteTaskID(physicalAddress string) parade.TaskID {
 	return parade.TaskID(fmt.Sprintf("%s:delete:%s", exportID, physicalAddress))
 }
 
 // SuccessTasksTreeGenerator accumulates success tasks during task generator.  It is exported
 // (only) for testing.
 type SuccessTasksTreeGenerator struct {
-	idGen                   taskIdGenerator
+	idGen                   taskIDGenerator
 	successDirectoriesCache *DirMatchCache
 	makeDestination         func(string) string
 	finishedTask            parade.TaskData
@@ -124,7 +124,7 @@ type SuccessTasksTreeGenerator struct {
 }
 
 func NewSuccessTasksTreeGenerator(exportID string, generateSuccessFor func(path string) bool, makeDestination func(string) string) SuccessTasksTreeGenerator {
-	idGen := taskIdGenerator(exportID)
+	idGen := taskIDGenerator(exportID)
 	zero, one := 0, 1
 	return SuccessTasksTreeGenerator{
 		idGen:                   idGen,
@@ -195,7 +195,7 @@ func (s *SuccessTasksTreeGenerator) GenerateTasksTo(tasks []parade.TaskData) []p
 
 // makeDiffTaskBody fills TaskData *out with id, action and a body to make it a task to
 // perform diff.
-func makeDiffTaskBody(out *parade.TaskData, idGen taskIdGenerator, diff catalog.Difference, makeDestination func(string) string) error {
+func makeDiffTaskBody(out *parade.TaskData, idGen taskIDGenerator, diff catalog.Difference, makeDestination func(string) string) error {
 	var (
 		data interface{}
 		err  error
@@ -240,7 +240,7 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		return fmt.Sprintf("%s/%s", dstPrefix, path)
 	}
 
-	idGen := taskIdGenerator(exportID)
+	idGen := taskIDGenerator(exportID)
 
 	successTasksGenerator := NewSuccessTasksTreeGenerator(
 		exportID, generateSuccessFor, makeDestination)
