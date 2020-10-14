@@ -30,7 +30,7 @@ func newMockParade(tasks []ownTaskResult) mockParade {
 }
 
 func getKTasks(k int, action string) []parade.OwnedTaskData {
-	var tasks []parade.OwnedTaskData
+	tasks := make([]parade.OwnedTaskData, 0, k)
 	for i := 0; i < k; i++ {
 		task := parade.OwnedTaskData{
 			ID:     parade.TaskID(i),
