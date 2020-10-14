@@ -5,32 +5,39 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"runtime/trace"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/cmdutils"
+
+	"github.com/treeverse/lakefs/uri"
 
 	"github.com/google/uuid"
+
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/jamiealquiza/tachymeter"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog"
 )
 
-// repoCmd represents the repo command
-var repoCmd = &cobra.Command{
-	Use:   "repo",
-	Short: "Load test database with repository calls",
+// entryCmd represents the repo command
+var entryCmd = &cobra.Command{
+	Use:   "entry <ref uri>",
+	Short: "Load test database with create entry calls",
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
+	),
 	Run: func(cmd *cobra.Command, args []string) {
+		u := uri.Must(uri.Parse(args[0]))
 		connectionString, _ := cmd.Flags().GetString("db")
 		requests, _ := cmd.Flags().GetInt("requests")
-		repository, _ := cmd.Flags().GetString("repository")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
 		sampleRatio, _ := cmd.Flags().GetFloat64("sample")
-		runTrace, _ := cmd.Flags().GetBool("trace")
 
 		if concurrency < 1 {
 			fmt.Printf("Concurrency must be above 1! (%d)\n", concurrency)
@@ -47,59 +54,61 @@ var repoCmd = &cobra.Command{
 		database := connectToDB(connectionString)
 		conf := config.NewConfig()
 		c := catalog.NewCataloger(database, catalog.WithParams(conf.GetCatalogerCatalogParams()))
-		if repository == "" {
-			repository = "repo-" + strings.ToLower(uuid.New().String())
+
+		// validate repository and branch
+		_, err := c.GetRepository(ctx, u.Repository)
+		if err != nil {
+			fmt.Printf("Get repository (%s) failed: %s", u.Repository, err)
+			os.Exit(1)
 		}
-		fmt.Printf("Repository: %s\n", repository)
+		_, err = c.GetBranchReference(ctx, u.Repository, u.Ref)
+		if err != nil {
+			fmt.Printf("Get branch (%s) failed: %s", u.Ref, err)
+			os.Exit(1)
+		}
+
 		fmt.Printf("Concurrency: %d\n", concurrency)
 		fmt.Printf("Requests: %d\n", requests)
-
-		if runTrace {
-			f, err := os.Create("trace.out")
-			if err != nil {
-				fmt.Printf("failed to create trace output file: %s\n", err)
-				os.Exit(1)
-			}
-			defer func() {
-				_ = f.Close()
-			}()
-
-			if err := trace.Start(f); err != nil {
-				fmt.Printf("failed to start trace: %s\n", err)
-				os.Exit(1)
-			}
-		}
 
 		bar := progressbar.New(requests * concurrency)
 		t := tachymeter.New(&tachymeter.Config{Size: int(float64(requests) * sampleRatio)})
 		var wg sync.WaitGroup
-		wg.Add(concurrency) // workers and one producer
+		wg.Add(concurrency)
+
 		var errCount int64
 		startingLine := make(chan bool)
 		for i := 0; i < concurrency; i++ {
 			go func() {
 				defer wg.Done()
 				<-startingLine
+				createEntryParams := catalog.CreateEntryParams{}
 				for reqID := 0; reqID < requests; reqID++ {
 					startTime := time.Now()
-					_, err := c.GetRepository(ctx, repository)
+					gen := strings.ReplaceAll(uuid.New().String(), "-", "")
+					err := c.CreateEntry(ctx, u.Repository, u.Ref,
+						catalog.Entry{
+							Path:            gen,
+							PhysicalAddress: gen,
+							CreationDate:    time.Now(),
+							Size:            42,
+							Checksum:        gen,
+						},
+						createEntryParams)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
 					}
 					t.AddTime(time.Since(startTime))
-					_ = bar.Add64(1)
+					_ = bar.Add(1)
 				}
 			}()
 		}
 
+		// start the work
 		wallTimeStart := time.Now()
 		close(startingLine)
 
-		// generate repository calls and wait for workers to complete
+		// wait for workers to complete
 		wg.Wait()
-		if runTrace {
-			trace.Stop()
-		}
 		_ = bar.Finish()
 		t.SetWallTime(time.Since(wallTimeStart))
 		fmt.Printf("\n%s\n", t.Calc())
@@ -111,6 +120,5 @@ var repoCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	dbCmd.AddCommand(repoCmd)
-	repoCmd.Flags().BoolP("trace", "t", false, "Run trace")
+	dbCmd.AddCommand(entryCmd)
 }
