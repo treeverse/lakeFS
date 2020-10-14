@@ -133,6 +133,32 @@ func intAddr(i int) *int {
 	return &i
 }
 
+func scanIDs(t *testing.T, prefix string) []parade.TaskID {
+	t.Helper()
+	rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
+	if err != nil {
+		t.Fatalf("[I] select remaining IDs for prefix %s: %s", prefix, err)
+	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			t.Fatalf("[I] remaining ids iterator close: %s", err)
+		}
+	}()
+	gotIDs := make([]parade.TaskID, 0)
+	for rows.Next() {
+		var id parade.TaskID
+		if err = rows.Scan(&id); err != nil {
+			t.Errorf("[I] scan ID value: %s", err)
+		}
+		gotIDs = append(gotIDs, id)
+	}
+	if err = rows.Err(); err != nil {
+		t.Fatalf("[I] scan rows: %s", err)
+	}
+	return gotIDs
+}
+
 func TestTaskDataIterator_Empty(t *testing.T) {
 	it := parade.TaskDataIterator{Data: []parade.TaskData{}}
 	if it.Err() != nil {
@@ -159,9 +185,9 @@ func TestTaskDataIterator_Values(t *testing.T) {
 		{ID: "111", Action: "frob", Body: stringAddr("1"), Status: stringAddr("state"),
 			StatusCode: "pending",
 			NumTries:   11, MaxTries: intAddr(17),
-			TotalDependencies: intAddr(9),
-			ToSignalAfter:     []parade.TaskID{parade.TaskID("foo"), parade.TaskID("bar")},
-			ActorID:           parade.ActorID("actor"), ActionDeadline: &now,
+			NumSignals: 7, TotalDependencies: intAddr(9),
+			ToSignalAfter: []parade.TaskID{parade.TaskID("foo"), parade.TaskID("bar")},
+			ActorID:       parade.ActorID("actor"), ActionDeadline: &now,
 			PerformanceToken:   performanceTokenAddr(parade.PerformanceToken{}),
 			NotifyChannelAfter: stringAddr("done"),
 		},
@@ -187,9 +213,9 @@ func TestTaskDataIterator_Values(t *testing.T) {
 			[]interface{}{
 				task.ID, task.Action, task.Body, task.Status, task.StatusCode,
 				task.NumTries, task.MaxTries,
-				task.TotalDependencies, toSignalAfter,
+				task.NumSignals, task.TotalDependencies,
 				task.ActorID, task.ActionDeadline,
-				task.PerformanceToken, task.NotifyChannelAfter,
+				task.PerformanceToken, toSignalAfter, task.NotifyChannelAfter,
 			}, values); diffs != nil {
 			t.Errorf("got other values at index %d than expected: %s", index, diffs)
 		}
@@ -205,6 +231,38 @@ func TestTaskDataIterator_Values(t *testing.T) {
 	}
 	if it.Next() {
 		t.Errorf("expected iterator %+v to end-and-error after advanced past tasks done", it)
+	}
+}
+
+func TestTaskStatusCodeValueScan(t *testing.T) {
+	cases := []struct {
+		name string
+		in   interface{}
+		err  error
+		out  parade.TaskStatusCodeValue
+	}{
+		{"emptyString", "", nil, parade.TaskInvalid},
+		{"int", -17, parade.ErrBadTypeConversion, ""},
+		{"nil", nil, parade.ErrBadTypeConversion, ""},
+		{"pending", "pending", nil, parade.TaskPending},
+		{"PENdiNG", "PENdiNG", nil, parade.TaskPending},
+		{"in-progress", "in-progress", nil, parade.TaskInProgress},
+		{"IN-ProgRESS", "IN-ProgRESS", nil, parade.TaskInProgress},
+		{"completed", "completed", nil, parade.TaskCompleted},
+		{"COMPLETED", "COMPLETED", nil, parade.TaskCompleted},
+		{"invalid", "huh?", nil, parade.TaskInvalid},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var dst parade.TaskStatusCodeValue
+			err := dst.Scan(c.in)
+			if !errors.Is(err, c.err) {
+				t.Errorf("got err %v, expected %v", err, c.err)
+			}
+			if err == nil && dst != c.out {
+				t.Errorf("expected %s, got %s", c.out, dst)
+			}
+		})
 	}
 }
 
@@ -577,7 +635,7 @@ func TestDeleteTasks(t *testing.T) {
 	tasks := []parade.TaskData{
 		{ID: parade.TaskID("a0"), Action: "root", ToSignalAfter: []parade.TaskID{"a1", "a3"}},
 		{ID: parade.TaskID("a1"), Action: "dep", ToSignalAfter: []parade.TaskID{"a2"}, TotalDependencies: intAddr(1)},
-		{ID: parade.TaskID("a2"), Action: "dep", ToSignalAfter: []parade.TaskID{"a3"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("a2"), Action: "dep", ToSignalAfter: []parade.TaskID{"a3"}, NumSignals: 1, TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("a3"), Action: "leaf", TotalDependencies: intAddr(2)},
 
 		{ID: parade.TaskID("b0"), Action: "root", ToSignalAfter: []parade.TaskID{"b2"}},
@@ -591,6 +649,12 @@ func TestDeleteTasks(t *testing.T) {
 		{ID: parade.TaskID("c4"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("c5"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("c6"), Action: "leaf", TotalDependencies: intAddr(1)},
+
+		{ID: parade.TaskID("d0"), Action: "done", StatusCode: parade.TaskCompleted, ToSignalAfter: []parade.TaskID{"d1"}},
+		{ID: parade.TaskID("d1"), Action: "new", NumSignals: 1, TotalDependencies: intAddr(2)},
+
+		{ID: parade.TaskID("e0"), Action: "done", ToSignalAfter: []parade.TaskID{"e1"}},
+		{ID: parade.TaskID("e1"), Action: "new", NumSignals: 1, TotalDependencies: intAddr(2)},
 	}
 
 	testutil.MustDo(t, "InsertTasks", pp.InsertTasks(ctx, tasks))
@@ -606,6 +670,8 @@ func TestDeleteTasks(t *testing.T) {
 		{title: "chain with extra link", casePrefix: "a", toDelete: []parade.TaskID{"a0"}},
 		{title: "delete only one dep", casePrefix: "b", toDelete: []parade.TaskID{"b0"}, expectedRemaining: []parade.TaskID{"b1", "b2"}},
 		{title: "treelike", casePrefix: "c", toDelete: []parade.TaskID{"c0"}},
+		{title: "delete done", casePrefix: "d", toDelete: []parade.TaskID{"d0"}, expectedRemaining: []parade.TaskID{"d1"}},
+		{title: "delete in-progress", casePrefix: "e", toDelete: []parade.TaskID{"e0"}},
 	}
 	prefix := t.Name()
 	for _, c := range cases {
@@ -615,24 +681,7 @@ func TestDeleteTasks(t *testing.T) {
 				t.Errorf("DeleteTasks failed: %s", err)
 			}
 
-			rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
-			if err != nil {
-				t.Errorf("[I] select remaining IDs for prefix %s: %s", casePrefix, err)
-			}
-
-			defer func() {
-				if err := rows.Close(); err != nil {
-					t.Fatalf("[I] remaining ids iterator close: %s", err)
-				}
-			}()
-			gotRemaining := make([]parade.TaskID, 0, len(c.expectedRemaining))
-			for rows.Next() {
-				var id parade.TaskID
-				if err = rows.Scan(&id); err != nil {
-					t.Errorf("[I] scan ID value: %s", err)
-				}
-				gotRemaining = append(gotRemaining, id)
-			}
+			gotRemaining := scanIDs(t, casePrefix)
 			sort.Sort(taskIDSlice(gotRemaining))
 			expectedRemaining := c.expectedRemaining
 			if expectedRemaining == nil {

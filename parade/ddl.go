@@ -78,22 +78,50 @@ const (
 	TaskInvalid TaskStatusCodeValue = "[invalid]"
 )
 
+var ErrBadTypeConversion = errors.New("bad type")
+
+// nolint: stylecheck
+func (dst *TaskStatusCodeValue) Scan(src interface{}) error {
+	var sc TaskStatusCodeValue
+	switch s := src.(type) {
+	case string:
+		sc = TaskStatusCodeValue(strings.ToLower(s))
+	case []byte:
+		sc = TaskStatusCodeValue(strings.ToLower(string(s)))
+	default:
+		return fmt.Errorf("cannot convert %T to TaskStatusCodeValue: %w", src, ErrBadTypeConversion)
+	}
+
+	if !(sc == TaskPending || sc == TaskInProgress || sc == TaskAborted || sc == TaskCompleted) {
+		// not a failure, "just" be a newer enum value than known
+		*dst = TaskInvalid
+		return nil
+	}
+	*dst = sc
+	return nil
+}
+
+func (src TaskStatusCodeValue) Value() (driver.Value, error) {
+	return string(src), nil
+}
+
 // TaskData is a row in table "tasks".  It describes a task to perform.
 type TaskData struct {
 	ID     TaskID `db:"task_id"`
 	Action string `db:"action"`
 	// Body is JSON-formatted
-	Body               *string           `db:"body"`
-	Status             *string           `db:"status"`
-	StatusCode         string            `db:"status_code"`
-	NumTries           int               `db:"num_tries"`
-	MaxTries           *int              `db:"max_tries"`
-	TotalDependencies  *int              `db:"total_dependencies"`
-	ActorID            ActorID           `db:"actor_id"`
-	ActionDeadline     *time.Time        `db:"action_deadline"`
-	PerformanceToken   *PerformanceToken `db:"performance_token"`
-	ToSignalAfter      []TaskID          `db:"to_signal_after"`
-	NotifyChannelAfter *string           `db:"notify_channel_after"`
+	Body               *string             `db:"body"`
+	Status             *string             `db:"status"`
+	StatusCode         TaskStatusCodeValue `db:"status_code"`
+	NumTries           int                 `db:"num_tries"`
+	MaxTries           *int                `db:"max_tries"`
+	NumSignals         int                 `db:"num_signals"` // Internal; set (only) in tests
+	TotalDependencies  *int                `db:"total_dependencies"`
+	ActorID            ActorID             `db:"actor_id"`
+	ActionDeadline     *time.Time          `db:"action_deadline"`
+	PerformanceToken   *PerformanceToken   `db:"performance_token"`
+	ToSignalAfter      []TaskID            `db:"to_signal_after"`
+	NotifyChannelAfter *string             `db:"notify_channel_after"`
 }
 
 // TaskDataIterator implements the pgx.CopyFromSource interface and allows using CopyFrom to insert
@@ -140,19 +168,21 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 		value.StatusCode,
 		value.NumTries,
 		value.MaxTries,
+		value.NumSignals,
 		value.TotalDependencies,
-		toSignalAfter,
 		value.ActorID,
 		value.ActionDeadline,
 		value.PerformanceToken,
+		toSignalAfter,
 		value.NotifyChannelAfter,
 	}, nil
 }
 
 var TaskDataColumnNames = []string{
 	"id", "action", "body", "status", "status_code", "num_tries", "max_tries",
-	"total_dependencies", "to_signal_after", "actor_id", "action_deadline", "performance_token",
-	"notify_channel_after",
+	"num_signals", "total_dependencies",
+	"actor_id", "action_deadline", "performance_token",
+	"to_signal_after", "notify_channel_after",
 }
 
 var tasksTable = pgx.Identifier{"tasks"}

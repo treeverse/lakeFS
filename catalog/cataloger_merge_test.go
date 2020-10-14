@@ -139,8 +139,8 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
 	}
 	expectedDifferences := Differences{
-		Difference{Type: DifferenceTypeConflict, Path: "/file2"},
-		Difference{Type: DifferenceTypeConflict, Path: "/file5"},
+		Difference{Type: DifferenceTypeConflict, Entry: Entry{Path: "/file2"}},
+		Difference{Type: DifferenceTypeConflict, Entry: Entry{Path: "/file5"}},
 	}
 	if res.Summary[DifferenceTypeConflict] != len(expectedDifferences) {
 		t.Fatalf("Merge summary conflicts=%d, expected %d", res.Summary[DifferenceTypeConflict], len(expectedDifferences))
