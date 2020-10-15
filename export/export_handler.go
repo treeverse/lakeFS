@@ -6,18 +6,11 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
+	"net/url"
 	"strings"
 )
 
 const actorName parade.ActorID = "EXPORT"
-const (
-	actionCopy   = "export-copy"
-	actionDelete = "export-delete"
-	actionTouch  = "export-touch"
-	actionNext   = "next-export"
-	actionStart  = "start-export"
-	actionDone   = "done-export"
-)
 
 type Handler struct {
 	adapter block.Adapter
@@ -36,62 +29,82 @@ type TaskBody struct {
 	SourceID             string
 }
 
-func (h *Handler) Handle(action string, body *string) parade.HandlerResult {
-	var params TaskBody
-	lg := logging.Default().WithFields(logging.Fields{
-		"actor":  actorName,
-		"action": action,
-	})
-	err := json.Unmarshal([]byte(*body), &params)
+func PathToPointer(path string) (block.ObjectPointer, error) {
+	u, err := url.Parse(path) //TODO: add verify path on create task
 	if err != nil {
-		lg.WithError(err).Error("unmarshal failed")
-		return parade.HandlerResult{
-			Status:     err.Error(),
-			StatusCode: parade.TaskInvalid,
-		}
+		return block.ObjectPointer{}, err
 	}
-	destinationPointer := block.ObjectPointer{
-		StorageNamespace: params.DestinationNamespace,
-		Identifier:       params.DestinationID,
+	return block.ObjectPointer{
+		StorageNamespace: fmt.Sprintf("%s://%s", u.Scheme, u.Host),
+		Identifier:       u.Path,
+	}, err
+}
+func (h *Handler) copy(body *string) error {
+	var copyData CopyData
+	err := json.Unmarshal([]byte(*body), &copyData)
+	if err != nil {
+		return err
 	}
-	sourcePointer := block.ObjectPointer{
-		StorageNamespace: params.SourceNamespace,
-		Identifier:       params.SourceID,
+	from, err := PathToPointer(copyData.From)
+	if err != nil {
+		return err
+	}
+	to, err := PathToPointer(copyData.To)
+	if err != nil {
+		return err
+	}
+	return h.adapter.Copy(from, to) // todo(guys): add wait for copy in handler
+}
+
+func (h *Handler) remove(body *string) error {
+	var deleteData DeleteData
+	err := json.Unmarshal([]byte(*body), &deleteData)
+	if err != nil {
+		return err
+	}
+	path, err := PathToPointer(deleteData.File)
+	if err != nil {
+		return err
+	}
+	return h.adapter.Remove(path)
+}
+
+func (h *Handler) touch(body *string) error {
+	var successData SuccessData
+	err := json.Unmarshal([]byte(*body), &successData)
+	if err != nil {
+		return err
+	}
+	path, err := PathToPointer(successData.File)
+	if err != nil {
+		return err
+	}
+	return h.adapter.Put(path, 0, strings.NewReader(""), block.PutOpts{})
+}
+func (h *Handler) Handle(action string, body *string) parade.HandlerResult {
+
+	var err error
+	switch action {
+	case CopyAction:
+		err = h.copy(body)
+	case DeleteAction:
+		err = h.remove(body)
+	case TouchAction:
+		err = h.touch(body)
+	case DoneAction:
+		//todo(guys): handle done action
+	default:
+		err = fmt.Errorf("unknown action")
 	}
 
-	switch action {
-	case actionCopy:
-		err = h.adapter.Copy(sourcePointer, destinationPointer) // todo(guys): add wait for copy in handler
-		if err != nil {
-			lg.WithError(err).Error("copy failed")
-			return parade.HandlerResult{
-				Status:     err.Error(),
-				StatusCode: parade.TaskInvalid,
-			}
-		}
-	case actionDelete:
-		err = h.adapter.Remove(destinationPointer)
-		if err != nil {
-			lg.WithError(err).Error("delete failed")
-			return parade.HandlerResult{
-				Status:     err.Error(),
-				StatusCode: parade.TaskInvalid,
-			}
-		}
-	case actionTouch:
-		err = h.adapter.Put(destinationPointer, 0, strings.NewReader(""), block.PutOpts{})
-		if err != nil {
-			lg.WithError(err).Error("touch failed")
-			return parade.HandlerResult{
-				Status:     err.Error(),
-				StatusCode: parade.TaskInvalid,
-			}
-		}
-	//todo(guys): add cases for other actions or remove them from Actions function
-	default:
-		lg.Error("unknown action")
+	if err != nil {
+		logging.Default().WithFields(logging.Fields{
+			"actor":  actorName,
+			"action": action,
+		}).WithError(err).Error("touch failed")
+
 		return parade.HandlerResult{
-			Status:     "UNKNOWN ACTION",
+			Status:     err.Error(),
 			StatusCode: parade.TaskInvalid,
 		}
 	}
@@ -102,7 +115,7 @@ func (h *Handler) Handle(action string, body *string) parade.HandlerResult {
 }
 
 func (h *Handler) Actions() []string {
-	return []string{actionCopy, actionDelete, actionNext, actionStart, actionDone}
+	return []string{CopyAction, DeleteAction, TouchAction, DoneAction}
 }
 
 func (h *Handler) Actor() parade.ActorID {
