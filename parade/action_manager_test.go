@@ -1,4 +1,4 @@
-package action
+package parade_test
 
 import (
 	"github.com/treeverse/lakefs/parade"
@@ -67,9 +67,9 @@ func newMockHandler() mockHandler {
 	}
 }
 
-func (m mockHandler) Handle(_ string, _ *string) HandlerResult {
+func (m mockHandler) Handle(_ string, _ *string) parade.HandlerResult {
 	atomic.AddInt32(m.handleCalled, 1)
-	return HandlerResult{}
+	return parade.HandlerResult{}
 }
 
 func (m mockHandler) Actions() []string {
@@ -84,7 +84,7 @@ func durationPointer(d time.Duration) *time.Duration {
 	return &d
 }
 
-func TestManager(t *testing.T) {
+func TestActionManager(t *testing.T) {
 	tests := []struct {
 		name                    string
 		mp                      mockParade
@@ -92,7 +92,7 @@ func TestManager(t *testing.T) {
 		sleepTime               time.Duration
 		expectedReturnTaskCalls int32
 		expectedHandleCalled    int32
-		properties              *Properties
+		properties              *parade.ManagerProperties
 	}{
 		{
 			name:                    "no tasks",
@@ -155,15 +155,15 @@ func TestManager(t *testing.T) {
 			sleepTime:               50 * time.Millisecond,
 			expectedReturnTaskCalls: int32(50),
 			expectedHandleCalled:    int32(50),
-			properties: &Properties{
-				waitTime: durationPointer(time.Millisecond * 100),
+			properties: &parade.ManagerProperties{
+				WaitTime: durationPointer(time.Millisecond * 100),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := NewAction(tt.mh, tt.mp, tt.properties)
+			a := parade.NewActionManager(tt.mh, tt.mp, tt.properties)
 			time.Sleep(tt.sleepTime)
 			a.Close()
 			returnCalled := atomic.LoadInt32(tt.mp.returnCalled)

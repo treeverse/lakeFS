@@ -22,9 +22,9 @@ func TestExportHandler_Handle(t *testing.T) {
 			name:   "copy on mem",
 			Action: actionCopy,
 			Body: TaskBody{
-				DestinationNamespace: "local://external-bucket",
+				DestinationNamespace: "mem://external-bucket",
 				DestinationID:        "one/two",
-				SourceNamespace:      "local://lakefs-buck",
+				SourceNamespace:      "mem://lakefs-buck",
 				SourceID:             "one/two",
 			},
 			blockstoreType: mem.BlockstoreType,
@@ -33,7 +33,7 @@ func TestExportHandler_Handle(t *testing.T) {
 			name:   "delete on mem",
 			Action: actionDelete,
 			Body: TaskBody{
-				DestinationNamespace: "local://external-bucket",
+				DestinationNamespace: "mem://external-bucket",
 				DestinationID:        "one/two",
 			},
 			blockstoreType: mem.BlockstoreType,
@@ -42,7 +42,7 @@ func TestExportHandler_Handle(t *testing.T) {
 			name:   "touch on mem",
 			Action: actionTouch,
 			Body: TaskBody{
-				DestinationNamespace: "local://external-bucket",
+				DestinationNamespace: "mem://external-bucket",
 				DestinationID:        "one/two",
 			},
 			blockstoreType: mem.BlockstoreType,
