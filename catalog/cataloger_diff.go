@@ -51,6 +51,10 @@ type diffResultsBatchWriter struct {
 
 var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 
+// Diff return list of differences between leftBranch and rightBranch.
+//   The second argument will be true of there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
+//   limit - is the maximum number of differences we will return, limited by DiffMaxLimit (which will be used in case limit less than 0)
+//   after - lookup entry's path bigger than this value.
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
@@ -92,6 +96,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 	return differences, hasMore, nil
 }
 
+// doDiff internal implementation of the actual diff. limit <0 will scan the complete branch
 func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, leftID, rightID int64, limit int, after string) error {
 	relation, err := getBranchesRelationType(tx, leftID, rightID)
 	if err != nil {

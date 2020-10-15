@@ -45,23 +45,28 @@ func (s *DBLineageScanner) Next() bool {
 			selectedEntry = ent
 		}
 	}
-	if selectedEntry == nil {
+	s.value = selectedEntry
+
+	// mark scanner ended if no new entry was selected
+	if s.value == nil {
 		s.ended = true
 		return false
 	}
 
-	// advance next row for all branches that have this Path
+	// move scanners to next item, in case they point to the same path as current element
 	for _, scanner := range s.scanners {
 		ent := scanner.Value()
-		if ent != nil && ent.Path == selectedEntry.Path {
-			_ = scanner.Next()
-			if err := scanner.Err(); err != nil {
-				s.err = fmt.Errorf("getting entry on branch: %w", err)
-				return false
-			}
+		if ent == nil || ent.Path != s.value.Path {
+			continue
+		}
+		if scanner.Next() {
+			continue
+		}
+		if err := scanner.Err(); err != nil {
+			s.err = fmt.Errorf("getting entry on branch: %w", err)
+			return false
 		}
 	}
-	s.value = selectedEntry
 	return true
 }
 

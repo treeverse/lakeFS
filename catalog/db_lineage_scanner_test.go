@@ -24,7 +24,7 @@ func TestDBLineageScanner(t *testing.T) {
 	testSetupDBScannerData(t, ctx, c, repository, numberOfObjects, baseBranchName, objSkip)
 
 	// bufferSizes - keep buffer size samples less and more then numberOfObjects
-	bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
+	bufferSizes := []int{1, 2, 3, 8, 19, 64, 512}
 	for _, bufSize := range bufferSizes {
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 			// test lineage scanner

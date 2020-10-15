@@ -42,6 +42,10 @@ func TestDBBranchScanner(t *testing.T) {
 			if scanner.Err() != nil {
 				t.Fatalf("first entry should not get error, got=%s", scanner.Err())
 			}
+			v := scanner.Value()
+			if v != nil {
+				t.Fatalf("Scanner Value=%+v, expected nil", v)
+			}
 			return nil, nil
 		})
 	})
@@ -96,7 +100,7 @@ func TestDBBranchScanner(t *testing.T) {
 	})
 
 	t.Run("buffer_sizes", func(t *testing.T) {
-		bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
+		bufferSizes := []int{1, 2, 3, 8, 19, 64, 512}
 		for _, bufSize := range bufferSizes {
 			for branchNo, objSkipNo := range objSkip {
 				branchName := "b" + strconv.Itoa(branchNo)
