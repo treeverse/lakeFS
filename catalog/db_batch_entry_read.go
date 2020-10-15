@@ -137,8 +137,6 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 		if err != nil {
 			return nil, fmt.Errorf("lineage select: %w", err)
 		}
-		s := sq.DebugSqlizer(readExpr)
-		_ = s
 		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
