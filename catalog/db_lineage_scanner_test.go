@@ -30,7 +30,8 @@ func TestDBLineageScanner(t *testing.T) {
 			// test lineage scanner
 			for branchNo := range objSkip {
 				branchName := "b" + strconv.Itoa(branchNo)
-				branchID := int64(branchNo + 1)
+				branchID, err := getBranchID(tx, repository, branchName, LockTypeNone)
+				testutil.MustDo(t, "get branch id", err)
 				scanner := NewDBLineageScanner(tx, branchID, UncommittedID, &DBScannerOptions{BufferSize: bufSize})
 				for i := 0; scanner.Next(); i++ {
 					o := scanner.Value()
@@ -41,12 +42,12 @@ func TestDBLineageScanner(t *testing.T) {
 					var expectedBranch int64
 					for j := branchNo; j >= 0; j-- {
 						if i%objSkip[j] == 0 {
-							expectedBranch = int64(j + 1)
+							expectedBranch = int64(j + 2)
 							break
 						}
 					}
 					if o.BranchID != expectedBranch {
-						t.Fatalf("fetch branchID=%d, expected=%d (branch=%s, number=%d)",
+						t.Fatalf("Read entry with branchID=%d, expected=%d (branch=%s, number=%d)",
 							o.BranchID, expectedBranch, branchName, i)
 					}
 				}
@@ -60,81 +61,94 @@ func TestDBLineageScanner(t *testing.T) {
 		})
 	}
 
+	// get branch IDs once
+	var b1BranchID, b2BranchID int64
+	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
+		var err error
+		b1BranchID, err = getBranchID(tx, repository, "b1", LockTypeNone)
+		testutil.MustDo(t, "get branch id", err)
+		b2BranchID, err = getBranchID(tx, repository, "b2", LockTypeNone)
+		testutil.MustDo(t, "get branch id", err)
+		return nil, nil
+	})
+
 	// test reading committed and uncommitted data
 	const bufSize = 8
 	scannerOpts := &DBScannerOptions{BufferSize: bufSize, After: "Obj-0003"}
 	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "Obj-0004", nil, "sd1")
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB1U := NewDBLineageScanner(tx, 2, UncommittedID, scannerOpts)
-		lineageScannerB1C := NewDBLineageScanner(tx, 2, CommittedID, scannerOpts)
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U ", 2, MinCommitUncommittedIndicator, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C ", 2, 4, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 2, 4, MaxCommitID)
+		lineageScannerB1U := NewDBLineageScanner(tx, b1BranchID, UncommittedID, scannerOpts)
+		lineageScannerB1C := NewDBLineageScanner(tx, b1BranchID, CommittedID, scannerOpts)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+
+		const expectedMinCommit = 5
+		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U", b1BranchID, MinCommitUncommittedIndicator, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b1BranchID, expectedMinCommit, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C", b1BranchID, expectedMinCommit, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b1BranchID, expectedMinCommit, MaxCommitID)
 		return nil, nil
 	})
 
 	_, err := c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 	testutil.MustDo(t, "commit to b1", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB1U := NewDBLineageScanner(tx, 2, UncommittedID, scannerOpts)
-		lineageScannerB1C := NewDBLineageScanner(tx, 2, CommittedID, scannerOpts)
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 2, 4, MaxCommitID)
+		lineageScannerB1U := NewDBLineageScanner(tx, b1BranchID, UncommittedID, scannerOpts)
+		lineageScannerB1C := NewDBLineageScanner(tx, b1BranchID, CommittedID, scannerOpts)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U", b1BranchID, 14, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C", b1BranchID, 14, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b1BranchID, 5, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b1BranchID, 5, MaxCommitID)
 		return nil, nil
 	})
 
 	_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b1 U", b1BranchID, 14, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b1 U", b1BranchID, 14, MaxCommitID)
 		return nil, nil
 	})
 
 	testutil.MustDo(t, "delete committed file on b1",
 		c.DeleteEntry(ctx, repository, "b1", "Obj-0004"))
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB1U := NewDBLineageScanner(tx, 2, UncommittedID, scannerOpts)
-		lineageScannerB1C := NewDBLineageScanner(tx, 2, CommittedID, scannerOpts)
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U ", 2, MinCommitUncommittedIndicator, 0)
-		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 2, 13, MaxCommitID)
+		lineageScannerB1U := NewDBLineageScanner(tx, b1BranchID, UncommittedID, scannerOpts)
+		lineageScannerB1C := NewDBLineageScanner(tx, b1BranchID, CommittedID, scannerOpts)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U", b1BranchID, MinCommitUncommittedIndicator, 0)
+		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C", b1BranchID, 14, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b1BranchID, 14, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b1BranchID, 14, MaxCommitID)
 		return nil, nil
 	})
 
 	_, err = c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 	testutil.MustDo(t, "commit to b1", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB1U := NewDBLineageScanner(tx, 2, UncommittedID, scannerOpts)
-		lineageScannerB1C := NewDBLineageScanner(tx, 2, CommittedID, scannerOpts)
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U ", 2, 13, 13)
-		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C ", 2, 13, 13)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 2, 13, MaxCommitID)
+		lineageScannerB1U := NewDBLineageScanner(tx, b1BranchID, UncommittedID, scannerOpts)
+		lineageScannerB1C := NewDBLineageScanner(tx, b1BranchID, CommittedID, scannerOpts)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB1U, "read 0004 lineage b1 U", b1BranchID, 14, 14)
+		testDBScannerNext(t, lineageScannerB1C, "read 0004 lineage b1 C", b1BranchID, 14, 14)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b1BranchID, 14, MaxCommitID)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b1BranchID, 14, MaxCommitID)
 		return nil, nil
 	})
 
 	_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 2, 13, 13)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 2, 13, 13)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b1BranchID, 14, 14)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b1BranchID, 14, 14)
 		return nil, nil
 	})
 
@@ -146,20 +160,20 @@ func TestDBLineageScanner(t *testing.T) {
 	testutil.MustDo(t, "delete committed file on b2",
 		c.DeleteEntry(ctx, repository, "b2", "Obj-0004"))
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 3, MinCommitUncommittedIndicator, 0)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 2, 17, MaxCommitID)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b2BranchID, MinCommitUncommittedIndicator, 0)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b1BranchID, 18, MaxCommitID)
 		return nil, nil
 	})
 
 	_, err = c.Commit(ctx, repository, "b2", "commit to b2", "tester", nil)
 	testutil.MustDo(t, "commit to b1", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB2U := NewDBLineageScanner(tx, 3, UncommittedID, scannerOpts)
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U ", 3, 19, 0)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 3, 19, 0)
+		lineageScannerB2U := NewDBLineageScanner(tx, b2BranchID, UncommittedID, scannerOpts)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB2U, "read 0004 lineage b2 U", b2BranchID, 20, 0)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b2BranchID, 20, 0)
 		return nil, nil
 	})
 
@@ -179,13 +193,13 @@ func TestDBLineageScanner(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageScannerB2C := NewDBLineageScanner(tx, 3, CommittedID, scannerOpts)
-		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C ", 3, 25, MaxCommitID)
+		lineageScannerB2C := NewDBLineageScanner(tx, b2BranchID, CommittedID, scannerOpts)
+		testDBScannerNext(t, lineageScannerB2C, "read 0004 lineage b2 C", b2BranchID, 26, MaxCommitID)
 		return nil, nil
 	})
 }
 
-func testDBScannerNext(t *testing.T, scanner *DBLineageScanner, msg string, expBranch, expMinCommit CommitID, expMaxCommit CommitID) {
+func testDBScannerNext(t *testing.T, scanner *DBLineageScanner, msg string, expBranch int64, expMinCommit CommitID, expMaxCommit CommitID) {
 	t.Helper()
 	if !scanner.Next() {
 		testutil.MustDo(t, msg, scanner.Err())
@@ -193,7 +207,7 @@ func testDBScannerNext(t *testing.T, scanner *DBLineageScanner, msg string, expB
 	}
 
 	o := scanner.Value()
-	if o.BranchID != int64(expBranch) {
+	if o.BranchID != expBranch {
 		t.Fatalf("%s branch=%d, expected=%d",
 			msg, o.BranchID, expBranch)
 	}
