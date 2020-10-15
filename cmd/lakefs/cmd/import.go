@@ -76,9 +76,9 @@ var importCmd = &cobra.Command{
 
 		repo, err := getRepository(ctx, cataloger, repoName, dryRun)
 		if err != nil {
-			fmt.Printf("Error %s\n", err)
+			fmt.Println("Error", err)
 			if errors.Is(err, catalog.ErrBranchNotFound) {
-				fmt.Println("Import will operate only on repositories created by newer version of lakeFS (>=v0.14.0)")
+				fmt.Println("This repository was created with an older version of lakeFS. To use the import feature, create a new repository")
 			}
 			os.Exit(1)
 		}
