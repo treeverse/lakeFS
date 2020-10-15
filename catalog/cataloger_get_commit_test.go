@@ -42,27 +42,27 @@ func TestCataloger_GetCommit(t *testing.T) {
 	}{
 		{
 			name:      "first",
-			reference: "~KJ8Wd1Rs96Z",
+			reference: "~KJ8Wd1Rs96a",
 			want: &CommitLog{
-				Reference:    "~KJ8Wd1Rs96Z",
+				Reference:    "~KJ8Wd1Rs96a",
 				Committer:    "tester0",
 				Message:      "Commit0",
 				CreationDate: time.Now(),
 				Metadata:     Metadata{"k0": "v0"},
-				Parents:      []string{"~KJ8Wd1Rs96Y"},
+				Parents:      []string{"~KJ8Wd1Rs96Z"},
 			},
 			wantErr: false,
 		},
 		{
 			name:      "second",
-			reference: "~KJ8Wd1Rs96a",
+			reference: "~KJ8Wd1Rs96b",
 			want: &CommitLog{
-				Reference:    "~KJ8Wd1Rs96a",
+				Reference:    "~KJ8Wd1Rs96b",
 				Committer:    "tester1",
 				Message:      "Commit1",
 				CreationDate: time.Now(),
 				Metadata:     Metadata{"k1": "v1"},
-				Parents:      []string{"~KJ8Wd1Rs96Z"},
+				Parents:      []string{"~KJ8Wd1Rs96a"},
 			},
 			wantErr: false,
 		},
@@ -143,8 +143,8 @@ func TestCataloger_GetMergeCommit(t *testing.T) {
 		t.Fatalf("Expected commit log to include two parents, got %d", len(commitLog.Parents))
 	}
 	expectedReferences := []string{
-		"~3WaKeK",      // branch b1, commit 4
-		"~KJ8Wd1Rs96Z", // branch master, commit 2
+		"~3WaKeL",      // branch b1, commit 5
+		"~KJ8Wd1Rs96a", // branch master, commit 3
 	}
 	sort.Strings(expectedReferences)
 	sort.Strings(commitLog.Parents)

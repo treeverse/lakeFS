@@ -12,10 +12,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const (
-	DefaultBranchName = "import-from-inventory"
-	CommitMsgTemplate = "Import from %s"
-)
+const CommitMsgTemplate = "Import from %s"
 
 type Importer struct {
 	repository         string

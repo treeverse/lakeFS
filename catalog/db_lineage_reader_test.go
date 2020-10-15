@@ -33,19 +33,19 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 				// test lineage reader
 				for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
 					branchName := "b" + strconv.Itoa(branchNo)
-					lineageReader, err := NewDBLineageReader(tx, int64(branchNo+1), UncommittedID, bufSize, -1, "")
+					lineageReader, err := NewDBLineageReader(tx, int64(branchNo+2), UncommittedID, bufSize, -1, "")
 					testutil.MustDo(t, "new lineage reader "+branchName, err)
 					for i := 0; i < numberOfObjects; i++ {
 						var expectedBranch int64
 						o, err := lineageReader.Next()
 						testutil.MustDo(t, "read from lineage "+branchName, err)
 						if o == nil {
-							t.Errorf("Got nil obj, branch=%s, number=%d\n", branchName, i)
+							t.Errorf("Got nil obj, branch=%s, number=%d", branchName, i)
 						}
 						// check item read from might branch
 						for j := branchNo; j >= 0; j-- {
 							if i%objSkip[j] == 0 {
-								expectedBranch = int64(j + 1)
+								expectedBranch = int64(j + 2)
 								break
 							}
 						}
@@ -64,18 +64,18 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 	t.Run("uncommitted", func(t *testing.T) {
 		testCatalogerCreateEntry(t, ctx, c, repository, "b1", "Obj-0004", nil, "sd1")
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB1U, err := NewDBLineageReader(tx, 2, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB1C, err := NewDBLineageReader(tx, 2, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, MinCommitUncommittedIndicator, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 2, 4, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 4, MaxCommitID)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 3, MinCommitUncommittedIndicator, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 5, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 3, 5, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 5, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -83,18 +83,18 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		_, err := c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 		testutil.MustDo(t, "commit to b1", err)
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB1U, err := NewDBLineageReader(tx, 2, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB1C, err := NewDBLineageReader(tx, 2, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 4, MaxCommitID)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 3, 14, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 3, 14, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 5, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 5, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -103,12 +103,12 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		_, err := c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 		testutil.MustDo(t, "merge b1 into b2", err)
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b1 U ", 3, 14, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b1 U ", 3, 14, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -117,18 +117,18 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		testutil.MustDo(t, "delete committed file on b1",
 			c.DeleteEntry(ctx, repository, "b1", "Obj-0004"))
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB1U, err := NewDBLineageReader(tx, 2, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB1C, err := NewDBLineageReader(tx, 2, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, MinCommitUncommittedIndicator, 0)
-			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 13, MaxCommitID)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 3, MinCommitUncommittedIndicator, 0)
+			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 3, 14, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 14, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 14, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -137,18 +137,18 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		_, err := c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 		testutil.MustDo(t, "commit to b1", err)
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB1U, err := NewDBLineageReader(tx, 2, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB1C, err := NewDBLineageReader(tx, 2, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(2), err)
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
+			lineageReaderB1C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, 13, 13)
-			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 2, 13, 13)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 13, MaxCommitID)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 3, 14, 14)
+			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 3, 14, 14)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 14, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 14, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -157,12 +157,12 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		_, err := c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 		testutil.MustDo(t, "merge b1 into b2", err)
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 13, 13)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 13, 13)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 14, 14)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 14, 14)
 			return nil, nil
 		})
 	})
@@ -176,12 +176,12 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		testutil.MustDo(t, "delete committed file on b2",
 			c.DeleteEntry(ctx, repository, "b2", "Obj-0004"))
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, MinCommitUncommittedIndicator, 0)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 17, MaxCommitID)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 4, MinCommitUncommittedIndicator, 0)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 18, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -190,12 +190,12 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		_, err := c.Commit(ctx, repository, "b2", "commit to b2", "tester", nil)
 		testutil.MustDo(t, "commit to b1", err)
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB2U, err := NewDBLineageReader(tx, 3, UncommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 19, 0)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 19, 0)
+			lineageReaderB2U, err := NewDBLineageReader(tx, 4, UncommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 4, 20, 0)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 4, 20, 0)
 			return nil, nil
 		})
 	})
@@ -217,9 +217,9 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 		_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 		testutil.MustDo(t, "merge b1 into b2", err)
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
-			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 3, 25, MaxCommitID)
+			lineageReaderB2C, err := NewDBLineageReader(tx, 4, CommittedID, bufSize, -1, "Obj-0003")
+			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(4), err)
+			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 4, 26, MaxCommitID)
 			return nil, nil
 		})
 	})
@@ -241,6 +241,7 @@ func testSetupDBReaderData(t *testing.T, ctx context.Context, c TestCataloger, r
 }
 
 func testDBReaderNext(t *testing.T, lReader *DBLineageReader, msg string, expBranch, expMinCommit CommitID, expMaxCommit CommitID) {
+	t.Helper()
 	o, err := lReader.Next()
 	testutil.MustDo(t, msg, err)
 	if o.BranchID != int64(expBranch) || o.MinCommit != CommitID(expMinCommit) || o.MaxCommit != expMaxCommit {

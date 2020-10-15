@@ -229,7 +229,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
-		const expectedCommits = commitsLen + 1 // one for the branch creation
+		const expectedCommits = commitsLen + 2 // one for the branch creation + import branch
 		commitsLog := resp.GetPayload().Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
@@ -491,8 +491,10 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error listing branches: %s", err)
 		}
-		if len(resp.GetPayload().Results) != 1 {
-			t.Fatalf("expected 1 branch, got %d", len(resp.GetPayload().Results))
+		const expectedBranchesLen = 2 // branch creation and import branch
+		branchesLen := len(resp.GetPayload().Results)
+		if branchesLen != expectedBranchesLen {
+			t.Fatalf("ListBranches len=%d, expected %d", branchesLen, expectedBranchesLen)
 		}
 	})
 

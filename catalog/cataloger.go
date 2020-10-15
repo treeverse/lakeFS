@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	CatalogerCommitter   = ""
-	DefaultBranchName    = "master"
-	DefaultPathDelimiter = "/"
+	CatalogerCommitter      = ""
+	DefaultBranchName       = "master"
+	DefaultImportBranchName = "import-from-inventory"
+	DefaultPathDelimiter    = "/"
 
 	dedupBatchSize         = 10
 	dedupBatchTimeout      = 50 * time.Millisecond
@@ -71,7 +72,6 @@ type BranchCataloger interface {
 	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
 	GetBranchReference(ctx context.Context, repository, branch string) (string, error)
 	ResetBranch(ctx context.Context, repository, branch string) error
-	SetDefaultBranch(ctx context.Context, repository, defaultBranch string) error
 }
 
 var ErrExpired = errors.New("expired from storage")

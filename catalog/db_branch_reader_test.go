@@ -24,13 +24,20 @@ func TestCataloger_DBBranchReader(t *testing.T) {
 	testSetupDBReaderData(t, ctx, c, repository, numberOfObjects, maxBranchNumber, baseBranchName, objSkip)
 
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
+		var repoID int64
+		testutil.MustDo(t, "get repository id",
+			tx.Get(&repoID, `SELECT id FROM catalog_repositories WHERE name=$1`, repository))
+
 		// test different cache sizes
 		for k := 0; k < len(bufferSizes); k++ {
 			bufSize := bufferSizes[k]
 			// test single branch reader
 			for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
 				branchName := "b" + strconv.Itoa(branchNo)
-				branchReader := NewDBBranchReader(tx, int64(branchNo+1), UncommittedID, bufSize, "")
+				var branchID int64
+				testutil.MustDo(t, "get branch id",
+					tx.Get(&branchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`, repoID, branchName))
+				branchReader := NewDBBranchReader(tx, branchID, UncommittedID, bufSize, "")
 				objSkipNo := objSkip[branchNo]
 				for i := 0; ; i += objSkipNo {
 					o, err := branchReader.Next()
