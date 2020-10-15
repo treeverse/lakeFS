@@ -10,6 +10,24 @@ variable "tag" {
   default = "dev"
 }
 
+variable "build" {
+  type        = number
+  description = "Benchmark Github action build number"
+  default = 0
+}
+
+variable "grafana-username" {
+  type        = string
+  description = "Grafana Cloud collector username"
+  default = "treeverse"
+}
+
+variable "grafana-password" {
+  type        = string
+  description = "Grafana Cloud collector password"
+  default = "notThePassw0rd"
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -120,7 +138,7 @@ resource "aws_ecs_cluster" "benchmark" {
 }
 
 resource "aws_cloudwatch_log_group" "benchmark" {
-  name = "/ecs/benchmark/${var.tag}"
+  name = "/ecs/benchmark/${var.build}"
 
   retention_in_days = 14
   tags = {

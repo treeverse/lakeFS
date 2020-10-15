@@ -1,0 +1,140 @@
+{
+  "projectName": "lakeFS",
+  "projectOwner": "treeverse",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "CONTRIBUTORS.md"
+  ],
+  "imageSize": 350,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "ozkatz",
+      "name": "Oz Katz",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/205955?v=4",
+      "profile": "https://lakefs.io/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "nopcoder",
+      "name": "Barak Amar",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/8110?v=4",
+      "profile": "https://github.com/nopcoder",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "tzahij",
+      "name": "tzahij",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/5455113?v=4",
+      "profile": "https://github.com/tzahij",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "guy-har",
+      "name": "guy-har",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/60321938?v=4",
+      "profile": "https://github.com/guy-har",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "arielshaqed",
+      "name": "arielshaqed",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/7802932?v=4",
+      "profile": "https://github.com/arielshaqed",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "johnnyaug",
+      "name": "johnnyaug",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/3149885?v=4",
+      "profile": "https://github.com/johnnyaug",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "itaiad200",
+      "name": "itaiad200",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/9861474?v=4",
+      "profile": "https://github.com/itaiad200",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "YaelRiv",
+      "name": "YaelRiv",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/67264175?v=4",
+      "profile": "https://github.com/YaelRiv",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "einato",
+      "name": "Einat Orr",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/56227795?v=4",
+      "profile": "https://github.com/einato",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "kzuri",
+      "name": "Devarsh Patel",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/65841886?v=4",
+      "profile": "https://github.com/kzuri",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "sourhub226",
+      "name": "Sourabh Sathe",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/58329492?v=4",
+      "profile": "https://github.com/sourhub226",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jengjeng",
+      "name": "Wittawat Patcharinsak",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/6948085?v=4",
+      "profile": "https://github.com/jengjeng",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "d-harel",
+      "name": "d-harel",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/11721947?v=4",
+      "profile": "https://github.com/d-harel",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "dependabot[bot]",
+      "name": "dependabot[bot]",
+      "avatar_url": "https://avatars0.githubusercontent.com/in/29110?v=4",
+      "profile": "https://github.com/apps/dependabot",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7
+}

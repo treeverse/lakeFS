@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+
 jobs:
   deploy-executor-image:
     name: Build and push benchmark executor Docker image
@@ -77,7 +78,8 @@ jobs:
       - name: Terraform apply
         run: |
           cd benchmarks/terraform/
-          terraform apply --auto-approve -var="dockerReg=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com" -var="tag=${{ steps.version.outputs.tag }}"
+          terraform apply --auto-approve -var="dockerReg=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com" -var="tag=${{ steps.version.outputs.tag }}" \
+            -var="build=${{ github.run_number }}" -var="grafana-username=${{ secrets.GRAFANA_USERNAME }}" -var="grafana-password=${{ secrets.GRAFANA_PASSWORD }}"
       - name: 'Terraform Output'
         id: terraform
         uses: hashicorp/terraform-github-actions@master
@@ -101,4 +103,3 @@ jobs:
           # keep the logs
           terraform state rm aws_cloudwatch_log_group.benchmark
           terraform destroy --auto-approve
-

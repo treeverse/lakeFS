@@ -370,6 +370,12 @@ definitions:
         format: int32
     minProperties: 1
 
+  config:
+      type: object
+      properties:
+        blockstore.type:
+          type: string
+
 paths:
 
   /setup_lakefs:
@@ -1252,54 +1258,6 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/inventory/s3/import:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: query
-        name: manifestUrl
-        required: true
-        type: string
-      - in: query
-        name: dryRun
-        type: boolean
-        default: false
-    post:
-      tags:
-        - repositories
-      operationId: importFromS3Inventory
-      summary: import metadata for an existing bucket in S3
-      responses:
-        201:
-          description: import results
-          schema:
-            type: object
-            properties:
-              is_dry_run:
-                type: boolean
-              added_or_changed:
-                type: integer
-                format: int64
-              deleted:
-                type: integer
-                format: int64
-              previous_manifest:
-                type: string
-              previous_import_date:
-                type: integer
-                format: int64
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: "repository not found"
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
   /repositories/{repository}/branches:
     parameters:
       - in: path
@@ -2020,3 +1978,18 @@ paths:
       responses:
         204:
           description: NoContent
+          
+  /config:
+    get:
+      tags:
+        - config
+      operationId: getConfig
+      description: retrieve the lakefs config
+      responses:
+        200:
+          description: the lakefs config
+          schema:
+            $ref: "#/definitions/config"
+        401:
+          $ref: "#/responses/Unauthorized"
+

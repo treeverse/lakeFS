@@ -11,7 +11,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
-	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
+	if _, err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
 		t.Fatal("create repository for testing", err)
 	}
 	const numOfBranches = 3
@@ -42,7 +42,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{
 			name:         "all",
 			args:         args{repository: "repo1", prefix: "", limit: -1, after: ""},
-			wantBranches: []string{"b1", "b2", "b3", "master", "z1", "z2", "z3"},
+			wantBranches: []string{"b1", "b2", "b3", DefaultImportBranchName, "master", "z1", "z2", "z3"},
 			wantMore:     false,
 			wantErr:      false,
 		},

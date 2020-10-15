@@ -56,6 +56,7 @@ type Adapter interface {
 	GetRange(obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(obj ObjectPointer) (Properties, error)
 	Remove(obj ObjectPointer) error
+	Copy(sourceObj, destinationObj ObjectPointer) error
 	CreateMultiPartUpload(obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
 	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
 	AbortMultiPartUpload(obj ObjectPointer, uploadID string) error

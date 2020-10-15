@@ -3,8 +3,11 @@ package stats
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -16,7 +19,7 @@ const (
 
 type Collector interface {
 	CollectEvent(class, action string)
-	CollectMetadata(accountMetadata map[string]string)
+	CollectMetadata(accountMetadata *Metadata)
 }
 
 type Metric struct {
@@ -30,16 +33,6 @@ type InputEvent struct {
 	ProcessID      string   `json:"process_id"`
 	Time           string   `json:"time"`
 	Metrics        []Metric `json:"metrics"`
-}
-
-type MetadataEntry struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type Metadata struct {
-	InstallationID string          `json:"installation_id"`
-	Entries        []MetadataEntry `json:"entries"`
 }
 
 type primaryKey struct {
@@ -113,7 +106,9 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(installationID, processID string, opts ...BufferedCollectorOpts) *BufferedCollector {
+func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
+	processID, moreOpts := getBufferedCollectorArgs(c)
+	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
 		writes:         make(chan primaryKey, DefaultCollectorEventBufferSize),
@@ -124,11 +119,9 @@ func NewBufferedCollector(installationID, processID string, opts ...BufferedColl
 		installationID: installationID,
 		processID:      processID,
 	}
-
 	for _, opt := range opts {
 		opt(s)
 	}
-
 	return s
 }
 func (s *BufferedCollector) getInstallationID() string {
@@ -201,23 +194,31 @@ func makeMetrics(counters keyIndex) []Metric {
 	return metrics
 }
 
-func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
-	entries := make([]MetadataEntry, len(accountMetadata))
-	i := 0
-	for k, v := range accountMetadata {
-		entries[i] = MetadataEntry{Name: k, Value: v}
-		i++
-	}
+func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.UpdateMetadata(ctx, Metadata{
-		InstallationID: s.getInstallationID(),
-		Entries:        entries,
-	})
+	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
 		logging.Default().
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
 	}
+}
+
+func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
+	if c == nil {
+		return "", nil
+	}
+	var sender Sender
+	if c.GetStatsEnabled() && !strings.HasPrefix(config.Version, config.UnreleasedVersion) {
+		sender = NewHTTPSender(c.GetStatsAddress(), time.Now)
+	} else {
+		sender = NewDummySender()
+	}
+	return uuid.Must(uuid.NewUUID()).String(),
+		[]BufferedCollectorOpts{
+			WithSender(sender),
+			WithFlushInterval(c.GetStatsFlushInterval()),
+		}
 }

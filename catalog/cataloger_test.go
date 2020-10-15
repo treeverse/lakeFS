@@ -38,7 +38,8 @@ func testCatalogerUniqueID() string {
 func testCatalogerRepo(t testing.TB, ctx context.Context, c Cataloger, prefix string, branch string) string {
 	t.Helper()
 	name := prefix + "-" + testCatalogerUniqueID()
-	if err := c.CreateRepository(ctx, name, "s3://bucket", branch); err != nil {
+	_, err := c.CreateRepository(ctx, name, "s3://bucket", branch)
+	if err != nil {
 		t.Fatalf("create repository %s, branch %s, failed: %s", name, branch, err)
 	}
 	return name

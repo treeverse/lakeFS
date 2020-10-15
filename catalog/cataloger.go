@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	CatalogerCommitter = ""
-
-	DefaultPathDelimiter = "/"
+	CatalogerCommitter      = ""
+	DefaultBranchName       = "master"
+	DefaultImportBranchName = "import-from-inventory"
+	DefaultPathDelimiter    = "/"
 
 	dedupBatchSize         = 10
 	dedupBatchTimeout      = 50 * time.Millisecond
@@ -58,7 +59,7 @@ type ExpireResult struct {
 }
 
 type RepositoryCataloger interface {
-	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
+	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
 	DeleteRepository(ctx context.Context, repository string) error
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)

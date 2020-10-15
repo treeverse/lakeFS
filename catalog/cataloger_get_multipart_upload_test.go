@@ -13,7 +13,7 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 
 	creationTime := time.Now().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data
-	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
+	if _, err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
 		t.Fatal("create repository for testing failed", err)
 	}
 	if err := c.CreateMultipartUpload(ctx, "repo1", "upload1", "/path1", "/file1", creationTime); err != nil {

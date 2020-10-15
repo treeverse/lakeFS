@@ -19,6 +19,7 @@ import (
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	configop "github.com/treeverse/lakefs/api/gen/restapi/operations/config"
 	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
 	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -34,7 +35,6 @@ import (
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/onboard"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
@@ -52,32 +52,32 @@ const (
 )
 
 type Dependencies struct {
-	ctx          context.Context
-	Cataloger    catalog.Cataloger
-	Auth         auth.Service
-	BlockAdapter block.Adapter
-	Stats        stats.Collector
-	Retention    retention.Service
-	Dedup        *dedup.Cleaner
-	Meta         auth.MetadataManager
-	Migrator     db.Migrator
-	Collector    stats.Collector
-	logger       logging.Logger
+	ctx             context.Context
+	Cataloger       catalog.Cataloger
+	Auth            auth.Service
+	BlockAdapter    block.Adapter
+	Stats           stats.Collector
+	Retention       retention.Service
+	Dedup           *dedup.Cleaner
+	MetadataManager auth.MetadataManager
+	Migrator        db.Migrator
+	Collector       stats.Collector
+	logger          logging.Logger
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 	return &Dependencies{
-		ctx:          ctx,
-		Cataloger:    d.Cataloger,
-		Auth:         d.Auth,
-		BlockAdapter: d.BlockAdapter.WithContext(ctx),
-		Stats:        d.Stats,
-		Retention:    d.Retention,
-		Dedup:        d.Dedup,
-		Meta:         d.Meta,
-		Migrator:     d.Migrator,
-		Collector:    d.Collector,
-		logger:       d.logger.WithContext(ctx),
+		ctx:             ctx,
+		Cataloger:       d.Cataloger,
+		Auth:            d.Auth,
+		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
+		Stats:           d.Stats,
+		Retention:       d.Retention,
+		Dedup:           d.Dedup,
+		MetadataManager: d.MetadataManager,
+		Migrator:        d.Migrator,
+		Collector:       d.Collector,
+		logger:          d.logger.WithContext(ctx),
 	}
 }
 
@@ -94,20 +94,20 @@ type Controller struct {
 }
 
 func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service,
-	dedupCleaner *dedup.Cleaner, meta auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
+	dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
-			ctx:          context.Background(),
-			Cataloger:    cataloger,
-			Auth:         auth,
-			BlockAdapter: blockAdapter,
-			Stats:        stats,
-			Retention:    retention,
-			Dedup:        dedupCleaner,
-			Meta:         meta,
-			Migrator:     migrator,
-			Collector:    collector,
-			logger:       logger,
+			ctx:             context.Background(),
+			Cataloger:       cataloger,
+			Auth:            auth,
+			BlockAdapter:    blockAdapter,
+			Stats:           stats,
+			Retention:       retention,
+			Dedup:           dedupCleaner,
+			MetadataManager: metadataManager,
+			Migrator:        migrator,
+			Collector:       collector,
+			logger:          logger,
 		},
 	}
 	return c
@@ -160,7 +160,6 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
 	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
-	api.RepositoriesImportFromS3InventoryHandler = c.ImportFromS3InventoryHandler()
 
 	api.BranchesListBranchesHandler = c.ListBranchesHandler()
 	api.BranchesGetBranchHandler = c.GetBranchHandler()
@@ -186,6 +185,8 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
 	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
+
+	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -232,7 +233,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// check if previous setup completed
-		if ts, _ := c.deps.Meta.SetupTimestamp(); !ts.IsZero() {
+		if ts, _ := c.deps.MetadataManager.SetupTimestamp(); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
 					Message: "lakeFS already initialized",
@@ -266,7 +267,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// update setup completed timestamp
-		if err := c.deps.Meta.UpdateSetupTimestamp(time.Now()); err != nil {
+		if err := c.deps.MetadataManager.UpdateSetupTimestamp(time.Now()); err != nil {
 			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
 		}
 
@@ -463,10 +464,12 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
-		if errors.Is(err, db.ErrNotFound) {
-			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found", params.Branch))
-		}
-		if err != nil {
+		switch {
+		case errors.Is(err, catalog.ErrBranchNotFound):
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
+		case errors.Is(err, catalog.ErrRepositoryNotFound):
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
@@ -540,16 +543,10 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
-		err = deps.Cataloger.CreateRepository(c.Context(),
+		repo, err := deps.Cataloger.CreateRepository(c.Context(),
 			swag.StringValue(params.Repository.ID),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
-		if err != nil {
-			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
-				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
-		}
-
-		repo, err := deps.Cataloger.GetRepository(c.Context(), swag.StringValue(params.Repository.ID))
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
@@ -646,13 +643,14 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		}
 		deps.LogAction("get_branch")
 		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
-		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewGetBranchNotFound().
-				WithPayload(responseError("branch '%s' not found", params.Branch))
-		}
-		if err != nil {
-			return branches.NewGetBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching branch: %s", err))
+
+		switch {
+		case errors.Is(err, catalog.ErrBranchNotFound):
+			return branches.NewGetBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
+		case errors.Is(err, catalog.ErrRepositoryNotFound):
+			return branches.NewGetBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
+			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		return branches.NewGetBranchOK().WithPayload(reference)
@@ -697,13 +695,13 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		deps.LogAction("delete_branch")
 		cataloger := deps.Cataloger
 		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
-		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewDeleteBranchNotFound().
-				WithPayload(responseError("branch '%s' not found", params.Branch))
-		}
-		if err != nil {
-			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching branch: %s", err))
+		switch {
+		case errors.Is(err, catalog.ErrBranchNotFound):
+			return branches.NewDeleteBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
+		case errors.Is(err, catalog.ErrRepositoryNotFound):
+			return branches.NewDeleteBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
+			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		return branches.NewDeleteBranchNoContent()
@@ -1181,7 +1179,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 
 		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -2228,72 +2226,23 @@ func (c *Controller) RetentionUpdateRetentionPolicyHandler() retentionop.UpdateR
 	})
 }
 
-func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3InventoryHandler {
-	return repositories.ImportFromS3InventoryHandlerFunc(func(params repositories.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
+func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
+	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.CreateRepositoryAction,
-				Resource: permissions.RepoArn(params.Repository),
+				// Should use repository creation permission but it is coupled to a repo id
+				// TODO(#764): Add a new action for reading configs?
+				Action:   permissions.ListRepositoriesAction,
+				Resource: permissions.All,
 			},
 		})
+
 		if err != nil {
-			return repositories.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
+			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		deps.LogAction("import_from_s3_inventory")
-		userModel, err := c.deps.Auth.GetUser(user.ID)
-		username := "lakeFS"
-		if err == nil {
-			username = userModel.Username
-		}
-		importConfig := &onboard.Config{
-			CommitUsername:     username,
-			InventoryURL:       params.ManifestURL,
-			Repository:         params.Repository,
-			InventoryGenerator: deps.BlockAdapter,
-			Cataloger:          deps.Cataloger,
-		}
-		importer, err := onboard.CreateImporter(deps.ctx, deps.logger, importConfig)
-		if err != nil {
-			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-		var importStats *onboard.Stats
-		dryRun := swag.BoolValue(params.DryRun)
-		if dryRun {
-			importStats, err = importer.Import(deps.ctx, true)
-			if err != nil {
-				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-					WithPayload(responseErrorFrom(err))
-			}
-		} else {
-			repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
-			if err != nil {
-				return repositories.NewImportFromS3InventoryNotFound().
-					WithPayload(responseErrorFrom(err))
-			}
-			_, err = deps.Cataloger.GetBranchReference(deps.ctx, params.Repository, onboard.DefaultBranchName)
-			if errors.Is(err, db.ErrNotFound) {
-				_, err = deps.Cataloger.CreateBranch(deps.ctx, params.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
-				if err != nil {
-					return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-						WithPayload(responseErrorFrom(err))
-				}
-			} else if err != nil {
-				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-					WithPayload(responseErrorFrom(err))
-			}
-			importStats, err = importer.Import(params.HTTPRequest.Context(), false)
-			if err != nil {
-				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-					WithPayload(responseErrorFrom(err))
-			}
-		}
-		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
-			IsDryRun:           dryRun,
-			PreviousImportDate: importStats.PreviousImportDate.Unix(),
-			PreviousManifest:   importStats.PreviousInventoryURL,
-			AddedOrChanged:     int64(importStats.AddedOrChanged),
-			Deleted:            int64(importStats.Deleted),
+
+		return configop.NewGetConfigOK().WithPayload(&models.Config{
+			BlockstoreType: deps.BlockAdapter.BlockstoreType(),
 		})
 	})
 }
