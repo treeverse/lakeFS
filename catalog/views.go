@@ -146,14 +146,14 @@ func sqDiffFromChildV(parentID, childID int64, parentEffectiveCommit, childEffec
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
 
-func sqDiffFromParentV(parentID, childID int64, lastChildMergeWithParent CommitID, parentUncommittedLineage, childUncommittedLineage []lineageCommit) sq.SelectBuilder {
+func sqDiffFromParentV(parentID, childID int64, lastChildMergeWithParent CommitID, parentCommittedLineage, childUncommittedLineage []lineageCommit) sq.SelectBuilder {
 	childLineageValues := getLineageAsValues(childUncommittedLineage, childID, MaxCommitID)
 	childLineage := sqEntriesLineage(childID, UncommittedID, childUncommittedLineage)
 	sqChild := sq.Select("*").
 		FromSelect(childLineage, "s").
 		Where("displayed_branch = ?", childID)
 
-	parentLineage := sqEntriesLineage(parentID, CommittedID, parentUncommittedLineage)
+	parentLineage := sqEntriesLineage(parentID, CommittedID, parentCommittedLineage)
 	// Can diff with expired files, just not usefully!
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
