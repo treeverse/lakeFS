@@ -154,7 +154,7 @@ func TestDiff(t *testing.T) {
 			if actualAdded[i].Key != expectedAdded {
 				t.Fatalf("added object in diff index %d different than expected. expected: %s, got: %s", i, expectedAdded, actualAdded[i].Key)
 			}
-			if actualAdded[i].LastModified != times[expectedAdded] {
+			if *actualAdded[i].LastModified != times[expectedAdded] {
 				t.Fatalf("modified time for key %s different than expected. expected: %v, got: %v", expectedAdded, times[expectedAdded], actualAdded[i].LastModified)
 			}
 		}
@@ -162,7 +162,7 @@ func TestDiff(t *testing.T) {
 			if actualDeleted[i].Key != expectedDeleted {
 				t.Fatalf("deleted object in diff index %d different than expected. expected: %s, got: %s", i, expectedDeleted, actualDeleted[i].Key)
 			}
-			if actualDeleted[i].LastModified != times[expectedDeleted] {
+			if *actualDeleted[i].LastModified != times[expectedDeleted] {
 				t.Fatalf("modified time for key %s different than expected. expected: %v, got: %v", expectedDeleted, times[expectedDeleted], actualDeleted[i].LastModified)
 			}
 		}
@@ -170,7 +170,7 @@ func TestDiff(t *testing.T) {
 			if actualChanged[i].Key != expectedChanged {
 				t.Fatalf("changed object in diff index %d different than expected. expected: %s, got: %s", i, expectedChanged, actualChanged[i].Key)
 			}
-			if actualChanged[i].LastModified != times[expectedChanged] {
+			if *actualChanged[i].LastModified != times[expectedChanged] {
 				t.Fatalf("modified time for key %s different than expected. expected: %v, got: %v", expectedChanged, times[expectedChanged], actualChanged[i].LastModified)
 			}
 		}
