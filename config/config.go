@@ -325,3 +325,7 @@ func GetMetastoreGlueCatalogID() string {
 func GetMetastoreType() string {
 	return viper.GetString(MetaStoreType)
 }
+
+func GetFixedInstallationID() string {
+	return viper.GetString("installation.fixed-id")
+}
