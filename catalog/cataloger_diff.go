@@ -220,11 +220,6 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, chil
 	var childEnt *DBScannerEntry
 	records := 0
 	for parentScanner.Next() {
-		// stop on limit
-		if limit > -1 && records >= limit {
-			break
-		}
-
 		// is parent element is relevant
 		parentEnt := parentScanner.Value()
 
@@ -257,7 +252,12 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, chil
 		if err != nil {
 			return err
 		}
+
+		// stop on limit
 		records++
+		if limit > -1 && records >= limit {
+			break
+		}
 	}
 	if err := parentScanner.Err(); err != nil {
 		return err
@@ -354,11 +354,6 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	var parentEnt *DBScannerEntry
 	records := 0
 	for childScanner.Next() {
-		// stop on limit
-		if limit > -1 && records >= limit {
-			break
-		}
-
 		// is child element is relevant
 		childEnt := childScanner.Value()
 		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
@@ -385,7 +380,12 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		if err != nil {
 			return err
 		}
+
+		// stop on limit
 		records++
+		if limit > -1 && records >= limit {
+			break
+		}
 	}
 	if err := childScanner.Err(); err != nil {
 		return err
