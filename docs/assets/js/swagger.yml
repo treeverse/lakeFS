@@ -370,6 +370,12 @@ definitions:
         format: int32
     minProperties: 1
 
+  config:
+      type: object
+      properties:
+        blockstore.type:
+          type: string
+
 paths:
 
   /setup_lakefs:
@@ -389,7 +395,6 @@ paths:
           description: user created successfully
           schema:
             $ref: "#/definitions/credentials_with_secret"
-            description: first user credentials
         400:
           description: bad request
           schema:
@@ -2021,3 +2026,18 @@ paths:
       responses:
         204:
           description: NoContent
+          
+  /config:
+    get:
+      tags:
+        - config
+      operationId: getConfig
+      description: retrieve the lakefs config
+      responses:
+        200:
+          description: the lakefs config
+          schema:
+            $ref: "#/definitions/config"
+        401:
+          $ref: "#/responses/Unauthorized"
+
