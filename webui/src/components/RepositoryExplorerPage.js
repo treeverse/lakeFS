@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect} from "react";
 import {
     useParams,
     useLocation,
@@ -23,9 +23,6 @@ import Alert from "react-bootstrap/Alert";
 import BranchesPage from "./BranchesPage";
 import ComparePage from "./ComparePage";
 import RepoSettingsPage from "./RepoSettingsPage";
-import {importObjects, importObjectsDryRun, resetImportObjects, resetImportObjectsDryRun} from "../actions/objects";
-import {DataImportForm} from "./DataImportForm";
-import {Modal} from "react-bootstrap";
 
 
 function useQuery() {
@@ -82,44 +79,8 @@ const RepositoryTabs = () => {
         </Nav>
     );
 };
-const ImportModal = connect(
-    ({objects}) => ({
-        importState: objects.import,
-        importDryRunState: objects.importDryRun
-    }),
-    ({importObjects, importObjectsDryRun, resetImportObjects, resetImportObjectsDryRun})
-)(({importObjects, importObjectsDryRun, importState, importDryRunState, resetImportObjects, resetImportObjectsDryRun, show, setShow}) => {
-    const disabled = importState.inProgress || importDryRunState.inProgress;
-    const { repoId } = useParams();
-    const onHide = () => {
-        resetImportObjects();
-        resetImportObjectsDryRun();
-        setShow(false);
-    };
 
-    const onSubmit = (manifestUrl) => {
-        if (disabled) return;
-        importObjects(repoId, manifestUrl);
-    };
-
-    const onTest = (manifestUrl) => {
-        if (disabled) return;
-        importObjectsDryRun(repoId, manifestUrl);
-    }
-
-    return (
-        <Modal show={show} onHide={onHide} size="lg">
-            <Modal.Header closeButton>
-                <Modal.Title>Import Data from S3</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <DataImportForm repoId={repoId} onSubmit={onSubmit} onTest={onTest} onCancel={onHide}/>
-            </Modal.Body>
-        </Modal>
-    );
-});
 const RepositoryExplorerPage = ({ repo, getRepository }) => {
-    const[showImportModal, setShowImportModal] = useState(false)
     const { repoId } = useParams();
     const query = useQuery();
 
@@ -175,8 +136,6 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
     return (
 
         <div className="mt-5">
-            <ImportModal repo={repo} show={showImportModal} setShow={setShowImportModal}/>
-
             <Breadcrumb>
                 <Breadcrumb.Item href={`/repositories`}>Repositories</Breadcrumb.Item>
                 <Breadcrumb.Item active href={`/repositories/${repoId}`}>{repoId}</Breadcrumb.Item>
@@ -187,7 +146,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
             <Switch>
                 <Redirect exact from="/repositories/:repoId" to="/repositories/:repoId/tree"/>
                 <Route path="/repositories/:repoId/tree">
-                    <TreePage repo={repo.payload} refId={refId} path={query.get('path') || ""} setShowImportModal={setShowImportModal}/>
+                    <TreePage repo={repo.payload} refId={refId} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/changes">
                     <ChangesPage repo={repo.payload} refId={refId} path={query.get('path') || ""}/>
@@ -202,7 +161,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                     <ComparePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/settings">
-                    <RepoSettingsPage repo={repo.payload} setShowImportModal={setShowImportModal}/>
+                    <RepoSettingsPage repo={repo.payload}/>
                 </Route>
             </Switch>
         </div>
