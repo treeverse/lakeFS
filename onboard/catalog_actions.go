@@ -84,7 +84,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		if diffObj.IsDeleted {
 			stats.Deleted += 1
 			if !dryRun {
-				err := c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, obj.Key)
+				err := c.cataloger.DeleteEntry(ctx, c.repository, catalog.DefaultImportBranchName, obj.Key)
 				if err != nil {
 					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
@@ -110,7 +110,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			}
 			tsk := &task{
 				f: func() error {
-					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+					err := c.cataloger.CreateEntries(ctx, c.repository, catalog.DefaultImportBranchName, previousBatch)
 					if err == nil {
 						c.addedProgress.Add(int64(len(previousBatch)))
 					}
@@ -133,7 +133,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
-		err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
+		err := c.cataloger.CreateEntries(ctx, c.repository, catalog.DefaultImportBranchName, currentBatch)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
@@ -145,7 +145,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 }
 
 func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
-	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, DefaultBranchName)
+	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, catalog.DefaultImportBranchName)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 
 func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
 	c.commitProgress.Activate()
-	res, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
+	res, err := c.cataloger.Commit(ctx, c.repository, catalog.DefaultImportBranchName,
 		commitMsg,
 		c.committer,
 		metadata)

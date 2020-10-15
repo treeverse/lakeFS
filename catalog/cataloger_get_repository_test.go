@@ -15,7 +15,7 @@ func TestCataloger_GetRepository(t *testing.T) {
 		repoName := fmt.Sprintf("repo%d", i)
 		storage := fmt.Sprintf("s3://bucket%d", i)
 		branchName := fmt.Sprintf("branch%d", i)
-		if err := c.CreateRepository(ctx, repoName, storage, branchName); err != nil {
+		if _, err := c.CreateRepository(ctx, repoName, storage, branchName); err != nil {
 			t.Fatal("create repository for testing failed", err)
 		}
 	}

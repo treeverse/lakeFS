@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_ListRepositories(t *testing.T) {
@@ -15,10 +17,8 @@ func TestCataloger_ListRepositories(t *testing.T) {
 	for i := 3; i > 0; i-- {
 		repoName := fmt.Sprintf("repo%d", i)
 		storage := fmt.Sprintf("s3://bucket%d", i)
-		err := c.CreateRepository(ctx, repoName, storage, "master")
-		if err != nil {
-			t.Fatal("create repository for testing failed", err)
-		}
+		_, err := c.CreateRepository(ctx, repoName, storage, "master")
+		testutil.MustDo(t, "create repository "+repoName, err)
 	}
 
 	type args struct {
