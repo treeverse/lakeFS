@@ -3,7 +3,6 @@ package export
 import (
 	"encoding/json"
 	"fmt"
-	act "github.com/treeverse/lakefs/action"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
@@ -37,7 +36,7 @@ type TaskBody struct {
 	SourceID             string
 }
 
-func (h *Handler) Handle(action string, body *string) act.HandlerResult {
+func (h *Handler) Handle(action string, body *string) parade.HandlerResult {
 	var params TaskBody
 	lg := logging.Default().WithFields(logging.Fields{
 		"actor":  actorName,
@@ -46,7 +45,7 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 	err := json.Unmarshal([]byte(*body), &params)
 	if err != nil {
 		lg.WithError(err).Error("unmarshal failed")
-		return act.HandlerResult{
+		return parade.HandlerResult{
 			Status:     err.Error(),
 			StatusCode: parade.TaskInvalid,
 		}
@@ -65,7 +64,7 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 		err = h.adapter.Copy(sourcePointer, destinationPointer) // todo(guys): add wait for copy in handler
 		if err != nil {
 			lg.WithError(err).Error("copy failed")
-			return act.HandlerResult{
+			return parade.HandlerResult{
 				Status:     err.Error(),
 				StatusCode: parade.TaskInvalid,
 			}
@@ -74,7 +73,7 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 		err = h.adapter.Remove(destinationPointer)
 		if err != nil {
 			lg.WithError(err).Error("delete failed")
-			return act.HandlerResult{
+			return parade.HandlerResult{
 				Status:     err.Error(),
 				StatusCode: parade.TaskInvalid,
 			}
@@ -83,7 +82,7 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 		err = h.adapter.Put(destinationPointer, 0, strings.NewReader(""), block.PutOpts{})
 		if err != nil {
 			lg.WithError(err).Error("touch failed")
-			return act.HandlerResult{
+			return parade.HandlerResult{
 				Status:     err.Error(),
 				StatusCode: parade.TaskInvalid,
 			}
@@ -91,12 +90,12 @@ func (h *Handler) Handle(action string, body *string) act.HandlerResult {
 	//todo(guys): add cases for other actions or remove them from Actions function
 	default:
 		lg.Error("unknown action")
-		return act.HandlerResult{
+		return parade.HandlerResult{
 			Status:     "UNKNOWN ACTION",
 			StatusCode: parade.TaskInvalid,
 		}
 	}
-	return act.HandlerResult{
+	return parade.HandlerResult{
 		Status:     fmt.Sprintf("Completed"),
 		StatusCode: parade.TaskCompleted,
 	}
