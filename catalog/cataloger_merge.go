@@ -150,7 +150,7 @@ func (c *cataloger) mergeFromParent(ctx context.Context, tx db.Tx, previousMaxCo
 	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
-				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type in ($3,$4))`,
+				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type in ($3,$4)AND entry_ctid IS NOT NULL)`,
 		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	}
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
-				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4)) AND entry_ctid IS NOT NULL`,
+				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged, MaxCommitID)
 	if err != nil {
 		return err
