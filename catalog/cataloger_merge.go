@@ -190,7 +190,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	}
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
-				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
+				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4)) AND entry_ctid IS NOT NULL`,
 		parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged, MaxCommitID)
 	if err != nil {
 		return err
