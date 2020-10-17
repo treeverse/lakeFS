@@ -59,7 +59,7 @@ var runCmd = &cobra.Command{
 			KeepRepo:         isKeep,
 			Credentials: model.Credential{
 				AccessKeyID:     viper.GetString(ConfigAccessKeyID),
-				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
+				SecretAccessKey: viper.GetString(ConfigSecretAccessKey),
 			},
 			ServerAddress: viper.GetString(ConfigServerEndpointURL),
 		}

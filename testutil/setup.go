@@ -83,7 +83,7 @@ func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs,
 		}
 		logger.Info("Cluster setup successfully")
 		viper.Set("access_key_id", res.Payload.AccessKeyID)
-		viper.Set("secret_access_key", res.Payload.AccessSecretKey)
+		viper.Set("secret_access_key", res.Payload.SecretAccessKey)
 	}
 	r.DefaultAuthentication = httptransport.BasicAuth(viper.GetString("access_key_id"), viper.GetString("secret_access_key"))
 

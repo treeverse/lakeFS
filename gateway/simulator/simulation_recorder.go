@@ -166,7 +166,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 	conf := &PlayBackMockConf{
 		BareDomain:      bareDomain,
 		AccessKeyID:     accessKeyID,
-		AccessSecretKey: creds.AccessSecretKey,
+		SecretAccessKey: creds.SecretAccessKey,
 		UserID:          creds.UserID,
 		Region:          region,
 	}

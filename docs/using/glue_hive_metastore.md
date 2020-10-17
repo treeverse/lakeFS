@@ -59,7 +59,7 @@ metastore:
     profile: default # optional, implies using a credentials file
     credentials:
       access_key_id: AKIAIOSFODNN7EXAMPLE
-      access_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
 It is recommended to set the type and catalog-id in the configuration file:
@@ -73,7 +73,7 @@ metastore:
     profile: default # optional, implies using a credentials file
     credentials:
       access_key_id: AKIAIOSFODNN7EXAMPLE
-      access_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
 # Suggested model:

@@ -419,9 +419,9 @@ const CredentialsCreateButton = connect(
                             </tr>
                             <tr>
                                 <th>Access Secret Key</th>
-                                <td><code>{payload.access_secret_key}</code></td>
+                                <td><code>{payload.secret_access_key}</code></td>
                                 <td>
-                                    <ClipboardButton variant="secondary" text={payload.access_secret_key}/>
+                                    <ClipboardButton variant="secondary" text={payload.secret_access_key}/>
                                 </td>
                             </tr>
                             </tbody>

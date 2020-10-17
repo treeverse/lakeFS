@@ -24,7 +24,7 @@ Creation Date: {{  .CreationDate |date }}
 
 var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green }}
 {{ "Access Key ID:" | ljust 18 }} {{ .AccessKeyID | bold }}
-{{ "Access Secret Key:" | ljust 18 }} {{  .AccessSecretKey | bold }}
+{{ "Access Secret Key:" | ljust 18 }} {{  .SecretAccessKey | bold }}
 
 {{ "Keep these somewhere safe since you will not be able to see the secret key again" | yellow }}
 `

@@ -30,7 +30,7 @@ const SetupPage = ({ doSetupLakeFS, setupState }) => {
 
 credentials:
   access_key_id: ${setupState.payload.access_key_id}
-  secret_access_key: ${setupState.payload.access_secret_key}
+  secret_access_key: ${setupState.payload.secret_access_key}
 server:
   endpoint_url: ${window.location.protocol}//${window.location.host}${API_ENDPOINT}
 `);
@@ -51,7 +51,7 @@ server:
                             </tr>
                             <tr>
                                 <td>Secret Key</td>
-                                <td><code>{setupState.payload.access_secret_key}</code> <ClipboardButton variant="link" text={setupState.payload.access_secret_key} tooltip="Copy secret key"/></td>
+                                <td><code>{setupState.payload.secret_access_key}</code> <ClipboardButton variant="link" text={setupState.payload.secret_access_key} tooltip="Copy secret key"/></td>
                             </tr>
                         </tbody>
                     </Table>
