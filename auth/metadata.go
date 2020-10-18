@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -32,9 +33,15 @@ func NewDBMetadataManager(version string, database db.Database) *DBMetadataManag
 		db:      database,
 	}
 }
-
+func generateInstallationID() string {
+	installationID := config.GetFixedInstallationID()
+	if installationID == "" {
+		installationID = uuid.New().String()
+	}
+	return installationID
+}
 func insertOrGetInstallationID(tx db.Tx) (string, error) {
-	newInstallationID := uuid.New().String()
+	newInstallationID := generateInstallationID()
 	res, err := tx.Exec(`INSERT INTO auth_installation_metadata (key_name, key_value)
 			VALUES ($1,$2)
 			ON CONFLICT DO NOTHING`,
