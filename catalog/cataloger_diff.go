@@ -22,11 +22,11 @@ const (
 )
 
 type diffEffectiveCommits struct {
-	// ParentEffectiveCommit last commit parent synchronized with child.
+	// ParentEffectiveCommit last commit parent merged from child.
 	// When no sync commit is found - set the commit ID to the point child's branch was created.
 	ParentEffectiveCommit CommitID `db:"parent_effective_commit"`
 
-	// ChildEffectiveCommit last commit child synchronized to parent.
+	// ChildEffectiveCommit last commit child merged from parent.
 	// If the child never synced with parent, the commit ID is set to 1.
 	ChildEffectiveCommit CommitID `db:"child_effective_commit"`
 
@@ -39,8 +39,8 @@ type contextKey string
 type diffResultRecord struct {
 	SourceBranch int64
 	DiffType     DifferenceType
-	Entry        Entry
-	EntryCtid    *string
+	Entry        Entry   // Partially filled. Path is always set.
+	EntryCtid    *string // CTID of the modified/added entry. Do not use outside of catalog diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
 }
 
 type diffResultsBatchWriter struct {
@@ -51,10 +51,10 @@ type diffResultsBatchWriter struct {
 
 var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 
-// Diff return list of differences between leftBranch and rightBranch.
-//   The second argument will be true of there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
+// Diff lists of differences between leftBranch and rightBranch.
+//   The second return value will be true if there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
 //   limit - is the maximum number of differences we will return, limited by DiffMaxLimit (which will be used in case limit less than 0)
-//   after - lookup entry's path bigger than this value.
+//   after - lookup entries whose path comes after this value.
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
@@ -241,7 +241,7 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, chil
 		}
 
 		diffRec := &diffResultRecord{
-			SourceBranch: parentID,
+			SourceBranch: parentEnt.BranchID,
 			DiffType:     diffType,
 			Entry:        parentEnt.Entry,
 		}
