@@ -1114,7 +1114,7 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	}
 }
 
-func TestCataloger_MergeWitoutDiff(t *testing.T) {
+func TestCataloger_MergeWithoutDiff(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
@@ -1125,8 +1125,8 @@ func TestCataloger_MergeWitoutDiff(t *testing.T) {
 	_, err = c.CreateBranch(ctx, repository, "b1", "master")
 	testutil.MustDo(t, "create branch b1", err)
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
-	if err.Error() != "no difference was found" {
-		t.Fatal("did not get 'nothing to commit' error")
+	if !errors.Is(err, ErrNoDifferenceWasFound) {
+		t.Fatalf("Merge expected err=%s, expected=%s", err, ErrNoDifferenceWasFound)
 	}
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file_dummy", nil, "master1")
 	_, err = c.Commit(ctx, repository, "master", "file_dummy", "tester", nil)
@@ -1140,8 +1140,8 @@ func TestCataloger_MergeWitoutDiff(t *testing.T) {
 		t.Fatalf("error on merge with no changes:%+v", err)
 	}
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
-	if err.Error() != "no difference was found" {
-		t.Fatal("did not get 'nothing to commit' error")
+	if !errors.Is(err, ErrNoDifferenceWasFound) {
+		t.Fatalf("Merge expected err=%s, expected=%s", err, ErrNoDifferenceWasFound)
 	}
 }
 
