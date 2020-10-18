@@ -188,10 +188,9 @@ func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[Differenc
 func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64, limit int, after string) error {
 	// get child last commit of merge from parent
 	var childLastFromParentCommitID CommitID
-	query, args, err := sq.Select("MAX(commit_id) as max_child_commit").
+	query, args, err := psql.Select("MAX(commit_id) as max_child_commit").
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_type = 'from_parent'", childID).
-		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("get child last commit sql: %w", err)
@@ -479,12 +478,11 @@ func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diff
 // the parent is the effective commit number of the first lineage record of the child that points to the parent
 // it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
 func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentID int64) (*diffEffectiveCommits, error) {
-	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
+	effectiveCommitsQuery, args, err := psql.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
 		OrderBy(`commit_id DESC`).
 		Limit(1).
-		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
 		return nil, err
