@@ -213,7 +213,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 				SELECT $1,path,'',0,'','{}',$2,0
 				FROM `+diffResultsTableName+`
 				WHERE diff_type=$3 AND source_branch<>$1`,
-		parentID, previousMaxCommitID, DifferenceTypeRemoved)
+		parentID, nextCommitID, DifferenceTypeRemoved)
 	if err != nil {
 		return err
 	}
