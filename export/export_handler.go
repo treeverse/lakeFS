@@ -81,7 +81,7 @@ func (h *Handler) touch(body *string) error {
 	}
 	return h.adapter.Put(path, 0, strings.NewReader(""), block.PutOpts{})
 }
-func (h *Handler) Handle(action string, body *string) parade.HandlerResult {
+func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 
 	var err error
 	switch action {
@@ -103,12 +103,12 @@ func (h *Handler) Handle(action string, body *string) parade.HandlerResult {
 			"action": action,
 		}).WithError(err).Error("touch failed")
 
-		return parade.HandlerResult{
+		return parade.ActorResult{
 			Status:     err.Error(),
 			StatusCode: parade.TaskInvalid,
 		}
 	}
-	return parade.HandlerResult{
+	return parade.ActorResult{
 		Status:     fmt.Sprintf("Completed"),
 		StatusCode: parade.TaskCompleted,
 	}
@@ -118,6 +118,6 @@ func (h *Handler) Actions() []string {
 	return []string{CopyAction, DeleteAction, TouchAction, DoneAction}
 }
 
-func (h *Handler) Actor() parade.ActorID {
+func (h *Handler) ActorID() parade.ActorID {
 	return actorName
 }

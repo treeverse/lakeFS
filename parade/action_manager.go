@@ -26,11 +26,11 @@ type ManagerProperties struct {
 	MaxDuration *time.Duration // maxDuration passed to parade.OwnTasks
 }
 
-// ActionManager manages the process of requesting and returning tasks for a specific TaskHandler.
+// ActionManager manages the process of requesting and returning tasks for a specific Actor.
 // The manager requests tasks, sends the tasks to workers through a channel, the workers then handle the task and return it.
 type ActionManager struct {
 	properties *ManagerProperties
-	handler    TaskHandler
+	actor      Actor
 	parade     Parade
 	quit       chan struct{}
 	wg         sync.WaitGroup
@@ -66,9 +66,9 @@ func setDefaultProperties(properties *ManagerProperties) *ManagerProperties {
 }
 
 // NewActionManager initiates an ActionManager with workers and returns a
-func NewActionManager(handler TaskHandler, parade Parade, properties *ManagerProperties) *ActionManager {
+func NewActionManager(actor Actor, parade Parade, properties *ManagerProperties) *ActionManager {
 	a := &ActionManager{
-		handler:    handler,
+		actor:      actor,
 		parade:     parade,
 		properties: setDefaultProperties(properties),
 		quit:       nil,
@@ -86,8 +86,10 @@ func (a *ActionManager) Close() {
 func (a *ActionManager) start() {
 	taskChannel := make(chan OwnedTaskData, a.properties.ChannelSize)
 	a.quit = make(chan struct{})
-	a.wp = newWorkerPool(a.handler, taskChannel, a.parade, a.properties.Workers)
+	a.wp = newWorkerPool(a.actor, taskChannel, a.parade, a.properties.Workers)
 	a.wg.Add(1)
+	actorID := a.actor.ActorID()
+	actions := a.actor.Actions()
 	go func() {
 		defer a.wg.Done()
 		d := time.Duration(0)
@@ -96,9 +98,9 @@ func (a *ActionManager) start() {
 			case <-a.quit:
 				return
 			case <-time.After(d):
-				ownedTasks, err := a.parade.OwnTasks(a.handler.Actor(), a.properties.MaxTasks, a.handler.Actions(), a.properties.MaxDuration)
+				ownedTasks, err := a.parade.OwnTasks(actorID, a.properties.MaxTasks, actions, a.properties.MaxDuration)
 				if err != nil {
-					logging.Default().WithField("actor", a.handler.Actor()).Errorf("manager failed to receive tasks: %s", err)
+					logging.Default().WithField("actor", actorID).Errorf("manager failed to receive tasks: %s", err)
 					d = *a.properties.ErrWaitTime
 					continue
 				}
@@ -116,16 +118,16 @@ func (a *ActionManager) start() {
 }
 
 type workerPool struct {
-	handler TaskHandler
+	actor   Actor
 	ch      chan OwnedTaskData
 	workers int
 	wg      sync.WaitGroup
 	parade  Parade
 }
 
-func newWorkerPool(handler TaskHandler, ch chan OwnedTaskData, parade Parade, workers int) *workerPool {
+func newWorkerPool(handler Actor, ch chan OwnedTaskData, parade Parade, workers int) *workerPool {
 	a := &workerPool{
-		handler: handler,
+		actor:   handler,
 		ch:      ch,
 		workers: workers,
 		wg:      sync.WaitGroup{},
@@ -147,7 +149,7 @@ func (a *workerPool) start() {
 			workerID := uuid.New()
 			defer a.wg.Done()
 			for task := range a.ch {
-				res := a.handler.Handle(task.Action, task.Body)
+				res := a.actor.Handle(task.Action, task.Body)
 				err := a.parade.ReturnTask(task.ID, task.Token, res.Status, res.StatusCode)
 				if err != nil {
 					logging.Default().WithFields(logging.Fields{

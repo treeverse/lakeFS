@@ -51,16 +51,16 @@ type mockHandler struct {
 	handleCalled int32
 }
 
-func (m *mockHandler) Handle(_ string, _ *string) parade.HandlerResult {
+func (m *mockHandler) Handle(_ string, _ *string) parade.ActorResult {
 	atomic.AddInt32(&m.handleCalled, 1)
-	return parade.HandlerResult{}
+	return parade.ActorResult{}
 }
 
 func (m *mockHandler) Actions() []string {
 	return []string{"one", "two"}
 }
 
-func (m *mockHandler) Actor() parade.ActorID {
+func (m *mockHandler) ActorID() parade.ActorID {
 	return "mock"
 }
 
