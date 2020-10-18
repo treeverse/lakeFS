@@ -26,8 +26,8 @@ type ManagerProperties struct {
 	MaxDuration *time.Duration // maxDuration passed to parade.OwnTasks
 }
 
-// A ActionManager manages the process of requesting and returning tasks for a specific TaskHandler
-// The manager requests tasks, sends the tasks to workers through a channel, the workers then handle the task and return it
+// ActionManager manages the process of requesting and returning tasks for a specific TaskHandler.
+// The manager requests tasks, sends the tasks to workers through a channel, the workers then handle the task and return it.
 type ActionManager struct {
 	properties *ManagerProperties
 	handler    TaskHandler
