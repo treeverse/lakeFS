@@ -33,6 +33,7 @@ type ActionManager struct {
 	handler    TaskHandler
 	parade     Parade
 	quit       chan struct{}
+	wg         sync.WaitGroup
 	wp         *workerPool
 }
 
@@ -79,28 +80,35 @@ func NewActionManager(handler TaskHandler, parade Parade, properties *ManagerPro
 func (a *ActionManager) Close() {
 	close(a.quit)
 	a.wp.Close()
+	a.wg.Wait()
 }
 
 func (a *ActionManager) start() {
 	taskChannel := make(chan OwnedTaskData, a.properties.ChannelSize)
 	a.quit = make(chan struct{})
 	a.wp = newWorkerPool(a.handler, taskChannel, a.parade, a.properties.Workers)
+	a.wg.Add(1)
 	go func() {
+		defer a.wg.Done()
+		d := time.Duration(0)
 		for {
 			select {
 			case <-a.quit:
 				return
-			default:
+			case <-time.After(d):
 				ownedTasks, err := a.parade.OwnTasks(a.handler.Actor(), a.properties.MaxTasks, a.handler.Actions(), a.properties.MaxDuration)
 				if err != nil {
 					logging.Default().WithField("actor", a.handler.Actor()).Errorf("manager failed to receive tasks: %s", err)
-					time.Sleep(*a.properties.WaitTime)
-				}
-				for _, ot := range ownedTasks {
-					a.wp.ch <- ot
+					d = *a.properties.ErrWaitTime
+					continue
 				}
 				if len(ownedTasks) == 0 {
-					time.Sleep(*a.properties.WaitTime)
+					d = *a.properties.WaitTime
+				} else {
+					d = 0
+					for _, ot := range ownedTasks {
+						a.wp.ch <- ot
+					}
 				}
 			}
 		}
