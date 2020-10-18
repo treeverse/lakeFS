@@ -34,21 +34,12 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-
-		params := &diffParams{
-			Repository:    repository,
-			LeftRef:       &Ref{Branch: leftBranch, CommitID: CommittedID},
-			LeftBranchID:  leftID,
-			RightRef:      &Ref{Branch: rightBranch, CommitID: UncommittedID},
-			RightBranchID: rightID,
-			Limit:         -1,
-		}
-		relation, err := c.getRefsRelationType(tx, params)
+		relation, err := getBranchesRelationType(tx, leftID, rightID)
 		if err != nil {
-			return nil, fmt.Errorf("get refs relation: %w", err)
+			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
-		err = c.doDiff(ctx, tx, params)
+		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID, -1, "")
 		if err != nil {
 			return nil, err
 		}

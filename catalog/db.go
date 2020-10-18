@@ -78,6 +78,33 @@ func getRepository(tx db.Tx, repository string) (*Repository, error) {
 	return &r, nil
 }
 
+func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64) (RelationType, error) {
+	var youngerBranch, olderBranch int64
+	var possibleRelation RelationType
+	if sourceBranchID == destinationBranchID {
+		return RelationTypeNone, nil
+	}
+	if sourceBranchID > destinationBranchID {
+		possibleRelation = RelationTypeFromChild
+		youngerBranch = sourceBranchID
+		olderBranch = destinationBranchID
+	} else {
+		possibleRelation = RelationTypeFromParent
+		youngerBranch = destinationBranchID
+		olderBranch = sourceBranchID
+	}
+	var isDirectRelation bool
+	err := tx.Get(&isDirectRelation,
+		`select lineage[1]=$1 from catalog_branches where id=$2`, olderBranch, youngerBranch)
+	if err != nil {
+		return RelationTypeNone, err
+	}
+	if isDirectRelation {
+		return possibleRelation, nil
+	}
+	return RelationTypeNotDirect, nil
+}
+
 // paginateSlice take slice address, resize and return 'has more' when needed
 func paginateSlice(s interface{}, limit int) bool {
 	if limit < 0 {
