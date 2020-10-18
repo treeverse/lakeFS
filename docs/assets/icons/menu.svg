@@ -1,11 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="20px" height="16px" viewBox="0 0 20 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>mobile menu@2x</title>
-    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g id="header-/-mobile" transform="translate(-30.000000, -32.000000)" fill="#279890">
-            <g id="Group" transform="translate(30.000000, 32.000000)">
-                <path d="M20,14 L20,16 L0,16 L0,14 L20,14 Z M20,7 L20,9 L0,9 L0,7 L20,7 Z M20,0 L20,2 L0,2 L0,0 L20,0 Z" id="mobile-menu"></path>
-            </g>
-        </g>
-    </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="16" version="1.1" viewBox="0 0 20 16"><title>mobile menu@2x</title><g id="Symbols" fill="none" fill-rule="evenodd" stroke="none" stroke-width="1"><g id="header-/-mobile" fill="#279890" transform="translate(-30.000000, -32.000000)"><g id="Group" transform="translate(30.000000, 32.000000)"><path id="mobile-menu" d="M20,14 L20,16 L0,16 L0,14 L20,14 Z M20,7 L20,9 L0,9 L0,7 L20,7 Z M20,0 L20,2 L0,2 L0,0 L20,0 Z"/></g></g></g></svg>

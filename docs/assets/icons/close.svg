@@ -1,9 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>close menu@2x</title>
-    <g id="lakeFS-Doc-website--|-Mobile" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g id="-M-|-lakeFS-Homepage--Menu" transform="translate(-242.000000, -32.000000)" fill="#279890">
-            <path d="M256.545455,32 L258,33.4545455 L251.454,40 L258,46.5454545 L256.545455,48 L250,41.454 L243.454545,48 L242,46.5454545 L248.546,40 L242,33.4545455 L243.454545,32 L250,38.546 L256.545455,32 Z" id="close-menu"></path>
-        </g>
-    </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16" version="1.1" viewBox="0 0 16 16"><title>close menu@2x</title><g id="lakeFS-Doc-website--|-Mobile" fill="none" fill-rule="evenodd" stroke="none" stroke-width="1"><g id="-M-|-lakeFS-Homepage--Menu" fill="#279890" transform="translate(-242.000000, -32.000000)"><path id="close-menu" d="M256.545455,32 L258,33.4545455 L251.454,40 L258,46.5454545 L256.545455,48 L250,41.454 L243.454545,48 L242,46.5454545 L248.546,40 L242,33.4545455 L243.454545,32 L250,38.546 L256.545455,32 Z"/></g></g></svg>
