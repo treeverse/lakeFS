@@ -1145,7 +1145,7 @@ func TestCataloger_MergeWitoutDiff(t *testing.T) {
 	}
 }
 
-func TestCataloger_MergeFromChildAfterMergeFromFather(t *testing.T) {
+func TestCataloger_MergeFromChildAfterMergeFromParent(t *testing.T) {
 	t.Skip("Should we trigger conflict when we apply changes on changes we merged from parent")
 	ctx := context.Background()
 	c := testCataloger(t)
