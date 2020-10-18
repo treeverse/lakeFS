@@ -240,9 +240,8 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, chil
 		}
 
 		diffRec := &diffResultRecord{
-			SourceBranch: parentEnt.BranchID,
-			DiffType:     diffType,
-			Entry:        parentEnt.Entry,
+			DiffType: diffType,
+			Entry:    parentEnt.Entry,
 		}
 		if matchedChild != nil && matchedChild.BranchID == childID && diffType != DifferenceTypeConflict && diffType != DifferenceTypeRemoved {
 			diffRec.EntryCtid = &parentEnt.RowCtid
@@ -370,12 +369,16 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 			continue
 		}
 
-		err = batch.Write(&diffResultRecord{
-			SourceBranch: childID,
-			DiffType:     diffType,
-			Entry:        childEnt.Entry,
-			EntryCtid:    &childEnt.RowCtid,
-		})
+		diffRecord := &diffResultRecord{
+			DiffType:  diffType,
+			Entry:     childEnt.Entry,
+			EntryCtid: &childEnt.RowCtid,
+		}
+		if diffType == DifferenceTypeRemoved && parentEnt != nil {
+			diffRecord.SourceBranch = parentEnt.BranchID
+		}
+
+		err = batch.Write(diffRecord)
 		if err != nil {
 			return err
 		}
