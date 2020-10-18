@@ -190,6 +190,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	if err != nil {
 		return err
 	}
+	// delete(mark max-commit) entries in father that are either deleted or changed from child
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
@@ -212,7 +213,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 				SELECT $1,path,'',0,'','{}',$2,0
 				FROM `+diffResultsTableName+`
 				WHERE diff_type=$3 AND source_branch<>$1`,
-		parentID, nextCommitID, DifferenceTypeRemoved)
+		parentID, previousMaxCommitID, DifferenceTypeRemoved)
 	if err != nil {
 		return err
 	}
