@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp/syntax"
+	"sort"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -16,7 +17,26 @@ const (
 	anotherBranch = "lost-not-found"
 )
 
-func TestExport_GetConfiguration(t *testing.T) {
+// configForBranchSlice adapts a slice to satisfy sort.Interface
+type configForBranchSlice []ExportConfigurationForBranch
+
+func (s configForBranchSlice) Len() int { return len(s) }
+
+func (s configForBranchSlice) Less(i int, j int) bool {
+	if s[i].Repository < s[j].Repository {
+		return true
+	}
+	if s[i].Repository > s[j].Repository {
+		return false
+	}
+	return s[i].Branch < s[j].Branch
+}
+
+func (s configForBranchSlice) Swap(i int, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func TestExportConfiguration(t *testing.T) {
 	const (
 		branchID        = 17
 		anotherBranchID = 29
@@ -83,6 +103,48 @@ func TestExport_GetConfiguration(t *testing.T) {
 		}
 		if regexpErr.Code != syntax.ErrMissingParen {
 			t.Errorf("expected configuration update with bad %+v to give missing paren, but got %s", badCfg, regexpErr.Code)
+		}
+	})
+
+	t.Run("GetExportConfigurations", func(t *testing.T) {
+		moreBranch := "secondary"
+		if _, err := c.CreateBranch(ctx, repo, moreBranch, defaultBranch); err != nil {
+			t.Fatalf("create secondary branch: %s", err)
+		}
+		moreCfg := ExportConfiguration{
+			Path:       "/more/to/export",
+			StatusPath: "/more/for/status",
+		}
+		expected := []ExportConfigurationForBranch{
+			{
+				Repository:             repo,
+				Branch:                 defaultBranch,
+				Path:                   cfg.Path,
+				StatusPath:             cfg.StatusPath,
+				LastKeysInPrefixRegexp: cfg.LastKeysInPrefixRegexp,
+			}, {
+				Repository:             repo,
+				Branch:                 moreBranch,
+				Path:                   moreCfg.Path,
+				StatusPath:             moreCfg.StatusPath,
+				LastKeysInPrefixRegexp: moreCfg.LastKeysInPrefixRegexp,
+			},
+		}
+
+		if err := c.PutExportConfiguration(repo, defaultBranch, &cfg); err != nil {
+			t.Fatalf("add configuration with %+v failed: %s", cfg, err)
+		}
+		if err := c.PutExportConfiguration(repo, moreBranch, &moreCfg); err != nil {
+			t.Fatalf("add configuration with %+v failed: %s", moreCfg, err)
+		}
+		got, err := c.GetExportConfigurations()
+		if err != nil {
+			t.Fatal(err)
+		}
+		sort.Sort(configForBranchSlice(expected))
+		sort.Sort(configForBranchSlice(got))
+		if diffs := deep.Equal(expected, got); diffs != nil {
+			t.Errorf("did not read expected configurations: %s", diffs)
 		}
 	})
 }
