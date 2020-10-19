@@ -3,11 +3,12 @@ package export
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
-	"net/url"
-	"strings"
 )
 
 const actorName parade.ActorID = "EXPORT"
