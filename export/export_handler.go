@@ -2,6 +2,7 @@ package export
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -31,7 +32,7 @@ type TaskBody struct {
 }
 
 func PathToPointer(path string) (block.ObjectPointer, error) {
-	u, err := url.Parse(path) //TODO: add verify path on create task
+	u, err := url.Parse(path) // TODO: add verify path on create task
 	if err != nil {
 		return block.ObjectPointer{}, err
 	}
@@ -82,8 +83,10 @@ func (h *Handler) touch(body *string) error {
 	}
 	return h.adapter.Put(path, 0, strings.NewReader(""), block.PutOpts{})
 }
-func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 
+var errUnknownAction = errors.New("unknown action")
+
+func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 	var err error
 	switch action {
 	case CopyAction:
@@ -93,9 +96,9 @@ func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 	case TouchAction:
 		err = h.touch(body)
 	case DoneAction:
-		//todo(guys): handle done action
+		// todo(guys): handle done action
 	default:
-		err = fmt.Errorf("unknown action")
+		err = errUnknownAction
 	}
 
 	if err != nil {
@@ -110,7 +113,7 @@ func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 		}
 	}
 	return parade.ActorResult{
-		Status:     fmt.Sprintf("Completed"),
+		Status:     "Completed",
 		StatusCode: parade.TaskCompleted,
 	}
 }
