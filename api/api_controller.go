@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
@@ -20,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	configop "github.com/treeverse/lakefs/api/gen/restapi/operations/config"
+	exportop "github.com/treeverse/lakefs/api/gen/restapi/operations/export"
 	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
 	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -184,7 +187,11 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
 	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
+
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
+
+	api.ExportGetContinuousExportHandler = c.ExportGetContinuousExportHandler()
+	api.ExportSetContinuousExportHandler = c.ExportSetContinuousExportHandler()
 
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
@@ -2176,6 +2183,93 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 		}
 
 		return authop.NewDetachPolicyFromGroupNoContent()
+	})
+}
+
+func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousExportHandler {
+	return exportop.GetContinuousExportHandlerFunc(func(params exportop.GetContinuousExportParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return exportop.NewGetContinuousExportUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		deps.LogAction("get_continuous_export")
+
+		config, err := deps.Cataloger.GetExportConfigurationForBranch(params.Repository, params.Branch)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
+			return exportop.NewGetContinuousExportNotFound().
+				WithPayload(responseErrorFrom(err))
+		}
+		if err != nil {
+			return exportop.NewGetContinuousExportDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		prefixRegexp, err := regexp.Compile(config.LastKeysInPrefixRegexp)
+		if err != nil {
+			return exportop.NewGetContinuousExportDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		prefixRegexps, err := catalog.DeconstructDisjunction(prefixRegexp)
+		if err != nil {
+			return exportop.NewGetContinuousExportDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(fmt.Errorf(
+					"cannot deconstruct last_keys_in_prefix_regexp %s: %w", config.LastKeysInPrefixRegexp, err)))
+		}
+
+		payload := models.ContinuousExportConfiguration{
+			ExportPath:             strfmt.URI(config.Path),
+			ExportStatusPath:       strfmt.URI(config.StatusPath),
+			LastKeysInPrefixRegexp: prefixRegexps,
+		}
+		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
+
+	})
+}
+
+func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandlerFunc {
+	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateBranchAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return exportop.NewSetContinuousExportUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		deps.LogAction("set_continuous_export")
+
+		lastKeysInPrefixRegexp, err := catalog.DisjunctRegexps(params.Config.LastKeysInPrefixRegexp)
+		if err != nil {
+			return exportop.NewSetContinuousExportDefault(http.StatusInternalServerError).
+				WithPayload(responseError("join last keys in prefix regexps: %s", err))
+		}
+		config := catalog.ExportConfiguration{
+			Path:                   params.Config.ExportPath.String(),
+			StatusPath:             params.Config.ExportStatusPath.String(),
+			LastKeysInPrefixRegexp: lastKeysInPrefixRegexp.String(),
+		}
+		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
+			return exportop.NewSetContinuousExportNotFound().
+				WithPayload(responseErrorFrom(err))
+		}
+		if err != nil {
+			return exportop.NewSetContinuousExportDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return exportop.NewSetContinuousExportCreated()
 	})
 }
 
