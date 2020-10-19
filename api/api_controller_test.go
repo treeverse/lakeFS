@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/api/gen/client"
@@ -21,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/config"
+	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/client/retention"
@@ -1350,6 +1352,93 @@ func TestHandler_ConfigHandlers(t *testing.T) {
 
 		if got.BlockstoreType != BlockstoreType {
 			t.Errorf("expected to get %s, got %s", BlockstoreType, got.BlockstoreType)
+		}
+	})
+}
+
+func TestHandler_ContinuousExportHandlers(t *testing.T) {
+	const (
+		repo          = "repo-for-continuous-export-test"
+		branch        = "main"
+		anotherBranch = "notMain"
+	)
+	handler, deps := getHandler(t, "")
+
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	ctx := context.Background()
+	_, err := deps.cataloger.CreateRepository(ctx, repo, "s3://foo1", branch)
+	testutil.MustDo(t, "create repository", err)
+
+	config := models.ContinuousExportConfiguration{
+		ExportPath:             strfmt.URI("s3://bucket/export"),
+		ExportStatusPath:       strfmt.URI("s3://bucket/report"),
+		LastKeysInPrefixRegexp: []string{"^_success$", ".*/_success$"},
+	}
+
+	res, err := clt.Export.SetContinuousExport(&export.SetContinuousExportParams{
+		Repository: repo,
+		Branch:     branch,
+		Config:     &config,
+	}, bauth)
+	testutil.MustDo(t, "initial continuous export configuration", err)
+	if res == nil {
+		t.Fatalf("initial continuous export configuration: expected OK but got nil")
+	}
+
+	t.Run("get missing branch configuration", func(t *testing.T) {
+		res, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
+			Repository: repo,
+			Branch:     anotherBranch,
+		}, bauth)
+		if err == nil || res != nil {
+			t.Fatalf("expected get to return an error but got result %v, error nil", res)
+		}
+		if _, ok := err.(*export.GetContinuousExportNotFound); !ok {
+			t.Errorf("expected get to return not found but got %T %+v", err, err)
+		}
+	})
+
+	t.Run("get configured branch", func(t *testing.T) {
+		got, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
+			Repository: repo,
+			Branch:     branch,
+		}, bauth)
+		if err != nil {
+			t.Fatalf("expected get to return result but got %s", err)
+		}
+		if diffs := deep.Equal(config, *got.GetPayload()); diffs != nil {
+			t.Errorf("got different configuration: %s", diffs)
+		}
+	})
+
+	t.Run("overwrite configuration", func(t *testing.T) {
+		newConfig := models.ContinuousExportConfiguration{
+			ExportPath:             strfmt.URI("s3://better-bucket/export"),
+			ExportStatusPath:       strfmt.URI("s3://better-bucket/report"),
+			LastKeysInPrefixRegexp: nil,
+		}
+		_, err := clt.Export.SetContinuousExport(&export.SetContinuousExportParams{
+			Repository: repo,
+			Branch:     branch,
+			Config:     &newConfig,
+		}, bauth)
+		if err != nil {
+			t.Errorf("failed to overwrite continuous export configuration: %s", err)
+		}
+		got, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
+			Repository: repo,
+			Branch:     branch,
+		}, bauth)
+		if err != nil {
+			t.Fatalf("expected get to return result but got %s", err)
+		}
+		if diffs := deep.Equal(newConfig, *got.GetPayload()); diffs != nil {
+			t.Errorf("got different configuration: %s", diffs)
 		}
 	})
 }
