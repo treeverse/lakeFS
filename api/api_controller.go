@@ -2230,7 +2230,6 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 			LastKeysInPrefixRegexp: prefixRegexps,
 		}
 		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
-
 	})
 }
 

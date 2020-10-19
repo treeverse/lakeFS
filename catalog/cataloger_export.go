@@ -118,7 +118,10 @@ func unbracket(s string) (string, error) {
 
 // DeconstructDisjunction returns the text forms of the regexps in the disjunction rex.  rex
 // should be constructed (only) by DisjunctRegexps.
-func DeconstructDisjunction(regexp *regexp.Regexp) ([]string, error) {
+func DeconstructDisjunction(regexp *regexp.Regexp) ([]string, error) { // nolint:interfacer
+	// Why nollnt above? I really do want this regexp handling function to take a regexp, not
+	// expvar.Var hich is a silly alias to Stringer.
+
 	s := regexp.String()
 	if len(s) == 0 {
 		return nil, nil
