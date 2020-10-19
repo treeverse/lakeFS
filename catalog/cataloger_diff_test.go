@@ -166,9 +166,9 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	secondCommit, err := c.Commit(ctx, repository, DefaultBranchName, "commit changes", "tester", nil)
 	testutil.MustDo(t, "commit branch changes", err)
 
-	// diff changes between first and second commit
+	// diff changes between second and first commit
 	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, -1, "")
-	testutil.MustDo(t, "Diff changes from first and second commits", err)
+	testutil.MustDo(t, "Diff changes from second and first commits", err)
 	if more {
 		t.Fatal("Diff has more differences, expected none")
 	}
@@ -176,6 +176,19 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeRemoved},
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
 		Difference{Entry: Entry{Path: "fileX-" + DefaultBranchName}, Type: DifferenceTypeAdded},
+	}); diff != nil {
+		t.Fatal("Diff unexpected differences:", diff)
+	}
+
+	// diff changes between first and second commit
+	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, -1, "")
+	testutil.MustDo(t, "Diff changes from first and second commits", err)
+	if more {
+		t.Fatal("Diff has more differences, expected none")
+	}
+	if diff := deep.Equal(res, Differences{
+		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeAdded},
+		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
 	}); diff != nil {
 		t.Fatal("Diff unexpected differences:", diff)
 	}
