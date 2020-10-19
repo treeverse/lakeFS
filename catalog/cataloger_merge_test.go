@@ -700,11 +700,16 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{}); diff != nil {
+
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeChanged: 1,
+	}); diff != nil {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//expectedDifferences = Differences{}
+	//expectedDifferences := Differences{
+	//	Difference{Type: DifferenceTypeModified, Path: "/file0"},
+	//}
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
@@ -1019,8 +1024,24 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "pushing /file111 down", nil)
 	testutil.MustDo(t, "merge branch2 to branch1", err)
 
-	_, err = c.Merge(ctx, repository, "branch1", "master", "tester", "pushing /file111 down", nil)
-	testutil.MustDo(t, "merge branch1 to master", err)
+	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "pushing /file111 down", nil)
+	if !errors.Is(err, ErrConflictFound) {
+		t.Fatalf("Merge err=%s, expected conflict", err)
+	}
+	if res == nil {
+		t.Fatal("Expected merge result, got none")
+	} else if res.Reference != "" {
+		t.Fatalf("Expected empty reference, got %s", res.Reference)
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeConflict: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
+
+	// delete the file to resolve conflict
+	testutil.MustDo(t, "delete the conflict file on master",
+		c.DeleteEntry(ctx, repository, "master", "/file111"))
 
 	// push file111 delete
 	_, err = c.Merge(ctx, repository, "branch1", "branch2", "tester", "delete /file111 up", nil)
@@ -1049,30 +1070,6 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{
 	//	Difference{Type: DifferenceTypeRemoved, Path: "/file111"},
-	//}
-	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
-	//testutil.MustDo(t, "diff merge changes", err)
-	//if !differences.Equal(expectedDifferences) {
-	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
-	//}
-
-	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "try delete /file111 . get conflict", nil)
-	if !errors.Is(err, ErrConflictFound) {
-		t.Fatalf("Expected to get conflict error, got err=%+v", err)
-	}
-	if res == nil {
-		t.Fatal("Expected merge result, got none")
-	} else if res.Reference != "" {
-		t.Fatalf("Expected empty reference, got %s", res.Reference)
-	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeConflict: 1,
-	}); diff != nil {
-		t.Fatal("Merge Summary", diff)
-	}
-	// TODO(barak): enable test after diff between commits is supported
-	//expectedDifferences = Differences{
-	//	Difference{Type: DifferenceTypeConflict, Path: "/file111"},
 	//}
 	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
@@ -1117,7 +1114,7 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	}
 }
 
-func TestCataloger_MergeWitoutDiff(t *testing.T) {
+func TestCataloger_MergeWithoutDiff(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
@@ -1128,8 +1125,8 @@ func TestCataloger_MergeWitoutDiff(t *testing.T) {
 	_, err = c.CreateBranch(ctx, repository, "b1", "master")
 	testutil.MustDo(t, "create branch b1", err)
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
-	if err.Error() != "no difference was found" {
-		t.Fatal("did not get 'nothing to commit' error")
+	if !errors.Is(err, ErrNoDifferenceWasFound) {
+		t.Fatalf("Merge expected err=%s, expected=%s", err, ErrNoDifferenceWasFound)
 	}
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file_dummy", nil, "master1")
 	_, err = c.Commit(ctx, repository, "master", "file_dummy", "tester", nil)
@@ -1143,7 +1140,65 @@ func TestCataloger_MergeWitoutDiff(t *testing.T) {
 		t.Fatalf("error on merge with no changes:%+v", err)
 	}
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
-	if err.Error() != "no difference was found" {
-		t.Fatal("did not get 'nothing to commit' error")
+	if !errors.Is(err, ErrNoDifferenceWasFound) {
+		t.Fatalf("Merge expected err=%s, expected=%s", err, ErrNoDifferenceWasFound)
+	}
+}
+
+func TestCataloger_MergeFromChildAfterMergeFromParent(t *testing.T) {
+	t.Skip("Should we trigger conflict when we apply changes on changes we merged from parent")
+	ctx := context.Background()
+	c := testCataloger(t)
+	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	// first entry creation
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master")
+	_, err := c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit file first time on master", err)
+	_, err = c.CreateBranch(ctx, repository, "b1", "master")
+	testutil.MustDo(t, "create branch b1", err)
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
+	if !errors.Is(err, ErrNoDifferenceWasFound) {
+		t.Fatalf("merge err=%s, expected ErrNoDifferenceWasFound", err)
+	}
+
+	// PART I
+	// two entries on master
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileY", nil, "master1")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "master", "fileY and fileZ", "tester", nil)
+	testutil.MustDo(t, "commit fileY  master", err)
+	// merge them into child
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge fileY from master to b1", nil)
+	testutil.MustDo(t, "merge into branch b1", err)
+	// delete one of those files in b1
+	err = c.DeleteEntry(ctx, repository, "b1", "fileY")
+	testutil.MustDo(t, "delete fileY on b1", err)
+	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "fileZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "b1", "fileY and fileZ", "tester", nil)
+	testutil.MustDo(t, "commit fileY b1", err)
+	_, err = c.Merge(ctx, repository, "b1", "master", "tester", "merge nothing from master to b1", nil)
+	if err != nil {
+		t.Fatalf("Merge err=%s, expected none", err)
+	}
+
+	// PART II
+	// two entries on master
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileYY", nil, "master1")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileZZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "master", "fileYY and fileZZ", "tester", nil)
+	testutil.MustDo(t, "commit fileYY  master", err)
+	// merge them into child
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge fileYY from master to b1", nil)
+	testutil.MustDo(t, "merge into branch b1", err)
+	// delete one of those files in b1
+	err = c.DeleteEntry(ctx, repository, "b1", "fileYY")
+	testutil.MustDo(t, "delete fileYY on b1", err)
+	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "fileZZ", nil, "master1")
+	_, err = c.Commit(ctx, repository, "b1", "fileYY and fileZZ", "tester", nil)
+	testutil.MustDo(t, "commit fileYY b1", err)
+	_, err = c.Merge(ctx, repository, "b1", "master", "tester", "merge nothing from master to b1", nil)
+	if err != nil {
+		t.Fatalf("Merge err=%s, expected none", err)
 	}
 }

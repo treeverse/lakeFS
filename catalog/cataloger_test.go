@@ -92,6 +92,7 @@ func testCreateEntryCalcChecksum(key string, seed string) string {
 }
 
 func testVerifyEntries(t testing.TB, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
+	t.Helper()
 	for _, entry := range entries {
 		ent, err := c.GetEntry(ctx, repository, reference, entry.Path, GetEntryParams{})
 		if entry.Deleted {
