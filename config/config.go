@@ -49,7 +49,7 @@ const (
 
 	MetaStoreType          = "metastore.type"
 	MetaStoreHiveURI       = "metastore.hive.uri"
-	MetastoreGlueCatalogID = "metastore.glue.catalog-id"
+	MetastoreGlueCatalogID = "metastore.glue.catalog_id"
 )
 
 var (
@@ -327,5 +327,5 @@ func GetMetastoreType() string {
 }
 
 func GetFixedInstallationID() string {
-	return viper.GetString("installation.fixed-id")
+	return viper.GetString("installation.fixed_id")
 }
