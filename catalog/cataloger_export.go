@@ -1,28 +1,26 @@
 package catalog
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
-	"regexp/syntax"
-	"strings"
 
+	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/db"
 )
 
 // ExportConfiguration describes the export configuration of a branch, as passed on wire, used
 // internally, and stored in DB.
 type ExportConfiguration struct {
-	Path                   string `db:"export_path" json:"exportPath"`
-	StatusPath             string `db:"export_status_path" json:"exportStatusPath"`
-	LastKeysInPrefixRegexp string `db:"last_keys_in_prefix_regexp" json:"lastKeysInPrefixRegexp"`
+	Path                   string         `db:"export_path"`
+	StatusPath             string         `db:"export_status_path"`
+	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
 }
 
 // ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
 type ExportConfigurationForBranch struct {
 	ExportConfiguration
-	Repository string `db:"repository"`
-	Branch     string `db:"branch"`
+	Repository string
+	Branch     string
 }
 
 func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error) {
@@ -66,6 +64,12 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 }
 
 func (c *cataloger) PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error {
+	// Validate all fields could be compiled as regexps.
+	for i, r := range conf.LastKeysInPrefixRegexp {
+		if _, err := regexp.Compile(r); err != nil {
+			return fmt.Errorf("invalid regexp /%s/ at position %d in LastKeysInPrefixRegexp: %w", r, i, err)
+		}
+	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
@@ -82,58 +86,4 @@ func (c *cataloger) PutExportConfiguration(repository string, branch string, con
 		return nil, err
 	})
 	return err
-}
-
-const (
-	groupStart = "(?:"
-	groupEnd   = ")"
-)
-
-// DisjunctRegexps returns a single regexp holding the disjunction ("|") of regexps.
-func DisjunctRegexps(regexps []string) (*regexp.Regexp, error) {
-	parts := make([]string, len(regexps))
-	for i, re := range regexps {
-		_, err := syntax.Parse(re, syntax.Perl)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", re, err)
-		}
-		parts[i] = groupStart + re + groupEnd
-	}
-	d := strings.Join(parts, "|")
-	return regexp.Compile(d)
-}
-
-var (
-	ErrNotBracketed = errors.New("not a bracketed string")
-	unbracketRegexp = regexp.MustCompile("^" + regexp.QuoteMeta(groupStart) + "(.*)" + regexp.QuoteMeta(groupEnd) + "$")
-)
-
-func unbracket(s string) (string, error) {
-	sub := unbracketRegexp.FindStringSubmatch(s)
-	if len(sub) == 0 {
-		return "", fmt.Errorf("%s: %w", s, ErrNotBracketed)
-	}
-	return sub[1], nil
-}
-
-// DeconstructDisjunction returns the text forms of the regexps in the disjunction rex.  rex
-// should be constructed (only) by DisjunctRegexps.
-func DeconstructDisjunction(regexp *regexp.Regexp) ([]string, error) { // nolint:interfacer
-	// Why nollnt above? I really do want this regexp handling function to take a regexp, not
-	// expvar.Var hich is a silly alias to Stringer.
-
-	s := regexp.String()
-	if len(s) == 0 {
-		return nil, nil
-	}
-	regexpParts := strings.Split(s, "|")
-	ret := make([]string, len(regexpParts))
-	for i, regexpPart := range regexpParts {
-		part, err := unbracket(regexpPart)
-		if err != nil {
-			return nil, err
-		}
-		ret[i] = part
-	}
-	return ret, nil
 }
