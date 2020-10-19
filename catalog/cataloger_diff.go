@@ -52,9 +52,11 @@ type diffResultsBatchWriter struct {
 var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 
 // Diff lists of differences between leftBranch and rightBranch.
-//   The second return value will be true if there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
-//   limit - is the maximum number of differences we will return, limited by DiffMaxLimit (which will be used in case limit less than 0)
-//   after - lookup entries whose path comes after this value.
+// The second return value will be true if there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
+// limit - is the maximum number of differences we will return, limited by DiffMaxLimit (which will be used in case limit less than 0)
+// after - lookup entries whose path comes after this value.
+// Diff internal API produce temporary table that this call deletes at the end of a successful transaction (failed will rollback changes)
+// The diff results table holds ctid to reference the relevant entry for changed/added and source branch for deleted - information used later to apply changes found
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},

@@ -11,6 +11,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+// Merge perform diff between two branches (left and right), apply changes on right branch and commit
+// It uses the cataloger diff internal API to produce a temporary table that we delete at the end of a successful merge
+// the table holds entry ctid to reference entries in case of changed/added and source branch in case of delete.
+// That information is used to address cases where we need to create new entry or tombstone as part of the merge
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
