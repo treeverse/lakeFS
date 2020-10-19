@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -2211,23 +2210,10 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 				WithPayload(responseErrorFrom(err))
 		}
 
-		prefixRegexp, err := regexp.Compile(config.LastKeysInPrefixRegexp)
-		if err != nil {
-			return exportop.NewGetContinuousExportDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-
-		prefixRegexps, err := catalog.DeconstructDisjunction(prefixRegexp)
-		if err != nil {
-			return exportop.NewGetContinuousExportDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(fmt.Errorf(
-					"cannot deconstruct last_keys_in_prefix_regexp %s: %w", config.LastKeysInPrefixRegexp, err)))
-		}
-
 		payload := models.ContinuousExportConfiguration{
 			ExportPath:             strfmt.URI(config.Path),
 			ExportStatusPath:       strfmt.URI(config.StatusPath),
-			LastKeysInPrefixRegexp: prefixRegexps,
+			LastKeysInPrefixRegexp: config.LastKeysInPrefixRegexp,
 		}
 		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
 	})
@@ -2248,7 +2234,6 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 
 		deps.LogAction("set_continuous_export")
 
-		lastKeysInPrefixRegexp, err := catalog.DisjunctRegexps(params.Config.LastKeysInPrefixRegexp)
 		if err != nil {
 			return exportop.NewSetContinuousExportDefault(http.StatusInternalServerError).
 				WithPayload(responseError("join last keys in prefix regexps: %s", err))
@@ -2256,7 +2241,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 		config := catalog.ExportConfiguration{
 			Path:                   params.Config.ExportPath.String(),
 			StatusPath:             params.Config.ExportStatusPath.String(),
-			LastKeysInPrefixRegexp: lastKeysInPrefixRegexp.String(),
+			LastKeysInPrefixRegexp: params.Config.LastKeysInPrefixRegexp,
 		}
 		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {

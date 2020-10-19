@@ -45,7 +45,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/klauspost/compress v1.10.10 // indirect
-	github.com/lib/pq v1.8.0 // indirect
+	github.com/lib/pq v1.8.0
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.2 // indirect
 	github.com/manifoldco/promptui v0.7.0
