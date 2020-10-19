@@ -11,6 +11,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+// Merge perform diff between two branches (left and right), apply changes on right branch and commit
+// It uses the cataloger diff internal API to produce a temporary table that we delete at the end of a successful merge
+// the table holds entry ctid to reference entries in case of changed/added and source branch in case of delete.
+// That information is used to address cases where we need to create new entry or tombstone as part of the merge
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
@@ -39,7 +43,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
-		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
+		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID, -1, "")
 		if err != nil {
 			return nil, err
 		}
@@ -188,6 +192,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	if err != nil {
 		return err
 	}
+	// delete(mark max-commit) entries in parent that are either deleted or changed from child
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
