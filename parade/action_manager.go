@@ -1,10 +1,12 @@
 package parade
 
 import (
-	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/logging"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
