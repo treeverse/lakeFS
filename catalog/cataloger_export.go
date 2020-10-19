@@ -17,10 +17,15 @@ type ExportConfiguration struct {
 }
 
 // ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
+// Unfortunately golang sql doesn't know about embedded structs, so you get a useless copy of
+// ExportConfiguration embedded here.
 type ExportConfigurationForBranch struct {
-	ExportConfiguration
-	Repository string
-	Branch     string
+	Repository string `db:"repository"`
+	Branch     string `db:"branch"`
+
+	Path                   string         `db:"export_path"`
+	StatusPath             string         `db:"export_status_path"`
+	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
 }
 
 func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error) {
@@ -48,16 +53,17 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 		`SELECT r.name repository, b.name branch,
                      e.export_path export_path, e.export_status_path export_status_path,
                      e.last_keys_in_prefix_regexp last_keys_in_prefix_regexp
-                 FROM catalog_branches_export e JOIN catalog_branches b ON e.branch_id = b.branch_id
+                 FROM catalog_branches_export e JOIN catalog_branches b ON e.branch_id = b.id
                       JOIN catalog_repositories r ON b.repository_id = r.id`)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var rec ExportConfigurationForBranch
-		if err = rows.Scan(&rec); err != nil {
+		if err = rows.StructScan(&rec); err != nil {
 			return nil, fmt.Errorf("scan configuration %+v: %w", rows, err)
 		}
+		fmt.Printf("[DEBUG] row %+v\n", rec)
 		ret = append(ret, rec)
 	}
 	return ret, nil
