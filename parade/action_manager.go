@@ -81,8 +81,8 @@ func NewActionManager(actor Actor, parade Parade, properties *ManagerProperties)
 
 func (a *ActionManager) Close() {
 	close(a.quit)
-	a.wp.Close()
 	a.wg.Wait()
+	a.wp.Close()
 }
 
 func (a *ActionManager) start() {
@@ -93,6 +93,7 @@ func (a *ActionManager) start() {
 	actorID := a.actor.ActorID()
 	actions := a.actor.Actions()
 	go func() {
+		defer close(taskChannel)
 		defer a.wg.Done()
 		d := time.Duration(0)
 		for {
@@ -140,7 +141,6 @@ func newWorkerPool(handler Actor, ch chan OwnedTaskData, parade Parade, workers 
 }
 
 func (a *workerPool) Close() {
-	close(a.ch)
 	a.wg.Wait()
 }
 
