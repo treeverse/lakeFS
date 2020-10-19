@@ -328,10 +328,4 @@ func TestCataloger_Diff_FromParentThreeBranches(t *testing.T) {
 	}); diff != nil {
 		t.Fatal("Diff unexpected differences:", diff)
 	}
-	//// diff changes between master and branch1
-	//res, more, err = c.Diff(ctx, repository, "master", "branch1", -1, "")
-	//testutil.MustDo(t, "Merge changes from master to branch1", err)
-	//// diff changes between master and branch2
-	//res, more, err = c.Diff(ctx, repository, "master", "branch2", -1, "")
-	//testutil.MustDo(t, "Merge changes from master to branch2", err)
 }

@@ -51,9 +51,11 @@ type diffResultsBatchWriter struct {
 
 type diffParams struct {
 	Repository    string
-	LeftRef       *Ref
+	LeftBranch    string
+	LeftCommitID  CommitID
 	LeftBranchID  int64
-	RightRef      *Ref
+	RightBranch   string
+	RightCommitID CommitID
 	RightBranchID int64
 	Limit         int
 	After         string
@@ -106,9 +108,11 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 
 		params := &diffParams{
 			Repository:    repository,
-			LeftRef:       leftRef,
+			LeftBranch:    leftRef.Branch,
+			LeftCommitID:  leftRef.CommitID,
 			LeftBranchID:  leftBranchID,
-			RightRef:      rightRef,
+			RightBranch:   rightRef.Branch,
+			RightCommitID: rightRef.CommitID,
 			RightBranchID: rightBranchID,
 			Limit:         diffResultsLimit,
 			After:         after,
@@ -146,10 +150,10 @@ func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, params *diffParams) er
 		c.log.WithFields(logging.Fields{
 			"relation_type":   relation,
 			"repository":      params.Repository,
-			"left_branch":     params.LeftRef.Branch,
-			"left_commit_id":  params.LeftRef.CommitID,
-			"right_branch":    params.RightRef.Branch,
-			"right_commit_id": params.RightRef.CommitID,
+			"left_branch":     params.LeftBranch,
+			"left_commit_id":  params.LeftCommitID,
+			"right_branch":    params.RightBranch,
+			"right_commit_id": params.RightCommitID,
 		}).Debug("Diff by relation - unsupported type")
 		return ErrFeatureNotSupported
 	}
@@ -583,10 +587,10 @@ func diffResultsTableNameFormat(id string) string {
 
 func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, params *diffParams) error {
 	c.log.WithFields(logging.Fields{
-		"left_branch":  params.LeftRef.Branch,
-		"left_commit":  params.LeftRef.CommitID,
-		"right_branch": params.RightRef.Branch,
-		"right_commit": params.RightRef.CommitID,
+		"left_branch":  params.LeftBranch,
+		"left_commit":  params.LeftCommitID,
+		"right_branch": params.RightBranch,
+		"right_commit": params.RightCommitID,
 	}).Debug("Diff not direct - feature not supported")
 	return ErrFeatureNotSupported
 }
@@ -601,8 +605,8 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *diffPa
 		After:            params.After,
 		AdditionalFields: []string{DBEntryFieldChecksum},
 	}
-	sourceScanner := NewDBBranchScanner(tx, params.LeftBranchID, params.LeftRef.CommitID, &scannerOpts)
-	targetScanner := NewDBLineageScanner(tx, params.RightBranchID, params.RightRef.CommitID, &scannerOpts)
+	sourceScanner := NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
+	targetScanner := NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
 	var targetNextEnt *DBScannerEntry
 	records := 0
@@ -647,7 +651,7 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *diffPa
 }
 
 func (c *cataloger) getRefsRelationType(tx db.Tx, params *diffParams) (RelationType, error) {
-	if params.LeftRef.Branch == params.RightRef.Branch {
+	if params.LeftBranch == params.RightBranch {
 		return RelationTypeSame, nil
 	}
 

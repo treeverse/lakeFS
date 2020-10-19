@@ -41,9 +41,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 
 		params := &diffParams{
 			Repository:    repository,
-			LeftRef:       &Ref{Branch: leftBranch, CommitID: CommittedID},
+			LeftBranch:    leftBranch,
+			LeftCommitID:  CommittedID,
 			LeftBranchID:  leftID,
-			RightRef:      &Ref{Branch: rightBranch, CommitID: UncommittedID},
+			RightBranch:   rightBranch,
+			RightCommitID: UncommittedID,
 			RightBranchID: rightID,
 			Limit:         -1,
 		}
