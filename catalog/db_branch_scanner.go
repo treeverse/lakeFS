@@ -48,17 +48,17 @@ func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBSca
 }
 
 func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (string, error) {
-	var maxCommitId CommitID
+	var branchMaxCommitID CommitID
 	var commits []string
 	var commitsWhere string
 	if commitID == UncommittedID || commitID == CommittedID {
-		maxCommitId = MaxCommitID
+		branchMaxCommitID = MaxCommitID
 	} else {
-		maxCommitId = commitID
+		branchMaxCommitID = commitID
 	}
 	// commit_id name is changed so that sorting will be performed on the numeric value, not the string value (where "10" is less than "2")
 	sql := "SELECT commit_id::text as str_commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id"
-	err := tx.Select(&commits, sql, branchID, maxCommitId)
+	err := tx.Select(&commits, sql, branchID, branchMaxCommitID)
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 	} else {
 		commitsWhere = "min_commit BETWEEN 1 AND " + commits[len(commits)-1]
 	}
-	return commitsWhere, nil
+	return commitsWhere, err
 }
 
 func (s *DBBranchScanner) Next() bool {
