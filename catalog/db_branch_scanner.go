@@ -1,23 +1,30 @@
 package catalog
 
 import (
+	"strconv"
+	"strings"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
-const DBScannerDefaultBufferSize = 1024
+const (
+	DBScannerDefaultBufferSize = 1024
+	MaxCommitsInFilter         = 100
+)
 
 type DBBranchScanner struct {
-	opts     DBScannerOptions
-	tx       db.Tx
-	branchID int64
-	commitID CommitID
-	buf      []*DBScannerEntry
-	idx      int
-	after    string
-	ended    bool
-	err      error
-	value    *DBScannerEntry
+	opts         DBScannerOptions
+	tx           db.Tx
+	branchID     int64
+	commitID     CommitID
+	commitsWhere string
+	buf          []*DBScannerEntry
+	idx          int
+	after        string
+	ended        bool
+	err          error
+	value        *DBScannerEntry
 }
 
 func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBScannerOptions) *DBBranchScanner {
@@ -35,7 +42,34 @@ func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBSca
 		s.opts.BufferSize = DBScannerDefaultBufferSize
 	}
 	s.buf = make([]*DBScannerEntry, 0, s.opts.BufferSize)
+	commitsWhere, _ := getRelevantCommitsCondition(tx, branchID, commitID)
+	s.commitsWhere = commitsWhere
 	return s
+}
+
+func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (string, error) {
+	var maxCommitId CommitID
+	var commits []string
+	var commitsWhere string
+	if commitID == UncommittedID || commitID == CommittedID {
+		maxCommitId = MaxCommitID
+	} else {
+		maxCommitId = commitID
+	}
+	sql := "SELECT commit_id::text FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id"
+	err := tx.Select(&commits, sql, branchID, maxCommitId)
+	if err != nil {
+		panic(err)
+	}
+	if commitID == UncommittedID {
+		commits = append(commits, strconv.FormatInt(int64(MaxCommitID), 10))
+	}
+	if len(commits) > MaxCommitsInFilter {
+		commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
+	} else {
+		commitsWhere = "min_commit BETWEEN 1 AND " + commits[len(commits)-1]
+	}
+	return commitsWhere, nil
 }
 
 func (s *DBBranchScanner) Next() bool {
@@ -106,16 +140,17 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 		Distinct().Options(" ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", s.branchID).
+		Where(s.commitsWhere).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(s.opts.BufferSize))
 	if s.after != "" {
 		q = q.Where("path > ?", s.after)
 	}
-	if s.commitID == CommittedID {
-		q = q.Where("min_commit < ?", MaxCommitID)
-	} else if s.commitID > 0 {
-		q = q.Where("min_commit between 1 and ?", s.commitID)
-	}
+	//if s.commitID == CommittedID {
+	//	q = q.Where("min_commit < ?", MaxCommitID)
+	//} else if s.commitID > 0 {
+	//	q = q.Where("min_commit between 1 and ?", s.commitID)
+	//}
 	if len(s.opts.AdditionalFields) > 0 {
 		q = q.Columns(s.opts.AdditionalFields...)
 	}
