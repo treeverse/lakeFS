@@ -12,9 +12,12 @@ import (
 )
 
 const (
-	DefaultCollectorEventBufferSize = 1024 * 1024
-	DefaultFlushInterval            = time.Second * 600
-	DefaultSendTimeout              = time.Second * 5
+	collectorEventBufferSize = 1024 * 1024
+	flushInterval            = time.Second * 600
+	sendTimeout              = time.Second * 5
+
+	// heartbeatInterval is the interval between 2 heartbeat events.
+	heartbeatInterval = 60 * time.Minute
 )
 
 type Collector interface {
@@ -111,17 +114,18 @@ func NewBufferedCollector(installationID string, c *config.Config, opts ...Buffe
 	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
-		writes:         make(chan primaryKey, DefaultCollectorEventBufferSize),
+		writes:         make(chan primaryKey, collectorEventBufferSize),
 		done:           make(chan bool),
 		sender:         NewDummySender(),
-		sendTimeout:    DefaultSendTimeout,
-		flushTicker:    &TimeTicker{ticker: time.NewTicker(DefaultFlushInterval)},
+		sendTimeout:    sendTimeout,
+		flushTicker:    &TimeTicker{ticker: time.NewTicker(flushInterval)},
 		installationID: installationID,
 		processID:      processID,
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
+
 	return s
 }
 func (s *BufferedCollector) getInstallationID() string {
@@ -129,11 +133,7 @@ func (s *BufferedCollector) getInstallationID() string {
 }
 
 func (s *BufferedCollector) incr(k primaryKey) {
-	if current, exists := s.cache[k]; !exists {
-		s.cache[k] = 1
-	} else {
-		s.cache[k] = current + 1
-	}
+	s.cache[k]++
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
@@ -163,6 +163,7 @@ func (s *BufferedCollector) Done() <-chan bool {
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
+	go s.collectHeartbeat(ctx)
 	for {
 		select {
 		case w := <-s.writes: // collect events
@@ -203,6 +204,17 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
+	}
+}
+
+func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
+	for {
+		select {
+		case <-time.After(heartbeatInterval):
+			s.CollectEvent("global", "heartbeat")
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
