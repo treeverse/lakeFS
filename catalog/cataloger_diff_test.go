@@ -38,7 +38,10 @@ func TestCataloger_Diff(t *testing.T) {
 	var after string
 	var differences Differences
 	for {
-		res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", limit, after)
+		res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", DiffParams{
+			Limit: limit,
+			After: after,
+		})
 		testutil.MustDo(t, "list diff changes", err)
 		if len(res) > limit {
 			t.Fatalf("Diff() result length=%d, expected no more than %d", len(res), limit)
@@ -82,7 +85,7 @@ func TestCataloger_Diff(t *testing.T) {
 	}
 
 	// check the case of 0 amount
-	res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", 0, "")
+	res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", DiffParams{Limit: 0})
 	testutil.MustDo(t, "list diff changes with 0 limit", err)
 	if !hasMore {
 		t.Error("Diff() limit 0 hasMore should be true")
@@ -124,7 +127,7 @@ func TestCataloger_Diff_FromChild(t *testing.T) {
 	testutil.MustDo(t, "commit changes", err)
 
 	// diff changes between "branch1" and "master" (from child)
-	res, more, err := c.Diff(ctx, repository, "branch1", DefaultBranchName, -1, "")
+	res, more, err := c.Diff(ctx, repository, "branch1", DefaultBranchName, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes between branch1 and master", err)
 	if more {
 		t.Fatal("Diff has more differences, expected none")
@@ -167,7 +170,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	testutil.MustDo(t, "commit branch changes", err)
 
 	// diff changes between second and first commit
-	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, -1, "")
+	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from second and first commits", err)
 	if more {
 		t.Fatal("Diff has more differences, expected none")
@@ -181,7 +184,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	}
 
 	// diff changes between first and second commit
-	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, -1, "")
+	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from first and second commits", err)
 	if more {
 		t.Fatal("Diff has more differences, expected none")
@@ -329,7 +332,7 @@ func TestCataloger_Diff_FromParentThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "commit branch changes", err)
 
 	// diff changes between master and branch0
-	res, more, err := c.Diff(ctx, repository, "master", "branch0", -1, "")
+	res, more, err := c.Diff(ctx, repository, "master", "branch0", DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from master to branch0", err)
 	if more {
 		t.Fatal("Diff has more differences, expected none")
@@ -340,5 +343,62 @@ func TestCataloger_Diff_FromParentThreeBranches(t *testing.T) {
 		Difference{Entry: Entry{Path: "fileX-" + DefaultBranchName}, Type: DifferenceTypeAdded},
 	}); diff != nil {
 		t.Fatal("Diff unexpected differences:", diff)
+	}
+}
+
+func TestCataloger_Diff_AdditionalFields(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	// test flow
+	// 1. create repo (with master branch)
+	// 2. create branch based on master - branch1
+	// 3. create 3 entries and commit on master
+	// 4. run diff between master and branch1 - no additional fields - check physical address is empty
+	// 4. run diff between master and branch1 - physical address as additional field - check physical address is set
+
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+	const numOfEntries = 3
+	for i := 0; i < numOfEntries; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repository, "master", fmt.Sprintf("file%d", i), nil, "")
+	}
+	_, err := c.Commit(ctx, repository, "master", "checking changes on master", "tester", nil)
+	testutil.Must(t, err)
+
+	res, hasMore, err := c.Diff(ctx, repository, "master", "branch1", DiffParams{Limit: numOfEntries})
+	testutil.MustDo(t, "diff changes", err)
+	if hasMore {
+		t.Fatal("Diff() hasMore should be false")
+	}
+	expectedLen := 3
+	if len(res) != expectedLen {
+		t.Fatalf("Diff() len of result %d, expected %d", len(res), expectedLen)
+	}
+	for _, d := range res {
+		if d.PhysicalAddress != "" {
+			t.Fatalf("Diff result entry should not have physical address set (%s)", d.PhysicalAddress)
+		}
+	}
+
+	res, hasMore, err = c.Diff(ctx, repository, "master", "branch1", DiffParams{
+		Limit:            numOfEntries,
+		AdditionalFields: []string{DBEntryFieldPhysicalAddress, DBEntryFieldChecksum},
+	})
+	testutil.MustDo(t, "diff changes", err)
+	if hasMore {
+		t.Fatal("Diff() hasMore should be false")
+	}
+	if len(res) != expectedLen {
+		t.Fatalf("Diff() len of result %d, expected %d", len(res), expectedLen)
+	}
+	for _, d := range res {
+		if d.PhysicalAddress == "" {
+			t.Fatalf("Diff result entry should not have physical address set (%s)", d.PhysicalAddress)
+		}
+		// verify that checksum - added by diff code is set on entry
+		if d.Checksum == "" {
+			t.Fatalf("Diff result entry should not have checksum address set (%s)", d.Checksum)
+		}
 	}
 }

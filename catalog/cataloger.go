@@ -51,6 +51,12 @@ type DedupParams struct {
 	StorageNamespace string
 }
 
+type DiffParams struct {
+	Limit            int
+	After            string
+	AdditionalFields []string // db fields names that will be load in additional to Path on Difference's Entry
+}
+
 type ExpireResult struct {
 	Repository        string
 	Branch            string
@@ -144,7 +150,7 @@ type Committer interface {
 }
 
 type Differ interface {
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error)
+	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 }
 

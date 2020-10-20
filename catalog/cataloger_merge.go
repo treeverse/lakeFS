@@ -39,13 +39,15 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
 
-		params := &diffParams{
+		params := &doDiffParams{
 			Repository:    repository,
 			LeftCommitID:  CommittedID,
 			LeftBranchID:  leftID,
 			RightCommitID: UncommittedID,
 			RightBranchID: rightID,
-			Limit:         -1,
+			DiffParams: DiffParams{
+				Limit: -1,
+			},
 		}
 		relation, err := c.getRefsRelationType(tx, params)
 		if err != nil {

@@ -145,7 +145,7 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	if res.Summary[DifferenceTypeConflict] != len(expectedDifferences) {
 		t.Fatalf("Merge summary conflicts=%d, expected %d", res.Summary[DifferenceTypeConflict], len(expectedDifferences))
 	}
-	differences, _, err := c.Diff(ctx, repository, "master", "branch1", -1, "")
+	differences, _, err := c.Diff(ctx, repository, "master", "branch1", DiffParams{Limit: -1})
 	testutil.MustDo(t, "diff merge changes", err)
 	if !differences.Equal(expectedDifferences) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
