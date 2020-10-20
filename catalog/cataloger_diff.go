@@ -51,10 +51,8 @@ type diffResultsBatchWriter struct {
 
 type diffParams struct {
 	Repository    string
-	LeftBranch    string
 	LeftCommitID  CommitID
 	LeftBranchID  int64
-	RightBranch   string
 	RightCommitID CommitID
 	RightBranchID int64
 	Limit         int
@@ -108,10 +106,8 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 
 		params := &diffParams{
 			Repository:    repository,
-			LeftBranch:    leftRef.Branch,
 			LeftCommitID:  leftRef.CommitID,
 			LeftBranchID:  leftBranchID,
-			RightBranch:   rightRef.Branch,
 			RightCommitID: rightRef.CommitID,
 			RightBranchID: rightBranchID,
 			Limit:         diffResultsLimit,
@@ -150,9 +146,9 @@ func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, params *diffParams) er
 		c.log.WithFields(logging.Fields{
 			"relation_type":   relation,
 			"repository":      params.Repository,
-			"left_branch":     params.LeftBranch,
+			"left_branch_id":  params.LeftBranchID,
 			"left_commit_id":  params.LeftCommitID,
-			"right_branch":    params.RightBranch,
+			"right_branch_id": params.RightBranchID,
 			"right_commit_id": params.RightCommitID,
 		}).Debug("Diff by relation - unsupported type")
 		return ErrFeatureNotSupported
@@ -321,11 +317,9 @@ func evaluateFromParentElementDiffType(targetBranchID int64, targetLastSyncCommi
 
 	// target entry not modified based on commit of the last sync lineage - none
 	commitIDByLineage := lineageCommitIDByBranchID(targetLastSyncLineage, sourceEntry.BranchID)
-	if commitIDByLineage > UncommittedID {
-		parentChangedAfterChild := sourceEntry.ChangedAfterCommit(commitIDByLineage)
-		if !parentChangedAfterChild {
-			return DifferenceTypeNone
-		}
+	parentChangedAfterChild := sourceEntry.ChangedAfterCommit(commitIDByLineage)
+	if !parentChangedAfterChild {
+		return DifferenceTypeNone
 	}
 
 	// if target entry is uncommitted - conflict
@@ -587,10 +581,10 @@ func diffResultsTableNameFormat(id string) string {
 
 func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, params *diffParams) error {
 	c.log.WithFields(logging.Fields{
-		"left_branch":  params.LeftBranch,
-		"left_commit":  params.LeftCommitID,
-		"right_branch": params.RightBranch,
-		"right_commit": params.RightCommitID,
+		"left_branch_id":  params.LeftBranchID,
+		"left_commit_id":  params.LeftCommitID,
+		"right_branch_id": params.RightBranchID,
+		"right_commit_id": params.RightCommitID,
 	}).Debug("Diff not direct - feature not supported")
 	return ErrFeatureNotSupported
 }
@@ -629,10 +623,8 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *diffPa
 		}
 
 		err = batch.Write(&diffResultRecord{
-			SourceBranch: params.LeftBranchID,
-			DiffType:     diffType,
-			Entry:        sourceEnt.Entry,
-			EntryCtid:    &sourceEnt.RowCtid,
+			DiffType: diffType,
+			Entry:    sourceEnt.Entry,
 		})
 		if err != nil {
 			return err
@@ -651,15 +643,12 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *diffPa
 }
 
 func (c *cataloger) getRefsRelationType(tx db.Tx, params *diffParams) (RelationType, error) {
-	if params.LeftBranch == params.RightBranch {
+	if params.LeftBranchID == params.RightBranchID {
 		return RelationTypeSame, nil
 	}
 
 	var youngerBranch, olderBranch int64
 	var possibleRelation RelationType
-	if params.LeftBranchID == params.RightBranchID {
-		return RelationTypeNone, nil
-	}
 	if params.LeftBranchID > params.RightBranchID {
 		possibleRelation = RelationTypeFromChild
 		youngerBranch = params.LeftBranchID
@@ -684,22 +673,22 @@ func (c *cataloger) getRefsRelationType(tx db.Tx, params *diffParams) (RelationT
 }
 
 func evaluateSameBranchElementDiffType(sourceEnt *DBScannerEntry, targetEnt *DBScannerEntry) DifferenceType {
-	// when the entry was deleted
 	if sourceEnt.IsDeleted() {
+		// both deleted - none
 		if targetEnt == nil || targetEnt.IsDeleted() {
 			return DifferenceTypeNone
 		}
+		// source exists, target not - removed
 		return DifferenceTypeRemoved
 	}
-	// when the entry was not deleted
-	if targetEnt != nil {
-		if targetEnt.IsDeleted() {
-			return DifferenceTypeAdded
-		}
-		if targetEnt.BranchID == sourceEnt.BranchID && targetEnt.MinCommit != sourceEnt.MinCommit {
-			return DifferenceTypeChanged
-		}
-		return DifferenceTypeNone
+	// source exists and no target - added
+	if targetEnt == nil || targetEnt.IsDeleted() {
+		return DifferenceTypeAdded
 	}
-	return DifferenceTypeAdded
+	// source and target not matched - change
+	if targetEnt.BranchID == sourceEnt.BranchID && targetEnt.MinCommit != sourceEnt.MinCommit {
+		return DifferenceTypeChanged
+	}
+	// entries match - none
+	return DifferenceTypeNone
 }
