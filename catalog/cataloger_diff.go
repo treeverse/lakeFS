@@ -49,8 +49,6 @@ type diffResultsBatchWriter struct {
 	Records              []*diffResultRecord
 }
 
-var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
-
 // Diff lists of differences between leftBranch and rightBranch.
 // The second return value will be true if there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
 // limit - is the maximum number of differences we will return, limited by DiffMaxLimit (which will be used in case limit less than 0)
