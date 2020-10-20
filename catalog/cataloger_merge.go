@@ -51,7 +51,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, fmt.Errorf("get refs relation: %w", err)
 		}
-
+		if relation == RelationTypeSame {
+			return nil, fmt.Errorf("merge from the same branch: %w", ErrOperationNotPermitted)
+		}
 		err = c.doDiff(ctx, tx, params)
 		if err != nil {
 			return nil, err
