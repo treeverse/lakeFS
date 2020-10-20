@@ -39,6 +39,18 @@ all: build
 clean:
 	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME)
 
+check-licenses: check-licenses-go-mod check-licenses-npm
+
+check-licenses-go-mod:
+	go get github.com/google/go-licenses
+	$(GOBINPATH)/go-licenses check ./cmd/$(LAKEFS_BINARY_NAME)
+	$(GOBINPATH)/go-licenses check ./cmd/$(LAKECTL_BINARY_NAME)
+
+check-licenses-npm:
+	go get github.com/senseyeio/diligent/cmd/diligent
+	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
+	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
+
 docs/assets/js/swagger.yml: swagger.yml
 	@cp swagger.yml docs/assets/js/swagger.yml
 
