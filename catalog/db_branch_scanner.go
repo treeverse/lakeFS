@@ -56,7 +56,8 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 	} else {
 		maxCommitId = commitID
 	}
-	sql := "SELECT commit_id::text FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id"
+	// commit_id name is changed so that sorting will be performed on the numeric value, not the string value (where "10" is less than "2")
+	sql := "SELECT commit_id::text as str_commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id"
 	err := tx.Select(&commits, sql, branchID, maxCommitId)
 	if err != nil {
 		panic(err)
@@ -64,7 +65,7 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 	if commitID == UncommittedID {
 		commits = append(commits, strconv.FormatInt(int64(MaxCommitID), 10))
 	}
-	if len(commits) > MaxCommitsInFilter {
+	if len(commits) < MaxCommitsInFilter {
 		commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
 	} else {
 		commitsWhere = "min_commit BETWEEN 1 AND " + commits[len(commits)-1]
