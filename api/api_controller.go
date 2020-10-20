@@ -2230,9 +2230,7 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				// Should use repository creation permission but it is coupled to a repo id
-				// TODO(#764): Add a new action for reading configs?
-				Action:   permissions.ListRepositoriesAction,
+				Action:   permissions.ReadConfigAction,
 				Resource: permissions.All,
 			},
 		})
