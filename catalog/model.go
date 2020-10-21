@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	DBEntryFieldChecksum = "checksum"
+	DBEntryFieldChecksum        = "checksum"
+	DBEntryFieldPhysicalAddress = "physical_address"
 )
 
 type Metadata map[string]string

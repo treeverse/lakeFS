@@ -85,7 +85,7 @@ func (s *DBBranchScanner) readBufferIfNeeded() bool {
 	var query string
 	var args []interface{}
 	q := s.buildQuery()
-	query, args, s.err = q.PlaceholderFormat(sq.Dollar).ToSql()
+	query, args, s.err = q.ToSql()
 	if s.err != nil {
 		return false
 	}
@@ -102,7 +102,7 @@ func (s *DBBranchScanner) readBufferIfNeeded() bool {
 }
 
 func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
-	q := sq.Select("branch_id", "path", "min_commit", "max_commit", "ctid").
+	q := psql.Select("branch_id", "path", "min_commit", "max_commit", "ctid").
 		Distinct().Options(" ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", s.branchID).
