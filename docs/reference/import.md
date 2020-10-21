@@ -27,7 +27,7 @@ Unfortunately, copying data is not always feasible for the following reasons:
 3. It requires you to switch to using the lakeFS endpoint in all places at once.
 
 ## Using lakeFS import tool
-To solve this, we offer an import tool which will not copy any data and allow for a more gradual onboarding process.
+To solve this we offer an import tool that does not copy any data, allowing for a more gradual onboarding process.
 
 The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
 The imported metadata will be reflected in lakeFS under a special branch, called `import-from-inventory`.
