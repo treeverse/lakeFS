@@ -63,7 +63,6 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 		if err = rows.StructScan(&rec); err != nil {
 			return nil, fmt.Errorf("scan configuration %+v: %w", rows, err)
 		}
-		fmt.Printf("[DEBUG] row %+v\n", rec)
 		ret = append(ret, rec)
 	}
 	return ret, nil

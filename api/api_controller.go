@@ -2234,10 +2234,6 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 
 		deps.LogAction("set_continuous_export")
 
-		if err != nil {
-			return exportop.NewSetContinuousExportDefault(http.StatusInternalServerError).
-				WithPayload(responseError("join last keys in prefix regexps: %s", err))
-		}
 		config := catalog.ExportConfiguration{
 			Path:                   params.Config.ExportPath.String(),
 			StatusPath:             params.Config.ExportStatusPath.String(),

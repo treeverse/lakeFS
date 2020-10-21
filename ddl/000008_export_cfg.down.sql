@@ -1,1 +1,1 @@
-DROP TABLE catalog_branches_export;
+DROP TABLE IF EXISTS catalog_branches_export;
