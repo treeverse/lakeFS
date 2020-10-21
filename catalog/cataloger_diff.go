@@ -398,7 +398,13 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, params *diffPar
 			return fmt.Errorf("scan next parent element: %w", err)
 		}
 
-		diffType := evaluateFromChildElementDiffType(effectiveCommits, params.RightBranchID, childEnt, parentEnt)
+		// point to matched parent entry
+		var matchedParent *DBScannerEntry
+		if parentEnt != nil && parentEnt.Path == childEnt.Path {
+			matchedParent = parentEnt
+		}
+
+		diffType := evaluateFromChildElementDiffType(effectiveCommits, childEnt, matchedParent)
 		if diffType == DifferenceTypeNone {
 			continue
 		}
@@ -446,48 +452,38 @@ func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, er
 	return diffResultsTableName, nil
 }
 
-func evaluateFromChildElementDiffType(effectiveCommits *diffEffectiveCommits, parentBranchID int64, childEnt *DBScannerEntry, parentEnt *DBScannerEntry) DifferenceType {
-	var matchedParent *DBScannerEntry
-	if parentEnt != nil && parentEnt.Path == childEnt.Path {
-		matchedParent = parentEnt
-	}
-	// when the entry was deleted
-	if childEnt.IsDeleted() {
-		if matchedParent == nil || matchedParent.IsDeleted() {
-			return DifferenceTypeNone
-		}
-		if matchedParent.BranchID == parentBranchID {
-			// check if parent did any change to the entity
-			if matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit {
-				return DifferenceTypeConflict
-			}
-			return DifferenceTypeRemoved
-		}
-		// check if the parent saw this entry at the time
-		if matchedParent.MinCommit >= effectiveCommits.ParentEffectiveCommitByBranchID(matchedParent.BranchID) {
-			return DifferenceTypeRemoved
-		}
+func evaluateFromChildElementDiffType(effectiveCommits *diffEffectiveCommits, childEnt *DBScannerEntry, matchedParent *DBScannerEntry) DifferenceType {
+	// both deleted - none
+	if childEnt.IsDeleted() && (matchedParent == nil || matchedParent.IsDeleted()) {
 		return DifferenceTypeNone
 	}
-	// when the entry was not deleted
+
+	// same entry - none
+	if matchedParent != nil && childEnt.IsDeleted() == matchedParent.IsDeleted() && childEnt.Checksum == matchedParent.Checksum {
+		return DifferenceTypeNone
+	}
+
+	// both entries are not deleted or point to the same content
 	if matchedParent != nil {
-		if matchedParent.IsDeleted() {
-			return DifferenceTypeAdded
+		// matched target was updated after client - conflict
+		effectiveCommitID := effectiveCommits.ParentEffectiveCommitByBranchID(matchedParent.BranchID)
+		if effectiveCommitID > UncommittedID && matchedParent.MinCommit > effectiveCommitID {
+			return DifferenceTypeConflict
 		}
-		if matchedParent.BranchID == parentBranchID {
-			// check if parent did any change to the entity
-			if matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit {
-				return DifferenceTypeConflict
-			}
-			return DifferenceTypeChanged
-		}
-		if matchedParent.MinCommit >= effectiveCommits.ParentEffectiveCommitByBranchID(matchedParent.BranchID) {
-			return DifferenceTypeChanged
-		}
+	}
+
+	// source deleted - removed
+	if childEnt.IsDeleted() {
+		return DifferenceTypeRemoved
+	}
+
+	// if target deleted - added
+	if matchedParent == nil || matchedParent.IsDeleted() {
 		return DifferenceTypeAdded
 	}
 
-	return DifferenceTypeAdded
+	// if target found - changed
+	return DifferenceTypeChanged
 }
 
 func insertDiffResultsBatch(exerciser sq.Execer, tableName string, batch []*diffResultRecord) error {

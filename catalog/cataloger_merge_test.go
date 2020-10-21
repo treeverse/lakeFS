@@ -701,9 +701,7 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 		t.Fatal("merge commit log should have two parents")
 	}
 
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeChanged: 1,
-	}); diff != nil {
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{}); diff != nil {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
@@ -1020,7 +1018,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	_, err = c.Commit(ctx, repository, "branch2", "commit file0 creation", "tester", nil)
 	testutil.MustDo(t, "commit file0 creation to branch2", err)
 
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file111", nil, "seed1")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file111", nil, "seed2")
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "pushing /file111 down", nil)
 	testutil.MustDo(t, "merge branch2 to branch1", err)
 
