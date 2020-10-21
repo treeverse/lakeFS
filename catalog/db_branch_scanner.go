@@ -42,7 +42,8 @@ func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBSca
 		s.opts.BufferSize = DBScannerDefaultBufferSize
 	}
 	s.buf = make([]*DBScannerEntry, 0, s.opts.BufferSize)
-	commitsWhere, _ := getRelevantCommitsCondition(tx, branchID, commitID)
+	commitsWhere, err := getRelevantCommitsCondition(tx, branchID, commitID)
+	s.err = err
 	s.commitsWhere = commitsWhere
 	return s
 }
@@ -60,7 +61,7 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 	sql := "SELECT commit_id::text as str_commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id"
 	err := tx.Select(&commits, sql, branchID, branchMaxCommitID)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if commitID == UncommittedID {
 		commits = append(commits, strconv.FormatInt(int64(MaxCommitID), 10))
@@ -69,16 +70,19 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 		commits = append(commits, "-1") // this will actually never happen, since each branch has an initial branch
 		// anyway - there is no commit id -1
 	}
-	if len(commits) < MaxCommitsInFilter {
+	if len(commits) <= MaxCommitsInFilter {
 		commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
 	} else {
 		commitsWhere = "min_commit BETWEEN 1 AND " + commits[len(commits)-1]
 	}
-	return commitsWhere, err
+	return commitsWhere, nil
 }
 
 func (s *DBBranchScanner) Next() bool {
 	if s.hasEnded() {
+		return false
+	}
+	if s.commitsWhere == "" { // getRelevantCommitsCondition failed
 		return false
 	}
 	if !s.readBufferIfNeeded() {
