@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -85,15 +85,9 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 		return nil, false, fmt.Errorf("right reference: %w", err)
 	}
 
-	var diffResultsLimit int
 	if params.Limit < 0 || params.Limit > DiffMaxLimit {
-		diffResultsLimit = DiffMaxLimit
-	} else {
-		diffResultsLimit = params.Limit
+		params.Limit = DiffMaxLimit
 	}
-
-	// we request additional one (without returning it) for pagination (hasMore)
-	diffResultsLimit += 1
 
 	ctx, cancel := c.withDiffResultsContext(ctx)
 	defer cancel()
@@ -120,6 +114,10 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 		if err != nil {
 			return nil, err
 		}
+
+		// we request additional one (without returning it) for pagination (hasMore)
+		diffResultsLimit := params.Limit + 1
+
 		return getDiffDifferences(ctx, tx, diffResultsLimit, params.After, params.AdditionalFields)
 	}, c.txOpts(ctx)...)
 	if err != nil {
@@ -174,26 +172,12 @@ func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) C
 	return c.ParentEffectiveCommit
 }
 
-func newDiffResultsBatchWriter(tx db.Tx, tableName string, additionalFields []string) *diffResultsBatchWriter {
-	// scan Entry db metadata and map addinalFields names into the struct field index
-	fieldsByIndex := make(map[int]string)
-	if len(additionalFields) > 0 {
-		ft := reflect.TypeOf(Entry{})
-		for _, fieldName := range additionalFields {
-			for i, l := 0, ft.NumField(); i < l; i++ {
-				// lookup db tag value on field - when matched we keep the field position at the same index of the field name
-				if ft.Field(i).Tag.Get("db") == fieldName {
-					fieldsByIndex[i] = fieldName
-					break
-				}
-			}
-		}
-	}
+// newDiffResultsBatchWriter - scan Entry db metadata and map additionalFields names into the struct field index
+func newDiffResultsBatchWriter(tx db.Tx, tableName string) *diffResultsBatchWriter {
 	return &diffResultsBatchWriter{
 		tx:                   tx,
 		DiffResultsTableName: tableName,
 		Records:              make([]*diffResultRecord, 0, diffResultsInsertBatchSize),
-		fieldsIndex:          fieldsByIndex,
 	}
 }
 
@@ -267,7 +251,10 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, params *doDiff
 	if err != nil {
 		return err
 	}
-	batch := newDiffResultsBatchWriter(tx, diffResultsTableName, params.AdditionalFields)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+	if err != nil {
+		return err
+	}
 	var childEnt *DBScannerEntry
 	records := 0
 	for parentScanner.Next() {
@@ -416,7 +403,11 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, params *doDiffP
 	}
 	childScanner := NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
 	parentScanner := NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
-	batch := newDiffResultsBatchWriter(tx, diffResultsTableName, params.AdditionalFields)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+	if err != nil {
+		return err
+	}
+
 	var parentEnt *DBScannerEntry
 	records := 0
 	for childScanner.Next() {
@@ -478,13 +469,13 @@ func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, er
 		source_branch bigint NOT NULL,
 		diff_type integer NOT NULL,
 		path character varying COLLATE "C" NOT NULL,
-		entry_ctid tid
+		entry_ctid tid,
 		physical_address character varying,
 		creation_date timestamp with time zone,
 		size bigint,
 		checksum character varying(64),
 		metadata jsonb,
-		is_expired BOOLEAN,
+		is_expired BOOLEAN
 	)`)
 	if err != nil {
 		return "", fmt.Errorf("diff result table: %w", err)
@@ -531,21 +522,32 @@ func (d *diffResultsBatchWriter) insertBatch() error {
 		return nil
 	}
 	ins := psql.Insert(d.DiffResultsTableName).
-		Columns("source_branch", "diff_type", "path", "entry_ctid")
+		Columns("source_branch", "diff_type", "path", "entry_ctid", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired")
 	for _, fieldName := range d.fieldsIndex {
 		ins = ins.Columns(fieldName)
 	}
 	for _, rec := range d.Records {
-		values := []interface{}{rec.SourceBranch, rec.DiffType, rec.Entry.Path, rec.EntryCtid}
-		// extract additional fields values
-		if len(d.fieldsIndex) > 0 {
-			fv := reflect.ValueOf(rec.Entry)
-			for i := range d.fieldsIndex {
-				v := fv.Field(i).Interface()
-				values = append(values, v)
-			}
+		var physicalAddress *string
+		var creationDate *time.Time
+		var size *int64
+		var checksum *string
+		var isExpired *bool
+		if rec.Entry.PhysicalAddress != "" {
+			physicalAddress = &rec.Entry.PhysicalAddress
 		}
-		ins = ins.Values(values...)
+		if !rec.Entry.CreationDate.IsZero() {
+			creationDate = &rec.Entry.CreationDate
+		}
+		if rec.Entry.Size != 0 {
+			size = &rec.Entry.Size
+		}
+		if rec.Entry.Checksum != "" {
+			checksum = &rec.Entry.Checksum
+		}
+		if rec.Entry.Expired {
+			isExpired = &rec.Entry.Expired
+		}
+		ins = ins.Values(rec.SourceBranch, rec.DiffType, rec.Entry.Path, rec.EntryCtid, physicalAddress, creationDate, size, checksum, rec.Entry.Metadata, isExpired)
 	}
 
 	query, args, err := ins.ToSql()
@@ -651,7 +653,10 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *doDiff
 	}
 	sourceScanner := NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
 	targetScanner := NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
-	batch := newDiffResultsBatchWriter(tx, diffResultsTableName, params.AdditionalFields)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+	if err != nil {
+		return err
+	}
 	var targetNextEnt *DBScannerEntry
 	records := 0
 	for sourceScanner.Next() {
