@@ -64,6 +64,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 		); err != nil {
 			return nil, err
 		}
+
 		reference := MakeReference(branch, commitID)
 		parentReference := MakeReference(branch, lastCommitID)
 		commitLog := &CommitLog{
@@ -74,6 +75,15 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			Reference:    reference,
 			Parents:      []string{parentReference},
 		}
+
+		for _, hook := range c.hooks.PostCommit {
+			err = hook(ctx, tx, commitLog)
+			if err != nil {
+				// Roll tx back if a hook failed
+				return nil, err
+			}
+		}
+
 		return commitLog, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {

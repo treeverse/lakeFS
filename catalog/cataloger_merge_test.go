@@ -3,91 +3,136 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 
 	"github.com/go-test/deep"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
-	ctx := context.Background()
-	c := testCataloger(t)
-	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
-
-	// create 3 files on master and commit
-	for i := 0; i < 3; i++ {
-		testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file"+strconv.Itoa(i), nil, "")
-	}
-	_, err := c.Commit(ctx, repository, "master", "commit to master", "tester", nil)
-	testutil.MustDo(t, "commit to master", err)
-
-	// create branch based on master
-	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
-
-	// add new file
-	const newFilename = "/file5"
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", newFilename, nil, "")
-
-	// delete committed file
-	const delFilename = "/file1"
-	testutil.MustDo(t, "delete committed file on master",
-		c.DeleteEntry(ctx, repository, "master", delFilename))
-
-	// change/override committed file
-	const overFilename = "/file2"
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", overFilename, nil, "seed1")
-
-	// commit, merge and verify
-	_, err = c.Commit(ctx, repository, "master", "second commit to master", "tester", nil)
-	testutil.MustDo(t, "second commit to master", err)
-
-	// before the merge - make sure we see the deleted file
-	_, err = c.GetEntry(ctx, repository, "branch1:HEAD", delFilename, GetEntryParams{})
-	if err != nil {
-		t.Fatalf("Get entry %s, expected to be found: %s", delFilename, err)
-	}
-
-	// merge master to branch1
-	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
-	if err != nil {
-		t.Fatal("Merge from master to branch1 failed:", err)
-	}
-	if !IsValidReference(res.Reference) {
-		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
-	}
-
-	testVerifyEntries(t, ctx, c, repository, "branch1", []testEntryInfo{
-		{Path: newFilename},
-		{Path: overFilename, Seed: "seed1"},
-		{Path: delFilename, Deleted: true},
+func validateMergeWithHooks(
+	t *testing.T,
+	setup func(t *testing.T, ctx context.Context, c Cataloger, repository string),
+	leftBranch, rightBranch, committer, message string,
+	verifySuccess func(t *testing.T, ctx context.Context, c Cataloger, repository string, res *MergeResult, err error),
+) {
+	t.Helper()
+	t.Run("with success hook", func(t *testing.T) {
+		ctx := context.Background()
+		c := testCataloger(t)
+		var resultLogs []*MergeResult
+		c.GetHooks().AddPostMerge(func(_ context.Context, _ db.Tx, mergeResult *MergeResult) error {
+			resultLogs = append(resultLogs, mergeResult)
+			return nil
+		})
+		repository := testCatalogerRepo(t, ctx, c, "repo", leftBranch)
+		setup(t, ctx, c, repository)
+		res, err := c.Merge(ctx, repository, leftBranch, rightBranch, committer, message, nil)
+		verifySuccess(t, ctx, c, repository, res, err)
+		if diffs := deep.Equal([]*MergeResult{res}, resultLogs); diffs != nil {
+			t.Error("unexpected hook calls", diffs)
+		}
 	})
+	t.Run("with failure hook", func(t *testing.T) {
+		ctx := context.Background()
+		c := testCataloger(t)
+		testingErr := fmt.Errorf("you know, for testing!")
+		c.GetHooks().AddPostMerge(func(_ context.Context, _ db.Tx, _ *MergeResult) error {
+			return testingErr
+		})
+		repository := testCatalogerRepo(t, ctx, c, "repo", leftBranch)
+		setup(t, ctx, c, repository)
+		_, err := c.Merge(ctx, repository, leftBranch, rightBranch, committer, message, nil)
+		if !errors.Is(err, testingErr) {
+			t.Errorf("expected merge to fail on testing but got %s", err)
+		}
+	})
+}
 
-	commitLog, err := c.GetCommit(ctx, repository, res.Reference)
-	testutil.MustDo(t, "get merge commit reference", err)
-	if len(commitLog.Parents) != 2 {
-		t.Fatal("merge commit log should have two parents")
-	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeRemoved: 1,
-		DifferenceTypeChanged: 1,
-		DifferenceTypeAdded:   1,
-	}); diff != nil {
-		t.Fatal("Merge Summary", diff)
-	}
-	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
-	//testutil.MustDo(t, "diff merge changes", err)
-	//expectedDifferences := Differences{
-	//	Difference{Type: DifferenceTypeChanged, Path: "/file2"},
-	//	Difference{Type: DifferenceTypeAdded, Path: "/file5"},
-	//	Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
-	//}
-	//if !differences.Equal(expectedDifferences) {
-	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
-	//}
+func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
+	const (
+		newFilename  = "/file5"
+		delFilename  = "/file1"
+		overFilename = "/file2"
+	)
+
+	validateMergeWithHooks(
+		t,
+		func(t *testing.T, ctx context.Context, c Cataloger, repository string) {
+			// create 3 files on master and commit
+			for i := 0; i < 3; i++ {
+				testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file"+strconv.Itoa(i), nil, "")
+			}
+			_, err := c.Commit(ctx, repository, "master", "commit to master", "tester", nil)
+			testutil.MustDo(t, "commit to master", err)
+
+			// create branch based on master
+			testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+
+			// add new file
+			testCatalogerCreateEntry(t, ctx, c, repository, "master", newFilename, nil, "")
+
+			// delete committed file
+			testutil.MustDo(t, "delete committed file on master",
+				c.DeleteEntry(ctx, repository, "master", delFilename))
+
+			// change/override committed file
+			testCatalogerCreateEntry(t, ctx, c, repository, "master", overFilename, nil, "seed1")
+
+			// commit
+			_, err = c.Commit(ctx, repository, "master", "second commit to master", "tester", nil)
+			testutil.MustDo(t, "second commit to master", err)
+
+			// before the merge - make sure we see the deleted file
+			_, err = c.GetEntry(ctx, repository, "branch1:HEAD", delFilename, GetEntryParams{})
+			if err != nil {
+				t.Fatalf("Get entry %s, expected to be found: %s", delFilename, err)
+			}
+		},
+		"master", "branch1", "tester", "",
+		func(t *testing.T, ctx context.Context, c Cataloger, repository string, res *MergeResult, err error) {
+			if err != nil {
+				t.Fatal("Merge from master to branch1 failed:", err)
+			}
+			if !IsValidReference(res.Reference) {
+				t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
+			}
+
+			testVerifyEntries(t, ctx, c, repository, "branch1", []testEntryInfo{
+				{Path: newFilename},
+				{Path: overFilename, Seed: "seed1"},
+				{Path: delFilename, Deleted: true},
+			})
+
+			commitLog, err := c.GetCommit(ctx, repository, res.Reference)
+			testutil.MustDo(t, "get merge commit reference", err)
+			if len(commitLog.Parents) != 2 {
+				t.Fatal("merge commit log should have two parents")
+			}
+			if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+				DifferenceTypeRemoved: 1,
+				DifferenceTypeChanged: 1,
+				DifferenceTypeAdded:   1,
+			}); diff != nil {
+				t.Fatal("Merge Summary", diff)
+			}
+			// TODO(barak): enable test after diff between commits is supported
+			//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+			//testutil.MustDo(t, "diff merge changes", err)
+			//expectedDifferences := Differences{
+			//	Difference{Type: DifferenceTypeChanged, Path: "/file2"},
+			//	Difference{Type: DifferenceTypeAdded, Path: "/file5"},
+			//	Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
+			//}
+			//if !differences.Equal(expectedDifferences) {
+			//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
+			//}
+		},
+	)
 }
 
 func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
