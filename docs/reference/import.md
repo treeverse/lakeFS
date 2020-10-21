@@ -31,7 +31,7 @@ To solve this, we offer an import tool which will not copy any data and allow fo
 
 The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
 The imported metadata will be reflected in lakeFS under a special branch, called `import-from-inventory`.
-You should not make any changes or commit anything to this branch: it will be operated only by lakeFS.
+You should not make any changes or commit anything to this branch: it will be operated on only by lakeFS.
 After importing, you will be able to merge this branch into your main branch.
 
 The imported data is not copied to the repository’s dedicated bucket.
