@@ -85,7 +85,7 @@ for a table named `example_table` under the schema `master` we would like to cre
  
 
 # Commands:
-Metastore tools supports three commands: ```copy```, ```diff``` and ```create-symlink```.
+Metastore tools support three commands: ```copy```, ```diff``` and ```create-symlink```.
 copy and diff could work both on Glue and on Hive.
 create-symlink works only on Glue.
 
