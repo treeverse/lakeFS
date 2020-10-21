@@ -46,7 +46,6 @@ type diffResultRecord struct {
 
 type diffResultsBatchWriter struct {
 	tx                   db.Tx
-	fieldsIndex          map[int]string
 	DiffResultsTableName string
 	Records              []*diffResultRecord
 }
@@ -252,9 +251,6 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, params *doDiff
 		return err
 	}
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
-	if err != nil {
-		return err
-	}
 	var childEnt *DBScannerEntry
 	records := 0
 	for parentScanner.Next() {
@@ -404,9 +400,6 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, params *doDiffP
 	childScanner := NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
 	parentScanner := NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
-	if err != nil {
-		return err
-	}
 
 	var parentEnt *DBScannerEntry
 	records := 0
@@ -522,10 +515,8 @@ func (d *diffResultsBatchWriter) insertBatch() error {
 		return nil
 	}
 	ins := psql.Insert(d.DiffResultsTableName).
-		Columns("source_branch", "diff_type", "path", "entry_ctid", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired")
-	for _, fieldName := range d.fieldsIndex {
-		ins = ins.Columns(fieldName)
-	}
+		Columns("source_branch", "diff_type", "path", "entry_ctid", "physical_address", "creation_date",
+			"size", "checksum", "metadata", "is_expired")
 	for _, rec := range d.Records {
 		var physicalAddress *string
 		var creationDate *time.Time
@@ -654,9 +645,6 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *doDiff
 	sourceScanner := NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
 	targetScanner := NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
-	if err != nil {
-		return err
-	}
 	var targetNextEnt *DBScannerEntry
 	records := 0
 	for sourceScanner.Next() {
