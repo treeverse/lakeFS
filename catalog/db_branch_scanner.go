@@ -65,6 +65,10 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 	if commitID == UncommittedID {
 		commits = append(commits, strconv.FormatInt(int64(MaxCommitID), 10))
 	}
+	if len(commits) == 0 {
+		commits = append(commits, "-1") // this will actually never happen, since each branch has an initial branch
+		// anyway - there is no commit id -1
+	}
 	if len(commits) < MaxCommitsInFilter {
 		commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
 	} else {
@@ -147,11 +151,6 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 	if s.after != "" {
 		q = q.Where("path > ?", s.after)
 	}
-	//if s.commitID == CommittedID {
-	//	q = q.Where("min_commit < ?", MaxCommitID)
-	//} else if s.commitID > 0 {
-	//	q = q.Where("min_commit between 1 and ?", s.commitID)
-	//}
 	if len(s.opts.AdditionalFields) > 0 {
 		q = q.Columns(s.opts.AdditionalFields...)
 	}
