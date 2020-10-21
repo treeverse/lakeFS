@@ -160,6 +160,7 @@ For the full list of actions and their required permissions see the following ta
 |List Group Policies            |`auth:ReadGroup`        |`arn:lakefs:auth:::group/{groupId}`                                     |GET /auth/groups/{groupId}/policies                                                |-                                                                    |
 |Attach Policy To Group         |`auth:AttachPolicy`     |`arn:lakefs:auth:::group/{groupId}`                                     |PUT /auth/groups/{groupId}/policies/{policyId}                                     |-                                                                    |
 |Detach Policy From Group       |`auth:DetachPolicy`     |`arn:lakefs:auth:::group/{groupId}`                                     |DELETE /auth/groups/{groupId}/policies/{policyId}                                  |-                                                                    |
+|List Config                    |`auth:ReadConfig`       |`*`                                                                     |GET /config                                                                        |-                                                                    |
 
 
 ### Preconfigured Policies

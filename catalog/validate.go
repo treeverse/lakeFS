@@ -1,14 +1,11 @@
 package catalog
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 )
 
 var (
-	ErrInvalidValue = errors.New("invalid value")
-
 	validBranchNameRegexp     = regexp.MustCompile(`^\w[-\w]*$`)
 	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
