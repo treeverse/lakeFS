@@ -12,6 +12,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -287,4 +288,71 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 	if ent.Checksum != checksumFile42 {
 		t.Fatalf("get entry from branch commit checksum=%s, expected, %s", ent.Checksum, checksumFile42)
 	}
+}
+
+func TestCataloger_CommitHooks(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	t.Run("commit hooks run and see commit", func(t *testing.T) {
+		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file1",
+			Checksum:        "abcdef",
+			PhysicalAddress: "/addr/1",
+			Size:            17,
+		}, CreateEntryParams{}); err != nil {
+			t.Fatalf("create entry for commit: %s", err)
+		}
+		var logs [2][]*CommitLog
+		for i := 0; i < 2; i++ {
+			j := i
+			c.GetHooks().AddPostCommit(func(_ context.Context, _ db.Tx, l *CommitLog) error {
+				logs[j] = append(logs[j], l)
+				return nil
+			})
+		}
+
+		commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
+		if err != nil {
+			t.Fatalf("commit entry: %s", err)
+		}
+
+		for i, log := range logs {
+			if len(log) != 1 || log[0] != commitLog {
+				t.Errorf("hook %d: expected one commit %+v but got %+v", i, commitLog, log)
+			}
+		}
+
+		entry, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
+		if err != nil || entry.Path != "/file1" || entry.Checksum != "abcdef" {
+			t.Errorf("expected /file1 committed, got %+v, %s", entry, err)
+		}
+	})
+
+	t.Run("commit hooks can block commit", func(t *testing.T) {
+		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file1",
+			Checksum:        "abcdef",
+			PhysicalAddress: "/addr/1",
+			Size:            17,
+		}, CreateEntryParams{}); err != nil {
+			t.Fatalf("create entry for commit: %s", err)
+		}
+		testingErr := fmt.Errorf("you know, for testing!")
+		c.GetHooks().AddPostCommit(func(_ context.Context, _ db.Tx, _ *CommitLog) error {
+			return testingErr
+		})
+
+		commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
+		if !errors.Is(err, testingErr) {
+			t.Errorf("expected commit to fail with %s but got %v, %s", testingErr, commitLog, err)
+		}
+
+		entry, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
+		if !errors.Is(err, db.ErrNotFound) {
+			t.Errorf("expected not to find /file1 because its commit rolled back, got %+v, %s", entry, err)
+		}
+	})
 }
