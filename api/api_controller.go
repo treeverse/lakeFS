@@ -835,7 +835,10 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		cataloger := deps.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
-		diff, hasMore, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef, limit, after)
+		diff, hasMore, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef, catalog.DiffParams{
+			Limit: limit,
+			After: after,
+		})
 		if errors.Is(err, catalog.ErrFeatureNotSupported) {
 			return refs.NewDiffRefsDefault(http.StatusNotImplemented).WithPayload(responseError(err.Error()))
 		}
