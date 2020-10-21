@@ -102,22 +102,25 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 			return nil, fmt.Errorf("right ref branch: %w", err)
 		}
 
-		err = c.doDiff(ctx, tx, &doDiffParams{
+		diffParams := &doDiffParams{
 			Repository:    repository,
 			LeftCommitID:  leftRef.CommitID,
 			LeftBranchID:  leftBranchID,
 			RightCommitID: rightRef.CommitID,
 			RightBranchID: rightBranchID,
-			DiffParams:    params,
-		})
+			DiffParams: DiffParams{
+				// we request additional one (without returning it) for pagination (hasMore)
+				Limit:            params.Limit + 1,
+				After:            params.After,
+				AdditionalFields: params.AdditionalFields,
+			},
+		}
+		err = c.doDiff(ctx, tx, diffParams)
 		if err != nil {
 			return nil, err
 		}
 
-		// we request additional one (without returning it) for pagination (hasMore)
-		diffResultsLimit := params.Limit + 1
-
-		return getDiffDifferences(ctx, tx, diffResultsLimit, params.After, params.AdditionalFields)
+		return getDiffDifferences(ctx, tx, diffParams.Limit, diffParams.After, params.AdditionalFields)
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, false, err
