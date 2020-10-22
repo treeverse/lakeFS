@@ -296,14 +296,7 @@ func TestCataloger_CommitHooks(t *testing.T) {
 
 	t.Run("commit hooks run and see commit", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
-			Path:            "/file1",
-			Checksum:        "abcdef",
-			PhysicalAddress: "/addr/1",
-			Size:            17,
-		}, CreateEntryParams{}); err != nil {
-			t.Fatalf("create entry for commit: %s", err)
-		}
+		testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "file1", nil, "")
 		var logs [2][]*CommitLog
 		for i := 0; i < 2; i++ {
 			j := i
