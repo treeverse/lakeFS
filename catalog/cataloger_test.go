@@ -53,9 +53,10 @@ func testCatalogerBranch(t testing.TB, ctx context.Context, c Cataloger, reposit
 	}
 }
 
-func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
+// testCatalogerCreateEntry creates a test entry on cataloger, returning a (fake) checksum based on the path, the test name, and a seed.
+func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) string {
 	t.Helper()
-	checksum := testCreateEntryCalcChecksum(path, seed)
+	checksum := testCreateEntryCalcChecksum(path, t.Name(), seed)
 	var size int64
 	for i := range checksum {
 		size += int64(checksum[i])
@@ -70,6 +71,7 @@ func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, re
 	if err != nil {
 		t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repository, err)
 	}
+	return checksum
 }
 
 func testCatalogerGetEntry(t testing.TB, ctx context.Context, c Cataloger, repository, reference, path string, expect bool) {
@@ -83,9 +85,9 @@ func testCatalogerGetEntry(t testing.TB, ctx context.Context, c Cataloger, repos
 	}
 }
 
-func testCreateEntryCalcChecksum(key string, seed string) string {
+func testCreateEntryCalcChecksum(key string, testName string, seed string) string {
 	h := sha256.New()
-	_, _ = h.Write([]byte(seed))
+	_, _ = h.Write([]byte(testName + seed))
 	_, _ = h.Write([]byte(key))
 	checksum := hex.EncodeToString(h.Sum(nil))
 	return checksum
@@ -101,7 +103,7 @@ func testVerifyEntries(t testing.TB, ctx context.Context, c Cataloger, repositor
 			}
 		} else {
 			testutil.MustDo(t, fmt.Sprintf("Get entry=%s, repository=%s, reference=%s", entry.Path, repository, reference), err)
-			expectedAddr := testCreateEntryCalcChecksum(entry.Path, entry.Seed)
+			expectedAddr := testCreateEntryCalcChecksum(entry.Path, t.Name(), entry.Seed)
 			if ent.PhysicalAddress != expectedAddr {
 				t.Fatalf("Get entry %s, addr = %s, expected %s", entry.Path, ent.PhysicalAddress, expectedAddr)
 			}

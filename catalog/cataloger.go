@@ -158,6 +158,10 @@ type Merger interface {
 	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
 }
 
+type Hookser interface {
+	Hooks() *CatalogerHooks
+}
+
 type ExportConfigurator interface {
 	GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error)
 	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
@@ -172,6 +176,7 @@ type Cataloger interface {
 	MultipartUpdateCataloger
 	Differ
 	Merger
+	Hookser
 	ExportConfigurator
 	io.Closer
 }
@@ -191,6 +196,28 @@ type CacheConfig struct {
 	Jitter  time.Duration
 }
 
+// CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
+// called in a current transaction context; if they return an error the transaction is rolled
+// back.  Because these transactions are current, the hook can see the effect the operation only
+// on the passed transaction.
+type CatalogerHooks struct {
+	// PostCommit hooks are called at the end of a commit.
+	PostCommit []func(ctx context.Context, tx db.Tx, commitLog *CommitLog) error
+
+	// PostMerge hooks are called at the end of a merge.
+	PostMerge []func(ctx context.Context, tx db.Tx, mergeResult *MergeResult) error
+}
+
+func (h *CatalogerHooks) AddPostCommit(f func(context.Context, db.Tx, *CommitLog) error) *CatalogerHooks {
+	h.PostCommit = append(h.PostCommit, f)
+	return h
+}
+
+func (h *CatalogerHooks) AddPostMerge(f func(context.Context, db.Tx, *MergeResult) error) *CatalogerHooks {
+	h.PostMerge = append(h.PostMerge, f)
+	return h
+}
+
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
 	params.Catalog
@@ -202,6 +229,7 @@ type cataloger struct {
 	dedupReportEnabled   bool
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
+	hooks                CatalogerHooks
 }
 
 type CatalogerOption func(*cataloger)
@@ -422,4 +450,8 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			}
 		}
 	}
+}
+
+func (c *cataloger) Hooks() *CatalogerHooks {
+	return &c.hooks
 }
