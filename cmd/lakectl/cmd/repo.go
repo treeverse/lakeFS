@@ -96,7 +96,6 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		
 		repo, err := clt.GetRepository(context.Background(), u.Repository)
 		if err != nil {
 			DieErr(err)
