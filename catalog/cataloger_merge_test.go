@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -1202,31 +1201,39 @@ func TestCataloger_MergeFromChildAfterMergeFromParent(t *testing.T) {
 	}
 }
 
+// MergeHookLogger - merge hook that will return an error if set by Err.
+// When no Err is set it will log merge log into Logs.
+type MergeHookLogger struct {
+	Err  error
+	Logs []*MergeResult
+}
+
+func (h *MergeHookLogger) Hook(_ context.Context, _ db.Tx, log *MergeResult) error {
+	if h.Err != nil {
+		return h.Err
+	}
+	h.Logs = append(h.Logs, log)
+	return nil
+}
+
 func TestCataloger_Merge_Hooks(t *testing.T) {
-	for _, success := range []bool{true, false} {
-		test := "pass"
-		if !success {
-			test = "fail"
-		}
-		testingErr := fmt.Errorf("you know, for testing!")
-		t.Run(test, func(t *testing.T) {
+	errHookFailed := errors.New("for testing")
+	tests := []struct {
+		name string
+		err  error
+	}{{"successful hooks", nil}, {"failing hooks", errHookFailed}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			c := testCataloger(t)
-			var gotMergeResult *MergeResult
-			if success {
-				c.Hooks().AddPostMerge(
-					func(_ context.Context, _ db.Tx, mergeResult *MergeResult) error {
-						if gotMergeResult != nil {
-							return fmt.Errorf("success merge hook called twice, %+v then %+v", gotMergeResult, mergeResult)
-						}
-						gotMergeResult = mergeResult
-						return nil
-					})
-			} else {
-				c.Hooks().AddPostMerge(
-					func(_ context.Context, _ db.Tx, _ *MergeResult) error {
-						return testingErr
-					})
+
+			// register hooks (more than one to verify all get called)
+			hooks := []MergeHookLogger{
+				{Err: tt.err},
+				{Err: tt.err},
+			}
+			for i := range hooks {
+				c.Hooks().AddPostMerge(hooks[i].Hook)
 			}
 
 			repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -1239,20 +1246,24 @@ func TestCataloger_Merge_Hooks(t *testing.T) {
 			_, err := c.Commit(ctx, repository, "branch1", "commit to master", "tester", nil)
 			testutil.MustDo(t, "commit to branch1", err)
 
-			res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
-			if success {
-				if err != nil {
-					t.Error("Merge from master to branch1 failed:", err)
-				}
-				testVerifyEntries(t, ctx, c, repository, "branch1", []testEntryInfo{
-					{Path: "/file1"},
-				})
-				if diffs := deep.Equal(res, gotMergeResult); diffs != nil {
+			res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
+
+			if !errors.Is(err, tt.err) {
+				t.Error("hook did not fail merge: ", err)
+			}
+			if err != nil {
+				return
+			}
+
+			// verify merge succeeded
+			testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{
+				{Path: "/file1"},
+			})
+
+			expected := []*MergeResult{res}
+			for _, hook := range hooks {
+				if diffs := deep.Equal(expected, hook.Logs); diffs != nil {
 					t.Error("hook received unexpected merge result: ", diffs)
-				}
-			} else {
-				if !errors.Is(err, testingErr) {
-					t.Error("hook did not fail merge: ", err)
 				}
 			}
 		})

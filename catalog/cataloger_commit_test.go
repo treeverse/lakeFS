@@ -306,7 +306,7 @@ func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, log *CommitLog) erro
 }
 
 func TestCataloger_CommitHooks(t *testing.T) {
-	errHookFailed := errors.New("hook failed")
+	errHookFailed := errors.New("for testing")
 	tests := []struct {
 		name    string
 		path    string
@@ -326,8 +326,6 @@ func TestCataloger_CommitHooks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			c := testCataloger(t)
-			repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-			_ = testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
 
 			// register hooks (more than one to verify all get called)
 			hooks := []CommitHookLogger{
@@ -337,6 +335,9 @@ func TestCataloger_CommitHooks(t *testing.T) {
 			for i := range hooks {
 				c.Hooks().AddPostCommit(hooks[i].Hook)
 			}
+
+			repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+			_ = testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
 
 			commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
 			// check that hook err is the commit error
