@@ -284,7 +284,7 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 	ent, err := c.GetEntry(ctx, repository, branchCommit.Reference, "file42", GetEntryParams{})
 	testutil.MustDo(t, "get entry from create branch commit - branch1", err)
 
-	checksumFile42 := testCreateEntryCalcChecksum("file42", "")
+	checksumFile42 := testCreateEntryCalcChecksum("file42", t.Name())
 	if ent.Checksum != checksumFile42 {
 		t.Fatalf("get entry from branch commit checksum=%s, expected, %s", ent.Checksum, checksumFile42)
 	}
@@ -296,7 +296,7 @@ func TestCataloger_CommitHooks(t *testing.T) {
 
 	t.Run("commit hooks run and see commit", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "file1", nil, "")
+		checksum := testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
 		var logs [2][]*CommitLog
 		for i := 0; i < 2; i++ {
 			j := i
@@ -318,21 +318,14 @@ func TestCataloger_CommitHooks(t *testing.T) {
 		}
 
 		entry, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
-		if err != nil || entry.Path != "/file1" || entry.Checksum != "abcdef" {
+		if err != nil || entry.Path != "/file1" || entry.Checksum != checksum {
 			t.Errorf("expected /file1 committed, got %+v, %s", entry, err)
 		}
 	})
 
 	t.Run("commit hooks can block commit", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
-			Path:            "/file1",
-			Checksum:        "abcdef",
-			PhysicalAddress: "/addr/1",
-			Size:            17,
-		}, CreateEntryParams{}); err != nil {
-			t.Fatalf("create entry for commit: %s", err)
-		}
+		testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file1", nil, "")
 		testingErr := fmt.Errorf("you know, for testing!")
 		c.GetHooks().AddPostCommit(func(_ context.Context, _ db.Tx, _ *CommitLog) error {
 			return testingErr
