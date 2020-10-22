@@ -12,6 +12,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -283,8 +284,75 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 	ent, err := c.GetEntry(ctx, repository, branchCommit.Reference, "file42", GetEntryParams{})
 	testutil.MustDo(t, "get entry from create branch commit - branch1", err)
 
-	checksumFile42 := testCreateEntryCalcChecksum("file42", "")
+	checksumFile42 := testCreateEntryCalcChecksum("file42", t.Name(), "")
 	if ent.Checksum != checksumFile42 {
 		t.Fatalf("get entry from branch commit checksum=%s, expected, %s", ent.Checksum, checksumFile42)
+	}
+}
+
+// CommitHookLogger - commit hook that will return an error if set by Err.
+// When no Err is set it will log commit log into Logs.
+type CommitHookLogger struct {
+	Err  error
+	Logs []*CommitLog
+}
+
+func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, log *CommitLog) error {
+	if h.Err != nil {
+		return h.Err
+	}
+	h.Logs = append(h.Logs, log)
+	return nil
+}
+
+func TestCataloger_CommitHooks(t *testing.T) {
+	errHookFailed := errors.New("for testing")
+	tests := []struct {
+		name    string
+		path    string
+		hookErr error
+		wantErr error
+	}{
+		{
+			name:    "no_block",
+			hookErr: nil,
+		},
+		{
+			name:    "block",
+			hookErr: errHookFailed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			c := testCataloger(t)
+
+			// register hooks (more than one to verify all get called)
+			hooks := []CommitHookLogger{
+				{Err: tt.hookErr},
+				{Err: tt.hookErr},
+			}
+			for i := range hooks {
+				c.Hooks().AddPostCommit(hooks[i].Hook)
+			}
+
+			repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+			_ = testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
+
+			commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
+			// check that hook err is the commit error
+			if !errors.Is(tt.hookErr, err) {
+				t.Fatalf("Commit err=%s, expected=%s", err, tt.hookErr)
+			}
+			// on successful commit the commit log should be found on hook's logs
+			if err != nil {
+				return
+			}
+			for i := range hooks {
+				if len(hooks[i].Logs) != 1 || hooks[i].Logs[0] != commitLog {
+					t.Errorf("hook %d: expected one commit %+v but got logs: %s", i, commitLog, spew.Sprint(hooks[i].Logs))
+				}
+			}
+		})
 	}
 }
