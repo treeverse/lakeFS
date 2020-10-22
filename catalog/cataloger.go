@@ -159,7 +159,7 @@ type Merger interface {
 }
 
 type Hookser interface {
-	GetHooks() *CatalogerHooks
+	Hooks() *CatalogerHooks
 }
 
 type ExportConfigurator interface {
@@ -452,6 +452,6 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 	}
 }
 
-func (c *cataloger) GetHooks() *CatalogerHooks {
+func (c *cataloger) Hooks() *CatalogerHooks {
 	return &c.hooks
 }
