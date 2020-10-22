@@ -290,55 +290,68 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 	}
 }
 
+// CommitHookLogger - commit hook that will return an error if set by Err.
+// When no Err is set it will log commit log into Logs.
+type CommitHookLogger struct {
+	Err  error
+	Logs []*CommitLog
+}
+
+func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, log *CommitLog) error {
+	if h.Err != nil {
+		return h.Err
+	}
+	h.Logs = append(h.Logs, log)
+	return nil
+}
+
 func TestCataloger_CommitHooks(t *testing.T) {
-	ctx := context.Background()
-	c := testCataloger(t)
+	errHookFailed := errors.New("hook failed")
+	tests := []struct {
+		name    string
+		path    string
+		hookErr error
+		wantErr error
+	}{
+		{
+			name:    "no_block",
+			hookErr: nil,
+		},
+		{
+			name:    "block",
+			hookErr: errHookFailed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			c := testCataloger(t)
+			repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+			_ = testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
 
-	t.Run("commit hooks run and see commit", func(t *testing.T) {
-		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		checksum := testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
-		var logs [2][]*CommitLog
-		for i := 0; i < 2; i++ {
-			j := i
-			c.Hooks().AddPostCommit(func(_ context.Context, _ db.Tx, l *CommitLog) error {
-				logs[j] = append(logs[j], l)
-				return nil
-			})
-		}
-
-		commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
-		if err != nil {
-			t.Fatalf("commit entry: %s", err)
-		}
-
-		for i, log := range logs {
-			if len(log) != 1 || log[0] != commitLog {
-				t.Errorf("hook %d: expected one commit %+v but got %+v", i, commitLog, log)
+			// register hooks (more than one to verify all get called)
+			hooks := []CommitHookLogger{
+				{Err: tt.hookErr},
+				{Err: tt.hookErr},
 			}
-		}
+			for i := range hooks {
+				c.Hooks().AddPostCommit(hooks[i].Hook)
+			}
 
-		entry, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
-		if err != nil || entry.Path != "/file1" || entry.Checksum != checksum {
-			t.Errorf("expected /file1 committed, got %+v, %s", entry, err)
-		}
-	})
-
-	t.Run("commit hooks can block commit", func(t *testing.T) {
-		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file1", nil, "")
-		testingErr := fmt.Errorf("you know, for testing!")
-		c.Hooks().AddPostCommit(func(_ context.Context, _ db.Tx, _ *CommitLog) error {
-			return testingErr
+			commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
+			// check that hook err is the commit error
+			if !errors.Is(tt.hookErr, err) {
+				t.Fatalf("Commit err=%s, expected=%s", err, tt.hookErr)
+			}
+			// on successful commit the commit log should be found on hook's logs
+			if err != nil {
+				return
+			}
+			for i := range hooks {
+				if len(hooks[i].Logs) != 1 || hooks[i].Logs[0] != commitLog {
+					t.Errorf("hook %d: expected one commit %+v but got logs: %s", i, commitLog, spew.Sprint(hooks[i].Logs))
+				}
+			}
 		})
-
-		commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
-		if !errors.Is(err, testingErr) {
-			t.Errorf("expected commit to fail with %s but got %v, %s", testingErr, commitLog, err)
-		}
-
-		entry, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
-		if !errors.Is(err, db.ErrNotFound) {
-			t.Errorf("expected not to find /file1 because its commit rolled back, got %+v, %s", entry, err)
-		}
-	})
+	}
 }
