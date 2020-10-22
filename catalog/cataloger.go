@@ -158,6 +158,12 @@ type Merger interface {
 	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
 }
 
+type ExportConfigurator interface {
+	GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error)
+	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
+	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
+}
+
 type Cataloger interface {
 	RepositoryCataloger
 	BranchCataloger
@@ -166,6 +172,7 @@ type Cataloger interface {
 	MultipartUpdateCataloger
 	Differ
 	Merger
+	ExportConfigurator
 	io.Closer
 }
 
