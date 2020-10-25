@@ -3,14 +3,15 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/treeverse/lakefs/logging"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type TxFunc func(tx Tx) (interface{}, error)
@@ -29,31 +30,31 @@ type QueryOptions struct {
 	ctx    context.Context
 }
 
-type SqlxDatabase struct {
-	db           *sqlx.DB
+type SqlDatabase struct {
+	db           *sql.DB
 	queryOptions *QueryOptions
 }
 
-func NewSqlxDatabase(db *sqlx.DB) *SqlxDatabase {
-	return &SqlxDatabase{db: db}
+func NewSqlDatabase(db *sql.DB) *SqlDatabase {
+	return &SqlDatabase{db: db}
 }
 
-func (d *SqlxDatabase) getLogger() logging.Logger {
+func (d *SqlDatabase) getLogger() logging.Logger {
 	if d.queryOptions != nil {
 		return d.queryOptions.logger
 	}
 	return logging.Default()
 }
 
-func (d *SqlxDatabase) getContext() context.Context {
+func (d *SqlDatabase) getContext() context.Context {
 	if d.queryOptions != nil {
 		return d.queryOptions.ctx
 	}
 	return context.Background()
 }
 
-func (d *SqlxDatabase) WithContext(ctx context.Context) Database {
-	return &SqlxDatabase{
+func (d *SqlDatabase) WithContext(ctx context.Context) Database {
+	return &SqlDatabase{
 		db: d.db,
 		queryOptions: &QueryOptions{
 			logger: logging.Default().WithContext(ctx),
@@ -62,12 +63,12 @@ func (d *SqlxDatabase) WithContext(ctx context.Context) Database {
 	}
 }
 
-func (d *SqlxDatabase) Close() error {
+func (d *SqlDatabase) Close() error {
 	return d.db.Close()
 }
 
 // performAndReport performs fn and logs a "done" report if its duration was long enough.
-func (d *SqlxDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
+func (d *SqlDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
 	start := time.Now()
 	ret, err := fn()
 	duration := time.Since(start)
@@ -81,37 +82,45 @@ func (d *SqlxDatabase) performAndReport(fields logging.Fields, fn func() (interf
 	return ret, err
 }
 
-func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+func (d *SqlDatabase) GetStruct(dest interface{}, query string, args ...interface{}) error {
 	_, err := d.performAndReport(logging.Fields{
 		"type":  "get",
 		"query": query,
 		"args":  args,
-	}, func() (interface{}, error) { return nil, d.db.GetContext(d.getContext(), dest, query, args...) })
+	}, func() (interface{}, error) {
+		return nil, sqlscan.Get(d.getContext(), d.db, dest, query, args...)
+	})
 	return err
 }
 
-func (d *SqlxDatabase) Query(query string, args ...interface{}) (rows *sqlx.Rows, err error) {
+func (d *SqlDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+	row := d.db.QueryRowContext(context.Background(), query, args...)
+	err := row.Scan(dest)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("query %s: %w", query, err)
+	}
+	return nil
+}
+func (d *SqlDatabase) Query(query string, args ...interface{}) (rows *sql.Rows, err error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "start query",
 		"query": query,
 		"args":  args,
-	}, func() (interface{}, error) { return d.db.QueryxContext(d.getContext(), query, args...) })
+	}, func() (interface{}, error) { return d.db.QueryContext(d.getContext(), query, args...) })
 	if ret == nil {
 		return nil, err
 	}
-	return ret.(*sqlx.Rows), err
+	return ret.(*sql.Rows), err
 }
 
-func (d *SqlxDatabase) Select(dest interface{}, query string, args ...interface{}) error {
-	_, err := d.performAndReport(logging.Fields{
-		"type":  "exec",
-		"query": query,
-		"args":  args,
-	}, func() (interface{}, error) { return nil, d.db.SelectContext(d.getContext(), dest, query, args...) })
-	return err
+func (d *SqlDatabase) Select(results interface{}, query string, args ...interface{}) error {
+	return Select(d, results, query, args...)
 }
 
-func (d *SqlxDatabase) Exec(query string, args ...interface{}) (sql.Result, error) {
+func (d *SqlDatabase) Exec(query string, args ...interface{}) (sql.Result, error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "exec",
 		"query": query,
@@ -123,7 +132,7 @@ func (d *SqlxDatabase) Exec(query string, args ...interface{}) (sql.Result, erro
 	return ret.(sql.Result), nil
 }
 
-func (d *SqlxDatabase) getTxOptions() *TxOptions {
+func (d *SqlDatabase) getTxOptions() *TxOptions {
 	options := DefaultTxOptions()
 	if d.queryOptions != nil {
 		options.logger = d.queryOptions.logger
@@ -132,7 +141,7 @@ func (d *SqlxDatabase) getTxOptions() *TxOptions {
 	return options
 }
 
-func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
+func (d *SqlDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	options := d.getTxOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -150,7 +159,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			time.Sleep(duration)
 		}
 
-		tx, err := d.db.BeginTxx(options.ctx, &sql.TxOptions{
+		tx, err := d.db.BeginTx(options.ctx, &sql.TxOptions{
 			Isolation: options.isolationLevel,
 			ReadOnly:  options.readOnly,
 		})
@@ -193,7 +202,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	return nil, ErrSerialization
 }
 
-func (d *SqlxDatabase) Metadata() (map[string]string, error) {
+func (d *SqlDatabase) Metadata() (map[string]string, error) {
 	metadata := make(map[string]string)
 	version, err := d.getVersion()
 	if err == nil {
@@ -211,15 +220,16 @@ func (d *SqlxDatabase) Metadata() (map[string]string, error) {
 			Name    string `db:"name"`
 			Setting string `db:"setting"`
 		}
-		var pgs []pgSettings
-		err = tx.Select(&pgs,
+		rows, err := tx.Query(
 			`SELECT name, setting FROM pg_settings
 					WHERE name IN ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')`)
 		if err != nil {
 			return nil, err
 		}
 		settings := make(map[string]string)
-		for _, setting := range pgs {
+		for rows.Next() {
+			var setting pgSettings
+			err = rows.Scan(&setting)
 			if setting.Name == "data_directory" {
 				isRDS := strings.HasPrefix(setting.Setting, "/rdsdata")
 				settings["is_rds"] = strconv.FormatBool(isRDS)
@@ -240,13 +250,13 @@ func (d *SqlxDatabase) Metadata() (map[string]string, error) {
 	return metadata, nil
 }
 
-func (d *SqlxDatabase) getVersion() (string, error) {
+func (d *SqlDatabase) getVersion() (string, error) {
 	v, err := d.Transact(func(tx Tx) (interface{}, error) {
 		type ver struct {
 			Version string `db:"version"`
 		}
 		var v ver
-		err := tx.Get(&v, "SELECT version()")
+		err := tx.GetStruct(&v, "SELECT version()")
 		if err != nil {
 			return "", err
 		}
@@ -258,10 +268,10 @@ func (d *SqlxDatabase) getVersion() (string, error) {
 	return v.(string), err
 }
 
-func (d *SqlxDatabase) getAuroraVersion() (string, error) {
+func (d *SqlDatabase) getAuroraVersion() (string, error) {
 	v, err := d.Transact(func(tx Tx) (interface{}, error) {
 		var v string
-		err := tx.Get(&v, "SELECT aurora_version()")
+		err := tx.GetStruct(&v, "SELECT aurora_version()")
 		if err != nil {
 			return "", err
 		}
@@ -273,6 +283,6 @@ func (d *SqlxDatabase) getAuroraVersion() (string, error) {
 	return v.(string), err
 }
 
-func (d *SqlxDatabase) Stats() sql.DBStats {
+func (d *SqlDatabase) Stats() sql.DBStats {
 	return d.db.Stats()
 }

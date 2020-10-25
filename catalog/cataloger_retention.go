@@ -8,8 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"database/sql"
+
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -159,7 +162,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 
 // expiryRows implements ExpiryRows.
 type expiryRows struct {
-	rows           *sqlx.Rows
+	rows           *sql.Rows
 	RepositoryName string
 }
 
@@ -177,7 +180,7 @@ func (e *expiryRows) Close() error {
 
 func (e *expiryRows) Read() (*ExpireResult, error) {
 	var record retentionQueryRecord
-	err := e.rows.StructScan(&record)
+	err := sqlscan.ScanRow(&record, e.rows)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +323,7 @@ func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName s
 }
 
 type StringRows struct {
-	rows *sqlx.Rows
+	rows *sql.Rows
 }
 
 func (s *StringRows) Next() bool {

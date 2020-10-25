@@ -1,9 +1,13 @@
 package catalog
 
 import (
+	"database/sql/driver"
+	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/db"
 )
@@ -28,6 +32,49 @@ type ExportConfigurationForBranch struct {
 	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
 }
 
+type CatalogBranchExportStatus string
+
+const (
+	ExportStatusInProgress = CatalogBranchExportStatus("in-progress")
+	ExportStatusSuccess    = CatalogBranchExportStatus("exported-successfully")
+	ExportStatusFailed     = CatalogBranchExportStatus("export-failed")
+	ExportStatusUnknown    = CatalogBranchExportStatus("[unknown]")
+)
+
+// ExportStatus describes the current export status of a branch, as passed on wire, used
+// internally, and stored in DB.
+type ExportStatus struct {
+	CurrentRef string `db:"current_ref"`
+	State      CatalogBranchExportStatus
+}
+
+var ErrBadTypeConversion = errors.New("bad type")
+
+// nolint: stylecheck
+func (dst *CatalogBranchExportStatus) Scan(src interface{}) error {
+	var sc CatalogBranchExportStatus
+	switch s := src.(type) {
+	case string:
+		sc = CatalogBranchExportStatus(strings.ToLower(s))
+	case []byte:
+		sc = CatalogBranchExportStatus(strings.ToLower(string(s)))
+	default:
+		return fmt.Errorf("cannot convert %T to CatalogBranchExportStatus: %w", src, ErrBadTypeConversion)
+	}
+
+	if !(sc == ExportStatusInProgress || sc == ExportStatusSuccess || sc == ExportStatusFailed) {
+		// not a failure, "just" be a newer enum value than known
+		*dst = ExportStatusUnknown
+		return nil
+	}
+	*dst = sc
+	return nil
+}
+
+func (src CatalogBranchExportStatus) Value() (driver.Value, error) {
+	return string(src), nil
+}
+
 func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error) {
 	ret, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
@@ -35,7 +82,7 @@ func (c *cataloger) GetExportConfigurationForBranch(repository string, branch st
 		if err != nil {
 			return nil, err
 		}
-		err = c.db.Get(&ret,
+		err = c.db.GetStruct(&ret,
 			`SELECT export_path, export_status_path, last_keys_in_prefix_regexp
                          FROM catalog_branches_export
                          WHERE branch_id = $1`, branchID)
@@ -58,14 +105,8 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
-		var rec ExportConfigurationForBranch
-		if err = rows.StructScan(&rec); err != nil {
-			return nil, fmt.Errorf("scan configuration %+v: %w", rows, err)
-		}
-		ret = append(ret, rec)
-	}
-	return ret, nil
+	err = sqlscan.ScanAll(&ret, rows)
+	return ret, err
 }
 
 func (c *cataloger) PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error {

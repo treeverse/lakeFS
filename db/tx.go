@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -17,14 +18,15 @@ const (
 )
 
 type Tx interface {
-	Query(query string, args ...interface{}) (*sqlx.Rows, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
 	Select(dest interface{}, query string, args ...interface{}) error
+	GetStruct(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
 type dbTx struct {
-	tx     *sqlx.Tx
+	tx     *sql.Tx
 	logger logging.Logger
 }
 
@@ -32,9 +34,9 @@ func queryToString(q string) string {
 	return strings.Join(strings.Fields(q), " ")
 }
 
-func (d *dbTx) Query(query string, args ...interface{}) (*sqlx.Rows, error) {
+func (d *dbTx) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	start := time.Now()
-	rows, err := d.tx.Queryx(query, args...)
+	rows, err := d.tx.Query(query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "query",
 		"args":  args,
@@ -49,33 +51,28 @@ func (d *dbTx) Query(query string, args ...interface{}) (*sqlx.Rows, error) {
 	return rows, nil
 }
 
-func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error {
-	start := time.Now()
-	err := d.tx.Select(dest, query, args...)
-	log := d.logger.WithFields(logging.Fields{
-		"type":  "select",
-		"args":  args,
-		"query": queryToString(query),
-		"took":  time.Since(start),
-	})
+func Select(d Tx, results interface{}, query string, args ...interface{}) error {
+	rows, err := d.Query(query, args...)
 	if err != nil {
-		dbErrorsCounter.WithLabelValues("select").Inc()
-		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
-	log.Trace("SQL query executed successfully")
-	return nil
+	defer rows.Close()
+	return sqlscan.ScanAll(results, rows)
 }
 
-func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
+func (d *dbTx) Select(results interface{}, query string, args ...interface{}) error {
+	return Select(d, results, query, args...)
+}
+
+func (d *dbTx) GetStruct(dest interface{}, query string, args ...interface{}) error {
 	start := time.Now()
-	err := d.tx.Get(dest, query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "get",
 		"args":  args,
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
+	err := sqlscan.Get(context.Background(), d.tx, dest, query, args...)
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
@@ -83,10 +80,33 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 	if err != nil {
 		dbErrorsCounter.WithLabelValues("get").Inc()
 		log.WithError(err).Error("SQL query failed with error")
-		return err
+		return fmt.Errorf("query %s: %w", query, err)
 	}
 	log.Trace("SQL query executed successfully")
-	return err
+	return nil
+}
+
+func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
+	start := time.Now()
+	log := d.logger.WithFields(logging.Fields{
+		"type":  "get",
+		"args":  args,
+		"query": queryToString(query),
+		"took":  time.Since(start),
+	})
+	row := d.tx.QueryRowContext(context.Background(), query, args...)
+	err := row.Scan(dest)
+	if errors.Is(err, sql.ErrNoRows) {
+		log.Trace("SQL query returned no results")
+		return ErrNotFound
+	}
+	if err != nil {
+		dbErrorsCounter.WithLabelValues("get").Inc()
+		log.WithError(err).Error("SQL query failed with error")
+		return fmt.Errorf("query %s: %w", query, err)
+	}
+	log.Trace("SQL query executed successfully")
+	return nil
 }
 
 func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
