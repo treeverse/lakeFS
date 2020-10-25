@@ -150,7 +150,7 @@ type Committer interface {
 }
 
 type Differ interface {
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, params DiffParams) (Differences, bool, error)
+	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 }
 
