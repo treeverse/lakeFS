@@ -89,7 +89,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 		for scanner.Next() {
 			v := scanner.Value()
 			var d Difference
-			d.Path = v.Entry.Path
+			d.Entry = v.Entry
 			d.Type = v.DiffType
 			differences = append(differences, d)
 		}
