@@ -8,6 +8,7 @@ const (
 	DifferenceTypeChanged
 	DifferenceTypeConflict
 	DifferenceTypeNone
+	NumberOfDifferenceTypes = 4
 )
 
 type Difference struct {
