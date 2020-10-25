@@ -123,12 +123,12 @@ func TestCataloger_Diff_AdditionalFields(t *testing.T) {
 		t.Fatalf("Diff() len of result %d, expected %d", len(res), expectedLen)
 	}
 	for _, d := range res {
-		if d.PhysicalAddress != "" {
-			t.Fatalf("Diff result entry should not have physical address set (%s)", d.PhysicalAddress)
+		if d.PhysicalAddress == "" {
+			t.Fatalf("Diff result entry should  have physical address set (%s)", d.PhysicalAddress)
 		}
 		// verify that checksum - added by diff code is set on entry
-		if d.Checksum != "" {
-			t.Fatalf("Diff result entry should not have checksum address set (%s)", d.Checksum)
+		if d.Checksum == "" {
+			t.Fatalf("Diff result entry should  have checksum address set (%s)", d.Checksum)
 		}
 	}
 }
