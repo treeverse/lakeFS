@@ -46,7 +46,9 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 
 		// create repository with ref to branch
 		if _, err := tx.Exec(`INSERT INTO catalog_repositories (id,name,storage_namespace,creation_date,default_branch)
-			VALUES ($1,$2,$3,transaction_timestamp(),$4)`, repoID, repository, storageNamespace, branchID); err != nil {
+			VALUES ($1,$2,$3,transaction_timestamp(),$4)`, repoID, repository, storageNamespace, branchID); db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("%s %w", repository, db.ErrAlreadyExists)
+		} else if err != nil {
 			return nil, fmt.Errorf("insert repository: %w", err)
 		}
 
