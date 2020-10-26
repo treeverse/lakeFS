@@ -19,6 +19,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 
+	importInitialCommitReference, err := c.GetBranchReference(ctx, repository, DefaultImportBranchName)
+	testutil.MustDo(t, "get import branch reference", err)
+
 	initialCommitReference, err := c.GetBranchReference(ctx, repository, "master")
 	testutil.MustDo(t, "get master branch reference", err)
 
@@ -46,10 +49,11 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Y"}},
-				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96b"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}, Parents: []string{"~3BJEPkwHYMdLDpaBrwnpTPmfarYET3yz"}},
+				{Reference: importInitialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryImportCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -63,8 +67,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         2,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96b"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -74,11 +78,11 @@ func TestCataloger_ListCommits(t *testing.T) {
 			args: args{
 				repository:    repository,
 				branch:        "master",
-				fromReference: commits[0].Reference,
+				fromReference: initialCommitReference,
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
+				{Reference: importInitialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryImportCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -92,7 +96,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -167,7 +171,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListCommits() error = %s", err)
 	}
-	if len(br2Commits) != 6 {
+	if len(br2Commits) != 7 {
 		t.Fatalf("ListCommits() error = %s", err)
 	}
 
@@ -453,7 +457,8 @@ func TestCataloger_ListCommits_Order(t *testing.T) {
 			expectedCommits := []string{
 				"Branch 'branch1' created, source branch 'master'",
 				commit1Msg,
-				"Repository created",
+				createRepositoryCommitMessage,
+				createRepositoryImportCommitMessage,
 			}
 
 			if diff := deep.Equal(commits, expectedCommits); diff != nil {

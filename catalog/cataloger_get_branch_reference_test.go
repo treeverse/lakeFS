@@ -33,13 +33,13 @@ func TestCataloger_GetBranch(t *testing.T) {
 		{
 			name:    "branch with commits",
 			args:    args{repository: repo, branch: "master"},
-			want:    "~KJ8Wd1Rs96a",
+			want:    "~KJ8Wd1Rs96b",
 			wantErr: false,
 		},
 		{
 			name:    "branch without commits",
 			args:    args{repository: repo, branch: "branch1"},
-			want:    "~2FgRfNLHmSmvR",
+			want:    "~2FgRfNLHmSmvS",
 			wantErr: false,
 		},
 		{

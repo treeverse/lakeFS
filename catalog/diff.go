@@ -7,11 +7,12 @@ const (
 	DifferenceTypeRemoved
 	DifferenceTypeChanged
 	DifferenceTypeConflict
+	DifferenceTypeNone
 )
 
 type Difference struct {
-	Type DifferenceType `db:"diff_type"`
-	Path string         `db:"path"`
+	Entry                // Partially filled.
+	Type  DifferenceType `db:"diff_type"`
 }
 
 func (d Difference) String() string {

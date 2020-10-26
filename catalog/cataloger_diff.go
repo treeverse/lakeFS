@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -12,84 +13,194 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type contextKey string
-
-func (k contextKey) String() string {
-	return string(k)
-}
-
 const (
 	DiffMaxLimit = 1000
 
-	diffResultsTableNamePrefix            = "catalog_diff_results"
-	contextDiffResultsKey      contextKey = "diff_results_key"
+	diffResultsTableNamePrefix = "catalog_diff_results"
+	diffResultsInsertBatchSize = 1024
+
+	contextDiffResultsKey contextKey = "diff_results_key"
 )
 
-var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
+type diffEffectiveCommits struct {
+	// ParentEffectiveCommit last commit parent merged from child.
+	// When no sync commit is found - set the commit ID to the point child's branch was created.
+	ParentEffectiveCommit CommitID `db:"parent_effective_commit"`
 
-func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
+	// ChildEffectiveCommit last commit child merged from parent.
+	// If the child never synced with parent, the commit ID is set to 1.
+	ChildEffectiveCommit CommitID `db:"child_effective_commit"`
+
+	// ParentEffectiveLineage lineage at the ParentEffectiveCommit
+	ParentEffectiveLineage []lineageCommit
+}
+
+type contextKey string
+
+type diffResultRecord struct {
+	SourceBranch int64
+	DiffType     DifferenceType
+	Entry        Entry   // Partially filled. Path is always set.
+	EntryCtid    *string // CTID of the modified/added entry. Do not use outside of catalog diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
+}
+
+type diffResultsBatchWriter struct {
+	tx                   db.Tx
+	DiffResultsTableName string
+	Records              []*diffResultRecord
+}
+
+type doDiffParams struct {
+	DiffParams
+	Repository    string
+	LeftCommitID  CommitID
+	LeftBranchID  int64
+	RightCommitID CommitID
+	RightBranchID int64
+}
+
+// Diff lists of differences between leftBranch and rightBranch.
+// The second return value will be true if there are more results. Use the last entry's path as the next call to Diff in the 'after' argument.
+// limit - is the maximum number of differences we will return, limited by DiffMaxLimit (which will be used in case limit less than 0)
+// after - lookup entries whose path comes after this value.
+// Diff internal API produce temporary table that this call deletes at the end of a successful transaction (failed will rollback changes)
+// The diff results table holds ctid to reference the relevant entry for changed/added and source branch for deleted - information used later to apply changes found
+func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
-		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
+		{Name: "leftReference", IsValid: ValidateReference(leftReference)},
+		{Name: "rightReference", IsValid: ValidateReference(rightReference)},
 	}); err != nil {
 		return nil, false, err
 	}
 
-	if limit < 0 || limit > DiffMaxLimit {
-		limit = DiffMaxLimit
+	// parse references
+	leftRef, err := ParseRef(leftReference)
+	if err != nil {
+		return nil, false, fmt.Errorf("left reference: %w", err)
+	}
+	rightRef, err := ParseRef(rightReference)
+	if err != nil {
+		return nil, false, fmt.Errorf("right reference: %w", err)
+	}
+
+	if params.Limit < 0 || params.Limit > DiffMaxLimit {
+		params.Limit = DiffMaxLimit
 	}
 
 	ctx, cancel := c.withDiffResultsContext(ctx)
 	defer cancel()
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
+		// get branch IDs
+		leftBranchID, err := c.getBranchIDCache(tx, repository, leftRef.Branch)
 		if err != nil {
-			return nil, fmt.Errorf("left branch: %w", err)
+			return nil, fmt.Errorf("left ref branch: %w", err)
 		}
-		rightID, err := c.getBranchIDCache(tx, repository, rightBranch)
+		rightBranchID, err := c.getBranchIDCache(tx, repository, rightRef.Branch)
 		if err != nil {
-			return nil, fmt.Errorf("right branch: %w", err)
+			return nil, fmt.Errorf("right ref branch: %w", err)
 		}
-		err = c.doDiff(ctx, tx, leftID, rightID)
+
+		diffParams := &doDiffParams{
+			Repository:    repository,
+			LeftCommitID:  leftRef.CommitID,
+			LeftBranchID:  leftBranchID,
+			RightCommitID: rightRef.CommitID,
+			RightBranchID: rightBranchID,
+			DiffParams: DiffParams{
+				// we request additional one (without returning it) for pagination (hasMore)
+				Limit:            params.Limit + 1,
+				After:            params.After,
+				AdditionalFields: params.AdditionalFields,
+			},
+		}
+		err = c.doDiff(ctx, tx, diffParams)
 		if err != nil {
 			return nil, err
 		}
-		return getDiffDifferences(ctx, tx, limit+1, after)
+
+		return getDiffDifferences(ctx, tx, diffParams.Limit, diffParams.After, params.AdditionalFields)
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, false, err
 	}
 	differences := res.(Differences)
-	hasMore := paginateSlice(&differences, limit)
+	hasMore := paginateSlice(&differences, params.Limit)
 	return differences, hasMore, nil
 }
 
-func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, leftID, rightID int64) error {
-	relation, err := getBranchesRelationType(tx, leftID, rightID)
+// doDiff internal implementation of the actual diff. limit <0 will scan the complete branch
+func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, params *doDiffParams) error {
+	if params == nil {
+		return fmt.Errorf("doDiff params are required: %w", ErrInvalidValue)
+	}
+	relation, err := c.getRefsRelationType(tx, params)
 	if err != nil {
 		return err
 	}
-	return c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
-}
-
-func (c *cataloger) doDiffByRelation(ctx context.Context, tx db.Tx, relation RelationType, leftID, rightID int64) error {
 	switch relation {
 	case RelationTypeFromParent:
-		return c.diffFromParent(ctx, tx, leftID, rightID)
+		return c.diffFromParent(ctx, tx, params)
 	case RelationTypeFromChild:
-		return c.diffFromChild(ctx, tx, leftID, rightID)
+		return c.diffFromChild(ctx, tx, params)
 	case RelationTypeNotDirect:
-		return c.diffNonDirect(ctx, tx, leftID, rightID)
+		return c.diffNonDirect(ctx, tx, params)
+	case RelationTypeSame:
+		return c.diffSameBranch(ctx, tx, params)
 	default:
 		c.log.WithFields(logging.Fields{
-			"relation_type": relation,
-			"left_id":       leftID,
-			"right_id":      rightID,
+			"relation_type":   relation,
+			"repository":      params.Repository,
+			"left_branch_id":  params.LeftBranchID,
+			"left_commit_id":  params.LeftCommitID,
+			"right_branch_id": params.RightBranchID,
+			"right_commit_id": params.RightCommitID,
 		}).Debug("Diff by relation - unsupported type")
 		return ErrFeatureNotSupported
 	}
+}
+
+func (k contextKey) String() string {
+	return string(k)
+}
+
+func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) CommitID {
+	for _, l := range c.ParentEffectiveLineage {
+		if l.BranchID == branchID {
+			return l.CommitID
+		}
+	}
+	return c.ParentEffectiveCommit
+}
+
+// newDiffResultsBatchWriter - scan Entry db metadata and map additionalFields names into the struct field index
+func newDiffResultsBatchWriter(tx db.Tx, tableName string) *diffResultsBatchWriter {
+	return &diffResultsBatchWriter{
+		tx:                   tx,
+		DiffResultsTableName: tableName,
+		Records:              make([]*diffResultRecord, 0, diffResultsInsertBatchSize),
+	}
+}
+
+func (d *diffResultsBatchWriter) Write(r *diffResultRecord) error {
+	// batch and/or insert results
+	d.Records = append(d.Records, r)
+	if len(d.Records) < diffResultsInsertBatchSize {
+		return nil
+	}
+	return d.Flush()
+}
+
+func (d *diffResultsBatchWriter) Flush() error {
+	if len(d.Records) == 0 {
+		return nil
+	}
+	if err := d.insertBatch(); err != nil {
+		return err
+	}
+	d.Records = d.Records[:0]
+	return nil
 }
 
 func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[DifferenceType]int, error) {
@@ -112,59 +223,158 @@ func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[Differenc
 	return m, nil
 }
 
-func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64) error {
-	// get the last child commit number of the last parent merge
-	// if there is none - then it is  the first merge
-	var maxChildMerge CommitID
-	childLineage, err := getLineage(tx, childID, UncommittedID)
-	if err != nil {
-		return fmt.Errorf("child lineage failed: %w", err)
-	}
-	parentLineage, err := getLineage(tx, parentID, CommittedID)
-	if err != nil {
-		return fmt.Errorf("parent lineage failed: %w", err)
-	}
-	maxChildQuery, args, err := sq.Select("MAX(commit_id) as max_child_commit").
+func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, params *doDiffParams) error {
+	// get child last commit of merge from parent
+	var childLastFromParentCommitID CommitID
+	query, args, err := psql.Select("MAX(commit_id) as max_child_commit").
 		From("catalog_commits").
-		Where("branch_id = ? AND merge_type = 'from_parent'", childID).
-		PlaceholderFormat(sq.Dollar).
+		Where("branch_id = ? AND merge_type = 'from_parent'", params.RightBranchID).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("get child last commit sql: %w", err)
 	}
-	err = tx.Get(&maxChildMerge, maxChildQuery, args...)
+	err = tx.Get(&childLastFromParentCommitID, query, args...)
 	if err != nil {
 		return fmt.Errorf("get child last commit failed: %w", err)
 	}
-	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+
+	diffResultsTableName, err := createDiffResultsTable(ctx, tx)
 	if err != nil {
 		return err
 	}
-	diffFromParentSQL, args, err := sqDiffFromParentV(parentID, childID, maxChildMerge, parentLineage, childLineage).
-		Prefix(`CREATE UNLOGGED TABLE ` + diffResultsTableName + " AS ").
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+
+	scannerOpts := DBScannerOptions{
+		After:            params.After,
+		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
+	}
+	parentScanner := NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
+	childScanner := NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
+	childLineage, err := childScanner.ReadLineage()
 	if err != nil {
-		return fmt.Errorf("diff from parent sql: %w", err)
+		return err
 	}
-	if _, err := tx.Exec(diffFromParentSQL, args...); err != nil {
-		return fmt.Errorf("select diff from parent: %w", err)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+	var childEnt *DBScannerEntry
+	records := 0
+	for parentScanner.Next() {
+		// is parent element is relevant
+		parentEnt := parentScanner.Value()
+
+		// get next child entry - scan until we match child's path to parent (or bigger)
+		childEnt, err = ScanDBEntryUntil(childScanner, childEnt, parentEnt.Path)
+		if err != nil {
+			return fmt.Errorf("scan next child element: %w", err)
+		}
+
+		// point to matched child based on path
+		var matchedChild *DBScannerEntry
+		if childEnt != nil && childEnt.Path == parentEnt.Path {
+			matchedChild = childEnt
+		}
+		// diff between entries
+		diffType := evaluateFromParentElementDiffType(params.RightBranchID, childLastFromParentCommitID, childLineage, parentEnt, matchedChild)
+		if diffType == DifferenceTypeNone {
+			continue
+		}
+
+		diffRec := &diffResultRecord{
+			DiffType: diffType,
+			Entry:    parentEnt.Entry,
+		}
+		if matchedChild != nil && matchedChild.BranchID == params.RightBranchID && diffType != DifferenceTypeConflict && diffType != DifferenceTypeRemoved {
+			diffRec.EntryCtid = &parentEnt.RowCtid
+		}
+		err = batch.Write(diffRec)
+		if err != nil {
+			return err
+		}
+		// stop on limit
+		records++
+		if params.Limit > -1 && records >= params.Limit {
+			break
+		}
 	}
-	return nil
+	if err := parentScanner.Err(); err != nil {
+		return err
+	}
+	return batch.Flush()
 }
 
-func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) (Differences, error) {
+// prepareDiffAdditionalFields - make sure we have the required additional fields for diff
+func prepareDiffAdditionalFields(fields []string) []string {
+	for _, f := range fields {
+		if f == DBEntryFieldChecksum {
+			return fields
+		}
+	}
+	return append(fields, DBEntryFieldChecksum)
+}
+
+// lineageCommitIDByBranchID lookup the branch ID in lineage and returns the commit ID.
+//   If branch ID not found UncommittedID is returned.
+func lineageCommitIDByBranchID(lineage []lineageCommit, branchID int64) CommitID {
+	for _, l := range lineage {
+		if l.BranchID == branchID {
+			return l.CommitID
+		}
+	}
+	return UncommittedID
+}
+
+func evaluateFromParentElementDiffType(targetBranchID int64, targetLastSyncCommitID CommitID, targetLastSyncLineage []lineageCommit, sourceEntry *DBScannerEntry, targetEntry *DBScannerEntry) DifferenceType {
+	// both deleted - none
+	if sourceEntry.IsDeleted() && (targetEntry == nil || targetEntry.IsDeleted()) {
+		return DifferenceTypeNone
+	}
+
+	// same entry - none
+	if targetEntry != nil && sourceEntry.IsDeleted() == targetEntry.IsDeleted() && sourceEntry.Checksum == targetEntry.Checksum {
+		return DifferenceTypeNone
+	}
+
+	// target entry not modified based on commit of the last sync lineage - none
+	commitIDByLineage := lineageCommitIDByBranchID(targetLastSyncLineage, sourceEntry.BranchID)
+	parentChangedAfterChild := sourceEntry.ChangedAfterCommit(commitIDByLineage)
+	if !parentChangedAfterChild {
+		return DifferenceTypeNone
+	}
+
+	// if target entry is uncommitted - conflict
+	// if target entry updated after merge from parent - conflict
+	if targetEntry != nil && targetEntry.BranchID == targetBranchID &&
+		(!targetEntry.IsCommitted() || targetEntry.ChangedAfterCommit(targetLastSyncCommitID)) {
+		return DifferenceTypeConflict
+	}
+
+	// if source was deleted (target exists) - removed
+	if sourceEntry.IsDeleted() {
+		return DifferenceTypeRemoved
+	}
+
+	// if target deleted (source exists) - add
+	if targetEntry == nil || targetEntry.IsDeleted() {
+		return DifferenceTypeAdded
+	}
+
+	// if target exists - change
+	return DifferenceTypeChanged
+}
+
+func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string, additionalFields []string) (Differences, error) {
 	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var result Differences
-	query, args, err := psql.Select("diff_type", "path").
+	q := psql.Select("diff_type", "path").
 		From(diffResultsTableName).
 		Where(sq.Gt{"path": after}).
 		OrderBy("path").
-		Limit(uint64(limit)).
-		ToSql()
+		Limit(uint64(limit))
+	if len(additionalFields) > 0 {
+		q = q.Columns(additionalFields...)
+	}
+	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("format diff results query: %w", err)
 	}
@@ -175,75 +385,220 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) 
 	return result, nil
 }
 
-func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
-	// read last merge commit numbers from commit table
-	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
-	// the child is 0, as any change in the child was never merged to the parent.
-	// the parent is the effective commit number of the first lineage record of the child that points to the parent
-	// it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
-	effectiveCommits := struct {
-		ParentEffectiveCommit CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
-		ChildEffectiveCommit  CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
-	}{}
+func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, params *doDiffParams) error {
+	effectiveCommits, err := c.selectChildEffectiveCommits(tx, params.LeftBranchID, params.RightBranchID)
+	if err != nil {
+		return err
+	}
 
-	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
+	diffResultsTableName, err := createDiffResultsTable(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	scannerOpts := DBScannerOptions{
+		After:            params.After,
+		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
+	}
+	childScanner := NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
+	parentScanner := NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+
+	var parentEnt *DBScannerEntry
+	records := 0
+	for childScanner.Next() {
+		// is child element is relevant
+		childEnt := childScanner.Value()
+		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
+			continue
+		}
+
+		// get next parent - next parentEnt that path >= child
+		parentEnt, err = ScanDBEntryUntil(parentScanner, parentEnt, childEnt.Path)
+		if err != nil {
+			return fmt.Errorf("scan next parent element: %w", err)
+		}
+
+		// point to matched parent entry
+		var matchedParent *DBScannerEntry
+		if parentEnt != nil && parentEnt.Path == childEnt.Path {
+			matchedParent = parentEnt
+		}
+
+		diffType := evaluateFromChildElementDiffType(effectiveCommits, childEnt, matchedParent)
+		if diffType == DifferenceTypeNone {
+			continue
+		}
+
+		diffRecord := &diffResultRecord{
+			DiffType:  diffType,
+			Entry:     childEnt.Entry,
+			EntryCtid: &childEnt.RowCtid,
+		}
+		if diffType == DifferenceTypeRemoved && parentEnt != nil {
+			diffRecord.SourceBranch = params.LeftBranchID
+		}
+
+		err = batch.Write(diffRecord)
+		if err != nil {
+			return err
+		}
+
+		// stop on limit
+		records++
+		if params.Limit > -1 && records >= params.Limit {
+			break
+		}
+	}
+	if err := childScanner.Err(); err != nil {
+		return err
+	}
+	return batch.Flush()
+}
+
+func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, error) {
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	_, err = executor.Exec("CREATE UNLOGGED TABLE " + diffResultsTableName + ` (
+		source_branch bigint NOT NULL,
+		diff_type integer NOT NULL,
+		path character varying COLLATE "C" NOT NULL,
+		entry_ctid tid,
+		physical_address character varying,
+		creation_date timestamp with time zone,
+		size bigint,
+		checksum character varying(64),
+		metadata jsonb,
+		is_expired BOOLEAN
+	)`)
+	if err != nil {
+		return "", fmt.Errorf("diff result table: %w", err)
+	}
+	return diffResultsTableName, nil
+}
+
+func evaluateFromChildElementDiffType(effectiveCommits *diffEffectiveCommits, childEnt *DBScannerEntry, matchedParent *DBScannerEntry) DifferenceType {
+	// both deleted - none
+	if childEnt.IsDeleted() && (matchedParent == nil || matchedParent.IsDeleted()) {
+		return DifferenceTypeNone
+	}
+
+	// same entry - none
+	if matchedParent != nil && childEnt.IsDeleted() == matchedParent.IsDeleted() && childEnt.Checksum == matchedParent.Checksum {
+		return DifferenceTypeNone
+	}
+
+	// both entries are not deleted or point to the same content
+	if matchedParent != nil {
+		// matched target was updated after client - conflict
+		effectiveCommitID := effectiveCommits.ParentEffectiveCommitByBranchID(matchedParent.BranchID)
+		if effectiveCommitID > UncommittedID && matchedParent.MinCommit > effectiveCommitID {
+			return DifferenceTypeConflict
+		}
+	}
+
+	// source deleted - removed
+	if childEnt.IsDeleted() {
+		return DifferenceTypeRemoved
+	}
+
+	// if target deleted - added
+	if matchedParent == nil || matchedParent.IsDeleted() {
+		return DifferenceTypeAdded
+	}
+
+	// if target found - changed
+	return DifferenceTypeChanged
+}
+
+func (d *diffResultsBatchWriter) insertBatch() error {
+	if len(d.Records) == 0 {
+		return nil
+	}
+	ins := psql.Insert(d.DiffResultsTableName).
+		Columns("source_branch", "diff_type", "path", "entry_ctid", "physical_address", "creation_date",
+			"size", "checksum", "metadata", "is_expired")
+	for _, rec := range d.Records {
+		var physicalAddress *string
+		var creationDate *time.Time
+		var size *int64
+		var checksum *string
+		var isExpired *bool
+		if rec.Entry.PhysicalAddress != "" {
+			physicalAddress = &rec.Entry.PhysicalAddress
+		}
+		if !rec.Entry.CreationDate.IsZero() {
+			creationDate = &rec.Entry.CreationDate
+		}
+		if rec.Entry.Size != 0 {
+			size = &rec.Entry.Size
+		}
+		if rec.Entry.Checksum != "" {
+			checksum = &rec.Entry.Checksum
+		}
+		if rec.Entry.Expired {
+			isExpired = &rec.Entry.Expired
+		}
+		ins = ins.Values(rec.SourceBranch, rec.DiffType, rec.Entry.Path, rec.EntryCtid, physicalAddress, creationDate, size, checksum, rec.Entry.Metadata, isExpired)
+	}
+
+	query, args, err := ins.ToSql()
+	if err != nil {
+		return fmt.Errorf("query for diff results insert: %w", err)
+	}
+	_, err = d.tx.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("insert query diff results: %w", err)
+	}
+	return nil
+}
+
+// selectChildEffectiveCommits - read last merge commit numbers from commit table
+// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
+// the child is 0, as any change in the child was never merged to the parent.
+// the parent is the effective commit number of the first lineage record of the child that points to the parent
+// it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
+func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentID int64) (*diffEffectiveCommits, error) {
+	effectiveCommitsQuery, args, err := psql.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
 		OrderBy(`commit_id DESC`).
 		Limit(1).
-		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return fmt.Errorf("effective commits sql: %w", err)
+		return nil, err
 	}
+	var effectiveCommits diffEffectiveCommits
 	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
 	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
 	if err != nil && !effectiveCommitsNotFound {
-		return fmt.Errorf("select effective commit: %w", err)
+		return nil, err
 	}
 	if effectiveCommitsNotFound {
 		effectiveCommits.ChildEffectiveCommit = 1 // we need all commits from the child. so any small number will do
 		parentEffectiveQuery, args, err := psql.Select("commit_id as parent_effective_commit").
 			From("catalog_commits").
-			Where("branch_id = ? AND merge_source_branch = ?", childID, parentID).
-			OrderBy("commit_id").
+			Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_parent'", childID, parentID).
+			OrderBy("commit_id desc").
 			Limit(1).
 			ToSql()
 		if err != nil {
-			return fmt.Errorf("parent effective commit sql: %w", err)
+			return nil, err
 		}
 		err = tx.Get(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
 		if err != nil {
-			return fmt.Errorf("select parent effective commit: %w", err)
+			return nil, err
 		}
 	}
 
-	parentLineage, err := getLineage(tx, parentID, UncommittedID)
+	effectiveLineage, err := getLineage(tx, parentID, effectiveCommits.ParentEffectiveCommit)
 	if err != nil {
-		return fmt.Errorf("parent lineage failed: %w", err)
+		return nil, err
 	}
-	childLineage, err := getLineage(tx, childID, CommittedID)
-	if err != nil {
-		return fmt.Errorf("child lineage failed: %w", err)
-	}
-
-	childLineageValues := getLineageAsValues(childLineage, childID, MaxCommitID)
-	mainDiffFromChild := sqDiffFromChildV(parentID, childID, effectiveCommits.ParentEffectiveCommit, effectiveCommits.ChildEffectiveCommit, parentLineage, childLineageValues)
-	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	diffFromChildSQL, args, err := mainDiffFromChild.
-		Prefix("CREATE UNLOGGED TABLE " + diffResultsTableName + " AS ").
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("diff from child sql: %w", err)
-	}
-	if _, err := tx.Exec(diffFromChildSQL, args...); err != nil {
-		return fmt.Errorf("exec diff from child: %w", err)
-	}
-	return nil
+	effectiveCommits.ParentEffectiveLineage = effectiveLineage
+	return &effectiveCommits, nil
 }
 
 // withDiffResultsContext generate diff results id used for temporary table name
@@ -270,10 +625,116 @@ func diffResultsTableNameFormat(id string) string {
 	return diffResultsTableNamePrefix + "_" + id
 }
 
-func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, leftID, rightID int64) error {
+func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, params *doDiffParams) error {
 	c.log.WithFields(logging.Fields{
-		"left_id":  leftID,
-		"right_id": rightID,
+		"left_branch_id":  params.LeftBranchID,
+		"left_commit_id":  params.LeftCommitID,
+		"right_branch_id": params.RightBranchID,
+		"right_commit_id": params.RightCommitID,
 	}).Debug("Diff not direct - feature not supported")
 	return ErrFeatureNotSupported
+}
+
+func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *doDiffParams) error {
+	diffResultsTableName, err := createDiffResultsTable(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	scannerOpts := DBScannerOptions{
+		After:            params.After,
+		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
+	}
+	sourceScanner := NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
+	targetScanner := NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
+	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
+	var targetNextEnt *DBScannerEntry
+	records := 0
+	for sourceScanner.Next() {
+		sourceEnt := sourceScanner.Value()
+		targetNextEnt, err = ScanDBEntryUntil(targetScanner, targetNextEnt, sourceEnt.Path)
+		if err != nil {
+			return fmt.Errorf("scan next parent element: %w", err)
+		}
+
+		// point to matched child based on path
+		var targetEnt *DBScannerEntry
+		if targetNextEnt != nil && sourceEnt.Path == targetNextEnt.Path {
+			targetEnt = targetNextEnt
+		}
+
+		diffType := evaluateSameBranchElementDiffType(sourceEnt, targetEnt)
+		if diffType == DifferenceTypeNone {
+			continue
+		}
+
+		err = batch.Write(&diffResultRecord{
+			DiffType: diffType,
+			Entry:    sourceEnt.Entry,
+		})
+		if err != nil {
+			return err
+		}
+
+		// stop on limit
+		records++
+		if params.Limit > -1 && records >= params.Limit {
+			break
+		}
+	}
+	if err := sourceScanner.Err(); err != nil {
+		return err
+	}
+	return batch.Flush()
+}
+
+func (c *cataloger) getRefsRelationType(tx db.Tx, params *doDiffParams) (RelationType, error) {
+	if params.LeftBranchID == params.RightBranchID {
+		return RelationTypeSame, nil
+	}
+
+	var youngerBranch, olderBranch int64
+	var possibleRelation RelationType
+	if params.LeftBranchID > params.RightBranchID {
+		possibleRelation = RelationTypeFromChild
+		youngerBranch = params.LeftBranchID
+		olderBranch = params.RightBranchID
+	} else {
+		possibleRelation = RelationTypeFromParent
+		youngerBranch = params.RightBranchID
+		olderBranch = params.LeftBranchID
+	}
+
+	var isDirectRelation bool
+	err := tx.Get(&isDirectRelation,
+		`select lineage[1]=$1 from catalog_branches where id=$2`, olderBranch, youngerBranch)
+	if err != nil {
+		return RelationTypeNone, err
+	}
+	if isDirectRelation {
+		return possibleRelation, nil
+	}
+
+	return RelationTypeNotDirect, nil
+}
+
+func evaluateSameBranchElementDiffType(sourceEnt *DBScannerEntry, targetEnt *DBScannerEntry) DifferenceType {
+	if sourceEnt.IsDeleted() {
+		// both deleted - none
+		if targetEnt == nil || targetEnt.IsDeleted() {
+			return DifferenceTypeNone
+		}
+		// source exists, target not - removed
+		return DifferenceTypeRemoved
+	}
+	// source exists and no target - added
+	if targetEnt == nil || targetEnt.IsDeleted() {
+		return DifferenceTypeAdded
+	}
+	// source and target not matched - change
+	if targetEnt.BranchID == sourceEnt.BranchID && targetEnt.MinCommit != sourceEnt.MinCommit {
+		return DifferenceTypeChanged
+	}
+	// entries match - none
+	return DifferenceTypeNone
 }

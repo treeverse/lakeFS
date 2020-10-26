@@ -11,6 +11,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+// Merge perform diff between two branches (left and right), apply changes on right branch and commit
+// It uses the cataloger diff internal API to produce a temporary table that we delete at the end of a successful merge
+// the table holds entry ctid to reference entries in case of changed/added and source branch in case of delete.
+// That information is used to address cases where we need to create new entry or tombstone as part of the merge
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
@@ -34,12 +38,25 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-		relation, err := getBranchesRelationType(tx, leftID, rightID)
-		if err != nil {
-			return nil, fmt.Errorf("branch relation: %w", err)
-		}
 
-		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
+		params := &doDiffParams{
+			Repository:    repository,
+			LeftCommitID:  CommittedID,
+			LeftBranchID:  leftID,
+			RightCommitID: UncommittedID,
+			RightBranchID: rightID,
+			DiffParams: DiffParams{
+				Limit: -1,
+			},
+		}
+		relation, err := c.getRefsRelationType(tx, params)
+		if err != nil {
+			return nil, fmt.Errorf("get refs relation: %w", err)
+		}
+		if relation == RelationTypeSame {
+			return nil, fmt.Errorf("merge from the same branch: %w", ErrOperationNotPermitted)
+		}
+		err = c.doDiff(ctx, tx, params)
 		if err != nil {
 			return nil, err
 		}
@@ -74,6 +91,15 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, err
 		}
 		mergeResult.Reference = MakeReference(rightBranch, commitID)
+
+		for _, hook := range c.hooks.PostMerge {
+			err = hook(ctx, tx, mergeResult)
+			if err != nil {
+				// Roll tx back if a hook failed
+				return nil, err
+			}
+		}
+
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
@@ -150,10 +176,8 @@ func (c *cataloger) mergeFromParent(ctx context.Context, tx db.Tx, previousMaxCo
 	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
-				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type=$3 
- 				-- the or condition - diff will see an entry as new if it is deleted in child. but merge still need to copy it
-				OR d.diff_type=$4 and d.path in (SELECT e1.path FROM catalog_entries e1 WHERE e1.branch_id=$1 and e1.max_commit != $5))`,
-		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded, MaxCommitID)
+				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type in ($3,$4)AND entry_ctid IS NOT NULL)`,
+		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded)
 	if err != nil {
 		return err
 	}
@@ -190,6 +214,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	if err != nil {
 		return err
 	}
+	// delete(mark max-commit) entries in parent that are either deleted or changed from child
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $5
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,

@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -93,7 +94,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
+func (m *mockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(class, action string) {}
 
@@ -111,7 +112,8 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	conn, _ := testutil.GetDB(t, databaseURI)
 	cataloger := catalog.NewCataloger(conn)
 
-	blockAdapter := testutil.NewBlockAdapterByEnv(t, IdTranslator)
+	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
+	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
@@ -125,7 +127,9 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	if storageNamespace == "" {
 		storageNamespace = "replay"
 	}
-	testutil.Must(t, cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master"))
+
+	_, err := cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
+	testutil.Must(t, err)
 	handler := gateway.NewHandler(
 		authService.Region,
 		cataloger,

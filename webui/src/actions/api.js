@@ -488,17 +488,6 @@ class Objects {
             throw new Error(await extractError(response));
         }
     }
-
-    async import(repoId, manifestUrl, dryRun) {
-        const query = qs({manifestUrl, dryRun});
-        const response = await apiRequest(`/repositories/${repoId}/inventory/s3/import?${query}`, {
-            method: 'POST',
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json()
-    }
 }
 
 class Commits {
@@ -576,6 +565,22 @@ class Setup {
     }
 }
 
+class Config {
+    async get() {
+        const response = await apiRequest('/config', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return response.json();
+            case 409:
+                throw new Error('Conflict');
+            default:
+                throw new Error('Unknown');
+        }
+    }
+}
+
 
 export const repositories = new Repositories();
 export const branches = new Branches();
@@ -584,3 +589,4 @@ export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
 export const auth = new Auth();
+export const config = new Config();

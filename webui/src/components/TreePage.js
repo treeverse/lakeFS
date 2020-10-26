@@ -79,7 +79,7 @@ const UploadButton = connect(
     );
 });
 
-const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, uploadState, deleteObject, deleteState, importState, setShowImportModal}) => {
+const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, uploadState, deleteObject, deleteState, importState}) => {
     const history = useHistory();
     const location = useLocation();
     const[showUploadModal, setShowUploadModal] = useState(false)
@@ -139,8 +139,7 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, uploadSt
                 }}
                 list={list}
                 path={path}
-                setShowUploadModal={setShowUploadModal}
-                setShowImportModal={setShowImportModal}/>
+                setShowUploadModal={setShowUploadModal}/>
             {paginator &&
             <p className="tree-paginator">
                 <Button variant="outline-primary" onClick={() => {

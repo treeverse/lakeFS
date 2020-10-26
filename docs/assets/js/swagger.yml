@@ -308,6 +308,35 @@ definitions:
       - id
       - statement
 
+  continuous_export_configuration:
+    type: object
+    required:
+      - exportPath
+    properties:
+      exportPath:
+        type: string
+        format: uri
+        x-nullable: false       # Override https://github.com/go-swagger/go-swagger/issues/1188
+                                # go-swagger totally not a bug.  This causes the generated field
+                                # *not* to be a pointer.  Then the regular (incorrect, in this
+                                # case) JSON parser parses it as an empty field, and validation
+                                # verifies the value is non-empty.  In *this particular case* it
+                                # works because a URI cannot be empty (at least not an absolute
+                                # URI, which is what we require).
+        description: export objects to this path
+        example: s3://company-bucket/path/to/export
+      exportStatusPath:
+        type: string
+        format: uri
+        description: write export status object to this path
+        example: s3://company-bucket/path/to/status
+      lastKeysInPrefixRegexp:
+        type: array
+        items:
+          type: string
+        description: "list of regexps of keys to exported last in each prefix (for signalling)"
+        example: ["^SUCCESS$", ".*/_SUCCESS$"]
+
   retention_policy:
     type: object
     required:
@@ -370,6 +399,12 @@ definitions:
         format: int32
     minProperties: 1
 
+  config:
+      type: object
+      properties:
+        blockstore.type:
+          type: string
+
 paths:
 
   /setup_lakefs:
@@ -389,7 +424,6 @@ paths:
           description: user created successfully
           schema:
             $ref: "#/definitions/credentials_with_secret"
-            description: first user credentials
         400:
           description: bad request
           schema:
@@ -1253,54 +1287,6 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/inventory/s3/import:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: query
-        name: manifestUrl
-        required: true
-        type: string
-      - in: query
-        name: dryRun
-        type: boolean
-        default: false
-    post:
-      tags:
-        - repositories
-      operationId: importFromS3Inventory
-      summary: import metadata for an existing bucket in S3
-      responses:
-        201:
-          description: import results
-          schema:
-            type: object
-            properties:
-              is_dry_run:
-                type: boolean
-              added_or_changed:
-                type: integer
-                format: int64
-              deleted:
-                type: integer
-                format: int64
-              previous_manifest:
-                type: string
-              previous_import_date:
-                type: integer
-                format: int64
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: "repository not found"
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
   /repositories/{repository}/branches:
     parameters:
       - in: path
@@ -1967,6 +1953,62 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/branches/{branch}/continuous-export:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    get:
+      tags:
+        - export
+        - branches
+      operationId: getContinuousExport
+      summary: returns the current continuous export configuration of a branch
+      responses:
+        200:
+          description: continuous export policy
+          schema:
+            $ref: "#/definitions/continuous_export_configuration"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no continuous export policy defined
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags:
+        - export
+        - branches
+      operationId: setContinuousExport
+      summary: sets a new continuous export configuration of a branch
+      parameters:
+        - in: body
+          name: config
+          required: true
+          schema:
+            $ref: "#/definitions/continuous_export_configuration"
+      responses:
+        201:
+          description: continuous export successfullyconfigured
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
 
   /repositories/{repository}/retention:
     parameters:
@@ -2021,3 +2063,18 @@ paths:
       responses:
         204:
           description: NoContent
+          
+  /config:
+    get:
+      tags:
+        - config
+      operationId: getConfig
+      description: retrieve the lakefs config
+      responses:
+        200:
+          description: the lakefs config
+          schema:
+            $ref: "#/definitions/config"
+        401:
+          $ref: "#/responses/Unauthorized"
+

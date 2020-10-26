@@ -3,20 +3,26 @@ package stats
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 )
 
 const (
-	DefaultCollectorEventBufferSize = 1024 * 1024
-	DefaultFlushInterval            = time.Second * 600
-	DefaultSendTimeout              = time.Second * 5
+	collectorEventBufferSize = 1024 * 1024
+	flushInterval            = time.Second * 600
+	sendTimeout              = time.Second * 5
+
+	// heartbeatInterval is the interval between 2 heartbeat events.
+	heartbeatInterval = 60 * time.Minute
 )
 
 type Collector interface {
 	CollectEvent(class, action string)
-	CollectMetadata(accountMetadata map[string]string)
+	CollectMetadata(accountMetadata *Metadata)
 }
 
 type Metric struct {
@@ -30,16 +36,6 @@ type InputEvent struct {
 	ProcessID      string   `json:"process_id"`
 	Time           string   `json:"time"`
 	Metrics        []Metric `json:"metrics"`
-}
-
-type MetadataEntry struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type Metadata struct {
-	InstallationID string          `json:"installation_id"`
-	Entries        []MetadataEntry `json:"entries"`
 }
 
 type primaryKey struct {
@@ -113,18 +109,19 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(installationID, processID string, opts ...BufferedCollectorOpts) *BufferedCollector {
+func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
+	processID, moreOpts := getBufferedCollectorArgs(c)
+	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
-		writes:         make(chan primaryKey, DefaultCollectorEventBufferSize),
+		writes:         make(chan primaryKey, collectorEventBufferSize),
 		done:           make(chan bool),
 		sender:         NewDummySender(),
-		sendTimeout:    DefaultSendTimeout,
-		flushTicker:    &TimeTicker{ticker: time.NewTicker(DefaultFlushInterval)},
+		sendTimeout:    sendTimeout,
+		flushTicker:    &TimeTicker{ticker: time.NewTicker(flushInterval)},
 		installationID: installationID,
 		processID:      processID,
 	}
-
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -136,11 +133,7 @@ func (s *BufferedCollector) getInstallationID() string {
 }
 
 func (s *BufferedCollector) incr(k primaryKey) {
-	if current, exists := s.cache[k]; !exists {
-		s.cache[k] = 1
-	} else {
-		s.cache[k] = current + 1
-	}
+	s.cache[k]++
 }
 
 func (s *BufferedCollector) send(metrics []Metric) {
@@ -170,6 +163,7 @@ func (s *BufferedCollector) Done() <-chan bool {
 }
 
 func (s *BufferedCollector) Run(ctx context.Context) {
+	go s.collectHeartbeat(ctx)
 	for {
 		select {
 		case w := <-s.writes: // collect events
@@ -201,23 +195,42 @@ func makeMetrics(counters keyIndex) []Metric {
 	return metrics
 }
 
-func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
-	entries := make([]MetadataEntry, len(accountMetadata))
-	i := 0
-	for k, v := range accountMetadata {
-		entries[i] = MetadataEntry{Name: k, Value: v}
-		i++
-	}
+func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.UpdateMetadata(ctx, Metadata{
-		InstallationID: s.getInstallationID(),
-		Entries:        entries,
-	})
+	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
 		logging.Default().
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
 	}
+}
+
+func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
+	for {
+		select {
+		case <-time.After(heartbeatInterval):
+			s.CollectEvent("global", "heartbeat")
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
+	if c == nil {
+		return "", nil
+	}
+	var sender Sender
+	if c.GetStatsEnabled() && !strings.HasPrefix(config.Version, config.UnreleasedVersion) {
+		sender = NewHTTPSender(c.GetStatsAddress(), time.Now)
+	} else {
+		sender = NewDummySender()
+	}
+	return uuid.Must(uuid.NewUUID()).String(),
+		[]BufferedCollectorOpts{
+			WithSender(sender),
+			WithFlushInterval(c.GetStatsFlushInterval()),
+		}
 }

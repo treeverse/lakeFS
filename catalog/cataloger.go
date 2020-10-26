@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	CatalogerCommitter = ""
-
-	DefaultPathDelimiter = "/"
+	CatalogerCommitter      = ""
+	DefaultBranchName       = "master"
+	DefaultImportBranchName = "import-from-inventory"
+	DefaultPathDelimiter    = "/"
 
 	dedupBatchSize         = 10
 	dedupBatchTimeout      = 50 * time.Millisecond
@@ -50,6 +51,12 @@ type DedupParams struct {
 	StorageNamespace string
 }
 
+type DiffParams struct {
+	Limit            int
+	After            string
+	AdditionalFields []string // db fields names that will be load in additional to Path on Difference's Entry
+}
+
 type ExpireResult struct {
 	Repository        string
 	Branch            string
@@ -58,7 +65,7 @@ type ExpireResult struct {
 }
 
 type RepositoryCataloger interface {
-	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
+	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
 	DeleteRepository(ctx context.Context, repository string) error
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
@@ -143,12 +150,22 @@ type Committer interface {
 }
 
 type Differ interface {
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error)
+	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 }
 
 type Merger interface {
 	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
+}
+
+type Hookser interface {
+	Hooks() *CatalogerHooks
+}
+
+type ExportConfigurator interface {
+	GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error)
+	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
+	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 }
 
 type Cataloger interface {
@@ -159,6 +176,8 @@ type Cataloger interface {
 	MultipartUpdateCataloger
 	Differ
 	Merger
+	Hookser
+	ExportConfigurator
 	io.Closer
 }
 
@@ -177,6 +196,28 @@ type CacheConfig struct {
 	Jitter  time.Duration
 }
 
+// CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
+// called in a current transaction context; if they return an error the transaction is rolled
+// back.  Because these transactions are current, the hook can see the effect the operation only
+// on the passed transaction.
+type CatalogerHooks struct {
+	// PostCommit hooks are called at the end of a commit.
+	PostCommit []func(ctx context.Context, tx db.Tx, commitLog *CommitLog) error
+
+	// PostMerge hooks are called at the end of a merge.
+	PostMerge []func(ctx context.Context, tx db.Tx, mergeResult *MergeResult) error
+}
+
+func (h *CatalogerHooks) AddPostCommit(f func(context.Context, db.Tx, *CommitLog) error) *CatalogerHooks {
+	h.PostCommit = append(h.PostCommit, f)
+	return h
+}
+
+func (h *CatalogerHooks) AddPostMerge(f func(context.Context, db.Tx, *MergeResult) error) *CatalogerHooks {
+	h.PostMerge = append(h.PostMerge, f)
+	return h
+}
+
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
 	params.Catalog
@@ -188,6 +229,7 @@ type cataloger struct {
 	dedupReportEnabled   bool
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
+	hooks                CatalogerHooks
 }
 
 type CatalogerOption func(*cataloger)
@@ -408,4 +450,8 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			}
 		}
 	}
+}
+
+func (c *cataloger) Hooks() *CatalogerHooks {
+	return &c.hooks
 }

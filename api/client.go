@@ -554,7 +554,7 @@ func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string
 		return statusOK.Payload, nil
 	}
 	conflict, ok := err.(*refs.MergeIntoBranchConflict)
-	if !ok {
+	if ok {
 		return conflict.Payload, catalog.ErrConflictFound
 	}
 	return nil, err

@@ -1,9 +1,10 @@
-package s3
+package s3inventory
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/scritchley/orc"
@@ -13,12 +14,36 @@ import (
 )
 
 const (
+	bucketFieldName           = "bucket"
+	keyFieldName              = "key"
+	sizeFieldName             = "size"
+	lastModifiedDateFieldName = "last_modified_date"
+	eTagFieldName             = "e_tag"
+	isDeleteMarkerFieldName   = "is_delete_marker"
+	isLatestFieldName         = "is_latest"
+)
+
+var inventoryFields = []string{
+	bucketFieldName,
+	keyFieldName,
+	sizeFieldName,
+	lastModifiedDateFieldName,
+	eTagFieldName,
+	isDeleteMarkerFieldName,
+	isLatestFieldName,
+}
+
+var requiredFields = []string{bucketFieldName, keyFieldName}
+
+const (
 	OrcFormatName     = "ORC"
 	ParquetFormatName = "Parquet"
 )
 
 var (
 	ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
+	ErrRequiredFieldNotFound      = errors.New("required field not found in inventory")
+	ErrUnknownField               = errors.New("unknown field")
 )
 
 type IReader interface {
@@ -27,13 +52,17 @@ type IReader interface {
 }
 
 type InventoryObject struct {
-	Bucket             string  `parquet:"name=bucket, type=UTF8"`
-	Key                string  `parquet:"name=key, type=UTF8"`
-	IsLatest           *bool   `parquet:"name=is_latest, type=BOOLEAN"`
-	IsDeleteMarker     *bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
-	Size               *int64  `parquet:"name=size, type=INT_64"`
-	LastModifiedMillis *int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
-	Checksum           *string `parquet:"name=e_tag, type=UTF8"`
+	Bucket         string
+	Key            string
+	IsLatest       bool
+	IsDeleteMarker bool
+	Size           int64
+	LastModified   *time.Time
+	Checksum       string
+}
+
+func NewInventoryObject() *InventoryObject {
+	return &InventoryObject{IsLatest: true}
 }
 
 func (o *InventoryObject) GetPhysicalAddress() string {
@@ -55,7 +84,7 @@ type MetadataReader interface {
 
 type FileReader interface {
 	MetadataReader
-	Read(dstInterface interface{}) error
+	Read(n int) ([]*InventoryObject, error)
 }
 
 func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
@@ -87,12 +116,11 @@ func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
-	var rawObject InventoryObject
-	pr, err := reader.NewParquetReader(pf, &rawObject, 4)
+	pr, err := reader.NewParquetReader(pf, nil, 4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
-	return &ParquetInventoryFileReader{ParquetReader: *pr}, nil
+	return NewParquetInventoryFileReader(pr)
 }
 
 func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileReader, error) {
@@ -112,4 +140,13 @@ func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileRea
 		orcSelect: orcSelect,
 		cursor:    orcReader.Select(orcSelect.SelectFields...),
 	}, nil
+}
+
+func isRequired(field string) bool {
+	for _, f := range requiredFields {
+		if f == field {
+			return true
+		}
+	}
+	return false
 }

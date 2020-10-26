@@ -19,8 +19,8 @@ func TestCataloger_ListEntries(t *testing.T) {
 	c := testCataloger(t)
 
 	// produce test data
-	testutil.MustDo(t, "create test repo",
-		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
+	_, err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master")
+	testutil.MustDo(t, "create test repo", err)
 	for i := 0; i < 5; i++ {
 		n := i + 1
 		filePath := fmt.Sprintf("/file%d", n)
@@ -816,7 +816,7 @@ func testListEntriesCreateEntries(t *testing.T, ctx context.Context, c Cataloger
 		for j := 0; j < numEntries; j += skip {
 			path := fmt.Sprintf("my_entry%03d", j)
 			seed := strconv.Itoa(i)
-			checksum := testCreateEntryCalcChecksum(path, seed)
+			checksum := testCreateEntryCalcChecksum(path, t.Name(), seed)
 			err := c.CreateEntry(ctx, repo, branch, Entry{Path: path, Checksum: checksum, PhysicalAddress: checksum, Size: int64(i)}, CreateEntryParams{})
 			if err != nil {
 				t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repo, err)

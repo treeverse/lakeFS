@@ -41,9 +41,8 @@ module "db" {
   # DB option group
   major_engine_version = "11"
 
-  # Snapshot name upon DB deletion
-  final_snapshot_identifier = "demodb"
-
+  skip_final_snapshot = true
+  
   # Database Deletion Protection
   deletion_protection = false
 }
@@ -75,7 +74,7 @@ resource "aws_ecs_task_definition" "benchmark" {
         "logConfiguration": {
           "logDriver": "awslogs",
           "options": {
-            "awslogs-group": "/ecs/benchmark/${var.tag}",
+            "awslogs-group": "${aws_cloudwatch_log_group.benchmark.name}",
             "awslogs-region": "us-east-1",
             "awslogs-stream-prefix": "env"
           }

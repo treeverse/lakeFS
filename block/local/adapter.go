@@ -93,6 +93,27 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 	return os.Remove(p)
 }
 
+func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
+	source := l.getPath(sourceObj.Identifier)
+	sourceFile, err := os.Open(source)
+	defer func() {
+		_ = sourceFile.Close()
+	}()
+	if err != nil {
+		return err
+	}
+	dest := l.getPath(destinationObj.Identifier)
+	destinationFile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = destinationFile.Close()
+	}()
+	_, err = io.Copy(destinationFile, sourceFile)
+	return err
+}
+
 func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
 	p := l.getPath(obj.Identifier)
 	f, err := os.OpenFile(p, os.O_RDONLY, 0755)

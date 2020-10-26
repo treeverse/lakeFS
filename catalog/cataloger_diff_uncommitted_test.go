@@ -19,7 +19,7 @@ func TestCataloger_DiffUncommitted_Pagination(t *testing.T) {
 	for i := 0; i < numOfFiles; i++ {
 		p := "/file" + strconv.Itoa(i)
 		testCatalogerCreateEntry(t, ctx, c, repository, "master", p, nil, "")
-		expectedDifferences = append(expectedDifferences, Difference{Type: DifferenceTypeAdded, Path: p})
+		expectedDifferences = append(expectedDifferences, Difference{Type: DifferenceTypeAdded, Entry: Entry{Path: p}})
 	}
 	const changesPerPage = 3
 	var differences Differences
@@ -83,9 +83,9 @@ func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
 	}
 
 	changes := Differences{
-		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
-		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
+		Difference{Type: DifferenceTypeRemoved, Entry: Entry{Path: "/file1"}},
+		Difference{Type: DifferenceTypeChanged, Entry: Entry{Path: "/file2"}},
+		Difference{Type: DifferenceTypeAdded, Entry: Entry{Path: "/file5"}},
 	}
 	if diff := deep.Equal(differences, changes); diff != nil {
 		t.Fatal("DiffUncommitted", diff)

@@ -24,6 +24,7 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import {connect} from "react-redux";
 import {listBranches} from "../actions/branches";
+import ConfirmationModal from "./ConfirmationModal";
 
 
 const humanSize = (bytes) => {
@@ -120,31 +121,40 @@ const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({repo, refId, entry, onDelete}) => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
+    const [show, setShow] = useState(false);  
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`;
+    const onSubmit = () => onDelete(entry);
     return (
-        <Dropdown alignRight onToggle={setDropdownOpen}>
-            <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
-                return (
-                    <Button variant="link" onClick={e => {
-                        e.preventDefault();
-                        onClick(e);
-                    }} ref={ref}>
-                        {children}
-                    </Button>
-                );
-            })}>
-                {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-            </Dropdown.Toggle>
+        <>
+            <Dropdown alignRight onToggle={setDropdownOpen}>
+                <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
+                    return (
+                        <Button variant="link" onClick={e => {
+                            e.preventDefault();
+                            onClick(e);
+                        }} ref={ref}>
+                            {children}
+                        </Button>
+                    );
+                })}>
+                    {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+                </Dropdown.Toggle>
 
-            <Dropdown.Menu>
-                <PathLink path={entry.path} refId={refId} repoId={repo.id}
-                          as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                <Dropdown.Item onClick={(e) => {
-                    e.preventDefault();
-                    if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
-                }}><TrashcanIcon/> {' '} Delete
-                </Dropdown.Item>
-            </Dropdown.Menu>
-        </Dropdown>
+                <Dropdown.Menu>
+                    <PathLink path={entry.path} refId={refId} repoId={repo.id}
+                            as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+                    <Dropdown.Item onClick={(e) => {
+                        e.preventDefault();
+                        handleShow();
+                    }}>
+                        <TrashcanIcon/> {' '} Delete
+                    </Dropdown.Item>
+                </Dropdown.Menu>
+            </Dropdown>
+            <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={onSubmit}/>
+        </>
     );
 };
 
@@ -312,7 +322,7 @@ const merge = (path, entriesAtPath, diffResults) => {
 
 };
 
-const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal, setShowImportModal}) => {
+const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal }) => {
     let body;
     const refreshData = useCallback(() => {
         if (refId.type === 'branch') {
@@ -333,7 +343,7 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
         body = <Alert variant="danger" className="tree-error">{list.error}</Alert>
     } else if (showGetStarted) {
         body = <GetStarted repo={repo} list={list} listBranchesState={listBranchesState}
-                           setShowUploadModal={setShowUploadModal} setShowImportModal={setShowImportModal}/>
+                           setShowUploadModal={setShowUploadModal}/>
     } else {
         const results = merge(path, list.payload.results, diffResults);
         body = (
@@ -362,15 +372,11 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
 };
 
 
-const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowImportModal}) => {
+const GetStarted = ({repo, list, listBranchesState, setShowUploadModal}) => {
     useEffect(() => {
     }, [repo, list, listBranchesState])
     return <>{(
         <Container className="m-3"><h3>To get started with this repository, you can:</h3>
-            <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {
-                e.preventDefault();
-                setShowImportModal(true)
-            }}>Import</a>&nbsp;data from S3 without copying it.</Row>
             <Row className="pt-2 ml-2"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {
                 e.preventDefault();
                 setShowUploadModal(true)

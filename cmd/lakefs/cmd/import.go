@@ -10,15 +10,14 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
-
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
+	"github.com/treeverse/lakefs/uri"
 )
 
 const (
@@ -39,9 +38,10 @@ var importCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
-		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
-		withMerge, _ := cmd.Flags().GetBool(WithMergeFlagName)
+		flags := cmd.Flags()
+		dryRun, _ := flags.GetBool(DryRunFlagName)
+		manifestURL, _ := flags.GetString(ManifestURLFlagName)
+		withMerge, _ := flags.GetBool(WithMergeFlagName)
 
 		ctx := context.Background()
 		conf := config.NewConfig()
@@ -73,18 +73,17 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
 			os.Exit(1)
 		}
-		repo, err := cataloger.GetRepository(ctx, repoName)
+
+		repo, err := getRepository(ctx, cataloger, repoName, dryRun)
 		if err != nil {
-			fmt.Printf("Failed to read repository %s: %s\n", repoName, err)
+			fmt.Println("Error", err)
+			if errors.Is(err, catalog.ErrBranchNotFound) {
+				fmt.Println("This repository was created with an older version of lakeFS. To use the import feature, create a new repository")
+			}
 			os.Exit(1)
 		}
-		if !dryRun {
-			err = prepareBranch(ctx, cataloger, repo, onboard.DefaultBranchName)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		} else {
+
+		if dryRun {
 			fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
 		}
 		importConfig := &onboard.Config{
@@ -94,7 +93,6 @@ var importCmd = &cobra.Command{
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 		}
-
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
 		if err != nil {
 			fmt.Printf("Import failed: %s\n", err)
@@ -124,12 +122,12 @@ var importCmd = &cobra.Command{
 
 		fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
 		fmt.Println()
-		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
+		fmt.Printf("Import to branch %s finished successfully.\n", catalog.DefaultImportBranchName)
 		fmt.Println()
 		if withMerge {
 			fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
 			msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-			commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+			commitLog, err := cataloger.Merge(ctx, repoName, catalog.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
 			if err != nil {
 				fmt.Printf("Merge failed: %s\n", err)
 				os.Exit(1)
@@ -138,27 +136,31 @@ var importCmd = &cobra.Command{
 			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
 		} else {
 			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
-			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
+			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, catalog.DefaultImportBranchName, repoName, repo.DefaultBranch)
 		}
 	},
 }
 
-func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catalog.Repository, branch string) error {
-	repoName := repo.Name
-	_, err := cataloger.GetBranchReference(ctx, repoName, branch)
-	if err == nil {
-		fmt.Printf("Branch %s already exists, no need to create it.\n\n", branch)
-		return nil
+func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string, dryRun bool) (*catalog.Repository, error) {
+	if dryRun {
+		return &catalog.Repository{
+			Name:          repoName,
+			DefaultBranch: catalog.DefaultBranchName,
+		}, nil
 	}
-	if errors.Is(err, db.ErrNotFound) {
-		fmt.Printf("Branch %s does not exist, creating.\n\n", branch)
-		_, err = cataloger.CreateBranch(ctx, repoName, branch, repo.DefaultBranch)
-		if err != nil {
-			return fmt.Errorf("failed to create branch %s in repo %s: %w", branch, repoName, err)
-		}
-		return nil
+	repo, err := cataloger.GetRepository(ctx, repoName)
+	if err != nil {
+		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
 	}
-	return fmt.Errorf("error when fetching branches for repo %s: %w", repoName, err)
+	// check we have import branch on this repo
+	importBranchExists, err := cataloger.BranchExists(ctx, repoName, catalog.DefaultImportBranchName)
+	if err != nil {
+		return nil, fmt.Errorf("read branch (%s) information from repository %s: %w", catalog.DefaultImportBranchName, repoName, err)
+	}
+	if !importBranchExists {
+		return nil, fmt.Errorf("import %w in repository: %s", catalog.ErrBranchNotFound, repoName)
+	}
+	return repo, nil
 }
 
 //nolint:gochecknoinits
