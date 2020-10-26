@@ -31,7 +31,7 @@ var initCmd = &cobra.Command{
 		}
 
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer func() { _ = dbPool.Close() }()
+		defer dbPool.Close()
 
 		userName, _ := cmd.Flags().GetString("user-name")
 

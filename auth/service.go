@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/georgysavva/scany/sqlscan"
+	"github.com/georgysavva/scany/pgxscan"
 
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
@@ -98,13 +98,12 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 	if err != nil {
 		return nil, nil, fmt.Errorf("query DB: %w", err)
 	}
-	rowScanner := sqlscan.NewRowScanner(rows)
+	rowScanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		value := reflect.New(retType)
 		if err = rowScanner.Scan(value.Interface()); err != nil {
 			return nil, nil, fmt.Errorf("scan value from DB: %w", err)
 		}
-		fmt.Printf("[DEBUG] row %+v value %+v scanner %+v\n", rows, value, rowScanner)
 		slice = reflect.Append(slice, value)
 	}
 	p := &model.Paginator{}
@@ -151,10 +150,7 @@ func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 	if err != nil {
 		return err
 	}
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
+	numRows := res.RowsAffected()
 	if numRows == 0 {
 		return db.ErrNotFound
 	}

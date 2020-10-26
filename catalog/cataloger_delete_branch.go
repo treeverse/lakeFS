@@ -54,9 +54,8 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 		if err != nil {
 			return nil, fmt.Errorf("delete branch: %w", err)
 		}
-		if affected, err := res.RowsAffected(); err != nil {
-			return nil, err
-		} else if affected != 1 {
+		affected := res.RowsAffected()
+		if affected != 1 {
 			return nil, ErrBranchNotFound
 		}
 		return nil, nil

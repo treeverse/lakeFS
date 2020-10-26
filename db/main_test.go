@@ -1,13 +1,15 @@
 package db_test
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"testing"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/ory/dockertest/v3"
 )
@@ -22,8 +24,9 @@ var (
 	databaseURI string
 )
 
-func runDBInstance(pool *dockertest.Pool) (string, func()) {
-	resource, err := pool.Run("postgres", "11", []string{
+func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
+	ctx := context.Background()
+	resource, err := dockerPool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
 		"POSTGRES_DB=lakefs_db",
@@ -34,7 +37,7 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 
 	// set cleanup
 	closer := func() {
-		err := pool.Purge(resource)
+		err := dockerPool.Purge(resource)
 		if err != nil {
 			log.Fatalf("could not kill postgres container")
 		}
@@ -47,20 +50,20 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 	}
 
 	// create connection
-	var conn *sql.DB
+	var pgPool *pgxpool.Pool
 	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/"+dbName+"?sslmode=disable", resource.GetPort("5432/tcp"))
-	err = pool.Retry(func() error {
+	err = dockerPool.Retry(func() error {
 		var err error
-		conn, err = sql.Open("pgx", uri)
+		pgPool, err = pgxpool.Connect(ctx, uri)
 		if err != nil {
 			return err
 		}
-		return conn.Ping()
+		return db.Ping(ctx, pgPool)
 	})
 	if err != nil {
 		log.Fatalf("could not connect to postgres: %s", err)
 	}
-	_ = conn.Close()
+	pgPool.Close()
 
 	// return DB URI
 	return uri, closer

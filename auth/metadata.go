@@ -48,9 +48,8 @@ func insertOrGetInstallationID(tx db.Tx) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if affected, err := res.RowsAffected(); err != nil {
-		return "", err
-	} else if affected == 1 {
+	affected := res.RowsAffected()
+	if affected == 1 {
 		return newInstallationID, nil
 	}
 	return getInstallationID(tx)

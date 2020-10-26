@@ -456,7 +456,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, params *doDiffP
 	return batch.Flush()
 }
 
-func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, error) {
+func createDiffResultsTable(ctx context.Context, executor db.Tx) (string, error) {
 	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
 	if err != nil {
 		return "", err

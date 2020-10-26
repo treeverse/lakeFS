@@ -1,11 +1,11 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"database/sql"
-
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/db/params"
 
 	"github.com/treeverse/lakefs/logging"
@@ -28,6 +28,19 @@ func BuildDatabaseConnection(dbParams params.Database) Database {
 	return database
 }
 
+func Ping(ctx context.Context, pool *pgxpool.Pool) error {
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire to ping: %w", err)
+	}
+	defer conn.Release()
+	err = conn.Conn().Ping(ctx)
+	if err != nil {
+		return fmt.Errorf("ping: %w", err)
+	}
+	return nil
+}
+
 func ConnectDB(p params.Database) (Database, error) {
 	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
@@ -39,19 +52,23 @@ func ConnectDB(p params.Database) (Database, error) {
 		"disable_auto_migrate": p.DisableAutoMigrate,
 	})
 	log.Info("connecting to the DB")
-	conn, err := sql.Open(p.Driver, p.ConnectionString)
+	config, err := pgxpool.ParseConfig(p.ConnectionString)
+	if err != nil {
+		return nil, fmt.Errorf("parse connection string: %w", err)
+	}
+	config.MaxConns = p.MaxOpenConnections
+	config.MinConns = p.MaxIdleConnections
+	config.MaxConnLifetime = p.ConnectionMaxLifetime
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), config)
 	if err != nil {
 		return nil, fmt.Errorf("could not open DB: %w", err)
 	}
-	err = conn.Ping()
+	err = Ping(context.Background(), pool)
 	if err != nil {
-		conn.Close()
+		pool.Close()
 		return nil, err
 	}
-
-	conn.SetMaxOpenConns(p.MaxOpenConnections)
-	conn.SetMaxIdleConns(p.MaxIdleConnections)
-	conn.SetConnMaxLifetime(p.ConnectionMaxLifetime)
 
 	if !p.DisableAutoMigrate {
 		log.Info("migrate DB if needed")
@@ -63,7 +80,7 @@ func ConnectDB(p params.Database) (Database, error) {
 	}
 
 	log.Info("initialized DB connection")
-	return NewSqlDatabase(conn), nil
+	return NewPgxDatabase(pool), nil
 }
 
 func normalizeDBParams(p *params.Database) {

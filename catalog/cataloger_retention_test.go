@@ -2,13 +2,13 @@ package catalog
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"sort"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/db/params"
 
 	"github.com/go-test/deep"
@@ -26,11 +26,7 @@ func readEntriesToExpire(t *testing.T, ctx context.Context, c Cataloger, reposit
 	if err != nil {
 		t.Fatalf("scan for expired failed: %s", err)
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			t.Fatalf("close rows from expire result %s", err)
-		}
-	}()
+	defer rows.Close()
 	ret := make([]*ExpireResult, 0, 10)
 	for rows.Next() {
 		e, err := rows.Read()
@@ -559,7 +555,7 @@ func TestCataloger_MarkEntriesExpired(t *testing.T) {
 	}
 }
 
-func getDeleting(t *testing.T, rows *sql.Rows) map[string]bool {
+func getDeleting(t *testing.T, rows pgx.Rows) map[string]bool {
 	t.Helper()
 	deleting := make(map[string]bool, 2)
 	for rows.Next() {
@@ -771,9 +767,9 @@ func TestCataloger_DeleteOrUnmarkObjectsForDeletion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("[internal] failed to set 2 objects to state deleting, %s", err)
 	}
-	numRows, err := res.RowsAffected()
-	if err != nil || numRows != 2 {
-		t.Fatalf("[internal] failed to set 2 objects to state deleting: %d objects set, %s", numRows, err)
+	numRows := res.RowsAffected()
+	if numRows != 2 {
+		t.Fatalf("[internal] failed to set 2 objects to state deleting: %d objects set", numRows)
 	}
 
 	deleteRows, err := c.DeleteOrUnmarkObjectsForDeletion(ctx, repository)

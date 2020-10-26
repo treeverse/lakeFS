@@ -107,8 +107,8 @@ func setDefaults() {
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
 		ConnectionString:      viper.GetString("database.connection_string"),
-		MaxOpenConnections:    viper.GetInt("database.max_open_connections"),
-		MaxIdleConnections:    viper.GetInt("database.max_idle_connections"),
+		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
+		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
 		DisableAutoMigrate:    viper.GetBool("database.disable_auto_migrate"),
 	}

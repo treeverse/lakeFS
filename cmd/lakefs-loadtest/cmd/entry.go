@@ -51,9 +51,7 @@ var entryCmd = &cobra.Command{
 
 		ctx := context.Background()
 		database := connectToDB(connectionString)
-		defer func() {
-			_ = database.Close()
-		}()
+		defer database.Close()
 
 		conf := config.NewConfig()
 		c := catalog.NewCataloger(database, catalog.WithParams(conf.GetCatalogerCatalogParams()))
