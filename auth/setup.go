@@ -186,10 +186,9 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 
 func SetupAdminUser(authService Service, user *model.User) (*model.Credential, error) {
 	now := time.Now()
-	var err error
 
 	// Setup the basic groups and policies
-	err = SetupBaseGroups(authService, now)
+	err := SetupBaseGroups(authService, now)
 	if err != nil {
 		return nil, err
 	}
