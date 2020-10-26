@@ -16,20 +16,11 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
-// initCmd represents the init command
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize a LakeFS instance, and setup an admin credentials",
+// superuserCmd represents the init command
+var superuserCmd = &cobra.Command{
+	Use:   "superuser",
+	Short: "Create additional user with admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
-
-		migrator := db.NewDatabaseMigrator(cfg.GetDatabaseParams())
-		err := migrator.Migrate(ctx)
-		if err != nil {
-			fmt.Printf("Failed to setup DB: %s\n", err)
-			os.Exit(1)
-		}
-
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer func() { _ = dbPool.Close() }()
 
@@ -40,9 +31,9 @@ var initCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(logging.Default(), cfg, authMetadataManager, cloudMetadataProvider)
-		credentials, err := auth.SetupAdminUser(authService, &model.User{
+		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
+		metadata := stats.NewMetadata(logging.Default(), cfg, authMetadataManager, metadataProvider)
+		credentials, err := auth.AddAdminUser(authService, &model.User{
 			CreatedAt: time.Now(),
 			Username:  userName,
 		})
@@ -55,7 +46,7 @@ var initCmd = &cobra.Command{
 		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
-		stats.CollectEvent("global", "init")
+		stats.CollectEvent("global", "superuser")
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 			credentials.AccessKeyID, credentials.AccessSecretKey)
@@ -67,7 +58,7 @@ var initCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
-	_ = initCmd.MarkFlagRequired("user-name")
+	rootCmd.AddCommand(superuserCmd)
+	superuserCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	_ = superuserCmd.MarkFlagRequired("user-name")
 }
