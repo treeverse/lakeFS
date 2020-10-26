@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -251,7 +250,7 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 	return err
 }
 
-func (c *cataloger) mergeNonDirect(_ context.Context, _ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
+func (c *cataloger) mergeNonDirect(_ context.Context, _ db.Tx, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
 	c.log.WithFields(logging.Fields{
 		"commit_id":      previousMaxCommitID,
 		"next_commit_id": nextCommitID,

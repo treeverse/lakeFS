@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"sort"
@@ -11,7 +12,6 @@ import (
 	"github.com/treeverse/lakefs/db/params"
 
 	"github.com/go-test/deep"
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -559,7 +559,7 @@ func TestCataloger_MarkEntriesExpired(t *testing.T) {
 	}
 }
 
-func getDeleting(t *testing.T, rows *sqlx.Rows) map[string]bool {
+func getDeleting(t *testing.T, rows *sql.Rows) map[string]bool {
 	t.Helper()
 	deleting := make(map[string]bool, 2)
 	for rows.Next() {

@@ -16,6 +16,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
+	github.com/georgysavva/scany v0.2.6
 	github.com/go-openapi/errors v0.19.6
 	github.com/go-openapi/loads v0.19.5
 	github.com/go-openapi/runtime v0.19.20
@@ -50,7 +51,6 @@ require (
 	github.com/mailru/easyjson v0.7.2 // indirect
 	github.com/manifoldco/promptui v0.7.0
 	github.com/matoous/go-nanoid v1.4.1
-	github.com/mattn/go-sqlite3 v1.14.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/mr-tron/base58 v1.2.0

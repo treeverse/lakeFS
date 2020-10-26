@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -16,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/gs"
@@ -92,7 +92,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 }
 
 func verifyDBConnectionString(uri string) error {
-	conn, err := sqlx.Connect("pgx", uri)
+	conn, err := sql.Open("pgx", uri)
 	if err != nil {
 		return err
 	}
@@ -127,16 +127,21 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 
 	// create connection
 	connURI := fmt.Sprintf("%s&search_path=%s", uri, generatedSchema)
-	conn, err := sqlx.Connect("pgx", connURI)
+	conn, err := sql.Open("pgx", connURI)
 	if err != nil {
 		t.Fatalf("could not connect to PostgreSQL: %s", err)
+	}
+	err = conn.Ping()
+	if err != nil {
+		conn.Close()
+		t.Fatalf("could not ping PostgreSQL: %s", err)
 	}
 
 	t.Cleanup(func() {
 		_ = conn.Close()
 	})
 
-	database := db.NewSqlxDatabase(conn)
+	database := db.NewSqlDatabase(conn)
 	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
 	})

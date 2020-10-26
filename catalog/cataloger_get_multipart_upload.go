@@ -20,7 +20,7 @@ func (c *cataloger) GetMultipartUpload(ctx context.Context, repository string, u
 			return nil, err
 		}
 		var m MultipartUpload
-		if err := tx.Get(&m, `
+		if err := tx.GetStruct(&m, `
 			SELECT r.name as repository, m.upload_id, m.path, m.creation_date, m.physical_address 
 			FROM catalog_multipart_uploads m, catalog_repositories r
 			WHERE r.id = m.repository_id AND m.repository_id = $1 AND m.upload_id = $2`,

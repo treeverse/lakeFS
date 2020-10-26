@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+	"github.com/georgysavva/scany/sqlscan"
 
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
@@ -98,11 +98,13 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 	if err != nil {
 		return nil, nil, fmt.Errorf("query DB: %w", err)
 	}
+	rowScanner := sqlscan.NewRowScanner(rows)
 	for rows.Next() {
 		value := reflect.New(retType)
-		if err = rows.StructScan(value.Interface()); err != nil {
+		if err = rowScanner.Scan(value.Interface()); err != nil {
 			return nil, nil, fmt.Errorf("scan value from DB: %w", err)
 		}
+		fmt.Printf("[DEBUG] row %+v value %+v scanner %+v\n", rows, value, rowScanner)
 		slice = reflect.Append(slice, value)
 	}
 	p := &model.Paginator{}
@@ -119,7 +121,7 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 
 func getUser(tx db.Tx, username string) (*model.User, error) {
 	user := &model.User{}
-	err := tx.Get(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
+	err := tx.GetStruct(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +130,7 @@ func getUser(tx db.Tx, username string) (*model.User, error) {
 
 func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 	group := &model.Group{}
-	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
+	err := tx.GetStruct(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -137,14 +139,14 @@ func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 
 func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
 	policy := &model.Policy{}
-	err := tx.Get(policy, `SELECT * FROM auth_policies WHERE display_name = $1`, policyDisplayName)
+	err := tx.GetStruct(policy, `SELECT * FROM auth_policies WHERE display_name = $1`, policyDisplayName)
 	if err != nil {
 		return nil, err
 	}
 	return policy, nil
 }
 
-func deleteOrNotFound(tx sqlx.Execer, stmt string, args ...interface{}) error {
+func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 	res, err := tx.Exec(stmt, args...)
 	if err != nil {
 		return err
@@ -220,7 +222,7 @@ func (s *DBAuthService) CreateUser(user *model.User) error {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
 		}
-		err := tx.Get(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
+		err := tx.GetStruct(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
 		return nil, err
 	})
 	return err
@@ -249,7 +251,7 @@ func (s *DBAuthService) GetUserByID(userID int) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 			user := &model.User{}
-			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
+			err := tx.GetStruct(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
 			if err != nil {
 				return nil, err
 			}
@@ -269,6 +271,10 @@ func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User
 		return nil, paginator, err
 	}
 	return slice.Interface().([]*model.User), paginator, err
+}
+
+func makeCol(c string) string {
+	return fmt.Sprintf("auth_credentials.%[1]s AS %[1]s", c)
 }
 
 func (s *DBAuthService) ListUserCredentials(username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
@@ -402,7 +408,7 @@ func (s *DBAuthService) CreateGroup(group *model.Group) error {
 		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 			return nil, err
 		}
-		return nil, tx.Get(group, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
+		return nil, tx.GetStruct(group, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
 			group.DisplayName, group.CreatedAt)
 	})
 	return err
@@ -577,7 +583,7 @@ func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 			}
 		}
 
-		return nil, tx.Get(policy, `
+		return nil, tx.GetStruct(policy, `
 			INSERT INTO auth_policies (display_name, created_at, statement)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (display_name) DO UPDATE SET statement = $3
@@ -735,7 +741,7 @@ func (s *DBAuthService) GetCredentialsForUser(username, accessKeyID string) (*mo
 			return nil, err
 		}
 		credentials := &model.Credential{}
-		err := tx.Get(credentials, `
+		err := tx.GetStruct(credentials, `
 			SELECT auth_credentials.*
 			FROM auth_credentials
 			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
@@ -756,7 +762,7 @@ func (s *DBAuthService) GetCredentials(accessKeyID string) (*model.Credential, e
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 			credentials := &model.Credential{}
-			err := tx.Get(credentials, `
+			err := tx.GetStruct(credentials, `
 			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyID)
 			if err != nil {
 				return nil, err

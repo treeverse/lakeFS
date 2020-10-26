@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -92,7 +91,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 	return res.(*CommitLog), nil
 }
 
-func commitUpdateCommittedEntriesWithMaxCommit(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
+func commitUpdateCommittedEntriesWithMaxCommit(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`UPDATE catalog_entries_v SET max_commit = $2
 			WHERE branch_id = $1 AND is_committed
 				AND max_commit = $3
@@ -104,7 +103,7 @@ func commitUpdateCommittedEntriesWithMaxCommit(tx sqlx.Execer, branchID int64, c
 	return res.RowsAffected()
 }
 
-func commitDeleteUncommittedTombstones(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
+func commitDeleteUncommittedTombstones(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`DELETE FROM catalog_entries_v WHERE branch_id = $1 AND NOT is_committed AND is_tombstone AND path IN (
 		SELECT path FROM catalog_entries_v WHERE branch_id = $1 AND is_committed AND max_commit = $2)`,
 		branchID, commitID)
@@ -114,7 +113,7 @@ func commitDeleteUncommittedTombstones(tx sqlx.Execer, branchID int64, commitID 
 	return res.RowsAffected()
 }
 
-func commitEntries(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
+func commitEntries(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed`,
 		branchID, commitID)
 	if err != nil {

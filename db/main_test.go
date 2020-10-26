@@ -1,13 +1,14 @@
 package db_test
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"testing"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
+
 	"github.com/ory/dockertest/v3"
 )
 
@@ -46,11 +47,11 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 	}
 
 	// create connection
-	var conn *sqlx.DB
+	var conn *sql.DB
 	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/"+dbName+"?sslmode=disable", resource.GetPort("5432/tcp"))
 	err = pool.Retry(func() error {
 		var err error
-		conn, err = sqlx.Connect("pgx", uri)
+		conn, err = sql.Open("pgx", uri)
 		if err != nil {
 			return err
 		}
