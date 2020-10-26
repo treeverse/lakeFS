@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"database/sql"
+
 	"github.com/treeverse/lakefs/db/params"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -38,9 +39,14 @@ func ConnectDB(p params.Database) (Database, error) {
 		"disable_auto_migrate": p.DisableAutoMigrate,
 	})
 	log.Info("connecting to the DB")
-	conn, err := sqlx.Connect(p.Driver, p.ConnectionString)
+	conn, err := sql.Open(p.Driver, p.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("could not open DB: %w", err)
+	}
+	err = conn.Ping()
+	if err != nil {
+		conn.Close()
+		return nil, err
 	}
 
 	conn.SetMaxOpenConns(p.MaxOpenConnections)
@@ -57,7 +63,7 @@ func ConnectDB(p params.Database) (Database, error) {
 	}
 
 	log.Info("initialized DB connection")
-	return NewSqlxDatabase(conn), nil
+	return NewSqlDatabase(conn), nil
 }
 
 func normalizeDBParams(p *params.Database) {

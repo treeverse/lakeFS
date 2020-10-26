@@ -571,7 +571,7 @@ func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentI
 		return nil, err
 	}
 	var effectiveCommits diffEffectiveCommits
-	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
+	err = tx.GetStruct(&effectiveCommits, effectiveCommitsQuery, args...)
 	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
 	if err != nil && !effectiveCommitsNotFound {
 		return nil, err

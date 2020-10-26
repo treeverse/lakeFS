@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -74,7 +73,7 @@ func getSetupTimestamp(tx db.Tx) (time.Time, error) {
 	return time.Parse(time.RFC3339, value)
 }
 
-func writeMetadata(tx sqlx.Execer, items map[string]string) error {
+func writeMetadata(tx db.Tx, items map[string]string) error {
 	for key, value := range items {
 		_, err := tx.Exec(`
 			INSERT INTO auth_installation_metadata (key_name, key_value)

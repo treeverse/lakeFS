@@ -68,7 +68,7 @@ func getNextCommitID(tx db.Tx) (CommitID, error) {
 
 func getRepository(tx db.Tx, repository string) (*Repository, error) {
 	var r Repository
-	err := tx.Get(&r, `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
+	err := tx.GetStruct(&r, `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
 			FROM catalog_repositories r, catalog_branches b
 			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name = $1`,
 		repository)
