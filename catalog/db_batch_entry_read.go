@@ -1,12 +1,12 @@
 package catalog
 
 import (
-	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -148,7 +148,7 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 			return nil, fmt.Errorf("select entries: %w", err)
 		}
 		return entries, nil
-	}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))
+	}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(pgx.ReadCommitted))
 	if err != nil {
 		return nil, err
 	}

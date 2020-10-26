@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/db"
 )
@@ -35,7 +36,7 @@ func (c *cataloger) GetExportConfigurationForBranch(repository string, branch st
 		if err != nil {
 			return nil, err
 		}
-		err = c.db.Get(&ret,
+		err = c.db.GetStruct(&ret,
 			`SELECT export_path, export_status_path, last_keys_in_prefix_regexp
                          FROM catalog_branches_export
                          WHERE branch_id = $1`, branchID)
@@ -58,14 +59,8 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
-		var rec ExportConfigurationForBranch
-		if err = rows.StructScan(&rec); err != nil {
-			return nil, fmt.Errorf("scan configuration %+v: %w", rows, err)
-		}
-		ret = append(ret, rec)
-	}
-	return ret, nil
+	err = pgxscan.ScanAll(&ret, rows)
+	return ret, err
 }
 
 func (c *cataloger) PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error {

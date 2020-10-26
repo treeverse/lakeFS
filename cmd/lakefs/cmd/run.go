@@ -54,9 +54,7 @@ var runCmd = &cobra.Command{
 		dbParams := cfg.GetDatabaseParams()
 
 		dbPool := db.BuildDatabaseConnection(dbParams)
-		defer func() {
-			_ = dbPool.Close()
-		}()
+		defer dbPool.Close()
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)

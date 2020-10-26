@@ -59,9 +59,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err := tx.Select(&rawCommits, query, fromCommitID, limit+1); err != nil {
 			return nil, err
 		}
-		fmt.Printf("[DEBUG] rawcommits %+v\n", rawCommits)
 		commits := convertRawCommits(rawCommits)
-		fmt.Printf("[DEBUG] commits %+v\n", commits)
 		return commits, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 

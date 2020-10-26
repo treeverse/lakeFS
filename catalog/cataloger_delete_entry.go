@@ -31,10 +31,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, fmt.Errorf("uncommitted: %w", err)
 		}
-		deletedUncommittedCount, err := res.RowsAffected()
-		if err != nil {
-			return nil, fmt.Errorf("rows affected: %w", err)
-		}
+		deletedUncommittedCount := res.RowsAffected()
 
 		// get uncommitted entry based on path
 		lineage, err := getLineage(tx, branchID, UncommittedID)

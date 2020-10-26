@@ -100,7 +100,7 @@ func commitUpdateCommittedEntriesWithMaxCommit(tx db.Tx, branchID int64, commitI
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	return res.RowsAffected(), nil
 }
 
 func commitDeleteUncommittedTombstones(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
@@ -110,7 +110,7 @@ func commitDeleteUncommittedTombstones(tx db.Tx, branchID int64, commitID Commit
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	return res.RowsAffected(), nil
 }
 
 func commitEntries(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
@@ -119,5 +119,5 @@ func commitEntries(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	return res.RowsAffected(), nil
 }

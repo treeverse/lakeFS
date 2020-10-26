@@ -5,20 +5,22 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/georgysavva/scany/sqlscan"
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/logging"
 )
 
 type TxFunc func(tx Tx) (interface{}, error)
 
 type Database interface {
-	io.Closer
 	Tx
+	Close()
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
@@ -30,31 +32,31 @@ type QueryOptions struct {
 	ctx    context.Context
 }
 
-type SqlDatabase struct {
-	db           *sql.DB
+type PgxDatabase struct {
+	db           *pgxpool.Pool
 	queryOptions *QueryOptions
 }
 
-func NewSqlDatabase(db *sql.DB) *SqlDatabase {
-	return &SqlDatabase{db: db}
+func NewPgxDatabase(db *pgxpool.Pool) *PgxDatabase {
+	return &PgxDatabase{db: db}
 }
 
-func (d *SqlDatabase) getLogger() logging.Logger {
+func (d *PgxDatabase) getLogger() logging.Logger {
 	if d.queryOptions != nil {
 		return d.queryOptions.logger
 	}
 	return logging.Default()
 }
 
-func (d *SqlDatabase) getContext() context.Context {
+func (d *PgxDatabase) getContext() context.Context {
 	if d.queryOptions != nil {
 		return d.queryOptions.ctx
 	}
 	return context.Background()
 }
 
-func (d *SqlDatabase) WithContext(ctx context.Context) Database {
-	return &SqlDatabase{
+func (d *PgxDatabase) WithContext(ctx context.Context) Database {
+	return &PgxDatabase{
 		db: d.db,
 		queryOptions: &QueryOptions{
 			logger: logging.Default().WithContext(ctx),
@@ -63,12 +65,12 @@ func (d *SqlDatabase) WithContext(ctx context.Context) Database {
 	}
 }
 
-func (d *SqlDatabase) Close() error {
-	return d.db.Close()
+func (d *PgxDatabase) Close() {
+	d.db.Close()
 }
 
 // performAndReport performs fn and logs a "done" report if its duration was long enough.
-func (d *SqlDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
+func (d *PgxDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
 	start := time.Now()
 	ret, err := fn()
 	duration := time.Since(start)
@@ -82,21 +84,21 @@ func (d *SqlDatabase) performAndReport(fields logging.Fields, fn func() (interfa
 	return ret, err
 }
 
-func (d *SqlDatabase) GetStruct(dest interface{}, query string, args ...interface{}) error {
+func (d *PgxDatabase) GetStruct(dest interface{}, query string, args ...interface{}) error {
 	_, err := d.performAndReport(logging.Fields{
 		"type":  "get",
 		"query": query,
 		"args":  args,
 	}, func() (interface{}, error) {
-		return nil, sqlscan.Get(d.getContext(), d.db, dest, query, args...)
+		return nil, pgxscan.Get(d.getContext(), d.db, dest, query, args...)
 	})
 	return err
 }
 
-func (d *SqlDatabase) Get(dest interface{}, query string, args ...interface{}) error {
-	row := d.db.QueryRowContext(context.Background(), query, args...)
+func (d *PgxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+	row := d.db.QueryRow(context.Background(), query, args...)
 	err := row.Scan(dest)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	}
 	if err != nil {
@@ -104,35 +106,35 @@ func (d *SqlDatabase) Get(dest interface{}, query string, args ...interface{}) e
 	}
 	return nil
 }
-func (d *SqlDatabase) Query(query string, args ...interface{}) (rows *sql.Rows, err error) {
+func (d *PgxDatabase) Query(query string, args ...interface{}) (rows pgx.Rows, err error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "start query",
 		"query": query,
 		"args":  args,
-	}, func() (interface{}, error) { return d.db.QueryContext(d.getContext(), query, args...) })
+	}, func() (interface{}, error) { return d.db.Query(d.getContext(), query, args...) })
 	if ret == nil {
 		return nil, err
 	}
-	return ret.(*sql.Rows), err
+	return ret.(pgx.Rows), err
 }
 
-func (d *SqlDatabase) Select(results interface{}, query string, args ...interface{}) error {
+func (d *PgxDatabase) Select(results interface{}, query string, args ...interface{}) error {
 	return Select(d, results, query, args...)
 }
 
-func (d *SqlDatabase) Exec(query string, args ...interface{}) (sql.Result, error) {
+func (d *PgxDatabase) Exec(query string, args ...interface{}) (pgconn.CommandTag, error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "exec",
 		"query": query,
 		"args":  args,
-	}, func() (interface{}, error) { return d.db.ExecContext(d.getContext(), query, args...) })
+	}, func() (interface{}, error) { return d.db.Exec(d.getContext(), query, args...) })
 	if err != nil {
 		return nil, err
 	}
-	return ret.(sql.Result), nil
+	return ret.(pgconn.CommandTag), nil
 }
 
-func (d *SqlDatabase) getTxOptions() *TxOptions {
+func (d *PgxDatabase) getTxOptions() *TxOptions {
 	options := DefaultTxOptions()
 	if d.queryOptions != nil {
 		options.logger = d.queryOptions.logger
@@ -141,7 +143,7 @@ func (d *SqlDatabase) getTxOptions() *TxOptions {
 	return options
 }
 
-func (d *SqlDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
+func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	options := d.getTxOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -159,16 +161,16 @@ func (d *SqlDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			time.Sleep(duration)
 		}
 
-		tx, err := d.db.BeginTx(options.ctx, &sql.TxOptions{
-			Isolation: options.isolationLevel,
-			ReadOnly:  options.readOnly,
+		tx, err := d.db.BeginTx(options.ctx, pgx.TxOptions{
+			IsoLevel:   options.isolationLevel,
+			AccessMode: options.accessMode,
 		})
 		if err != nil {
 			return nil, err
 		}
 		ret, err = fn(&dbTx{tx: tx, logger: options.logger})
 		if err != nil {
-			rollbackErr := tx.Rollback()
+			rollbackErr := tx.Rollback(options.ctx)
 			if rollbackErr != nil {
 				return nil, rollbackErr
 			}
@@ -180,7 +182,7 @@ func (d *SqlDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			}
 			return nil, err
 		} else {
-			err = tx.Commit()
+			err = tx.Commit(options.ctx)
 			if err != nil {
 				// retry on serialization error
 				if IsSerializationError(err) {
@@ -202,7 +204,7 @@ func (d *SqlDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	return nil, ErrSerialization
 }
 
-func (d *SqlDatabase) Metadata() (map[string]string, error) {
+func (d *PgxDatabase) Metadata() (map[string]string, error) {
 	metadata := make(map[string]string)
 	version, err := d.getVersion()
 	if err == nil {
@@ -250,7 +252,7 @@ func (d *SqlDatabase) Metadata() (map[string]string, error) {
 	return metadata, nil
 }
 
-func (d *SqlDatabase) getVersion() (string, error) {
+func (d *PgxDatabase) getVersion() (string, error) {
 	v, err := d.Transact(func(tx Tx) (interface{}, error) {
 		type ver struct {
 			Version string `db:"version"`
@@ -268,7 +270,7 @@ func (d *SqlDatabase) getVersion() (string, error) {
 	return v.(string), err
 }
 
-func (d *SqlDatabase) getAuroraVersion() (string, error) {
+func (d *PgxDatabase) getAuroraVersion() (string, error) {
 	v, err := d.Transact(func(tx Tx) (interface{}, error) {
 		var v string
 		err := tx.GetStruct(&v, "SELECT aurora_version()")
@@ -283,6 +285,23 @@ func (d *SqlDatabase) getAuroraVersion() (string, error) {
 	return v.(string), err
 }
 
-func (d *SqlDatabase) Stats() sql.DBStats {
-	return d.db.Stats()
+func (d *PgxDatabase) Stats() sql.DBStats {
+	stat := d.db.Stat()
+	return sql.DBStats{
+		MaxOpenConnections: int(stat.MaxConns()),
+		// Includes conns being constructed, so this violates the invariant documented
+		// in DBStats that OpenConnections = InUse + Idle.
+		OpenConnections: int(stat.TotalConns()),
+		InUse:           int(stat.AcquiredConns()),
+		Idle:            int(stat.IdleConns()),
+		// WaitCount is the number of connections for which sql had to wait.
+		// EmptyAcquireCount is the number of connections that pgx acquired after
+		// waiting.  The two are close enough (but race each other).
+		WaitCount: stat.EmptyAcquireCount(),
+		// Time to acquire is close enough to time spent waiting; fudge.
+		WaitDuration:      stat.AcquireDuration(),
+		MaxIdleClosed:     0, // TODO(ariels): Does pgx have this anywhere?
+		MaxIdleTimeClosed: 0, // TODO(ariels): Could generate this with post-connect/release hooks
+		MaxLifetimeClosed: 0, // TODO(ariels): Is this even possible in pgx?
+	}
 }

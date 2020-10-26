@@ -2,13 +2,14 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/georgysavva/scany/sqlscan"
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -18,15 +19,15 @@ const (
 )
 
 type Tx interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Query(query string, args ...interface{}) (pgx.Rows, error)
 	Select(dest interface{}, query string, args ...interface{}) error
 	GetStruct(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
-	Exec(query string, args ...interface{}) (sql.Result, error)
+	Exec(query string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
 type dbTx struct {
-	tx     *sql.Tx
+	tx     pgx.Tx
 	logger logging.Logger
 }
 
@@ -34,9 +35,9 @@ func queryToString(q string) string {
 	return strings.Join(strings.Fields(q), " ")
 }
 
-func (d *dbTx) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 	start := time.Now()
-	rows, err := d.tx.Query(query, args...)
+	rows, err := d.tx.Query(context.Background(), query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "query",
 		"args":  args,
@@ -57,7 +58,7 @@ func Select(d Tx, results interface{}, query string, args ...interface{}) error 
 		return err
 	}
 	defer rows.Close()
-	return sqlscan.ScanAll(results, rows)
+	return pgxscan.ScanAll(results, rows)
 }
 
 func (d *dbTx) Select(results interface{}, query string, args ...interface{}) error {
@@ -72,8 +73,8 @@ func (d *dbTx) GetStruct(dest interface{}, query string, args ...interface{}) er
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	err := sqlscan.Get(context.Background(), d.tx, dest, query, args...)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := pgxscan.Get(context.Background(), d.tx, dest, query, args...)
+	if errors.Is(err, pgx.ErrNoRows) {
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
@@ -94,9 +95,9 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	row := d.tx.QueryRowContext(context.Background(), query, args...)
+	row := d.tx.QueryRow(context.Background(), query, args...)
 	err := row.Scan(dest)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
@@ -109,9 +110,9 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 	return nil
 }
 
-func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
+func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error) {
 	start := time.Now()
-	res, err := d.tx.Exec(query, args...)
+	res, err := d.tx.Exec(context.Background(), query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "exec",
 		"args":  args,
@@ -132,16 +133,16 @@ type TxOpt func(*TxOptions)
 type TxOptions struct {
 	logger         logging.Logger
 	ctx            context.Context
-	isolationLevel sql.IsolationLevel
-	readOnly       bool
+	isolationLevel pgx.TxIsoLevel
+	accessMode     pgx.TxAccessMode
 }
 
 func DefaultTxOptions() *TxOptions {
 	return &TxOptions{
 		logger:         logging.Default(),
 		ctx:            context.Background(),
-		isolationLevel: sql.LevelSerializable,
-		readOnly:       false,
+		isolationLevel: pgx.Serializable,
+		accessMode:     pgx.ReadWrite,
 	}
 }
 
@@ -159,11 +160,11 @@ func WithContext(ctx context.Context) TxOpt {
 
 func ReadOnly() TxOpt {
 	return func(o *TxOptions) {
-		o.readOnly = true
+		o.accessMode = pgx.ReadOnly
 	}
 }
 
-func WithIsolationLevel(level sql.IsolationLevel) TxOpt {
+func WithIsolationLevel(level pgx.TxIsoLevel) TxOpt {
 	return func(o *TxOptions) {
 		o.isolationLevel = level
 	}
