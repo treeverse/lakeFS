@@ -19,7 +19,7 @@ import (
 // superuserCmd represents the init command
 var superuserCmd = &cobra.Command{
 	Use:   "superuser",
-	Short: "Create additional superuser with admin credential",
+	Short: "Create additional user with admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer func() { _ = dbPool.Close() }()

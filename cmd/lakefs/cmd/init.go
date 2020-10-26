@@ -19,7 +19,7 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize a LakeFS instance, and setup an admin credential",
+	Short: "Initialize a LakeFS instance, and setup an admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 
