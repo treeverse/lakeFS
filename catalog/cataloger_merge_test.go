@@ -70,10 +70,9 @@ func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 		t.Fatal("merge commit log should have two parents")
 	}
 	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeRemoved:  1,
-		DifferenceTypeChanged:  1,
-		DifferenceTypeAdded:    1,
-		DifferenceTypeConflict: 0,
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   1,
 	}); diff != nil {
 		t.Fatal("Merge Summary", diff)
 	}
