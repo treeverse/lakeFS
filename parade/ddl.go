@@ -202,7 +202,7 @@ type OwnedTaskData struct {
 }
 
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions.
-func OwnTasks(conn *pgxpool.Conn, actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
+func OwnTasks(conn pgxscan.Querier, actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
 	ctx := context.Background()
 	rows, err := conn.Query(
 		ctx, `SELECT * FROM own_tasks($1, $2, $3, $4)`, maxTasks, actions, actor, maxDuration)

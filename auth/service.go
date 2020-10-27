@@ -269,10 +269,6 @@ func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User
 	return slice.Interface().([]*model.User), paginator, err
 }
 
-func makeCol(c string) string {
-	return fmt.Sprintf("auth_credentials.%[1]s AS %[1]s", c)
-}
-
 func (s *DBAuthService) ListUserCredentials(username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.Credential
 	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(credential), params, "auth_credentials.access_key_id", psql.Select("auth_credentials.*").
