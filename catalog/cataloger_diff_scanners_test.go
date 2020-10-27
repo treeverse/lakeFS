@@ -3,12 +3,145 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
+func TestCataloger_Diff_scanner_FromChild(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", DefaultBranchName)
+
+	// create 3 files and commit
+	const numberOfEntries = 3
+	for i := 0; i < numberOfEntries; i++ {
+		p := fmt.Sprintf("file%d", i)
+		testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, p, nil, DefaultBranchName)
+	}
+	_, err := c.Commit(ctx, repository, DefaultBranchName, "initial commit", "tester", nil)
+	testutil.MustDo(t, "initial commit", err)
+
+	// branch changes into child branch called "branch1"
+	testCatalogerBranch(t, ctx, c, repository, "branch1", DefaultBranchName)
+
+	// branch1 - delete
+	err = c.DeleteEntry(ctx, repository, "branch1", "file1")
+	testutil.MustDo(t, "delete entry from branch", err)
+
+	// branch1 - update
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "file2", nil, "branch1")
+
+	// branch1 - add
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "fileX", nil, "branch1")
+
+	// commit change on "branch1"
+	_, err = c.Commit(ctx, repository, "branch1", "commit changes", "tester", nil)
+	testutil.MustDo(t, "commit changes", err)
+
+	// diff changes between "branch1" and "master" (from child)
+	res, more, err := c.Diff(ctx, repository, "branch1", DefaultBranchName, DiffParams{Limit: -1})
+	testutil.MustDo(t, "Diff changes between branch1 and master", err)
+	if more {
+		t.Fatal("Diff has more differences, expected none")
+	}
+	if diff := deep.Equal(res, Differences{
+		Difference{Entry: Entry{Path: "file1"}, Type: DifferenceTypeRemoved},
+		Difference{Entry: Entry{Path: "file2"}, Type: DifferenceTypeChanged},
+		Difference{Entry: Entry{Path: "fileX"}, Type: DifferenceTypeAdded},
+	}); diff != nil {
+		t.Fatal("Diff unexpected differences:", diff)
+	}
+}
+func TestCataloger_Diff_scanner_FromChildThreeBranches(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	// create 3 files and commit
+	commitThreeFiles := func(msg, branch string, offset int) {
+		const items = 3
+		for i := 0; i < items; i++ {
+			testCatalogerCreateEntry(t, ctx, c, repository, branch, "/file"+strconv.Itoa(i+items*offset), nil, "")
+		}
+		_, err := c.Commit(ctx, repository, branch, msg, "tester", nil)
+		testutil.MustDo(t, msg, err)
+	}
+	// create 3 files and commit on master
+	commitThreeFiles("First commit to master", "master", 0)
+
+	// create branch1 based on master with 3 files committed
+	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+	commitThreeFiles("First commit to branch1", "branch1", 1)
+
+	// create branch2 based on branch1 with 3 files committed
+	testCatalogerBranch(t, ctx, c, repository, "branch2", "branch1")
+	commitThreeFiles("First commit to branch2", "branch2", 2)
+
+	// make changes on branch2
+	const newFilename = "/file555"
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch2", newFilename, nil, "")
+	const delFilename = "/file1"
+	testutil.MustDo(t, "delete committed file on master",
+		c.DeleteEntry(ctx, repository, "branch2", delFilename))
+	const overFilename = "/file2"
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch2", overFilename, nil, "seed1")
+	_, err := c.Commit(ctx, repository, "branch2", "second commit to branch2", "tester", nil)
+	testutil.MustDo(t, "second commit to branch2", err)
+
+	// merge the above up to master (from branch2)
+	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "", nil)
+	testutil.MustDo(t, "Merge changes from branch2 to branch1", err)
+	// merge the changes from branch1 to master
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
+	testutil.MustDo(t, "Merge changes from branch1 to master", err)
+
+	if !IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
+	}
+	commitLog, err := c.GetCommit(ctx, repository, res.Reference)
+	testutil.MustDo(t, "get merge commit reference", err)
+	if len(commitLog.Parents) != 2 {
+		t.Fatal("merge commit log should have two parents")
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   7,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
+	// TODO(barak): enable test after diff between commits is supported
+	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//testutil.MustDo(t, "diff merge changes", err)
+	//expectedDifferences := Differences{
+	//	Difference{Type: DifferenceTypeChanged, Path: "/file2"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file3"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file4"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file5"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file555"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file6"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file7"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file8"},
+	//	Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
+	//}
+	//if !differences.Equal(expectedDifferences) {
+	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
+	//}
+
+	testVerifyEntries(t, ctx, c, repository, "master:HEAD", []testEntryInfo{
+		{Path: "/file1", Deleted: true},
+		{Path: "/file2", Seed: "seed1"},
+		{Path: "/file3"},
+		{Path: "/file4"},
+		{Path: "/file555"},
+		{Path: "/file6"},
+		{Path: "/file7"},
+		{Path: "/file8"},
+	})
+}
 func TestCataloger_Diff_Scanner_FromParentThreeBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)

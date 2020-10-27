@@ -238,12 +238,11 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, params *doDiff
 
 // prepareDiffAdditionalFields - make sure we have the required additional fields for diff
 func prepareDiffAdditionalFields(fields []string) []string {
-	for _, f := range fields {
-		if f == DBEntryFieldChecksum {
-			return fields
-		}
+	if !findString(fields, DBEntryFieldChecksum) {
+		return append(fields, DBEntryFieldChecksum)
+	} else {
+		return fields
 	}
-	return append(fields, DBEntryFieldChecksum)
 }
 
 // lineageCommitIDByBranchID lookup the branch ID in lineage and returns the commit ID.
