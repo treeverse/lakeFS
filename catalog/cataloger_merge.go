@@ -111,6 +111,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		}
 		err = InsertMergeCommit(tx, relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
 		mergeResult.Summary = scanner.diffSummary
+		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
 		return mergeResult, err
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
