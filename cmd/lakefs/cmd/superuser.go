@@ -22,7 +22,7 @@ var superuserCmd = &cobra.Command{
 	Short: "Create additional user with admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer func() { _ = dbPool.Close() }()
+		defer dbPool.Close()
 
 		userName, _ := cmd.Flags().GetString("user-name")
 
