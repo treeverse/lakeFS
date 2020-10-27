@@ -232,6 +232,9 @@ func (d *PgxDatabase) Metadata() (map[string]string, error) {
 		for rows.Next() {
 			var setting pgSettings
 			err = rows.Scan(&setting)
+			if err != nil {
+				return nil, err
+			}
 			if setting.Name == "data_directory" {
 				isRDS := strings.HasPrefix(setting.Setting, "/rdsdata")
 				settings["is_rds"] = strconv.FormatBool(isRDS)
