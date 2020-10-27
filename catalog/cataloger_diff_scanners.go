@@ -20,6 +20,7 @@ import (
 type diffEvaluator func(c *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType
 
 type diffScanner struct {
+	relation                  RelationType
 	diffParams                *doDiffParams
 	leftScanner, rightScanner *DBLineageScanner
 	err                       error
@@ -125,6 +126,8 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 }
 
 func (c *cataloger) newDiffScanner(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
+	var scanner *diffScanner
+	var err error
 	if params == nil {
 		return nil, fmt.Errorf("doDiff params are required: %w", ErrInvalidValue)
 	}
@@ -134,9 +137,9 @@ func (c *cataloger) newDiffScanner(tx db.Tx, params *doDiffParams) (*diffScanner
 	}
 	switch relation {
 	case RelationTypeFromParent:
-		return c.newDiffFromParent(tx, params)
+		scanner, err = c.newDiffFromParent(tx, params)
 	case RelationTypeFromChild:
-		return c.newDiffFromChild(tx, params)
+		scanner, err = c.newDiffFromChild(tx, params)
 	//case RelationTypeNotDirect:
 	//	return c.diffNonDirect(ctx, tx, params)
 	//case RelationTypeSame:
@@ -152,6 +155,8 @@ func (c *cataloger) newDiffScanner(tx db.Tx, params *doDiffParams) (*diffScanner
 		}).Debug("Diff by relation - unsupported type")
 		return nil, ErrFeatureNotSupported
 	}
+	scanner.relation = relation
+	return scanner, err
 }
 
 func (c *cataloger) newDiffFromParent(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
@@ -240,9 +245,11 @@ func (c *diffScanner) Next() bool {
 		// 1. the entry exists in the child branch
 		// 2. difference type is either changed or added.
 		// Then the entry has to appear in the child branch, but an older version exists in the child, so merge will copy it, and the ctid is needed for that
-		if matchedRight != nil && matchedRight.BranchID == c.diffParams.RightBranchID && (diffType == DifferenceTypeAdded || diffType == DifferenceTypeChanged) {
+		if (diffType == DifferenceTypeAdded || diffType == DifferenceTypeChanged) &&
+			((matchedRight != nil && matchedRight.BranchID == c.diffParams.RightBranchID) || c.relation == RelationTypeFromChild) {
 			c.value.EntryCtid = &leftEnt.RowCtid
 		}
+
 		c.rowsCounter++
 		c.diffSummary[diffType]++
 		return true // exit for loop and function
