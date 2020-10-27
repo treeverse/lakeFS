@@ -33,7 +33,11 @@ const UploadButton = connect(
         if (disabled) return; setShow(false);
     };
 
-    const basePath = repo.id + "/" + refId.id + "/";
+    const basePath = `${repo.id}/${refId.id}/\u00A0`;
+
+    const pathStyle = {
+        'min-width' : '25%',
+    };
 
     return (
         <>
@@ -48,11 +52,11 @@ const UploadButton = connect(
                         e.preventDefault();
                     }}>
                         <Form.Group controlId="path">
-                             <Row>
-                                <Col className="col-auto">
-                                    <Form.Control className="text-right" plaintext readOnly value={basePath} />
+                            <Row noGutters={true}>
+                                <Col className="col-auto d-flex align-items-center justify-content-start">
+                                    {basePath}
                                 </Col>
-                                <Col>
+                                <Col style={pathStyle}>
                                     <Form.Control type="text" placeholder="Object name" autoFocus name="text" ref={textRef} defaultValue={path}/>
                                 </Col>
                             </Row>
