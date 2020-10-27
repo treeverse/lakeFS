@@ -10,6 +10,9 @@
     Remove test and documentation related stuff
     Try to sort the list by importance
     Update the description of items if needed so the reader will understand better what this release changes
+- [ ] Migrateion should be noted and documented outside the changelog
+    How to run the migrate if needed
+    Is lakeFS service needs to be down while migrate is running (backward compatibility)
 - [ ] Uncheck the 'This is a pre-release'
 - [ ] Update [charts](https://github.com/treeverse/charts) repository (PR, Approve and Commit)
     Edit `charts/lakefs/Chart.yaml`
