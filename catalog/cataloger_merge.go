@@ -87,13 +87,13 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		for scanner.Next() {
 			v := scanner.Value()
 			if v.DiffType == DifferenceTypeConflict {
-				panic("got conflict")
+				return nil, ErrConflictFound
 			}
 			differences = append(differences, v)
 			if len(differences) >= MergeBatchSize {
 				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				differences = differences[:0]
 			}
