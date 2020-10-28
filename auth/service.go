@@ -120,7 +120,7 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 
 func getUser(tx db.Tx, username string) (*model.User, error) {
 	user := &model.User{}
-	err := tx.GetStruct(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
+	err := tx.Get(user, `SELECT * FROM auth_users WHERE display_name = $1`, username)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func getUser(tx db.Tx, username string) (*model.User, error) {
 
 func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 	group := &model.Group{}
-	err := tx.GetStruct(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
+	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 
 func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
 	policy := &model.Policy{}
-	err := tx.GetStruct(policy, `SELECT * FROM auth_policies WHERE display_name = $1`, policyDisplayName)
+	err := tx.Get(policy, `SELECT * FROM auth_policies WHERE display_name = $1`, policyDisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (s *DBAuthService) CreateUser(user *model.User) error {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
 		}
-		err := tx.GetStruct(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
+		err := tx.Get(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
 		return nil, err
 	})
 	return err
@@ -247,7 +247,7 @@ func (s *DBAuthService) GetUserByID(userID int) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 			user := &model.User{}
-			err := tx.GetStruct(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
+			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
 			if err != nil {
 				return nil, err
 			}
@@ -400,7 +400,7 @@ func (s *DBAuthService) CreateGroup(group *model.Group) error {
 		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 			return nil, err
 		}
-		return nil, tx.GetStruct(group, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
+		return nil, tx.Get(group, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
 			group.DisplayName, group.CreatedAt)
 	})
 	return err
@@ -575,7 +575,7 @@ func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 			}
 		}
 
-		return nil, tx.GetStruct(policy, `
+		return nil, tx.Get(policy, `
 			INSERT INTO auth_policies (display_name, created_at, statement)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (display_name) DO UPDATE SET statement = $3
@@ -733,7 +733,7 @@ func (s *DBAuthService) GetCredentialsForUser(username, accessKeyID string) (*mo
 			return nil, err
 		}
 		credentials := &model.Credential{}
-		err := tx.GetStruct(credentials, `
+		err := tx.Get(credentials, `
 			SELECT auth_credentials.*
 			FROM auth_credentials
 			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
@@ -754,7 +754,7 @@ func (s *DBAuthService) GetCredentials(accessKeyID string) (*model.Credential, e
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 			credentials := &model.Credential{}
-			err := tx.GetStruct(credentials, `
+			err := tx.Get(credentials, `
 			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyID)
 			if err != nil {
 				return nil, err

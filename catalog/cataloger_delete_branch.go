@@ -23,7 +23,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 
 		// default branch doesn't have parents
 		var legacyCount int
-		err = tx.Get(&legacyCount, `SELECT array_length(lineage,1) FROM catalog_branches WHERE id=$1`, branchID)
+		err = tx.GetPrimitive(&legacyCount, `SELECT array_length(lineage,1) FROM catalog_branches WHERE id=$1`, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -33,7 +33,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 
 		// check we don't have branch depends on us by count lineage records we are part of
 		var childBranches int
-		err = tx.Get(&childBranches, `SELECT count(*) FROM catalog_branches b 
+		err = tx.GetPrimitive(&childBranches, `SELECT count(*) FROM catalog_branches b 
 			JOIN catalog_branches b2 ON b.repository_id = b2.repository_id AND b2.id=$1
 			WHERE $1=ANY(b.lineage)`, branchID)
 		if err != nil {

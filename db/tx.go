@@ -21,8 +21,8 @@ const (
 type Tx interface {
 	Query(query string, args ...interface{}) (pgx.Rows, error)
 	Select(dest interface{}, query string, args ...interface{}) error
-	GetStruct(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
+	GetPrimitive(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
@@ -65,7 +65,7 @@ func (d *dbTx) Select(results interface{}, query string, args ...interface{}) er
 	return Select(d, results, query, args...)
 }
 
-func (d *dbTx) GetStruct(dest interface{}, query string, args ...interface{}) error {
+func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 	start := time.Now()
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "get",
@@ -87,7 +87,7 @@ func (d *dbTx) GetStruct(dest interface{}, query string, args ...interface{}) er
 	return nil
 }
 
-func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
+func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{}) error {
 	start := time.Now()
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "get",

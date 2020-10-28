@@ -25,7 +25,7 @@ func NewDBRetentionService(db db.Database) *DBRetentionService {
 func (s *DBRetentionService) GetPolicy(repositoryName string) (*catalog.PolicyWithCreationTime, error) {
 	o, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var policy catalog.PolicyWithCreationTime
-		err := tx.GetStruct(
+		err := tx.Get(
 			&policy,
 			`SELECT description, (value::json)->'Rules' as rules, created_at FROM catalog_repositories_config WHERE repository_id IN (SELECT id FROM catalog_repositories WHERE name = $1) AND key = $2`,
 			repositoryName,

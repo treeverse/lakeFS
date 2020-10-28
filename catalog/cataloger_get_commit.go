@@ -28,7 +28,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
 			WHERE b.id=$1 AND c.commit_id=$2`
 		var rawCommit commitLogRaw
-		if err := tx.GetStruct(&rawCommit, query, branchID, ref.CommitID); err != nil {
+		if err := tx.Get(&rawCommit, query, branchID, ref.CommitID); err != nil {
 			return nil, err
 		}
 		commit := convertRawCommit(rawCommit)
