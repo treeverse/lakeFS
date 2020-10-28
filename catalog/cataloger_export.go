@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/db"
 )
@@ -101,7 +102,7 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
                      e.export_path export_path, e.export_status_path export_status_path,
                      e.last_keys_in_prefix_regexp last_keys_in_prefix_regexp
                  FROM catalog_branches_export e JOIN catalog_branches b ON e.branch_id = b.id
-                      JOIN catalog_repositories r ON b.repository_id = r.id`)
+                    JOIN catalog_repositories r ON b.repository_id = r.id`)
 	if err != nil {
 		return nil, err
 	}
@@ -132,4 +133,69 @@ func (c *cataloger) PutExportConfiguration(repository string, branch string, con
 		return nil, err
 	})
 	return err
+}
+
+type errExportFailed struct {
+	Message string // Error string reported in database
+}
+
+func (e errExportFailed) Error() string {
+	return e.Message
+}
+
+var ErrExportFailed = errExportFailed{}
+
+func (c *cataloger) ExportMarkStart(tx db.Tx, repo string, branch string, newRef string) (oldRef string, state CatalogBranchExportStatus, err error) {
+	var res struct {
+		CurrentRef   string
+		State        CatalogBranchExportStatus
+		ErrorMessage string
+	}
+	branchID, err := c.getBranchIDCache(tx, repo, branch)
+	if err != nil {
+		return
+	}
+	err = tx.Get(&res, `
+		SELECT current_ref, state, error_message
+		FROM catalog_branches_export_state
+		WHERE branch_id=$1 FOR UPDATE`,
+		branchID)
+	if err != nil && !errors.Is(err, ErrEntryNotFound) {
+		err = fmt.Errorf("ExportMarkStart: failed to get existing state: %w", err)
+		return
+	}
+	oldRef = res.CurrentRef
+	state = res.State
+
+	tag, err := tx.Exec(`
+		UPDATE catalog_branches
+		SET current_ref=$2, state='in-progress', error_message=NULL
+		WHERE branch_id=$1`,
+		branchID, newRef)
+	if err != nil {
+		return
+	}
+	if tag.RowsAffected() != 1 {
+		err = fmt.Errorf("[I] ExportMarkStart: Updated %d rows instead of just 1: %w", pgx.ErrNoRows, err)
+		return
+	}
+	if state == ExportStatusFailed {
+		err = errExportFailed{res.ErrorMessage}
+	}
+	return
+}
+
+func (c *cataloger) ExportStateDelete(tx db.Tx, repo string, branch string) error {
+	branchID, err := c.getBranchIDCache(tx, repo, branch)
+	if err != nil {
+		return err
+	}
+	tag, err := tx.Exec(`DELETE FROM catalog_branches_export_state WHERE branch_id=$1`, branchID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return fmt.Errorf("[I] ExportStateDelete: deleted %d rows instead of just 1: %w", tag.RowsAffected(), pgx.ErrNoRows)
+	}
+	return nil
 }

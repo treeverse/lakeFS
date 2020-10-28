@@ -168,6 +168,19 @@ type ExportConfigurator interface {
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 }
 
+type ExportStateHandler interface {
+	// ExportMarkStart starts an export operation on branch of repo and returns the ref of
+	// the previous export.  If the previous export failed it returns ErrExportFailed.  If
+	// another export is running return state ExportStatusInProgress -- and caller should
+	// clean it up by removing and adding the "next export" withint this transaction.  If
+	// another transaction concurrently runs ExportMarkStart on branchID, one blocks until
+	// the other is done.
+	ExportMarkStart(tx db.Tx, repo string, branch string, newRef string) (string, CatalogBranchExportStatus, error)
+	// Delete any export state for repo.  Mostly useful in tests: in a living system the
+	// export state is part of the state of the world.
+	ExportStateDelete(tx db.Tx, repo string, branch string) error
+}
+
 type Cataloger interface {
 	RepositoryCataloger
 	BranchCataloger
@@ -178,6 +191,7 @@ type Cataloger interface {
 	Merger
 	Hookser
 	ExportConfigurator
+	ExportStateHandler
 	io.Closer
 }
 

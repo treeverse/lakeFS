@@ -3,12 +3,16 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp/syntax"
 	"sort"
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
+	"github.com/treeverse/lakefs/db"
 )
 
 const (
@@ -37,10 +41,6 @@ func (s configForBranchSlice) Swap(i int, j int) {
 }
 
 func TestExportConfiguration(t *testing.T) {
-	const (
-		branchID        = 17
-		anotherBranchID = 29
-	)
 	ctx := context.Background()
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
@@ -147,4 +147,86 @@ func TestExportConfiguration(t *testing.T) {
 			t.Errorf("did not read expected configurations: %s", diffs)
 		}
 	})
+}
+
+func TestExportState(t *testing.T) {
+	const (
+		ref1 = "this commit"
+		ref2 = "that commit"
+	)
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
+
+	cases := []struct {
+		name        string
+		startRef    string // start with this ref (and state) if set, otherwise start with no row
+		startState  CatalogBranchExportStatus
+		setRef      string
+		expectState CatalogBranchExportStatus
+		expectErr   func(t *testing.T, err error)
+	}{
+		{
+			name:        "clean",
+			setRef:      ref2,
+			expectState: ExportStatusInProgress,
+		}, {
+			name:        "reset",
+			startRef:    ref1,
+			setRef:      ref2,
+			expectState: ExportStatusInProgress,
+		}, {
+			name:        "previousFailed",
+			startRef:    ref1,
+			startState:  ExportStatusFailed,
+			setRef:      ref2,
+			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if !errors.Is(err, ErrExportFailed) {
+					t.Errorf("expected ErrExportFailed but got %s", err)
+				}
+			},
+		},
+	}
+	for _, tt := range cases {
+		pool, err := pgxpool.Connect(ctx, c.DbConnURI)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		err = db.Ping(ctx, pool)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		d := db.NewPgxDatabase(pool)
+		t.Run(tt.name, func(t *testing.T) {
+			_, err = d.Transact(func(tx db.Tx) (interface{}, error) {
+				if tt.startRef != "" {
+					// This also ends up testing ExportMarkStart in the same way
+					// each time.
+					if _, _, err := c.ExportMarkStart(tx, repo, defaultBranch, tt.startRef); err != nil {
+						return nil, fmt.Errorf("setup (mark previous): %w", err)
+					}
+				} else {
+					if err := c.ExportStateDelete(tx, repo, defaultBranch); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+						return nil, fmt.Errorf("setup (delete): %w", err)
+					}
+				}
+
+				gotRef, gotState, err := c.ExportMarkStart(tx, repo, defaultBranch, tt.setRef)
+				if tt.expectErr != nil {
+					tt.expectErr(t, err)
+				}
+				if gotRef != tt.startRef {
+					t.Errorf("expected to old ref %s but got %s", tt.startRef, gotRef)
+				}
+				if tt.startState != "" && gotState != tt.startState {
+					t.Errorf("expected previous state %s but got %s", tt.startState, gotState)
+				}
+				return nil, nil
+			})
+			if err != nil {
+				t.Errorf(err.Error())
+			}
+		})
+	}
 }
