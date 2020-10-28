@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+	"github.com/georgysavva/scany/pgxscan"
 
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
@@ -98,9 +98,10 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 	if err != nil {
 		return nil, nil, fmt.Errorf("query DB: %w", err)
 	}
+	rowScanner := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		value := reflect.New(retType)
-		if err = rows.StructScan(value.Interface()); err != nil {
+		if err = rowScanner.Scan(value.Interface()); err != nil {
 			return nil, nil, fmt.Errorf("scan value from DB: %w", err)
 		}
 		slice = reflect.Append(slice, value)
@@ -144,15 +145,12 @@ func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
 	return policy, nil
 }
 
-func deleteOrNotFound(tx sqlx.Execer, stmt string, args ...interface{}) error {
+func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 	res, err := tx.Exec(stmt, args...)
 	if err != nil {
 		return err
 	}
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
+	numRows := res.RowsAffected()
 	if numRows == 0 {
 		return db.ErrNotFound
 	}

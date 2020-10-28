@@ -84,7 +84,7 @@ var ErrExpired = errors.New("expired from storage")
 
 // ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
 type ExpiryRows interface {
-	io.Closer
+	Close()
 	Next() bool
 	Err() error
 	// Read returns the current from ExpiryRows, or an error on failure.  Call it only after
@@ -400,15 +400,14 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			if err != nil {
 				return nil, err
 			}
-			if rowsAffected, err := res.RowsAffected(); err != nil {
-				return nil, err
-			} else if rowsAffected == 1 {
+			rowsAffected := res.RowsAffected()
+			if rowsAffected == 1 {
 				// new address was added - continue
 				continue
 			}
 
 			// fill the address into the right location
-			err = tx.Get(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+			err = tx.GetPrimitive(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
 				repoID, r.DedupID)
 			if err != nil {
 				return nil, err

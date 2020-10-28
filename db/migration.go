@@ -157,9 +157,7 @@ func MigrateTo(p params.Database, version uint, force bool) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = mdb.Close()
-	}()
+	defer mdb.Close()
 	m, err := getMigrate(p)
 	if err != nil {
 		return err

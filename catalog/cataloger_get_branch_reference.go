@@ -21,7 +21,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 		}
 
 		var commitID CommitID
-		err = tx.Get(&commitID, `SELECT COALESCE(MAX(commit_id),0) as commit_id FROM catalog_commits WHERE branch_id=$1`, branchID)
+		err = tx.GetPrimitive(&commitID, `SELECT COALESCE(MAX(commit_id),0) as commit_id FROM catalog_commits WHERE branch_id=$1`, branchID)
 		if err != nil {
 			return "", err
 		}
