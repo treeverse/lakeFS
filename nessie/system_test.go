@@ -54,7 +54,7 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 	_, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
 		WithRepository(&models.RepositoryCreation{
 			DefaultBranch:    masterBranch,
-			ID:               swag.String(name),
+			Name:             swag.String(name),
 			StorageNamespace: swag.String(repoStorage),
 		}), nil)
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)

@@ -73,7 +73,7 @@ func testBenchmarkLakeFS() error {
 	repo, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
 		WithRepository(&models.RepositoryCreation{
 			DefaultBranch:    "master",
-			ID:               swag.String(repoName),
+			Name:             swag.String(repoName),
 			StorageNamespace: swag.String(ns),
 		}), nil)
 	if err != nil {

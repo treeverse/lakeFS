@@ -532,7 +532,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
-				Resource: permissions.RepoArn(swag.StringValue(params.Repository.ID)),
+				Resource: permissions.RepoArn(swag.StringValue(params.Repository.Name)),
 			},
 		})
 		if err != nil {
@@ -550,7 +550,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
 		repo, err := deps.Cataloger.CreateRepository(c.Context(),
-			swag.StringValue(params.Repository.ID),
+			swag.StringValue(params.Repository.Name),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
 		if err != nil {
