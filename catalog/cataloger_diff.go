@@ -223,6 +223,22 @@ func (c *cataloger) newDiffFromChild(tx db.Tx, params *doDiffParams) (*diffScann
 	return scanner, nil
 }
 
+func (c *cataloger) newDiffSameBranch(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
+	// get child last commit of merge from parent
+	scanner := new(diffScanner)
+	scanner.diffParams = params
+	scanner.diffEvaluator = evaluateSameBranch
+
+	scannerOpts := DBScannerOptions{
+		After:            params.After,
+		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
+	}
+	scanner.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
+	scanner.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
+	scanner.diffSummary = newSummaryMap()
+	return scanner, nil
+}
+
 func (c *diffScanner) Next() bool {
 	var err error
 	if c.diffParams.Limit > -1 && c.rowsCounter >= c.diffParams.Limit {
@@ -287,18 +303,6 @@ func (c *diffScanner) Error() error {
 	return c.err
 }
 
-func isNoneDiff(leftEntry, rightEntry *DBScannerEntry) bool {
-	// both deleted - none
-	if leftEntry.IsDeleted() && (rightEntry == nil || rightEntry.IsDeleted()) {
-		return true
-	}
-	// same entry - none
-	if rightEntry != nil && leftEntry.IsDeleted() == rightEntry.IsDeleted() && leftEntry.Checksum == rightEntry.Checksum {
-		return true
-	}
-	return false
-}
-
 func evaluateParentToChild(c *diffScanner, leftEntry, rightEntry *DBScannerEntry) DifferenceType {
 	if isNoneDiff(leftEntry, rightEntry) {
 		return DifferenceTypeNone
@@ -359,21 +363,35 @@ func evaluateChildToParent(c *diffScanner, leftEntry *DBScannerEntry, rightEntry
 
 }
 
-func stringIsInSlice(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
+func evaluateSameBranch(_ *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
+	if isNoneDiff(leftEntry, rightEntry) {
+		return DifferenceTypeNone
 	}
-	return false
+	// source exists and no target - added
+	if rightEntry == nil || rightEntry.IsDeleted() {
+		return DifferenceTypeAdded
+	}
+	// assert: right entry is not nil, and not deleted
+	if leftEntry.IsDeleted() {
+		return DifferenceTypeRemoved
+	}
+	// If we got to this point
+	// 1. both entries exist and are not deleted
+	// 2. their checksum do not match (would be caught by is NoneDiff)
+	return DifferenceTypeChanged
+
 }
 
-func newSummaryMap() map[DifferenceType]int {
-	m := make(map[DifferenceType]int)
-	for i := 0; i < int(DifferenceTypeNone); i++ {
-		m[DifferenceType(i)] = 0
+func isNoneDiff(leftEntry, rightEntry *DBScannerEntry) bool {
+	// both deleted - none
+	if leftEntry.IsDeleted() && (rightEntry == nil || rightEntry.IsDeleted()) {
+		return true
 	}
-	return m
+	// same entry - none
+	if rightEntry != nil && leftEntry.IsDeleted() == rightEntry.IsDeleted() && leftEntry.Checksum == rightEntry.Checksum {
+		return true
+	}
+	return false
 }
 
 // selectChildEffectiveCommits - read last merge commit numbers from commit table
@@ -442,22 +460,6 @@ func prepareDiffAdditionalFields(fields []string) []string {
 	}
 }
 
-func (c *cataloger) newDiffSameBranch(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
-	// get child last commit of merge from parent
-	scanner := new(diffScanner)
-	scanner.diffParams = params
-	scanner.diffEvaluator = evaluateSameBranch
-
-	scannerOpts := DBScannerOptions{
-		After:            params.After,
-		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
-	}
-	scanner.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
-	scanner.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
-	scanner.diffSummary = newSummaryMap()
-	return scanner, nil
-}
-
 func (c *cataloger) getRefsRelationType(tx db.Tx, params *doDiffParams) (RelationType, error) {
 	if params.LeftBranchID == params.RightBranchID {
 		return RelationTypeSame, nil
@@ -488,26 +490,6 @@ func (c *cataloger) getRefsRelationType(tx db.Tx, params *doDiffParams) (Relatio
 	return RelationTypeNotDirect, nil
 }
 
-// leftEntry, rightEntry *DBScannerEntry
-func evaluateSameBranch(_ *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
-	if isNoneDiff(leftEntry, rightEntry) {
-		return DifferenceTypeNone
-	}
-	// source exists and no target - added
-	if rightEntry == nil || rightEntry.IsDeleted() {
-		return DifferenceTypeAdded
-	}
-	// assert: right entry is not nil, and not deleted
-	if leftEntry.IsDeleted() {
-		return DifferenceTypeRemoved
-	}
-	// If we got to this point
-	// 1. both entries exist and are not deleted
-	// 2. their checksum do not match (would be caught by is NoneDiff)
-	return DifferenceTypeChanged
-
-}
-
 func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) CommitID {
 	for _, l := range c.ParentEffectiveLineage {
 		if l.BranchID == branchID {
@@ -515,6 +497,23 @@ func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) C
 		}
 	}
 	return c.ParentEffectiveCommit
+}
+
+func stringIsInSlice(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
+func newSummaryMap() map[DifferenceType]int {
+	m := make(map[DifferenceType]int)
+	for i := 0; i < int(DifferenceTypeNone); i++ {
+		m[DifferenceType(i)] = 0
+	}
+	return m
 }
 
 func (c *cataloger) diffNonDirect(_ db.Tx, params *doDiffParams) error {
