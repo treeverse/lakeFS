@@ -53,8 +53,10 @@ var runCmd = &cobra.Command{
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
 
-		if err := db.ValidateSchemaUpToDate(dbParams); err != nil {
-			logger.WithError(err).Fatal("Failed on schema validation")
+		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+			logger.WithError(err).Fatal("Migration version mismatch")
+		} else if err != nil {
+			logger.WithError(err).Warn("Failed on schema validation")
 		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
 		defer func() {
@@ -173,7 +175,7 @@ const runBanner = `
 `
 
 func printWelcome(w io.Writer) {
-	fmt.Fprint(w, runBanner)
+	_, _ = fmt.Fprint(w, runBanner)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
