@@ -382,6 +382,9 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string, 
 	if err != nil {
 		return nil, fmt.Errorf("select diff results: %w", err)
 	}
+	if result == nil {
+		result = Differences{}
+	}
 	return result, nil
 }
 
@@ -732,7 +735,7 @@ func evaluateSameBranchElementDiffType(sourceEnt *DBScannerEntry, targetEnt *DBS
 		return DifferenceTypeAdded
 	}
 	// source and target not matched - change
-	if targetEnt.BranchID == sourceEnt.BranchID && targetEnt.MinCommit != sourceEnt.MinCommit {
+	if targetEnt.IsDeleted() != sourceEnt.IsDeleted() || targetEnt.Checksum != sourceEnt.Checksum {
 		return DifferenceTypeChanged
 	}
 	// entries match - none
