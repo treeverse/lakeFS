@@ -47,15 +47,6 @@ func ConnectDB(p params.Database) (Database, error) {
 	conn.SetMaxIdleConns(p.MaxIdleConnections)
 	conn.SetConnMaxLifetime(p.ConnectionMaxLifetime)
 
-	if !p.DisableAutoMigrate {
-		log.Info("migrate DB if needed")
-		err = MigrateUp(p)
-		if err != nil {
-			log.WithError(err).Error("migrate DB")
-			return nil, err
-		}
-	}
-
 	log.Info("initialized DB connection")
 	return NewSqlxDatabase(conn), nil
 }
