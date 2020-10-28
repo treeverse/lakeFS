@@ -33,10 +33,11 @@ type CatalogRepoActions struct {
 	logger          logging.Logger
 	deletedProgress *cmdutils.Progress
 	addedProgress   *cmdutils.Progress
+	commitProgress  *cmdutils.Progress
 }
 
 func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
-	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress}
+	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress, c.commitProgress}
 }
 
 func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) *CatalogRepoActions {
@@ -45,8 +46,9 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer
 		repository:      repository,
 		committer:       committer,
 		logger:          logger,
-		addedProgress:   cmdutils.NewProgress("Objects Added or Changed", -1),
-		deletedProgress: cmdutils.NewProgress("Objects Deleted", -1),
+		addedProgress:   cmdutils.NewActiveProgress("Objects Added or Changed", cmdutils.Spinner),
+		deletedProgress: cmdutils.NewActiveProgress("Objects Deleted", cmdutils.Spinner),
+		commitProgress:  cmdutils.NewProgress("Committing Changes", cmdutils.SpinnerNoCounter),
 	}
 }
 
@@ -82,7 +84,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		if diffObj.IsDeleted {
 			stats.Deleted += 1
 			if !dryRun {
-				err := c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, obj.Key)
+				err := c.cataloger.DeleteEntry(ctx, c.repository, catalog.DefaultImportBranchName, obj.Key)
 				if err != nil {
 					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
@@ -93,7 +95,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		entry := catalog.Entry{
 			Path:            obj.Key,
 			PhysicalAddress: obj.PhysicalAddress,
-			CreationDate:    obj.LastModified,
+			CreationDate:    *obj.LastModified,
 			Size:            obj.Size,
 			Checksum:        obj.Checksum,
 		}
@@ -108,7 +110,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			}
 			tsk := &task{
 				f: func() error {
-					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+					err := c.cataloger.CreateEntries(ctx, c.repository, catalog.DefaultImportBranchName, previousBatch)
 					if err == nil {
 						c.addedProgress.Add(int64(len(previousBatch)))
 					}
@@ -131,17 +133,19 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
-		err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
+		err := c.cataloger.CreateEntries(ctx, c.repository, catalog.DefaultImportBranchName, currentBatch)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
 	c.addedProgress.Add(int64(len(currentBatch)))
+	c.addedProgress.SetCompleted(true)
+	c.deletedProgress.SetCompleted(true)
 	return &stats, nil
 }
 
 func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
-	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, DefaultBranchName)
+	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, catalog.DefaultImportBranchName)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		return nil, err
 	}
@@ -159,8 +163,13 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 }
 
 func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
-	return c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
+	c.commitProgress.Activate()
+	res, err := c.cataloger.Commit(ctx, c.repository, catalog.DefaultImportBranchName,
 		commitMsg,
 		c.committer,
 		metadata)
+	if err == nil {
+		c.commitProgress.SetCompleted(true)
+	}
+	return res, err
 }

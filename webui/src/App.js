@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 
 import {connect} from 'react-redux';
 import Navbar from 'react-bootstrap/Navbar';
@@ -12,6 +12,7 @@ import LoginForm from "./components/Login";
 import SetupPage from "./components/SetupPage";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import { logout, redirected } from './actions/auth';
+import {getConfig} from "./actions/config";
 import {IndexPage} from "./components/IndexPage";
 
 // css imports
@@ -96,7 +97,12 @@ const TopBar = ({ user }) => {
 }
 
 
-const App = ({ user, redirectTo, redirected }) => {
+const App = ({ user, redirectTo, redirected, getConfig }) => {
+
+    useEffect(() => {
+        getConfig();
+      }, [getConfig]);
+
     return (
         <Router className="App">
             <TopBar user={user}/>
@@ -121,4 +127,4 @@ export default connect(
     ({ auth }) => ({
         user: auth.user,
         redirectTo: auth.redirectTo,
-    }), ({ redirected }))(App);
+    }), ({ redirected, getConfig }))(App);

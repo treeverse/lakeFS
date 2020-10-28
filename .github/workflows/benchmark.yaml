@@ -1,0 +1,107 @@
+name: Benchmark
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy-executor-image:
+    name: Build and push benchmark executor Docker image
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+
+      - name: Generate code
+        run: |
+          make gen
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_BENCHMARK_EXECUTOR: benchmark-executor
+        run: |
+          docker build --target benchmark-executor -t $ECR_REGISTRY/$ECR_REPOSITORY_BENCHMARK_EXECUTOR:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_BENCHMARK_EXECUTOR:${{ steps.version.outputs.tag }}
+
+  benchmark-system:
+    name: Measure system benchmark
+    needs: deploy-executor-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+        id: go
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.BENCHMARK_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BENCHMARK_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.13.4
+      - name: Terraform init
+        run: |
+          cd benchmarks/terraform/
+          terraform init
+      - name: Terraform apply
+        run: |
+          cd benchmarks/terraform/
+          terraform apply --auto-approve -var="dockerReg=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com" -var="tag=${{ steps.version.outputs.tag }}" \
+            -var="build=${{ github.run_number }}" -var="grafana-username=${{ secrets.GRAFANA_USERNAME }}" -var="grafana-password=${{ secrets.GRAFANA_PASSWORD }}"
+      - name: 'Terraform Output'
+        id: terraform
+        uses: hashicorp/terraform-github-actions@master
+        with:
+          tf_actions_version: 0.13.4
+          tf_actions_subcommand: 'output'
+          tf_actions_working_dir: 'benchmarks/terraform'
+      - name: Wait until executor finishes
+        run: |
+          CLUSTER_ARN=$(echo '${{ steps.terraform.outputs.tf_actions_output }}' | jq -r '.cluster_arn.value')
+          EXECUTOR_FAMILY=$(echo '${{ steps.terraform.outputs.tf_actions_output }}' | jq -r '.executor_family.value')
+          until [ $(aws ecs list-tasks --cluster=$CLUSTER_ARN --desired-status=STOPPED --family=$EXECUTOR_FAMILY | jq '.taskArns | length') -ge 1 ] ; do
+            echo benchmark-executor still running, sleeping...
+            sleep 20
+          done
+      - name: Terraform destory
+        if: ${{ always() }}
+        run: |
+          cd benchmarks/terraform/
+
+          # keep the logs
+          terraform state rm aws_cloudwatch_log_group.benchmark
+          terraform destroy --auto-approve

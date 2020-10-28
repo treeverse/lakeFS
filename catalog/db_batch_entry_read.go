@@ -1,12 +1,12 @@
 package catalog
 
 import (
-	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -123,15 +123,9 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 
 func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList []pathRequest) ([]*Entry, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// get branch
 		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
 			return nil, err
-		}
-		// get lineage
-		lineage, err := getLineage(tx, branchID, ref.CommitID)
-		if err != nil {
-			return nil, fmt.Errorf("get lineage: %w", err)
 		}
 		// prepare list of paths
 		p := make([]string, len(pathReqList))
@@ -139,9 +133,10 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 			p[i] = s.path
 		}
 		// prepare query
-		readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
-			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
-			Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
+		readExpr, err := sqEntryLineageSelect(tx, branchID, ref.CommitID, true, p)
+		if err != nil {
+			return nil, fmt.Errorf("lineage select: %w", err)
+		}
 		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
@@ -153,7 +148,7 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 			return nil, fmt.Errorf("select entries: %w", err)
 		}
 		return entries, nil
-	}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))
+	}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(pgx.ReadCommitted))
 	if err != nil {
 		return nil, err
 	}

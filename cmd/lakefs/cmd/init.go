@@ -12,13 +12,14 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 )
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize a LakeFS instance, and setup an admin credential",
+	Short: "Initialize a LakeFS instance, and setup an admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 
@@ -30,7 +31,7 @@ var initCmd = &cobra.Command{
 		}
 
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer func() { _ = dbPool.Close() }()
+		defer dbPool.Close()
 
 		userName, _ := cmd.Flags().GetString("user-name")
 
@@ -38,14 +39,9 @@ var initCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-
-		metaManager := auth.NewDBMetadataManager(config.Version, dbPool)
-		metadata, err := metaManager.Write()
-		if err != nil {
-			fmt.Printf("failed to write initial setup metadata: %s\n", err)
-			os.Exit(1)
-		}
-
+		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
+		metadata := stats.NewMetadata(logging.Default(), cfg, authMetadataManager, cloudMetadataProvider)
 		credentials, err := auth.SetupAdminUser(authService, &model.User{
 			CreatedAt: time.Now(),
 			Username:  userName,
@@ -56,8 +52,7 @@ var initCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
-		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
+		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")

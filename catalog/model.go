@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	DBEntryFieldChecksum        = "checksum"
+	DBEntryFieldPhysicalAddress = "physical_address"
+)
+
 type Metadata map[string]string
 
 type Repository struct {
@@ -88,10 +93,36 @@ func (j *Metadata) Scan(src interface{}) error {
 	return json.Unmarshal(data, j)
 }
 
-type DBReaderEntry struct {
-	BranchID  int64    `db:"branch_id"`
-	Path      string   `db:"path"`
+type DBScannerEntry struct {
+	BranchID int64  `db:"branch_id"`
+	RowCtid  string `db:"ctid"`
+	MinMaxCommit
+	Entry
+}
+
+type MinMaxCommit struct {
 	MinCommit CommitID `db:"min_commit"`
 	MaxCommit CommitID `db:"max_commit"`
-	RowCtid   string   `db:"ctid"`
+}
+
+func (m MinMaxCommit) IsDeleted() bool {
+	return m.MaxCommit != MaxCommitID
+}
+func (m MinMaxCommit) IsTombstone() bool {
+	return m.MaxCommit == TombstoneCommitID
+}
+
+func (m MinMaxCommit) IsCommitted() bool {
+	return m.MinCommit != MaxCommitID
+}
+
+func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
+	// needed for diff, to check if an entry changed after the lineage commit id
+	return m.MinCommit > commitID || (m.IsDeleted() && m.MaxCommit >= commitID)
+}
+
+type entryPathPrefixInfo struct {
+	BranchID   int64  `db:"branch_id"`
+	PathSuffix string `db:"path_suffix"`
+	MinMaxCommit
 }

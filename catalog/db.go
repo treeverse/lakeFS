@@ -29,7 +29,7 @@ func getBranchID(tx db.Tx, repository, branch string, lockType LockType) (int64,
 		return 0, err
 	}
 	var branchID int64
-	err = tx.Get(&branchID, q, repository, branch)
+	err = tx.GetPrimitive(&branchID, q, repository, branch)
 	return branchID, err
 }
 
@@ -50,19 +50,19 @@ func formatSQLWithLockType(sql string, lockType LockType) (string, error) {
 
 func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	var repoID int
-	err := tx.Get(&repoID, `SELECT id FROM catalog_repositories WHERE name=$1`, repository)
+	err := tx.GetPrimitive(&repoID, `SELECT id FROM catalog_repositories WHERE name=$1`, repository)
 	return repoID, err
 }
 
 func getLastCommitIDByBranchID(tx db.Tx, branchID int64) (CommitID, error) {
 	var commitID CommitID
-	err := tx.Get(&commitID, `SELECT max(commit_id) FROM catalog_commits where branch_id=$1`, branchID)
+	err := tx.GetPrimitive(&commitID, `SELECT max(commit_id) FROM catalog_commits where branch_id=$1`, branchID)
 	return commitID, err
 }
 
 func getNextCommitID(tx db.Tx) (CommitID, error) {
 	var commitID CommitID
-	err := tx.Get(&commitID, `SELECT nextval('catalog_commit_id_seq');`)
+	err := tx.GetPrimitive(&commitID, `SELECT nextval('catalog_commit_id_seq');`)
 	return commitID, err
 }
 
@@ -76,33 +76,6 @@ func getRepository(tx db.Tx, repository string) (*Repository, error) {
 		return nil, err
 	}
 	return &r, nil
-}
-
-func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64) (RelationType, error) {
-	var youngerBranch, olderBranch int64
-	var possibleRelation RelationType
-	if sourceBranchID == destinationBranchID {
-		return RelationTypeNone, nil
-	}
-	if sourceBranchID > destinationBranchID {
-		possibleRelation = RelationTypeFromChild
-		youngerBranch = sourceBranchID
-		olderBranch = destinationBranchID
-	} else {
-		possibleRelation = RelationTypeFromParent
-		youngerBranch = destinationBranchID
-		olderBranch = sourceBranchID
-	}
-	var isDirectRelation bool
-	err := tx.Get(&isDirectRelation,
-		`select lineage[1]=$1 from catalog_branches where id=$2`, olderBranch, youngerBranch)
-	if err != nil {
-		return RelationTypeNone, err
-	}
-	if isDirectRelation {
-		return possibleRelation, nil
-	}
-	return RelationTypeNotDirect, nil
 }
 
 // paginateSlice take slice address, resize and return 'has more' when needed

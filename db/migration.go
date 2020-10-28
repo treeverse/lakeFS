@@ -151,21 +151,23 @@ func MigrateDown(params params.Database) error {
 	return nil
 }
 
-func MigrateTo(p params.Database, version uint) error {
+func MigrateTo(p params.Database, version uint, force bool) error {
 	// make sure we have schema by calling connect
 	mdb, err := ConnectDB(p)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = mdb.Close()
-	}()
+	defer mdb.Close()
 	m, err := getMigrate(p)
 	if err != nil {
 		return err
 	}
 	defer closeMigrate(m)
-	err = m.Migrate(version)
+	if force {
+		err = m.Force(int(version))
+	} else {
+		err = m.Migrate(version)
+	}
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}

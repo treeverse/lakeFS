@@ -6,8 +6,23 @@ on:
       - master
 
 jobs:
+  check-secrets:
+    name: Check if secrets are available.
+    outputs:
+      secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: enablejobs
+        env:
+          ENABLE_NEXT_JOBS: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
+          echo "::set-output name=secretsavailable::${{ env.ENABLE_NEXT_JOBS != '' }}"
+
   deploy-image:
     name: Build and push Docker image
+    needs: check-secrets
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,10 +63,16 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_LAKEFS: lakefs
-          ECR_REPOSITORY_LAKECTL: lakectl
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+          set +e
+          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
+          if [ $? -eq 0 ]; then
+            echo "Image exists"
+          else
+            echo "Image doesn't exist"
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+          fi
 
   run-system:
     name: Run latest lakeFS app
@@ -104,6 +125,10 @@ jobs:
         run: |
             FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
+      - name: lakeFS Logs
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
       - name: Export DB
         if: ${{ always() }}
         env:

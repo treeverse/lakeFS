@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/cmdutils"
-	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 )
 
 var ErrInventoryNotSorted = errors.New("got unsorted s3 inventory")
@@ -17,7 +17,7 @@ type InventoryIterator struct {
 	*Inventory
 	err                   error
 	val                   *block.InventoryObject
-	buffer                []inventorys3.InventoryObject
+	buffer                []*s3inventory.InventoryObject
 	inventoryFileIndex    int
 	valIndexInBuffer      int
 	inventoryFileProgress *cmdutils.Progress
@@ -31,11 +31,13 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 		creationTimestamp = 0
 	}
 	t := time.Unix(creationTimestamp/int64(time.Second/time.Millisecond), 0)
+	inventoryFileProgress := cmdutils.NewActiveProgress(fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), cmdutils.Bar)
+	inventoryFileProgress.SetTotal(int64(len(inv.Manifest.Files)))
 	return &InventoryIterator{
 		Inventory:             inv,
 		inventoryFileIndex:    -1,
-		inventoryFileProgress: cmdutils.NewProgress(fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), int64(len(inv.Manifest.Files))),
-		currentFileProgress:   cmdutils.NewProgress(fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02")), 0),
+		inventoryFileProgress: inventoryFileProgress,
+		currentFileProgress:   cmdutils.NewActiveProgress(fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02")), cmdutils.Bar),
 	}
 }
 
@@ -52,7 +54,7 @@ func (it *InventoryIterator) Next() bool {
 				it.err = ErrInventoryNotSorted
 				return false
 			}
-			it.currentFileProgress.Incr()
+			it.currentFileProgress.SetCurrent(int64(it.valIndexInBuffer + 1))
 			it.val = val
 			return true
 		}
@@ -60,6 +62,8 @@ func (it *InventoryIterator) Next() bool {
 		it.valIndexInBuffer = -1
 		if !it.moveToNextInventoryFile() {
 			// no more files left
+			it.inventoryFileProgress.SetCompleted(true)
+			it.currentFileProgress.SetCompleted(true)
 			return false
 		}
 		if !it.fillBuffer() {
@@ -94,8 +98,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
 		}
 	}()
-	it.buffer = make([]inventorys3.InventoryObject, rdr.GetNumRows())
-	err = rdr.Read(&it.buffer)
+	it.buffer, err = rdr.Read(int(rdr.GetNumRows()))
 	if err != nil {
 		it.err = err
 		return false
@@ -106,23 +109,16 @@ func (it *InventoryIterator) fillBuffer() bool {
 func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
 		obj := it.buffer[i]
-		if (obj.IsLatest != nil && !*obj.IsLatest) ||
-			(obj.IsDeleteMarker != nil && *obj.IsDeleteMarker) {
+		if !obj.IsLatest || obj.IsDeleteMarker {
 			continue
 		}
 		res := block.InventoryObject{
 			Bucket:          obj.Bucket,
 			Key:             obj.Key,
 			PhysicalAddress: obj.GetPhysicalAddress(),
-		}
-		if obj.Size != nil {
-			res.Size = *obj.Size
-		}
-		if obj.LastModifiedMillis != nil {
-			res.LastModified = time.Unix(*obj.LastModifiedMillis/int64(time.Second/time.Millisecond), 0)
-		}
-		if obj.Checksum != nil {
-			res.Checksum = *obj.Checksum
+			Size:            obj.Size,
+			LastModified:    obj.LastModified,
+			Checksum:        obj.Checksum,
 		}
 		it.valIndexInBuffer = i
 		return &res

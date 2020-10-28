@@ -26,15 +26,12 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		}
 
 		// delete uncommitted entry, if found first
-		res, err := tx.Exec("DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=0 AND max_commit=catalog_max_commit_id()",
-			branchID, path)
+		res, err := tx.Exec("DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=$3 AND max_commit=$4",
+			branchID, path, MinCommitUncommittedIndicator, MaxCommitID)
 		if err != nil {
 			return nil, fmt.Errorf("uncommitted: %w", err)
 		}
-		deletedUncommittedCount, err := res.RowsAffected()
-		if err != nil {
-			return nil, fmt.Errorf("rows affected: %w", err)
-		}
+		deletedUncommittedCount := res.RowsAffected()
 
 		// get uncommitted entry based on path
 		lineage, err := getLineage(tx, branchID, UncommittedID)
@@ -51,7 +48,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 			return nil, fmt.Errorf("build sql: %w", err)
 		}
 		var isCommitted bool
-		err = tx.Get(&isCommitted, sql, args...)
+		err = tx.GetPrimitive(&isCommitted, sql, args...)
 		committedNotFound := errors.Is(err, db.ErrNotFound)
 		if err != nil && !committedNotFound {
 			return nil, err
@@ -62,8 +59,8 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		//    - if we didn't delete uncommitted - return not found
 		if isCommitted {
 			_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit)
-					VALUES ($1,$2,'','',0,'{}',0,0)`,
-				branchID, path)
+					VALUES ($1,$2,'','',0,'{}',$3,0)`,
+				branchID, path, MaxCommitID)
 			if err != nil {
 				return nil, fmt.Errorf("tombstone: %w", err)
 			}

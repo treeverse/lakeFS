@@ -73,7 +73,8 @@ func TestSanityAPI(t *testing.T) {
 		branches.NewListBranchesParamsWithContext(ctx).WithRepository(repo),
 		nil)
 	require.NoError(t, err, "list branches")
-	require.ElementsMatch(t, branchesResp.Payload.Results, []string{masterBranch, "branch1"}, "match existing branches")
+	require.ElementsMatch(t, branchesResp.Payload.Results, []string{masterBranch, "import-from-inventory", "branch1"},
+		"match existing branches")
 
 	log.Debug("branch1 - change file0")
 	_, _ = uploadFileRandomData(ctx, t, repo, "branch1", "file0")

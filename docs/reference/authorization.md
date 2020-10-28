@@ -70,7 +70,7 @@ When a user makes a request to perform that action, the following process takes 
 
 1. Authentication - The credentials passed in the request are evaluated, and the user's identity is extracted.
 2. Action permission resolution - lakeFS would then calculate the set of allowed actions and resources that this request requires.
-3. Effective policy resolution - the user's policies (either attached directly or through group memeberships) are calculated
+3. Effective policy resolution - the user's policies (either attached directly or through group memberships) are calculated
 4. Policy/Permission evaluation - lakeFS will compare the given user policies with the request actions and determine whether or not the request is allowed to continue
 
 ### Policy Precedence
@@ -160,6 +160,7 @@ For the full list of actions and their required permissions see the following ta
 |List Group Policies            |`auth:ReadGroup`        |`arn:lakefs:auth:::group/{groupId}`                                     |GET /auth/groups/{groupId}/policies                                                |-                                                                    |
 |Attach Policy To Group         |`auth:AttachPolicy`     |`arn:lakefs:auth:::group/{groupId}`                                     |PUT /auth/groups/{groupId}/policies/{policyId}                                     |-                                                                    |
 |Detach Policy From Group       |`auth:DetachPolicy`     |`arn:lakefs:auth:::group/{groupId}`                                     |DELETE /auth/groups/{groupId}/policies/{policyId}                                  |-                                                                    |
+|List Config                    |`auth:ReadConfig`       |`*`                                                                     |GET /config                                                                        |-                                                                    |
 
 
 ### Preconfigured Policies

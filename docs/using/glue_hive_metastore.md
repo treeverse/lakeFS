@@ -85,7 +85,7 @@ for a table named `example_table` under the schema `master` we would like to cre
  
 
 # Commands:
-Metastore tools supports three commands: ```copy```, ```diff``` and ```create-symlink```.
+Metastore tools support three commands: ```copy```, ```diff``` and ```create-symlink```.
 copy and diff could work both on Glue and on Hive.
 create-symlink works only on Glue.
 
@@ -102,22 +102,22 @@ In case the destination table already exists, the command will only merge the ch
 Example:
 
 Suppose we have the table `example_by_dt` on branch `master` on schema `default`.
-We create a new branch `exmpale_branch` .
+We create a new branch `example_branch` .
 we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
 
 Recommended:
 ``` bash
-lakectl metastore copy  --from-schema default --from-table exmpale_by_dt --to-branch example_branch 
+lakectl metastore copy  --from-schema default --from-table example_by_dt --to-branch example_branch 
 ```
 
 Glue:
 ``` bash
-lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table exmpale_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example_branch 
+lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example_branch 
 ```
 
 Hive:
 ``` bash
-lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch exmample-branch
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example-branch
 ```
 
 ### Copy partition
@@ -161,7 +161,7 @@ Shows added`+` , removed`-` and changed`~` partitions and columns.
 
 Example:
 
-Suppose that we made some changes on the copied table `exmample_by_dt` on schema `example_branch` and we want to see the changes before merging back to `example_by_dt` on schema `default`. 
+Suppose that we made some changes on the copied table `example_by_dt` on schema `example_branch` and we want to see the changes before merging back to `example_by_dt` on schema `default`. 
 
 Recommended:
 ``` bash

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
@@ -55,11 +56,20 @@ var fsListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		results, _, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, "", -1)
-		if err != nil {
-			DieErr(err)
+		var from string
+		for {
+			results, more, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, from, -1)
+			if err != nil {
+				DieErr(err)
+			}
+			if len(results) > 0 {
+				Write(fsLsTemplate, results)
+			}
+			if !swag.BoolValue(more.HasMore) {
+				break
+			}
+			from = more.NextOffset
 		}
-		Write(fsLsTemplate, results)
 	},
 }
 

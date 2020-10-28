@@ -15,321 +15,145 @@ nav_order: 2
 1. TOC
 {:toc}
 
-## Use case #1 - Recurring batch jobs in production
+## Development Environment
 
-Batch jobs in production require the following guarantees:
+As part of our routine work with data we develop new code, improve and upgrade old code, upgrade infrastructures, and test new technologies. lakeFS enables a safe development environment on your data lake without the need to copy or mock data, work on the pipelines or involve DevOps.
 
-1. **Isolation** - other readers can't see the job's output before we've done proper validation.
-1. **Reproducibility** - We want to run the same code on the same input data with predictable results.
-1. **Atomicity** - We want to make our changes available as one atomic unit.
-1. **Production safety** - We want to be able to "rewind" to our initial state if something went wrong.
-1. **Data Validation** - The ability to test and validate a job's output before it is made available to its consumers
+Creating a branch provides you an isolated environment with a snapshot of your repository (any part of your data lake you chose to manage on lakeFS). While working on your own branch in isolation, all other data users will be looking at the repository’s master branch. They can't see your changes, and you don’t see changes to master done after you created the branch. 
+No worries, no data duplication is done, it’s all metadata management behind the scenes.
+Let’s look at 3 examples of a development environment and their branching models.
 
-**Recommended model:** Branch per job, commit per execution, merge to main after validation
-{: .note .note-info }
+### Example 1: Upgrading Spark and using Revert action
 
-![job branching model](../assets/img/job_branching_model.png)
+You installed the latest version of Apache Spark. As a first step you’ll test your Spark jobs to see that the upgrade doesn't have any undesired side effects.
 
-1. assuming we have a `main` branch, let's create a "job" branch for our pipeline. For this example let's assume we have a Spark job that reads raw input data, aggregates it by user and creates a new partition for the give date
-1. We'll start by creating a branch for this pipeline:
-   
+For this purpose, you may create a branch (testing-spark-3.0) which will only be used to test the Spark upgrade, and discarded later. Jobs may run smoothly (the theoretical possibility exists!), or they may fail halfway through, leaving you with some intermediate partitions, data and metadata. In this case, you can simply *revert* the branch to its original state, without worrying about the intermediate results of your last experiment, and perform another (hopefully successful) test in an isolated branch. Revert actions are atomic and immediate, so no manual cleanup is required.
+
+Once testing is completed, and you have achieved the desired result, you can delete this experimental branch, and all data not used on any other branch will be deleted with it.
+
+<img src="../assets/img/branching_1.png" alt="branching_1" width="500px"/>
+
+_Creating a testing branch:_
+
    ```shell
    lakectl branch create \
-      lakefs://example-repo@job-raw-data-grouping \
+      lakefs://example-repo@testing-spark-3.0 \
       --source lakefs://example-repo@main
    # output:
-   # created branch 'job-raw-data-grouping', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   # created branch 'testing-spark-3.0', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
-1. Now, let's change our code to use this branch. Assuming this code reads and writes from S3, this is simple:
-   
-   ```diff
-   < spark.write.partitionBy("date").parquet("s3a://example-repo/collections/events/by-date")
-   > spark.write.partitionBy("date").parquet("s3a://example-repo/job-raw-data-grouping/collections/events/by-date")
-   ```
-1. In case of a failure, let's remove whatever intermediate state Spark might have left behind. We do this by simply reverting all uncommitted data:
-   
+
+_Reverting changes to a branch:_
+
    ```shell
-   lakectl branch revert lakefs://example-repo@job-raw-data-grouping
+   lakectl branch revert lakefs://example-repo@testing-spark-3.0
    # are you sure you want to revert all uncommitted changes?: y█
    ```
-1. Otherwise, if our job ended successfully, let's make our new data available to readers by committing and merging to main:
-For our commit, let's also add the Git commit hash for the job's source code and other metadata for reference:
-   
-   ```shell
-   lakectl commit lakefs://example-repo@job-raw-data-grouping \
-      -m 'raw data grouping for 01/01/2020' \
-      --meta job_commit_hash=501e31a67 \
-      --meta airflow_run_url=http://... \
-      --meta spark_version=2.4.6
-   # output: 
-   # Commit for branch "job-raw-data-grouping" done.
-   #
-   # ID: ~79RU9aUsQ9GLnU
-   # Timestamp: 2020-01-01 12:00:00 +0000 UTC
-   # Parents: ~43aP3nUrR17LcX
-   ```
-1. Once committed, we can now atomically merge this commit to main:
-   
-   ```shell
-   lakectl merge lakefs://example-repo@job-raw-data-grouping lakefs://example-repo@main   
-   # output:
-   # new: 65 modified: 0 removed: 0 
-   ```
 
-1. That's it. All output created by our job is now merged into our main branch and available to readers
+### Example 2: Compare - Which option is better?
 
-## Use case #2 - Production pipeline with multiple jobs
+Easily compare by testing which one performs better on your data set. 
+Examples may be:
+* Different computation tools, e.g Spark vs. Presto
+* Different compression algorithms
+* Different Spark configurations
+* Different code versions of an ETL
 
-This is similar to the previous case, except we now have several jobs that produce related data. We want to be able to release all related data as one atomic unit, or revert them all together (or partially) if something goes wrong.
+Run each experiment on its own independent branch, while the master remains untouched. Once both experiments are done, create a comparison query (using hive or presto or any other tool of your choice) to compare data characteristics, performance or any other metric you see fit.
 
-A common use case for this are "materialized views" - i.e. the same data but partitioned by different columns or sorted differently to optimize for different readers.
+With lakeFS you don't need to worry about creating data paths for the experiments, copying data, and remembering to delete it. It’s substantially easier to avoid errors and maintain a clean lake after.
 
-In production data pipelines, we require the following guarantees:
+<img src="../assets/img/branching_2.png" alt="branching_2" width="500px"/>
 
-1. **Isolation** - Isolation of each job in the pipeline, but also, isolating the entire pipeline until it has completed.
-1. **Reproducibility** - Every job should be reproducible, but also the pipeline as a whole.
-1. **Atomicity** - We want to make our changes available as one atomic unit, at both job and pipeline level.
-1. **Production safety** - We want to be able to "rewind" to our initial state if something went wrong.
-1. **Data Validation** - The ability to test and validate the entire pipeline's output before it is made available to its consumers
+_Reading from and comparing branches using Spark:_
 
-**Recommended model:** Branch per job, merged into pipeline branch, merged into main after all jobs complete
-{: .note .note-info }
+   ```scala
+   val dfExperiment1 = sc.read.parquet("s3a://example-repo/experiment-1/events/by-date")
+   val dfExperiment2 = sc.read.parquet("s3a://example-repo/experiment-2/events/by-date")
 
-![pipeline branching model](../assets/img/pipeline_branching_model.png)
-
-1. Let's take the previous example and expand it a little. Instead of `job` branches that are derived from `main`, let's add an intermediate `pipeline` branch.
-   
-   ```shell
-   lakectl branch create \
-      lakefs://example-repo@pipeline-raw-data-grouping \
-      --source lakefs://example-repo@main
-   # output:
-   # created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
-   ```
-1. Now, for each job that takes part in the pipeline, we'll create a `job` branch that is **derived from the `pipline` branch**:
-   
-   ```shell
-   lakectl branch create \
-      lakefs://example-repo@job-raw-data-grouping-by-user \
-      --source lakefs://example-repo@pipeline-raw-data-grouping
-   # output:
-   # created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
-   ```
-1. Once we have a job branch, we can run our jobs, validate and commit our output as we did in the previous section.
-1. Only when all jobs have completed - and all their output has been merged to the `pipeline` branch, we can merge it into `main`:
-   ```shell
-   lakectl merge lakefs://example-repo@pipeline-raw-data-grouping lakefs://example-repo@main   
-   # output:
-   # new: 542 modified: 0 removed: 0 
+   dfExperiment1.groupBy("...").count()
+   dfExperiment2.groupBy("...").count() // now we can compare the properties of the data itself
    ```
 
-## Use case #3 - Safe data stream ingestion
+### Example 3: Reproduce - A bug in production
 
-For this use case let's look at streaming systems, or real time ingest pipelines that use the data lake as a Sink.
+You upgraded spark and deployed changes in production. A few days or weeks later, you identify a data quality issue, a performance degradation, or an increase to your infra costs. Something that requires investigation and fixing (aka, a bug).
 
-A common scenario would be data arriving to a message broker such as [Apache Kafka](https://kafka.apache.org/){: target="_blank" } or [AWS Kinesis](https://aws.amazon.com/kinesis/){: target="_blank" }, with a consumer that reads small batches from the stream and writes Parquet files to S3.
+lakeFS allows you to open a branch of your lake from the specific merge/commit that introduced the changes to production. Using the metadata saved on the merge/commit  you can reproduce all aspects of the environment, then reproduce the issue on the branch and debug it. Meanwhile,  you can revert the master to a previous point in time, or keep it as is, depending on the use case
 
-These messaging systems generally have an [offset mechanism](https://kafka.apache.org/documentation/#intro_topics){: target="_blank" } that allows a consumer to "rewind" and re-read messages.
-This is great for production safety - but re-reading will also mean duplication of data in our data lake unless:
+<img src="../assets/img/branching_3.png" alt="branching_3" width="500px"/>
 
-1. When rewinding an offset we also know exactly which objects to delete from previous runs
-1. Alternatively, we were very careful when designing our consumer to ensure it is absolutely idempotent, even in the face of failure.
 
-When streaming data into a data lake, we require the following guarantees:
+_Reading from a historic version (a previous commit) using Spark_
 
-1. **Production safety** - We want to be able to "rewind" to a previous state in case anything goes wrong.
-1. **Atomicity** - We want to make our changes available as one atomic unit, usually defined by a time interval (i.e. this is all the data for the current minute/hour/day)
-
-**Recommended model:** Branch per consumer type, periodic commits with stream offset, merge when ready for consumption
-{: .note .note-info }
-
-![data stream branching model](../assets/img/stream_branching_model.png)
-
-1. Let's create a branch for our consumer:
-   
-   ```shell
-   lakectl branch create \
-      lakefs://example-repo@consumer-raw-data \
-      --source lakefs://example-repo@main
-   # output:
-   # created branch 'consumer-raw-data', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   ```scala
+   // represents the data as existed at commit "~79RU9aUsQ9GLnU":
+   spark.read.parquet("s3://example-repo/~79RU9aUsQ9GLnU/events/by-date") 
    ```
-1. Let's change our consumer to write to the new branch:
-   
-   ```diff
-   < topics.dir = "topics"
-   > topics.dir = "consumer-raw-data/topics"
-   ```
-1. Now that parquet files are written to our new branch, we want to commit periodically. This will allow us to rewind safely:
-   
-   ```shell
-   lakectl commit lakefs://example-repo@consumer-raw-data \
-      -m 'raw data consumer checkpoint' \
-      --meta kafka_committed_offset=<KAFKA_TOPIC_OFFSET> \
-      --meta confluent_platform_version=5.5
-   # output:
-   # Commit for branch "consumer-raw-data" done.
-   # 
-   # ID: ~79RU9aUsQ9GLnU
-   # Timestamp: 2020-01-01 12:00:00 +0000 UTC
-   # Parents: ~43aP3nUrR17LcX
-   ```
-   
-   Take note that `<KAFKA_TOPIC_OFFSET>` represents the latest committed offset, which also represents the latest offset that exists in our branch.
-1. If something went wrong - we want to rewind to an earlier state and reprocess messages.
-   
-   This requires 3 steps:
-   
-   1. Look at the commit history and pick the latest known commit that was valid
-   
-      ```shell
-      lakectl log lakefs://example-repo@
-      # output:
-      # commit ~43aP3nUrR17LcX
-      # Author: rawDataConsumer
-      # Date: 2020-07-20 12:00:00 +0000 UTC
-      # 
-      #     raw data consumer checkpoint
-      # 
-      #     kafka_committed_offset = ...
-      #     confluent_platform_version = 5.5
-      # 	
-      # commit ~79RU9aUsQ9GLnU
-      # Author: rawDataConsumer
-      # Date: 2020-07-20 11:00:00 +0000 UTC
-      ...
-      ```
-   1. Reset our branch to that commit:
-   
-      ```shell
-      lakectl branch revert lakefs://example-repo@consumer-raw-data --commit ~79RU9aUsQ9GLnU
-      ```
-   1. Take the `kafka_committed_offset` metadata from the commit, and reset our Kafka Consumer Group offset to that value
-1. In case we're happy with the changes, we can decide how we want to expose new data to readers:
-   * Readers that need the absolute latest data and don't require no isolation - can read directly from the consumer's branch
-      
-      ```
-      s3://example-repo/consumer-raw-data/topics/events/...
-      ```  
-   * Readers that want to see only validated, committed data, can read from the main branch:
-      
-     ```
-      s3://example-repo/main/topics/events/...
-     ```
-     
-     ### Time Availability
-     {: .no_toc }
-     
-     We can decide if we want to merge back to main every time we commit, do it once a day, taking multiple commits each time, or any other logic that makes business sense.
-     
-     In many cases streams are ingested immediately, but the data is only processed after a fixed duration of time - for example, analytics events arrive all the time, but a process that aggregates them by creating a daily sum runs only after all data for a given day has arrived.
-     
-     We can use the merging mechanism to signal that - if a reader sees a new date partition in the main branch - they can assume that partition contains all the daily data.
-    
-     We can even create a branching scheme that reflects update times:
-        - merge to an "hourly" branch every time we finish ingesting an hour of data 
-        - merge from the "hourly" branch to a "daily" branch once we finish processing a day, and so on. 
-        
 
-## Use case #4 - Research and Data Science
+## Continuous Integration
+Everyday data lake  management includes ingestion of new data collections, and a growing number of consumers reading and writing analysis results to the lake. In order to ensure our lake is reliable  we need to validate new data sources, enforce good practices to maintain  a clean lake (avoid the swamp) and validate metadata. lakeFS simplifies continuous integration of data to the lake by supporting ingestion on a designated branch. Merging data to master is enabled only if conditions apply. To make this tenable, let’s look at a few examples:
 
-Data science requires experimentation - We want to adjust an algorithm or test different parameters and see how they influence results.
+### Example 1: Pre-merge hooks - enforce best practices
 
-If the input data changes between different runs, it's impossible to determine if our results changed because we changed the code or because the input changed.
+Examples of good practices enforced in organizations:  
 
-Additionally, we want some form of quality assurance - being able to run the algorithm as it existed at a given point in time, with the same exact input data that existed when it initially ran.
+ - No user_* columns except under /private/...
+ - Only `(*.parquet | *.orc | _delta_log/*.json)` files allowed
+ - Under /production, only backward-compatible schema changes are allowed
+ - New tables on master must be registered in our metadata repository first, with owner and SLA
 
-Data science requires experimentation - We want to adjust a model or refine hyper-parameters and see how the changes we made influence the accuracy of our model, hence we need:
+lakeFS will assist in enforcing best practices by giving you a designated branch to ingest new data (“new-data-1” in the drawing). . You may run automated tests to validate predefined best practices as pre-merge hooks. If the validation passes, the new data will be automatically and atomically merged to the master branch. However, if the validation fails, you will be alerted, and the new data will not be exposed to consumers.
 
-1. **Reproducibility** - The data set used to build the model should be available for reproducibility and quality validation of different versions of the model
-1. **Data CI/CD** - when we update the model in production we want to monitor the accuracy of the model, and the assumption we had on the properties of the data
+By using this branching model and implementing best practices as pre merge hooks, you ensure the master lake is never compromised.
 
-**Recommended model:** Branch per experiment type, commit per run with algorithm parameters as metadata*
-{: .note .note-info }
+<img src="../assets/img/branching_5.png" alt="branching_5" width="500px"/>
 
-![Experiment branching model](../assets/img/experiment_branch_model.png)
 
-1. Create `experiment` branches derived from the main branch:
+## Continuous Deployment
+Not every day we introduce new data to the lake, or add/change ETLs, but we do have recurring jobs that are running, and updates to our existing data collections. Even if  the code and infra didn't change, the data might, and those changes introduce quality issues. This is one of the complexities of a data product, the data we consume changes over the course of a month, a week, or even a single day. 
+
+**Examples of changes to data that may occur:**
+ - A client-side bug in the data collection of website events
+ - A new Android version that interferes with the collecting events from your App
+ - COVID-19 abrupt impact on consumers' behavior, and its effect on the accuracy of ML models.
+ - During a change to Salesforce interface, the validation requirement from a certain field had been lost
+
+lakeFS helps you validate your expectations and assumptions from the data itself.
+
+
+### Example 1: Pre merge hook - a data quality issue
+
+Continuous deployment of existing data we expect to consume, flowing from our ingest-pipelines into the lake. Similar to the Continuous Integration use-case  - we create a ingest branch (“events-data”), which allows us to create tests using data analysis tools or data quality services (e.g. [Great Expectations](https://greatexpectations.io/){: target="_blank" }, [Monte Carlo](https://www.montecarlodata.com/){: target="_blank" }) to ensure reliability of the data we merge to the master branch. Since merge is atomic, no performance issue will be introduced by using lakeFS, but your master branch will only include quality data. 
+
+<img src="../assets/img/branching_6.png" alt="branching_6" width="500px"/>
+
+### Example 2: RollBack! - Data ingested from a Kafka stream
+
+If you introduce a new code version to production and discover  it has a critical bug, you can simply roll back to the previous version. But you also need to roll back the results of running it.  lakeFS gives you the power to rollback your data if you introduced low quality data. The rollback is an atomic action that prevents the data consumers from receiving low quality data until the issue is resolved.
+
+As previously mentioned, with lakeFS the recommended branching schema is to ingest data to a dedicated branch. When streaming data, we can decide to merge the incoming data to master at a given time interval or checkpoint, depending on how we chose to write it from Kafka. 
+
+You can run quality tests for each merge (as presented in Example 1). Alas, tests are not perfect and we might still introduce low quality data at some point. In such a case, we can rollback master to the last known high quality commit, since our commits for streaming will include the metadata of the Kafka offset. 
+
+<img src="../assets/img/branching_7.png" alt="branching_7" width="500px"/>
+
+_Rolling back a branch to a previous commit using the CLI_
 
    ```shell
-   lakectl branch create \
-      lakefs://example-repo@exp-cnn-tests \
-      --source lakefs://example-repo@main
-   # output:
-   # created branch 'exp-cnn-tests', pointing to commit ID: '~43aP3nUrR17LcX'
+   lakectl branch revert lakefs://example-repo@stream-1 --commit ~79RU9aUsQ9GLnU
    ```
-1. Run the desired algorithm, committing the results along with the parameters used:
 
-   ```shell
-   lakectl commit lakefs://example-repo@exp-cnn-tests \
-      -m 'trying tensorflow cnn' \
-      --meta tf_cnn_param_a=1 \
-      --meta tf_cnn_param_b=2 \
-      --meta tf_version=2.3.0 \
-      --meta algo_git_hash=4d55f2e372
-   # output:
-   # Commit for branch "exp-cnn-tests" done.
-   # 
-   # ID: ~79RU9aUsQ9GLnU
-   # Timestamp: 2020-01-01 12:00:00 +0000 UTC
-   # Parents: ~43aP3nUrR17LcX
-   ```
-1. By being able to address different commits directly, we can compare results and experiment with the generated models easily. To read from a specific commit we can pass its ID instead of the branch name when calling S3:
-   
-   ```
-   s3://example-repo/~79RU9aUsQ9GLnU/models/user-recommendations/
-   ```
-1. Since we store the parameters as metadata for each commit, we can use multiple models simultaneously - comparing them and monitoring their results.
+### Example 3: Cross collection consistency
 
-### Keeping experiment branches up to date
-{: .no_toc }
+We often need consistency between different data collections. A few examples may be:
+ - To join different collections in order to create a unified view of an account, a user or another entity we measure.
+ - To introduce the same data in different formats
+ - To introduce the same data with a different leading index or sorting due to performance considerations
 
-While snapshot isolation is a desired attribute, and ensures data doesn't change under our feet, we sometime want to explicitly ask to see more up to date data in our branch.
+lakeFS will help ensure you introduce only consistent data to your consumers by exposing the new collections and their join in one atomic action to master. Once you consumed the collections on a different branch, and only when both are synchronized, we calculated the join and merged to master. 
 
-In lakeFS this is done by merging in the opposite direction - from the main branch into our experiment branch:
+In this example you can see two data sets (Sales data and Marketing data) consumed each to its own independent branch, and after the write of both data sets is completed, they are merged to a different branch (leads branch) where the join ETL runs and creates a joined collection by account. The joined table is then merged to master.
+The same logic can apply if the data is ingested in streaming, using standard formats, or formats that allow upsert/delete such as Apache Hudi, Delta Lake or Iceberg.
 
-```shell
-lakectl merge lakefs://example-repo@main lakefs://example-repo@exp-cnn-tests   
-# output:
-# new: 2592 modified: 12 removed: 1439 
-```
-
-## Use case #5 - Ad-hoc exploration and experimentation
-
-Sometimes we don't have a structured experiment or workflow, we simply want to play with the data - test out completely new algorithms, introduce new technologies or simply try out something we're not sure of its results.
-
-For this, the following guarantees are required:
-
-1. **Isolation** - We want our experiments to have no effect on production unless we explicitly decide otherwise.
-1. **Production safety** - We want to be able to "rewind" to a previous state in case anything goes wrong.
-
-**Recommended model:** Branch(es) per user, keeps up-to-date from a main branch, never merged back
-{: .note .note-info }
-
-![user branching model](../assets/img/user_branching_model.png)
-
-1. Start by creating a branch for the given user
-   
-   ```shell
-   lakectl branch create \
-      lakefs://example-repo@user-janedoe \
-      --source lakefs://example-repo@main
-   # output:
-   # created branch 'user-janedoe', pointing to commit ID: '~79RU9aUsQ9GLnU'
-   ```
-1. Run whatever we want in our isolated branch by reading and writing from `s3://example-repo/user-janedoe/collections/...`
-1. When we're done, we can throw away this branch
-
-   ```shell
-   lakectl branch revert lakefs://example-repo@user-janedoe
-   # Are you sure you want to revert all uncommitted changes?: y
-   lakectl branch delete lakefs://example-repo@user-janedoe
-   # Are you sure you want to delete branch?: y
-   ```
-1. Alternatively, if we do want to keep our branch around, but want to see up to date data, we can merge main into our user branch
-
-   ```shell
-   lakectl merge lakefs://example-repo@main lakefs://example-repo@user-janedoe   
-   # output:
-   # new: 1927 modified: 3 removed: 782 
-   ```
+<img src="../assets/img/branching_8.png" alt="branching_8" width="500px"/>

@@ -14,12 +14,15 @@ import (
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/config"
+	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/client/retention"
@@ -33,7 +36,7 @@ import (
 )
 
 func TestHandler_ListRepositoriesHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -61,9 +64,12 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 	t.Run("list some repos", func(t *testing.T) {
 		// write some repos
 		ctx := context.Background()
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master"))
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "foo2", "s3://foo1", "master"))
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "foo3", "s3://foo1", "master"))
+		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = deps.cataloger.CreateRepository(ctx, "foo2", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = deps.cataloger.CreateRepository(ctx, "foo3", "s3://foo1", "master")
+		testutil.Must(t, err)
 
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
 			httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
@@ -132,7 +138,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 }
 
 func TestHandler_GetRepoHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -157,8 +163,9 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 
 	t.Run("get existing repo", func(t *testing.T) {
 		const testBranchName = "non-default"
-		testutil.Must(t,
-			deps.cataloger.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName))
+		_, err := deps.cataloger.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName)
+		testutil.Must(t, err)
+
 		resp, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
 			Repository: "foo1",
 		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
@@ -175,7 +182,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 }
 
 func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -187,7 +194,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 
 	ctx := context.Background()
 	t.Run("get missing branch", func(t *testing.T) {
-		err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +208,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	})
 
 	t.Run("get branch log", func(t *testing.T) {
-		err := deps.cataloger.CreateRepository(ctx, "repo2", "ns1", "master")
+		_, err := deps.cataloger.CreateRepository(ctx, "repo2", "ns1", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -224,7 +231,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
-		const expectedCommits = commitsLen + 1 // one for the branch creation
+		const expectedCommits = commitsLen + 2 // one for the branch creation + import branch
 		commitsLog := resp.GetPayload().Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
@@ -233,7 +240,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 }
 
 func TestHandler_GetCommitHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -259,7 +266,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 
 	t.Run("get existing commit", func(t *testing.T) {
 		ctx := context.Background()
-		err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
+		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
 			catalog.Entry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"},
@@ -291,7 +298,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 }
 
 func TestHandler_CommitHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -321,13 +328,13 @@ func TestHandler_CommitHandler(t *testing.T) {
 
 	t.Run("commit success", func(t *testing.T) {
 		ctx := context.Background()
-		testutil.MustDo(t, "create repo foo1",
-			deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master"))
+		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
+		testutil.MustDo(t, "create repo foo1", err)
 		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
 			catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil},
 			catalog.CreateEntryParams{},
 		))
-		_, err := clt.Commits.Commit(&commits.CommitParams{
+		_, err = clt.Commits.Commit(&commits.CommitParams{
 			Branch: "master",
 			Commit: &models.CommitCreation{
 				Message:  swag.String("some message"),
@@ -342,7 +349,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 }
 
 func TestHandler_CreateRepositoryHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -356,7 +363,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
 				StorageNamespace: swag.String("s3://foo-bucket/"),
-				ID:               swag.String("my-new-repo"),
+				Name:             swag.String("my-new-repo"),
 				DefaultBranch:    "master",
 			},
 		}, bauth)
@@ -372,14 +379,14 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 
 	t.Run("create repo duplicate", func(t *testing.T) {
 		ctx := context.Background()
-		err := deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo1/", "master")
+		_, err := deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo1/", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
 		_, err = clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
 				StorageNamespace: swag.String("s3://foo-bucket/"),
-				ID:               swag.String("repo2"),
+				Name:             swag.String("repo2"),
 				DefaultBranch:    "master",
 			},
 		}, bauth)
@@ -391,7 +398,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteRepositoryHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -403,9 +410,10 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 
 	ctx := context.Background()
 	t.Run("delete repo success", func(t *testing.T) {
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master"))
+		_, err := deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master")
+		testutil.Must(t, err)
 
-		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
+		_, err = clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			Repository: "my-new-repo",
 		}, bauth)
 
@@ -430,11 +438,15 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "rr0", "s3://foo1", "master"))
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "rr1", "s3://foo1", "master"))
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "rr11", "s3://foo1", "master"))
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "rr2", "s3://foo1", "master"))
-		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
+		_, err := deps.cataloger.CreateRepository(ctx, "rr0", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = deps.cataloger.CreateRepository(ctx, "rr1", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = deps.cataloger.CreateRepository(ctx, "rr11", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = deps.cataloger.CreateRepository(ctx, "rr2", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			Repository: "rr1",
 		}, bauth)
 
@@ -458,7 +470,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_ListBranchesHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -472,7 +484,8 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 
 	t.Run("list branches only default", func(t *testing.T) {
 		ctx := context.Background()
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
+		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
+		testutil.Must(t, err)
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:     swag.Int64(-1),
 			Repository: "repo1",
@@ -480,14 +493,17 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error listing branches: %s", err)
 		}
-		if len(resp.GetPayload().Results) != 1 {
-			t.Fatalf("expected 1 branch, got %d", len(resp.GetPayload().Results))
+		const expectedBranchesLen = 2 // branch creation and import branch
+		branchesLen := len(resp.GetPayload().Results)
+		if branchesLen != expectedBranchesLen {
+			t.Fatalf("ListBranches len=%d, expected %d", branchesLen, expectedBranchesLen)
 		}
 	})
 
 	t.Run("list branches pagination", func(t *testing.T) {
 		ctx := context.Background()
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo2", "master"))
+		_, err := deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo2", "master")
+		testutil.Must(t, err)
 		for i := 0; i < 7; i++ {
 			branchName := "master" + strconv.Itoa(i+1)
 			_, err := deps.cataloger.CreateBranch(ctx, "repo2", branchName, "master")
@@ -536,7 +552,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 }
 
 func TestHandler_GetBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -549,7 +565,8 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	t.Run("get default branch", func(t *testing.T) {
 		ctx := context.Background()
 		const testBranch = "master"
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch))
+		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
+		testutil.Must(t, err)
 		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			Branch:     testBranch,
 			Repository: "repo1",
@@ -585,7 +602,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 }
 
 func TestHandler_CreateBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -597,7 +614,8 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch success", func(t *testing.T) {
 		ctx := context.Background()
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
+		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
+		testutil.Must(t, err)
 		const newBranchName = "master2"
 		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
@@ -643,7 +661,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -655,8 +673,9 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 
 	t.Run("delete branch success", func(t *testing.T) {
 		ctx := context.Background()
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master"))
-		_, err := deps.cataloger.CreateBranch(ctx, "my-new-repo", "master2", "master")
+		_, err := deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master")
+		testutil.Must(t, err)
+		_, err = deps.cataloger.CreateBranch(ctx, "my-new-repo", "master2", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -689,7 +708,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -700,7 +719,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	ctx := context.Background()
-	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -779,7 +798,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -789,8 +808,8 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	testutil.Must(t,
-		deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master"))
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	testutil.Must(t, err)
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 			Path:            "foo/bar",
@@ -877,7 +896,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	ctx := context.Background()
 	// create user
@@ -887,7 +906,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	// setup client
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
-	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -984,7 +1003,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -994,7 +1013,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1084,7 +1103,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1094,7 +1113,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1157,7 +1176,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1254,7 +1273,7 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 }
 
 func TestHandler_RetentionPolicyHandlers(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1264,7 +1283,7 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1311,9 +1330,122 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 	})
 }
 
+func TestHandler_ConfigHandlers(t *testing.T) {
+	const BlockstoreType = "s3"
+	handler, deps := getHandler(t, BlockstoreType)
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	t.Run("Get config (currently only block store type)", func(t *testing.T) {
+		resp, err := clt.Config.GetConfig(&config.GetConfigParams{}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got := resp.GetPayload()
+
+		if got.BlockstoreType != BlockstoreType {
+			t.Errorf("expected to get %s, got %s", BlockstoreType, got.BlockstoreType)
+		}
+	})
+}
+
+func TestHandler_ContinuousExportHandlers(t *testing.T) {
+	const (
+		repo          = "repo-for-continuous-export-test"
+		branch        = "main"
+		anotherBranch = "notMain"
+	)
+	handler, deps := getHandler(t, "")
+
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	ctx := context.Background()
+	_, err := deps.cataloger.CreateRepository(ctx, repo, "s3://foo1", branch)
+	testutil.MustDo(t, "create repository", err)
+
+	config := models.ContinuousExportConfiguration{
+		ExportPath:             strfmt.URI("s3://bucket/export"),
+		ExportStatusPath:       strfmt.URI("s3://bucket/report"),
+		LastKeysInPrefixRegexp: []string{"^_success$", ".*/_success$"},
+	}
+
+	res, err := clt.Export.SetContinuousExport(&export.SetContinuousExportParams{
+		Repository: repo,
+		Branch:     branch,
+		Config:     &config,
+	}, bauth)
+	testutil.MustDo(t, "initial continuous export configuration", err)
+	if res == nil {
+		t.Fatalf("initial continuous export configuration: expected OK but got nil")
+	}
+
+	t.Run("get missing branch configuration", func(t *testing.T) {
+		res, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
+			Repository: repo,
+			Branch:     anotherBranch,
+		}, bauth)
+		if err == nil || res != nil {
+			t.Fatalf("expected get to return an error but got result %v, error nil", res)
+		}
+		if _, ok := err.(*export.GetContinuousExportNotFound); !ok {
+			t.Errorf("expected get to return not found but got %T %+v", err, err)
+		}
+	})
+
+	t.Run("get configured branch", func(t *testing.T) {
+		got, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
+			Repository: repo,
+			Branch:     branch,
+		}, bauth)
+		if err != nil {
+			t.Fatalf("expected get to return result but got %s", err)
+		}
+		if diffs := deep.Equal(config, *got.GetPayload()); diffs != nil {
+			t.Errorf("got different configuration: %s", diffs)
+		}
+	})
+
+	t.Run("overwrite configuration", func(t *testing.T) {
+		newConfig := models.ContinuousExportConfiguration{
+			ExportPath:             strfmt.URI("s3://better-bucket/export"),
+			ExportStatusPath:       strfmt.URI("s3://better-bucket/report"),
+			LastKeysInPrefixRegexp: nil,
+		}
+		_, err := clt.Export.SetContinuousExport(&export.SetContinuousExportParams{
+			Repository: repo,
+			Branch:     branch,
+			Config:     &newConfig,
+		}, bauth)
+		if err != nil {
+			t.Errorf("failed to overwrite continuous export configuration: %s", err)
+		}
+		got, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
+			Repository: repo,
+			Branch:     branch,
+		}, bauth)
+		if err != nil {
+			t.Fatalf("expected get to return result but got %s", err)
+		}
+		if diffs := deep.Equal(newConfig, *got.GetPayload()); diffs != nil {
+			t.Errorf("got different configuration: %s", diffs)
+		}
+	})
+}
+
 func Test_setupLakeFSHandler(t *testing.T) {
 	// get handler with DB without apply the DDL
-	handler, deps := getHandler(t, testutil.WithGetDBApplyDDL(false))
+	handler, deps := getHandler(t, "", testutil.WithGetDBApplyDDL(false))
 
 	srv := httptest.NewServer(handler)
 	defer srv.Close()

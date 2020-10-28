@@ -2,7 +2,7 @@
 layout: default
 title: Other Installations
 parent: Quick Start
-nav_order: 99
+nav_order: 50
 has_children: false
 ---
 

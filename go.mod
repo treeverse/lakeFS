@@ -3,10 +3,11 @@ module github.com/treeverse/lakefs
 go 1.15
 
 require (
-	cloud.google.com/go v0.63.0 // indirect
+	cloud.google.com/go v0.63.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
+	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
@@ -15,6 +16,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
+	github.com/georgysavva/scany v0.2.6
 	github.com/go-openapi/errors v0.19.6
 	github.com/go-openapi/loads v0.19.5
 	github.com/go-openapi/runtime v0.19.20
@@ -36,18 +38,18 @@ require (
 	github.com/jackc/pgconn v1.6.4
 	github.com/jackc/pgerrcode v0.0.0-20190803225404-afa3381909a6
 	github.com/jackc/pgproto3/v2 v2.0.4 // indirect
+	github.com/jackc/pgtype v1.4.2
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/klauspost/compress v1.10.10 // indirect
-	github.com/lib/pq v1.8.0 // indirect
+	github.com/lib/pq v1.8.0
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.2 // indirect
 	github.com/manifoldco/promptui v0.7.0
-	github.com/mattn/go-sqlite3 v1.14.0 // indirect
+	github.com/matoous/go-nanoid v1.4.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/mr-tron/base58 v1.2.0
@@ -63,6 +65,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v1.1.1 // indirect
 	github.com/spf13/afero v1.3.4 // indirect
+	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1

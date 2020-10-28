@@ -14,7 +14,7 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 
 1. Your security groups should allow the load balancer to access the lakeFS server.
 1. Create a target group with a listener for port 8000.
-1. Setup TLS termination using the domain names you wish to use for both endpoints (i.e. `s3.lakefs.example.com`, `*.s3.lakefs.example.com`, `lakefs.example.com`).
+1. Setup TLS termination using the domain names you wish to use for both endpoints (e.g. `s3.lakefs.example.com`, `*.s3.lakefs.example.com`, `lakefs.example.com`).
 1. Configure the health-check to use the exposed `/_health` URL
 
 ## DNS

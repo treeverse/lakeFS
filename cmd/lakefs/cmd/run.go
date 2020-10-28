@@ -53,10 +53,13 @@ var runCmd = &cobra.Command{
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
 
+		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+			logger.WithError(err).Fatal("Migration version mismatch")
+		} else if err != nil {
+			logger.WithError(err).Warn("Failed on schema validation")
+		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
-		defer func() {
-			_ = dbPool.Close()
-		}()
+		defer dbPool.Close()
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
@@ -75,20 +78,12 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-
-		meta := auth.NewDBMetadataManager(config.Version, dbPool)
-
-		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
-
-		// collect and write metadata
-		metadata, err := meta.Write()
-		if err != nil {
-			logger.WithError(err).Debug("failed to collect account metadata")
-		}
-
-		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
+		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		metadata := stats.NewMetadata(logger, cfg, authMetadataManager, cloudMetadataProvider)
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// send metadata
-		stats.CollectMetadata(metadata)
+		bufferedCollector.CollectMetadata(metadata)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 		defer func() {
@@ -106,8 +101,8 @@ var runCmd = &cobra.Command{
 			cataloger,
 			blockStore,
 			authService,
-			meta,
-			stats,
+			authMetadataManager,
+			bufferedCollector,
 			retention,
 			migrator,
 			dedupCleaner,
@@ -121,14 +116,14 @@ var runCmd = &cobra.Command{
 			blockStore,
 			authService,
 			cfg.GetS3GatewayDomainName(),
-			stats,
+			bufferedCollector,
 			dedupCleaner,
 		)
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		go stats.Run(ctx)
+		go bufferedCollector.Run(ctx)
 
-		stats.CollectEvent("global", "run")
+		bufferedCollector.CollectEvent("global", "run")
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{
@@ -152,7 +147,7 @@ var runCmd = &cobra.Command{
 
 		<-done
 		cancelFn()
-		<-stats.Done()
+		<-bufferedCollector.Done()
 	},
 }
 
@@ -178,7 +173,7 @@ const runBanner = `
 `
 
 func printWelcome(w io.Writer) {
-	fmt.Fprint(w, runBanner)
+	_, _ = fmt.Fprint(w, runBanner)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
