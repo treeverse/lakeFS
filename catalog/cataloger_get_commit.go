@@ -31,7 +31,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err := tx.GetStruct(&rawCommit, query, branchID, ref.CommitID); err != nil {
 			return nil, err
 		}
-		commit := convertRawCommit(&rawCommit)
+		commit := convertRawCommit(rawCommit)
 		return commit, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 	return res.(*CommitLog), err
 }
 
-func convertRawCommit(raw *commitLogRaw) *CommitLog {
+func convertRawCommit(raw commitLogRaw) *CommitLog {
 	metadata := raw.Metadata
 	if metadata == nil {
 		metadata = make(Metadata)
