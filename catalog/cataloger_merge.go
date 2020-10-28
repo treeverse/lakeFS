@@ -228,10 +228,8 @@ func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 	var err error
 	var childNewLineage *string
 	var parentLastLineage string
-
-	err = tx.GetPrimitive(&parentLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM catalog_commits
-												WHERE branch_id = $1 AND merge_type = 'from_parent' ORDER BY branch_id,commit_id DESC`, parentID)
-	if err != nil && !errors.As(err, &db.ErrNotFound) {
+	leftLastCommitID, err := getLastCommitIDByBranchID(tx, leftID)
+	if err != nil {
 		return err
 	}
 	if relation == RelationTypeFromParent {

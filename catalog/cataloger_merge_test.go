@@ -7,9 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-
-
-	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )

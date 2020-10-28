@@ -123,7 +123,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 			differences = append(differences, d)
 		}
 
-		return differences, nil
+		return differences, err
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, false, err
@@ -223,15 +223,15 @@ func (c *cataloger) newDiffFromChild(tx db.Tx, params *doDiffParams) (*diffScann
 func (c *cataloger) newDiffSameBranch(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
 	// get child last commit of merge from parent
 	scanner := new(diffScanner)
+	scanner.relation = RelationTypeSame
 	scanner.diffParams = params
 	scanner.diffEvaluator = evaluateSameBranch
-
 
 	scannerOpts := DBScannerOptions{
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
 	}
-	scanner.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
+	scanner.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
 	scanner.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
 	scanner.diffSummary = newSummaryMap()
 	return scanner, nil
