@@ -74,8 +74,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 func convertRawCommits(rawCommits []commitLogRaw) []*CommitLog {
 	commits := make([]*CommitLog, len(rawCommits))
 	for i, commit := range rawCommits {
-		copy := commit
-		commits[i] = convertRawCommit(&copy)
+		commits[i] = convertRawCommit(commit)
 	}
 	return commits
 }
