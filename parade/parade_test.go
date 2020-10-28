@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -15,10 +16,11 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4/pgxpool"
+	dbwrapper "github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/testutil"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 )
 
@@ -30,7 +32,7 @@ const (
 var (
 	pool        *dockertest.Pool
 	databaseURI string
-	db          *sqlx.DB
+	db          *pgxpool.Pool
 
 	postgresUrl = flag.String("postgres-url", "", "Postgres connection string.  If unset, run a Postgres in a Docker container.  If set, should have ddl.sql already loaded.")
 	parallelism = flag.Int("parallelism", 16, "Number of concurrent client worker goroutines.")
@@ -76,27 +78,33 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 		log.Fatalf("could not expire postgres container")
 	}
 
+	ctx := context.Background()
+
 	// create connection
-	var conn *sqlx.DB
+	var pgPool *pgxpool.Pool
 	uri := fmt.Sprintf("postgres://parade:parade@localhost:%s/"+dbName+"?sslmode=disable", resource.GetPort("5432/tcp"))
 	err = pool.Retry(func() error {
 		var err error
-		conn, err = sqlx.Connect("pgx", uri)
+		pgPool, err = pgxpool.Connect(ctx, uri)
 		if err != nil {
 			return err
 		}
-		return conn.Ping()
+		return dbwrapper.Ping(ctx, pgPool)
 	})
 	if err != nil {
 		log.Fatalf("could not connect to postgres: %s", err)
 	}
 
 	// Run the DDL
-	if _, err = sqlx.LoadFile(conn, "./ddl.sql"); err != nil {
+	contents, err := ioutil.ReadFile("./ddl.sql")
+	if err != nil {
+		log.Fatalf("read DDL file ./ddl.sql: %s", err)
+	}
+	if _, err = pgPool.Exec(ctx, string(contents)); err != nil {
 		log.Fatalf("exec command file ./ddl.sql: %s", err)
 	}
 
-	_ = conn.Close()
+	pgPool.Close()
 
 	// return DB URI
 	return uri, closer
@@ -109,10 +117,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("could not connect to Docker: %s", err)
 	}
+	ctx := context.Background()
 	var dbCleanup func()
 	databaseURI, dbCleanup = runDBInstance(pool)
 	defer dbCleanup() // In case we don't reach the cleanup action.
-	db = sqlx.MustConnect("pgx", databaseURI)
+	db, err = pgxpool.Connect(ctx, databaseURI)
+	if err != nil {
+		log.Fatalf("open PostgreSQL pool: %s", err)
+	}
 	defer db.Close()
 	code := m.Run()
 	if _, ok := os.LookupEnv("GOTEST_KEEP_DB"); !ok && dbCleanup != nil {
@@ -135,16 +147,13 @@ func intAddr(i int) *int {
 
 func scanIDs(t *testing.T, prefix string) []parade.TaskID {
 	t.Helper()
-	rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
+	ctx := context.Background()
+	rows, err := db.Query(ctx, `SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
 	if err != nil {
 		t.Fatalf("[I] select remaining IDs for prefix %s: %s", prefix, err)
 	}
 
-	defer func() {
-		if err := rows.Close(); err != nil {
-			t.Fatalf("[I] remaining ids iterator close: %s", err)
-		}
-	}()
+	defer rows.Close()
 	gotIDs := make([]parade.TaskID, 0)
 	for rows.Next() {
 		var id parade.TaskID

@@ -33,7 +33,7 @@ func TestConnectDB(t *testing.T) {
 				t.Errorf("ConnectDB() got no database instance when expected")
 			}
 			if err != nil && got != nil {
-				_ = got.Close()
+				got.Close()
 			}
 		})
 	}

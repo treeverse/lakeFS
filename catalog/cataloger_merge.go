@@ -9,7 +9,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -123,8 +122,18 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				mergeResult.Summary[k] = v
 			}
 		}
+
 		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
-		return mergeResult, err
+
+		for _, hook := range c.hooks.PostMerge {
+			err = hook(ctx, tx, mergeResult)
+			if err != nil {
+				// Roll tx back if a hook failed
+				return nil, err
+			}
+		}
+
+		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
 }
@@ -138,14 +147,14 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 		(select max(commit_id) from catalog_commits where branch_id=$2)as max_left_commit
 		from catalog_commits where branch_id = $1 and merge_source_branch = $2
 		order by branch_id,commit_id desc) t`
-	err := tx.Get(&hasCommitDifferences, mergeCommitsQuery, rightID, leftID)
+	err := tx.GetPrimitive(&hasCommitDifferences, mergeCommitsQuery, rightID, leftID)
 	if errors.Is(err, db.ErrNotFound) {
 		// not found errors indicate there is no merge record for this relation
 		//  a parent to child merge record is written when the branch is created,
 		// so this may happen only on first child to parent merge.
 		// in this case - a check is done if any commits where done to child.
 		const checkChildCommitsQuery = "select exists(select * from catalog_commits where branch_id = $1 and merge_type='none')"
-		err = tx.Get(&hasCommitDifferences, checkChildCommitsQuery, leftID)
+		err = tx.GetPrimitive(&hasCommitDifferences, checkChildCommitsQuery, leftID)
 	}
 	if err != nil {
 		return false, fmt.Errorf("has commit difference: %w", err)
@@ -219,8 +228,10 @@ func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 	var err error
 	var childNewLineage *string
 	var parentLastLineage string
-	leftLastCommitID, err := getLastCommitIDByBranchID(tx, leftID)
-	if err != nil {
+
+	err = tx.GetPrimitive(&parentLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM catalog_commits
+												WHERE branch_id = $1 AND merge_type = 'from_parent' ORDER BY branch_id,commit_id DESC`, parentID)
+	if err != nil && !errors.As(err, &db.ErrNotFound) {
 		return err
 	}
 	if relation == RelationTypeFromParent {
@@ -245,7 +256,8 @@ func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 	return nil
 }
 
-func (c *cataloger) mergeNonDirect(_ context.Context, _ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
+func (c *cataloger) mergeNonDirect(_ context.Context, _ db.Tx, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
+
 	c.log.WithFields(logging.Fields{
 		"commit_id":      previousMaxCommitID,
 		"next_commit_id": nextCommitID,

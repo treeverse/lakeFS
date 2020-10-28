@@ -52,7 +52,7 @@ var importCmd = &cobra.Command{
 		}
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer func() { _ = dbPool.Close() }()
+		defer dbPool.Close()
 
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 		defer func() { _ = cataloger.Close() }()

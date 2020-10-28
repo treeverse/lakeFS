@@ -226,7 +226,7 @@ func ReturnTask(ctx context.Context, taskId TaskId, token PerformanceToken, resu
 ##### WaitForTask
 
 ```go
-// WaitForTask waits for taskId (which must have been started wth PostResult) to finish and
+// WaitForTask waits for taskId (which must have been started with PostResult) to finish and
 // returns it.  It returns immediately the task has already finished.
 func WaitForTask(ctx context.Context, taskId TaskId) (TaskData, error)
 ```
