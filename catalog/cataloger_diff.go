@@ -190,7 +190,6 @@ func (c *cataloger) newDiffFromParent(tx db.Tx, params *doDiffParams) (*diffScan
 	}
 	scanner.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
 	scanner.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
-	//scanner.childLineage, err = scanner.rightScanner.ReadLineage()
 	scanner.childLineage, err = getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
 		return nil, err
@@ -336,7 +335,6 @@ func evaluateParentToChild(c *diffScanner, leftEntry, rightEntry *DBScannerEntry
 
 func evaluateChildToParent(c *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
 	if isNoneDiff(leftEntry, rightEntry) {
-
 		return DifferenceTypeNone
 	}
 	if rightEntry != nil {
@@ -359,7 +357,6 @@ func evaluateChildToParent(c *diffScanner, leftEntry *DBScannerEntry, rightEntry
 
 	// if target found - changed
 	return DifferenceTypeChanged
-
 }
 
 func evaluateSameBranch(_ *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
@@ -378,7 +375,6 @@ func evaluateSameBranch(_ *diffScanner, leftEntry *DBScannerEntry, rightEntry *D
 	// 1. both entries exist and are not deleted
 	// 2. their checksum do not match (would be caught by is NoneDiff)
 	return DifferenceTypeChanged
-
 }
 
 func isNoneDiff(leftEntry, rightEntry *DBScannerEntry) bool {
@@ -450,7 +446,7 @@ func lineageCommitIDByBranchID(lineage []lineageCommit, branchID int64) CommitID
 	return UncommittedID
 }
 
-//prepareDiffAdditionalFields - make sure we have the required additional fields for diff
+// prepareDiffAdditionalFields - make sure we have checksum field for diff
 func prepareDiffAdditionalFields(fields []string) []string {
 	if !stringIsInSlice(fields, DBEntryFieldChecksum) {
 		return append(fields, DBEntryFieldChecksum)
