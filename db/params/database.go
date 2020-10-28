@@ -8,5 +8,4 @@ type Database struct {
 	MaxOpenConnections    int
 	MaxIdleConnections    int
 	ConnectionMaxLifetime time.Duration
-	DisableAutoMigrate    bool
 }
