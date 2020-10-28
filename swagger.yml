@@ -91,6 +91,7 @@ definitions:
     properties:
       id:
         type: string
+        pattern: '^[a-z0-9][a-z0-9-]{2,62}$'
       storage_namespace:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
