@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -32,9 +33,6 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	}); err != nil {
 		return nil, err
 	}
-
-	ctx, cancel := c.withDiffResultsContext(ctx)
-	defer cancel()
 
 	mergeResult := &MergeResult{}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
@@ -91,7 +89,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 			differences = append(differences, v)
 			if len(differences) >= MergeBatchSize {
-				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID)
+				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID, relation)
 				if err != nil {
 					return nil, err
 				}
@@ -102,7 +100,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID)
+		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID, relation)
 		if err != nil {
 			return nil, err
 		}
@@ -156,6 +154,7 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 }
 
 func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, relation RelationType) error {
+	// collect changes that need be applied on the branch
 	paths := make([]string, 0, MergeBatchSize)
 	ctidArray := make([]string, 0, MergeBatchSize)
 	var tombstonePaths []string
@@ -167,12 +166,12 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			diffRec.EntryCtid != nil {
 			ctidArray = append(ctidArray, *diffRec.EntryCtid)
 		}
-		if diffRec.DiffType == DifferenceTypeRemoved && (diffRec.SourceBranch != rightID) && relation == RelationTypeFromChild {
+		if diffRec.DiffType == DifferenceTypeRemoved && diffRec.parentTombstoneNeeded {
 			tombstonePaths = append(paths, diffRec.Entry.Path)
-
 		}
 	}
 	if len(paths) > 0 {
+		// set entries that exist in the right branch as deleted by entries that were removed or changed
 		setMaxCommit := sq.Update("catalog_entries").
 			Set("max_commit", previousMaxCommitID).
 			Where("branch_id = ? and max_commit = ?", rightID, MaxCommitID).
@@ -187,6 +186,7 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 		}
 	}
 	if len(ctidArray) > 0 {
+		// copy entries from left to right
 		internalSelect := sq.Select(int64Str(rightID), "path", "physical_address", "creation_date", "size", "checksum", "metadata", int64Str(int64(nextCommitID))).
 			From("catalog_entries").
 			Where(sq.Eq{"ctid": ctidArray})
@@ -202,13 +202,15 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			return err
 		}
 	}
-	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
-				SELECT $1,path,'',0,'','{}',$2,0
-				WHERE diff_type=$3 AND source_branch<>$1`,
-		leftID, nextCommitID, DifferenceTypeRemoved)
-	//SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three')) AS t (num,letter)
-	if err != nil {
-		return err
+	// insert tombsotnes into parent branch that has a removed entry in its lineage
+	if len(tombstonePaths) > 0 {
+		values := "(VALUES ('" + strings.Join(tombstonePaths, "'),('") + "')) AS t(path)"
+		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
+				SELECT $1,path,'',0,'','{}',$2,0 FROM ` + values
+		_, err := tx.Exec(sql, rightID, previousMaxCommitID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
