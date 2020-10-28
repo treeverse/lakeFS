@@ -54,7 +54,7 @@ var runCmd = &cobra.Command{
 		dbParams := cfg.GetDatabaseParams()
 
 		if err := db.ValidateSchemaUpToDate(dbParams); err != nil {
-			logger.WithError(err).Warn("Failed on schema validation")
+			logger.WithError(err).Fatal("Failed on schema validation")
 		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
 		defer func() {
