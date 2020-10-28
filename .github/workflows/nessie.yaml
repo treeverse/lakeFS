@@ -128,7 +128,7 @@ jobs:
       - name: lakeFS Logs
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker-compose -f nessie/ops/docker-compose.yaml log lakefs
+        run: docker-compose -f nessie/ops/docker-compose.yaml logs lakefs
       - name: Export DB
         if: ${{ always() }}
         env:
