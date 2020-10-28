@@ -16,10 +16,14 @@ CREATE TABLE IF NOT EXISTS catalog_branches_export_state (
 ALTER TABLE catalog_branches_export_state
     ADD CONSTRAINT branches_export_state_branches_fk
     FOREIGN KEY (branch_id) REFERENCES catalog_branches(id)
+    -- Does *not* reference catalog_branches_export - state is independent of configuration,
+    -- e.g. when configuration is changed.
     ON DELETE CASCADE;
 
 ALTER TABLE catalog_branches_export_state
     ADD CONSTRAINT catalog_branches_export_error_on_failure
     CHECK ((state = 'export-failed') = (error_message IS NOT NULL));
+
+-- BUG(ariels): reset export state when catalog_branches_export changes it physical address.
 
 END;
