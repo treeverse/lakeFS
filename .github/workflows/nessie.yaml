@@ -125,6 +125,10 @@ jobs:
         run: |
             FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
+      - name: lakeFS Logs
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
       - name: Export DB
         if: ${{ always() }}
         env:
