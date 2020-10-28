@@ -43,7 +43,6 @@ require (
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/klauspost/compress v1.10.10 // indirect
 	github.com/lib/pq v1.8.0
