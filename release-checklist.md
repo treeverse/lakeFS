@@ -11,8 +11,8 @@
     - Try to sort the list by importance
     - Update the description of items if needed so the reader will understand better what this release changes
     - Migration should be noted and documented outside the changelog (check the changelog for migrate: prefix):
-    - How to run the migration if needed
-    - Whether lakeFS service needs to be down while migration is running (backward compatibility)
+        - How to run the migration if needed
+        - Whether lakeFS service needs to be down while migration is running (backward compatibility)
 - [ ] Uncheck 'This is a pre-release'
 - [ ] Update [charts](https://github.com/treeverse/charts) repository (PR, Approve and Commit)
     - Bump the `version` patch level (`charts/lakefs/Chart.yaml`)
