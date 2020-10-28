@@ -363,7 +363,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
 				StorageNamespace: swag.String("s3://foo-bucket/"),
-				ID:               swag.String("my-new-repo"),
+				Name:             swag.String("my-new-repo"),
 				DefaultBranch:    "master",
 			},
 		}, bauth)
@@ -386,7 +386,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 		_, err = clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
 				StorageNamespace: swag.String("s3://foo-bucket/"),
-				ID:               swag.String("repo2"),
+				Name:             swag.String("repo2"),
 				DefaultBranch:    "master",
 			},
 		}, bauth)
