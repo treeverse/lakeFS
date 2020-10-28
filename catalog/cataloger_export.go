@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/db"
 )
@@ -58,14 +59,8 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
-		var rec ExportConfigurationForBranch
-		if err = rows.StructScan(&rec); err != nil {
-			return nil, fmt.Errorf("scan configuration %+v: %w", rows, err)
-		}
-		ret = append(ret, rec)
-	}
-	return ret, nil
+	err = pgxscan.ScanAll(&ret, rows)
+	return ret, err
 }
 
 func (c *cataloger) PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error {

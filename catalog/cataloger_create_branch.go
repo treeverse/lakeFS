@@ -34,14 +34,14 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 
 		// get source branch id and
 		var sourceBranchID int
-		if err := tx.Get(&sourceBranchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
+		if err := tx.GetPrimitive(&sourceBranchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
 			repoID, sourceBranch); err != nil {
 			return nil, fmt.Errorf("source branch id: %w", err)
 		}
 
 		// next id for branch
 		var branchID int64
-		if err := tx.Get(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
+		if err := tx.GetPrimitive(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
 			return nil, fmt.Errorf("next branch id: %w", err)
 		}
 

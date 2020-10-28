@@ -59,9 +59,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Warn("Failed on schema validation")
 		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
-		defer func() {
-			_ = dbPool.Close()
-		}()
+		defer dbPool.Close()
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)

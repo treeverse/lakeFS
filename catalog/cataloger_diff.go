@@ -233,7 +233,7 @@ func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, params *doDiff
 	if err != nil {
 		return fmt.Errorf("get child last commit sql: %w", err)
 	}
-	err = tx.Get(&childLastFromParentCommitID, query, args...)
+	err = tx.GetPrimitive(&childLastFromParentCommitID, query, args...)
 	if err != nil {
 		return fmt.Errorf("get child last commit failed: %w", err)
 	}
@@ -456,7 +456,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, params *doDiffP
 	return batch.Flush()
 }
 
-func createDiffResultsTable(ctx context.Context, executor sq.Execer) (string, error) {
+func createDiffResultsTable(ctx context.Context, executor db.Tx) (string, error) {
 	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
 	if err != nil {
 		return "", err
@@ -587,7 +587,7 @@ func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentI
 		if err != nil {
 			return nil, err
 		}
-		err = tx.Get(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
+		err = tx.GetPrimitive(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -706,7 +706,7 @@ func (c *cataloger) getRefsRelationType(tx db.Tx, params *doDiffParams) (Relatio
 	}
 
 	var isDirectRelation bool
-	err := tx.Get(&isDirectRelation,
+	err := tx.GetPrimitive(&isDirectRelation,
 		`select lineage[1]=$1 from catalog_branches where id=$2`, olderBranch, youngerBranch)
 	if err != nil {
 		return RelationTypeNone, err

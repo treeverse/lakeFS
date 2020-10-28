@@ -52,7 +52,7 @@ func insertEntry(tx db.Tx, branchID int64, entry *Entry) (string, error) {
 		dbTime.Time = entry.CreationDate
 		dbTime.Valid = true
 	}
-	err := tx.Get(&ctid, `INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata,creation_date,is_expired,min_commit)
+	err := tx.GetPrimitive(&ctid, `INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata,creation_date,is_expired,min_commit)
                         VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7,NOW()),$8,$9)
 			ON CONFLICT (branch_id,path,min_commit)
 			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, min_commit=EXCLUDED.min_commit, max_commit=$9

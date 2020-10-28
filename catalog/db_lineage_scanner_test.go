@@ -14,7 +14,6 @@ func TestDBLineageScanner(t *testing.T) {
 
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)
-	defer func() { _ = conn.Close() }()
 
 	c := TestCataloger{Cataloger: NewCataloger(conn), DbConnURI: uri}
 	baseBranchName := "b0"

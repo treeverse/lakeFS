@@ -25,19 +25,19 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for import branch
 		var importBranchID int64
-		if err := tx.Get(&importBranchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
+		if err := tx.GetPrimitive(&importBranchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
 			return nil, fmt.Errorf("next id import branch: %w", err)
 		}
 
 		// next id for branch
 		var branchID int64
-		if err := tx.Get(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
+		if err := tx.GetPrimitive(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
 			return nil, fmt.Errorf("next id default branch: %w", err)
 		}
 
 		// next id for repository
 		var repoID int64
-		if err := tx.Get(&repoID, `SELECT nextval('catalog_repositories_id_seq')`); err != nil {
+		if err := tx.GetPrimitive(&repoID, `SELECT nextval('catalog_repositories_id_seq')`); err != nil {
 			return nil, fmt.Errorf("next repository id: %w", err)
 		}
 		if _, err := tx.Exec(`SET CONSTRAINTS catalog_repositories_branches_id_fk DEFERRED`); err != nil {
@@ -60,7 +60,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 
 		// create initial commit for import branch
 		var importCommitID CommitID
-		err := tx.Get(&importCommitID, `INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
+		err := tx.GetPrimitive(&importCommitID, `INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
 			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0)
 			RETURNING commit_id`,
 			importBranchID, CatalogerCommitter, createRepositoryImportCommitMessage)
@@ -77,7 +77,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 
 		// create initial commit on default branch - child of import branch
 		var creationDate time.Time
-		err = tx.Get(&creationDate, `INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,
+		err = tx.GetPrimitive(&creationDate, `INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,
 				previous_commit_id,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0,$4,'from_parent',$5,$6)
 			RETURNING creation_date`,
