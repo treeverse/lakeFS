@@ -2,11 +2,11 @@ package catalog
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -250,7 +250,7 @@ func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPathPr
 	}
 	err = readParams.tx.Select(&readBuf, s, args...)
 	if len(readBuf) == 0 {
-		err = sql.ErrNoRows
+		err = pgx.ErrNoRows
 	}
 	if err != nil {
 		return err

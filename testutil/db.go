@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/gs"
@@ -92,12 +92,13 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 }
 
 func verifyDBConnectionString(uri string) error {
-	conn, err := sqlx.Connect("pgx", uri)
+	ctx := context.Background()
+	pool, err := pgxpool.Connect(ctx, uri)
 	if err != nil {
 		return err
 	}
-	err = conn.Ping()
-	_ = conn.Close()
+	err = db.Ping(ctx, pool)
+	pool.Close()
 	return err
 }
 
@@ -114,6 +115,7 @@ func WithGetDBApplyDDL(apply bool) GetDBOption {
 }
 
 func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) {
+	ctx := context.Background()
 	options := &GetDBOptions{
 		ApplyDDL: true,
 	}
@@ -127,16 +129,21 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 
 	// create connection
 	connURI := fmt.Sprintf("%s&search_path=%s", uri, generatedSchema)
-	conn, err := sqlx.Connect("pgx", connURI)
+	pool, err := pgxpool.Connect(ctx, connURI)
 	if err != nil {
 		t.Fatalf("could not connect to PostgreSQL: %s", err)
 	}
+	err = db.Ping(ctx, pool)
+	if err != nil {
+		pool.Close()
+		t.Fatalf("could not ping PostgreSQL: %s", err)
+	}
 
 	t.Cleanup(func() {
-		_ = conn.Close()
+		pool.Close()
 	})
 
-	database := db.NewSqlxDatabase(conn)
+	database := db.NewPgxDatabase(pool)
 	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
 	})

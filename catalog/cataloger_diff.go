@@ -226,6 +226,7 @@ func (c *cataloger) newDiffSameBranch(tx db.Tx, params *doDiffParams) (*diffScan
 	scanner.diffParams = params
 	scanner.diffEvaluator = evaluateSameBranch
 
+
 	scannerOpts := DBScannerOptions{
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
@@ -335,6 +336,7 @@ func evaluateParentToChild(c *diffScanner, leftEntry, rightEntry *DBScannerEntry
 
 func evaluateChildToParent(c *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
 	if isNoneDiff(leftEntry, rightEntry) {
+
 		return DifferenceTypeNone
 	}
 	if rightEntry != nil {
@@ -423,7 +425,7 @@ func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentI
 		if err != nil {
 			return nil, err
 		}
-		err = tx.Get(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
+		err = tx.GetPrimitive(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -475,7 +477,7 @@ func (c *cataloger) getRefsRelationType(tx db.Tx, params *doDiffParams) (Relatio
 	}
 
 	var isDirectRelation bool
-	err := tx.Get(&isDirectRelation,
+	err := tx.GetPrimitive(&isDirectRelation,
 		`select lineage[1]=$1 from catalog_branches where id=$2`, olderBranch, youngerBranch)
 	if err != nil {
 		return RelationTypeNone, err

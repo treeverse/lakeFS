@@ -9,7 +9,9 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4"
+
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -159,7 +161,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 
 // expiryRows implements ExpiryRows.
 type expiryRows struct {
-	rows           *sqlx.Rows
+	rows           pgx.Rows
 	RepositoryName string
 }
 
@@ -171,13 +173,13 @@ func (e *expiryRows) Err() error {
 	return e.rows.Err()
 }
 
-func (e *expiryRows) Close() error {
-	return e.rows.Close()
+func (e *expiryRows) Close() {
+	e.rows.Close()
 }
 
 func (e *expiryRows) Read() (*ExpireResult, error) {
 	var record retentionQueryRecord
-	err := e.rows.StructScan(&record)
+	err := pgxscan.ScanRow(&record, e.rows)
 	if err != nil {
 		return nil, err
 	}
@@ -281,10 +283,7 @@ func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName strin
 		if err != nil {
 			return nil, fmt.Errorf("updating entries to expire: %w", err)
 		}
-		count, err := result.RowsAffected()
-		if err != nil {
-			return nil, fmt.Errorf("getting number of updated rows: %w", err)
-		}
+		count := result.RowsAffected()
 		return int(count), nil
 	})
 	if err != nil {
@@ -316,11 +315,11 @@ func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName s
 	if err != nil {
 		return 0, err
 	}
-	return result.RowsAffected()
+	return result.RowsAffected(), nil
 }
 
 type StringRows struct {
-	rows *sqlx.Rows
+	rows pgx.Rows
 }
 
 func (s *StringRows) Next() bool {
@@ -331,8 +330,8 @@ func (s *StringRows) Err() error {
 	return s.rows.Err()
 }
 
-func (s *StringRows) Close() error {
-	return s.rows.Close()
+func (s *StringRows) Close() {
+	s.rows.Close()
 }
 
 func (s *StringRows) Read() (string, error) {

@@ -84,7 +84,7 @@ var ErrExpired = errors.New("expired from storage")
 
 // ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
 type ExpiryRows interface {
-	io.Closer
+	Close()
 	Next() bool
 	Err() error
 	// Read returns the current from ExpiryRows, or an error on failure.  Call it only after
@@ -150,12 +150,22 @@ type Committer interface {
 }
 
 type Differ interface {
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, params DiffParams) (Differences, bool, error)
+	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 }
 
 type Merger interface {
 	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
+}
+
+type Hookser interface {
+	Hooks() *CatalogerHooks
+}
+
+type ExportConfigurator interface {
+	GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error)
+	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
+	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 }
 
 type Cataloger interface {
@@ -166,6 +176,8 @@ type Cataloger interface {
 	MultipartUpdateCataloger
 	Differ
 	Merger
+	Hookser
+	ExportConfigurator
 	io.Closer
 }
 
@@ -184,6 +196,28 @@ type CacheConfig struct {
 	Jitter  time.Duration
 }
 
+// CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
+// called in a current transaction context; if they return an error the transaction is rolled
+// back.  Because these transactions are current, the hook can see the effect the operation only
+// on the passed transaction.
+type CatalogerHooks struct {
+	// PostCommit hooks are called at the end of a commit.
+	PostCommit []func(ctx context.Context, tx db.Tx, commitLog *CommitLog) error
+
+	// PostMerge hooks are called at the end of a merge.
+	PostMerge []func(ctx context.Context, tx db.Tx, mergeResult *MergeResult) error
+}
+
+func (h *CatalogerHooks) AddPostCommit(f func(context.Context, db.Tx, *CommitLog) error) *CatalogerHooks {
+	h.PostCommit = append(h.PostCommit, f)
+	return h
+}
+
+func (h *CatalogerHooks) AddPostMerge(f func(context.Context, db.Tx, *MergeResult) error) *CatalogerHooks {
+	h.PostMerge = append(h.PostMerge, f)
+	return h
+}
+
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
 	params.Catalog
@@ -195,6 +229,7 @@ type cataloger struct {
 	dedupReportEnabled   bool
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
+	hooks                CatalogerHooks
 }
 
 type CatalogerOption func(*cataloger)
@@ -365,15 +400,14 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			if err != nil {
 				return nil, err
 			}
-			if rowsAffected, err := res.RowsAffected(); err != nil {
-				return nil, err
-			} else if rowsAffected == 1 {
+			rowsAffected := res.RowsAffected()
+			if rowsAffected == 1 {
 				// new address was added - continue
 				continue
 			}
 
 			// fill the address into the right location
-			err = tx.Get(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+			err = tx.GetPrimitive(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
 				repoID, r.DedupID)
 			if err != nil {
 				return nil, err
@@ -415,4 +449,8 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			}
 		}
 	}
+}
+
+func (c *cataloger) Hooks() *CatalogerHooks {
+	return &c.hooks
 }

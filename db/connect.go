@@ -1,12 +1,13 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/db/params"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -27,37 +28,49 @@ func BuildDatabaseConnection(dbParams params.Database) Database {
 	return database
 }
 
+func Ping(ctx context.Context, pool *pgxpool.Pool) error {
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire to ping: %w", err)
+	}
+	defer conn.Release()
+	err = conn.Conn().Ping(ctx)
+	if err != nil {
+		return fmt.Errorf("ping: %w", err)
+	}
+	return nil
+}
+
 func ConnectDB(p params.Database) (Database, error) {
 	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
-		"driver":               p.Driver,
-		"uri":                  p.ConnectionString,
-		"max_open_conns":       p.MaxOpenConnections,
-		"max_idle_conns":       p.MaxIdleConnections,
-		"conn_max_lifetime":    p.ConnectionMaxLifetime,
-		"disable_auto_migrate": p.DisableAutoMigrate,
+		"driver":            p.Driver,
+		"uri":               p.ConnectionString,
+		"max_open_conns":    p.MaxOpenConnections,
+		"max_idle_conns":    p.MaxIdleConnections,
+		"conn_max_lifetime": p.ConnectionMaxLifetime,
 	})
 	log.Info("connecting to the DB")
-	conn, err := sqlx.Connect(p.Driver, p.ConnectionString)
+	config, err := pgxpool.ParseConfig(p.ConnectionString)
+	if err != nil {
+		return nil, fmt.Errorf("parse connection string: %w", err)
+	}
+	config.MaxConns = p.MaxOpenConnections
+	config.MinConns = p.MaxIdleConnections
+	config.MaxConnLifetime = p.ConnectionMaxLifetime
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), config)
 	if err != nil {
 		return nil, fmt.Errorf("could not open DB: %w", err)
 	}
-
-	conn.SetMaxOpenConns(p.MaxOpenConnections)
-	conn.SetMaxIdleConns(p.MaxIdleConnections)
-	conn.SetConnMaxLifetime(p.ConnectionMaxLifetime)
-
-	if !p.DisableAutoMigrate {
-		log.Info("migrate DB if needed")
-		err = MigrateUp(p)
-		if err != nil {
-			log.WithError(err).Error("migrate DB")
-			return nil, err
-		}
+	err = Ping(context.Background(), pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
 	}
 
 	log.Info("initialized DB connection")
-	return NewSqlxDatabase(conn), nil
+	return NewPgxDatabase(pool), nil
 }
 
 func normalizeDBParams(p *params.Database) {
