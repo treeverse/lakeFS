@@ -2,9 +2,9 @@
 
 - [ ] [Master branch checks](https://github.com/treeverse/lakeFS/actions?query=branch%3Amaster) are green 
 - [ ] Create a [new draft release](https://github.com/treeverse/lakeFS/releases/new)
-    - Bump the version based on SemVer guidelines [SemVer](https://semver.org/)
-    - Make sure that version starts with 'v' and the semver number
-    - Database migration is part of new feature and not a patch
+    - Bump the version based on [SemVer](https://semver.org/) guidelines.
+    - Make sure the version is `v` succeeded by the SemVer number. Example: `v1.1.14`.
+    - If the change includes a migration, it is considered a new feature, and the minor version needs to be bumped.
 - [ ] Verify that [GoReleaser actions](https://github.com/treeverse/lakeFS/actions?query=workflow%3Agoreleaser) triggered by new draft release complates successfully
 - [ ] Update the release notes (after goreleaser auto-generated list)
     - Remove test and documentation related stuff
@@ -17,4 +17,3 @@
 - [ ] Update [charts](https://github.com/treeverse/charts) repository (PR, Approve and Commit)
     - Bump the `version` patch level (`charts/lakefs/Chart.yaml`)
     - Update `appVersion` to the lakeFS version (`charts/lakefs/Chart.yaml`)
-
