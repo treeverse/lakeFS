@@ -197,6 +197,68 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	}
 }
 
+// TestCataloger_Diff_SameBranchDiffMergedChanges test changes we merge from parent are found in diff between two commits
+func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", DefaultBranchName)
+
+	testCatalogerBranch(t, ctx, c, repository, "branch1", DefaultBranchName)
+	const numberOfEntries = 3
+	for j := 0; j < numberOfEntries; j++ {
+		p := fmt.Sprintf("file%d-%s", j, DefaultBranchName)
+		testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, p, nil, DefaultBranchName)
+	}
+	// commit and merge changes
+	_, err := c.Commit(ctx, repository, DefaultBranchName, "commit changes to "+DefaultBranchName, "tester", nil)
+	testutil.MustDo(t, "initial branch commit", err)
+	firstCommit, err := c.Merge(ctx, repository, DefaultBranchName, "branch1", "tester", "merge changes from master to branch1", nil)
+	testutil.MustDo(t, "merge changes from master to branch1", err)
+
+	// delete
+	err = c.DeleteEntry(ctx, repository, DefaultBranchName, "file1-"+DefaultBranchName)
+	testutil.MustDo(t, "delete entry from branch", err)
+
+	// update
+	testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "file2-"+DefaultBranchName, nil, DefaultBranchName+"mod")
+
+	// add
+	testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "fileX-"+DefaultBranchName, nil, DefaultBranchName)
+
+	// commit and merge changes
+	_, err = c.Commit(ctx, repository, DefaultBranchName, "commit changes", "tester", nil)
+	testutil.MustDo(t, "commit branch changes", err)
+	secondCommit, err := c.Merge(ctx, repository, DefaultBranchName, "branch1", "tester", "merge more changes from master to branch1", nil)
+	testutil.MustDo(t, "merge more changes from master to branch1", err)
+
+	// diff changes between second and first commit
+	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, DiffParams{Limit: -1})
+	testutil.MustDo(t, "Diff changes from second and first commits", err)
+	if more {
+		t.Fatal("Diff has more differences, expected none")
+	}
+	if diff := deep.Equal(res, Differences{
+		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeRemoved},
+		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
+		Difference{Entry: Entry{Path: "fileX-" + DefaultBranchName}, Type: DifferenceTypeAdded},
+	}); diff != nil {
+		t.Fatal("Diff unexpected differences:", diff)
+	}
+
+	// diff changes between first and second commit
+	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, DiffParams{Limit: -1})
+	testutil.MustDo(t, "Diff changes from first and second commits", err)
+	if more {
+		t.Fatal("Diff has more differences, expected none")
+	}
+	if diff := deep.Equal(res, Differences{
+		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeAdded},
+		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
+	}); diff != nil {
+		t.Fatal("Diff unexpected differences:", diff)
+	}
+}
+
 func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)

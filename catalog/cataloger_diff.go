@@ -645,7 +645,7 @@ func (c *cataloger) diffSameBranch(ctx context.Context, tx db.Tx, params *doDiff
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
 	}
-	sourceScanner := NewDBBranchScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
+	sourceScanner := NewDBLineageScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
 	targetScanner := NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
 	batch := newDiffResultsBatchWriter(tx, diffResultsTableName)
 	var targetNextEnt *DBScannerEntry
