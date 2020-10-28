@@ -82,9 +82,6 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 		params.Limit = DiffMaxLimit
 	}
 
-	//ctx, cancel := c.withDiffResultsContext(ctx)
-	//defer cancel()
-
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// get branch IDs
 		leftBranchID, err := c.getBranchIDCache(tx, repository, leftRef.Branch)
