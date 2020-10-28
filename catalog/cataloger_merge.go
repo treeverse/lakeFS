@@ -88,7 +88,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 			differences = append(differences, v)
 			if len(differences) >= MergeBatchSize {
-				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
+				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID)
 				if err != nil {
 					return nil, err
 				}
@@ -99,7 +99,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
+		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID)
 		if err != nil {
 			return nil, err
 		}
@@ -165,8 +165,8 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 	return hasCommitDifferences, nil
 }
 
-func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCommitID CommitID, rightID int64, relation RelationType) error {
-	// collect changes that need be applied on the branch
+func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCommitID CommitID, rightID int64) error {
+	// collect changes to apply  on the branch
 	paths := make([]string, 0, MergeBatchSize)
 	ctidArray := make([]string, 0, MergeBatchSize)
 	var tombstonePaths []string
@@ -182,6 +182,7 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			tombstonePaths = append(tombstonePaths, diffRec.Entry.Path)
 		}
 	}
+	// apply changes
 	if len(paths) > 0 {
 		// set entries that exist in the right branch as deleted by entries that were removed or changed
 		setMaxCommit := sq.Update("catalog_entries").
