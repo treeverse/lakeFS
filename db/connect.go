@@ -30,12 +30,11 @@ func BuildDatabaseConnection(dbParams params.Database) Database {
 func ConnectDB(p params.Database) (Database, error) {
 	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
-		"driver":               p.Driver,
-		"uri":                  p.ConnectionString,
-		"max_open_conns":       p.MaxOpenConnections,
-		"max_idle_conns":       p.MaxIdleConnections,
-		"conn_max_lifetime":    p.ConnectionMaxLifetime,
-		"disable_auto_migrate": p.DisableAutoMigrate,
+		"driver":            p.Driver,
+		"uri":               p.ConnectionString,
+		"max_open_conns":    p.MaxOpenConnections,
+		"max_idle_conns":    p.MaxIdleConnections,
+		"conn_max_lifetime": p.ConnectionMaxLifetime,
 	})
 	log.Info("connecting to the DB")
 	conn, err := sqlx.Connect(p.Driver, p.ConnectionString)

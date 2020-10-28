@@ -110,7 +110,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    viper.GetInt("database.max_open_connections"),
 		MaxIdleConnections:    viper.GetInt("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
-		DisableAutoMigrate:    viper.GetBool("database.disable_auto_migrate"),
 	}
 }
 
