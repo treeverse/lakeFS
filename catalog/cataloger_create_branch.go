@@ -34,14 +34,14 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 
 		// get source branch id and
 		var sourceBranchID int
-		if err := tx.Get(&sourceBranchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
+		if err := tx.GetPrimitive(&sourceBranchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
 			repoID, sourceBranch); err != nil {
 			return nil, fmt.Errorf("source branch id: %w", err)
 		}
 
 		// next id for branch
 		var branchID int64
-		if err := tx.Get(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
+		if err := tx.GetPrimitive(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
 			return nil, fmt.Errorf("next branch id: %w", err)
 		}
 
@@ -58,7 +58,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 			TransactionTimestamp time.Time `db:"transaction_timestamp"`
 		}{}
 		commitMsg := fmt.Sprintf(createBranchCommitMessageFormat, branch, sourceBranch)
-		err = tx.GetStruct(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
+		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,transaction_timestamp(),$4,'from_parent',
 				(select (select max(commit_id) from catalog_commits where branch_id=$4) ||

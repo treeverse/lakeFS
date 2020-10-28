@@ -36,7 +36,7 @@ func (c *cataloger) GetExportConfigurationForBranch(repository string, branch st
 		if err != nil {
 			return nil, err
 		}
-		err = c.db.GetStruct(&ret,
+		err = c.db.Get(&ret,
 			`SELECT export_path, export_status_path, last_keys_in_prefix_regexp
                          FROM catalog_branches_export
                          WHERE branch_id = $1`, branchID)

@@ -84,7 +84,7 @@ func (d *PgxDatabase) performAndReport(fields logging.Fields, fn func() (interfa
 	return ret, err
 }
 
-func (d *PgxDatabase) GetStruct(dest interface{}, query string, args ...interface{}) error {
+func (d *PgxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
 	_, err := d.performAndReport(logging.Fields{
 		"type":  "get",
 		"query": query,
@@ -95,7 +95,7 @@ func (d *PgxDatabase) GetStruct(dest interface{}, query string, args ...interfac
 	return err
 }
 
-func (d *PgxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+func (d *PgxDatabase) GetPrimitive(dest interface{}, query string, args ...interface{}) error {
 	row := d.db.QueryRow(context.Background(), query, args...)
 	err := row.Scan(dest)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -261,7 +261,7 @@ func (d *PgxDatabase) getVersion() (string, error) {
 			Version string `db:"version"`
 		}
 		var v ver
-		err := tx.GetStruct(&v, "SELECT version()")
+		err := tx.Get(&v, "SELECT version()")
 		if err != nil {
 			return "", err
 		}
@@ -276,7 +276,7 @@ func (d *PgxDatabase) getVersion() (string, error) {
 func (d *PgxDatabase) getAuroraVersion() (string, error) {
 	v, err := d.Transact(func(tx Tx) (interface{}, error) {
 		var v string
-		err := tx.GetStruct(&v, "SELECT aurora_version()")
+		err := tx.Get(&v, "SELECT aurora_version()")
 		if err != nil {
 			return "", err
 		}

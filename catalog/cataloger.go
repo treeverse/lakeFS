@@ -407,7 +407,7 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			}
 
 			// fill the address into the right location
-			err = tx.Get(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+			err = tx.GetPrimitive(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
 				repoID, r.DedupID)
 			if err != nil {
 				return nil, err

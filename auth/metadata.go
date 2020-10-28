@@ -57,14 +57,14 @@ func insertOrGetInstallationID(tx db.Tx) (string, error) {
 
 func getInstallationID(tx db.Tx) (string, error) {
 	var installationID string
-	err := tx.Get(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
+	err := tx.GetPrimitive(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
 		InstallationIDKeyName)
 	return installationID, err
 }
 
 func getSetupTimestamp(tx db.Tx) (time.Time, error) {
 	var value string
-	err := tx.Get(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
+	err := tx.GetPrimitive(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
 		SetupTimestampKeyName)
 	if err != nil {
 		return time.Time{}, err

@@ -84,7 +84,7 @@ func (c *cataloger) getEntryMaybeExpired(ctx context.Context, repository string,
 		}
 
 		var ent Entry
-		if err := tx.GetStruct(&ent, sql, args...); err != nil {
+		if err := tx.Get(&ent, sql, args...); err != nil {
 			return nil, err
 		}
 		return &ent, nil

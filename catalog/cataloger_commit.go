@@ -55,7 +55,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 
 		// insert commit record
 		var creationDate time.Time
-		if err = tx.Get(&creationDate,
+		if err = tx.GetPrimitive(&creationDate,
 			`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,metadata,merge_type,previous_commit_id)
 			VALUES ($1,$2,$3,$4,transaction_timestamp(),$5,$6,$7)
 			RETURNING creation_date`,
