@@ -88,7 +88,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 			differences = append(differences, v)
 			if len(differences) >= MergeBatchSize {
-				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID, relation)
+				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
 				if err != nil {
 					return nil, err
 				}
@@ -99,7 +99,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, leftID, rightID, relation)
+		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
 		if err != nil {
 			return nil, err
 		}
@@ -116,6 +116,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 		}
 		err = InsertMergeCommit(tx, relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
+		if err != nil {
+			return nil, err
+		}
 		mergeResult.Summary = make(map[DifferenceType]int, 4)
 		for k, v := range scanner.diffSummary {
 			if v != 0 {
@@ -162,7 +165,7 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 	return hasCommitDifferences, nil
 }
 
-func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, relation RelationType) error {
+func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCommitID CommitID, rightID int64, relation RelationType) error {
 	// collect changes that need be applied on the branch
 	paths := make([]string, 0, MergeBatchSize)
 	ctidArray := make([]string, 0, MergeBatchSize)
@@ -176,7 +179,7 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			ctidArray = append(ctidArray, *diffRec.EntryCtid)
 		}
 		if diffRec.DiffType == DifferenceTypeRemoved && diffRec.parentTombstoneNeeded {
-			tombstonePaths = append(paths, diffRec.Entry.Path)
+			tombstonePaths = append(tombstonePaths, diffRec.Entry.Path)
 		}
 	}
 	if len(paths) > 0 {
@@ -255,7 +258,6 @@ func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 }
 
 func (c *cataloger) mergeNonDirect(_ context.Context, _ db.Tx, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
-
 	c.log.WithFields(logging.Fields{
 		"commit_id":      previousMaxCommitID,
 		"next_commit_id": nextCommitID,

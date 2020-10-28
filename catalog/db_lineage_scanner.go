@@ -29,14 +29,6 @@ func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBSc
 	return s
 }
 
-//type DBEntriesScanner interface {
-//	Next() bool
-//	Err() error
-//	Value() *DBScannerEntry
-//	hasEnded() bool
-//	ReadLineage() ([]lineageCommit, error)
-//}
-
 func (s *DBLineageScanner) Next() bool {
 	if s.ended {
 		return false
