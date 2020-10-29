@@ -32,19 +32,19 @@ export const RepositoryCreateForm = connect(
     const checkRepoValidity = () => {
         const isRepoValid = repoValidityRegex.test(repoIdField.current.value)
         setRepoValid(isRepoValid);
-        setFormValid(isRepoValid);
+        setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
     };
 
     const checkStorageNamespaceValidity = () => {
         const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value)
         setStorageNamespaceValid(isStorageNamespaceValid);
-        setFormValid(isStorageNamespaceValid);
+        setFormValid(isStorageNamespaceValid && defaultBranchValid && repoValid);
     };
 
     const checkDefaultBranchValidity = () => {
         const isBranchValid = defaultBranchField.current.value.length;
         setDefaultBranchValid(isBranchValid);
-        setFormValid(isBranchValid);
+        setFormValid(isBranchValid && storageNamespaceValid && repoValid);
     };
 
     let blockstoreType = config.payload == null ? DEFAULT_BLOCKSTORE_TYPE : config.payload['blockstore.type']
