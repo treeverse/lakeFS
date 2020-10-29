@@ -22,10 +22,10 @@ export const RepositoryCreateForm = connect(
     const [formValid, setFormValid] = useState(false);
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
-    const repoIdField = useRef(null);
+    const repoNameField = useRef(null);
 
     const checkValidity = () => {
-        if (repoIdField.current.value.length === 0 ||
+        if (repoNameField.current.value.length === 0 ||
             storageNamespaceField.current.value.length === 0 ||
             defaultBranchField.current.value.length === 0) {
             setFormValid(false);
@@ -43,7 +43,7 @@ export const RepositoryCreateForm = connect(
                 return;
             }
             onSubmit({
-                id: repoIdField.current.value,
+                name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value
             });
@@ -51,7 +51,7 @@ export const RepositoryCreateForm = connect(
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" autoFocus ref={repoIdField} onChange={checkValidity}/>
+                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={checkValidity}/>
                 </Col>
             </Form.Group>
 
