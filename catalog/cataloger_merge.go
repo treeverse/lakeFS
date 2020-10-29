@@ -215,7 +215,7 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			return err
 		}
 	}
-	// insert tombsotnes into parent branch that has a removed entry in its lineage
+	// insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
 		values := "(VALUES ('" + strings.Join(tombstonePaths, "'),('") + "')) AS t(path)"
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
@@ -238,7 +238,7 @@ func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 	}
 	if relation == RelationTypeFromParent {
 		err = tx.Get(&parentLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM catalog_commits
-												WHERE branch_id = $1 AND merge_type = 'from_parent' ORDER BY branch_id,commit_id DESC`, leftID)
+												  WHERE branch_id = $1 AND merge_type = 'from_parent' ORDER BY branch_id,commit_id DESC`, leftID)
 		if err != nil && !errors.As(err, &db.ErrNotFound) {
 			return err
 		}
