@@ -67,7 +67,7 @@ export const RepositoryCreateForm = connect(
                     <Form.Control type="text" autoFocus ref={repoIdField} onChange={checkRepoValidity}/>
                     {!repoValid &&
                         <Form.Text className="text-danger">
-                            Min 2 characters. Only Alpahnumeric characters and '-' allowed.
+                            Min 2 characters. Only lowercase alphanumeric characters and '-' allowed.
                         </Form.Text>
                     }
                 </Col>
