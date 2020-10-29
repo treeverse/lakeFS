@@ -204,7 +204,7 @@ func (c *cataloger) ExportStateMarkEnd(tx db.Tx, repo string, branch string, ref
 		return fmt.Errorf("ExportMarkEnd: end export: %w", err)
 	}
 	if tag.RowsAffected() != 1 {
-		err = fmt.Errorf("ExportMarkEnd: could not find export to end: %s %w", tag, ErrExportFailed)
+		return fmt.Errorf("ExportMarkEnd: could not find export to end: %s %w", tag, ErrExportFailed)
 	}
 	return nil
 }
