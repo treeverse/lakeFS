@@ -8,8 +8,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
-	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
 	"github.com/treeverse/lakefs/db"
@@ -159,28 +159,51 @@ func TestExportState(t *testing.T) {
 	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
 
 	cases := []struct {
-		name        string
-		startRef    string // start with this ref (and state) if set, otherwise start with no row
-		startState  CatalogBranchExportStatus
-		setRef      string
-		expectState CatalogBranchExportStatus
-		expectErr   func(t *testing.T, err error)
+		name         string
+		startRef     string // start with this ref (and state) if set, otherwise start with no row
+		startState   CatalogBranchExportStatus
+		startMessage *string
+		setRef       string
+		expectState  CatalogBranchExportStatus
+		expectErr    func(t *testing.T, err error)
 	}{
 		{
 			name:        "clean",
 			setRef:      ref2,
 			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if err != nil {
+					t.Errorf("unexpected error %s", err)
+				}
+			},
 		}, {
 			name:        "reset",
 			startRef:    ref1,
 			setRef:      ref2,
 			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if err != nil {
+					t.Errorf("unexpected error %s", err)
+				}
+			},
 		}, {
-			name:        "previousFailed",
+			name:        "previousSucceeded",
 			startRef:    ref1,
-			startState:  ExportStatusFailed,
+			startState:  ExportStatusSuccess,
 			setRef:      ref2,
 			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if err != nil {
+					t.Errorf("unexpected error %s", err)
+				}
+			},
+		}, {
+			name:         "previousFailed",
+			startRef:     ref1,
+			startState:   ExportStatusFailed,
+			startMessage: swag.String("humpty dumpty had a great fall"),
+			setRef:       ref2,
+			expectState:  ExportStatusInProgress,
 			expectErr: func(t *testing.T, err error) {
 				if !errors.Is(err, ErrExportFailed) {
 					t.Errorf("expected ErrExportFailed but got %s", err)
@@ -200,19 +223,27 @@ func TestExportState(t *testing.T) {
 		d := db.NewPgxDatabase(pool)
 		t.Run(tt.name, func(t *testing.T) {
 			_, err = d.Transact(func(tx db.Tx) (interface{}, error) {
+				// Clean up any existing state
+				if err := c.ExportStateDelete(tx, repo, defaultBranch); err != nil && !errors.Is(err, ErrEntryNotFound) {
+					return nil, fmt.Errorf("setup (delete): %w", err)
+				}
+
 				if tt.startRef != "" {
-					// This also ends up testing ExportMarkStart in the same way
+					// This also ends up testing ExportStateMarkStart in the same way
 					// each time.
-					if _, _, err := c.ExportMarkStart(tx, repo, defaultBranch, tt.startRef); err != nil {
+					if _, _, err := c.ExportStateMarkStart(tx, repo, defaultBranch, tt.startRef); err != nil {
 						return nil, fmt.Errorf("setup (mark previous): %w", err)
 					}
-				} else {
-					if err := c.ExportStateDelete(tx, repo, defaultBranch); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-						return nil, fmt.Errorf("setup (delete): %w", err)
+					// Test ExportMarkEnd if previous state is configured.
+					if tt.startState != "" && tt.startState != ExportStatusInProgress {
+						err := c.ExportStateMarkEnd(tx, repo, defaultBranch, tt.startRef, tt.startState, tt.startMessage)
+						if err != nil {
+							return nil, fmt.Errorf("setup (set previous): %w", err)
+						}
 					}
 				}
 
-				gotRef, gotState, err := c.ExportMarkStart(tx, repo, defaultBranch, tt.setRef)
+				gotRef, gotState, err := c.ExportStateMarkStart(tx, repo, defaultBranch, tt.setRef)
 				if tt.expectErr != nil {
 					tt.expectErr(t, err)
 				}

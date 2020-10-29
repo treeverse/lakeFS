@@ -175,9 +175,12 @@ type ExportStateHandler interface {
 	// clean it up by removing and adding the "next export" withint this transaction.  If
 	// another transaction concurrently runs ExportMarkStart on branchID, one blocks until
 	// the other is done.
-	ExportMarkStart(tx db.Tx, repo string, branch string, newRef string) (string, CatalogBranchExportStatus, error)
-	// Delete any export state for repo.  Mostly useful in tests: in a living system the
-	// export state is part of the state of the world.
+	ExportStateMarkStart(tx db.Tx, repo string, branch string, newRef string) (string, CatalogBranchExportStatus, error)
+	// ExportMarkEnd verifies that the current export is of ref and ends an export operation
+	// on branch of repo.
+	ExportStateMarkEnd(tx db.Tx, repo string, branch string, ref string, newState CatalogBranchExportStatus, newMessage *string) error
+	// ExportStateDelete deletes any export state for repo.  Mostly useful in tests: in a
+	// living system the export state is part of the state of the world.
 	ExportStateDelete(tx db.Tx, repo string, branch string) error
 }
 
