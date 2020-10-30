@@ -80,9 +80,6 @@ func (s *DBLineageScanner) Value() *DBScannerEntry {
 	}
 	return s.value
 }
-func (s *DBLineageScanner) getBranchID() int64 {
-	return s.branchID
-}
 func (s *DBLineageScanner) hasEnded() bool {
 	return s.ended || s.err != nil
 }

@@ -8,16 +8,14 @@ import (
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
-
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
 const (
 	MergeBatchSize = 128
 )
 
-type mergeBatchType []*diffResultRecord
+type mergeBatchRecords []*diffResultRecord
 
 // Merge perform diff between two branches (left and right), apply changes on right branch and commit
 // It uses the cataloger diff internal API to produce a temporary table that we delete at the end of a successful merge
@@ -34,6 +32,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	}
 
 	mergeResult := &MergeResult{}
+	summary := make(map[DifferenceType]int)
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
@@ -44,7 +43,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
 
-		params := &doDiffParams{
+		params := doDiffParams{
 			Repository:    repository,
 			LeftCommitID:  CommittedID,
 			LeftBranchID:  leftID,
@@ -55,40 +54,42 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			},
 		}
 
-		relation, err := c.getRefsRelationType(tx, params)
+		relation, err := getRefsRelationType(tx, params)
 		if err != nil {
 			return nil, fmt.Errorf("get refs relation: %w", err)
 		}
-		if relation == RelationTypeSame {
+		switch relation {
+		case RelationTypeSame:
 			return nil, fmt.Errorf("merge from the same branch: %w", ErrOperationNotPermitted)
+		case RelationTypeNotDirect:
+			return nil, fmt.Errorf("merge suported only between branches that are parent-child or child-parent: %w", ErrOperationNotPermitted)
 		}
-
-		scanner, err := c.newDiffScanner(tx, params)
+		scanner, err := NewDiffScanner(tx, params, relation)
 		if err != nil {
 			return nil, err
 		}
 		nextCommitID, err := getNextCommitID(tx)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		// do the merge based on the relation
 		previousMaxCommitID, err := getLastCommitIDByBranchID(tx, rightID)
 		if err != nil {
-			return 0, err
-		}
-		if relation == RelationTypeNotDirect {
-			err = c.mergeNonDirect(ctx, tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, message, metadata)
 			return nil, err
 		}
-		differences := make(mergeBatchType, 0, MergeBatchSize)
+
+		differences := make(mergeBatchRecords, 0, MergeBatchSize)
+		var rowsCounter int
 		for scanner.Next() {
 			v := scanner.Value()
+			summary[v.DiffType] = summary[v.DiffType] + 1
+			rowsCounter++
 			if v.DiffType == DifferenceTypeConflict {
 				return nil, ErrConflictFound
 			}
 			differences = append(differences, v)
 			if len(differences) >= MergeBatchSize {
-				err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID)
+				err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
 				if err != nil {
 					return nil, err
 				}
@@ -99,14 +100,14 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		err = mergeBatch(tx, differences, previousMaxCommitID, nextCommitID, rightID)
+		err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
 		if err != nil {
 			return nil, err
 		}
 		if message == "" {
 			message = fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 		}
-		if scanner.rowsCounter == 0 {
+		if rowsCounter == 0 {
 			commitDifferences, err := hasCommitDifferences(tx, leftID, rightID)
 			if err != nil {
 				return nil, err
@@ -119,13 +120,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		mergeResult.Summary = make(map[DifferenceType]int, 4)
-		for k, v := range scanner.diffSummary {
-			if v != 0 {
-				mergeResult.Summary[k] = v
-			}
-		}
-
+		mergeResult.Summary = summary
 		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
 
 		for _, hook := range c.hooks.PostMerge {
@@ -165,7 +160,7 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 	return hasCommitDifferences, nil
 }
 
-func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCommitID CommitID, rightID int64) error {
+func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previousMaxCommitID, nextCommitID CommitID, rightID int64, relation RelationType) error {
 	// collect changes to apply  on the branch
 	paths := make([]string, 0, MergeBatchSize)
 	ctidArray := make([]string, 0, MergeBatchSize)
@@ -178,7 +173,9 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			diffRec.EntryCtid != nil {
 			ctidArray = append(ctidArray, *diffRec.EntryCtid)
 		}
-		if diffRec.DiffType == DifferenceTypeRemoved && diffRec.parentTombstoneNeeded {
+		if diffRec.DiffType == DifferenceTypeRemoved &&
+			diffRec.TargetEntryNotInDirectBranch &&
+			relation == RelationTypeFromChild {
 			tombstonePaths = append(tombstonePaths, diffRec.Entry.Path)
 		}
 	}
@@ -215,7 +212,7 @@ func mergeBatch(tx db.Tx, mergeBatch mergeBatchType, previousMaxCommitID, nextCo
 			return err
 		}
 	}
-	// insert tombstones into parent branch that has a removed entry in its lineage
+	//insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
 		values := "(VALUES ('" + strings.Join(tombstonePaths, "'),('") + "')) AS t(path)"
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
@@ -248,26 +245,14 @@ func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 			*childNewLineage += "," + parentLastLineage
 		}
 	}
-	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
-                     lineage_commits)
-		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,$10,$7,$8,string_to_array($9,',')::bigint[])`,
+	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_source_branch, merge_source_commit,
+                     lineage_commits, merge_type)
+		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,$7,$8,string_to_array($9,',')::bigint[],$10)`,
 		rightID, nextCommitID, previousMaxCommitID, committer, msg, metadata, leftID, leftLastCommitID, childNewLineage, relation)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (c *cataloger) mergeNonDirect(_ context.Context, _ db.Tx, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
-	c.log.WithFields(logging.Fields{
-		"commit_id":      previousMaxCommitID,
-		"next_commit_id": nextCommitID,
-		"left_id":        leftID,
-		"right_id":       rightID,
-		"committer":      committer,
-		"msg":            msg,
-	}).Debug("Merge non direct - feature not supported")
-	return ErrFeatureNotSupported
 }
 
 func int64Str(l int64) string {

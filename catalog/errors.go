@@ -28,4 +28,5 @@ var (
 	ErrReadEntryTimeout              = errors.New("read entry timeout")
 	ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 	ErrInvalidValue                  = errors.New("invalid value")
+	ErrNonDirectNotSupported         = errors.New("non direct diff not supported")
 )

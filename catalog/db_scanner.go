@@ -13,7 +13,6 @@ type DBScanner interface {
 	Next() bool
 	Value() *DBScannerEntry
 	Err() error
-	getBranchID() int64
 }
 
 func ScanDBEntryUntil(s DBScanner, ent *DBScannerEntry, p string) (*DBScannerEntry, error) {

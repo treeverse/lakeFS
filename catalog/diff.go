@@ -8,7 +8,6 @@ const (
 	DifferenceTypeChanged
 	DifferenceTypeConflict
 	DifferenceTypeNone
-	NumberOfDifferenceTypes = 4
 )
 
 type Difference struct {
@@ -32,19 +31,6 @@ func (d Difference) String() string {
 }
 
 type Differences []Difference
-
-func (d Differences) CountByType() map[DifferenceType]int {
-	result := make(map[DifferenceType]int)
-	for i := range d {
-		typ := d[i].Type
-		if count, ok := result[typ]; !ok {
-			result[typ] = 1
-		} else {
-			result[typ] = count + 1
-		}
-	}
-	return result
-}
 
 func (d Differences) Equal(other Differences) bool {
 	if len(d) != len(other) {
