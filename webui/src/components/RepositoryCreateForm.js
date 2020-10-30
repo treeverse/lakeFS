@@ -27,10 +27,10 @@ export const RepositoryCreateForm = connect(
     const [defaultBranchValid, setDefaultBranchValid] = useState(true);
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
-    const repoIdField = useRef(null);
+    const repoNameField = useRef(null);
 
     const checkRepoValidity = () => {
-        const isRepoValid = repoValidityRegex.test(repoIdField.current.value)
+        const isRepoValid = repoValidityRegex.test(repoNameField.current.value)
         setRepoValid(isRepoValid);
         setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
     };
@@ -56,7 +56,7 @@ export const RepositoryCreateForm = connect(
                 return;
             }
             onSubmit({
-                id: repoIdField.current.value,
+                name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value
             });
@@ -64,7 +64,7 @@ export const RepositoryCreateForm = connect(
             <Form.Group as={Row} controlId="id">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" autoFocus ref={repoIdField} onChange={checkRepoValidity}/>
+                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={checkRepoValidity}/>
                     {!repoValid &&
                         <Form.Text className="text-danger">
                             Min 2 characters. Only lowercase alphanumeric characters and '-' allowed.
