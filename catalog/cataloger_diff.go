@@ -1,10 +1,9 @@
 package catalog
 
 import (
-	"fmt"
-
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -13,10 +12,10 @@ import (
 const DiffMaxLimit = 1000
 
 type diffResultRecord struct {
-	parentTombstoneNeeded bool
-	DiffType              DifferenceType
-	Entry                 Entry   // Partially filled. Path is always set.
-	EntryCtid             *string // CTID of the modified/added entry. Do not use outside of catalog diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
+	TargetEntryNotInDirectBranch bool // the entry is reflected via lineage, NOT in the branch itself
+	DiffType                     DifferenceType
+	Entry                        Entry   // Partially filled. Path is always set.
+	EntryCtid                    *string // CTID of the modified/added entry. Do not use outside of catalog diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
 }
 
 type diffEffectiveCommits struct {
@@ -40,23 +39,20 @@ type doDiffParams struct {
 	RightCommitID CommitID
 	RightBranchID int64
 }
-type diffEvaluator func(c *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType
 
-type diffScanner struct {
-	relation                  RelationType
-	diffParams                *doDiffParams
-	leftScanner, rightScanner DBScanner
-	err                       error
-	value                     *diffResultRecord
-	lastRightEnt              *DBScannerEntry
-	diffSummary               map[DifferenceType]int
-	rowsCounter               int
-	diffEvaluator             diffEvaluator
-	// parent to child vars
-	childLineage                []lineageCommit
-	childLastFromParentCommitID CommitID
-	// child to parent vars
-	effectiveCommits *diffEffectiveCommits
+type diffEvaluator func(c *DiffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType
+
+type DiffScanner struct {
+	relation                    RelationType
+	params                      doDiffParams
+	leftScanner                 DBScanner
+	rightScanner                DBScanner
+	err                         error
+	value                       *diffResultRecord
+	evaluator                   diffEvaluator
+	childLineage                []lineageCommit       // used by diff from parent to child
+	childLastFromParentCommitID CommitID              // used by diff from parent to child
+	effectiveCommits            *diffEffectiveCommits // used by diff from child to parent
 }
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
@@ -81,7 +77,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 	if params.Limit < 0 || params.Limit > DiffMaxLimit {
 		params.Limit = DiffMaxLimit
 	}
-
+	var diffParams doDiffParams
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// get branch IDs
 		leftBranchID, err := c.getBranchIDCache(tx, repository, leftRef.Branch)
@@ -93,7 +89,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 			return nil, fmt.Errorf("right ref branch: %w", err)
 		}
 
-		diffParams := &doDiffParams{
+		diffParams = doDiffParams{
 			Repository:    repository,
 			LeftCommitID:  leftRef.CommitID,
 			LeftBranchID:  leftBranchID,
@@ -106,26 +102,38 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 				AdditionalFields: params.AdditionalFields,
 			},
 		}
-		scanner, err := c.newDiffScanner(tx, diffParams)
+		relation, err := getRefsRelationType(tx, diffParams)
 		if err != nil {
 			return nil, err
 		}
-		clearChecksumField := !stringIsInSlice(params.AdditionalFields, DBEntryFieldChecksum)
+		if relation == RelationTypeNotDirect {
+			return nil, ErrNonDirectNotSupported
+		}
+		scanner, err := NewDiffScanner(tx, diffParams, relation)
+		if err != nil {
+			return nil, err
+		}
 		differences := make(Differences, 0, params.Limit+1)
 		for scanner.Next() {
 			v := scanner.Value()
-			var d Difference
-			d.Entry = v.Entry
-			d.Type = v.DiffType
-			if clearChecksumField {
-				d.Entry.Checksum = ""
+			differences = append(differences, Difference{v.Entry, v.DiffType})
+			if diffParams.Limit > -1 && len(differences) >= diffParams.Limit {
+				break
 			}
-			differences = append(differences, d)
 		}
-
-		return differences, err
+		if scanner.Error() != nil {
+			return nil, scanner.Error()
+		}
+		return differences, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
+		c.log.WithError(err).
+			WithFields(logging.Fields{
+				"left_branch_id":  diffParams.LeftBranchID,
+				"left_commit_id":  diffParams.LeftCommitID,
+				"right_branch_id": diffParams.RightBranchID,
+				"right_commit_id": diffParams.RightCommitID,
+			}).Debug("Diff error")
 		return nil, false, err
 	}
 	differences := res.(Differences)
@@ -133,45 +141,24 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 	return differences, hasMore, nil
 }
 
-func (c *cataloger) newDiffScanner(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
-	var scanner *diffScanner
-	var err error
-	if params == nil {
-		return nil, fmt.Errorf("doDiff params are required: %w", ErrInvalidValue)
-	}
-	relation, err := c.getRefsRelationType(tx, params)
-	if err != nil {
-		return nil, err
-	}
+func NewDiffScanner(tx db.Tx, params doDiffParams, relation RelationType) (*DiffScanner, error) {
+	scanner := &DiffScanner{relation: relation,
+		params: params}
 	switch relation {
 	case RelationTypeFromParent:
-		scanner, err = c.newDiffFromParent(tx, params)
+		return scanner.diffFromParent(tx, params)
 	case RelationTypeFromChild:
-		scanner, err = c.newDiffFromChild(tx, params)
-	case RelationTypeNotDirect:
-		return nil, c.diffNonDirect(tx, params)
+		return scanner.diffFromChild(tx, params)
 	case RelationTypeSame:
-		return c.newDiffSameBranch(tx, params)
+		return scanner.diffSameBranch(tx, params)
 	default:
-		c.log.WithFields(logging.Fields{
-			"relation_type":   relation,
-			"repository":      params.Repository,
-			"left_branch_id":  params.LeftBranchID,
-			"left_commit_id":  params.LeftCommitID,
-			"right_branch_id": params.RightBranchID,
-			"right_commit_id": params.RightCommitID,
-		}).Debug("Diff by relation - unsupported type")
 		return nil, ErrFeatureNotSupported
 	}
-	scanner.relation = relation
-	return scanner, err
 }
 
-func (c *cataloger) newDiffFromParent(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
+func (scanner *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 	// get child last commit of merge from parent
-	scanner := new(diffScanner)
-	scanner.diffParams = params
-	scanner.diffEvaluator = evaluateParentToChild
+	scanner.evaluator = evaluateParentToChild
 	query, args, err := psql.Select("MAX(commit_id) as max_child_commit").
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_type = 'from_parent'", params.RightBranchID).
@@ -194,37 +181,30 @@ func (c *cataloger) newDiffFromParent(tx db.Tx, params *doDiffParams) (*diffScan
 	if err != nil {
 		return nil, err
 	}
-	scanner.diffSummary = newSummaryMap()
 	return scanner, nil
 }
 
-func (c *cataloger) newDiffFromChild(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
+func (scanner *DiffScanner) diffFromChild(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 	var err error
-	scanner := new(diffScanner)
-	scanner.diffParams = params
-	scanner.diffEvaluator = evaluateChildToParent
+	scanner.evaluator = evaluateChildToParent
 	scannerOpts := DBScannerOptions{
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
 	}
 	// get child last commit of merge from parent
-	scanner.effectiveCommits, err = c.selectChildEffectiveCommits(tx, params.LeftBranchID, params.RightBranchID)
+	scanner.effectiveCommits, err = selectChildEffectiveCommits(tx, params.LeftBranchID, params.RightBranchID)
 	if err != nil {
 		return nil, err
 	}
 
 	scanner.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
 	scanner.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
-	scanner.diffSummary = newSummaryMap()
 	return scanner, nil
 }
 
-func (c *cataloger) newDiffSameBranch(tx db.Tx, params *doDiffParams) (*diffScanner, error) {
+func (scanner *DiffScanner) diffSameBranch(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 	// get child last commit of merge from parent
-	scanner := new(diffScanner)
-	scanner.relation = RelationTypeSame
-	scanner.diffParams = params
-	scanner.diffEvaluator = evaluateSameBranch
+	scanner.evaluator = evaluateSameBranch
 
 	scannerOpts := DBScannerOptions{
 		After:            params.After,
@@ -232,32 +212,27 @@ func (c *cataloger) newDiffSameBranch(tx db.Tx, params *doDiffParams) (*diffScan
 	}
 	scanner.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
 	scanner.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
-	scanner.diffSummary = newSummaryMap()
 	return scanner, nil
 }
 
-func (c *diffScanner) Next() bool {
-	var err error
-	if c.diffParams.Limit > -1 && c.rowsCounter >= c.diffParams.Limit {
-		return false
-	}
+func (c *DiffScanner) Next() bool {
 	for c.leftScanner.Next() {
 		// is parent element is relevant
 		leftEnt := c.leftScanner.Value()
 		// get next child entry - scan until we match child's path to parent (or bigger)
-		c.lastRightEnt, err = ScanDBEntryUntil(c.rightScanner, c.lastRightEnt, leftEnt.Path)
+		lastRightEnt, err := ScanDBEntryUntil(c.rightScanner, c.rightScanner.Value(), leftEnt.Path)
 		if err != nil {
 			c.err = fmt.Errorf("scan next right element: %w", err)
 			return false
 		}
 		// point to matched right based on path
 		var matchedRight *DBScannerEntry
-		if c.lastRightEnt != nil && c.lastRightEnt.Path == leftEnt.Path {
-			matchedRight = c.lastRightEnt
+		if lastRightEnt != nil && lastRightEnt.Path == leftEnt.Path {
+			matchedRight = lastRightEnt
 		}
 		// diff between entries
 
-		diffType := c.diffEvaluator(c, leftEnt, matchedRight)
+		diffType := c.evaluator(c, leftEnt, matchedRight)
 
 		if diffType == DifferenceTypeNone {
 			continue
@@ -271,36 +246,34 @@ func (c *diffScanner) Next() bool {
 		// 2. difference type is either changed or added.
 		// Then the entry has to appear in the child branch, but an older version exists in the child, so merge will copy it, and the ctid is needed for that
 		if (diffType == DifferenceTypeAdded || diffType == DifferenceTypeChanged) &&
-			((matchedRight != nil && matchedRight.BranchID == c.diffParams.RightBranchID) || c.relation == RelationTypeFromChild) {
+			((matchedRight != nil && matchedRight.BranchID == c.params.RightBranchID) || c.relation == RelationTypeFromChild) {
 			c.value.EntryCtid = &leftEnt.RowCtid
 		}
 		if diffType == DifferenceTypeRemoved &&
 			c.relation == RelationTypeFromChild &&
 			matchedRight != nil &&
-			matchedRight.BranchID != c.rightScanner.getBranchID() {
-			c.value.parentTombstoneNeeded = true
+			//matchedRight.BranchID != c.rightScanner.getBranchID() {
+			matchedRight.BranchID != c.params.RightBranchID {
+			c.value.TargetEntryNotInDirectBranch = true
 		}
-		c.rowsCounter++
-		c.diffSummary[diffType]++
 		return true // exit for loop and function
 	}
 	c.err = c.leftScanner.Err()
 	return false
 }
 
-func (c *diffScanner) Value() *diffResultRecord {
-	if c.err == nil {
-		return c.value
-	} else {
-		return nil // will happen only if the caller did not check error
+func (c *DiffScanner) Value() *diffResultRecord {
+	if c.err != nil {
+		return nil
 	}
+	return c.value
 }
 
-func (c *diffScanner) Error() error {
+func (c *DiffScanner) Error() error {
 	return c.err
 }
 
-func evaluateParentToChild(c *diffScanner, leftEntry, rightEntry *DBScannerEntry) DifferenceType {
+func evaluateParentToChild(c *DiffScanner, leftEntry, rightEntry *DBScannerEntry) DifferenceType {
 	if isNoneDiff(leftEntry, rightEntry) {
 		return DifferenceTypeNone
 	}
@@ -314,7 +287,7 @@ func evaluateParentToChild(c *diffScanner, leftEntry, rightEntry *DBScannerEntry
 
 	// if target entry is uncommitted - conflict
 	// if target entry updated after merge from parent - conflict
-	if rightEntry != nil && rightEntry.BranchID == c.diffParams.RightBranchID &&
+	if rightEntry != nil && rightEntry.BranchID == c.params.RightBranchID &&
 		(!rightEntry.IsCommitted() || rightEntry.ChangedAfterCommit(c.childLastFromParentCommitID)) {
 		return DifferenceTypeConflict
 	}
@@ -333,7 +306,7 @@ func evaluateParentToChild(c *diffScanner, leftEntry, rightEntry *DBScannerEntry
 	return DifferenceTypeChanged
 }
 
-func evaluateChildToParent(c *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
+func evaluateChildToParent(c *DiffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
 	if isNoneDiff(leftEntry, rightEntry) {
 		return DifferenceTypeNone
 	}
@@ -359,7 +332,7 @@ func evaluateChildToParent(c *diffScanner, leftEntry *DBScannerEntry, rightEntry
 	return DifferenceTypeChanged
 }
 
-func evaluateSameBranch(_ *diffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
+func evaluateSameBranch(_ *DiffScanner, leftEntry *DBScannerEntry, rightEntry *DBScannerEntry) DifferenceType {
 	if isNoneDiff(leftEntry, rightEntry) {
 		return DifferenceTypeNone
 	}
@@ -394,7 +367,7 @@ func isNoneDiff(leftEntry, rightEntry *DBScannerEntry) bool {
 // the child is 0, as any change in the child was never merged to the parent.
 // the parent is the effective commit number of the first lineage record of the child that points to the parent
 // it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
-func (c *cataloger) selectChildEffectiveCommits(tx db.Tx, childID int64, parentID int64) (*diffEffectiveCommits, error) {
+func selectChildEffectiveCommits(tx db.Tx, childID int64, parentID int64) (*diffEffectiveCommits, error) {
 	effectiveCommitsQuery, args, err := psql.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
 		From("catalog_commits").
 		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
@@ -448,14 +421,13 @@ func lineageCommitIDByBranchID(lineage []lineageCommit, branchID int64) CommitID
 
 // prepareDiffAdditionalFields - make sure we have checksum field for diff
 func prepareDiffAdditionalFields(fields []string) []string {
-	if !stringIsInSlice(fields, DBEntryFieldChecksum) {
-		return append(fields, DBEntryFieldChecksum)
-	} else {
+	if stringIsInSlice(fields, DBEntryFieldChecksum) {
 		return fields
 	}
+	return append(fields, DBEntryFieldChecksum)
 }
 
-func (c *cataloger) getRefsRelationType(tx db.Tx, params *doDiffParams) (RelationType, error) {
+func getRefsRelationType(tx db.Tx, params doDiffParams) (RelationType, error) {
 	if params.LeftBranchID == params.RightBranchID {
 		return RelationTypeSame, nil
 	}
@@ -501,22 +473,4 @@ func stringIsInSlice(slice []string, val string) bool {
 		}
 	}
 	return false
-}
-
-func newSummaryMap() map[DifferenceType]int {
-	m := make(map[DifferenceType]int)
-	for i := 0; i < int(DifferenceTypeNone); i++ {
-		m[DifferenceType(i)] = 0
-	}
-	return m
-}
-
-func (c *cataloger) diffNonDirect(_ db.Tx, params *doDiffParams) error {
-	c.log.WithFields(logging.Fields{
-		"left_branch_id":  params.LeftBranchID,
-		"left_commit_id":  params.LeftCommitID,
-		"right_branch_id": params.RightBranchID,
-		"right_commit_id": params.RightCommitID,
-	}).Debug("Diff not direct - feature not supported")
-	return ErrFeatureNotSupported
 }

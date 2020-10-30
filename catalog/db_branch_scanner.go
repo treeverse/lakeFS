@@ -66,10 +66,6 @@ func (s *DBBranchScanner) Value() *DBScannerEntry {
 	return s.value
 }
 
-func (s *DBBranchScanner) getBranchID() int64 {
-	return s.branchID
-}
-
 func (s *DBBranchScanner) hasEnded() bool {
 	return s.ended || s.err != nil
 }
