@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	MergeBatchSize = 128
+	MergeBatchSize = 256
 )
 
 type mergeBatchRecords []*diffResultRecord
