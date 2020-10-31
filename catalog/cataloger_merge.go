@@ -60,9 +60,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		}
 		switch relation {
 		case RelationTypeSame:
-			return nil, fmt.Errorf("merge from the same branch: %w", ErrOperationNotPermitted)
+			return nil, ErrSameBranchMergeNotSupported
 		case RelationTypeNotDirect:
-			return nil, fmt.Errorf("merge suported only between branches that are parent-child or child-parent: %w", ErrOperationNotPermitted)
+			return nil, ErrNonDirectMergeNotSupported
 		}
 		scanner, err := NewDiffScanner(tx, params, relation)
 		if err != nil {
