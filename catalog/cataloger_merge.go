@@ -80,9 +80,10 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 
 		differences := make(mergeBatchRecords, 0, MergeBatchSize)
 		var rowsCounter int
+		one := 1
 		for scanner.Next() {
 			v := scanner.Value()
-			summary[v.DiffType] = summary[v.DiffType] + 1
+			summary[v.DiffType] = summary[v.DiffType] + one
 			rowsCounter++
 			if v.DiffType == DifferenceTypeConflict {
 				return nil, ErrConflictFound
