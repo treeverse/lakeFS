@@ -273,6 +273,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
 	}); diff != nil {
