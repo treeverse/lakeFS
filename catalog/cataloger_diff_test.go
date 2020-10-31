@@ -130,7 +130,7 @@ func TestCataloger_Diff_FromChild(t *testing.T) {
 	res, more, err := c.Diff(ctx, repository, "branch1", DefaultBranchName, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes between branch1 and master", err)
 	if more {
-		t.Fatal("Diff has more differences, expected none")
+		t.Fatal("Diff has more than expected differences")
 	}
 	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
@@ -174,7 +174,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from second and first commits", err)
 	if more {
-		t.Fatal("Diff has more differences, expected none")
+		t.Fatal("Diff has more than expected differences")
 	}
 	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
@@ -189,7 +189,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from first and second commits", err)
 	if more {
-		t.Fatal("Diff has more differences, expected none")
+		t.Fatal("Diff has more than expected differences")
 	}
 	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
@@ -238,7 +238,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from second and first commits", err)
 	if more {
-		t.Fatal("Diff has more differences, expected none")
+		t.Fatal("Diff has more than expected differences")
 	}
 	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
@@ -253,11 +253,27 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from first and second commits", err)
 	if more {
-		t.Fatal("Diff has more differences, expected none")
+		t.Fatal("Diff has more than expected differences")
 	}
 	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeAdded},
+		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
+	}); diff != nil {
+		t.Fatal("Diff unexpected differences:", diff)
+	}
+
+	// rewrite a file with different content and expect to find a change in diff
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "file2-"+DefaultBranchName, nil, DefaultBranchName+"mod2")
+	rewriteCommit, err := c.Commit(ctx, repository, "branch1", "rewrite file2", "tester", nil)
+	testutil.MustDo(t, "rewrite file2", err)
+
+	res, more, err = c.Diff(ctx, repository, rewriteCommit.Reference, secondCommit.Reference, DiffParams{Limit: -1})
+	testutil.MustDo(t, "Diff changes from rewrite and second commits", err)
+	if more {
+		t.Fatal("Diff has more than expected differences")
+	}
+	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
 	}); diff != nil {
 		t.Fatal("Diff unexpected differences:", diff)
@@ -402,7 +418,7 @@ func TestCataloger_Diff_FromParentThreeBranches(t *testing.T) {
 	res, more, err := c.Diff(ctx, repository, "master", "branch0", DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from master to branch0", err)
 	if more {
-		t.Fatal("Diff has more differences, expected none")
+		t.Fatal("Diff has more than expected differences")
 	}
 	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
