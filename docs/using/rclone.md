@@ -8,7 +8,7 @@ has_children: false
 # Copying data with rclone
 {: .no_toc }
 [Rclone](https://rclone.org/){:target="_blank"} is a command line program to sync files and directories between cloud providers.
-To use it with lakeFS, just create an Rclone remote as describe below, and then use it as you would any other Rclone remote.                                                                                                  
+To use it with lakeFS, just create a Rclone remote as describe below, and then use it as you would any other Rclone remote.                                                                                                  
 
 ## Table of contents
 {: .no_toc .text-delta }
