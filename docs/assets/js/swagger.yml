@@ -86,10 +86,10 @@ definitions:
   repository_creation:
     type: object
     required:
-      - id
+      - name
       - storage_namespace
     properties:
-      id:
+      name:
         type: string
       storage_namespace:
         type: string

@@ -302,9 +302,8 @@ func (d *PgxDatabase) Stats() sql.DBStats {
 		// waiting.  The two are close enough (but race each other).
 		WaitCount: stat.EmptyAcquireCount(),
 		// Time to acquire is close enough to time spent waiting; fudge.
-		WaitDuration:      stat.AcquireDuration(),
-		MaxIdleClosed:     0, // TODO(ariels): Does pgx have this anywhere?
-		MaxIdleTimeClosed: 0, // TODO(ariels): Could generate this with post-connect/release hooks
-		MaxLifetimeClosed: 0, // TODO(ariels): Is this even possible in pgx?
+		WaitDuration: stat.AcquireDuration(),
+		// Not clear that pgx can report MaxIdleClosed, MaxIdleTimeClosed,
+		// MaxLifetimeClosed.
 	}
 }
