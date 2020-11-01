@@ -29,5 +29,7 @@ var (
 	ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 	ErrInvalidValue                  = errors.New("invalid value")
 	ErrNonDirectNotSupported         = errors.New("non direct diff not supported")
+	ErrNonDirectMergeNotSupported    = errors.New("merge suported only between branches that are parent-child or child-parent")
+	ErrSameBranchMergeNotSupported   = errors.New("same branch merge not supported")
 	ErrMergeWorkerRollback           = errors.New("merge worker exit because of diff error")
 )
