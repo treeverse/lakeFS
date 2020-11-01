@@ -5,10 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/treeverse/lakefs/diagnostics"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/diagnostics"
 )
 
 // diagnosticsCmd represents the diagnostics command
