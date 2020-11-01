@@ -6,7 +6,7 @@ const initialState = {
     merge: async.initialState,
 };
 
-export default (state = initialState, action) => {
+const store = (state = initialState, action) => {
     state = {
         ...state,
         diff: async.reduce(DIFF_REFS, state.diff, action),
@@ -20,3 +20,5 @@ export default (state = initialState, action) => {
             return state;
     }
 };
+
+export default store;
