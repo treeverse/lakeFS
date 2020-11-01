@@ -130,6 +130,10 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 }
 
 func drainChannel(channel chan mergeBatchRecords) {
+	// If merge just exited on error, than the diffWorker could continue sending to channel until the buffer
+	// got full, and diffWorker would stay in memory, in the middle of a transaction - something that
+	// may create problems after a while.
+	// channel draining is needed so that diffWorker does not get stuck, and  can exit the transaction
 	for ok := true; ok; { // drain the channel, till it closes
 		_, ok = <-channel
 	}
