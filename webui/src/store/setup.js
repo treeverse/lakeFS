@@ -5,9 +5,11 @@ const initialState = {
     setupLakeFS: async.actionInitialState,
 };
 
-export default (state = initialState, action) => {
+const store = (state = initialState, action) => {
     return {
         ...state,
         setupLakeFS: async.reduce(SETUP_LAKEFS, state.setupLakeFS, action),
     };
 };
+
+export default store; 

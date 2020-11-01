@@ -7,7 +7,7 @@ const initialState = {
     commit: async.actionInitialState,
 };
 
-export default (state = initialState, action) => {
+const store = (state = initialState, action) => {
     state = {
         ...state,
         log: async.reduce(COMMITS_LIST, state.log, action),
@@ -16,3 +16,5 @@ export default (state = initialState, action) => {
     state.log = async.reducePaginate(COMMITS_LIST_PAGINATE, state.log, action);
     return state;
 };
+
+export default store;

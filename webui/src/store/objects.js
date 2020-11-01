@@ -14,7 +14,7 @@ const initialState = {
     importDryRun: async.actionInitialState,
 };
 
-export default (state = initialState, action) => {
+const store = (state = initialState, action) => {
     state = {
         ...state,
         list: async.reduce(OBJECTS_LIST_TREE, state.list, action),
@@ -29,3 +29,5 @@ export default (state = initialState, action) => {
             return state;
     }
 };
+
+export default store;
