@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
@@ -54,19 +53,12 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			},
 		}
 
-		relation, err := getRefsRelationType(tx, params)
-		if err != nil {
-			return nil, fmt.Errorf("get refs relation: %w", err)
-		}
-		switch relation {
-		case RelationTypeSame:
-			return nil, ErrSameBranchMergeNotSupported
-		case RelationTypeNotDirect:
-			return nil, ErrNonDirectMergeNotSupported
-		}
-		scanner, err := NewDiffScanner(tx, params, relation)
+		scanner, err := NewDiffScanner(tx, params)
 		if err != nil {
 			return nil, err
+		}
+		if scanner.Relation == RelationTypeSame {
+			return nil, ErrSameBranchMergeNotSupported
 		}
 		nextCommitID, err := getNextCommitID(tx)
 		if err != nil {
@@ -82,14 +74,14 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		var rowsCounter int
 		for scanner.Next() {
 			v := scanner.Value()
-			summary[v.DiffType]++
+			summary[v.Type]++
 			rowsCounter++
-			if v.DiffType == DifferenceTypeConflict {
+			if v.Type == DifferenceTypeConflict {
 				return nil, ErrConflictFound
 			}
 			differences = append(differences, v)
 			if len(differences) >= MergeBatchSize {
-				err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
+				err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, scanner.Relation)
 				if err != nil {
 					return nil, err
 				}
@@ -100,7 +92,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, relation)
+		err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, scanner.Relation)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +108,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
-		err = InsertMergeCommit(tx, relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
+		err = insertMergeCommit(tx, scanner.Relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -166,14 +158,14 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	ctidArray := make([]string, 0, MergeBatchSize)
 	var tombstonePaths []string
 	for _, diffRec := range mergeBatch {
-		if diffRec.DiffType == DifferenceTypeRemoved || diffRec.DiffType == DifferenceTypeChanged {
+		if diffRec.Type == DifferenceTypeRemoved || diffRec.Type == DifferenceTypeChanged {
 			paths = append(paths, diffRec.Entry.Path)
 		}
-		if (diffRec.DiffType == DifferenceTypeAdded || diffRec.DiffType == DifferenceTypeChanged) &&
+		if (diffRec.Type == DifferenceTypeAdded || diffRec.Type == DifferenceTypeChanged) &&
 			diffRec.EntryCtid != nil {
 			ctidArray = append(ctidArray, *diffRec.EntryCtid)
 		}
-		if diffRec.DiffType == DifferenceTypeRemoved &&
+		if diffRec.Type == DifferenceTypeRemoved &&
 			diffRec.TargetEntryNotInDirectBranch &&
 			relation == RelationTypeFromChild {
 			tombstonePaths = append(tombstonePaths, diffRec.Entry.Path)
@@ -197,7 +189,10 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	}
 	if len(ctidArray) > 0 {
 		// copy entries from left to right
-		internalSelect := sq.Select(int64Str(rightID), "path", "physical_address", "creation_date", "size", "checksum", "metadata", int64Str(int64(nextCommitID))).
+		internalSelect := sq.Select().
+			Column("?", rightID).
+			Columns("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			Column("?", nextCommitID).
 			From("catalog_entries").
 			Where(sq.Eq{"ctid": ctidArray})
 		copyEntries := sq.Insert("catalog_entries").
@@ -224,37 +219,24 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	}
 	return nil
 }
-
-func InsertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID int64, nextCommitID CommitID, previousMaxCommitID CommitID, committer string, msg string, metadata Metadata) error {
-	var err error
-	var childNewLineage *string
-	var parentLastLineage string
+func insertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID int64, nextCommitID CommitID, previousMaxCommitID CommitID, committer string, msg string, metadata Metadata) error {
+	var childNewLineage []int64
 	leftLastCommitID, err := getLastCommitIDByBranchID(tx, leftID)
 	if err != nil {
 		return err
 	}
 	if relation == RelationTypeFromParent {
-		err = tx.Get(&parentLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM catalog_commits
+		var parentLastLineage []int64
+		err = tx.Get(&parentLastLineage, `SELECT DISTINCT ON (branch_id) lineage_commits FROM catalog_commits
 												  WHERE branch_id = $1 AND merge_type = 'from_parent' ORDER BY branch_id,commit_id DESC`, leftID)
 		if err != nil && !errors.As(err, &db.ErrNotFound) {
 			return err
 		}
-		t := int64Str(int64(leftLastCommitID))
-		childNewLineage = &t
-		if len(parentLastLineage) > 0 {
-			*childNewLineage += "," + parentLastLineage
-		}
+		childNewLineage = append([]int64{int64(leftLastCommitID)}, parentLastLineage...)
 	}
 	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_source_branch, merge_source_commit,
                      lineage_commits, merge_type)
-		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,$7,$8,string_to_array($9,',')::bigint[],$10)`,
+		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,$7,$8,$9,$10)`,
 		rightID, nextCommitID, previousMaxCommitID, committer, msg, metadata, leftID, leftLastCommitID, childNewLineage, relation)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func int64Str(l int64) string {
-	return strconv.FormatInt(l, 10)
+	return err
 }
