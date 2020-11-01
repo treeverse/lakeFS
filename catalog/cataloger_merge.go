@@ -80,10 +80,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 
 		differences := make(mergeBatchRecords, 0, MergeBatchSize)
 		var rowsCounter int
-		one := 1
 		for scanner.Next() {
 			v := scanner.Value()
-			summary[v.DiffType] = summary[v.DiffType] + one
+			summary[v.DiffType]++
 			rowsCounter++
 			if v.DiffType == DifferenceTypeConflict {
 				return nil, ErrConflictFound
@@ -213,7 +212,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 			return err
 		}
 	}
-	//insert tombstones into parent branch that has a removed entry in its lineage
+	// insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
 		values := "(VALUES ('" + strings.Join(tombstonePaths, "'),('") + "')) AS t(path)"
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
