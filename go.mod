@@ -9,6 +9,7 @@ require (
 	github.com/apache/thrift v0.13.0
 	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.34.0
+	github.com/bxcodec/faker/v3 v3.5.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
