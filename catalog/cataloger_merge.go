@@ -85,7 +85,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, buf.err
 			}
 			for _, d := range buf.differences {
-				summary[d.DiffType] = summary[d.DiffType] + 1
+				summary[d.DiffType]++
 				rowsCounter++
 			}
 			err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
@@ -152,7 +152,6 @@ func (c *cataloger) diffWorker(params doDiffParams, relation RelationType, merge
 			}
 			if len(mergeBatch.differences) >= MergeBatchSize {
 				mergeBatchChan <- mergeBatch
-				//mergeBatch.differences = mergeBatch.differences[:0]
 				mergeBatch.differences = make([]*diffResultRecord, 0, MergeBatchSize)
 			}
 		}
@@ -238,7 +237,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 			return err
 		}
 	}
-	//insert tombstones into parent branch that has a removed entry in its lineage
+	// insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
 		values := "(VALUES ('" + strings.Join(tombstonePaths, "'),('") + "')) AS t(path)"
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
