@@ -34,8 +34,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	}); err != nil {
 		return nil, err
 	}
-
-	mergeResult := &MergeResult{}
+	mergeResult := &MergeResult{Summary: make(map[DifferenceType]int)}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
@@ -78,27 +77,26 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		mergeBatchChan := make(chan mergeBatchRecords, MergeBatchChanBuffer)
 		var workerExitFlag bool
 		go c.diffWorker(params, relation, mergeBatchChan, &workerExitFlag)
-		summary := make(map[DifferenceType]int)
 		var rowsCounter int
 		for buf := range mergeBatchChan {
 			if buf.err != nil {
 				return nil, buf.err
 			}
 			for _, d := range buf.differences {
-				summary[d.DiffType]++
+				if d.DiffType == DifferenceTypeConflict {
+					workerExitFlag = true
+					drainChannel(mergeBatchChan)
+					return nil, ErrConflictFound
+				}
+				mergeResult.Summary[d.DiffType]++
 				rowsCounter++
 			}
 			err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
 			if err != nil {
 				workerExitFlag = true
-				for ok := true; ok; { // drain the channel, till the worker closes it
-					_, ok = <-mergeBatchChan
-				}
+				drainChannel(mergeBatchChan)
 				return nil, err
 			}
-		}
-		if message == "" {
-			message = fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 		}
 		if rowsCounter == 0 {
 			commitDifferences, err := hasCommitDifferences(tx, leftID, rightID)
@@ -109,11 +107,13 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
+		if message == "" {
+			message = fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
+		}
 		err = InsertMergeCommit(tx, relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
 		if err != nil {
 			return nil, err
 		}
-		mergeResult.Summary = summary
 		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
 
 		for _, hook := range c.hooks.PostMerge {
@@ -127,6 +127,12 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
+}
+
+func drainChannel(channel chan mergeBatchRecords) {
+	for ok := true; ok; { // drain the channel, till it closes
+		_, ok = <-channel
+	}
 }
 
 func (c *cataloger) diffWorker(params doDiffParams, relation RelationType, mergeBatchChan chan mergeBatchRecords, exitFlag *bool) {
@@ -145,11 +151,6 @@ func (c *cataloger) diffWorker(params doDiffParams, relation RelationType, merge
 			}
 			v := scanner.Value()
 			mergeBatch.differences = append(mergeBatch.differences, v)
-			if v.DiffType == DifferenceTypeConflict {
-				mergeBatch.err = ErrConflictFound
-				mergeBatchChan <- mergeBatch
-				return nil, nil
-			}
 			if len(mergeBatch.differences) >= MergeBatchSize {
 				mergeBatchChan <- mergeBatch
 				mergeBatch.differences = make([]*diffResultRecord, 0, MergeBatchSize)
