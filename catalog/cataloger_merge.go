@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	MergeBatchSize       = 10
-	MergeBatchChanBuffer = 128
+	MergeBatchSize       = 256
+	MergeBatchChanBuffer = 10
 )
 
 type mergeBatchRecords struct {
@@ -63,9 +63,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		}
 		switch relation {
 		case RelationTypeSame:
-			return nil, fmt.Errorf("merge from the same branch: %w", ErrOperationNotPermitted)
+			return nil, ErrSameBranchMergeNotSupported
 		case RelationTypeNotDirect:
-			return nil, fmt.Errorf("merge suported only between branches that are parent-child or child-parent: %w", ErrOperationNotPermitted)
+			return nil, ErrNonDirectMergeNotSupported
 		}
 		nextCommitID, err := getNextCommitID(tx)
 		if err != nil {
@@ -86,7 +86,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 			for _, d := range buf.differences {
 				summary[d.DiffType] = summary[d.DiffType] + 1
-				rowsCounter++
+			rowsCounter++
 			}
 			err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
 			if err != nil {
