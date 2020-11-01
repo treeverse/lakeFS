@@ -30,8 +30,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}
 
-	mergeResult := &MergeResult{}
-	summary := make(map[DifferenceType]int)
+	mergeResult := &MergeResult{
+		Summary: make(map[DifferenceType]int),
+	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
@@ -74,7 +75,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		var rowsCounter int
 		for scanner.Next() {
 			v := scanner.Value()
-			summary[v.Type]++
+			mergeResult.Summary[v.Type]++
 			rowsCounter++
 			if v.Type == DifferenceTypeConflict {
 				return nil, ErrConflictFound
@@ -112,7 +113,6 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		mergeResult.Summary = summary
 		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
 
 		for _, hook := range c.hooks.PostMerge {
