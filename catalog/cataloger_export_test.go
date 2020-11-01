@@ -3,12 +3,16 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp/syntax"
 	"sort"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
+	"github.com/treeverse/lakefs/db"
 )
 
 const (
@@ -37,10 +41,6 @@ func (s configForBranchSlice) Swap(i int, j int) {
 }
 
 func TestExportConfiguration(t *testing.T) {
-	const (
-		branchID        = 17
-		anotherBranchID = 29
-	)
 	ctx := context.Background()
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
@@ -147,4 +147,117 @@ func TestExportConfiguration(t *testing.T) {
 			t.Errorf("did not read expected configurations: %s", diffs)
 		}
 	})
+}
+
+func TestExportState(t *testing.T) {
+	const (
+		ref1 = "this commit"
+		ref2 = "that commit"
+	)
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
+
+	cases := []struct {
+		name         string
+		startRef     string // start with this ref (and state) if set, otherwise start with no row
+		startState   CatalogBranchExportStatus
+		startMessage *string
+		setRef       string
+		expectState  CatalogBranchExportStatus
+		expectErr    func(t *testing.T, err error)
+	}{
+		{
+			name:        "clean",
+			setRef:      ref2,
+			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if err != nil {
+					t.Errorf("unexpected error %s", err)
+				}
+			},
+		}, {
+			name:        "reset",
+			startRef:    ref1,
+			setRef:      ref2,
+			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if err != nil {
+					t.Errorf("unexpected error %s", err)
+				}
+			},
+		}, {
+			name:        "previousSucceeded",
+			startRef:    ref1,
+			startState:  ExportStatusSuccess,
+			setRef:      ref2,
+			expectState: ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if err != nil {
+					t.Errorf("unexpected error %s", err)
+				}
+			},
+		}, {
+			name:         "previousFailed",
+			startRef:     ref1,
+			startState:   ExportStatusFailed,
+			startMessage: swag.String("humpty dumpty had a great fall"),
+			setRef:       ref2,
+			expectState:  ExportStatusInProgress,
+			expectErr: func(t *testing.T, err error) {
+				if !errors.Is(err, ErrExportFailed) {
+					t.Errorf("expected ErrExportFailed but got %s", err)
+				}
+			},
+		},
+	}
+	for _, tt := range cases {
+		pool, err := pgxpool.Connect(ctx, c.DbConnURI)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		err = db.Ping(ctx, pool)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		d := db.NewPgxDatabase(pool)
+		t.Run(tt.name, func(t *testing.T) {
+			_, err = d.Transact(func(tx db.Tx) (interface{}, error) {
+				// Clean up any existing state
+				if err := c.ExportStateDelete(tx, repo, defaultBranch); err != nil && !errors.Is(err, ErrEntryNotFound) {
+					return nil, fmt.Errorf("setup (delete): %w", err)
+				}
+
+				if tt.startRef != "" {
+					// This also ends up testing ExportStateMarkStart in the same way
+					// each time.
+					if _, _, err := c.ExportStateMarkStart(tx, repo, defaultBranch, tt.startRef); err != nil {
+						return nil, fmt.Errorf("setup (mark previous): %w", err)
+					}
+					// Test ExportMarkEnd if previous state is configured.
+					if tt.startState != "" && tt.startState != ExportStatusInProgress {
+						err := c.ExportStateMarkEnd(tx, repo, defaultBranch, tt.startRef, tt.startState, tt.startMessage)
+						if err != nil {
+							return nil, fmt.Errorf("setup (set previous): %w", err)
+						}
+					}
+				}
+
+				gotRef, gotState, err := c.ExportStateMarkStart(tx, repo, defaultBranch, tt.setRef)
+				if tt.expectErr != nil {
+					tt.expectErr(t, err)
+				}
+				if gotRef != tt.startRef {
+					t.Errorf("expected to old ref %s but got %s", tt.startRef, gotRef)
+				}
+				if tt.startState != "" && gotState != tt.startState {
+					t.Errorf("expected previous state %s but got %s", tt.startState, gotState)
+				}
+				return nil, nil
+			})
+			if err != nil {
+				t.Errorf(err.Error())
+			}
+		})
+	}
 }
