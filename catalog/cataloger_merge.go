@@ -86,7 +86,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 			for _, d := range buf.differences {
 				summary[d.DiffType] = summary[d.DiffType] + 1
-			rowsCounter++
+				rowsCounter++
 			}
 			err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
 			if err != nil {

@@ -489,7 +489,7 @@ func TestCataloger_Diff_AdditionalFields(t *testing.T) {
 }
 
 func clearChecksum(d *Differences) {
-	for i, _ := range *d {
+	for i := range *d {
 		(*d)[i].Entry.Checksum = ""
 	}
 }
