@@ -237,7 +237,8 @@ func (s *DiffScanner) Next() bool {
 		if diffType == DifferenceTypeNone {
 			continue
 		}
-		s.value = &diffResultRecord{DiffType: diffType,
+		s.value = &diffResultRecord{
+			DiffType: diffType,
 			Entry: leftEnt.Entry,
 		}
 
