@@ -97,7 +97,7 @@ function useHover() {
     return [ref, value];
 }
 
-export default ({ text, variant, onSuccess, onError, icon = <ClippyIcon/>,  tooltip = "Copy to clipboard"}) => {
+const ClipboardButton = ({ text, variant, onSuccess, onError, icon = <ClippyIcon/>,  tooltip = "Copy to clipboard"}) => {
 
     const [show, setShow] = useState(false);
     const [tooltipText, setTooltipText] = useState(tooltip);
@@ -126,3 +126,5 @@ export default ({ text, variant, onSuccess, onError, icon = <ClippyIcon/>,  tool
         </>
     );
 };
+
+export default ClipboardButton;
