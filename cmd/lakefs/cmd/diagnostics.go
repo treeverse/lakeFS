@@ -26,11 +26,11 @@ var diagnosticsCmd = &cobra.Command{
 
 		f, err := os.Create(output)
 		if err != nil {
-			log.Fatalf("Create %s failed - %s", output, err)
+			log.Fatalf("Create zip file '%s' failed - %s", output, err)
 		}
 		defer func() { _ = f.Close() }()
 
-		log.Printf("Collecting...")
+		log.Printf("Collecting data")
 		err = c.Collect(ctx, f)
 		if err != nil {
 			log.Fatalf("Failed to collect data: %s", err)
@@ -42,6 +42,5 @@ var diagnosticsCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(diagnosticsCmd)
-	diagnosticsCmd.Flags().StringP("output", "o", "", "output zip filename")
-	_ = diagnosticsCmd.MarkFlagRequired("output")
+	diagnosticsCmd.Flags().StringP("output", "o", "lakefs-diagnostics.zip", "output zip filename")
 }
