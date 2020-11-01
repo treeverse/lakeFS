@@ -16,9 +16,12 @@ type Collector struct {
 	db db.Database
 }
 
-const maxRecordsPerQueryCollect = 1000
+const (
+	maxRecordsPerQueryCollect = 1000
+	csvFileExt                = ".csv"
+)
 
-var ErrNoColumns = errors.New("no columns in table")
+var ErrNoColumnsFound = errors.New("no columns found")
 
 func NewCollector(adb db.Database) *Collector {
 	return &Collector{
@@ -30,33 +33,88 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 	writer := zip.NewWriter(w)
 	defer func() { err = writer.Close() }()
 
-	err = c.writeTableContent(ctx, writer, "auth_installation_metadata")
-	if err != nil {
-		return err
+	var errs []error
+	contentFromTables := []string{
+		"auth_installation_metadata",
+		"schema_migrations",
+	}
+	for _, tbl := range contentFromTables {
+		err = c.writeTableContent(ctx, writer, tbl)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("write table content for %s %w", tbl, err))
+		}
 	}
 
+	countFromTables := []string{
+		"catalog_branches",
+		"catalog_commits",
+		"catalog_entries",
+		"catalog_repositories",
+		"catalog_object_dedup",
+		"catalog_multipart_uploads",
+		"auth_users",
+	}
+	for _, tbl := range countFromTables {
+		err = c.writeTableCount(ctx, writer, tbl)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("write table count for %s %w", tbl, err))
+		}
+	}
+
+	err = c.writeQueryContent(ctx, writer, "entries_per_branch", sq.
+		Select("branch_id", "COUNT(*)").From("catalog_entries").GroupBy("branch_id"))
+	if err != nil {
+		errs = append(errs, fmt.Errorf("write query entries_per_branch %w", err))
+	}
+
+	err = c.writeRawQueryContent(ctx, writer, "table_sizes", `
+SELECT *, pg_size_pretty(total_bytes) AS total
+    , pg_size_pretty(index_bytes) AS INDEX
+    , pg_size_pretty(toast_bytes) AS toast
+    , pg_size_pretty(table_bytes) AS TABLE
+  FROM (SELECT *, total_bytes-index_bytes-COALESCE(toast_bytes,0) AS table_bytes FROM (
+      SELECT c.oid,nspname AS table_schema, relname AS TABLE_NAME
+              , c.reltuples AS row_estimate
+              , pg_total_relation_size(c.oid) AS total_bytes
+              , pg_indexes_size(c.oid) AS index_bytes
+              , pg_total_relation_size(reltoastrelid) AS toast_bytes
+          FROM pg_class c
+          LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE relkind = 'r') a) a`)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("get table sizes %w", err))
+	}
+
+	// write all errors into log
+	if err := c.writeErrors(ctx, writer, errs); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, name string, selectBuilder sq.SelectBuilder) error {
-	filename := name + ".csv"
+	q := selectBuilder.Limit(maxRecordsPerQueryCollect)
+	query, args, err := q.ToSql()
+	if err != nil {
+		return fmt.Errorf("query build: %w", err)
+	}
+	return c.writeRawQueryContent(ctx, writer, name, query, args...)
+}
+
+func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer, name string, query string, args ...interface{}) error {
+	rows, err := c.db.Query(query, args...)
+	if err != nil {
+		return fmt.Errorf("execute query: %w", err)
+	}
+	defer rows.Close()
+
+	filename := name + csvFileExt
 	w, err := writer.Create(filename)
 	if err != nil {
 		return fmt.Errorf("new file for table %s - %w", name, err)
 	}
 	csvWriter := csv.NewWriter(w)
 	defer csvWriter.Flush()
-
-	q := selectBuilder.Limit(maxRecordsPerQueryCollect)
-	query, args, err := q.ToSql()
-	if err != nil {
-		return fmt.Errorf("query build: %w", err)
-	}
-	rows, err := c.db.Query(query, args...)
-	if err != nil {
-		return fmt.Errorf("execute query: %w", err)
-	}
-	defer rows.Close()
 
 	first := true
 	for rows.Next() {
@@ -67,7 +125,7 @@ func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, n
 			first = false
 			descriptions := rows.FieldDescriptions()
 			if len(descriptions) == 0 {
-				return ErrNoColumns
+				return ErrNoColumnsFound
 			}
 			cols := make([]string, len(descriptions))
 			for i, fd := range descriptions {
@@ -95,4 +153,26 @@ func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, n
 func (c *Collector) writeTableContent(ctx context.Context, writer *zip.Writer, name string) error {
 	q := sq.Select("*").From(name)
 	return c.writeQueryContent(ctx, writer, name, q)
+}
+
+func (c *Collector) writeTableCount(ctx context.Context, writer *zip.Writer, name string) error {
+	q := sq.Select("COUNT(*)").From(name)
+	return c.writeQueryContent(ctx, writer, name+"_count", q)
+}
+
+func (c *Collector) writeErrors(ctx context.Context, writer *zip.Writer, errs []error) error {
+	if len(errs) == 0 {
+		return nil
+	}
+	w, err := writer.Create("errors.log")
+	if err != nil {
+		return err
+	}
+	for _, err := range errs {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		_, _ = fmt.Fprintf(w, "%v\n", err)
+	}
+	return nil
 }

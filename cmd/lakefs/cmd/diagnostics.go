@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/treeverse/lakefs/diagnostics"
@@ -17,26 +17,25 @@ var diagnosticsCmd = &cobra.Command{
 	Short: "Collect lakeFS diagnostics",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
-		//conf := config.NewConfig()
 		output, _ := cmd.Flags().GetString("output")
 
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
 		c := diagnostics.NewCollector(dbPool)
+
 		f, err := os.Create(output)
 		if err != nil {
-			fmt.Printf("Failed to open file! %s\n", err)
+			log.Fatalf("Create %s failed - %s", output, err)
 		}
 		defer func() { _ = f.Close() }()
 
-		fmt.Println("Collecting...")
+		log.Printf("Collecting...")
 		err = c.Collect(ctx, f)
 		if err != nil {
-			fmt.Printf("Failed to collect data: %s\n", err)
+			log.Fatalf("Failed to collect data: %s", err)
 		}
-
-		fmt.Printf("Diagnostics collected into zip file: %s\n", output)
+		log.Printf("Diagnostics collected into %s", output)
 	},
 }
 
