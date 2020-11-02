@@ -14,7 +14,7 @@ const (
 	MergeBatchSize = 256
 )
 
-type mergeBatchRecords []*diffResultRecord
+type mergeBatchRecords []*DiffResultRecord
 
 // Merge perform diff between two branches (left and right), apply changes on right branch and commit
 // It uses the cataloger diff internal API to produce a temporary table that we delete at the end of a successful merge

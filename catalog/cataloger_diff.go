@@ -10,19 +10,6 @@ import (
 
 const DiffMaxLimit = 1000
 
-type diffEffectiveCommits struct {
-	// ParentEffectiveCommit last commit parent merged from child.
-	// When no sync commit is found - set the commit ID to the point child's branch was created.
-	ParentEffectiveCommit CommitID `db:"parent_effective_commit"`
-
-	// ChildEffectiveCommit last commit child merged from parent.
-	// If the child never synced with parent, the commit ID is set to 1.
-	ChildEffectiveCommit CommitID `db:"child_effective_commit"`
-
-	// ParentEffectiveLineage lineage at the ParentEffectiveCommit
-	ParentEffectiveLineage []lineageCommit
-}
-
 func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
