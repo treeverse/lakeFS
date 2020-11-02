@@ -37,6 +37,7 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 	contentFromTables := []string{
 		"auth_installation_metadata",
 		"schema_migrations",
+		"pg_stat_database",
 	}
 	for _, tbl := range contentFromTables {
 		err = c.writeTableContent(ctx, writer, tbl)
@@ -48,10 +49,7 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 	countFromTables := []string{
 		"catalog_branches",
 		"catalog_commits",
-		"catalog_entries",
 		"catalog_repositories",
-		"catalog_object_dedup",
-		"catalog_multipart_uploads",
 		"auth_users",
 	}
 	for _, tbl := range countFromTables {
@@ -59,12 +57,6 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 		if err != nil {
 			errs = append(errs, fmt.Errorf("write table count for %s %w", tbl, err))
 		}
-	}
-
-	err = c.writeQueryContent(ctx, writer, "entries_per_branch", sq.
-		Select("branch_id", "COUNT(*)").From("catalog_entries").GroupBy("branch_id"))
-	if err != nil {
-		errs = append(errs, fmt.Errorf("write query entries_per_branch %w", err))
 	}
 
 	err = c.writeRawQueryContent(ctx, writer, "table_sizes", `
