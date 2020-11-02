@@ -42,6 +42,7 @@ const (
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
+	DefaultS3MaxRetries        = 5
 
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
@@ -91,6 +92,7 @@ func setDefaults() {
 	viper.SetDefault("blockstore.s3.region", DefaultBlockStoreS3Region)
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
+	viper.SetDefault("blockstore.s3.max_retries", DefaultS3MaxRetries)
 
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
@@ -191,6 +193,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
+	cfg.WithMaxRetries(viper.GetInt("blockstore.s3.max_retries"))
 	return cfg
 }
 
