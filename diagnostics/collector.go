@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
+// Collector collects diagnostics information and write the collected content into a writer in a zip format
 type Collector struct {
 	db db.Database
 }
@@ -21,14 +22,16 @@ const (
 	csvFileExt                = ".csv"
 )
 
-var ErrNoColumnsFound = errors.New("no columns found")
+var errNoColumnsFound = errors.New("no columns found")
 
+// NewCollector accepts database to work with during collect
 func NewCollector(adb db.Database) *Collector {
 	return &Collector{
 		db: adb,
 	}
 }
 
+// Collect query information from the database into csv files and write everything to io writer
 func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 	writer := zip.NewWriter(w)
 	defer func() { err = writer.Close() }()
@@ -42,7 +45,7 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 	for _, tbl := range contentFromTables {
 		err = c.writeTableContent(ctx, writer, tbl)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("write table content for %s %w", tbl, err))
+			errs = append(errs, fmt.Errorf("write table content for %s: %w", tbl, err))
 		}
 	}
 
@@ -55,7 +58,7 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 	for _, tbl := range countFromTables {
 		err = c.writeTableCount(ctx, writer, tbl)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("write table count for %s %w", tbl, err))
+			errs = append(errs, fmt.Errorf("write table count for %s: %w", tbl, err))
 		}
 	}
 
@@ -79,7 +82,7 @@ SELECT *, pg_size_pretty(total_bytes) AS total
 
 	// write all errors into log
 	if err := c.writeErrors(ctx, writer, errs); err != nil {
-		return err
+		return fmt.Errorf("write errors: %w", err)
 	}
 	return nil
 }
@@ -117,14 +120,14 @@ func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer
 			first = false
 			descriptions := rows.FieldDescriptions()
 			if len(descriptions) == 0 {
-				return ErrNoColumnsFound
+				return errNoColumnsFound
 			}
 			cols := make([]string, len(descriptions))
 			for i, fd := range descriptions {
 				cols[i] = string(fd.Name)
 			}
 			if err := csvWriter.Write(cols); err != nil {
-				return fmt.Errorf("write csv header for %s %w", name, err)
+				return fmt.Errorf("write csv header for %s: %w", name, err)
 			}
 		}
 		v, err := rows.Values()
