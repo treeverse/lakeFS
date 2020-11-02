@@ -132,7 +132,7 @@ func drainChannel(channel chan mergeBatchRecords) {
 	// got full, and diffWorker would stay in memory, in the middle of a transaction - something that
 	// may create problems after a while.
 	// channel draining is needed so that diffWorker does not get stuck, and  can exit the transaction
-	for _ = range channel {
+	for range channel {
 	}
 }
 
