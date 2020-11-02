@@ -15,12 +15,11 @@ type DBScanner interface {
 	Err() error
 }
 
-func ScanDBEntryUntil(s DBScanner, ent *DBScannerEntry, p string) (*DBScannerEntry, error) {
-	for ent == nil || ent.Path < p {
+func ScanDBEntriesUntil(s DBScanner, p string) (*DBScannerEntry, error) {
+	for s.Value() == nil || s.Value().Path < p {
 		if !s.Next() {
 			return nil, s.Err()
 		}
-		ent = s.Value()
 	}
-	return ent, nil
+	return s.Value(), nil
 }
