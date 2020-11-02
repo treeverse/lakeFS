@@ -33,7 +33,10 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	}); err != nil {
 		return nil, err
 	}
-	mergeResult := &MergeResult{Summary: make(map[DifferenceType]int)}
+
+	mergeResult := &MergeResult{
+		Summary: make(map[DifferenceType]int),
+	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
@@ -243,10 +246,9 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	}
 	// insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
-		values := "(VALUES ('" + strings.Join(tombstonePaths, "'),('") + "')) AS t(path)"
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
-				SELECT $1,path,'',0,'','{}',$2,0 FROM ` + values
-		_, err := tx.Exec(sql, rightID, previousMaxCommitID)
+				SELECT $1,path,'',0,'','{}',$2,0 FROM(SELECT * FROM UNNEST($3::text []))t(path)`
+		_, err := tx.Exec(sql, rightID, previousMaxCommitID, tombstonePaths)
 		if err != nil {
 			return err
 		}
