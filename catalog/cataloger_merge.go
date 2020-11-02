@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
@@ -17,7 +16,7 @@ const (
 
 type mergeBatchRecords struct {
 	err         error
-	differences []*diffResultRecord
+	differences []*DiffResultRecord
 }
 
 // Merge perform diff between two branches (left and right), apply changes on right branch and commit
@@ -133,15 +132,14 @@ func drainChannel(channel chan mergeBatchRecords) {
 	// got full, and diffWorker would stay in memory, in the middle of a transaction - something that
 	// may create problems after a while.
 	// channel draining is needed so that diffWorker does not get stuck, and  can exit the transaction
-	for ok := true; ok; { // drain the channel, till it closes
-		_, ok = <-channel
+	for _ = range channel {
 	}
 }
 
 func (c *cataloger) diffWorker(params doDiffParams, mergeBatchChan chan mergeBatchRecords, exitFlag *bool) {
 	_, _ = c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		defer close(mergeBatchChan)
-		mergeBatch := mergeBatchRecords{differences: make([]*diffResultRecord, 0, MergeBatchSize)}
+		mergeBatch := mergeBatchRecords{differences: make([]*DiffResultRecord, 0, MergeBatchSize)}
 		scanner, err := NewDiffScanner(tx, params)
 		if err != nil {
 			mergeBatch.err = err
@@ -156,7 +154,7 @@ func (c *cataloger) diffWorker(params doDiffParams, mergeBatchChan chan mergeBat
 			mergeBatch.differences = append(mergeBatch.differences, v)
 			if len(mergeBatch.differences) >= MergeBatchSize {
 				mergeBatchChan <- mergeBatch
-				mergeBatch.differences = make([]*diffResultRecord, 0, MergeBatchSize)
+				mergeBatch.differences = make([]*DiffResultRecord, 0, MergeBatchSize)
 			}
 		}
 		mergeBatch.err = scanner.Error()
