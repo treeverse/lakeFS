@@ -42,7 +42,6 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-
 		params := doDiffParams{
 			Repository:    repository,
 			LeftCommitID:  CommittedID,
@@ -68,53 +67,16 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-
-		mergeCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		mergeBatchChan, errChan := c.initDiffWorker(mergeCtx, params)
-		var rowsCounter int
-		for {
-			var endOfResults bool
-			select {
-			case buf, ok := <-mergeBatchChan:
-				if !ok {
-					endOfResults = true
-				} else {
-					for _, d := range buf {
-						if d.Type == DifferenceTypeConflict {
-							cancel()
-							return nil, ErrConflictFound
-						}
-						mergeResult.Summary[d.Type]++
-						rowsCounter++
-					}
-					err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
-					if err != nil {
-						cancel()
-						return nil, err
-					}
-				}
-			case err := <-errChan:
-				if err != nil {
-					return nil, err
-				}
-				endOfResults = true
-			}
-			if endOfResults {
-				break
-			}
-		}
+		rowsCounter, err := c.doMerge(ctx, tx, params, mergeResult, previousMaxCommitID, nextCommitID, relation)
 		if message == "" {
 			message = fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 		}
 		if rowsCounter == 0 {
 			commitDifferences, err := hasCommitDifferences(tx, leftID, rightID)
 			if err != nil {
-				cancel()
 				return nil, err
 			}
 			if !commitDifferences {
-				cancel()
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
@@ -133,6 +95,35 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
+}
+
+func (c *cataloger) doMerge(ctx context.Context, tx db.Tx, params doDiffParams, mergeResult *MergeResult, previousMaxCommitID CommitID, nextCommitID CommitID, relation RelationType) (int, error) {
+	mergeCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	mergeBatchChan, errChan := c.initDiffWorker(mergeCtx, params)
+	var rowsCounter int
+	for {
+		select {
+		case buf, ok := <-mergeBatchChan:
+			if !ok {
+				return rowsCounter, nil
+			} else {
+				for _, d := range buf {
+					mergeResult.Summary[d.Type]++
+					rowsCounter++
+					if d.Type == DifferenceTypeConflict {
+						return rowsCounter, ErrConflictFound
+					}
+				}
+				err := applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, params.RightBranchID, relation)
+				if err != nil {
+					return rowsCounter, err
+				}
+			}
+		case err := <-errChan:
+			return rowsCounter, err
+		}
+	}
 }
 
 func (c *cataloger) initDiffWorker(ctx context.Context, params doDiffParams) (chan mergeBatchRecords, chan error) {
