@@ -97,52 +97,55 @@ func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, n
 }
 
 func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer, name string, query string, args ...interface{}) error {
-	rows, err := c.db.Query(query, args...)
-	if err != nil {
-		return fmt.Errorf("execute query: %w", err)
-	}
-	defer rows.Close()
-
-	filename := name + csvFileExt
-	w, err := writer.Create(filename)
-	if err != nil {
-		return fmt.Errorf("new file for table %s - %w", name, err)
-	}
-	csvWriter := csv.NewWriter(w)
-	defer csvWriter.Flush()
-
-	first := true
-	for rows.Next() {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		if first {
-			first = false
-			descriptions := rows.FieldDescriptions()
-			if len(descriptions) == 0 {
-				return errNoColumnsFound
-			}
-			cols := make([]string, len(descriptions))
-			for i, fd := range descriptions {
-				cols[i] = string(fd.Name)
-			}
-			if err := csvWriter.Write(cols); err != nil {
-				return fmt.Errorf("write csv header for %s: %w", name, err)
-			}
-		}
-		v, err := rows.Values()
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		rows, err := tx.Query(query, args...)
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("execute query: %w", err)
 		}
-		record := make([]string, len(v))
-		for i := range v {
-			record[i] = fmt.Sprintf("%v", v[i])
+		defer rows.Close()
+
+		filename := name + csvFileExt
+		w, err := writer.Create(filename)
+		if err != nil {
+			return nil, fmt.Errorf("new file for table %s - %w", name, err)
 		}
-		if err := csvWriter.Write(record); err != nil {
-			return err
+		csvWriter := csv.NewWriter(w)
+		defer csvWriter.Flush()
+
+		first := true
+		for rows.Next() {
+			// write csv header row
+			if first {
+				first = false
+				descriptions := rows.FieldDescriptions()
+				if len(descriptions) == 0 {
+					return nil, errNoColumnsFound
+				}
+				cols := make([]string, len(descriptions))
+				for i, fd := range descriptions {
+					cols[i] = string(fd.Name)
+				}
+				if err := csvWriter.Write(cols); err != nil {
+					return nil, fmt.Errorf("write csv header for %s: %w", name, err)
+				}
+			}
+
+			// format and write data row
+			v, err := rows.Values()
+			if err != nil {
+				return nil, err
+			}
+			record := make([]string, len(v))
+			for i := range v {
+				record[i] = fmt.Sprintf("%v", v[i])
+			}
+			if err := csvWriter.Write(record); err != nil {
+				return nil, err
+			}
 		}
-	}
-	return rows.Err()
+		return nil, rows.Err()
+	}, db.WithContext(ctx), db.ReadOnly())
+	return err
 }
 
 func (c *Collector) writeTableContent(ctx context.Context, writer *zip.Writer, name string) error {
@@ -155,7 +158,7 @@ func (c *Collector) writeTableCount(ctx context.Context, writer *zip.Writer, nam
 	return c.writeQueryContent(ctx, writer, name+"_count", q)
 }
 
-func (c *Collector) writeErrors(ctx context.Context, writer *zip.Writer, errs []error) error {
+func (c *Collector) writeErrors(_ context.Context, writer *zip.Writer, errs []error) error {
 	if len(errs) == 0 {
 		return nil
 	}
@@ -164,9 +167,6 @@ func (c *Collector) writeErrors(ctx context.Context, writer *zip.Writer, errs []
 		return err
 	}
 	for _, err := range errs {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		_, _ = fmt.Fprintf(w, "%v\n", err)
 	}
 	return nil
