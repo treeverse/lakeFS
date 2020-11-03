@@ -135,15 +135,12 @@ func (s *DiffScanner) Next() bool {
 			return false
 		}
 		// point to matched right based on path
-		var ent, matchedRight *DBScannerEntry
-		ent = s.rightScanner.Value()
-		if ent != nil && ent.Path == leftEnt.Path {
-			matchedRight = ent
+		var matchedRight *DBScannerEntry
+		rightEnt := s.rightScanner.Value()
+		if rightEnt != nil && rightEnt.Path == leftEnt.Path {
+			matchedRight = rightEnt
 		}
-		// diff between entries
-
 		diffType := s.evaluator(leftEnt, matchedRight)
-
 		if diffType == DifferenceTypeNone {
 			continue
 		}
