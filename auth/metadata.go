@@ -32,6 +32,7 @@ func NewDBMetadataManager(version string, database db.Database) *DBMetadataManag
 		db:      database,
 	}
 }
+
 func generateInstallationID() string {
 	installationID := config.GetFixedInstallationID()
 	if installationID == "" {
@@ -39,6 +40,7 @@ func generateInstallationID() string {
 	}
 	return installationID
 }
+
 func insertOrGetInstallationID(tx db.Tx) (string, error) {
 	newInstallationID := generateInstallationID()
 	res, err := tx.Exec(`INSERT INTO auth_installation_metadata (key_name, key_value)
