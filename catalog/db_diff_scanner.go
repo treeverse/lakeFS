@@ -129,15 +129,16 @@ func (s *DiffScanner) Next() bool {
 	for s.leftScanner.Next() {
 		leftEnt := s.leftScanner.Value()
 		// get next right entry - scan until we match right path to left (or bigger)
-		lastRightEnt, err := ScanDBEntriesUntil(s.rightScanner, leftEnt.Path)
+		err := ScanDBEntriesUntil(s.rightScanner, leftEnt.Path)
 		if err != nil {
 			s.err = fmt.Errorf("scan next right element: %w", err)
 			return false
 		}
 		// point to matched right based on path
-		var matchedRight *DBScannerEntry
-		if lastRightEnt != nil && lastRightEnt.Path == leftEnt.Path {
-			matchedRight = lastRightEnt
+		var ent, matchedRight *DBScannerEntry
+		ent = s.rightScanner.Value()
+		if ent != nil && ent.Path == leftEnt.Path {
+			matchedRight = ent
 		}
 		// diff between entries
 
