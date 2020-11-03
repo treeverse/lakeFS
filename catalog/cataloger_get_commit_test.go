@@ -79,10 +79,30 @@ func TestCataloger_GetCommit(t *testing.T) {
 			wantErr:   true,
 		},
 		{
-			name:      "branch",
+			name:      "branch uncommitted",
 			reference: "master",
-			want:      nil,
-			wantErr:   true,
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96b",
+				Committer:    "tester1",
+				Message:      "Commit1",
+				CreationDate: time.Now(),
+				Metadata:     Metadata{"k1": "v1"},
+				Parents:      []string{"~KJ8Wd1Rs96a"},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "branch committed",
+			reference: "master:HEAD",
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96b",
+				Committer:    "tester1",
+				Message:      "Commit1",
+				CreationDate: time.Now(),
+				Metadata:     Metadata{"k1": "v1"},
+				Parents:      []string{"~KJ8Wd1Rs96a"},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
