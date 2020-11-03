@@ -30,9 +30,7 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultBlockStoreGSS3Endpoint            = "https://storage.googleapis.com"
-	DefaultBlockStoreGSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
-	DefaultBlockStoreGSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
 	DefaultAuthCacheEnabled = true
 	DefaultAuthCacheSize    = 1024
@@ -98,8 +96,6 @@ func setDefaults() {
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", DefaultBlockStoreGSS3Endpoint)
-	viper.SetDefault("blockstore.gs.streaming_chunk_size", DefaultBlockStoreGSStreamingChunkSize)
-	viper.SetDefault("blockstore.gs.streaming_chunk_timeout", DefaultBlockStoreGSStreamingChunkTimeout)
 
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
