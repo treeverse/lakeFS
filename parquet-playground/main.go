@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
-	"strconv"
+	"sort"
+
+	"github.com/apache/thrift/lib/go/thrift"
 
 	"github.com/xitongsys/parquet-go-source/local"
 	"github.com/xitongsys/parquet-go/parquet"
@@ -28,31 +31,31 @@ type S346inventory struct {
 }
 
 func main() {
-	files, err := readParquet()
+	_, err := readSingleRow()
 	if err != nil {
 		panic(err)
 	}
 
-	const newFilesCount = 10000
-	moreFiles := make([]*S346inventory, newFilesCount)
-
-	for i := 0; i < 100000; i++ {
-		o := files[i%len(files)]
-		o.Key = o.Key + strconv.Itoa(i)
-		moreFiles[i] = o
-	}
-
-	for i := 0; i <= 6; i++ {
-		generateParquet(moreFiles, i)
-	}
+	//const newFilesCount = 10000
+	//moreFiles := make([]*S346inventory, newFilesCount)
+	//
+	//for i := 0; i < 100000; i++ {
+	//	o := files[i%len(files)]
+	//	o.Key = o.Key + strconv.Itoa(i)
+	//	moreFiles[i] = o
+	//}
+	//
+	//for i := 0; i <= 6; i++ {
+	//	generateParquet(moreFiles, i)
+	//}
 }
 
 const recordNumber = 10000
-const lookupBucket = "lakefs-example-data"
 const lookupKey = "events/dt=2020-01-12/part-00000-db6d9dfd-681b-4eb4-af00-cabc91b8a2b2.c000"
+const keyColumn = 1
 
 func readSingleRow() ([]*S346inventory, error) {
-	fr, err := local.NewLocalFileReader("/Users/itaiadmi/Downloads/efcdefa7-6222-4330-86fe-c0982aceaf89.parquet")
+	fr, err := local.NewLocalFileReader(file)
 	if err != nil {
 		return nil, err
 	}
@@ -61,19 +64,112 @@ func readSingleRow() ([]*S346inventory, error) {
 		return nil, err
 	}
 
-	for _, rg := range pr.Footer.RowGroups{
+	var keyPageNumber int
+	for _, rg := range pr.Footer.RowGroups {
 		cols := rg.GetColumns()
-		bucketCol := cols[1]
-		bucketStats :=bucketCol.GetMetaData().GetStatistics()
-		keyCol := cols[2]
-		keyStats :=keyCol.GetMetaData().GetStatistics()
+		keyCol := cols[keyColumn]
+		keyStats := keyCol.GetMetaData().GetStatistics()
 
-		if string(bucketStats.MinValue) >=
+		// filter raw groups
+		if !keyInRange(lookupKey, string(keyStats.GetMinValue()), string(keyStats.GetMaxValue())) {
+			continue
+		}
+
+		fmt.Printf("found the raw group")
+		// read the key column index
+
+		colIndex, err := columnIndex(keyCol)
+		if err != nil {
+			return nil, err
+		}
+
+		// find the matching pages
+		for i, isNull := range colIndex.NullPages {
+			if isNull {
+				// all values for this page are null, nothing to check here
+				continue
+			}
+			if keyInRange(lookupKey, string(colIndex.MinValues[i]), string(colIndex.MaxValues[i])) {
+				// found a possible match
+				fmt.Printf("found pages for key column: %v", keyPageNumber)
+				keyPageNumber = i
+				break
+			}
+		}
+
+		// found the matching rawGroup, no need to keep iterating
+		break
 	}
+
+	cb := pr.ColumnBuffers["Parquet_go_root.Key"]
+	for i := 0; i < keyPageNumber; i++ {
+		// skipping pages until the matching page
+		if _, err := cb.ReadPageForSkip(); err != nil {
+			panic(err)
+		}
+	}
+	if err := cb.ReadPage(); err != nil {
+		panic(err)
+	}
+
+	vals := cb.DataTable.Values
+	fmt.Println("read page, starting to search in it")
+
+	i := sort.Search(len(vals), func(i int) bool { return vals[i].(string) >= lookupKey })
+	if vals[i] == lookupKey {
+		fmt.Printf("Found the key: %d, %s\n", i, vals[i])
+	} else {
+		fmt.Printf("Key not found: %s\n", vals[i])
+	}
+
+	return nil, nil
 }
 
+func keyInRange(key, min, max string) bool {
+	return key >= min && key <= max
+}
+
+func pageLocations(keyCol *parquet.ColumnChunk) ([]*parquet.PageLocation, error) {
+	pf := thrift.NewTCompactProtocolFactory()
+	fr, err := local.NewLocalFileReader(file)
+	if err != nil {
+		return nil, err
+	}
+	fr.Seek(keyCol.GetOffsetIndexOffset(), io.SeekStart)
+	defer fr.Close()
+	protocol := pf.GetProtocol(thrift.NewStreamTransportR(fr))
+	offsetIndex := parquet.NewOffsetIndex()
+	if err := offsetIndex.Read(protocol); err != nil {
+		panic(err)
+	}
+
+	pageLocations := offsetIndex.GetPageLocations()
+	return pageLocations, nil
+}
+
+func columnIndex(keyCol *parquet.ColumnChunk) (*parquet.ColumnIndex, error) {
+	pf := thrift.NewTCompactProtocolFactory()
+	fr, err := local.NewLocalFileReader(file)
+	if err != nil {
+		return nil, err
+	}
+
+	fr.Seek(*keyCol.ColumnIndexOffset, io.SeekStart)
+	defer fr.Close()
+	protocol := pf.GetProtocol(thrift.NewStreamTransportR(fr))
+	cIndex := parquet.NewColumnIndex()
+	if err := cIndex.Read(protocol); err != nil {
+		panic(err)
+	}
+	fmt.Printf("found cIndex")
+
+	return cIndex, nil
+}
+
+const file = "/Users/itaiadmi/Downloads/efcdefa7-6222-4330-86fe-c0982aceaf89.parquet"
+
 func readParquet() ([]*S346inventory, error) {
-	fr, err := local.NewLocalFileReader("/Users/itaiadmi/Downloads/efcdefa7-6222-4330-86fe-c0982aceaf89.parquet")
+	fr, err := local.NewLocalFileReader(file)
 	if err != nil {
 		return nil, err
 	}
