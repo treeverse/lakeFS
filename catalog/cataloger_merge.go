@@ -68,6 +68,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, err
 		}
 		rowsCounter, err := c.doMerge(ctx, tx, params, mergeResult, previousMaxCommitID, nextCommitID, relation)
+		if err != nil {
+			return nil, err
+		}
 		if message == "" {
 			message = fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 		}
