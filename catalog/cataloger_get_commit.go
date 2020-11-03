@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -22,6 +23,17 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err != nil {
 			return nil, err
 		}
+
+		// for branch (committed or uncommitted) we reference last commit
+		if ref.CommitID == UncommittedID || ref.CommitID == CommittedID {
+			lastCommitID, err := getLastCommitIDByBranchID(tx, branchID)
+			if err != nil {
+				return nil, fmt.Errorf("get last commit id: %w", err)
+			}
+			ref.CommitID = lastCommitID
+		}
+
+		// read commit log information
 		query := `SELECT b.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 			COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
 			FROM catalog_commits c JOIN catalog_branches b ON b.id = c.branch_id 
