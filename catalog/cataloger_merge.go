@@ -14,10 +14,7 @@ const (
 	MergeBatchChanBuffer = 10
 )
 
-type mergeBatchRecords struct {
-	err         error
-	differences []*DiffResultRecord
-}
+type mergeBatchRecords []*DiffResultRecord
 
 // Merge perform diff between two branches (left and right), apply changes on right branch and commit
 // It uses the cataloger diff internal API to produce a temporary table that we delete at the end of a successful merge
@@ -71,30 +68,40 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		mergeBatchChan := make(chan mergeBatchRecords, MergeBatchChanBuffer)
-		var workerExitFlag bool
-		go c.diffWorker(params, mergeBatchChan, &workerExitFlag)
+
+		mergeCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		mergeBatchChan, errChan := c.initDiffWorker(mergeCtx, params)
 		var rowsCounter int
-		for buf := range mergeBatchChan {
-			if buf.err != nil {
-				workerExitFlag = true
-				drainChannel(mergeBatchChan)
-				return nil, buf.err
-			}
-			for _, d := range buf.differences {
-				if d.Type == DifferenceTypeConflict {
-					workerExitFlag = true
-					drainChannel(mergeBatchChan)
-					return nil, ErrConflictFound
+		for {
+			var endOfResults bool
+			select {
+			case buf, ok := <-mergeBatchChan:
+				if !ok {
+					endOfResults = true
+				} else {
+					for _, d := range buf {
+						if d.Type == DifferenceTypeConflict {
+							cancel()
+							return nil, ErrConflictFound
+						}
+						mergeResult.Summary[d.Type]++
+						rowsCounter++
+					}
+					err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
+					if err != nil {
+						cancel()
+						return nil, err
+					}
 				}
-				mergeResult.Summary[d.Type]++
-				rowsCounter++
+			case err := <-errChan:
+				if err != nil {
+					return nil, err
+				}
+				endOfResults = true
 			}
-			err = applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, rightID, relation)
-			if err != nil {
-				workerExitFlag = true
-				drainChannel(mergeBatchChan)
-				return nil, err
+			if endOfResults {
+				break
 			}
 		}
 		if message == "" {
@@ -103,9 +110,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if rowsCounter == 0 {
 			commitDifferences, err := hasCommitDifferences(tx, leftID, rightID)
 			if err != nil {
+				cancel()
 				return nil, err
 			}
 			if !commitDifferences {
+				cancel()
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
@@ -121,46 +130,52 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, err
 			}
 		}
-
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
 }
 
-func drainChannel(channel chan mergeBatchRecords) {
-	// If merge just exited on error, than the diffWorker could continue sending to channel until the buffer
-	// got full, and diffWorker would stay in memory, in the middle of a transaction - something that
-	// may create problems after a while.
-	// channel draining is needed so that diffWorker does not get stuck, and  can exit the transaction
-	for range channel {
-	}
-}
-
-func (c *cataloger) diffWorker(params doDiffParams, mergeBatchChan chan mergeBatchRecords, exitFlag *bool) {
-	_, _ = c.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (c *cataloger) initDiffWorker(ctx context.Context, params doDiffParams) (chan mergeBatchRecords, chan error) {
+	mergeBatchChan := make(chan mergeBatchRecords, MergeBatchChanBuffer)
+	errChan := make(chan error, 1)
+	go func() {
+		defer close(errChan)
 		defer close(mergeBatchChan)
-		mergeBatch := mergeBatchRecords{differences: make([]*DiffResultRecord, 0, MergeBatchSize)}
-		scanner, err := NewDiffScanner(tx, params)
-		if err != nil {
-			mergeBatch.err = err
-			mergeBatchChan <- mergeBatch
+		_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+			mergeBatch := make([]*DiffResultRecord, 0, MergeBatchSize)
+			scanner, err := NewDiffScanner(tx, params)
+			if err != nil {
+				return nil, err
+			}
+			for scanner.Next() {
+				v := scanner.Value()
+				mergeBatch = append(mergeBatch, v)
+				if len(mergeBatch) >= MergeBatchSize {
+					select {
+					case mergeBatchChan <- mergeBatch:
+						mergeBatch = make([]*DiffResultRecord, 0, MergeBatchSize)
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					}
+				}
+			}
+			if scanner.Error() != nil {
+				return nil, scanner.Error()
+			}
+			if len(mergeBatch) > 0 {
+				select {
+				case mergeBatchChan <- mergeBatch:
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+			}
 			return nil, nil
+		}, c.txOpts(ctx, db.ReadOnly())...)
+		if err != nil {
+			errChan <- err
 		}
-		for scanner.Next() {
-			if *exitFlag {
-				return nil, nil
-			}
-			v := scanner.Value()
-			mergeBatch.differences = append(mergeBatch.differences, v)
-			if len(mergeBatch.differences) >= MergeBatchSize {
-				mergeBatchChan <- mergeBatch
-				mergeBatch.differences = make([]*DiffResultRecord, 0, MergeBatchSize)
-			}
-		}
-		mergeBatch.err = scanner.Error()
-		mergeBatchChan <- mergeBatch
-		return nil, nil
-	}, db.ReadOnly())
+	}()
+	return mergeBatchChan, errChan
 }
 
 // hasCommitDifferences - Checks if the current commit id of target or source branch advanced since last merge
@@ -192,7 +207,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	paths := make([]string, 0, MergeBatchSize)
 	ctidArray := make([]string, 0, MergeBatchSize)
 	var tombstonePaths []string
-	for _, diffRec := range mergeBatch.differences {
+	for _, diffRec := range mergeBatch {
 		if diffRec.Type == DifferenceTypeRemoved || diffRec.Type == DifferenceTypeChanged {
 			paths = append(paths, diffRec.Entry.Path)
 		}
@@ -245,7 +260,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	// insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
-				SELECT $1,path,'',0,'','{}',$2,0 FROM(SELECT * FROM UNNEST($3::text []))t(path)`
+				SELECT $1,path,'',0,'','{}',$2,0 FROM UNNEST($3::text []) path`
 		_, err := tx.Exec(sql, rightID, previousMaxCommitID, tombstonePaths)
 		if err != nil {
 			return err
