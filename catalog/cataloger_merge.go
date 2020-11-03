@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	MergeBatchSize = 256
+	MergeBatchSize       = 256
+	MergeBatchChanBuffer = 10
 )
 
 type mergeBatchRecords []*DiffResultRecord
@@ -41,7 +42,6 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-
 		params := doDiffParams{
 			Repository:    repository,
 			LeftCommitID:  CommittedID,
@@ -52,47 +52,22 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				Limit: -1,
 			},
 		}
-
-		scanner, err := NewDiffScanner(tx, params)
+		relation, err := getRefsRelationType(tx, params)
 		if err != nil {
 			return nil, err
 		}
-		if scanner.Relation == RelationTypeSame {
+		if relation == RelationTypeSame {
 			return nil, ErrSameBranchMergeNotSupported
 		}
 		nextCommitID, err := getNextCommitID(tx)
 		if err != nil {
 			return nil, err
 		}
-		// do the merge based on the relation
 		previousMaxCommitID, err := getLastCommitIDByBranchID(tx, rightID)
 		if err != nil {
 			return nil, err
 		}
-
-		differences := make(mergeBatchRecords, 0, MergeBatchSize)
-		var rowsCounter int
-		for scanner.Next() {
-			v := scanner.Value()
-			mergeResult.Summary[v.Type]++
-			rowsCounter++
-			if v.Type == DifferenceTypeConflict {
-				return nil, ErrConflictFound
-			}
-			differences = append(differences, v)
-			if len(differences) >= MergeBatchSize {
-				err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, scanner.Relation)
-				if err != nil {
-					return nil, err
-				}
-				differences = differences[:0]
-			}
-		}
-		err = scanner.Error()
-		if err != nil {
-			return nil, err
-		}
-		err = applyDiffChangesToRightBranch(tx, differences, previousMaxCommitID, nextCommitID, rightID, scanner.Relation)
+		rowsCounter, err := c.doMerge(ctx, tx, params, mergeResult, previousMaxCommitID, nextCommitID, relation)
 		if err != nil {
 			return nil, err
 		}
@@ -108,12 +83,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
-		err = insertMergeCommit(tx, scanner.Relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
+		err = insertMergeCommit(tx, relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
 		if err != nil {
 			return nil, err
 		}
 		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
-
 		for _, hook := range c.hooks.PostMerge {
 			err = hook(ctx, tx, mergeResult)
 			if err != nil {
@@ -121,10 +95,81 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, err
 			}
 		}
-
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
+}
+
+func (c *cataloger) doMerge(ctx context.Context, tx db.Tx, params doDiffParams, mergeResult *MergeResult, previousMaxCommitID CommitID, nextCommitID CommitID, relation RelationType) (int, error) {
+	mergeCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	mergeBatchChan, errChan := c.initDiffWorker(mergeCtx, params)
+	var rowsCounter int
+	for {
+		select {
+		case buf, ok := <-mergeBatchChan:
+			if !ok {
+				return rowsCounter, nil
+			} else {
+				for _, d := range buf {
+					mergeResult.Summary[d.Type]++
+					rowsCounter++
+					if d.Type == DifferenceTypeConflict {
+						return rowsCounter, ErrConflictFound
+					}
+				}
+				err := applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, params.RightBranchID, relation)
+				if err != nil {
+					return rowsCounter, err
+				}
+			}
+		case err := <-errChan:
+			return rowsCounter, err
+		}
+	}
+}
+
+func (c *cataloger) initDiffWorker(ctx context.Context, params doDiffParams) (chan mergeBatchRecords, chan error) {
+	mergeBatchChan := make(chan mergeBatchRecords, MergeBatchChanBuffer)
+	errChan := make(chan error, 1)
+	go func() {
+		defer close(errChan)
+		defer close(mergeBatchChan)
+		_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+			mergeBatch := make([]*DiffResultRecord, 0, MergeBatchSize)
+			scanner, err := NewDiffScanner(tx, params)
+			if err != nil {
+				return nil, err
+			}
+			for scanner.Next() {
+				v := scanner.Value()
+				mergeBatch = append(mergeBatch, v)
+				if len(mergeBatch) >= MergeBatchSize {
+					select {
+					case mergeBatchChan <- mergeBatch:
+						mergeBatch = make([]*DiffResultRecord, 0, MergeBatchSize)
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					}
+				}
+			}
+			if scanner.Error() != nil {
+				return nil, scanner.Error()
+			}
+			if len(mergeBatch) > 0 {
+				select {
+				case mergeBatchChan <- mergeBatch:
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+			}
+			return nil, nil
+		}, c.txOpts(ctx, db.ReadOnly())...)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+	return mergeBatchChan, errChan
 }
 
 // hasCommitDifferences - Checks if the current commit id of target or source branch advanced since last merge
@@ -209,7 +254,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	// insert tombstones into parent branch that has a removed entry in its lineage
 	if len(tombstonePaths) > 0 {
 		sql := `INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
-				SELECT $1,path,'',0,'','{}',$2,0 FROM(SELECT * FROM UNNEST($3::text []))t(path)`
+				SELECT $1,path,'',0,'','{}',$2,0 FROM UNNEST($3::text []) path`
 		_, err := tx.Exec(sql, rightID, previousMaxCommitID, tombstonePaths)
 		if err != nil {
 			return err
