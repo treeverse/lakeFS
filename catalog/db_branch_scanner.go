@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DBScannerDefaultBufferSize      = 1024
+	DBScannerDefaultBufferSize      = 4096
 	BranchScannerMaxCommitsInFilter = 1000
 )
 
