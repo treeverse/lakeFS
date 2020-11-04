@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/treeverse/lakefs/auth/model"
@@ -185,24 +186,39 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 
 func SetupAdminUser(authService Service, user *model.User) (*model.Credential, error) {
 	now := time.Now()
-	var err error
 
 	// Setup the basic groups and policies
-	err = SetupBaseGroups(authService, now)
+	err := SetupBaseGroups(authService, now)
 	if err != nil {
 		return nil, err
+	}
+
+	return AddAdminUser(authService, user)
+}
+
+func AddAdminUser(authService Service, user *model.User) (*model.Credential, error) {
+	const adminGroupName = "Admins"
+
+	// verify admin group exists
+	_, err := authService.GetGroup(adminGroupName)
+	if err != nil {
+		return nil, fmt.Errorf("admin group - %w", err)
 	}
 
 	// create admin user
 	err = authService.CreateUser(user)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create user - %w", err)
 	}
-	err = authService.AddUserToGroup(user.Username, "Admins")
+	err = authService.AddUserToGroup(user.Username, adminGroupName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("add user to group - %w", err)
 	}
 
 	// Generate and return a key pair
-	return authService.CreateCredentials(user.Username)
+	creds, err := authService.CreateCredentials(user.Username)
+	if err != nil {
+		return nil, fmt.Errorf("create credentials for %s %w", user.Username, err)
+	}
+	return creds, nil
 }

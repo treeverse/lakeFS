@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
-import {Button, ButtonToolbar, Form, Modal, OverlayTrigger, Tooltip} from "react-bootstrap";
+import {Button, ButtonToolbar, Form, Modal, OverlayTrigger, Tooltip, Row, Col} from "react-bootstrap";
 import {GitCommitIcon, SyncIcon} from "@primer/octicons-react";
 import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import RefDropdown from "./RefDropdown";
@@ -33,6 +33,12 @@ const UploadButton = connect(
         if (disabled) return; setShow(false);
     };
 
+    const basePath = `${repo.id}/${refId.id}/\u00A0`;
+
+    const pathStyle = {
+        'min-width' : '25%',
+    };
+
     return (
         <>
             <Modal show={show} onHide={onHide}>
@@ -46,7 +52,14 @@ const UploadButton = connect(
                         e.preventDefault();
                     }}>
                         <Form.Group controlId="path">
-                            <Form.Control type="text" placeholder="Object path" autoFocus name="text" ref={textRef} defaultValue={path}/>
+                            <Row noGutters={true}>
+                                <Col className="col-auto d-flex align-items-center justify-content-start">
+                                    {basePath}
+                                </Col>
+                                <Col style={pathStyle}>
+                                    <Form.Control type="text" placeholder="Object name" autoFocus name="text" ref={textRef} defaultValue={path}/>
+                                </Col>
+                            </Row>
                         </Form.Group>
 
                         <Form.Group controlId="content">

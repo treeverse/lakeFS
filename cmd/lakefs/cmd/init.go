@@ -19,7 +19,7 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize a LakeFS instance, and setup an admin credential",
+	Short: "Initialize a LakeFS instance, and setup an admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 
@@ -31,7 +31,7 @@ var initCmd = &cobra.Command{
 		}
 
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer func() { _ = dbPool.Close() }()
+		defer dbPool.Close()
 
 		userName, _ := cmd.Flags().GetString("user-name")
 

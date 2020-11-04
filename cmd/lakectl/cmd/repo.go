@@ -91,12 +91,11 @@ var repoCreateCmd = &cobra.Command{
 		err = clt.CreateRepository(context.Background(), &models.RepositoryCreation{
 			StorageNamespace: &args[1],
 			DefaultBranch:    defaultBranch,
-			ID:               &u.Repository,
+			Name:             &u.Repository,
 		})
 		if err != nil {
 			DieErr(err)
 		}
-
 		repo, err := clt.GetRepository(context.Background(), u.Repository)
 		if err != nil {
 			DieErr(err)

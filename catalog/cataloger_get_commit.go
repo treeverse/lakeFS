@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -22,6 +23,17 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err != nil {
 			return nil, err
 		}
+
+		// for branch (committed or uncommitted) we reference last commit
+		if ref.CommitID == UncommittedID || ref.CommitID == CommittedID {
+			lastCommitID, err := getLastCommitIDByBranchID(tx, branchID)
+			if err != nil {
+				return nil, fmt.Errorf("get last commit id: %w", err)
+			}
+			ref.CommitID = lastCommitID
+		}
+
+		// read commit log information
 		query := `SELECT b.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 			COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
 			FROM catalog_commits c JOIN catalog_branches b ON b.id = c.branch_id 
@@ -31,7 +43,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err := tx.Get(&rawCommit, query, branchID, ref.CommitID); err != nil {
 			return nil, err
 		}
-		commit := convertRawCommit(&rawCommit)
+		commit := convertRawCommit(rawCommit)
 		return commit, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
@@ -40,13 +52,17 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 	return res.(*CommitLog), err
 }
 
-func convertRawCommit(raw *commitLogRaw) *CommitLog {
+func convertRawCommit(raw commitLogRaw) *CommitLog {
+	metadata := raw.Metadata
+	if metadata == nil {
+		metadata = make(Metadata)
+	}
 	c := &CommitLog{
 		Reference:    MakeReference(raw.BranchName, raw.CommitID),
 		Committer:    raw.Committer,
 		Message:      raw.Message,
 		CreationDate: raw.CreationDate,
-		Metadata:     raw.Metadata,
+		Metadata:     metadata,
 	}
 	if raw.MergeSourceBranchName != "" && raw.MergeSourceCommit > 0 {
 		reference := MakeReference(raw.MergeSourceBranchName, raw.MergeSourceCommit)
