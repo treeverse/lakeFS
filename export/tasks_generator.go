@@ -262,7 +262,7 @@ func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor fun
 func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, error) {
 	const initialSize = 1_000
 
-	one := 1 // Number of dependencies of many tasks.  This will *not* change.
+	zero := 0
 
 	ret := make([]parade.TaskData, 0, initialSize)
 
@@ -275,7 +275,7 @@ func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, erro
 		task := parade.TaskData{
 			StatusCode:        parade.TaskPending,
 			MaxTries:          &e.NumTries,
-			TotalDependencies: &one, // Depends only on a start task
+			TotalDependencies: &zero, // Depends only on a start task
 		}
 		err := makeDiffTaskBody(&task, e.idGen, diff, e.makeDestination)
 		if err != nil {
