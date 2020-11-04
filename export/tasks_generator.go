@@ -224,28 +224,49 @@ func makeDiffTaskBody(out *parade.TaskData, idGen taskIDGenerator, diff catalog.
 	return nil
 }
 
-// GenerateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
-// "generate success" task after generating all files in each directory that matches
-// generateSuccessFor.
-func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Differences, generateSuccessFor func(path string) bool) ([]parade.TaskData, error) {
-	const initialSize = 1_000
+// TasksGenerator generates tasks from diffs iteratively.
+type TasksGenerator struct {
+	ExportID string
+	DstPrefix string
+	GenerateSuccessFor func(path string) bool
+	NumTries int
 
-	one := 1 // Number of dependencies of many tasks.  This will *not* change.
-	numTries := 5
+	makeDestination func(string) string
+	idGen taskIDGenerator
+	successTasksGenerator SuccessTasksTreeGenerator
+}
 
+// NewTasksGenerator returns a generator that exports tasks from diffs to file operations under
+// dstPrefix.  It generates success files for files in directories matched by
+// "generateSuccessFor".
+func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor func(path string) bool) *TasksGenerator {
 	dstPrefix = strings.TrimRight(dstPrefix, "/")
 	makeDestination := func(path string) string {
 		return fmt.Sprintf("%s/%s", dstPrefix, path)
 	}
 
-	idGen := taskIDGenerator(exportID)
+	return &TasksGenerator{
+		ExportID: exportID,
+		DstPrefix: dstPrefix,
+		GenerateSuccessFor: generateSuccessFor,
+		NumTries: 5,
+		makeDestination: makeDestination,
+		idGen: taskIDGenerator(exportID),
+		successTasksGenerator: NewSuccessTasksTreeGenerator(
+			exportID, generateSuccessFor, makeDestination),
+	}
+}
 
-	successTasksGenerator := NewSuccessTasksTreeGenerator(
-		exportID, generateSuccessFor, makeDestination)
+// Add translates diffs into many tasks and remembers "generate success" tasks for Finish.  It
+// returns some tasks that can already be added.
+func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, error) {
+	const initialSize = 1_000
+
+	one := 1 // Number of dependencies of many tasks.  This will *not* change.
 
 	ret := make([]parade.TaskData, 0, initialSize)
 
-	// Create the file operation tasks
+	// Create file operation tasks to return
 	for _, diff := range diffs {
 		if diff.Path == "" {
 			return nil, fmt.Errorf("no \"Path\" in %+v: %w", diff, ErrMissingColumns)
@@ -253,14 +274,14 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 
 		task := parade.TaskData{
 			StatusCode:        parade.TaskPending,
-			MaxTries:          &numTries,
+			MaxTries:          &e.NumTries,
 			TotalDependencies: &one, // Depends only on a start task
 		}
-		err := makeDiffTaskBody(&task, idGen, diff, makeDestination)
+		err := makeDiffTaskBody(&task, e.idGen, diff, e.makeDestination)
 		if err != nil {
 			return ret, err
 		}
-		id, err := successTasksGenerator.AddFor(diff.Path)
+		id, err := e.successTasksGenerator.AddFor(diff.Path)
 		if err != nil {
 			return ret, fmt.Errorf("generate tasks after %+v: %w", diff, err)
 		}
@@ -269,7 +290,13 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		ret = append(ret, task)
 	}
 
-	ret = successTasksGenerator.GenerateTasksTo(ret)
+	return ret, nil
+}
+
+// Finish ends tasks generation, releasing any tasks for success and finish.
+func (e *TasksGenerator) Finish() ([]parade.TaskData, error) {
+	ret := make([]parade.TaskData, 0)
+	ret = e.successTasksGenerator.GenerateTasksTo(ret)
 
 	return ret, nil
 }
