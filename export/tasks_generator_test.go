@@ -279,7 +279,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 				To:   "testfs://prefix/add1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
+			TotalDependencies: &zero,
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		},
 		&parade.TaskData{
@@ -290,7 +290,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 				To:   "testfs://prefix/change1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
+			TotalDependencies: &zero,
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		},
 	}, copyTasks); diffs != nil {
@@ -305,7 +305,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 				File: "testfs://prefix/remove1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
+			TotalDependencies: &zero,
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		}}, deleteTasks); diffs != nil {
 		t.Error("unexpected delete tasks", diffs)
@@ -385,7 +385,7 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 	tasksWithIDs := make([]parade.TaskData, 0, len(catalogDiffs))
 
 	for o := 0; o < len(catalogDiffs); o += 3 {
-		end := o+3
+		end := o + 3
 		if end > len(catalogDiffs) {
 			end = len(catalogDiffs)
 		}

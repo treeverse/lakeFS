@@ -226,13 +226,13 @@ func makeDiffTaskBody(out *parade.TaskData, idGen taskIDGenerator, diff catalog.
 
 // TasksGenerator generates tasks from diffs iteratively.
 type TasksGenerator struct {
-	ExportID string
-	DstPrefix string
+	ExportID           string
+	DstPrefix          string
 	GenerateSuccessFor func(path string) bool
-	NumTries int
+	NumTries           int
 
-	makeDestination func(string) string
-	idGen taskIDGenerator
+	makeDestination       func(string) string
+	idGen                 taskIDGenerator
 	successTasksGenerator SuccessTasksTreeGenerator
 }
 
@@ -246,12 +246,12 @@ func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor fun
 	}
 
 	return &TasksGenerator{
-		ExportID: exportID,
-		DstPrefix: dstPrefix,
+		ExportID:           exportID,
+		DstPrefix:          dstPrefix,
 		GenerateSuccessFor: generateSuccessFor,
-		NumTries: 5,
-		makeDestination: makeDestination,
-		idGen: taskIDGenerator(exportID),
+		NumTries:           5,
+		makeDestination:    makeDestination,
+		idGen:              taskIDGenerator(exportID),
 		successTasksGenerator: NewSuccessTasksTreeGenerator(
 			exportID, generateSuccessFor, makeDestination),
 	}
