@@ -240,6 +240,7 @@ type TasksGenerator struct {
 // dstPrefix.  It generates success files for files in directories matched by
 // "generateSuccessFor".
 func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor func(path string) bool) *TasksGenerator {
+	const numTries = 5
 	dstPrefix = strings.TrimRight(dstPrefix, "/")
 	makeDestination := func(path string) string {
 		return fmt.Sprintf("%s/%s", dstPrefix, path)
@@ -249,7 +250,7 @@ func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor fun
 		ExportID:           exportID,
 		DstPrefix:          dstPrefix,
 		GenerateSuccessFor: generateSuccessFor,
-		NumTries:           5,
+		NumTries:           numTries,
 		makeDestination:    makeDestination,
 		idGen:              taskIDGenerator(exportID),
 		successTasksGenerator: NewSuccessTasksTreeGenerator(
