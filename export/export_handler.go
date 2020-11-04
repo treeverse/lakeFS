@@ -32,7 +32,7 @@ type TaskBody struct {
 }
 
 func PathToPointer(path string) (block.ObjectPointer, error) {
-	u, err := url.Parse(path) // TODO: add verify path on create task
+	u, err := url.Parse(path) // TODO(guys): add verify path on create task
 	if err != nil {
 		return block.ObjectPointer{}, err
 	}
@@ -55,7 +55,7 @@ func (h *Handler) copy(body *string) error {
 	if err != nil {
 		return err
 	}
-	return h.adapter.Copy(from, to) // todo(guys): add wait for copy in handler
+	return h.adapter.Copy(from, to) // TODO(guys): add wait for copy in handler
 }
 
 func (h *Handler) remove(body *string) error {
@@ -96,7 +96,7 @@ func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 	case TouchAction:
 		err = h.touch(body)
 	case DoneAction:
-		// todo(guys): handle done action
+		// TODO(guys): handle done action
 	default:
 		err = errUnknownAction
 	}
