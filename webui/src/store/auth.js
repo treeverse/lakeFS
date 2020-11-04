@@ -69,8 +69,7 @@ const initialState = {
     groupPoliciesList: async.initialState,
 };
 
-export default (state = initialState, action) => {
-
+const store = (state = initialState, action) => {
     state = {
         ...state,
         usersList: async.reduce(AUTH_LIST_USERS, state.usersList, action),
@@ -131,3 +130,5 @@ export default (state = initialState, action) => {
             return state;
     }
 };
+
+export default store;

@@ -1,8 +1,11 @@
 package catalog
 
 import (
+	"database/sql/driver"
+	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/lib/pq"
@@ -27,6 +30,49 @@ type ExportConfigurationForBranch struct {
 	Path                   string         `db:"export_path"`
 	StatusPath             string         `db:"export_status_path"`
 	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
+}
+
+type CatalogBranchExportStatus string
+
+const (
+	ExportStatusInProgress = CatalogBranchExportStatus("in-progress")
+	ExportStatusSuccess    = CatalogBranchExportStatus("exported-successfully")
+	ExportStatusFailed     = CatalogBranchExportStatus("export-failed")
+	ExportStatusUnknown    = CatalogBranchExportStatus("[unknown]")
+)
+
+// ExportStatus describes the current export status of a branch, as passed on wire, used
+// internally, and stored in DB.
+type ExportStatus struct {
+	CurrentRef string `db:"current_ref"`
+	State      CatalogBranchExportStatus
+}
+
+var ErrBadTypeConversion = errors.New("bad type")
+
+// nolint: stylecheck
+func (dst *CatalogBranchExportStatus) Scan(src interface{}) error {
+	var sc CatalogBranchExportStatus
+	switch s := src.(type) {
+	case string:
+		sc = CatalogBranchExportStatus(strings.ToLower(s))
+	case []byte:
+		sc = CatalogBranchExportStatus(strings.ToLower(string(s)))
+	default:
+		return fmt.Errorf("cannot convert %T to CatalogBranchExportStatus: %w", src, ErrBadTypeConversion)
+	}
+
+	if !(sc == ExportStatusInProgress || sc == ExportStatusSuccess || sc == ExportStatusFailed) {
+		// not a failure, "just" be a newer enum value than known
+		*dst = ExportStatusUnknown
+		return nil
+	}
+	*dst = sc
+	return nil
+}
+
+func (src CatalogBranchExportStatus) Value() (driver.Value, error) {
+	return string(src), nil
 }
 
 func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error) {
@@ -55,7 +101,7 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
                      e.export_path export_path, e.export_status_path export_status_path,
                      e.last_keys_in_prefix_regexp last_keys_in_prefix_regexp
                  FROM catalog_branches_export e JOIN catalog_branches b ON e.branch_id = b.id
-                      JOIN catalog_repositories r ON b.repository_id = r.id`)
+                    JOIN catalog_repositories r ON b.repository_id = r.id`)
 	if err != nil {
 		return nil, err
 	}
@@ -86,4 +132,94 @@ func (c *cataloger) PutExportConfiguration(repository string, branch string, con
 		return nil, err
 	})
 	return err
+}
+
+var ErrExportFailed = errors.New("export failed")
+
+func (c *cataloger) ExportStateMarkStart(tx db.Tx, repo string, branch string, newRef string) (oldRef string, state CatalogBranchExportStatus, err error) {
+	var res struct {
+		CurrentRef   string
+		State        CatalogBranchExportStatus
+		ErrorMessage *string
+	}
+	branchID, err := c.getBranchIDCache(tx, repo, branch)
+	if err != nil {
+		return oldRef, state, err
+	}
+	err = tx.Get(&res, `
+		SELECT current_ref, state, error_message
+		FROM catalog_branches_export_state
+		WHERE branch_id=$1 FOR UPDATE`,
+		branchID)
+	missing := errors.Is(err, ErrEntryNotFound)
+	if err != nil && !missing {
+		err = fmt.Errorf("ExportStateuMarkStart: failed to get existing state: %w", err)
+		return oldRef, state, err
+	}
+	oldRef = res.CurrentRef
+	state = res.State
+
+	var query string
+	if missing {
+		query = `
+			INSERT INTO catalog_branches_export_state (branch_id, current_ref, state, error_message)
+			VALUES ($1, $2, 'in-progress', NULL)`
+	} else {
+		query = `
+			UPDATE catalog_branches_export_state
+			SET current_ref=$2, state='in-progress', error_message=NULL
+			WHERE branch_id=$1`
+	}
+	tag, err := tx.Exec(query, branchID, newRef)
+	if err != nil {
+		return oldRef, state, err
+	}
+	if tag.RowsAffected() != 1 {
+		err = fmt.Errorf("[I] ExportMarkStart: could not update single row %s: %w", tag, ErrEntryNotFound)
+		return oldRef, state, err
+	}
+	if state == ExportStatusFailed {
+		var message string
+		if res.ErrorMessage == nil {
+			message = "[unknown]"
+		} else {
+			message = *res.ErrorMessage
+		}
+		err = fmt.Errorf("%s %w", message, ErrExportFailed)
+	}
+	return oldRef, state, err
+}
+
+func (c *cataloger) ExportStateMarkEnd(tx db.Tx, repo string, branch string, ref string, newState CatalogBranchExportStatus, newMessage *string) error {
+	branchID, err := c.getBranchIDCache(tx, repo, branch)
+	if err != nil {
+		return err
+	}
+	tag, err := tx.Exec(`
+		UPDATE catalog_branches_export_state
+		SET state=$3, error_message=$4
+		WHERE branch_id=$1 AND current_ref=$2`,
+		branchID, ref, newState, newMessage)
+	if err != nil {
+		return fmt.Errorf("ExportMarkEnd: end export: %w", err)
+	}
+	if tag.RowsAffected() != 1 {
+		return fmt.Errorf("ExportMarkEnd: could not find export to end: %s %w", tag, ErrExportFailed)
+	}
+	return nil
+}
+
+func (c *cataloger) ExportStateDelete(tx db.Tx, repo string, branch string) error {
+	branchID, err := c.getBranchIDCache(tx, repo, branch)
+	if err != nil {
+		return err
+	}
+	tag, err := tx.Exec(`DELETE FROM catalog_branches_export_state WHERE branch_id=$1`, branchID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return fmt.Errorf("[I] ExportStateDelete: could not delete single row %s: %w", tag, ErrEntryNotFound)
+	}
+	return nil
 }

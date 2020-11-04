@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useMemo, useEffect, useRef, useState} from "react";
 
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import {connect} from "react-redux";
@@ -26,7 +26,7 @@ const CreateBranchButton = connect(
     ({ createBranch, resetBranch })
 )(({ repo, status, createBranch, resetBranch }) => {
     const [show, setShow] = useState(false);
-    const defaultBranch = { id: repo.default_branch, type: "branch"};
+    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: "branch"}), [repo]);
     const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
     const textRef = useRef(null);
 
