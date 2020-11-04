@@ -13,7 +13,7 @@ const initialState = {
     repo: async.initialState,
 };
 
-export default  (state = initialState, action) => {
+const store = (state = initialState, action) => {
     // register async reducers
     state = {
         ...state,
@@ -35,3 +35,5 @@ export default  (state = initialState, action) => {
             return state;
     }
 };
+
+export default store;
