@@ -17,7 +17,6 @@ func TestDBBranchScanner(t *testing.T) {
 	const numberOfObjects = 100
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)
-	defer func() { _ = conn.Close() }()
 	c := TestCataloger{Cataloger: NewCataloger(conn), DbConnURI: uri}
 
 	const baseBranchName = "b0"

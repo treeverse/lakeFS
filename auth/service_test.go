@@ -105,7 +105,6 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 func TestDBAuthService_ListPaged(t *testing.T) {
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	adb, _ := testutil.GetDB(t, databaseURI)
-	defer adb.Close()
 	type row struct{ A string }
 	if _, err := adb.Exec(`CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
 		t.Fatalf("CREATE TABLE test_pages: %s", err)

@@ -42,7 +42,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		cte := `WITH RECURSIVE lineage_graph AS (
     select branch_id,commit_id from ` + lineageAsValuesTable + `
 	union all
-	select * from (Select distinct on (c.branch_id,c.merge_source_branch) merge_source_branch,merge_source_commit from catalog_commits c 
+	select * from (Select distinct on (c.branch_id,c.merge_source_branch) merge_source_branch,merge_source_commit from catalog_commits c
 	join lineage_graph l on l.branch_id = c.branch_id and c.merge_type='from_child'  and c.merge_source_commit < l.commit_id
 	order by c.branch_id,c.merge_source_branch,c.commit_id desc )t)
 `
@@ -55,7 +55,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 			ORDER BY c.commit_id DESC
 			LIMIT $2`
 
-		var rawCommits []*commitLogRaw
+		var rawCommits []commitLogRaw
 		if err := tx.Select(&rawCommits, query, fromCommitID, limit+1); err != nil {
 			return nil, err
 		}
@@ -71,7 +71,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 	return commits, hasMore, err
 }
 
-func convertRawCommits(rawCommits []*commitLogRaw) []*CommitLog {
+func convertRawCommits(rawCommits []commitLogRaw) []*CommitLog {
 	commits := make([]*CommitLog, len(rawCommits))
 	for i, commit := range rawCommits {
 		commits[i] = convertRawCommit(commit)

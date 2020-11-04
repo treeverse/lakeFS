@@ -30,9 +30,7 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultBlockStoreGSS3Endpoint            = "https://storage.googleapis.com"
-	DefaultBlockStoreGSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
-	DefaultBlockStoreGSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
 	DefaultAuthCacheEnabled = true
 	DefaultAuthCacheSize    = 1024
@@ -42,6 +40,7 @@ const (
 	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
+	DefaultS3MaxRetries        = 5
 
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
@@ -91,13 +90,12 @@ func setDefaults() {
 	viper.SetDefault("blockstore.s3.region", DefaultBlockStoreS3Region)
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
+	viper.SetDefault("blockstore.s3.max_retries", DefaultS3MaxRetries)
 
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", DefaultBlockStoreGSS3Endpoint)
-	viper.SetDefault("blockstore.gs.streaming_chunk_size", DefaultBlockStoreGSStreamingChunkSize)
-	viper.SetDefault("blockstore.gs.streaming_chunk_timeout", DefaultBlockStoreGSStreamingChunkTimeout)
 
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
@@ -107,10 +105,9 @@ func setDefaults() {
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
 		ConnectionString:      viper.GetString("database.connection_string"),
-		MaxOpenConnections:    viper.GetInt("database.max_open_connections"),
-		MaxIdleConnections:    viper.GetInt("database.max_idle_connections"),
+		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
+		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
-		DisableAutoMigrate:    viper.GetBool("database.disable_auto_migrate"),
 	}
 }
 
@@ -192,6 +189,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
+	cfg.WithMaxRetries(viper.GetInt("blockstore.s3.max_retries"))
 	return cfg
 }
 

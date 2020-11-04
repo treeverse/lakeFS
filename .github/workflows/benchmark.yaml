@@ -71,6 +71,8 @@ jobs:
           aws-region: us-east-1
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.13.4
       - name: Terraform init
         run: |
           cd benchmarks/terraform/

@@ -200,11 +200,12 @@ var zero int = 0
 var one int = 1
 
 func TestTasksGenerator_Empty(t *testing.T) {
-	tasks, err := export.GenerateTasksFromDiffs(
+	gen := export.NewTasksGenerator(
 		"empty",
 		"testfs://prefix/",
-		catalog.Differences{},
 		func(_ string) bool { return true })
+
+	tasks, err := gen.Finish()
 	if err != nil {
 		t.Fatalf("failed to GenerateTasksFromDiffs: %s", err)
 	}
@@ -253,15 +254,19 @@ func TestTasksGenerator_Simple(t *testing.T) {
 		Type:  catalog.DifferenceTypeRemoved,
 		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "/remove1"},
 	}}
-	tasksWithIDs, err := export.GenerateTasksFromDiffs(
+	gen := export.NewTasksGenerator(
 		"simple",
 		"testfs://prefix/",
-		catalogDiffs,
 		func(_ string) bool { return false })
+	tasksWithIDs, err := gen.Add(catalogDiffs)
 	if err != nil {
-		t.Fatalf("failed to GenerateTasksFromDiffs: %s", err)
+		t.Fatalf("failed to add tasks: %s", err)
 	}
-
+	finishTasks, err := gen.Finish()
+	if err != nil {
+		t.Fatalf("failed to finish generating tasks: %s", err)
+	}
+	tasksWithIDs = append(tasksWithIDs, finishTasks...)
 	tasks := cleanup(tasksWithIDs)
 
 	copyTasks := getTasks(isCopy, tasks)
@@ -274,7 +279,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 				To:   "testfs://prefix/add1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
+			TotalDependencies: &zero,
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		},
 		&parade.TaskData{
@@ -285,7 +290,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 				To:   "testfs://prefix/change1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
+			TotalDependencies: &zero,
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		},
 	}, copyTasks); diffs != nil {
@@ -300,7 +305,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 				File: "testfs://prefix/remove1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
+			TotalDependencies: &zero,
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		}}, deleteTasks); diffs != nil {
 		t.Error("unexpected delete tasks", diffs)
@@ -371,15 +376,31 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 		{before: "foo:delete:/remove5", after: "foo:make-success:a/plain", avoid: true},
 		{before: "foo:delete:/remove5", after: "foo:finished"},
 	}
-	tasksWithIDs, err := export.GenerateTasksFromDiffs(
+	gen := export.NewTasksGenerator(
 		"foo",
 		"testfs://prefix/",
-		catalogDiffs,
 		func(path string) bool { return strings.HasSuffix(path, "success") },
 	)
-	if err != nil {
-		t.Fatalf("failed to GenerateTasksFromDiffs: %s", err)
+
+	tasksWithIDs := make([]parade.TaskData, 0, len(catalogDiffs))
+
+	for o := 0; o < len(catalogDiffs); o += 3 {
+		end := o + 3
+		if end > len(catalogDiffs) {
+			end = len(catalogDiffs)
+		}
+		slice := catalogDiffs[o:end]
+		moreTasks, err := gen.Add(slice)
+		if err != nil {
+			t.Fatalf("failed to add tasks %d..%d: %+v: %s", o, end, catalogDiffs[o:o+3], err)
+		}
+		tasksWithIDs = append(tasksWithIDs, moreTasks...)
 	}
+	moreTasks, err := gen.Finish()
+	if err != nil {
+		t.Fatalf("failed to finish generating tasks: %s", err)
+	}
+	tasksWithIDs = append(tasksWithIDs, moreTasks...)
 
 	for i, task := range tasksWithIDs {
 		t.Logf("task %d: %+v", i, task)

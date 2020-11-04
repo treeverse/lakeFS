@@ -7,8 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -59,40 +58,62 @@ type Waiter interface {
 	Cancel()
 }
 
-type ParadeDB sqlx.DB
+type ParadeDB pgxpool.Pool
 
 // NewParadeDB returns a Parade that implements Parade on a database.  The DDL should already be
 // installed on that database.
-func NewParadeDB(db *sqlx.DB) Parade {
-	return (*ParadeDB)(db)
+func NewParadeDB(pool *pgxpool.Pool) Parade {
+	return (*ParadeDB)(pool)
+}
+
+func (p *ParadeDB) pgxPool() *pgxpool.Pool {
+	return (*pgxpool.Pool)(p)
 }
 
 func (p *ParadeDB) InsertTasks(ctx context.Context, tasks []TaskData) error {
-	sqlConn, err := p.DB.Conn(ctx)
+	conn, err := p.pgxPool().Acquire(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("acquire conn: %w", err)
 	}
-	defer sqlConn.Close()
-	return sqlConn.Raw(func(driverConn interface{}) error {
-		conn := driverConn.(*stdlib.Conn).Conn()
-		return InsertTasks(ctx, conn, &TaskDataIterator{Data: tasks})
-	})
+	defer conn.Release()
+	return InsertTasks(ctx, conn, &TaskDataIterator{Data: tasks})
 }
 
 func (p *ParadeDB) OwnTasks(actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
-	return OwnTasks((*sqlx.DB)(p), actor, maxTasks, actions, maxDuration)
+	ctx := context.Background()
+	conn, err := p.pgxPool().Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire conn: %w", err)
+	}
+	defer conn.Release()
+
+	return OwnTasks(conn, actor, maxTasks, actions, maxDuration)
 }
 
 func (p *ParadeDB) ExtendTaskDeadline(taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
-	return ExtendTaskDeadline((*sqlx.DB)(p), taskID, token, maxDuration)
+	ctx := context.Background()
+	conn, err := p.pgxPool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire conn: %w", err)
+	}
+	defer conn.Release()
+
+	return ExtendTaskDeadline(conn, taskID, token, maxDuration)
 }
 
 func (p *ParadeDB) ReturnTask(taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
-	return ReturnTask((*sqlx.DB)(p), taskID, token, resultStatus, resultStatusCode)
+	ctx := context.Background()
+	conn, err := p.pgxPool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire conn: %w", err)
+	}
+	defer conn.Release()
+
+	return ReturnTask(conn, taskID, token, resultStatus, resultStatusCode)
 }
 
 func (p *ParadeDB) NewWaiter(ctx context.Context, taskID TaskID) (Waiter, error) {
-	conn, err := stdlib.AcquireConn(p.DB)
+	conn, err := p.pgxPool().Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get conn to for waiter: %w", err)
 	}
@@ -102,41 +123,38 @@ func (p *ParadeDB) NewWaiter(ctx context.Context, taskID TaskID) (Waiter, error)
 }
 
 func (p *ParadeDB) DeleteTasks(ctx context.Context, taskIDs []TaskID) error {
-	sqlConn, err := p.DB.Conn(ctx)
+	conn, err := p.pgxPool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire conn: %w", err)
+	}
+	defer conn.Release()
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer sqlConn.Close()
-	return sqlConn.Raw(func(driverConn interface{}) error {
-		conn := driverConn.(*stdlib.Conn).Conn()
-		tx, err := conn.Begin(ctx)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if tx != nil {
-				// No useful error handling for an error here, return value is
-				// already out there.  Just log.
-				if err := tx.Rollback(ctx); err != nil {
-					logging.FromContext(ctx).Errorf("rollback after error: %s", err)
-				}
+	defer func() {
+		if tx != nil {
+			// No useful error handling for an error here, return value is
+			// already out there.  Just log.
+			if err := tx.Rollback(ctx); err != nil {
+				logging.FromContext(ctx).Errorf("rollback after error: %s", err)
 			}
-		}()
-
-		err = DeleteTasks(ctx, tx, taskIDs)
-		if err != nil {
-			return err
 		}
+	}()
 
-		err = tx.Commit(ctx)
-		if err != nil {
-			// Try to rollback (it might not work or fail again, but at least we
-			// tried...)
-			return fmt.Errorf("COMMIT delete_tasks: %w", err)
-		}
-		tx = nil // Don't rollback
-		return nil
-	})
+	err = DeleteTasks(ctx, tx, taskIDs)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		// Try to rollback (it might not work or fail again, but at least we
+		// tried...)
+		return fmt.Errorf("COMMIT delete_tasks: %w", err)
+	}
+	tx = nil // Don't rollback
+	return nil
 }
 
 // ParadePrefix wraps a Parade and adds a prefix to all TaskIDs, action names, and ActorIDs.
