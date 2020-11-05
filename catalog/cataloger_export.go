@@ -136,7 +136,7 @@ func (c *cataloger) PutExportConfiguration(repository string, branch string, con
 
 var ErrExportFailed = errors.New("export failed")
 
-func (c *cataloger) ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage string, err error)) error {
+func (c *cataloger) ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)) error {
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		oldRef, state, err := c.ExportStateMarkStart(tx, repo, branch, newRef)
 		if err != nil {
@@ -147,8 +147,7 @@ func (c *cataloger) ExportState(repo, branch, newRef string, cb func(oldRef stri
 		if err != nil {
 			return nil, err
 		}
-
-		err = c.ExportStateMarkEnd(tx, repo, branch, newRef, newState, &newMsg)
+		err = c.ExportStateMarkEnd(tx, repo, branch, newRef, newState, newMsg)
 		return nil, err
 	})
 	return err

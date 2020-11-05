@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/parade"
+
+	"github.com/treeverse/lakefs/export"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
@@ -60,6 +64,7 @@ type Dependencies struct {
 	BlockAdapter    block.Adapter
 	Stats           stats.Collector
 	Retention       retention.Service
+	Parade          parade.Parade
 	Dedup           *dedup.Cleaner
 	MetadataManager auth.MetadataManager
 	Migrator        db.Migrator
@@ -75,6 +80,7 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
 		Stats:           d.Stats,
 		Retention:       d.Retention,
+		Parade:          d.Parade,
 		Dedup:           d.Dedup,
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
@@ -95,8 +101,7 @@ type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service,
-	dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, parade parade.Parade, dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
 			ctx:             context.Background(),
@@ -105,6 +110,7 @@ func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter 
 			BlockAdapter:    blockAdapter,
 			Stats:           stats,
 			Retention:       retention,
+			Parade:          parade,
 			Dedup:           dedupCleaner,
 			MetadataManager: metadataManager,
 			Migrator:        migrator,
@@ -191,7 +197,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.ExportGetContinuousExportHandler = c.ExportGetContinuousExportHandler()
 	api.ExportSetContinuousExportHandler = c.ExportSetContinuousExportHandler()
-
+	api.ExportExecuteContinuousExportHandler = c.ExportExecuteContinuousExport()
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
@@ -464,7 +470,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		deps.LogAction("get_branch")
+		deps.LogAction("get_branch_commit_log")
 		cataloger := deps.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
@@ -2219,6 +2225,29 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 			LastKeysInPrefixRegexp: config.LastKeysInPrefixRegexp,
 		}
 		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
+	})
+}
+
+func (c *Controller) ExportExecuteContinuousExport() exportop.ExecuteContinuousExportHandler {
+	return exportop.ExecuteContinuousExportHandlerFunc(func(params exportop.ExecuteContinuousExportParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateBranchAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return exportop.NewSetContinuousExportUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("execute_continuous_export")
+
+		err = export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
+		if err != nil {
+			return exportop.NewExecuteContinuousExportDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return exportop.NewExecuteContinuousExportCreated()
 	})
 }
 

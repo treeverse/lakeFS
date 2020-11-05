@@ -8,7 +8,7 @@ CREATE TYPE task_status_code_value AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-    id VARCHAR(64) NOT NULL PRIMARY KEY, -- nanoid
+    id VARCHAR(128) NOT NULL PRIMARY KEY, -- nanoid
 
     action VARCHAR(128) NOT NULL, -- name (type) of action to perform
     body TEXT,                  -- data used by action
