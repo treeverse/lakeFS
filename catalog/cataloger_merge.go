@@ -96,7 +96,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			}
 		}
 		return nil, nil
-	}, c.txOpts(ctx)...)
+	}, c.txOpts(ctx, db.ReadCommitted())...)
 	return mergeResult, err
 }
 
