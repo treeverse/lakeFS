@@ -172,7 +172,7 @@ type ExportStateHandler interface {
 	// ExportState starts an export operation on branch of repo
 	// calls a callback with the oldRef and state
 	// and ends the export operation
-	ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage string, err error)) error
+	ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)) error
 	// ExportStateMarkStart starts an export operation on branch of repo and returns the ref of
 	// the previous export.  If the previous export failed it returns ErrExportFailed.  If
 	// another export is running return state ExportStatusInProgress -- and caller should

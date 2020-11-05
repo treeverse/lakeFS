@@ -76,6 +76,7 @@ func TestLocalLoad(t *testing.T) {
 		&mockCollector{},
 		retentionService,
 		migrator,
+		nil,
 		dedupCleaner,
 		logging.Default(),
 	)

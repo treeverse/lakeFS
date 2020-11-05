@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"path"
 
+	"github.com/treeverse/lakefs/api/gen/client/export"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -83,6 +85,10 @@ type RepositoryClient interface {
 	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
 	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
+
+	SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error
+	GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error)
+	ExecuteContinuousExport(ctx context.Context, repository, branchID string) error
 }
 
 type Client interface {
@@ -480,6 +486,40 @@ func (c *client) RevertBranch(ctx context.Context, repository, branchID string, 
 		Revert:     revertProps,
 		Repository: repository,
 		Context:    ctx,
+	}, c.auth)
+	return err
+}
+
+func (c *client) SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error {
+	_, err := c.remote.Export.SetContinuousExport(&export.SetContinuousExportParams{
+		Branch:     branchID,
+		Config:     config,
+		Repository: repository,
+		Context:    ctx,
+		HTTPClient: nil,
+	}, c.auth)
+	return err
+}
+
+func (c *client) GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error) {
+	resp, err := c.remote.Export.GetContinuousExport(&export.GetContinuousExportParams{
+		Branch:     branchID,
+		Repository: repository,
+		Context:    ctx,
+		HTTPClient: nil,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), err
+}
+
+func (c *client) ExecuteContinuousExport(ctx context.Context, repository, branchID string) error {
+	_, err := c.remote.Export.ExecuteContinuousExport(&export.ExecuteContinuousExportParams{
+		Branch:     branchID,
+		Repository: repository,
+		Context:    ctx,
+		HTTPClient: nil,
 	}, c.auth)
 	return err
 }

@@ -1,6 +1,8 @@
 package export_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -24,14 +26,23 @@ func TestDirMatchCache(t *testing.T) {
 		numCalls int
 	}{
 		{
+			name: "no delimiter",
+			pred: func(path string) bool { return strings.HasSuffix(path, "match") },
+			lookups: []L{
+				{"a", "", false}, // +1 calls
+				{"", "", false},  // +0 calls
+			},
+			numCalls: 1,
+		},
+		{
 			name: "leaves",
 			pred: func(path string) bool { return strings.HasSuffix(path, "match") },
 			lookups: []L{
-				{"/a/b/match", "", false},                    // +3 calls
-				{"/a/b/match/c", "/a/b/match", true},         // +1 call
-				{"/a/b/match/c/d/e/f/g", "/a/b/match", true}, // +4 calls
-				{"", "", false},                              // +0 calls
-				{"/a/match/b/match", "/a/match", true},       // +2 calls
+				{"a/b/match", "", false},                   // +3 calls
+				{"a/b/match/c", "a/b/match", true},         // +1 call
+				{"a/b/match/c/d/e/f/g", "a/b/match", true}, // +4 calls
+				{"", "", false},                            // +0 calls
+				{"a/match/b/match", "a/match", true},       // +2 calls
 			},
 			numCalls: 10,
 		},
@@ -52,9 +63,9 @@ func TestDirMatchCache(t *testing.T) {
 				return strings.HasSuffix(path, "x") || path == ""
 			},
 			lookups: []L{
-				{"", "", true},              // +1 call
-				{"/a/b/c/file", "", true},   // +3 calls
-				{"/a/x/file", "/a/x", true}, // +1 call
+				{"", "", true},            // +1 call
+				{"a/b/c/file", "", true},  // +3 calls
+				{"a/x/file", "a/x", true}, // +1 call
 			},
 			numCalls: 5,
 		},
@@ -200,10 +211,7 @@ var zero int = 0
 var one int = 1
 
 func TestTasksGenerator_Empty(t *testing.T) {
-	gen := export.NewTasksGenerator(
-		"empty",
-		"testfs://prefix/",
-		func(_ string) bool { return true })
+	gen := export.NewTasksGenerator("empty", "testfs://prefix/", func(_ string) bool { return true }, nil)
 
 	tasks, err := gen.Finish()
 	if err != nil {
@@ -246,18 +254,18 @@ func toJSON(t testing.TB, v interface{}) *string {
 func TestTasksGenerator_Simple(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
 		Type:  catalog.DifferenceTypeAdded,
-		Entry: catalog.Entry{Path: "add1", PhysicalAddress: "/add1"},
+		Entry: catalog.Entry{Path: "add1", PhysicalAddress: "add1"},
 	}, {
 		Type:  catalog.DifferenceTypeChanged,
-		Entry: catalog.Entry{Path: "change1", PhysicalAddress: "/change1"},
+		Entry: catalog.Entry{Path: "change1", PhysicalAddress: "change1"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "/remove1"},
+		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "remove1"},
 	}}
 	gen := export.NewTasksGenerator(
 		"simple",
 		"testfs://prefix/",
-		func(_ string) bool { return false })
+		func(_ string) bool { return false }, nil)
 	tasksWithIDs, err := gen.Add(catalogDiffs)
 	if err != nil {
 		t.Fatalf("failed to add tasks: %s", err)
@@ -272,10 +280,10 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	copyTasks := getTasks(isCopy, tasks)
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
-			ID:     "simple:copy:/add1",
+			ID:     "simple:copy:ae8800d484a16747ba741efdfceb6966b13afcd51fd63d2483ebfa92c9f930f4",
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
-				From: "/add1",
+				From: "add1",
 				To:   "testfs://prefix/add1",
 			}),
 			StatusCode:        parade.TaskPending,
@@ -283,10 +291,10 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		},
 		&parade.TaskData{
-			ID:     "simple:copy:/change1",
+			ID:     "simple:copy:8548a31793681d6672c3314e6b6a6ac66764391a561263471ac1bbfab583dcb1",
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
-				From: "/change1",
+				From: "change1",
 				To:   "testfs://prefix/change1",
 			}),
 			StatusCode:        parade.TaskPending,
@@ -299,7 +307,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	deleteTasks := getTasks(isDelete, tasks)
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
-			ID:     "simple:delete:/remove1",
+			ID:     "simple:delete:e02ee70254cbc21faa9265e1649a767cced4e39eb6c76d739810508dab7d43f1",
 			Action: export.DeleteAction,
 			Body: toJSON(t, export.DeleteData{
 				File: "testfs://prefix/remove1",
@@ -327,59 +335,64 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	}
 }
 
+func getGeneratedID(path string) string {
+	shaHash := sha256.Sum256([]byte(path))
+	return hex.EncodeToString(shaHash[:])
+}
 func TestTasksGenerator_SuccessFiles(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/1", PhysicalAddress: "/remove1"},
+		Entry: catalog.Entry{Path: "a/success/1", PhysicalAddress: "remove1"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/plain/1", PhysicalAddress: "/remove2"},
+		Entry: catalog.Entry{Path: "a/plain/1", PhysicalAddress: "remove2"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/sub/success/11", PhysicalAddress: "/remove11"},
+		Entry: catalog.Entry{Path: "a/success/sub/success/11", PhysicalAddress: "remove11"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/sub/success/12", PhysicalAddress: "/remove12"},
+		Entry: catalog.Entry{Path: "a/success/sub/success/12", PhysicalAddress: "remove12"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "b/success/1", PhysicalAddress: "/remove3"},
+		Entry: catalog.Entry{Path: "b/success/1", PhysicalAddress: "remove3"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/2", PhysicalAddress: "/remove4"},
+		Entry: catalog.Entry{Path: "a/success/2", PhysicalAddress: "remove4"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/plain/2", PhysicalAddress: "/remove5"},
+		Entry: catalog.Entry{Path: "a/plain/2", PhysicalAddress: "remove5"},
 	}}
 
 	expectedDeps := []struct {
 		before, after parade.TaskID
 		avoid         bool
 	}{
-		{before: "foo:delete:/remove1", after: "foo:make-success:a/success"},
-		{before: "foo:delete:/remove1", after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/1")), after: "foo:make-success:a/success"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/1")), after: "foo:finished"},
 
-		{before: "foo:delete:/remove2", after: "foo:make-success:a/plain", avoid: true},
-		{before: "foo:delete:/remove2", after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/1")), after: "foo:make-success:a/plain", avoid: true},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/1")), after: "foo:finished"},
 
-		{before: "foo:delete:/remove11", after: "foo:make-success:a/success/sub/success"},
-		{before: "foo:delete:/remove11", after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/11")), after: "foo:make-success:a/success/sub/success"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/11")), after: "foo:finished"},
 
-		{before: "foo:delete:/remove12", after: "foo:make-success:a/success/sub/success"},
-		{before: "foo:delete:/remove12", after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/12")), after: "foo:make-success:a/success/sub/success"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/12")), after: "foo:finished"},
 
 		{before: "foo:make-success:a/success/sub/success", after: "foo:make-success:a/success"},
 
-		{before: "foo:delete:/remove3", after: "foo:make-success:b/success"},
-		{before: "foo:delete:/remove3", after: "foo:finished"},
-		{before: "foo:delete:/remove4", after: "foo:make-success:a/success"},
-		{before: "foo:delete:/remove4", after: "foo:finished"},
-		{before: "foo:delete:/remove5", after: "foo:make-success:a/plain", avoid: true},
-		{before: "foo:delete:/remove5", after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("b/success/1")), after: "foo:make-success:b/success"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("b/success/1")), after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/2")), after: "foo:make-success:a/success"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/2")), after: "foo:finished"},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/2")), after: "foo:make-success:a/plain", avoid: true},
+		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/2")), after: "foo:finished"},
 	}
 	gen := export.NewTasksGenerator(
 		"foo",
 		"testfs://prefix/",
 		func(path string) bool { return strings.HasSuffix(path, "success") },
+		nil,
 	)
 
 	tasksWithIDs := make([]parade.TaskData, 0, len(catalogDiffs))

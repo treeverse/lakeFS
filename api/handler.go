@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/treeverse/lakefs/parade"
+
 	openapierr "github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
@@ -47,6 +49,7 @@ type Handler struct {
 	authService     auth.Service
 	stats           stats.Collector
 	retention       retention.Service
+	parade          parade.Parade
 	migrator        db.Migrator
 	apiServer       *restapi.Server
 	handler         *http.ServeMux
@@ -54,14 +57,14 @@ type Handler struct {
 	logger          logging.Logger
 }
 
-func NewHandler(
-	cataloger catalog.Cataloger,
+func NewHandler(cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
 	metadataManager auth.MetadataManager,
 	stats stats.Collector,
 	retention retention.Service,
 	migrator db.Migrator,
+	parade parade.Parade,
 	dedupCleaner *dedup.Cleaner,
 	logger logging.Logger,
 ) http.Handler {
@@ -73,6 +76,7 @@ func NewHandler(
 		metadataManager: metadataManager,
 		stats:           stats,
 		retention:       retention,
+		parade:          parade,
 		migrator:        migrator,
 		dedupCleaner:    dedupCleaner,
 		logger:          logger,
@@ -167,7 +171,7 @@ func (s *Handler) buildAPI() {
 	api.BasicAuthAuth = s.BasicAuth()
 	api.JwtTokenAuth = s.JwtTokenAuth()
 	// bind our handlers to the server
-	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedupCleaner, s.metadataManager, s.migrator, s.stats, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.parade, s.dedupCleaner, s.metadataManager, s.migrator, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

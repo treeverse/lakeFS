@@ -2,13 +2,14 @@ package export
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"strings"
+	"testing"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/mem"
 	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/testutil"
-	"io/ioutil"
-	"strings"
-	"testing"
 )
 
 func TestCopy(t *testing.T) {
@@ -31,7 +32,7 @@ func TestCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(adapter)
+	h := NewHandler(adapter, nil, nil)
 	taskBody, err := json.Marshal(&CopyData{
 		From: from,
 		To:   to,
@@ -80,7 +81,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(adapter)
+	h := NewHandler(adapter, nil, nil)
 	taskBody, err := json.Marshal(&DeleteData{
 		File: path,
 	})
@@ -118,7 +119,7 @@ func TestTouch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(adapter)
+	h := NewHandler(adapter, nil, nil)
 	taskBody, err := json.Marshal(&SuccessData{
 		File: path,
 	})

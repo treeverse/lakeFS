@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	DefaultDatabaseConnString = "postgres://localhost:5432/postgres?sslmode=disable"
+	DefaultDatabaseConnString       = "postgres://localhost:5432/postgres?sslmode=disable"
+	DefaultParadeDatabaseConnString = "postgres://localhost:5432/parade?sslmode=disable"
 
 	DefaultBlockStoreType                    = "local"
 	DefaultBlockStoreLocalPath               = "~/lakefs/data"
@@ -79,6 +80,7 @@ func setDefaults() {
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
 	viper.SetDefault("database.connection_string", DefaultDatabaseConnString)
+	viper.SetDefault("parade.database.connection_string", DefaultParadeDatabaseConnString)
 
 	viper.SetDefault("auth.cache.enabled", DefaultAuthCacheEnabled)
 	viper.SetDefault("auth.cache.size", DefaultAuthCacheSize)
@@ -108,6 +110,15 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
 		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
+	}
+}
+
+func (c *Config) GetParadeDatabaseParams() dbparams.Database {
+	return dbparams.Database{
+		ConnectionString:      viper.GetString("parade.database.connection_string"),
+		MaxOpenConnections:    viper.GetInt32("parade.database.max_open_connections"),
+		MaxIdleConnections:    viper.GetInt32("parade.database.max_idle_connections"),
+		ConnectionMaxLifetime: viper.GetDuration("parade.database.connection_max_lifetime"),
 	}
 }
 
