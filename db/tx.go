@@ -164,6 +164,17 @@ func ReadOnly() TxOpt {
 	}
 }
 
+func ReadCommitted() TxOpt {
+	return func(o *TxOptions) {
+		o.isolationLevel = pgx.ReadCommitted
+	}
+}
+func RepeatableRead() TxOpt {
+	return func(o *TxOptions) {
+		o.isolationLevel = pgx.RepeatableRead
+	}
+}
+
 func WithIsolationLevel(level pgx.TxIsoLevel) TxOpt {
 	return func(o *TxOptions) {
 		o.isolationLevel = level
