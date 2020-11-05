@@ -10,7 +10,7 @@ import (
 
 const (
 	DBScannerDefaultBufferSize      = 4096
-	BranchScannerMaxCommitsInFilter = 1000
+	BranchScannerMaxCommitsInFilter = 40
 )
 
 type DBBranchScanner struct {
@@ -52,6 +52,9 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 	var branchMaxCommitID CommitID
 	var commits []string
 	var commitsWhere string
+	if commitID == UncommittedID {
+		return "", nil
+	}
 	if commitID == UncommittedID || commitID == CommittedID {
 		branchMaxCommitID = MaxCommitID
 	} else {
@@ -82,7 +85,7 @@ func (s *DBBranchScanner) Next() bool {
 	if s.hasEnded() {
 		return false
 	}
-	if s.commitsWhere == "" { // getRelevantCommitsCondition failed
+	if s.err != nil {
 		return false
 	}
 	if !s.readBufferIfNeeded() {
@@ -145,15 +148,17 @@ func (s *DBBranchScanner) readBufferIfNeeded() bool {
 }
 
 func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
-	q := psql.Select("branch_id", "path", "min_commit", "max_commit", "ctid").
+	q := sq.Select("branch_id", "path", "min_commit", "max_commit", "ctid").
 		Distinct().Options(" ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", s.branchID).
-		Where(s.commitsWhere).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(s.opts.BufferSize))
 	if s.after != "" {
 		q = q.Where("path > ?", s.after)
+	}
+	if s.commitsWhere != "" {
+		q = q.Where(s.commitsWhere)
 	}
 	if len(s.opts.AdditionalFields) > 0 {
 		q = q.Columns(s.opts.AdditionalFields...)
@@ -161,5 +166,8 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 	if s.opts.AdditionalWhere != nil {
 		q = q.Where(s.opts.AdditionalWhere)
 	}
+	z := sq.DebugSqlizer(q)
+	_ = z
+	q = q.PlaceholderFormat(sq.Dollar)
 	return q
 }
