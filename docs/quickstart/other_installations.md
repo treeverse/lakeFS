@@ -19,7 +19,7 @@ has_children: false
 
 To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank"}:
 
-1. Ensure you have Docker installed on your computer, and that compose version is 1.25.04 or higher. For more information, please see the [following issue](https://github.com/treeverse/lakeFS/issues/894).
+1. Ensure you have Docker installed on your computer, and that compose version is 1.25.04 or higher. For more information, please see this [issue](https://github.com/treeverse/lakeFS/issues/894).
 
 1. Run the following command in your terminal:
 
