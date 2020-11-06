@@ -30,7 +30,18 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
 <div style="background: #ffdddd border: 3px solid #dd4444; margine: 15px;">
-
+		
+## Table of content
+	-[Capabilities](#capabilities)
+	-[Getting Started](#getting-started)
+		-[Docker (MacOS, Linux)](#docker-mac-linux)
+		-[Docker (Windows)](#docker-windows)
+		-[Download the Binary](#download-binary)
+		-[Setting up a repository](#setting-up-repository)
+	-[Community](#community)
+	-[Contributing](#contributing)
+	-[More information](#more-info)
+	-[Licensing](#licensing)
 
 ## Capabilities
 
@@ -102,6 +113,9 @@ Stay up to date and get lakeFS support via:
 - [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
 
+
+## Contributing
+If you've ever wanted to contribute to open source, and a great cause, now is your chance!
 
 ## More information
 
