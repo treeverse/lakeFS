@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-
-	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -137,18 +135,6 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	}
 	if res.Reference != "" {
 		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
-	}
-	expectedDifferences := Differences{
-		Difference{Type: DifferenceTypeConflict, Entry: Entry{Path: "/file2"}},
-		Difference{Type: DifferenceTypeConflict, Entry: Entry{Path: "/file5"}},
-	}
-	if res.Summary[DifferenceTypeConflict] != len(expectedDifferences) {
-		t.Fatalf("Merge summary conflicts=%d, expected %d", res.Summary[DifferenceTypeConflict], len(expectedDifferences))
-	}
-	differences, _, err := c.Diff(ctx, repository, "master", "branch1", DiffParams{Limit: -1})
-	testutil.MustDo(t, "diff merge changes", err)
-	if !differences.Equal(expectedDifferences) {
-		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
 	}
 }
 
@@ -804,11 +790,6 @@ func TestCataloger_Merge_FromChildConflicts(t *testing.T) {
 	} else if res.Reference != "" {
 		t.Fatalf("Merge reference = %s, expected none", res.Reference)
 	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeConflict: 1,
-	}); diff != nil {
-		t.Fatal("Merge Summary", diff)
-	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences := Differences{
 	//	Difference{Type: DifferenceTypeConflict, Path: "/file0"},
@@ -1030,11 +1011,6 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 		t.Fatal("Expected merge result, got none")
 	} else if res.Reference != "" {
 		t.Fatalf("Expected empty reference, got %s", res.Reference)
-	}
-	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
-		DifferenceTypeConflict: 1,
-	}); diff != nil {
-		t.Fatal("Merge Summary", diff)
 	}
 
 	// delete the file to resolve conflict
