@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MergeBatchSize       = 256
+	MergeBatchSize       = 1024
 	MergeBatchChanBuffer = 10
 )
 
