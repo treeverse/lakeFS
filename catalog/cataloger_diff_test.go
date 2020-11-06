@@ -132,6 +132,7 @@ func TestCataloger_Diff_FromChild(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1"}, Type: DifferenceTypeRemoved},
 		Difference{Entry: Entry{Path: "file2"}, Type: DifferenceTypeChanged},
@@ -175,6 +176,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeRemoved},
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
@@ -189,6 +191,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeAdded},
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
@@ -237,6 +240,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeRemoved},
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
@@ -251,6 +255,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeAdded},
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
@@ -268,6 +273,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
 	}); diff != nil {
@@ -415,6 +421,7 @@ func TestCataloger_Diff_FromParentThreeBranches(t *testing.T) {
 	if more {
 		t.Fatal("Diff has more than expected differences")
 	}
+	clearChecksum(&res)
 	if diff := deep.Equal(res, Differences{
 		Difference{Entry: Entry{Path: "file1-" + DefaultBranchName}, Type: DifferenceTypeRemoved},
 		Difference{Entry: Entry{Path: "file2-" + DefaultBranchName}, Type: DifferenceTypeChanged},
@@ -478,5 +485,11 @@ func TestCataloger_Diff_AdditionalFields(t *testing.T) {
 		if d.Checksum == "" {
 			t.Fatalf("Diff result entry should not have checksum address set (%s)", d.Checksum)
 		}
+	}
+}
+
+func clearChecksum(d *Differences) {
+	for i := range *d {
+		(*d)[i].Entry.Checksum = ""
 	}
 }
