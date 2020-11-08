@@ -33,7 +33,7 @@ func TestDBBranchScanner(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			scanner := NewDBBranchScanner(tx, branchID, UncommittedID, &DBScannerOptions{BufferSize: 64})
+			scanner := NewDBBranchScanner(tx, branchID, UncommittedID, DBScannerOptions{BufferSize: 64})
 			firstNext := scanner.Next()
 			if firstNext {
 				t.Fatalf("first entry should be false")
@@ -54,7 +54,7 @@ func TestDBBranchScanner(t *testing.T) {
 
 	t.Run("additional_fields", func(t *testing.T) {
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			scanner := NewDBBranchScanner(tx, branchID, UncommittedID, &DBScannerOptions{
+			scanner := NewDBBranchScanner(tx, branchID, UncommittedID, DBScannerOptions{
 				AdditionalFields: []string{"checksum", "physical_address"},
 			})
 			testedSomething := false
@@ -81,7 +81,7 @@ func TestDBBranchScanner(t *testing.T) {
 	t.Run("additional_where", func(t *testing.T) {
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 			p := fmt.Sprintf("Obj-%04d", numberOfObjects-5)
-			scanner := NewDBBranchScanner(tx, branchID, UncommittedID, &DBScannerOptions{
+			scanner := NewDBBranchScanner(tx, branchID, UncommittedID, DBScannerOptions{
 				AdditionalWhere: sq.Expr("path=?", p),
 			})
 			var ent *DBScannerEntry
@@ -106,7 +106,7 @@ func TestDBBranchScanner(t *testing.T) {
 				_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 					branchID, err := getBranchID(tx, repository, branchName, LockTypeNone)
 					testutil.MustDo(t, "get branch ID", err)
-					scanner := NewDBBranchScanner(tx, branchID, UncommittedID, &DBScannerOptions{BufferSize: bufSize})
+					scanner := NewDBBranchScanner(tx, branchID, UncommittedID, DBScannerOptions{BufferSize: bufSize})
 					i := 0
 					for scanner.Next() {
 						o := scanner.Value()
