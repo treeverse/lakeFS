@@ -13,6 +13,7 @@ type DBScanner interface {
 	Next() bool
 	Value() *DBScannerEntry
 	Err() error
+	SetAdditionalWhere(s sq.Sqlizer)
 }
 
 func ScanDBEntriesUntil(s DBScanner, p string) error {
