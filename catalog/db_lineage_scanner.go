@@ -3,6 +3,8 @@ package catalog
 import (
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
+
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -17,16 +19,23 @@ type DBLineageScanner struct {
 	opts     DBScannerOptions
 }
 
-func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBScannerOptions) *DBLineageScanner {
+func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBScannerOptions) *DBLineageScanner {
 	s := &DBLineageScanner{
 		tx:       tx,
 		branchID: branchID,
 		commitID: commitID,
-	}
-	if opts != nil {
-		s.opts = *opts
+		opts:     opts,
 	}
 	return s
+}
+
+func (s *DBLineageScanner) SetAdditionalWhere(part sq.Sqlizer) {
+	s.opts.AdditionalWhere = part
+	if s.scanners != nil {
+		for _, scanner := range s.scanners {
+			scanner.SetAdditionalWhere(part)
+		}
+	}
 }
 
 func (s *DBLineageScanner) Next() bool {
@@ -98,9 +107,9 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 		return false
 	}
 	s.scanners = make([]*DBBranchScanner, len(lineage)+1)
-	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, &s.opts)
+	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, s.opts)
 	for i, bl := range lineage {
-		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, &s.opts)
+		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, s.opts)
 	}
 	for _, branchScanner := range s.scanners {
 		if branchScanner.Next() {

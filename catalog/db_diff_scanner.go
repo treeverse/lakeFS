@@ -86,8 +86,8 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams) (*DiffScanne
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
 	}
-	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
+	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	s.childLineage, err = getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
 		return nil, err
@@ -107,8 +107,8 @@ func (s *DiffScanner) diffFromChild(tx db.Tx, params doDiffParams) (*DiffScanner
 	if err != nil {
 		return nil, err
 	}
-	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, &scannerOpts)
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, &scannerOpts)
+	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	return s, nil
 }
 
@@ -120,8 +120,8 @@ func (s *DiffScanner) diffSameBranch(tx db.Tx, params doDiffParams) (*DiffScanne
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
 	}
-	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, params.LeftCommitID, &scannerOpts)
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, &scannerOpts)
+	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, params.LeftCommitID, scannerOpts)
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, scannerOpts)
 	return s, nil
 }
 
