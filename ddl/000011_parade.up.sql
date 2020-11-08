@@ -1,4 +1,7 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+BEGIN;
+
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA extensions;
 
 CREATE TYPE task_status_code_value AS ENUM (
     'pending',          -- waiting for an actor to perform it (new or being retried)
@@ -17,6 +20,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     status_code task_status_code_value NOT NULL DEFAULT 'pending', -- internal status code, used by parade to issue tasks
 
     num_tries INTEGER NOT NULL DEFAULT 0, -- number of attempts actors have made on this task
+    num_failures INTEGER NOT NULL DEFAULT 0, -- number of those attempts that failed
     max_tries INTEGER,
 
     total_dependencies INTEGER, -- number of tasks that must signal this task
@@ -48,13 +52,13 @@ $$;
 CREATE OR REPLACE FUNCTION own_tasks(
     max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR(64), token UUID, action VARCHAR(128), body TEXT)
+RETURNS TABLE(task_id VARCHAR(64), token UUID, num_failures INTEGER, action VARCHAR(128), body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
         status_code = 'in-progress',
         num_tries = num_tries + 1,
-        performance_token = gen_random_uuid(),
+        performance_token = extensions.gen_random_uuid(),
         action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
     WHERE id IN (
         SELECT id
@@ -67,7 +71,7 @@ LANGUAGE sql VOLATILE AS $$
         ORDER BY random()
         FOR UPDATE SKIP LOCKED
         LIMIT max_tasks)
-    RETURNING id, performance_token, action, body
+    RETURNING id, performance_token, num_failures, action, body
 $$;
 
 -- Extends ownership of task id by an extra max_duration, if it is still locked with performance
@@ -75,11 +79,16 @@ $$;
 CREATE OR REPLACE FUNCTION extend_task_deadline(
     task_id VARCHAR(64), token UUID, max_duration INTERVAL
 ) RETURNS BOOLEAN
-LANGUAGE sql AS $$
+LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET action_deadline = NOW() + max_duration
     WHERE id = task_id AND performance_token = token
     RETURNING true;
+$$;
+
+CREATE OR REPLACE FUNCTION no_more_tries(r tasks)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
+    SELECT $1.num_tries >= $1.max_tries
 $$;
 
 -- Returns an owned task id that was locked with token.  It is an error
@@ -92,26 +101,40 @@ LANGUAGE plpgsql AS $$
 DECLARE
     num_updated INTEGER;
     channel VARCHAR(64);
-    tasks_to_signal_after VARCHAR(64) ARRAY;
+    to_signal VARCHAR(64) ARRAY;
 BEGIN
-    UPDATE tasks INTO channel, tasks_to_signal_after
-    SET status = result_status,
-        status_code = result_status_code,
-        actor_id = NULL,
-        performance_token = NULL
-    WHERE id = task_id AND performance_token = token
-    RETURNING notify_channel_after, to_signal_after;
+    CASE result_status_code
+    WHEN 'aborted', 'completed' THEN
+        UPDATE tasks INTO channel, to_signal
+        SET status = result_status,
+            status_code = result_status_code,
+            actor_id = NULL,
+            performance_token = NULL
+        WHERE id = task_id AND performance_token = token
+        RETURNING notify_channel_after, to_signal_after;
+    WHEN 'pending' THEN
+        UPDATE tasks INTO channel, to_signal
+	SET status = result_status,
+	    status_code = (CASE WHEN no_more_tries(tasks) THEN 'aborted' ELSE 'pending' END)::task_status_code_value,
+	    actor_id = NULL,
+	    performance_token = NULL
+	WHERE id = task_id AND performance_token = token
+	RETURNING (CASE WHEN no_more_tries(tasks) THEN notify_channel_after ELSE NULL END),
+	          (CASE WHEN no_more_tries(tasks) THEN to_signal_after ELSE NULL END);
+    ELSE
+        RAISE EXCEPTION 'cannot return task to status %', result_status;
+    END CASE;
 
     GET DIAGNOSTICS num_updated := ROW_COUNT;
 
     UPDATE tasks
-    SET num_signals = num_signals+1
-    WHERE id = ANY(tasks_to_signal_after);
+    SET num_signals = num_signals+1,
+        num_failures = num_failures + CASE WHEN result_status_code = 'aborted'::task_status_code_value THEN 1 ELSE 0 END
+    WHERE id = ANY(to_signal);
 
     IF channel IS NOT NULL THEN
         PERFORM pg_notify(channel, NULL);
     END IF;
-
 
     RETURN num_updated;
 END;
@@ -121,7 +144,7 @@ $$;
 -- tasks with no remaining dependencies.)
 CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR(64))
 RETURNS SETOF VARCHAR(64)
-LANGUAGE sql AS $$
+LANGUAGE sql VOLATILE AS $$
 WITH updates AS (
         SELECT UNNEST(to_signal_after) effect_id,
             (CASE WHEN status_code IN ('aborted', 'completed') THEN 0 ELSE 1 END) delta
@@ -172,3 +195,5 @@ BEGIN
     $Q$, task_id_name);
 END;
 $$;
+
+END;

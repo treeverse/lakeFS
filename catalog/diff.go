@@ -11,8 +11,14 @@ const (
 )
 
 type Difference struct {
-	Entry                // Partially filled.
+	Entry                // Partially filled. Path is always set.
 	Type  DifferenceType `db:"diff_type"`
+}
+
+type DiffResultRecord struct {
+	TargetEntryNotInDirectBranch bool // the entry is reflected via lineage, NOT in the branch itself
+	Difference
+	EntryCtid *string // CTID of the modified/added entry. Do not use outside of catalog diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
 }
 
 func (d Difference) String() string {
@@ -31,19 +37,6 @@ func (d Difference) String() string {
 }
 
 type Differences []Difference
-
-func (d Differences) CountByType() map[DifferenceType]int {
-	result := make(map[DifferenceType]int)
-	for i := range d {
-		typ := d[i].Type
-		if count, ok := result[typ]; !ok {
-			result[typ] = 1
-		} else {
-			result[typ] = count + 1
-		}
-	}
-	return result
-}
 
 func (d Differences) Equal(other Differences) bool {
 	if len(d) != len(other) {
