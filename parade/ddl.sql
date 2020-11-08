@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     status_code task_status_code_value NOT NULL DEFAULT 'pending', -- internal status code, used by parade to issue tasks
 
     num_tries INTEGER NOT NULL DEFAULT 0, -- number of attempts actors have made on this task
+    num_failures INTEGER NOT NULL DEFAULT 0, -- number of those attempts that failed
     max_tries INTEGER,
 
     total_dependencies INTEGER, -- number of tasks that must signal this task
@@ -48,7 +49,7 @@ $$;
 CREATE OR REPLACE FUNCTION own_tasks(
     max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR(64), token UUID, action VARCHAR(128), body TEXT)
+RETURNS TABLE(task_id VARCHAR(64), token UUID, num_failures INTEGER, action VARCHAR(128), body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
@@ -67,7 +68,7 @@ LANGUAGE sql VOLATILE AS $$
         ORDER BY random()
         FOR UPDATE SKIP LOCKED
         LIMIT max_tasks)
-    RETURNING id, performance_token, action, body
+    RETURNING id, performance_token, num_failures, action, body
 $$;
 
 -- Extends ownership of task id by an extra max_duration, if it is still locked with performance
@@ -126,7 +127,8 @@ BEGIN
     GET DIAGNOSTICS num_updated := ROW_COUNT;
 
     UPDATE tasks
-    SET num_signals = num_signals+1
+    SET num_signals = num_signals+1,
+        num_failures = num_failures + CASE WHEN result_status_code = 'aborted'::task_status_code_value THEN 1 ELSE 0 END
     WHERE id = ANY(to_signal);
 
     IF channel IS NOT NULL THEN

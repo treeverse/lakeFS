@@ -451,6 +451,48 @@ func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 	if len(moreTasks) != 1 || moreTasks[0].ID != parade.TaskID("123") {
 		t.Errorf("expected to receive only task 123 but got tasks %+v", moreTasks)
 	}
+	if moreTasks[0].NumSignalledFailures != 0 {
+		t.Errorf("expected task 123 to have no signalled failures but got task %+v", moreTasks[0])
+	}
+}
+
+func TestReturnTask_CountsFailures(t *testing.T) {
+	ctx := context.Background()
+	pp := makeParadePrefix(t)
+
+	two := 2
+
+	tasks := []parade.TaskData{
+		{ID: "success", Action: "succeed", ToSignalAfter: []parade.TaskID{"end"}},
+		{ID: "failure", Action: "fail", ToSignalAfter: []parade.TaskID{"end"}},
+		{ID: "end", Action: "done", TotalDependencies: &two},
+	}
+
+	testutil.MustDo(t, "InsertTasks", pp.InsertTasks(ctx, tasks))
+	defer makeCleanup(t, ctx, pp, tasks)()
+
+	ownedTasks, err := pp.OwnTasks("foo", 1, []string{"succeed"}, nil)
+	testutil.MustDo(t, "OwnTasks succeed", err)
+	if len(ownedTasks) != 1 {
+		t.Fatalf("expected single task \"succeed\" but got %+v", ownedTasks)
+	}
+	testutil.MustDo(t, "ReturnTask succeed", pp.ReturnTask(ownedTasks[0].ID, ownedTasks[0].Token, "ok", parade.TaskCompleted))
+
+	ownedTasks, err = pp.OwnTasks("foo", 1, []string{"fail"}, nil)
+	testutil.MustDo(t, "OwnTasks fail", err)
+	if len(ownedTasks) != 1 {
+		t.Fatalf("expected single task \"fail\" but got %+v", ownedTasks)
+	}
+	testutil.MustDo(t, "ReturnTask fail", pp.ReturnTask(ownedTasks[0].ID, ownedTasks[0].Token, "ok", parade.TaskAborted))
+
+	ownedTasks, err = pp.OwnTasks("foo", 1, []string{"done"}, nil)
+	testutil.MustDo(t, "OwnTasks succeed", err)
+	if len(ownedTasks) != 1 {
+		t.Fatalf("expected single task \"done\" but got %+v", ownedTasks)
+	}
+	if ownedTasks[0].NumSignalledFailures != 1 {
+		t.Errorf("expected 1 failure signalled on \"done\" but got %d", ownedTasks[0].NumSignalledFailures)
+	}
 }
 
 func TestReturnTask_RetryUntilFailed(t *testing.T) {

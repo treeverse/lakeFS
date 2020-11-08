@@ -115,6 +115,7 @@ type TaskData struct {
 	Status             *string             `db:"status"`
 	StatusCode         TaskStatusCodeValue `db:"status_code"`
 	NumTries           int                 `db:"num_tries"`
+	NumFailures        int                 `db:"num_failures"`
 	MaxTries           *int                `db:"max_tries"`
 	NumSignals         int                 `db:"num_signals"` // Internal; set (only) in tests
 	TotalDependencies  *int                `db:"total_dependencies"`
@@ -179,6 +180,7 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 	}, nil
 }
 
+// TaskDataColumnNames holds the names of columns in tasks as they appear in the database.
 var TaskDataColumnNames = []string{
 	"id", "action", "body", "status", "status_code", "num_tries", "max_tries",
 	"num_signals", "total_dependencies",
@@ -195,10 +197,11 @@ func InsertTasks(ctx context.Context, conn *pgxpool.Conn, source pgx.CopyFromSou
 
 // OwnedTaskData is a row returned from "SELECT * FROM own_tasks(...)".
 type OwnedTaskData struct {
-	ID     TaskID           `db:"task_id"`
-	Token  PerformanceToken `db:"token"`
-	Action string           `db:"action"`
-	Body   *string
+	ID                   TaskID           `db:"task_id"`
+	Token                PerformanceToken `db:"token"`
+	NumSignalledFailures int              `db:"num_failures"`
+	Action               string           `db:"action"`
+	Body                 *string
 }
 
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions.
