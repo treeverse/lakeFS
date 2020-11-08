@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -17,7 +16,6 @@ import (
 	"github.com/go-test/deep"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
-	dbwrapper "github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/testutil"
 
@@ -32,9 +30,8 @@ const (
 var (
 	pool        *dockertest.Pool
 	databaseURI string
-	db          *pgxpool.Pool
 
-	postgresUrl = flag.String("postgres-url", "", "Postgres connection string.  If unset, run a Postgres in a Docker container.  If set, should have ddl.sql already loaded.")
+	postgresUrl = flag.String("postgres-url", "", "Postgres connection string.  If unset, run a Postgres in a Docker container.")
 	parallelism = flag.Int("parallelism", 16, "Number of concurrent client worker goroutines.")
 	bulk        = flag.Int("bulk", 2_000, "Number of tasks to acquire at once in each client goroutine.")
 	taskFactor  = flag.Int("task-factor", 20_000, "Scale benchmark N by this many tasks")
@@ -48,68 +45,6 @@ func (p taskIDSlice) Len() int           { return len(p) }
 func (p taskIDSlice) Less(i, j int) bool { return p[i] < p[j] }
 func (p taskIDSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-// runDBInstance starts a test Postgres server inside container pool, and returns a connection
-// URI and a closer function.
-func runDBInstance(pool *dockertest.Pool) (string, func()) {
-	if *postgresUrl != "" {
-		return *postgresUrl, nil
-	}
-
-	resource, err := pool.Run("postgres", "11", []string{
-		"POSTGRES_USER=parade",
-		"POSTGRES_PASSWORD=parade",
-		"POSTGRES_DB=parade_db",
-	})
-	if err != nil {
-		log.Fatalf("could not start postgresql: %s", err)
-	}
-
-	// set cleanup
-	closer := func() {
-		err := pool.Purge(resource)
-		if err != nil {
-			log.Fatalf("could not kill postgres container")
-		}
-	}
-
-	// expire, just to make sure
-	err = resource.Expire(dbContainerTimeoutSeconds)
-	if err != nil {
-		log.Fatalf("could not expire postgres container")
-	}
-
-	ctx := context.Background()
-
-	// create connection
-	var pgPool *pgxpool.Pool
-	uri := fmt.Sprintf("postgres://parade:parade@localhost:%s/"+dbName+"?sslmode=disable", resource.GetPort("5432/tcp"))
-	err = pool.Retry(func() error {
-		var err error
-		pgPool, err = pgxpool.Connect(ctx, uri)
-		if err != nil {
-			return err
-		}
-		return dbwrapper.Ping(ctx, pgPool)
-	})
-	if err != nil {
-		log.Fatalf("could not connect to postgres: %s", err)
-	}
-
-	// Run the DDL
-	contents, err := ioutil.ReadFile("./ddl.sql")
-	if err != nil {
-		log.Fatalf("read DDL file ./ddl.sql: %s", err)
-	}
-	if _, err = pgPool.Exec(ctx, string(contents)); err != nil {
-		log.Fatalf("exec command file ./ddl.sql: %s", err)
-	}
-
-	pgPool.Close()
-
-	// return DB URI
-	return uri, closer
-}
-
 var keepDB bool
 
 func TestMain(m *testing.M) {
@@ -120,18 +55,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("could not connect to Docker: %s", err)
 	}
-	ctx := context.Background()
 	var dbCleanup func()
-	databaseURI, dbCleanup = runDBInstance(pool)
-	if keepDB {
-		fmt.Println("Test DB URL: ", databaseURI)
-	}
+	databaseURI, dbCleanup = testutil.GetDBInstance(pool)
 	defer dbCleanup() // In case we don't reach the cleanup action.
-	db, err = pgxpool.Connect(ctx, databaseURI)
-	if err != nil {
-		log.Fatalf("open PostgreSQL pool: %s", err)
-	}
-	defer db.Close()
 	code := m.Run()
 	if !keepDB && dbCleanup != nil {
 		dbCleanup() // os.Exit() below won't call the defered cleanup, do it now.
@@ -151,10 +77,10 @@ func intAddr(i int) *int {
 	return &i
 }
 
-func scanIDs(t *testing.T, prefix string) []parade.TaskID {
+func scanIDs(t *testing.T, pool *pgxpool.Pool, prefix string) []parade.TaskID {
 	t.Helper()
 	ctx := context.Background()
-	rows, err := db.Query(ctx, `SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
+	rows, err := pool.Query(ctx, `SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, prefix)
 	if err != nil {
 		t.Fatalf("[I] select remaining IDs for prefix %s: %s", prefix, err)
 	}
@@ -282,7 +208,12 @@ func TestTaskStatusCodeValueScan(t *testing.T) {
 }
 
 func makeParadePrefix(t testing.TB) *parade.ParadePrefix {
-	return &parade.ParadePrefix{parade.NewParadeDB(db), t.Name()}
+	db, handlerDatabaseURI := testutil.GetDB(t, databaseURI)
+	pool := db.Pool()
+	if keepDB {
+		t.Log("Test DB URL: ", handlerDatabaseURI)
+	}
+	return &parade.ParadePrefix{parade.NewParadeDB(pool), t.Name()}
 }
 
 // makeCleanup returns a cleanup for tasks that you can defer, that ignores any changes to tasks
@@ -782,7 +713,8 @@ func TestDeleteTasks(t *testing.T) {
 				t.Errorf("DeleteTasks failed: %s", err)
 			}
 
-			gotRemaining := scanIDs(t, casePrefix)
+			pool := pp.Base.(*parade.ParadeDB).PgxPool()
+			gotRemaining := scanIDs(t, pool, casePrefix)
 			sort.Sort(taskIDSlice(gotRemaining))
 			expectedRemaining := c.expectedRemaining
 			if expectedRemaining == nil {
