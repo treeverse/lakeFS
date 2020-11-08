@@ -82,6 +82,13 @@ LANGUAGE sql AS $$
     RETURNING true;
 $$;
 
+CREATE TYPE task_after_data AS (channel VARCHAR(64), to_signal VARCHAR(64) ARRAY);
+
+CREATE OR REPLACE FUNCTION no_more_tries(r tasks)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
+    SELECT $1.num_tries >= $1.max_tries
+$$;
+
 -- Returns an owned task id that was locked with token.  It is an error
 -- to return a task with the wrong token; that can happen if the
 -- deadline expired and the task was given to another actor.
@@ -92,26 +99,39 @@ LANGUAGE plpgsql AS $$
 DECLARE
     num_updated INTEGER;
     channel VARCHAR(64);
-    tasks_to_signal_after VARCHAR(64) ARRAY;
+    to_signal VARCHAR(64) ARRAY;
 BEGIN
-    UPDATE tasks INTO channel, tasks_to_signal_after
-    SET status = result_status,
-        status_code = result_status_code,
-        actor_id = NULL,
-        performance_token = NULL
-    WHERE id = task_id AND performance_token = token
-    RETURNING notify_channel_after, to_signal_after;
+    CASE result_status_code
+    WHEN 'aborted', 'completed' THEN
+        UPDATE tasks INTO channel, to_signal
+        SET status = result_status,
+            status_code = result_status_code,
+            actor_id = NULL,
+            performance_token = NULL
+        WHERE id = task_id AND performance_token = token
+        RETURNING notify_channel_after, to_signal_after;
+    WHEN 'pending' THEN
+        UPDATE tasks INTO channel, to_signal
+	SET status = result_status,
+	    status_code = (CASE WHEN no_more_tries(tasks) THEN 'aborted' ELSE 'pending' END)::task_status_code_value,
+	    actor_id = NULL,
+	    performance_token = NULL
+	WHERE id = task_id AND performance_token = token
+	RETURNING (CASE WHEN no_more_tries(tasks) THEN notify_channel_after ELSE NULL END),
+	          (CASE WHEN no_more_tries(tasks) THEN to_signal_after ELSE NULL END);
+    ELSE
+        RAISE EXCEPTION 'cannot return task to status %', result_status;
+    END CASE;
 
     GET DIAGNOSTICS num_updated := ROW_COUNT;
 
     UPDATE tasks
     SET num_signals = num_signals+1
-    WHERE id = ANY(tasks_to_signal_after);
+    WHERE id = ANY(to_signal);
 
     IF channel IS NOT NULL THEN
         PERFORM pg_notify(channel, NULL);
     END IF;
-
 
     RETURN num_updated;
 END;
