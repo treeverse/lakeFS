@@ -1,4 +1,7 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+BEGIN;
+
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA extensions;
 
 CREATE TYPE task_status_code_value AS ENUM (
     'pending',          -- waiting for an actor to perform it (new or being retried)
@@ -55,7 +58,7 @@ LANGUAGE sql VOLATILE AS $$
     SET actor_id = owner_id,
         status_code = 'in-progress',
         num_tries = num_tries + 1,
-        performance_token = gen_random_uuid(),
+        performance_token = extensions.gen_random_uuid(),
         action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
     WHERE id IN (
         SELECT id
@@ -76,14 +79,12 @@ $$;
 CREATE OR REPLACE FUNCTION extend_task_deadline(
     task_id VARCHAR(64), token UUID, max_duration INTERVAL
 ) RETURNS BOOLEAN
-LANGUAGE sql AS $$
+LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET action_deadline = NOW() + max_duration
     WHERE id = task_id AND performance_token = token
     RETURNING true;
 $$;
-
-CREATE TYPE task_after_data AS (channel VARCHAR(64), to_signal VARCHAR(64) ARRAY);
 
 CREATE OR REPLACE FUNCTION no_more_tries(r tasks)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
@@ -143,7 +144,7 @@ $$;
 -- tasks with no remaining dependencies.)
 CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR(64))
 RETURNS SETOF VARCHAR(64)
-LANGUAGE sql AS $$
+LANGUAGE sql VOLATILE AS $$
 WITH updates AS (
         SELECT UNNEST(to_signal_after) effect_id,
             (CASE WHEN status_code IN ('aborted', 'completed') THEN 0 ELSE 1 END) delta
@@ -194,3 +195,5 @@ BEGIN
     $Q$, task_id_name);
 END;
 $$;
+
+END;

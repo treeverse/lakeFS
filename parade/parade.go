@@ -66,12 +66,12 @@ func NewParadeDB(pool *pgxpool.Pool) Parade {
 	return (*ParadeDB)(pool)
 }
 
-func (p *ParadeDB) pgxPool() *pgxpool.Pool {
+func (p *ParadeDB) PgxPool() *pgxpool.Pool {
 	return (*pgxpool.Pool)(p)
 }
 
 func (p *ParadeDB) InsertTasks(ctx context.Context, tasks []TaskData) error {
-	conn, err := p.pgxPool().Acquire(ctx)
+	conn, err := p.PgxPool().Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("acquire conn: %w", err)
 	}
@@ -81,7 +81,7 @@ func (p *ParadeDB) InsertTasks(ctx context.Context, tasks []TaskData) error {
 
 func (p *ParadeDB) OwnTasks(actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
 	ctx := context.Background()
-	conn, err := p.pgxPool().Acquire(ctx)
+	conn, err := p.PgxPool().Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("acquire conn: %w", err)
 	}
@@ -92,7 +92,7 @@ func (p *ParadeDB) OwnTasks(actor ActorID, maxTasks int, actions []string, maxDu
 
 func (p *ParadeDB) ExtendTaskDeadline(taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
 	ctx := context.Background()
-	conn, err := p.pgxPool().Acquire(ctx)
+	conn, err := p.PgxPool().Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("acquire conn: %w", err)
 	}
@@ -103,7 +103,7 @@ func (p *ParadeDB) ExtendTaskDeadline(taskID TaskID, token PerformanceToken, max
 
 func (p *ParadeDB) ReturnTask(taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
 	ctx := context.Background()
-	conn, err := p.pgxPool().Acquire(ctx)
+	conn, err := p.PgxPool().Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("acquire conn: %w", err)
 	}
@@ -113,7 +113,7 @@ func (p *ParadeDB) ReturnTask(taskID TaskID, token PerformanceToken, resultStatu
 }
 
 func (p *ParadeDB) NewWaiter(ctx context.Context, taskID TaskID) (Waiter, error) {
-	conn, err := p.pgxPool().Acquire(ctx)
+	conn, err := p.PgxPool().Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get conn to for waiter: %w", err)
 	}
@@ -123,7 +123,7 @@ func (p *ParadeDB) NewWaiter(ctx context.Context, taskID TaskID) (Waiter, error)
 }
 
 func (p *ParadeDB) DeleteTasks(ctx context.Context, taskIDs []TaskID) error {
-	conn, err := p.pgxPool().Acquire(ctx)
+	conn, err := p.PgxPool().Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("acquire conn: %w", err)
 	}
