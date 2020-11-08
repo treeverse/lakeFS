@@ -110,9 +110,12 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 	return uri, closer
 }
 
+var keepDB bool
+
 func TestMain(m *testing.M) {
 	var err error
 	flag.Parse()
+	_, keepDB = os.LookupEnv("GOTEST_KEEP_DB")
 	pool, err = dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("could not connect to Docker: %s", err)
@@ -120,6 +123,9 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 	var dbCleanup func()
 	databaseURI, dbCleanup = runDBInstance(pool)
+	if keepDB {
+		fmt.Println("Test DB URL: ", databaseURI)
+	}
 	defer dbCleanup() // In case we don't reach the cleanup action.
 	db, err = pgxpool.Connect(ctx, databaseURI)
 	if err != nil {
@@ -127,7 +133,7 @@ func TestMain(m *testing.M) {
 	}
 	defer db.Close()
 	code := m.Run()
-	if _, ok := os.LookupEnv("GOTEST_KEEP_DB"); !ok && dbCleanup != nil {
+	if !keepDB && dbCleanup != nil {
 		dbCleanup() // os.Exit() below won't call the defered cleanup, do it now.
 	}
 	os.Exit(code)
@@ -288,7 +294,12 @@ func makeCleanup(t testing.TB, ctx context.Context, pp *parade.ParadePrefix, tas
 		ids = append(ids, task.ID)
 	}
 
-	return func() { testutil.MustDo(t, "cleanup DeleteTasks", pp.DeleteTasks(ctx, ids)) }
+	return func() {
+		if t.Failed() && keepDB {
+			return
+		}
+		testutil.MustDo(t, "cleanup DeleteTasks", pp.DeleteTasks(ctx, ids))
+	}
 }
 
 func TestOwn(t *testing.T) {
@@ -439,6 +450,45 @@ func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 	}
 	if len(moreTasks) != 1 || moreTasks[0].ID != parade.TaskID("123") {
 		t.Errorf("expected to receive only task 123 but got tasks %+v", moreTasks)
+	}
+}
+
+func TestReturnTask_RetryUntilFailed(t *testing.T) {
+	ctx := context.Background()
+	pp := makeParadePrefix(t)
+
+	maxTries := 7
+	one := 1
+
+	tasks := []parade.TaskData{
+		{ID: "try_till_failure", Action: "fail", MaxTries: &maxTries, ToSignalAfter: []parade.TaskID{"end"}},
+		{ID: "end", Action: "report", TotalDependencies: &one},
+	}
+	actions := []string{"fail", "report"}
+
+	testutil.MustDo(t, "InsertTasks", pp.InsertTasks(ctx, tasks))
+	defer makeCleanup(t, ctx, pp, tasks)()
+
+	for i := 0; i < maxTries; i++ {
+		ownedTasks, err := pp.OwnTasks(parade.ActorID("foo"), 2, actions, nil)
+		testutil.MustDo(t, "OwnTasks to retry", err)
+		if len(ownedTasks) != 1 {
+			t.Fatalf("expected to get just a try_till_failure task after %d but got %+v", i, ownedTasks)
+		}
+		if pp.StripPrefix(ownedTasks[0].Action) != "fail" {
+			t.Errorf("expected to get task with Action \"fail\" but got %+v", ownedTasks[0])
+		}
+		testutil.MustDo(t, "ReturnTask to retry",
+			pp.ReturnTask(ownedTasks[0].ID, ownedTasks[0].Token, "retry", parade.TaskPending))
+	}
+
+	ownedTasks, err := pp.OwnTasks(parade.ActorID("foo"), 2, actions, nil)
+	testutil.MustDo(t, "OwnTasks to end", err)
+	if len(ownedTasks) != 1 {
+		t.Fatalf("expected to get just a done task but got %+v", ownedTasks)
+	}
+	if pp.StripPrefix(ownedTasks[0].Action) != "report" {
+		t.Errorf("expected to get task with Action \"report\" but got %+v", ownedTasks[0])
 	}
 }
 
