@@ -25,6 +25,7 @@ type Database interface {
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
 	WithContext(ctx context.Context) Database
+	Pool() *pgxpool.Pool
 }
 
 type QueryOptions struct {
@@ -67,6 +68,10 @@ func (d *PgxDatabase) WithContext(ctx context.Context) Database {
 
 func (d *PgxDatabase) Close() {
 	d.db.Close()
+}
+
+func (d *PgxDatabase) Pool() *pgxpool.Pool {
+	return d.db
 }
 
 // performAndReport performs fn and logs a "done" report if its duration was long enough.
