@@ -91,12 +91,7 @@ var runCmd = &cobra.Command{
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 
 		// parade
-		paradeDBParams := cfg.GetParadeDatabaseParams()
-		paradeDBPool, err := db.ConnectDBPool(paradeDBParams)
-		if err != nil {
-			logger.WithError(err).Errorf("Failed to connect parade database")
-		}
-		paradeDB := parade.NewParadeDB(paradeDBPool)
+		paradeDB := parade.NewParadeDB(dbPool.Pool())
 		// export handler
 		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
 		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
@@ -105,7 +100,6 @@ var runCmd = &cobra.Command{
 			_ = cataloger.Close()
 			_ = dedupCleaner.Close()
 			exportActionManager.Close()
-			paradeDBPool.Close()
 		}()
 
 		// start API server
