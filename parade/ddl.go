@@ -180,7 +180,7 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 	}, nil
 }
 
-// Names of columns in tasks as they appear in the database.
+// TaskDataColumnNames holds the names of columns in tasks as they appear in the database.
 var TaskDataColumnNames = []string{
 	"id", "action", "body", "status", "status_code", "num_tries", "max_tries",
 	"num_signals", "total_dependencies",
