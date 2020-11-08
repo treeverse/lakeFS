@@ -133,7 +133,6 @@ func entriesToDiff(entries []*catalog.Entry) []catalog.Difference {
 	return res
 }
 
-// Todo(guys) - add tests - not checked at all
 func getGenerateSuccess(lastKeysInPrefixRegexp []string) func(path string) bool {
 	return func(path string) bool {
 		for _, regex := range lastKeysInPrefixRegexp {

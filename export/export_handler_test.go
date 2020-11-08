@@ -3,6 +3,7 @@ package export
 import (
 	"encoding/json"
 	"io/ioutil"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -148,5 +149,47 @@ func TestTouch(t *testing.T) {
 	expect := ""
 	if string(val) != expect {
 		t.Errorf("expected %s, got %s\n", testData, string(val))
+	}
+}
+
+func Test_getGenerateSuccess(t *testing.T) {
+
+	tests := []struct {
+		name                   string
+		lastKeysInPrefixRegexp []string
+		expectTrue             []string
+		expectFalse            []string
+		want                   func(path string) bool
+	}{
+		{
+			name:                   "one regex",
+			lastKeysInPrefixRegexp: []string{".*\\.success$"},
+			expectTrue:             []string{"a.success", "other.success"},
+			expectFalse:            []string{"dfd", "a.suc", "a.successer"},
+			want:                   nil,
+		},
+		{
+			name:                   "two regexes",
+			lastKeysInPrefixRegexp: []string{".*\\.success$", ".*/success"},
+			expectTrue:             []string{"path/to/a.success", "other.success", "path/to/success"},
+			expectFalse:            []string{"dfd", "a.suc", "a.successer"},
+			want:                   nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gs := getGenerateSuccess(tt.lastKeysInPrefixRegexp); !reflect.DeepEqual(gs, tt.want) {
+				for _, path := range tt.expectTrue {
+					if !gs(path) {
+						t.Errorf("expected path %s to return true", path)
+					}
+				}
+				for _, path := range tt.expectFalse {
+					if gs(path) {
+						t.Errorf("expected path %s to return false", path)
+					}
+				}
+			}
+		})
 	}
 }
