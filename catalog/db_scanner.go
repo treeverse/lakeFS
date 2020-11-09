@@ -7,7 +7,6 @@ type DBScannerOptions struct {
 	After            string
 	AdditionalFields []string
 	AdditionalWhere  sq.Sqlizer
-	TrimmedLineage   []lineageCommit
 }
 
 type DBScanner interface {

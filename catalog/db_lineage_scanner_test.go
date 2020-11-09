@@ -31,7 +31,7 @@ func TestDBLineageScanner(t *testing.T) {
 				branchName := "b" + strconv.Itoa(branchNo)
 				branchID, err := getBranchID(tx, repository, branchName, LockTypeNone)
 				testutil.MustDo(t, "get branch id", err)
-				scanner := NewDBLineageScanner(tx, branchID, UncommittedID, DBScannerOptions{BufferSize: bufSize})
+				scanner := NewDBLineageScanner(tx, branchID, UncommittedID, DBLineageScannerOptions{DBScannerOptions: DBScannerOptions{BufferSize: bufSize}})
 				for i := 0; scanner.Next(); i++ {
 					o := scanner.Value()
 					if o == nil {
@@ -73,9 +73,8 @@ func TestDBLineageScanner(t *testing.T) {
 
 	// test reading committed and uncommitted data
 	const bufSize = 8
-	scannerOpts := DBScannerOptions{
-		BufferSize: bufSize,
-		After:      "Obj-0003",
+	scannerOpts := DBLineageScannerOptions{DBScannerOptions: DBScannerOptions{BufferSize: bufSize,
+		After: "Obj-0003"},
 	}
 	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "Obj-0004", nil, "sd1")
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
