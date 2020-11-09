@@ -197,7 +197,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.ExportGetContinuousExportHandler = c.ExportGetContinuousExportHandler()
 	api.ExportSetContinuousExportHandler = c.ExportSetContinuousExportHandler()
-	api.ExportExecuteContinuousExportHandler = c.ExportExecuteContinuousExport()
+	api.ExportRunHandler = c.ExportRunHandler()
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
@@ -2228,8 +2228,8 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 	})
 }
 
-func (c *Controller) ExportExecuteContinuousExport() exportop.ExecuteContinuousExportHandler {
-	return exportop.ExecuteContinuousExportHandlerFunc(func(params exportop.ExecuteContinuousExportParams, user *models.User) middleware.Responder {
+func (c *Controller) ExportRunHandler() exportop.RunHandler {
+	return exportop.RunHandlerFunc(func(params exportop.RunParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -2242,12 +2242,12 @@ func (c *Controller) ExportExecuteContinuousExport() exportop.ExecuteContinuousE
 		}
 		deps.LogAction("execute_continuous_export")
 
-		err = export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
+		exportID, err := export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
 		if err != nil {
-			return exportop.NewExecuteContinuousExportDefault(http.StatusInternalServerError).
+			return exportop.NewRunDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		return exportop.NewExecuteContinuousExportCreated()
+		return exportop.NewRunCreated().WithPayload(exportID)
 	})
 }
 

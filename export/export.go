@@ -21,20 +21,18 @@ func getExportID(repo, branch, commitRef string) (string, error) {
 
 // ExportBranchStart inserts a start task on branch, sets branch export state to pending.
 // If export already in progress will return error
-func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) error {
+func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) (string, error) {
 	commit, err := cataloger.GetCommit(context.Background(), repo, branch)
 	if err != nil {
-		return err
+		return "", err
 	}
 	commitRef := commit.Reference
-
+	exportID, err := getExportID(repo, branch, commitRef)
+	if err != nil {
+		return "", err
+	}
 	err = cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
-		if err != nil {
-			return "", nil, err
-		}
-
-		exportID, err := getExportID(repo, branch, commitRef)
 		if err != nil {
 			return "", nil, err
 		}
@@ -49,7 +47,7 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 		}
 		return catalog.ExportStatusInProgress, nil, nil
 	})
-	return err
+	return exportID, err
 }
 
 // ExportBranchDone ends the export branch process by changing the status
