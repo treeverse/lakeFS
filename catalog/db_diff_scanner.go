@@ -95,14 +95,14 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	}
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
-	if len(leftLineage) >= 1 {
-		for i := range leftLineage {
-			if leftLineage[i].CommitID == rightLineage[i+1].CommitID {
-				leftLineage = leftLineage[:i]
-				break
-			}
+
+	for i := range leftLineage {
+		if leftLineage[i].CommitID == rightLineage[i+1].CommitID {
+			leftLineage = leftLineage[:i]
+			break
 		}
 	}
+
 	scannerOpts.Lineage = leftLineage
 	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
 	scannerOpts.Lineage = rightLineage
