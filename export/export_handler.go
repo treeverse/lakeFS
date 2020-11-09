@@ -233,7 +233,7 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 	if err != nil {
 		return err
 	}
-	return ExportBranchDone(h.cataloger, status, msg, finishData.Branch, finishData.CommitRef, finishData.Repo)
+	return ExportBranchDone(h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
 }
 
 var errUnknownAction = errors.New("unknown action")

@@ -230,7 +230,7 @@ func TestTasksGenerator_Empty(t *testing.T) {
 	}
 	doneTasks := getTasks(isDone, tasks)
 	if diffs := deep.Equal(taskPtrs{
-		&parade.TaskData{ID: "empty:finished", Action: export.DoneAction, StatusCode: parade.TaskPending, MaxTries: &one, TotalDependencies: &zero},
+		&parade.TaskData{ID: "empty:finish", Action: export.DoneAction, StatusCode: parade.TaskPending, MaxTries: &one, TotalDependencies: &zero},
 	}, doneTasks); diffs != nil {
 		t.Error("unexpected done tasks", diffs)
 	}
@@ -287,7 +287,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			}),
 			StatusCode:        parade.TaskPending,
 			TotalDependencies: &zero,
-			ToSignalAfter:     []parade.TaskID{"simple:finished"},
+			ToSignalAfter:     []parade.TaskID{"simple:finish"},
 		},
 		&parade.TaskData{
 			ID:     idGen.CopyTaskID("change1"),
@@ -298,7 +298,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			}),
 			StatusCode:        parade.TaskPending,
 			TotalDependencies: &zero,
-			ToSignalAfter:     []parade.TaskID{"simple:finished"},
+			ToSignalAfter:     []parade.TaskID{"simple:finish"},
 		},
 	}, copyTasks); diffs != nil {
 		t.Error("unexpected copy tasks", diffs)
@@ -313,7 +313,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			}),
 			StatusCode:        parade.TaskPending,
 			TotalDependencies: &zero,
-			ToSignalAfter:     []parade.TaskID{"simple:finished"},
+			ToSignalAfter:     []parade.TaskID{"simple:finish"},
 		}}, deleteTasks); diffs != nil {
 		t.Error("unexpected delete tasks", diffs)
 	}
@@ -324,7 +324,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	doneTasks := getTasks(isDone, tasks)
 	totalDeps := len(catalogDiffs)
 	if diffs := deep.Equal(taskPtrs{
-		&parade.TaskData{ID: "simple:finished", Action: export.DoneAction, StatusCode: parade.TaskPending, TotalDependencies: &totalDeps},
+		&parade.TaskData{ID: "simple:finish", Action: export.DoneAction, StatusCode: parade.TaskPending, TotalDependencies: &totalDeps},
 	}, doneTasks); diffs != nil {
 		t.Error("unexpected done tasks", diffs)
 	}
@@ -363,25 +363,25 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 		avoid         bool
 	}{
 		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:make-success:a/success"},
-		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:finish"},
 
 		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:make-success:a/plain", avoid: true},
-		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:finish"},
 
 		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:make-success:a/success/sub/success"},
-		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:finish"},
 
 		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:make-success:a/success/sub/success"},
-		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:finish"},
 
 		{before: "foo:make-success:a/success/sub/success", after: "foo:make-success:a/success"},
 
 		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:make-success:b/success"},
-		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:finish"},
 		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:make-success:a/success"},
-		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:finish"},
 		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:make-success:a/plain", avoid: true},
-		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:finish"},
 	}
 	gen := export.NewTasksGenerator(
 		"foo",

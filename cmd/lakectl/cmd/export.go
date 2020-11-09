@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -81,10 +82,11 @@ var exportExecuteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		err := client.ExecuteContinuousExport(context.Background(), branchURI.Repository, branchURI.Ref)
+		exportID, err := client.RunExport(context.Background(), branchURI.Repository, branchURI.Ref)
 		if err != nil {
 			DieErr(err)
 		}
+		fmt.Printf("Export-ID:%s\n", exportID)
 	},
 }
 

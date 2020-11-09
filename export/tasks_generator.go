@@ -121,7 +121,7 @@ func (exportID TaskIDGenerator) makeSuccessTaskID(path string) parade.TaskID {
 }
 
 func (exportID TaskIDGenerator) finishedTaskID() parade.TaskID {
-	return parade.TaskID(fmt.Sprintf("%s:finished", exportID))
+	return parade.TaskID(fmt.Sprintf("%s:finish", exportID))
 }
 
 func (exportID TaskIDGenerator) startedTaskID() parade.TaskID {

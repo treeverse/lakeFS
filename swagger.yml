@@ -2025,11 +2025,14 @@ paths:
       tags:
         - export
         - branches
-      operationId: executeContinuousExport
+      operationId: run
       summary: hook to be called in order to execute continues export on branch
       responses:
         201:
           description: continuous export successfully started
+          schema:
+            description: "export ID"
+            type: string
         401:
           $ref: "#/responses/Unauthorized"
         404:
