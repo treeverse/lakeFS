@@ -10,7 +10,7 @@ CREATE TYPE task_status_code_value AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-    id VARCHAR(128) NOT NULL PRIMARY KEY, -- nanoid
+    id VARCHAR NOT NULL PRIMARY KEY, -- nanoid
 
     action VARCHAR(128) NOT NULL, -- name (type) of action to perform
     body TEXT,                  -- data used by action
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 -- Returns true if task with this id, code and deadline can
 -- be allocated.
-CREATE OR REPLACE FUNCTION can_allocate_task(id VARCHAR(64), code task_status_code_value, deadline TIMESTAMPTZ, num_signals INTEGER, total_dependencies INTEGER)
+CREATE OR REPLACE FUNCTION can_allocate_task(id VARCHAR, code task_status_code_value, deadline TIMESTAMPTZ, num_signals INTEGER, total_dependencies INTEGER)
 RETURNS BOOLEAN
 LANGUAGE sql IMMUTABLE AS $$
     SELECT (code = 'pending' OR (code = 'in-progress' AND deadline < NOW())) AND
@@ -51,7 +51,7 @@ $$;
 CREATE OR REPLACE FUNCTION own_tasks(
     max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR(64), token UUID, num_failures INTEGER, action VARCHAR(128), body TEXT)
+RETURNS TABLE(task_id VARCHAR, token UUID, num_failures INTEGER, action VARCHAR(128), body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
@@ -76,7 +76,7 @@ $$;
 -- Extends ownership of task id by an extra max_duration, if it is still locked with performance
 -- token.
 CREATE OR REPLACE FUNCTION extend_task_deadline(
-    task_id VARCHAR(64), token UUID, max_duration INTERVAL
+    task_id VARCHAR, token UUID, max_duration INTERVAL
 ) RETURNS BOOLEAN
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
@@ -94,7 +94,7 @@ $$;
 -- to return a task with the wrong token; that can happen if the
 -- deadline expired and the task was given to another actor.
 CREATE OR REPLACE FUNCTION return_task(
-    task_id VARCHAR(64), token UUID, result_status TEXT, result_status_code task_status_code_value
+    task_id VARCHAR, token UUID, result_status TEXT, result_status_code task_status_code_value
 ) RETURNS INTEGER
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -141,8 +141,8 @@ $$;
 
 -- (Utility for delete_task function: remove all dependencies from task ID, returning ids of any
 -- tasks with no remaining dependencies.)
-CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR(64))
-RETURNS SETOF VARCHAR(64)
+CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR)
+RETURNS SETOF VARCHAR
 LANGUAGE sql VOLATILE AS $$
 WITH updates AS (
         SELECT UNNEST(to_signal_after) effect_id,
