@@ -2232,8 +2232,8 @@ func (c *Controller) ExportExecuteContinuousExport() exportop.ExecuteContinuousE
 	return exportop.ExecuteContinuousExportHandlerFunc(func(params exportop.ExecuteContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.CreateBranchAction,
-				Resource: permissions.BranchArn(params.Repository, params.Branch),
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
