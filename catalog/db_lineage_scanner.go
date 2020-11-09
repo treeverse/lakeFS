@@ -16,10 +16,15 @@ type DBLineageScanner struct {
 	ended    bool
 	err      error
 	value    *DBScannerEntry
-	opts     DBScannerOptions
+	opts     DBLineageScannerOptions
 }
 
-func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBScannerOptions) *DBLineageScanner {
+type DBLineageScannerOptions struct {
+	DBScannerOptions
+	Lineage []lineageCommit
+}
+
+func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBLineageScannerOptions) *DBLineageScanner {
 	s := &DBLineageScanner{
 		tx:       tx,
 		branchID: branchID,
@@ -103,8 +108,8 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 	if s.scanners != nil {
 		return true
 	}
-	if s.opts.TrimmedLineage != nil {
-		lineage = s.opts.TrimmedLineage
+	if s.opts.Lineage != nil {
+		lineage = s.opts.Lineage
 	} else {
 		lineage, err = s.ReadLineage()
 	}
@@ -113,9 +118,9 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 		return false
 	}
 	s.scanners = make([]*DBBranchScanner, len(lineage)+1)
-	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, s.opts)
+	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, s.opts.DBScannerOptions)
 	for i, bl := range lineage {
-		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, s.opts)
+		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, s.opts.DBScannerOptions)
 	}
 	for _, branchScanner := range s.scanners {
 		if branchScanner.Next() {
