@@ -27,16 +27,14 @@ type DBBranchScanner struct {
 	value        *DBScannerEntry
 }
 
-func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBScannerOptions) *DBBranchScanner {
+func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBScannerOptions) *DBBranchScanner {
 	s := &DBBranchScanner{
 		tx:       tx,
 		branchID: branchID,
 		idx:      0,
 		commitID: commitID,
-	}
-	if opts != nil {
-		s.opts = *opts
-		s.after = opts.After
+		opts:     opts,
+		after:    opts.After,
 	}
 	if s.opts.BufferSize == 0 {
 		s.opts.BufferSize = DBScannerDefaultBufferSize
@@ -46,6 +44,10 @@ func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts *DBSca
 	s.err = err
 	s.commitsWhere = commitsWhere
 	return s
+}
+
+func (s *DBBranchScanner) SetAdditionalWhere(part sq.Sqlizer) {
+	s.opts.AdditionalWhere = part
 }
 
 func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (string, error) {
