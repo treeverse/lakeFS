@@ -96,7 +96,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams) (*DiffScanne
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
 	if len(parentLineage) >= 1 {
-		for i, _ := range parentLineage {
+		for i := range parentLineage {
 			if parentLineage[i].CommitID == childLineage[i+1].CommitID {
 				parentLineage = parentLineage[:i]
 				break
