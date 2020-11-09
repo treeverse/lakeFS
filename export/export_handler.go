@@ -57,16 +57,11 @@ func (h *Handler) start(body *string) error {
 		return err
 	}
 
-	config, err := h.cataloger.GetExportConfigurationForBranch(startData.Repo, startData.Branch)
+	finishBodyStr, err := getFinishBodyString(startData.Repo, startData.Branch, startData.ToCommitRef, startData.ExportConfig.StatusPath)
 	if err != nil {
 		return err
 	}
-
-	finishBodyStr, err := getFinishBodyString(startData.Repo, startData.Branch, startData.ToCommitRef)
-	if err != nil {
-		return err
-	}
-	return h.generateTasks(startData, config, &finishBodyStr)
+	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr)
 }
 
 func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string) error {
@@ -150,11 +145,12 @@ func getGenerateSuccess(lastKeysInPrefixRegexp []string) func(path string) bool 
 	}
 }
 
-func getFinishBodyString(repo, branch, commitRef string) (string, error) {
+func getFinishBodyString(repo, branch, commitRef, statusPath string) (string, error) {
 	finishData := FinishData{
-		Repo:      repo,
-		Branch:    branch,
-		CommitRef: commitRef,
+		Repo:       repo,
+		Branch:     branch,
+		CommitRef:  commitRef,
+		StatusPath: statusPath,
 	}
 	finisBody, err := json.Marshal(finishData)
 	if err != nil {
@@ -206,18 +202,38 @@ func (h *Handler) touch(body *string) error {
 	return h.adapter.Put(path, 0, strings.NewReader(""), block.PutOpts{})
 }
 
-func (h *Handler) done(body *string) error {
+func getStatus(signalledErrors int) (catalog.CatalogBranchExportStatus, *string) {
+	if signalledErrors > 0 {
+		msg := fmt.Sprintf("%d tasks failed\n", signalledErrors)
+		return catalog.ExportStatusFailed, &msg
+	}
+	return catalog.ExportStatusSuccess, nil
+}
+func (h *Handler) done(body *string, signalledErrors int) error {
 	var finishData FinishData
 	err := json.Unmarshal([]byte(*body), &finishData)
 	if err != nil {
 		return err
 	}
-	return ExportBranchDone(h.cataloger, catalog.ExportStatusSuccess, finishData.Repo, finishData.Branch, finishData.CommitRef)
+
+	status, msg := getStatus(signalledErrors)
+	fileName := fmt.Sprintf("%s-%s-%s", finishData.Repo, finishData.Branch, finishData.CommitRef)
+	path, err := PathToPointer(fmt.Sprintf("%s/%s", finishData.StatusPath, fileName))
+	if err != nil {
+		return err
+	}
+	data := fmt.Sprintf("status: %s, signalled_errors: %d\n", status, signalledErrors)
+	reader := strings.NewReader(data)
+	err = h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
+	if err != nil {
+		return err
+	}
+	return ExportBranchDone(h.cataloger, status, msg, finishData.Branch, finishData.CommitRef, finishData.Repo)
 }
 
 var errUnknownAction = errors.New("unknown action")
 
-func (h *Handler) Handle(action string, body *string) parade.ActorResult {
+func (h *Handler) Handle(action string, body *string, signalledErrors int) parade.ActorResult {
 	var err error
 	switch action {
 	case StartAction:
@@ -229,7 +245,7 @@ func (h *Handler) Handle(action string, body *string) parade.ActorResult {
 	case TouchAction:
 		err = h.touch(body)
 	case DoneAction:
-		err = h.done(body)
+		err = h.done(body, signalledErrors)
 	default:
 		err = errUnknownAction
 	}

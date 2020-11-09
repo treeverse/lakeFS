@@ -29,14 +29,18 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 	commitRef := commit.Reference
 
 	err = cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
-		// Todo(guys) consider checking commitRef bigger than or equal oldRef
-		// Todo(guys) consider checking if branch configured and fail here
+		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
+		if err != nil {
+			msg := "failed to get export configuration for branch"
+			return catalog.ExportStatusFailed, &msg, err
+		}
+
 		exportID, err := getExportID(repo, branch, commitRef)
 		if err != nil {
 			msg := "failed generating ID"
 			return catalog.ExportStatusFailed, &msg, err
 		}
-		tasks, err := GetStartTasks(repo, branch, oldRef, commitRef, exportID)
+		tasks, err := GetStartTasks(repo, branch, oldRef, commitRef, exportID, config)
 		if err != nil {
 			msg := "failed creating start task"
 			return catalog.ExportStatusFailed, &msg, err
@@ -53,9 +57,9 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 }
 
 // ExportBranchDone ends the export branch process by changing the status
-func ExportBranchDone(cataloger catalog.Cataloger, status catalog.CatalogBranchExportStatus, repo, branch, commitRef string) error {
+func ExportBranchDone(cataloger catalog.Cataloger, status catalog.CatalogBranchExportStatus, statusMsg *string, repo, branch, commitRef string) error {
 	err := cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
-		return status, nil, nil
+		return status, statusMsg, nil
 	})
 	return err
 }
