@@ -35,6 +35,7 @@ type StartData struct {
 	FromCommitRef string `json:"from"`
 	ToCommitRef   string `json:"to"`
 	ExportID      string `json:"export_id"`
+	ExportConfig  catalog.ExportConfiguration
 }
 
 type CopyData struct {
@@ -52,9 +53,10 @@ type SuccessData struct {
 }
 
 type FinishData struct {
-	Repo      string `json:"repo"`
-	Branch    string `json:"branch"`
-	CommitRef string `json:"commitRef"`
+	Repo       string `json:"repo"`
+	Branch     string `json:"branch"`
+	CommitRef  string `json:"commitRef"`
+	StatusPath string `json:"status_path"`
 }
 
 // Returns the "dirname" of path: everything up to the last "/" (excluding that slash).  If
@@ -260,7 +262,7 @@ type TasksGenerator struct {
 	successTasksGenerator SuccessTasksTreeGenerator
 }
 
-func GetStartTasks(repo, branch, fromCommitRef, toCommitRef, exportID string) ([]parade.TaskData, error) {
+func GetStartTasks(repo, branch, fromCommitRef, toCommitRef, exportID string, config catalog.ExportConfiguration) ([]parade.TaskData, error) {
 	one, zero := 1, 0
 	data := StartData{
 		Repo:          repo,
@@ -268,6 +270,7 @@ func GetStartTasks(repo, branch, fromCommitRef, toCommitRef, exportID string) ([
 		FromCommitRef: fromCommitRef,
 		ToCommitRef:   toCommitRef,
 		ExportID:      exportID,
+		ExportConfig:  config,
 	}
 	body, err := json.Marshal(data)
 	if err != nil {

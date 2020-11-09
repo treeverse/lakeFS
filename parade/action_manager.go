@@ -151,7 +151,7 @@ func (a *workerPool) start() {
 			workerID := uuid.New()
 			defer a.wg.Done()
 			for task := range a.ch {
-				res := a.actor.Handle(task.Action, task.Body)
+				res := a.actor.Handle(task.Action, task.Body, task.NumSignalledFailures)
 				err := a.parade.ReturnTask(task.ID, task.Token, res.Status, res.StatusCode)
 				if err != nil {
 					logging.Default().WithFields(logging.Fields{

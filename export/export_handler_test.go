@@ -46,7 +46,7 @@ func TestCopy(t *testing.T) {
 		Action: CopyAction,
 		Body:   &taskBodyStr,
 	}
-	if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
+	if res := h.Handle(task.Action, task.Body, task.NumSignalledFailures); res.StatusCode != parade.TaskCompleted {
 		t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 	}
 	// read Destination
@@ -94,7 +94,7 @@ func TestDelete(t *testing.T) {
 		Action: DeleteAction,
 		Body:   &taskBodyStr,
 	}
-	if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
+	if res := h.Handle(task.Action, task.Body, task.NumSignalledFailures); res.StatusCode != parade.TaskCompleted {
 		t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 	}
 	// read Destination
@@ -132,7 +132,7 @@ func TestTouch(t *testing.T) {
 		Action: TouchAction,
 		Body:   &taskBodyStr,
 	}
-	if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
+	if res := h.Handle(task.Action, task.Body, task.NumSignalledFailures); res.StatusCode != parade.TaskCompleted {
 		t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 	}
 	// read Destination
