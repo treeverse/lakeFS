@@ -1,8 +1,6 @@
 package export_test
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -278,9 +276,10 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	tasks := cleanup(tasksWithIDs)
 
 	copyTasks := getTasks(isCopy, tasks)
+	idGen := export.TaskIDGenerator("simple")
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
-			ID:     "simple:copy:ae8800d484a16747ba741efdfceb6966b13afcd51fd63d2483ebfa92c9f930f4",
+			ID:     idGen.CopyTaskID("add1"),
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
 				From: "add1",
@@ -291,7 +290,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			ToSignalAfter:     []parade.TaskID{"simple:finished"},
 		},
 		&parade.TaskData{
-			ID:     "simple:copy:8548a31793681d6672c3314e6b6a6ac66764391a561263471ac1bbfab583dcb1",
+			ID:     idGen.CopyTaskID("change1"),
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
 				From: "change1",
@@ -307,7 +306,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	deleteTasks := getTasks(isDelete, tasks)
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
-			ID:     "simple:delete:e02ee70254cbc21faa9265e1649a767cced4e39eb6c76d739810508dab7d43f1",
+			ID:     idGen.DeleteTaskID("remove1"),
 			Action: export.DeleteAction,
 			Body: toJSON(t, export.DeleteData{
 				File: "testfs://prefix/remove1",
@@ -335,10 +334,6 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	}
 }
 
-func getGeneratedID(path string) string {
-	shaHash := sha256.Sum256([]byte(path))
-	return hex.EncodeToString(shaHash[:])
-}
 func TestTasksGenerator_SuccessFiles(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
 		Type:  catalog.DifferenceTypeRemoved,
@@ -362,31 +357,31 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 		Type:  catalog.DifferenceTypeRemoved,
 		Entry: catalog.Entry{Path: "a/plain/2", PhysicalAddress: "remove5"},
 	}}
-
+	idGen := export.TaskIDGenerator("foo")
 	expectedDeps := []struct {
 		before, after parade.TaskID
 		avoid         bool
 	}{
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/1")), after: "foo:make-success:a/success"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/1")), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:make-success:a/success"},
+		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:finished"},
 
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/1")), after: "foo:make-success:a/plain", avoid: true},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/1")), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:make-success:a/plain", avoid: true},
+		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:finished"},
 
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/11")), after: "foo:make-success:a/success/sub/success"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/11")), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:make-success:a/success/sub/success"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:finished"},
 
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/12")), after: "foo:make-success:a/success/sub/success"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/sub/success/12")), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:make-success:a/success/sub/success"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:finished"},
 
 		{before: "foo:make-success:a/success/sub/success", after: "foo:make-success:a/success"},
 
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("b/success/1")), after: "foo:make-success:b/success"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("b/success/1")), after: "foo:finished"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/2")), after: "foo:make-success:a/success"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/success/2")), after: "foo:finished"},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/2")), after: "foo:make-success:a/plain", avoid: true},
-		{before: parade.TaskID("foo:delete:" + getGeneratedID("a/plain/2")), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:make-success:b/success"},
+		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:make-success:a/success"},
+		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:make-success:a/plain", avoid: true},
+		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:finished"},
 	}
 	gen := export.NewTasksGenerator(
 		"foo",
