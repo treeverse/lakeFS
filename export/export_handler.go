@@ -68,7 +68,7 @@ func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfig
 	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr)
 	var diffs catalog.Differences
 	var err error
-	hasMore := true
+	var hasMore bool
 	after := ""
 	limit := -1
 	diffFromBase := startData.FromCommitRef == ""
