@@ -1245,3 +1245,55 @@ func TestCataloger_Merge_Hooks(t *testing.T) {
 		})
 	}
 }
+
+func TestCataloger_Merge_FromParentConflicts_WithSkip(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	// create 3 files on master and commit
+	for i := 1000; i < 4000; i += 1000 {
+		testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file"+strconv.Itoa(i), nil, "")
+	}
+	_, err := c.Commit(ctx, repository, "master", "commit to master", "tester", nil)
+	testutil.MustDo(t, "commit to master", err)
+
+	// create branch based on master
+	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+
+	// add new file
+	const newFilename = "/file5000"
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", newFilename, nil, "")
+
+	// delete committed file
+	const delFilename = "/file1000"
+	testutil.MustDo(t, "delete committed file on master",
+		c.DeleteEntry(ctx, repository, "master", delFilename))
+
+	// change/override committed file
+	const overFilename = "/file2000"
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", overFilename, nil, "seed1")
+
+	// commit changes on master
+	_, err = c.Commit(ctx, repository, "master", "second commit to master", "tester", nil)
+	testutil.MustDo(t, "second commit to master", err)
+	for i := 1000; i < 4000; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "/file"+strconv.Itoa(i), nil, "seed1")
+	}
+	// make other changes to the same files
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "/file5000", nil, "seed2")
+	testutil.MustDo(t, "delete committed file on master",
+		c.DeleteEntry(ctx, repository, "branch1", delFilename))
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", overFilename, nil, "seed2")
+
+	// merge should identify conflicts on pending changes
+	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
+
+	// expected to find 2 conflicts on the files we update/created with the same path
+	if !errors.Is(err, ErrConflictFound) {
+		t.Errorf("Merge err = %s, expected conflict with err = %s", err, ErrConflictFound)
+	}
+	if res.Reference != "" {
+		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
+	}
+}
