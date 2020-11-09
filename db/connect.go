@@ -41,7 +41,7 @@ func Ping(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
-// ConnectDBPool connects to a database using the database params and return dbPool
+// ConnectDBPool connects to a database using the database params and returns a connection pool
 func ConnectDBPool(p params.Database) (*pgxpool.Pool, error) {
 	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
