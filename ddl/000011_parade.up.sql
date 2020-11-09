@@ -1,7 +1,6 @@
 BEGIN;
 
-CREATE SCHEMA IF NOT EXISTS extensions;
-CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public CASCADE;
 
 CREATE TYPE task_status_code_value AS ENUM (
     'pending',          -- waiting for an actor to perform it (new or being retried)
@@ -58,7 +57,7 @@ LANGUAGE sql VOLATILE AS $$
     SET actor_id = owner_id,
         status_code = 'in-progress',
         num_tries = num_tries + 1,
-        performance_token = extensions.gen_random_uuid(),
+        performance_token = gen_random_uuid(),
         action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
     WHERE id IN (
         SELECT id
