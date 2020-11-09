@@ -77,7 +77,7 @@ var exportGetCmd = &cobra.Command{
 // exportSetCmd get continues export configuration for branch
 var exportExecuteCmd = &cobra.Command{
 	Use:   "run",
-	Short: "executes continues export on the requested branch",
+	Short: "export requested branch now",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
