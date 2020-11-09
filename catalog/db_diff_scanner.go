@@ -86,12 +86,31 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams) (*DiffScanne
 		After:            params.After,
 		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
 	}
-	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
-	s.childLineage, err = getLineage(tx, params.RightBranchID, UncommittedID)
+	parentLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
 	if err != nil {
 		return nil, err
 	}
+	childLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
+	if err != nil {
+		return nil, err
+	}
+	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
+	// so it is trimmed from the parent lineage
+	if len(parentLineage) >= 1 {
+		for i, _ := range parentLineage {
+			if parentLineage[i].CommitID == childLineage[i+1].CommitID {
+				parentLineage = parentLineage[:i]
+				break
+			}
+		}
+	}
+	parentOpts := scannerOpts
+	parentOpts.TrimmedLineage = parentLineage
+	childOpts := scannerOpts
+	childOpts.TrimmedLineage = childLineage
+	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, parentOpts)
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, childOpts)
+	s.childLineage = childLineage
 	return s, nil
 }
 

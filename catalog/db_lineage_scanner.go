@@ -98,10 +98,16 @@ func (s *DBLineageScanner) ReadLineage() ([]lineageCommit, error) {
 }
 
 func (s *DBLineageScanner) ensureBranchScanners() bool {
+	var lineage []lineageCommit
+	var err error
 	if s.scanners != nil {
 		return true
 	}
-	lineage, err := s.ReadLineage()
+	if s.opts.TrimmedLineage != nil {
+		lineage = s.opts.TrimmedLineage
+	} else {
+		lineage, err = s.ReadLineage()
+	}
 	if err != nil {
 		s.err = fmt.Errorf("getting lineage: %w", err)
 		return false
