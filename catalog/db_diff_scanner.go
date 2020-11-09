@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -128,6 +129,8 @@ func (s *DiffScanner) diffSameBranch(tx db.Tx, params doDiffParams) (*DiffScanne
 func (s *DiffScanner) Next() bool {
 	for s.leftScanner.Next() {
 		leftEnt := s.leftScanner.Value()
+		// update right scanner additional where part to help the scanner skip to the matched path from left entry
+		s.rightScanner.SetAdditionalWhere(sq.Expr("path >= ?", leftEnt.Path))
 		// get next right entry - scan until we match right path to left (or bigger)
 		err := ScanDBEntriesUntil(s.rightScanner, leftEnt.Path)
 		if err != nil {
