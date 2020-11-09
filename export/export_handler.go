@@ -110,7 +110,6 @@ func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfig
 		return err
 	}
 	return h.parade.InsertTasks(context.Background(), taskData)
-	// Todo(guys): add generate success for, and success path
 }
 
 // getDiffFromBase returns all the entries on the ref as diffs
@@ -134,15 +133,17 @@ func entriesToDiff(entries []*catalog.Entry) []catalog.Difference {
 }
 
 func getGenerateSuccess(lastKeysInPrefixRegexp []string) func(path string) bool {
+	lastKeysRe := make([]*regexp.Regexp, 0, len(lastKeysInPrefixRegexp))
+	for _, expr := range lastKeysInPrefixRegexp {
+		re, err := regexp.Compile(expr)
+		if err != nil {
+			logging.Default().WithField("expression", expr).Error(err)
+		}
+		lastKeysRe = append(lastKeysRe, re)
+	}
 	return func(path string) bool {
-		for _, regex := range lastKeysInPrefixRegexp {
-			match, err := regexp.MatchString(regex, path)
-			if err != nil {
-				// ignore failing for now
-				// Todo(guys) - handle this
-				return false
-			}
-			if match {
+		for _, re := range lastKeysRe {
+			if re.MatchString(path) {
 				return true
 			}
 		}
@@ -178,7 +179,7 @@ func (h *Handler) copy(body *string) error {
 	if err != nil {
 		return err
 	}
-	return h.adapter.Copy(from, to) // TODO(guys): add wait for copy in handler
+	return h.adapter.Copy(from, to)
 }
 
 func (h *Handler) remove(body *string) error {
