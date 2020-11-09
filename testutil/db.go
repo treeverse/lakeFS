@@ -128,7 +128,7 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 		strings.ReplaceAll(uuid.New().String(), "-", ""))
 
 	// create connection
-	connURI := fmt.Sprintf("%s&search_path=%s", uri, generatedSchema)
+	connURI := fmt.Sprintf("%s&search_path=%s,public", uri, generatedSchema)
 	pool, err := pgxpool.Connect(ctx, connURI)
 	if err != nil {
 		t.Fatalf("could not connect to PostgreSQL: %s", err)

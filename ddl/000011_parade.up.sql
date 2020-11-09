@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public CASCADE;
 
 CREATE TYPE task_status_code_value AS ENUM (
     'pending',          -- waiting for an actor to perform it (new or being retried)
