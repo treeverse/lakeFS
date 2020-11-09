@@ -19,8 +19,8 @@ func getExportID(repo, branch, commitRef string) (string, error) {
 	return fmt.Sprintf("%s-%s-%s-%s", repo, branch, commitRef, nid), nil
 }
 
-// ExportBranchStart inserts a start task on branch and changes branch export state to pending
-// if export on  already in progress will return error
+// ExportBranchStart inserts a start task on branch, sets branch export state to pending.
+// If export already in progress will return error
 func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) error {
 	commit, err := cataloger.GetCommit(context.Background(), repo, branch)
 	if err != nil {
@@ -31,25 +31,21 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 	err = cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
 		if err != nil {
-			msg := "failed to get export configuration for branch"
-			return catalog.ExportStatusFailed, &msg, err
+			return "", nil, err
 		}
 
 		exportID, err := getExportID(repo, branch, commitRef)
 		if err != nil {
-			msg := "failed generating ID"
-			return catalog.ExportStatusFailed, &msg, err
+			return "", nil, err
 		}
 		tasks, err := GetStartTasks(repo, branch, oldRef, commitRef, exportID, config)
 		if err != nil {
-			msg := "failed creating start task"
-			return catalog.ExportStatusFailed, &msg, err
+			return "", nil, err
 		}
 
 		err = paradeDB.InsertTasks(context.Background(), tasks)
 		if err != nil {
-			msg := "failed inserting start task"
-			return catalog.ExportStatusFailed, &msg, err
+			return "", nil, err
 		}
 		return catalog.ExportStatusInProgress, nil, nil
 	})
