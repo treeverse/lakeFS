@@ -72,7 +72,7 @@ func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfig
 	after := ""
 	limit := -1
 	diffFromBase := startData.FromCommitRef == ""
-	for hasMore {
+	for {
 		if diffFromBase {
 			diffs, hasMore, err = getDiffFromBase(context.Background(), startData.Repo, startData.ToCommitRef, after, limit, h.cataloger)
 		} else {
@@ -86,6 +86,9 @@ func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfig
 		if err != nil {
 			return err
 		}
+		if len(diffs) == 0 {
+			break
+		}
 		taskData, err := tasksGenerator.Add(diffs)
 		if err != nil {
 			return err
@@ -95,9 +98,11 @@ func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfig
 		if err != nil {
 			return err
 		}
-		if hasMore && len(diffs) > 0 {
-			after = diffs[len(diffs)-1].Path
+
+		if !hasMore {
+			break
 		}
+		after = diffs[len(diffs)-1].Path
 	}
 
 	taskData, err := tasksGenerator.Finish()
