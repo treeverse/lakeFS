@@ -27,11 +27,10 @@ const (
 	ReadBranchAction       = "fs:ReadBranch"
 	RevertBranchAction     = "fs:RevertBranch"
 	ListBranchesAction     = "fs:ListBranches"
+	ExportConfigAction     = "fs:ExportConfig"
 
 	RetentionReadPolicyAction  = "retention:GetPolicy"
 	RetentionWritePolicyAction = "retention:WritePolicy"
-
-	ExportSetConfigAction = "fs:export:SetConfig"
 
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"

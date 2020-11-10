@@ -136,7 +136,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 			Statement: model.Statements{
 				{
 					Action: []string{
-						"export:Set*",
+						"fs:ExportConfig",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,

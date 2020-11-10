@@ -2255,7 +2255,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.ExportSetConfigAction,
+				Action:   permissions.ExportConfigAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})

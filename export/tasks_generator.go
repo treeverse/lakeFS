@@ -315,7 +315,7 @@ func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor fun
 // Add translates diffs into many tasks and remembers "generate success" tasks for Finish.  It
 // returns some tasks that can already be added.
 func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, error) {
-	const initialSize = 1000
+	const initialSize = 1_000
 
 	zero := 0
 
