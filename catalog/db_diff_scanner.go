@@ -55,9 +55,11 @@ func NewDiffScanner(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 		Relation: relation,
 		params:   params,
 	}
-	scannerOpts := DBLineageScannerOptions{DBScannerOptions: DBScannerOptions{
-		After:            params.After,
-		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields)},
+	scannerOpts := DBLineageScannerOptions{
+		DBScannerOptions: DBScannerOptions{
+			After:            params.After,
+			AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
+		},
 	}
 	switch relation {
 	case RelationTypeFromParent:
