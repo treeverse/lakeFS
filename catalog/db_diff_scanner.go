@@ -36,7 +36,6 @@ type diffEffectiveCommits struct {
 	// ParentEffectiveCommit last commit parent merged from child.
 	// When no sync commit is found - set the commit ID to the point child's branch was created.
 	ParentEffectiveCommit CommitID `db:"parent_effective_commit"`
-
 	// ChildEffectiveCommit last commit child merged from parent.
 	// If the child never synced with parent, the commit ID is set to 1.
 	ChildEffectiveCommit CommitID `db:"child_effective_commit"`
@@ -57,19 +56,25 @@ func NewDiffScanner(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 		Relation: relation,
 		params:   params,
 	}
+	scannerOpts := DBLineageScannerOptions{
+		DBScannerOptions: DBScannerOptions{
+			After:            params.After,
+			AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
+		},
+	}
 	switch relation {
 	case RelationTypeFromParent:
-		return scanner.diffFromParent(tx, params)
+		return scanner.diffFromParent(tx, params, scannerOpts)
 	case RelationTypeFromChild:
-		return scanner.diffFromChild(tx, params)
+		return scanner.diffFromChild(tx, params, scannerOpts)
 	case RelationTypeSame:
-		return scanner.diffSameBranch(tx, params)
+		return scanner.diffSameBranch(tx, params, scannerOpts)
 	default:
 		return nil, ErrFeatureNotSupported
 	}
 }
 
-func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
+func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts DBLineageScannerOptions) (*DiffScanner, error) {
 	// get child last commit of merge from parent
 	s.evaluator = s.evaluateParentToChild
 	query, args, err := psql.Select("MAX(commit_id) as max_child_commit").
@@ -83,44 +88,50 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams) (*DiffScanne
 	if err != nil {
 		return nil, fmt.Errorf("get child last commit failed: %w", err)
 	}
-	scannerOpts := DBScannerOptions{
-		After:            params.After,
-		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
-	}
-	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
-	s.childLineage, err = getLineage(tx, params.RightBranchID, UncommittedID)
+	leftLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get left branch lineage: %w", err)
 	}
+	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
+	if err != nil {
+		return nil, fmt.Errorf("get right branch lineage: %w", err)
+	}
+	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
+	// so it is trimmed from the parent lineage
+	if len(rightLineage)-len(leftLineage) != 1 {
+		return nil, ErrLineageCorrupted
+	}
+	for i := range leftLineage {
+		if leftLineage[i].CommitID == rightLineage[i+1].CommitID {
+			leftLineage = leftLineage[:i]
+			break
+		}
+	}
+
+	scannerOpts.Lineage = leftLineage
+	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
+	scannerOpts.Lineage = rightLineage
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
+	s.childLineage = rightLineage
 	return s, nil
 }
 
-func (s *DiffScanner) diffFromChild(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
+func (s *DiffScanner) diffFromChild(tx db.Tx, params doDiffParams, scannerOpts DBLineageScannerOptions) (*DiffScanner, error) {
 	var err error
 	s.evaluator = s.evaluateChildToParent
-	scannerOpts := DBScannerOptions{
-		After:            params.After,
-		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
-	}
 	// get child last commit of merge from parent
 	s.effectiveCommits, err = selectChildEffectiveCommits(tx, params.LeftBranchID, params.RightBranchID)
 	if err != nil {
 		return nil, err
 	}
-	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
+	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, scannerOpts.DBScannerOptions)
 	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	return s, nil
 }
 
-func (s *DiffScanner) diffSameBranch(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
+func (s *DiffScanner) diffSameBranch(tx db.Tx, params doDiffParams, scannerOpts DBLineageScannerOptions) (*DiffScanner, error) {
 	// get child last commit of merge from parent
 	s.evaluator = evaluateSameBranch
-
-	scannerOpts := DBScannerOptions{
-		After:            params.After,
-		AdditionalFields: prepareDiffAdditionalFields(params.AdditionalFields),
-	}
 	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, params.LeftCommitID, scannerOpts)
 	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, params.RightCommitID, scannerOpts)
 	return s, nil
