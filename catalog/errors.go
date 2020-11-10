@@ -29,5 +29,5 @@ var (
 	ErrInvalidValue                = errors.New("invalid value")
 	ErrNonDirectNotSupported       = errors.New("non direct diff not supported")
 	ErrSameBranchMergeNotSupported = errors.New("same branch merge not supported")
-	ErrLineageCorrupted            = errors.New("child and father lineage does not match")
+	ErrLineageCorrupted            = errors.New("lineage corrupted")
 )
