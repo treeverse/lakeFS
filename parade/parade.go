@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	ErrInvalidToken    = errors.New("performance token invalid (action may have exceeded deadline)")
-	ErrBadStatus       = errors.New("bad status for task")
-	ErrNoNotifyChannel = errors.New("task has no notify_channel_after")
+	ErrInvalidToken       = errors.New("performance token invalid (action may have exceeded deadline)")
+	ErrBadStatus          = errors.New("bad status for task")
+	ErrNoNotifyChannel    = errors.New("task has no notify_channel_after")
+	ErrServiceUnavailable = errors.New("service unavailable")
 )
 
 type Parade interface {
