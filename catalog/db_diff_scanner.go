@@ -89,7 +89,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	}
 	leftLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("get parent last commit failed: %w", err)
+		return nil, fmt.Errorf("get left branch lineage: %w", err)
 	}
 	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
