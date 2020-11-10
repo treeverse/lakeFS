@@ -2029,7 +2029,7 @@ paths:
       summary: export branch
       responses:
         201:
-          description: continuous export successfully started
+          description: export successfully started
           schema:
             description: "export ID"
             type: string
