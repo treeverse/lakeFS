@@ -93,7 +93,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	}
 	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("get chaild lineage failed on :%w", err)
+		return nil, fmt.Errorf("get right branch lineage: %w", err)
 	}
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
