@@ -31,6 +31,8 @@ const (
 	RetentionReadPolicyAction  = "retention:GetPolicy"
 	RetentionWritePolicyAction = "retention:WritePolicy"
 
+	ExportSetConfigAction = "fs:export:SetConfig"
+
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"
 	DeleteUserAction        = "auth:DeleteUser"

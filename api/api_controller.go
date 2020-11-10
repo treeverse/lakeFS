@@ -2198,7 +2198,7 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 	return exportop.GetContinuousExportHandlerFunc(func(params exportop.GetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.ListBranchesAction,
+				Action:   permissions.ReadBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
@@ -2232,8 +2232,8 @@ func (c *Controller) ExportRunHandler() exportop.RunHandler {
 	return exportop.RunHandlerFunc(func(params exportop.RunParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.WriteObjectAction,
-				Resource: permissions.ObjectArn(params.Repository, params.Branch),
+				Action:   permissions.CreateCommitAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
@@ -2255,7 +2255,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.CreateBranchAction,
+				Action:   permissions.ExportSetConfigAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
