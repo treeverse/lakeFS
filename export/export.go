@@ -20,7 +20,7 @@ func getExportID(repo, branch, commitRef string) (string, error) {
 }
 
 // ExportBranchStart inserts a start task on branch, sets branch export state to pending.
-// If export already in progress will return error
+// It returns an error if an export is already in progress.
 func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) (string, error) {
 	commit, err := cataloger.GetCommit(context.Background(), repo, branch)
 	if err != nil {
