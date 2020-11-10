@@ -162,7 +162,7 @@ func Test_getGenerateSuccess(t *testing.T) {
 		want                   func(path string) bool
 	}{
 		{
-			name:                   "one regex",
+			name:                   "one regexp",
 			lastKeysInPrefixRegexp: []string{".*\\.success$"},
 			expectTrue:             []string{"a.success", "other.success"},
 			expectFalse:            []string{"dfd", "a.suc", "a.successer"},
