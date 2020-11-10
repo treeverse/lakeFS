@@ -15,9 +15,9 @@ import (
 // ExportConfiguration describes the export configuration of a branch, as passed on wire, used
 // internally, and stored in DB.
 type ExportConfiguration struct {
-	Path                   string         `db:"export_path" json:"path"`
-	StatusPath             string         `db:"export_status_path" json:"status_path"`
-	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp" json:"regex"`
+	Path                   string         `db:"export_path" json:"export_path"`
+	StatusPath             string         `db:"export_status_path" json:"export_status_path"`
+	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp" json:"last_keys_in_prefix_regexp"`
 }
 
 // ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
