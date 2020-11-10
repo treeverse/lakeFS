@@ -12,7 +12,7 @@ CREATE TYPE task_status_code_value AS ENUM (
 CREATE TABLE IF NOT EXISTS tasks (
     id VARCHAR NOT NULL PRIMARY KEY, -- nanoid
 
-    action VARCHAR(128) NOT NULL, -- name (type) of action to perform
+    action VARCHAR NOT NULL, -- name (type) of action to perform
     body TEXT,                  -- data used by action
     status TEXT,                -- status text defined by action, visible to action
 
@@ -25,15 +25,15 @@ CREATE TABLE IF NOT EXISTS tasks (
     total_dependencies INTEGER, -- number of tasks that must signal this task
     num_signals INTEGER NOT NULL DEFAULT 0, -- number of tasks that have already signalled this task
 
-    actor_id VARCHAR(64),    -- ID of performing actor if in-progress
+    actor_id VARCHAR,    -- ID of performing actor if in-progress
     action_deadline TIMESTAMPTZ, -- offer this task to other actors once action_deadline has elapsed
     performance_token UUID,
 
     -- BUG(ariels): add REFERENCES dependency to each of the to_signal_after
     --     tasks.  Or at least add triggers that perform ON DELETE
     --     CASCADE.
-    to_signal_after VARCHAR(64) ARRAY, -- IDs to signal after performing this task
-    notify_channel_after VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
+    to_signal_after VARCHAR ARRAY, -- IDs to signal after performing this task
+    notify_channel_after VARCHAR -- (if non-NULL) name of a channel to NOTIFY when this task ends
 );
 
 -- Returns true if task with this id, code and deadline can
@@ -49,9 +49,9 @@ $$;
 -- belonging to `actor_id' and returns their ids and a "performance
 -- token".  Both must be returned to complete the task successfully.
 CREATE OR REPLACE FUNCTION own_tasks(
-    max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
+    max_tasks INTEGER, actions VARCHAR ARRAY, owner_id VARCHAR, max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR, token UUID, num_failures INTEGER, action VARCHAR(128), body TEXT)
+RETURNS TABLE(task_id VARCHAR, token UUID, num_failures INTEGER, action VARCHAR, body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
@@ -99,8 +99,11 @@ CREATE OR REPLACE FUNCTION return_task(
 LANGUAGE plpgsql AS $$
 DECLARE
     num_updated INTEGER;
-    channel VARCHAR(64);
-    to_signal VARCHAR(64) ARRAY;
+    channel VARCHAR;
+    to_signal VARCHAR ARRAY;
+
+
+
 BEGIN
     CASE result_status_code
     WHEN 'aborted', 'completed' THEN
