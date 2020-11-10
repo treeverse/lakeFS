@@ -169,7 +169,7 @@ func Test_getGenerateSuccess(t *testing.T) {
 			want:                   nil,
 		},
 		{
-			name:                   "two regexes",
+			name:                   "two regexps",
 			lastKeysInPrefixRegexp: []string{".*\\.success$", ".*/success"},
 			expectTrue:             []string{"path/to/a.success", "other.success", "path/to/success"},
 			expectFalse:            []string{"dfd", "a.suc", "a.successer"},
