@@ -14,14 +14,14 @@ import (
 var exportCmd = &cobra.Command{
 	Use:    "export",
 	Hidden: true,
-	Short:  "create and manage continues export",
+	Short:  "create and manage continuous export",
 	Long:   `Read set and update continuous export configurations and trigger exports`,
 }
 
-// exportGetCmd get continues export configuration for branch
+// exportGetCmd get continuous export configuration for branch
 var exportSetCmd = &cobra.Command{
 	Use:   "set <branch uri>",
-	Short: "set continues export configuration for branch",
+	Short: "set continuous export configuration for branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
@@ -57,10 +57,10 @@ Last Keys In Prefix Regexp: {{.Configuration.LastKeysInPrefixRegexp}}
 
 `
 
-// exportGetCmd get continues export configuration for branch
+// exportGetCmd get continuous export configuration for branch
 var exportGetCmd = &cobra.Command{
 	Use:   "get <branch uri>",
-	Short: "get continues export configuration for branch",
+	Short: "get continuous export configuration for branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
@@ -76,7 +76,7 @@ var exportGetCmd = &cobra.Command{
 	},
 }
 
-// exportSetCmd get continues export configuration for branch
+// exportSetCmd get continuous export configuration for branch
 var exportExecuteCmd = &cobra.Command{
 	Use:   "run",
 	Short: "export requested branch now",
