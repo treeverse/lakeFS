@@ -15,9 +15,9 @@ import (
 // ExportConfiguration describes the export configuration of a branch, as passed on wire, used
 // internally, and stored in DB.
 type ExportConfiguration struct {
-	Path                   string         `db:"export_path"`
-	StatusPath             string         `db:"export_status_path"`
-	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
+	Path                   string         `db:"export_path" json:"export_path"`
+	StatusPath             string         `db:"export_status_path" json:"export_status_path"`
+	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp" json:"last_keys_in_prefix_regexp"`
 }
 
 // ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
@@ -136,6 +136,23 @@ func (c *cataloger) PutExportConfiguration(repository string, branch string, con
 
 var ErrExportFailed = errors.New("export failed")
 
+func (c *cataloger) ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)) error {
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		oldRef, state, err := c.ExportStateMarkStart(tx, repo, branch, newRef)
+		if err != nil {
+			return nil, err
+		}
+
+		newState, newMsg, err := cb(oldRef, state)
+		if err != nil {
+			return nil, err
+		}
+		err = c.ExportStateMarkEnd(tx, repo, branch, newRef, newState, newMsg)
+		return nil, err
+	})
+	return err
+}
+
 func (c *cataloger) ExportStateMarkStart(tx db.Tx, repo string, branch string, newRef string) (oldRef string, state CatalogBranchExportStatus, err error) {
 	var res struct {
 		CurrentRef   string
@@ -151,7 +168,7 @@ func (c *cataloger) ExportStateMarkStart(tx db.Tx, repo string, branch string, n
 		FROM catalog_branches_export_state
 		WHERE branch_id=$1 FOR UPDATE`,
 		branchID)
-	missing := errors.Is(err, ErrEntryNotFound)
+	missing := errors.Is(err, db.ErrNotFound)
 	if err != nil && !missing {
 		err = fmt.Errorf("ExportStateuMarkStart: failed to get existing state: %w", err)
 		return oldRef, state, err

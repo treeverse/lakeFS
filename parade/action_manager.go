@@ -1,6 +1,7 @@
 package parade
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -14,7 +15,7 @@ const (
 	defaultChannelSize = 1000
 	defaultMaxTasks    = 500
 	defaultWaitTime    = time.Millisecond * 300
-	defaultErrWaitTime = time.Millisecond * 300
+	defaultErrWaitTime = time.Second * 3
 	defaultMaxDuration = time.Minute * 30 // Todo(guys): change this
 )
 
@@ -103,7 +104,11 @@ func (a *ActionManager) start() {
 			case <-time.After(d):
 				ownedTasks, err := a.parade.OwnTasks(actorID, a.properties.MaxTasks, actions, a.properties.MaxDuration)
 				if err != nil {
-					logging.Default().WithField("actor", actorID).Errorf("manager failed to receive tasks: %s", err)
+					if errors.Is(err, ErrServiceUnavailable) {
+						logging.Default().WithField("actor", actorID).WithError(err).Debug("manager failed to receive tasks")
+					} else {
+						logging.Default().WithField("actor", actorID).WithError(err).Error("manager failed to receive tasks")
+					}
 					d = *a.properties.ErrWaitTime
 					continue
 				}
@@ -151,7 +156,7 @@ func (a *workerPool) start() {
 			workerID := uuid.New()
 			defer a.wg.Done()
 			for task := range a.ch {
-				res := a.actor.Handle(task.Action, task.Body)
+				res := a.actor.Handle(task.Action, task.Body, task.NumSignalledFailures)
 				err := a.parade.ReturnTask(task.ID, task.Token, res.Status, res.StatusCode)
 				if err != nil {
 					logging.Default().WithFields(logging.Fields{
