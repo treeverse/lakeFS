@@ -2,13 +2,15 @@ package export
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"reflect"
+	"strings"
+	"testing"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/mem"
 	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/testutil"
-	"io/ioutil"
-	"strings"
-	"testing"
 )
 
 func TestCopy(t *testing.T) {
@@ -31,7 +33,7 @@ func TestCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(adapter)
+	h := NewHandler(adapter, nil, nil)
 	taskBody, err := json.Marshal(&CopyData{
 		From: from,
 		To:   to,
@@ -44,7 +46,7 @@ func TestCopy(t *testing.T) {
 		Action: CopyAction,
 		Body:   &taskBodyStr,
 	}
-	if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
+	if res := h.Handle(task.Action, task.Body, task.NumSignalledFailures); res.StatusCode != parade.TaskCompleted {
 		t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 	}
 	// read Destination
@@ -80,7 +82,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(adapter)
+	h := NewHandler(adapter, nil, nil)
 	taskBody, err := json.Marshal(&DeleteData{
 		File: path,
 	})
@@ -92,7 +94,7 @@ func TestDelete(t *testing.T) {
 		Action: DeleteAction,
 		Body:   &taskBodyStr,
 	}
-	if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
+	if res := h.Handle(task.Action, task.Body, task.NumSignalledFailures); res.StatusCode != parade.TaskCompleted {
 		t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 	}
 	// read Destination
@@ -118,7 +120,7 @@ func TestTouch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(adapter)
+	h := NewHandler(adapter, nil, nil)
 	taskBody, err := json.Marshal(&SuccessData{
 		File: path,
 	})
@@ -130,7 +132,7 @@ func TestTouch(t *testing.T) {
 		Action: TouchAction,
 		Body:   &taskBodyStr,
 	}
-	if res := h.Handle(task.Action, task.Body); res.StatusCode != parade.TaskCompleted {
+	if res := h.Handle(task.Action, task.Body, task.NumSignalledFailures); res.StatusCode != parade.TaskCompleted {
 		t.Errorf("expected status code: %s, got: %s", parade.TaskCompleted, res.StatusCode)
 	}
 	// read Destination
@@ -147,5 +149,47 @@ func TestTouch(t *testing.T) {
 	expect := ""
 	if string(val) != expect {
 		t.Errorf("expected %s, got %s\n", testData, string(val))
+	}
+}
+
+func Test_getGenerateSuccess(t *testing.T) {
+
+	tests := []struct {
+		name                   string
+		lastKeysInPrefixRegexp []string
+		expectTrue             []string
+		expectFalse            []string
+		want                   func(path string) bool
+	}{
+		{
+			name:                   "one regexp",
+			lastKeysInPrefixRegexp: []string{".*\\.success$"},
+			expectTrue:             []string{"a.success", "other.success"},
+			expectFalse:            []string{"dfd", "a.suc", "a.successer"},
+			want:                   nil,
+		},
+		{
+			name:                   "two regexps",
+			lastKeysInPrefixRegexp: []string{".*\\.success$", ".*/success"},
+			expectTrue:             []string{"path/to/a.success", "other.success", "path/to/success"},
+			expectFalse:            []string{"dfd", "a.suc", "a.successer"},
+			want:                   nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gs := getGenerateSuccess(tt.lastKeysInPrefixRegexp); !reflect.DeepEqual(gs, tt.want) {
+				for _, path := range tt.expectTrue {
+					if !gs(path) {
+						t.Errorf("expected path %s to return true", path)
+					}
+				}
+				for _, path := range tt.expectFalse {
+					if gs(path) {
+						t.Errorf("expected path %s to return false", path)
+					}
+				}
+			}
+		})
 	}
 }

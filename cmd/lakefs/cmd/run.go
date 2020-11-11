@@ -11,6 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/export"
+	"github.com/treeverse/lakefs/parade"
+
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
@@ -86,10 +89,17 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
+
+		// parade
+		paradeDB := parade.NewParadeDB(dbPool.Pool())
+		// export handler
+		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
+		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
 		defer func() {
 			// order is important - close cataloger channel before dedup
 			_ = cataloger.Close()
 			_ = dedupCleaner.Close()
+			exportActionManager.Close()
 		}()
 
 		// start API server
@@ -105,6 +115,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			retention,
 			migrator,
+			paradeDB,
 			dedupCleaner,
 			logger.WithField("service", "api_gateway"),
 		)

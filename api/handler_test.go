@@ -106,6 +106,7 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		&mockCollector{},
 		retentionService,
 		migrator,
+		nil,
 		dedupCleaner,
 		logging.Default(),
 	)

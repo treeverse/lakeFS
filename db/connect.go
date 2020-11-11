@@ -41,7 +41,8 @@ func Ping(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
-func ConnectDB(p params.Database) (Database, error) {
+// ConnectDBPool connects to a database using the database params and returns a connection pool
+func ConnectDBPool(p params.Database) (*pgxpool.Pool, error) {
 	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
 		"driver":            p.Driver,
@@ -70,6 +71,15 @@ func ConnectDB(p params.Database) (Database, error) {
 	}
 
 	log.Info("initialized DB connection")
+	return pool, err
+}
+
+// ConnectDB connects to a database using the database params and returns Database
+func ConnectDB(p params.Database) (Database, error) {
+	pool, err := ConnectDBPool(p)
+	if err != nil {
+		return nil, err
+	}
 	return NewPgxDatabase(pool), nil
 }
 

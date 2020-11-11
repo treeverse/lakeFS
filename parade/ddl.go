@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -210,10 +213,15 @@ func OwnTasks(conn pgxscan.Querier, actor ActorID, maxTasks int, actions []strin
 	rows, err := conn.Query(
 		ctx, `SELECT * FROM own_tasks($1, $2, $3, $4)`, maxTasks, actions, actor, maxDuration)
 	if err != nil {
+		var pgerr *pgconn.PgError
+		if errors.As(err, &pgerr) && pgerr.Code == pgerrcode.UndefinedFunction {
+			return nil, ErrServiceUnavailable
+		}
 		return nil, fmt.Errorf("try to own tasks: %w", err)
 	}
 	tasks := make([]OwnedTaskData, 0, maxTasks)
 	err = pgxscan.ScanAll(&tasks, rows)
+
 	return tasks, err
 }
 
