@@ -2026,7 +2026,7 @@ paths:
         - export
         - branches
       operationId: run
-      summary: hook to be called in order to execute continues export on branch
+      summary: hook to be called in order to execute continuous export on branch
       responses:
         201:
           description: continuous export successfully started
