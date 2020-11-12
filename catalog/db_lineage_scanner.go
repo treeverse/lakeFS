@@ -21,7 +21,8 @@ type DBLineageScanner struct {
 
 type DBLineageScannerOptions struct {
 	DBScannerOptions
-	Lineage []lineageCommit
+	Lineage      []lineageCommit
+	minMinCommit []CommitID
 }
 
 func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBLineageScannerOptions) *DBLineageScanner {
@@ -118,9 +119,16 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 		return false
 	}
 	s.scanners = make([]*DBBranchScanner, len(lineage)+1)
-	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, s.opts.DBScannerOptions)
+	var minMinCommit []CommitID
+	minMinCommit = s.opts.minMinCommit
+	if minMinCommit == nil {
+		for i := 0; i <= len(lineage); i++ {
+			minMinCommit = append(minMinCommit, 1)
+		}
+	}
+	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, minMinCommit[0], s.opts.DBScannerOptions)
 	for i, bl := range lineage {
-		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, s.opts.DBScannerOptions)
+		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, minMinCommit[i+1], s.opts.DBScannerOptions)
 	}
 	for _, branchScanner := range s.scanners {
 		if branchScanner.Next() {

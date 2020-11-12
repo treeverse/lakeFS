@@ -27,7 +27,7 @@ type DBBranchScanner struct {
 	value        *DBScannerEntry
 }
 
-func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBScannerOptions) *DBBranchScanner {
+func NewDBBranchScanner(tx db.Tx, branchID int64, commitID, minMinCommit CommitID, opts DBScannerOptions) *DBBranchScanner {
 	s := &DBBranchScanner{
 		tx:       tx,
 		branchID: branchID,
@@ -40,7 +40,7 @@ func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBScan
 		s.opts.BufferSize = DBScannerDefaultBufferSize
 	}
 	s.buf = make([]*DBScannerEntry, 0, s.opts.BufferSize)
-	commitsWhere, err := getRelevantCommitsCondition(tx, branchID, commitID)
+	commitsWhere, err := getRelevantCommitsCondition(tx, branchID, commitID, minMinCommit)
 	s.err = err
 	s.commitsWhere = commitsWhere
 	return s
@@ -50,7 +50,7 @@ func (s *DBBranchScanner) SetAdditionalWhere(part sq.Sqlizer) {
 	s.opts.AdditionalWhere = part
 }
 
-func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (string, error) {
+func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID, minMinCommit CommitID) (string, error) {
 	var branchMaxCommitID CommitID
 	var commits []string
 	var commitsWhere string
@@ -63,8 +63,8 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 		branchMaxCommitID = commitID
 	}
 	// commit_id name is changed so that sorting will be performed on the numeric value, not the string value (where "10" is less than "2")
-	sql := "SELECT commit_id::text as str_commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id limit $3"
-	err := tx.Select(&commits, sql, branchID, branchMaxCommitID, BranchScannerMaxCommitsInFilter+1)
+	sql := "SELECT commit_id::text as str_commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id BETWEEN  $2 AND $3 ORDER BY commit_id limit $4"
+	err := tx.Select(&commits, sql, branchID, minMinCommit+1, branchMaxCommitID, BranchScannerMaxCommitsInFilter+1)
 	if err != nil {
 		return "", err
 	}
@@ -76,9 +76,14 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (s
 		// anyway - there is no commit id -1
 	}
 	if len(commits) <= BranchScannerMaxCommitsInFilter {
-		commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
+		//commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
+		minCommitsWhere := "min_commit in (" + strings.Join(commits, `,`) + ")"
+		commits = append(commits, strconv.FormatInt(int64(minMinCommit), 10)) // add the minimal commit, because if it appears in a max_commit, It is a change
+		maxCommitWhere := "max_commit in (" + strings.Join(commits, `,`) + ")"
+		commitsWhere = "(" + minCommitsWhere + " OR " + maxCommitWhere + ")"
 	} else {
-		commitsWhere = "min_commit BETWEEN 1 AND " + commits[len(commits)-1]
+		commitsWhere = "(min_commit BETWEEN " + strconv.FormatInt(int64(minMinCommit)+1, 10) + " AND " + commits[len(commits)-1] +
+			" OR max_commit BETWEEN " + strconv.FormatInt(int64(minMinCommit), 10) + " AND " + commits[len(commits)-1] + ")"
 	}
 	return commitsWhere, nil
 }

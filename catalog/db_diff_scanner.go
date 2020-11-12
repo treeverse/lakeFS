@@ -87,30 +87,49 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	if err != nil {
 		return nil, fmt.Errorf("get child last commit failed: %w", err)
 	}
-	leftLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
+	query, args, err = psql.Select("MAX(commit_id) as max_parent_commit").
+		From("catalog_commits").
+		Where("branch_id = ? ", params.LeftBranchID).
+		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("get parent last commit failed: %w", err)
+		return nil, fmt.Errorf("get parent last commit sql: %w", err)
 	}
+	//var parentLastCommitID CommitID
+	//err = tx.Get(&parentLastCommitID, query, args...)
+	//if err != nil {
+	//	return nil, fmt.Errorf("get parent last commit failed: %w", err)
+	//}
 	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
 		return nil, fmt.Errorf("get chaild lineage failed on :%w", err)
+	}
+	//if rightLineage[0].CommitID == parentLastCommitID {
+	//	return nil, fmt.Errorf("no commits in parent since last merge :%w", ErrNoDifferenceWasFound)
+	//}
+	leftLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
+	if err != nil {
+		return nil, fmt.Errorf("get parent last commit failed: %w", err)
 	}
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
 	if len(rightLineage)-len(leftLineage) != 1 {
 		return nil, fmt.Errorf("corrupted lineage definitions:%w", ErrLineageCorrupted)
 	}
+	var minMinCommit = []CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
 	for i := range leftLineage {
 		if leftLineage[i].CommitID == rightLineage[i+1].CommitID {
 			leftLineage = leftLineage[:i]
 			break
+		} else {
+			minMinCommit = append(minMinCommit, rightLineage[i+1].CommitID)
 		}
 	}
-
+	rightOpts := scannerOpts
+	rightOpts.Lineage = rightLineage
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, rightOpts)
 	scannerOpts.Lineage = leftLineage
+	scannerOpts.minMinCommit = minMinCommit
 	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
-	scannerOpts.Lineage = rightLineage
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	s.childLineage = rightLineage
 	return s, nil
 }
@@ -123,7 +142,7 @@ func (s *DiffScanner) diffFromChild(tx db.Tx, params doDiffParams, scannerOpts D
 	if err != nil {
 		return nil, err
 	}
-	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, scannerOpts.DBScannerOptions)
+	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, 1, scannerOpts.DBScannerOptions)
 	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	return s, nil
 }
