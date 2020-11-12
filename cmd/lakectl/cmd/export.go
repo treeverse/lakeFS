@@ -12,10 +12,9 @@ import (
 )
 
 var exportCmd = &cobra.Command{
-	Use:    "export",
-	Hidden: true,
-	Short:  "create and manage continuous export",
-	Long:   `Read set and update continuous export configurations and trigger exports`,
+	Use:   "export",
+	Short: "create and manage continuous export",
+	Long:  `Read set and update continuous export configurations and trigger exports`,
 }
 
 // exportGetCmd get continuous export configuration for branch

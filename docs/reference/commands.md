@@ -846,6 +846,59 @@ Global Flags:
 
 ````
 
+#### `lakectl export get `
+````text
+get continuous export configuration for branch
+
+Usage:
+  lakectl export get <branch uri> [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+  -f, --force           without prompting for confirmation
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+
+````
+
+#### `lakectl export set `
+````text
+set continuous export configuration for branch
+
+Usage:
+  lakectl export set <branch uri> [flags]
+
+Flags:
+  -h, --help                       help for set
+      --path string                export objects to this path
+      --prefix-regex stringArray   list of regexps of keys to exported last in each prefix (for signalling)
+      --status-path string         write export status object to this path
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+  -f, --force           without prompting for confirmation
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+
+````
+
+#### `lakectl export run `
+````text
+export requested branch now
+
+Usage:
+  lakectl export run [flags]
+
+Flags:
+  -h, --help   help for run
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+  -f, --force           without prompting for confirmation
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+
+````
 ### lakeFS URI pattern
 
 Different CLI and UI operations use `lakefs://` URIs.  
