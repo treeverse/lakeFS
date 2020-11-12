@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	nanoid "github.com/matoous/go-nanoid"
@@ -19,6 +20,8 @@ func getExportID(repo, branch, commitRef string) (string, error) {
 	return fmt.Sprintf("%s-%s-%s-%s", repo, branch, commitRef, nid), nil
 }
 
+var ErrExportInProgress = errors.New("export currently in progress")
+
 // ExportBranchStart inserts a start task on branch, sets branch export state to pending.
 // It returns an error if an export is already in progress.
 func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) (string, error) {
@@ -35,6 +38,9 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
 		if err != nil {
 			return "", nil, err
+		}
+		if state == catalog.ExportStatusInProgress {
+			return state, nil, ErrExportInProgress
 		}
 		tasks, err := GetStartTasks(repo, branch, oldRef, commitRef, exportID, config)
 		if err != nil {
