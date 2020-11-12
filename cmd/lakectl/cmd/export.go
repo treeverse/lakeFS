@@ -25,11 +25,11 @@ var exportSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		exportPath, err := cmd.Flags().GetString("export-path")
+		exportPath, err := cmd.Flags().GetString("path")
 		if err != nil {
 			DieErr(err)
 		}
-		exportStatusPath, err := cmd.Flags().GetString("export-status-path")
+		exportStatusPath, err := cmd.Flags().GetString("status-path")
 		if err != nil {
 			DieErr(err)
 		}
