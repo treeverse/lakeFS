@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 )
 
