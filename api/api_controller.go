@@ -264,29 +264,17 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 
 		c.deps.Collector.CollectEvent("global", "init")
 
-		// setup admin user
-		adminUser := &model.User{
-			CreatedAt: time.Now(),
-			Username:  *setupReq.User.Username,
-		}
-
-		cred, err := auth.SetupAdminUser(c.deps.Auth, adminUser)
+		username := swag.StringValue(setupReq.User.Username)
+		cred, err := auth.CreateInitialAdminUser(c.deps.Auth, c.deps.MetadataManager, username)
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
-				WithPayload(&models.Error{
-					Message: err.Error(),
-				})
-		}
-
-		// update setup completed timestamp
-		if err := c.deps.MetadataManager.UpdateSetupTimestamp(time.Now()); err != nil {
-			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
+				WithPayload(&models.Error{Message: err.Error()})
 		}
 
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
-			CreationDate:    adminUser.CreatedAt.Unix(),
+			CreationDate:    cred.IssuedDate.Unix(),
 		})
 	})
 }

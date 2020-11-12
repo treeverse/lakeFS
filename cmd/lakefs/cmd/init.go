@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -39,13 +37,11 @@ var initCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		metadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(logging.Default(), cfg, authMetadataManager, cloudMetadataProvider)
-		credentials, err := auth.SetupAdminUser(authService, &model.User{
-			CreatedAt: time.Now(),
-			Username:  userName,
-		})
+		metadata := stats.NewMetadata(logging.Default(), cfg, metadataManager, cloudMetadataProvider)
+
+		credentials, err := auth.CreateInitialAdminUser(authService, metadataManager, userName)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)

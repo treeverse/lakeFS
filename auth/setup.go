@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/permissions"
 )
@@ -234,4 +236,22 @@ func AddAdminUser(authService Service, user *model.User) (*model.Credential, err
 		return nil, fmt.Errorf("create credentials for %s %w", user.Username, err)
 	}
 	return creds, nil
+}
+
+func CreateInitialAdminUser(authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
+	adminUser := &model.User{
+		CreatedAt: time.Now(),
+		Username:  username,
+	}
+	// create first admin user
+	cred, err := SetupAdminUser(authService, adminUser)
+	if err != nil {
+		return nil, err
+	}
+
+	// update setup timestamp
+	if err := metadataManger.UpdateSetupTimestamp(time.Now()); err != nil {
+		logging.Default().WithError(err).Error("Failed the update setup timestamp")
+	}
+	return cred, err
 }
