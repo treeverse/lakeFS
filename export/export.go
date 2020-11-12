@@ -35,12 +35,12 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 		return "", err
 	}
 	err = cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
+		if state == catalog.ExportStatusInProgress {
+			return state, nil, ErrExportInProgress
+		}
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
 		if err != nil {
 			return "", nil, err
-		}
-		if state == catalog.ExportStatusInProgress {
-			return state, nil, ErrExportInProgress
 		}
 		tasks, err := GetStartTasks(repo, branch, oldRef, commitRef, exportID, config)
 		if err != nil {
