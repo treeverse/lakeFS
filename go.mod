@@ -39,7 +39,6 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20190803225404-afa3381909a6
 	github.com/jackc/pgproto3/v2 v2.0.4 // indirect
 	github.com/jackc/pgtype v1.4.2
-	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible

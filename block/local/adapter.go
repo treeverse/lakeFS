@@ -75,9 +75,22 @@ func (l *Adapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
+// maybeMkdir runs f(path), but if f fails due to file-not-found MkdirAll's its dir and then
+// runs it again.
+func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, error) {
+	ret, err := f(path)
+	if !errors.Is(err, os.ErrNotExist) {
+		return ret, err
+	}
+	if err = os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+		return nil, err
+	}
+	return f(path)
+}
+
 func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
 	p := l.getPath(obj.Identifier)
-	f, err := os.Create(p)
+	f, err := maybeMkdir(p, os.Create)
 	if err != nil {
 		return err
 	}
@@ -103,7 +116,7 @@ func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 		return err
 	}
 	dest := l.getPath(destinationObj.Identifier)
-	destinationFile, err := os.Create(dest)
+	destinationFile, err := maybeMkdir(dest, os.Create)
 	if err != nil {
 		return err
 	}

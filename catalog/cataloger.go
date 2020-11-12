@@ -169,14 +169,18 @@ type ExportConfigurator interface {
 }
 
 type ExportStateHandler interface {
-	// ExportMarkStart starts an export operation on branch of repo and returns the ref of
+	// ExportState starts an export operation on branch of repo
+	// calls a callback with the oldRef and state
+	// and ends the export operation
+	ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)) error
+	// ExportStateMarkStart starts an export operation on branch of repo and returns the ref of
 	// the previous export.  If the previous export failed it returns ErrExportFailed.  If
 	// another export is running return state ExportStatusInProgress -- and caller should
 	// clean it up by removing and adding the "next export" withint this transaction.  If
 	// another transaction concurrently runs ExportMarkStart on branchID, one blocks until
 	// the other is done.
 	ExportStateMarkStart(tx db.Tx, repo string, branch string, newRef string) (string, CatalogBranchExportStatus, error)
-	// ExportMarkEnd verifies that the current export is of ref and ends an export operation
+	// ExportStateMarkEnd verifies that the current export is of ref and ends an export operation
 	// on branch of repo.
 	ExportStateMarkEnd(tx db.Tx, repo string, branch string, ref string, newState CatalogBranchExportStatus, newMessage *string) error
 	// ExportStateDelete deletes any export state for repo.  Mostly useful in tests: in a

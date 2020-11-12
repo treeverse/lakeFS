@@ -1,11 +1,12 @@
 package parade_test
 
 import (
-	"github.com/treeverse/lakefs/parade"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/treeverse/lakefs/parade"
 )
 
 type ownTaskResult struct {
@@ -51,7 +52,7 @@ type mockHandler struct {
 	handleCalled int32
 }
 
-func (m *mockHandler) Handle(_ string, _ *string) parade.ActorResult {
+func (m *mockHandler) Handle(_ string, _ *string, _ int) parade.ActorResult {
 	atomic.AddInt32(&m.handleCalled, 1)
 	return parade.ActorResult{}
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dlmiddlecote/sqlstats"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
@@ -22,10 +23,12 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
+	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 )
@@ -55,6 +58,8 @@ var runCmd = &cobra.Command{
 
 		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
 			logger.WithError(err).Fatal("Migration version mismatch")
+		} else if errors.Is(err, migrate.ErrNilVersion) {
+			logger.Debug("No migration, setup required")
 		} else if err != nil {
 			logger.WithError(err).Warn("Failed on schema validation")
 		}
@@ -86,10 +91,17 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
+
+		// parade
+		paradeDB := parade.NewParadeDB(dbPool.Pool())
+		// export handler
+		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
+		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
 		defer func() {
 			// order is important - close cataloger channel before dedup
 			_ = cataloger.Close()
 			_ = dedupCleaner.Close()
+			exportActionManager.Close()
 		}()
 
 		// start API server
@@ -105,6 +117,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			retention,
 			migrator,
+			paradeDB,
 			dedupCleaner,
 			logger.WithField("service", "api_gateway"),
 		)

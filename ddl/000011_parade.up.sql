@@ -1,7 +1,6 @@
 BEGIN;
 
-CREATE SCHEMA IF NOT EXISTS extensions;
-CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public CASCADE;
 
 CREATE TYPE task_status_code_value AS ENUM (
     'pending',          -- waiting for an actor to perform it (new or being retried)
@@ -11,9 +10,9 @@ CREATE TYPE task_status_code_value AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-    id VARCHAR(64) NOT NULL PRIMARY KEY, -- nanoid
+    id VARCHAR NOT NULL PRIMARY KEY, -- nanoid
 
-    action VARCHAR(128) NOT NULL, -- name (type) of action to perform
+    action VARCHAR NOT NULL, -- name (type) of action to perform
     body TEXT,                  -- data used by action
     status TEXT,                -- status text defined by action, visible to action
 
@@ -26,20 +25,20 @@ CREATE TABLE IF NOT EXISTS tasks (
     total_dependencies INTEGER, -- number of tasks that must signal this task
     num_signals INTEGER NOT NULL DEFAULT 0, -- number of tasks that have already signalled this task
 
-    actor_id VARCHAR(64),    -- ID of performing actor if in-progress
+    actor_id VARCHAR,    -- ID of performing actor if in-progress
     action_deadline TIMESTAMPTZ, -- offer this task to other actors once action_deadline has elapsed
     performance_token UUID,
 
     -- BUG(ariels): add REFERENCES dependency to each of the to_signal_after
     --     tasks.  Or at least add triggers that perform ON DELETE
     --     CASCADE.
-    to_signal_after VARCHAR(64) ARRAY, -- IDs to signal after performing this task
-    notify_channel_after VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
+    to_signal_after VARCHAR ARRAY, -- IDs to signal after performing this task
+    notify_channel_after VARCHAR -- (if non-NULL) name of a channel to NOTIFY when this task ends
 );
 
 -- Returns true if task with this id, code and deadline can
 -- be allocated.
-CREATE OR REPLACE FUNCTION can_allocate_task(id VARCHAR(64), code task_status_code_value, deadline TIMESTAMPTZ, num_signals INTEGER, total_dependencies INTEGER)
+CREATE OR REPLACE FUNCTION can_allocate_task(id VARCHAR, code task_status_code_value, deadline TIMESTAMPTZ, num_signals INTEGER, total_dependencies INTEGER)
 RETURNS BOOLEAN
 LANGUAGE sql IMMUTABLE AS $$
     SELECT (code = 'pending' OR (code = 'in-progress' AND deadline < NOW())) AND
@@ -50,15 +49,15 @@ $$;
 -- belonging to `actor_id' and returns their ids and a "performance
 -- token".  Both must be returned to complete the task successfully.
 CREATE OR REPLACE FUNCTION own_tasks(
-    max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
+    max_tasks INTEGER, actions VARCHAR ARRAY, owner_id VARCHAR, max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR(64), token UUID, num_failures INTEGER, action VARCHAR(128), body TEXT)
+RETURNS TABLE(task_id VARCHAR, token UUID, num_failures INTEGER, action VARCHAR, body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
         status_code = 'in-progress',
         num_tries = num_tries + 1,
-        performance_token = extensions.gen_random_uuid(),
+        performance_token = gen_random_uuid(),
         action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
     WHERE id IN (
         SELECT id
@@ -77,7 +76,7 @@ $$;
 -- Extends ownership of task id by an extra max_duration, if it is still locked with performance
 -- token.
 CREATE OR REPLACE FUNCTION extend_task_deadline(
-    task_id VARCHAR(64), token UUID, max_duration INTERVAL
+    task_id VARCHAR, token UUID, max_duration INTERVAL
 ) RETURNS BOOLEAN
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
@@ -95,13 +94,16 @@ $$;
 -- to return a task with the wrong token; that can happen if the
 -- deadline expired and the task was given to another actor.
 CREATE OR REPLACE FUNCTION return_task(
-    task_id VARCHAR(64), token UUID, result_status TEXT, result_status_code task_status_code_value
+    task_id VARCHAR, token UUID, result_status TEXT, result_status_code task_status_code_value
 ) RETURNS INTEGER
 LANGUAGE plpgsql AS $$
 DECLARE
     num_updated INTEGER;
-    channel VARCHAR(64);
-    to_signal VARCHAR(64) ARRAY;
+    channel VARCHAR;
+    to_signal VARCHAR ARRAY;
+
+
+
 BEGIN
     CASE result_status_code
     WHEN 'aborted', 'completed' THEN
@@ -142,8 +144,8 @@ $$;
 
 -- (Utility for delete_task function: remove all dependencies from task ID, returning ids of any
 -- tasks with no remaining dependencies.)
-CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR(64))
-RETURNS SETOF VARCHAR(64)
+CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR)
+RETURNS SETOF VARCHAR
 LANGUAGE sql VOLATILE AS $$
 WITH updates AS (
         SELECT UNNEST(to_signal_after) effect_id,

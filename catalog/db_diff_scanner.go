@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -92,7 +93,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 		Where("branch_id = ? ", params.LeftBranchID).
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("get parent last commit sql: %w", err)
+		return nil, fmt.Errorf("get left branch last commit sql: %w", err)
 	}
 	//var parentLastCommitID CommitID
 	//err = tx.Get(&parentLastCommitID, query, args...)
@@ -101,7 +102,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	//}
 	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("get chaild lineage failed on :%w", err)
+		return nil, fmt.Errorf("get right branch lineage failed on :%w", err)
 	}
 	//if rightLineage[0].CommitID == parentLastCommitID {
 	//	return nil, fmt.Errorf("no commits in parent since last merge :%w", ErrNoDifferenceWasFound)
@@ -113,7 +114,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
 	if len(rightLineage)-len(leftLineage) != 1 {
-		return nil, fmt.Errorf("corrupted lineage definitions:%w", ErrLineageCorrupted)
+		return nil, ErrLineageCorrupted
 	}
 	var minMinCommit = []CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
 	for i := range leftLineage {
@@ -130,6 +131,8 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	scannerOpts.Lineage = leftLineage
 	scannerOpts.minMinCommit = minMinCommit
 	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
+	scannerOpts.Lineage = rightLineage
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	s.childLineage = rightLineage
 	return s, nil
 }
@@ -158,6 +161,8 @@ func (s *DiffScanner) diffSameBranch(tx db.Tx, params doDiffParams, scannerOpts 
 func (s *DiffScanner) Next() bool {
 	for s.leftScanner.Next() {
 		leftEnt := s.leftScanner.Value()
+		// update right scanner additional where part to help the scanner skip to the matched path from left entry
+		s.rightScanner.SetAdditionalWhere(sq.Expr("path >= ?", leftEnt.Path))
 		// get next right entry - scan until we match right path to left (or bigger)
 		err := ScanDBEntriesUntil(s.rightScanner, leftEnt.Path)
 		if err != nil {
