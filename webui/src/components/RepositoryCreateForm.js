@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
@@ -6,17 +6,16 @@ import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {connect} from "react-redux";
+import {getConfig} from "../actions/config";
+
 
 const DEFAULT_BLOCKSTORE_TYPE = "s3";
 
 export const RepositoryCreateForm = connect(
   ({ repositories, config }) => {
     const {create} = repositories;
-    return {
-      create,
-      config: config.config,
-    };
-  })(({ error, onSubmit, onCancel, create, sm = 6, config }) => {
+    return {create, config: config.config};
+  }, {getConfig})(({ error, onSubmit, onCancel, create, config, getConfig, sm = 6 }) => {
     const fieldNameOffset = 3;
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
     const storageNamespaceValidityRegex = /^(s3|gs|mem|local|transient):\/.*$/;
@@ -47,8 +46,12 @@ export const RepositoryCreateForm = connect(
         setFormValid(isBranchValid && storageNamespaceValid && repoValid);
     };
 
-    let blockstoreType = config.payload == null ? DEFAULT_BLOCKSTORE_TYPE : config.payload['blockstore.type']
+    useEffect(() => {
+        getConfig()
+    }, [getConfig]);
 
+    const blockstoreType = config.payload ? config.payload['blockstore.type'] : DEFAULT_BLOCKSTORE_TYPE;
+    const storageNamespaceExample = `e.g. ${blockstoreType}://example-bucket/`;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {
             e.preventDefault();
@@ -76,7 +79,7 @@ export const RepositoryCreateForm = connect(
             <Form.Group as={Row}>
                 <Form.Label column sm={fieldNameOffset}>Storage Namespace</Form.Label>
                     <Col sm={sm}>
-                        <Form.Control type="text" ref={storageNamespaceField} placeholder={`e.g. ${blockstoreType}://example-bucket/`} onChange={checkStorageNamespaceValidity}/>
+                        <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity}/>
                         {!storageNamespaceValid &&
                             <Form.Text className="text-danger">
                                 Invalid Storage Namespace.
