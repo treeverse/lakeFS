@@ -98,8 +98,8 @@ func init() {
 	exportCmd.AddCommand(exportSetCmd)
 	exportCmd.AddCommand(exportExecuteCmd)
 
-	exportSetCmd.Flags().String("export-path", "", "export objects to this path")
-	exportSetCmd.Flags().String("export-status-path", "", "write export status object to this path")
+	exportSetCmd.Flags().String("path", "", "export objects to this path")
+	exportSetCmd.Flags().String("status-path", "", "write export status object to this path")
 	exportSetCmd.Flags().StringArray("prefix-regex", nil, "list of regexps of keys to exported last in each prefix (for signalling)")
-	exportSetCmd.MarkFlagRequired("export-path")
+	_ = exportSetCmd.MarkFlagRequired("path")
 }
