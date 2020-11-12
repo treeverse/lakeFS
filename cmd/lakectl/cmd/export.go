@@ -25,11 +25,11 @@ var exportSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		exportPath, err := cmd.Flags().GetString("export-path")
+		exportPath, err := cmd.Flags().GetString("path")
 		if err != nil {
 			DieErr(err)
 		}
-		exportStatusPath, err := cmd.Flags().GetString("export-status-path")
+		exportStatusPath, err := cmd.Flags().GetString("status-path")
 		if err != nil {
 			DieErr(err)
 		}
@@ -98,7 +98,8 @@ func init() {
 	exportCmd.AddCommand(exportSetCmd)
 	exportCmd.AddCommand(exportExecuteCmd)
 
-	exportSetCmd.Flags().String("export-path", "", "export objects to this path")
-	exportSetCmd.Flags().String("export-status-path", "", "write export status object to this path")
+	exportSetCmd.Flags().String("path", "", "export objects to this path")
+	exportSetCmd.Flags().String("status-path", "", "write export status object to this path")
 	exportSetCmd.Flags().StringArray("prefix-regex", nil, "list of regexps of keys to exported last in each prefix (for signalling)")
+	_ = exportSetCmd.MarkFlagRequired("path")
 }
