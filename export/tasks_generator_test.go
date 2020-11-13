@@ -209,7 +209,7 @@ var zero int = 0
 var one int = 1
 
 func TestTasksGenerator_Empty(t *testing.T) {
-	gen := export.NewTasksGenerator("empty", "testfs://prefix/", func(_ string) bool { return true }, nil)
+	gen := export.NewTasksGenerator("empty", "testfs://prefix/", func(_ string) bool { return true }, nil, "")
 
 	tasks, err := gen.Finish()
 	if err != nil {
@@ -260,10 +260,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 		Type:  catalog.DifferenceTypeRemoved,
 		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "remove1"},
 	}}
-	gen := export.NewTasksGenerator(
-		"simple",
-		"testfs://prefix/",
-		func(_ string) bool { return false }, nil)
+	gen := export.NewTasksGenerator("simple", "testfs://prefix/", func(_ string) bool { return false }, nil, "")
 	tasksWithIDs, err := gen.Add(catalogDiffs)
 	if err != nil {
 		t.Fatalf("failed to add tasks: %s", err)
@@ -383,12 +380,7 @@ func TestTasksGenerator_SuccessFiles(t *testing.T) {
 		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:make-success:a/plain", avoid: true},
 		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:finish"},
 	}
-	gen := export.NewTasksGenerator(
-		"foo",
-		"testfs://prefix/",
-		func(path string) bool { return strings.HasSuffix(path, "success") },
-		nil,
-	)
+	gen := export.NewTasksGenerator("foo", "testfs://prefix/", func(path string) bool { return strings.HasSuffix(path, "success") }, nil, "")
 
 	tasksWithIDs := make([]parade.TaskData, 0, len(catalogDiffs))
 
