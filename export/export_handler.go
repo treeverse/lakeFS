@@ -39,14 +39,20 @@ type TaskBody struct {
 	SourceID             string
 }
 
+func removeLeadingSlash(path string) string {
+	if len(path) > 0 && path[0] == '/' {
+		return path[1:]
+	}
+	return path
+}
 func PathToPointer(path string) (block.ObjectPointer, error) {
 	u, err := url.Parse(path) // TODO(guys): add verify path on create task
 	if err != nil {
 		return block.ObjectPointer{}, err
 	}
 	return block.ObjectPointer{
-		StorageNamespace: fmt.Sprintf("%s://%s", u.Scheme, u.Host),
-		Identifier:       u.Path,
+		StorageNamespace: fmt.Sprintf("%s://%s/", u.Scheme, u.Host),
+		Identifier:       removeLeadingSlash(u.Path),
 	}, err
 }
 
@@ -61,11 +67,15 @@ func (h *Handler) start(body *string) error {
 	if err != nil {
 		return err
 	}
-	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr)
+	repo, err := h.cataloger.GetRepository(context.Background(), startData.Repo)
+	if err != nil {
+		return err
+	}
+	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr, repo.StorageNamespace)
 }
 
-func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string) error {
-	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr)
+func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string, storageNamespace string) error {
+	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr, storageNamespace)
 	var diffs catalog.Differences
 	var err error
 	var hasMore bool
@@ -221,18 +231,19 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 	if err != nil {
 		return err
 	}
-
 	status, msg := getStatus(signalledErrors)
-	fileName := fmt.Sprintf("%s-%s-%s", finishData.Repo, finishData.Branch, finishData.CommitRef)
-	path, err := PathToPointer(fmt.Sprintf("%s/%s", finishData.StatusPath, fileName))
-	if err != nil {
-		return err
-	}
-	data := fmt.Sprintf("status: %s, signalled_errors: %d\n", status, signalledErrors)
-	reader := strings.NewReader(data)
-	err = h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
-	if err != nil {
-		return err
+	if len(finishData.StatusPath) > 0 {
+		fileName := fmt.Sprintf("%s-%s-%s", finishData.Repo, finishData.Branch, finishData.CommitRef)
+		path, err := PathToPointer(fmt.Sprintf("%s/%s", finishData.StatusPath, fileName))
+		if err != nil {
+			return err
+		}
+		data := fmt.Sprintf("status: %s, signalled_errors: %d\n", status, signalledErrors)
+		reader := strings.NewReader(data)
+		err = h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
+		if err != nil {
+			return err
+		}
 	}
 	return ExportBranchDone(h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
 }
