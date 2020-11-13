@@ -16,12 +16,12 @@ import (
 func TestCopy(t *testing.T) {
 	adapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, mem.BlockstoreType)
 	sourcePointer := block.ObjectPointer{
-		StorageNamespace: "mem://lakeFS-bucket",
-		Identifier:       "/one/two",
+		StorageNamespace: "mem://lakeFS-bucket/",
+		Identifier:       "one/two",
 	}
 	destinationPointer := block.ObjectPointer{
-		StorageNamespace: "mem://external-bucket",
-		Identifier:       "/one/two",
+		StorageNamespace: "mem://external-bucket/",
+		Identifier:       "one/two",
 	}
 	from := sourcePointer.StorageNamespace + sourcePointer.Identifier
 	to := destinationPointer.StorageNamespace + destinationPointer.Identifier
@@ -70,8 +70,8 @@ func TestDelete(t *testing.T) {
 	adapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, mem.BlockstoreType)
 
 	destinationPointer := block.ObjectPointer{
-		StorageNamespace: "mem://external-bucket",
-		Identifier:       "/one/two",
+		StorageNamespace: "mem://external-bucket/",
+		Identifier:       "one/two",
 	}
 	path := destinationPointer.StorageNamespace + destinationPointer.Identifier
 
@@ -108,8 +108,8 @@ func TestDelete(t *testing.T) {
 func TestTouch(t *testing.T) {
 	adapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, mem.BlockstoreType)
 	destinationPointer := block.ObjectPointer{
-		StorageNamespace: "mem://external-bucket",
-		Identifier:       "/one/two",
+		StorageNamespace: "mem://external-bucket/",
+		Identifier:       "one/two",
 	}
 	path := destinationPointer.StorageNamespace + destinationPointer.Identifier
 

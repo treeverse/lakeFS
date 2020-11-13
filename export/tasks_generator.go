@@ -222,12 +222,12 @@ func (s *SuccessTasksTreeGenerator) GenerateTasksTo(tasks []parade.TaskData) []p
 
 // makeDiffTaskBody fills TaskData *out with id, action and a body to make it a task to
 // perform diff.
-func makeDiffTaskBody(out *parade.TaskData, idGen TaskIDGenerator, diff catalog.Difference, makeDestination func(string) string) error {
+func makeDiffTaskBody(out *parade.TaskData, idGen TaskIDGenerator, diff catalog.Difference, makeDestination func(string) string, makeSource func(string) string) error {
 	var data interface{}
 	switch diff.Type {
 	case catalog.DifferenceTypeAdded, catalog.DifferenceTypeChanged:
 		data = CopyData{
-			From: diff.PhysicalAddress,
+			From: makeSource(diff.PhysicalAddress),
 			To:   makeDestination(diff.Path),
 		}
 		out.ID = idGen.CopyTaskID(diff.Path)
@@ -252,11 +252,11 @@ func makeDiffTaskBody(out *parade.TaskData, idGen TaskIDGenerator, diff catalog.
 
 // TasksGenerator generates tasks from diffs iteratively.
 type TasksGenerator struct {
-	ExportID           string
-	DstPrefix          string
-	GenerateSuccessFor func(path string) bool
-	NumTries           int
-
+	ExportID              string
+	DstPrefix             string
+	GenerateSuccessFor    func(path string) bool
+	NumTries              int
+	makeSource            func(string) string
 	makeDestination       func(string) string
 	idGen                 TaskIDGenerator
 	successTasksGenerator SuccessTasksTreeGenerator
@@ -294,9 +294,13 @@ func GetStartTasks(repo, branch, fromCommitRef, toCommitRef, exportID string, co
 // NewTasksGenerator returns a generator that exports tasks from diffs to file operations under
 // dstPrefix.  It generates success files for files in directories matched by
 // "generateSuccessFor".
-func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor func(path string) bool, finishBody *string) *TasksGenerator {
+func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor func(path string) bool, finishBody *string, storageNamespace string) *TasksGenerator {
 	const numTries = 5
 	dstPrefix = strings.TrimRight(dstPrefix, "/")
+	storageNamespace = strings.TrimRight(storageNamespace, "/")
+	makeSource := func(path string) string {
+		return fmt.Sprintf("%s/%s", storageNamespace, path)
+	}
 	makeDestination := func(path string) string {
 		return fmt.Sprintf("%s/%s", dstPrefix, path)
 	}
@@ -307,6 +311,7 @@ func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor fun
 		GenerateSuccessFor:    generateSuccessFor,
 		NumTries:              numTries,
 		makeDestination:       makeDestination,
+		makeSource:            makeSource,
 		idGen:                 TaskIDGenerator(exportID),
 		successTasksGenerator: NewSuccessTasksTreeGenerator(exportID, generateSuccessFor, makeDestination, finishBody),
 	}
@@ -332,7 +337,7 @@ func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, erro
 			MaxTries:          &e.NumTries,
 			TotalDependencies: &zero, // Depends only on a start task
 		}
-		err := makeDiffTaskBody(&task, e.idGen, diff, e.makeDestination)
+		err := makeDiffTaskBody(&task, e.idGen, diff, e.makeDestination, e.makeSource)
 		if err != nil {
 			return ret, err
 		}
