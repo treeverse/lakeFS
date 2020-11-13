@@ -39,12 +39,6 @@ type TaskBody struct {
 	SourceID             string
 }
 
-func removeLeadingSlash(path string) string {
-	if len(path) > 0 && path[0] == '/' {
-		return path[1:]
-	}
-	return path
-}
 func PathToPointer(path string) (block.ObjectPointer, error) {
 	u, err := url.Parse(path) // TODO(guys): add verify path on create task
 	if err != nil {
@@ -52,7 +46,7 @@ func PathToPointer(path string) (block.ObjectPointer, error) {
 	}
 	return block.ObjectPointer{
 		StorageNamespace: fmt.Sprintf("%s://%s/", u.Scheme, u.Host),
-		Identifier:       removeLeadingSlash(u.Path),
+		Identifier:       strings.TrimPrefix(u.Path, "/"),
 	}, err
 }
 
@@ -225,6 +219,21 @@ func getStatus(signalledErrors int) (catalog.CatalogBranchExportStatus, *string)
 	}
 	return catalog.ExportStatusSuccess, nil
 }
+
+func (h *Handler) updateStatus(finishData FinishData, status catalog.CatalogBranchExportStatus, signalledErrors int) error {
+	if finishData.StatusPath == "" {
+		return nil
+	}
+	fileName := fmt.Sprintf("%s-%s-%s", finishData.Repo, finishData.Branch, finishData.CommitRef)
+	path, err := PathToPointer(fmt.Sprintf("%s/%s", finishData.StatusPath, fileName))
+	if err != nil {
+		return err
+	}
+	data := fmt.Sprintf("status: %s, signalled_errors: %d\n", status, signalledErrors)
+	reader := strings.NewReader(data)
+	return h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
+}
+
 func (h *Handler) done(body *string, signalledErrors int) error {
 	var finishData FinishData
 	err := json.Unmarshal([]byte(*body), &finishData)
@@ -232,18 +241,9 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 		return err
 	}
 	status, msg := getStatus(signalledErrors)
-	if len(finishData.StatusPath) > 0 {
-		fileName := fmt.Sprintf("%s-%s-%s", finishData.Repo, finishData.Branch, finishData.CommitRef)
-		path, err := PathToPointer(fmt.Sprintf("%s/%s", finishData.StatusPath, fileName))
-		if err != nil {
-			return err
-		}
-		data := fmt.Sprintf("status: %s, signalled_errors: %d\n", status, signalledErrors)
-		reader := strings.NewReader(data)
-		err = h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
-		if err != nil {
-			return err
-		}
+	err = h.updateStatus(finishData, status, signalledErrors)
+	if err != nil {
+		return err
 	}
 	return ExportBranchDone(h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
 }
