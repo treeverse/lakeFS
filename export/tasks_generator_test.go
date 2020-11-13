@@ -260,7 +260,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 		Type:  catalog.DifferenceTypeRemoved,
 		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "remove1"},
 	}}
-	gen := export.NewTasksGenerator("simple", "testfs://prefix/", func(_ string) bool { return false }, nil, "")
+	gen := export.NewTasksGenerator("simple", "testfs://prefix/", func(_ string) bool { return false }, nil, "testsrc://prefix/")
 	tasksWithIDs, err := gen.Add(catalogDiffs)
 	if err != nil {
 		t.Fatalf("failed to add tasks: %s", err)
@@ -279,7 +279,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			ID:     idGen.CopyTaskID("add1"),
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
-				From: "add1",
+				From: "testsrc://prefix/add1",
 				To:   "testfs://prefix/add1",
 			}),
 			StatusCode:        parade.TaskPending,
@@ -290,7 +290,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 			ID:     idGen.CopyTaskID("change1"),
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
-				From: "change1",
+				From: "testsrc://prefix/change1",
 				To:   "testfs://prefix/change1",
 			}),
 			StatusCode:        parade.TaskPending,
