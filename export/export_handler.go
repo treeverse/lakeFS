@@ -45,8 +45,8 @@ func PathToPointer(path string) (block.ObjectPointer, error) {
 		return block.ObjectPointer{}, err
 	}
 	return block.ObjectPointer{
-		StorageNamespace: fmt.Sprintf("%s://%s", u.Scheme, u.Host),
-		Identifier:       u.Path,
+		StorageNamespace: fmt.Sprintf("%s://%s/", u.Scheme, u.Host),
+		Identifier:       strings.TrimPrefix(u.Path, "/"),
 	}, err
 }
 
@@ -61,11 +61,15 @@ func (h *Handler) start(body *string) error {
 	if err != nil {
 		return err
 	}
-	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr)
+	repo, err := h.cataloger.GetRepository(context.Background(), startData.Repo)
+	if err != nil {
+		return err
+	}
+	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr, repo.StorageNamespace)
 }
 
-func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string) error {
-	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr)
+func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string, storageNamespace string) error {
+	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr, storageNamespace)
 	var diffs catalog.Differences
 	var err error
 	var hasMore bool
@@ -215,14 +219,11 @@ func getStatus(signalledErrors int) (catalog.CatalogBranchExportStatus, *string)
 	}
 	return catalog.ExportStatusSuccess, nil
 }
-func (h *Handler) done(body *string, signalledErrors int) error {
-	var finishData FinishData
-	err := json.Unmarshal([]byte(*body), &finishData)
-	if err != nil {
-		return err
-	}
 
-	status, msg := getStatus(signalledErrors)
+func (h *Handler) updateStatus(finishData FinishData, status catalog.CatalogBranchExportStatus, signalledErrors int) error {
+	if finishData.StatusPath == "" {
+		return nil
+	}
 	fileName := fmt.Sprintf("%s-%s-%s", finishData.Repo, finishData.Branch, finishData.CommitRef)
 	path, err := PathToPointer(fmt.Sprintf("%s/%s", finishData.StatusPath, fileName))
 	if err != nil {
@@ -230,7 +231,17 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 	}
 	data := fmt.Sprintf("status: %s, signalled_errors: %d\n", status, signalledErrors)
 	reader := strings.NewReader(data)
-	err = h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
+	return h.adapter.Put(path, reader.Size(), reader, block.PutOpts{})
+}
+
+func (h *Handler) done(body *string, signalledErrors int) error {
+	var finishData FinishData
+	err := json.Unmarshal([]byte(*body), &finishData)
+	if err != nil {
+		return err
+	}
+	status, msg := getStatus(signalledErrors)
+	err = h.updateStatus(finishData, status, signalledErrors)
 	if err != nil {
 		return err
 	}
