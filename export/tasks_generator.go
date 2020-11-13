@@ -297,8 +297,9 @@ func GetStartTasks(repo, branch, fromCommitRef, toCommitRef, exportID string, co
 func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor func(path string) bool, finishBody *string, storageNamespace string) *TasksGenerator {
 	const numTries = 5
 	dstPrefix = strings.TrimRight(dstPrefix, "/")
+	storageNamespace = strings.TrimRight(storageNamespace, "/")
 	makeSource := func(path string) string {
-		return storageNamespace + path
+		return fmt.Sprintf("%s/%s", storageNamespace, path)
 	}
 	makeDestination := func(path string) string {
 		return fmt.Sprintf("%s/%s", dstPrefix, path)
