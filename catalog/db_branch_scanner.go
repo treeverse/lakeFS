@@ -76,7 +76,6 @@ func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID, minMinCommi
 		// anyway - there is no commit id -1
 	}
 	if len(commits) <= BranchScannerMaxCommitsInFilter {
-		//commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
 		minCommitsWhere := "min_commit in (" + strings.Join(commits, `,`) + ")"
 		commits = append(commits, strconv.FormatInt(int64(minMinCommit), 10)) // add the minimal commit, because if it appears in a max_commit, It is a change
 		maxCommitWhere := "max_commit in (" + strings.Join(commits, `,`) + ")"
