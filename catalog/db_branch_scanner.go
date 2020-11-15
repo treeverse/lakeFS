@@ -69,7 +69,7 @@ func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
 	}
 	if len(commits) == 0 {
 		// this will actually never happen, since each branch has an initial branch
-		commits = []int64{int64(CommittedID)}
+		commits = []int64{0}
 	}
 
 	var wherePart sq.Sqlizer
@@ -80,10 +80,10 @@ func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
 		}, nil
 	}
 
-	lastCommitID := commits[len(commits)-1]
+	upperCommitID := commits[len(commits)-1]
 	wherePart = sq.Or{
-		sq.Expr("min_commit BETWEEN ? AND ?", s.minCommitID+1, lastCommitID),
-		sq.Expr("max_commit BETWEEN ? AND ?", s.minCommitID, lastCommitID),
+		sq.Expr("min_commit BETWEEN ? AND ?", s.minCommitID+1, upperCommitID),
+		sq.Expr("max_commit BETWEEN ? AND ?", s.minCommitID, upperCommitID),
 	}
 	return wherePart, nil
 }
