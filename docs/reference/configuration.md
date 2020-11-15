@@ -47,6 +47,10 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.credentials.access_key_id` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.access_secret_key` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
+* `blockstore.s3.endpoint` `(string : )` - If specified, custom endpoint for the AWS S3 API (https://s3_compatible_service_endpoint:port)
+* `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
+    #force_path_style: true
+
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to S3 (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.retention.role_arn` - ARN of IAM role to use to
   perform AWS S3 Batch tagging operations.  This role must be
@@ -163,6 +167,38 @@ blockstore:
   type: gs
   gs:
     credentials_file: /secrets/lakefs-service-account.json
+
+gateways:
+  s3:
+    domain_name: s3.my-company.com
+    region: us-east-1
+```
+
+## Example: MinIO
+
+```yaml
+---
+logging:
+  format: json
+  level: WARN
+  output: "-"
+
+database:
+  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+
+auth:
+  encrypt:
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+
+blockstore:
+  type: s3
+  s3:
+    region: us-east-1
+    force_path_style: true
+    endpoint: http://localhost:9000
+    credentials:
+      access_key_id: minioadmin
+      access_secret_key: minioadmin
 
 gateways:
   s3:
