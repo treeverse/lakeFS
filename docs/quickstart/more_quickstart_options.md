@@ -1,13 +1,15 @@
 ---
 layout: default
-title: Other Installations
+title: More Quickstart Options
 parent: Quick Start
 nav_order: 50
 has_children: false
 ---
 
-# Other Installation Options
+# More Quickstart Options
 {: .no_toc}
+
+{% include learn_only.html %} 
 
 ## Table of Contents
 {: .no_toc .text-delta }
@@ -40,7 +42,7 @@ helm repo add lakefs https://charts.lakefs.io
 helm install my-lakefs lakefs/lakefs
 ```
 
-## Manual Installation 
+## Using the Binary 
 
 Alternatively, you may opt to run the lakefs binary directly on your computer.
 
