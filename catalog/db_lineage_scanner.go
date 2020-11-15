@@ -117,15 +117,11 @@ func (s *DBLineageScanner) buildScanners() {
 		return
 	}
 	s.scanners = make([]*DBBranchScanner, len(lineage)+1)
+	// use min commits or allocate default
 	minCommits := s.opts.MinCommits
 	if minCommits == nil {
-		// initialize min commits
 		minCommits = make([]CommitID, len(s.scanners))
-		for i := 0; i < len(minCommits); i++ {
-			minCommits[i] = 1
-		}
 	} else if len(minCommits) != len(s.scanners) {
-		// size doesn't match
 		s.err = ErrMinCommitsMismatch
 	}
 	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, minCommits[0], s.opts.DBScannerOptions)
