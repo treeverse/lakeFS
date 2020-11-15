@@ -78,6 +78,9 @@ jobs:
     name: Run latest lakeFS app
     needs: deploy-image
     runs-on: ubuntu-latest
+    env:
+      LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+      LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
