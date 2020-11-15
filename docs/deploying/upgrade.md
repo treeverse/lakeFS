@@ -26,7 +26,7 @@ Note that an older version of lakeFS cannot run on a migrated database.
 Rolling back to a previous version will require migrating down, using the command:
 
 ```bash
-lakefs migrate goto <number>
+lakefs migrate goto --version <number>
 ```
 
 The <number> depends on the older verison of lakeFS, running the following will print out the available version required to rollback to.
