@@ -29,4 +29,8 @@ Rolling back to a previous version will require migrating down, using the comman
 lakefs migrate goto <number>
 ```
 
-The <number> depends on the verison of lakeFS you roll back.
+The <number> depends on the older verison of lakeFS, running the following will print out the available version required to rollback to.
+
+```bash
+lakefs migrate version
+```
