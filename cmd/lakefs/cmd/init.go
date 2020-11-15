@@ -31,7 +31,11 @@ var initCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		userName, _ := cmd.Flags().GetString("user-name")
+		userName, err := cmd.Flags().GetString("user-name")
+		if err != nil {
+			fmt.Printf("user-name: %s\n", err)
+			os.Exit(1)
+		}
 
 		authService := auth.NewDBAuthService(
 			dbPool,
@@ -64,6 +68,7 @@ var initCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	f := initCmd.Flags()
+	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	_ = initCmd.MarkFlagRequired("user-name")
 }
