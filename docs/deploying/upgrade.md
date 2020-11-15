@@ -9,7 +9,7 @@ has_children: false
 # Upgrade lakeFS
 {: .no_toc }
 Upgrade lakeFS from previous version usually require just downloading the latest release or deploy the latest version.
-There are cases where lakeFS database will require a migrate - check the [releases](https://github.com/treeverse/lakeFS/releases) you are upgrade from, if any requires that.
+There are cases where the database will require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases) you are upgrading to requires that.
 
 # Migrating
 
@@ -30,4 +30,3 @@ lakefs migrate goto <number>
 ```
 
 The <number> depends on the verison of lakeFS you roll back.
-
