@@ -1,6 +1,7 @@
 package nessie
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -21,10 +22,11 @@ const (
 )
 
 func TestSuperuserWithPassedCreds(t *testing.T) {
-	ctx, _, _ := setupTest(t)
+	ctx, log, _ := setupTest(t)
 
 	cfg := config.NewConfig()
 	dbParams := cfg.GetDatabaseParams()
+	log.WithField("db_config", fmt.Sprintf("%q", dbParams)).Info("connect to DB")
 	pool := db.BuildDatabaseConnection(dbParams)
 
 	viper.SetEnvPrefix("LAKEFS") // Fetch lakeFS envariables in config
