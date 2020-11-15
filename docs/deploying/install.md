@@ -22,22 +22,22 @@ lakeFS can be easily installed on Kubernetes using a [Helm chart](https://github
 To install lakeFS with Helm:
 1. Create a `conf-values.yaml` file, replacing values as described in the comments:
  
-     ```yaml
-     secrets:
-         # replace this with the connection string of the database you created in a previous step:
-         databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
-         # replace this with a randomly-generated string
-         authEncryptSecretKey: <some random string>
-     lakefsConfig: |
-       blockstore:
-         type: s3
-         s3:
-           region: us-east-1
-       gateways:
-         s3:
-           # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-           domain_name: s3.lakefs.example.com
-     ```
+    ```yaml
+   secrets:
+     # replace this with the connection string of the database you created in a previous step:
+     databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
+     # replace this with a randomly-generated string
+     authEncryptSecretKey: <some random string>
+   lakefsConfig: |
+     blockstore:
+       type: s3
+       s3:
+         region: us-east-1
+     gateways:
+       s3:
+         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
+         domain_name: s3.lakefs.example.com
+    ```
    
     See [below](#configurations) for more configuration options. The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html), but without sensitive information.
     Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject them into Kubernetes secrets.

@@ -9,14 +9,12 @@ has_children: false
 # Installing lakeFS
 {: .no_toc }
 
-**Note** This section is for learning purposes. The installations below will not persist your data.
-For a production suitable deployment, see [Deploying on AWS](../deploying/index.md).
-{: .note }
+{% include learn_only.html %} 
 
 ## Using docker-compose
 {: .no_toc }
 
-If you wish to install your lakeFS using Kubernetes, install it manually, or install it on Windows, check out [Other Installations](other_installations.md) page.
+Other quickstart methods can be found [here](more_quickstart_options.md).
 {: .note .note-info }
 
 To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank"}:
