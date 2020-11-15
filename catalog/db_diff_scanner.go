@@ -86,36 +86,38 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	}
 	err = tx.Get(&s.childLastFromParentCommitID, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("get child last commit failed: %w", err)
+		return nil, fmt.Errorf("get child last commit: %w", err)
 	}
 	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("get right branch lineage failed on :%w", err)
+		return nil, fmt.Errorf("get right branch lineage: %w", err)
 	}
 	leftLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("get parent last commit failed: %w", err)
+		return nil, fmt.Errorf("get left branch lineage: %w", err)
 	}
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
-	if len(rightLineage)-len(leftLineage) != 1 {
+	if len(rightLineage)-len(leftLineage) != 1 || len(rightLineage) == 0 {
 		return nil, ErrLineageCorrupted
 	}
-	var minMinCommit = []CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
+	minMinCommit := []CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
 	for i := range leftLineage {
 		if leftLineage[i].CommitID == rightLineage[i+1].CommitID {
 			leftLineage = leftLineage[:i]
 			break
-		} else {
-			minMinCommit = append(minMinCommit, rightLineage[i+1].CommitID)
 		}
+		minMinCommit = append(minMinCommit, rightLineage[i+1].CommitID)
 	}
+
 	rightOpts := scannerOpts
 	rightOpts.Lineage = rightLineage
 	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, rightOpts)
-	scannerOpts.Lineage = leftLineage
-	scannerOpts.minMinCommit = minMinCommit
-	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, scannerOpts)
+
+	leftOpts := scannerOpts
+	leftOpts.Lineage = leftLineage
+	leftOpts.MinCommits = minMinCommit
+	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, leftOpts)
 	return s, nil
 }
 
