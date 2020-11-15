@@ -13,7 +13,7 @@ There are cases where lakeFS database will require a migrate - check the [releas
 
 # Migrating
 
-In case migration is required, stop the running lakeFS service.
+In case a migration is required, first stop the running lakeFS service.
 Using the new lakeFS version, run the following:
 
 ```bash
@@ -30,5 +30,4 @@ lakefs migrate goto <number>
 ```
 
 The <number> depends on the verison of lakeFS you roll back.
-
 
