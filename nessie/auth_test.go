@@ -27,6 +27,7 @@ func TestSuperuserWithPassedCreds(t *testing.T) {
 	dbParams := cfg.GetDatabaseParams()
 	pool := db.BuildDatabaseConnection(dbParams)
 
+	viper.SetEnvPrefix("LAKEFS") // Fetch lakeFS envariables in config
 	authService := auth.NewDBAuthService(
 		pool,
 		crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
