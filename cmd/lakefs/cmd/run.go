@@ -57,7 +57,7 @@ var runCmd = &cobra.Command{
 		dbParams := cfg.GetDatabaseParams()
 
 		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
-			logger.WithError(err).Fatal("Migration version mismatch")
+			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
 		} else if errors.Is(err, migrate.ErrNilVersion) {
 			logger.Debug("No migration, setup required")
 		} else if err != nil {
