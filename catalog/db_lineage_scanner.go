@@ -121,6 +121,9 @@ func (s *DBLineageScanner) buildScanners() {
 	minCommits := s.opts.MinCommits
 	if minCommits == nil {
 		minCommits = make([]CommitID, len(s.scanners))
+		for i := 0; i < len(minCommits); i++ {
+			minCommits[i] = 1
+		}
 	} else if len(minCommits) != len(s.scanners) {
 		s.err = ErrMinCommitsMismatch
 	}

@@ -69,7 +69,7 @@ func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
 	}
 	if len(commits) == 0 {
 		// this will actually never happen, since each branch has an initial branch
-		commits = []int64{0}
+		commits = []int64{1}
 	}
 
 	var wherePart sq.Sqlizer
