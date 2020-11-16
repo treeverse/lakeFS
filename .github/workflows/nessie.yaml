@@ -140,11 +140,25 @@ jobs:
         run: |
             cd nessie/ops
             docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
+      - name: Run lakeFS S3 to use with local API key
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          # Setting Account_ID as a secret as a way to avoid specifying it here
+          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          docker-compose -f nessie/ops/docker-compose.yaml down -v
+          docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie S3 with local API key
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
         run: go test -v ./nessie --system-tests --use-local-credentials
-      - name: Run Nessie GS
+      - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
