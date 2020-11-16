@@ -140,7 +140,11 @@ jobs:
         run: |
             cd nessie/ops
             docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
-      - name: Run lakeFS GS
+      - name: Run Nessie S3 with local API key
+        env:
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
+        run: go test -v ./nessie --system-tests --use-local-credentials
+      - name: Run Nessie GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here

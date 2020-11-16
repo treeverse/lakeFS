@@ -246,10 +246,18 @@ func AddAdminUser(authService Service, user *model.SuperuserConfiguration) (*mod
 }
 
 func CreateInitialAdminUser(authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
+	return CreateInitialAdminUserWithKeys(authService, metadataManger, username, nil, nil)
+}
+
+func CreateInitialAdminUserWithKeys(authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{User: model.User{
 		CreatedAt: time.Now(),
 		Username:  username,
 	}}
+	if accessKeyID != nil && secretAccessKey != nil {
+		adminUser.AccessKeyID = *accessKeyID
+		adminUser.SecretAccessKey = *secretAccessKey
+	}
 	// create first admin user
 	cred, err := SetupAdminUser(authService, adminUser)
 	if err != nil {
