@@ -1,9 +1,6 @@
 package catalog
 
 import (
-	"strconv"
-	"strings"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
@@ -18,7 +15,8 @@ type DBBranchScanner struct {
 	tx           db.Tx
 	branchID     int64
 	commitID     CommitID
-	commitsWhere string
+	minCommitID  CommitID
+	commitsWhere sq.Sqlizer
 	buf          []*DBScannerEntry
 	idx          int
 	after        string
@@ -27,22 +25,21 @@ type DBBranchScanner struct {
 	value        *DBScannerEntry
 }
 
-func NewDBBranchScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBScannerOptions) *DBBranchScanner {
+func NewDBBranchScanner(tx db.Tx, branchID int64, commitID, minCommitID CommitID, opts DBScannerOptions) *DBBranchScanner {
 	s := &DBBranchScanner{
-		tx:       tx,
-		branchID: branchID,
-		idx:      0,
-		commitID: commitID,
-		opts:     opts,
-		after:    opts.After,
+		tx:          tx,
+		branchID:    branchID,
+		idx:         0,
+		commitID:    commitID,
+		minCommitID: minCommitID,
+		opts:        opts,
+		after:       opts.After,
 	}
 	if s.opts.BufferSize == 0 {
 		s.opts.BufferSize = DBScannerDefaultBufferSize
 	}
 	s.buf = make([]*DBScannerEntry, 0, s.opts.BufferSize)
-	commitsWhere, err := getRelevantCommitsCondition(tx, branchID, commitID)
-	s.err = err
-	s.commitsWhere = commitsWhere
+	s.commitsWhere, s.err = s.buildCommitsWherePart()
 	return s
 }
 
@@ -50,37 +47,46 @@ func (s *DBBranchScanner) SetAdditionalWhere(part sq.Sqlizer) {
 	s.opts.AdditionalWhere = part
 }
 
-func getRelevantCommitsCondition(tx db.Tx, branchID int64, commitID CommitID) (string, error) {
-	var branchMaxCommitID CommitID
-	var commits []string
-	var commitsWhere string
-	if commitID == UncommittedID {
-		return "", nil
+func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
+	if s.commitID == UncommittedID {
+		return nil, nil
 	}
-	if commitID == UncommittedID || commitID == CommittedID {
+	var branchMaxCommitID CommitID
+	if s.commitID == CommittedID {
 		branchMaxCommitID = MaxCommitID
 	} else {
-		branchMaxCommitID = commitID
+		branchMaxCommitID = s.commitID
 	}
 	// commit_id name is changed so that sorting will be performed on the numeric value, not the string value (where "10" is less than "2")
-	sql := "SELECT commit_id::text as str_commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id <= $2 ORDER BY commit_id limit $3"
-	err := tx.Select(&commits, sql, branchID, branchMaxCommitID, BranchScannerMaxCommitsInFilter+1)
+	var commits []int64
+	err := s.tx.Select(&commits,
+		`SELECT commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id BETWEEN $2 AND $3 ORDER BY commit_id LIMIT $4`,
+		s.branchID, s.minCommitID+1, branchMaxCommitID, BranchScannerMaxCommitsInFilter+1)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if commitID == UncommittedID {
-		commits = append(commits, strconv.FormatInt(int64(MaxCommitID), 10))
+	if s.commitID == UncommittedID {
+		commits = append(commits, int64(MaxCommitID))
 	}
 	if len(commits) == 0 {
-		commits = append(commits, "-1") // this will actually never happen, since each branch has an initial branch
-		// anyway - there is no commit id -1
+		// this will actually never happen, since each branch has an initial branch
+		commits = []int64{1}
 	}
+
+	var wherePart sq.Sqlizer
 	if len(commits) <= BranchScannerMaxCommitsInFilter {
-		commitsWhere = "min_commit in (" + strings.Join(commits, `,`) + ")"
-	} else {
-		commitsWhere = "min_commit BETWEEN 1 AND " + commits[len(commits)-1]
+		return sq.Or{
+			sq.Eq{"min_commit": commits},
+			sq.Eq{"max_commit": append(commits, int64(s.minCommitID))},
+		}, nil
 	}
-	return commitsWhere, nil
+
+	upperCommitID := commits[len(commits)-1]
+	wherePart = sq.Or{
+		sq.Expr("min_commit BETWEEN ? AND ?", s.minCommitID+1, upperCommitID),
+		sq.Expr("max_commit BETWEEN ? AND ?", s.minCommitID, upperCommitID),
+	}
+	return wherePart, nil
 }
 
 func (s *DBBranchScanner) Next() bool {
@@ -159,7 +165,7 @@ func (s *DBBranchScanner) buildQuery() sq.SelectBuilder {
 	if s.after != "" {
 		q = q.Where("path > ?", s.after)
 	}
-	if s.commitsWhere != "" {
+	if s.commitsWhere != nil {
 		q = q.Where(s.commitsWhere)
 	}
 	if len(s.opts.AdditionalFields) > 0 {
