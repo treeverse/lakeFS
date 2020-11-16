@@ -19,12 +19,22 @@ var (
 
 func TestMain(m *testing.M) {
 	systemTests := flag.Bool("system-tests", false, "Run system tests")
+	useLocalCredentials := flag.Bool("use-local-credentials", false, "Generate local API key during `lakefs setup'")
+
 	flag.Parse()
 	if !*systemTests {
 		os.Exit(0)
 	}
 
-	logger, client, svc = testutil.SetupTestingEnv("nessie", "nessie-system-testing")
+	params := testutil.SetupTestingEnvParams{
+		Name:      "nessie",
+		StorageNS: "nessie-system-testing",
+	}
+	if *useLocalCredentials {
+		params.AdminAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
+		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	}
+	logger, client, svc = testutil.SetupTestingEnv(&params)
 	logger.Info("Setup succeeded, running the tests")
 
 	os.Exit(m.Run())

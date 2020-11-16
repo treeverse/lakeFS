@@ -25,7 +25,16 @@ import (
 
 const defaultSetupTimeout = 5 * time.Minute
 
-func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs, *s3.S3) {
+type SetupTestingEnvParams struct {
+	Name      string
+	StorageNS string
+
+	// Only if non-empty
+	AdminAccessKeyID     string
+	AdminSecretAccessKey string
+}
+
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, *genclient.Lakefs, *s3.S3) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -34,11 +43,11 @@ func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs,
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
 	viper.SetDefault("access_key_id", "")
 	viper.SetDefault("secret_access_key", "")
-	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", storageNS, xid.New().String()))
+	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
 
 	viper.AddConfigPath(".")
-	viper.SetEnvPrefix(strings.ToUpper(name))
-	viper.SetConfigName(strings.ToLower(name))
+	viper.SetEnvPrefix(strings.ToUpper(params.Name))
+	viper.SetConfigName(strings.ToLower(params.Name))
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
@@ -50,7 +59,7 @@ func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs,
 
 	// initialize the env/repo
 	logger = logging.Default()
-	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", name))
+	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", params.Name))
 
 	endpointURL := viper.GetString("endpoint_url")
 	u, err := url.Parse(endpointURL)
@@ -71,11 +80,18 @@ func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs,
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if setupLakeFS {
 		// first setup of lakeFS
-		adminUserName := name
+		adminUserName := params.Name
+		user := models.Setup{
+			Username: swag.String(adminUserName),
+		}
+		if params.AdminAccessKeyID != "" {
+			user.Key = &models.SetupKey{
+				AccessKeyID:     &params.AdminAccessKeyID,
+				SecretAccessKey: &params.AdminSecretAccessKey,
+			}
+		}
 		res, err := client.Setup.SetupLakeFS(&setup.SetupLakeFSParams{
-			User: &models.Setup{
-				Username: swag.String(adminUserName),
-			},
+			User:    &user,
 			Context: ctx,
 		})
 		if err != nil {

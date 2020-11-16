@@ -36,6 +36,16 @@ var initCmd = &cobra.Command{
 			fmt.Printf("user-name: %s\n", err)
 			os.Exit(1)
 		}
+		accessKeyID, err := cmd.Flags().GetString("access-key-id")
+		if err != nil {
+			fmt.Printf("access-key-id: %s\n", err)
+			os.Exit(1)
+		}
+		secretAccessKey, err := cmd.Flags().GetString("secret-access-key")
+		if err != nil {
+			fmt.Printf("secret-access-key: %s\n", err)
+			os.Exit(1)
+		}
 
 		authService := auth.NewDBAuthService(
 			dbPool,
@@ -45,7 +55,7 @@ var initCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(logging.Default(), cfg, metadataManager, cloudMetadataProvider)
 
-		credentials, err := auth.CreateInitialAdminUser(authService, metadataManager, userName)
+		credentials, err := auth.CreateInitialAdminUserWithKeys(authService, metadataManager, userName, &accessKeyID, &secretAccessKey)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)
