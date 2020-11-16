@@ -6,17 +6,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/export"
+	"github.com/treeverse/lakefs/api/gen/models"
 	"io/ioutil"
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/go-openapi/swag"
-	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/api/gen/client/commits"
-	"github.com/treeverse/lakefs/api/gen/models"
+	"time"
 )
 
 func NewS3Service() *s3.S3 {
@@ -72,10 +72,7 @@ func TestExport(t *testing.T) {
 	bucket, keyPath := parsePath(t, exportPath)
 	key := keyPath + "/" + objPath
 	s3Svc := NewS3Service()
-	objectOutput, err := s3Svc.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
+	objectOutput, err := s3GetObjectRetry(s3Svc, bucket, key)
 	require.NoError(t, err, "failed to get exported file bucket:%s key:%s", bucket, key)
 	body, err := ioutil.ReadAll(objectOutput.Body)
 	require.NoError(t, err, "failed to read exported file")
@@ -85,9 +82,24 @@ func TestExport(t *testing.T) {
 	bucket, keyPath = parsePath(t, statusPath)
 	statusFilename := fmt.Sprintf("%s-%s-%s", repo, masterBranch, commit.ID)
 	key = keyPath + "/" + statusFilename
-	_, err = s3Svc.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	require.NoError(t, err, "failed to get exported status file")
+	_, err = s3GetObjectRetry(s3Svc, bucket, key)
+
+	require.NoError(t, err, "failed to get exported status file bucket:%s key:%s", bucket, key)
+}
+
+func s3GetObjectRetry(s3Svc *s3.S3, bucket string, key string) (*s3.GetObjectOutput, error) {
+	var err error
+	var objectOutput *s3.GetObjectOutput
+	count := 0
+	for range time.Tick(5 * time.Second) {
+		count++
+		objectOutput, err = s3Svc.GetObject(&s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err != nil || count > 5 {
+			break
+		}
+	}
+	return objectOutput, err
 }
