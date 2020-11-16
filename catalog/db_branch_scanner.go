@@ -59,8 +59,9 @@ func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
 	}
 	// commit_id name is changed so that sorting will be performed on the numeric value, not the string value (where "10" is less than "2")
 	var commits []int64
-	sql := "SELECT commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id BETWEEN $2 AND $3 ORDER BY commit_id LIMIT $4"
-	err := s.tx.Select(&commits, sql, s.branchID, s.minCommitID+1, branchMaxCommitID, BranchScannerMaxCommitsInFilter+1)
+	err := s.tx.Select(&commits,
+		`SELECT commit_id FROM catalog_commits WHERE branch_id = $1 AND commit_id BETWEEN $2 AND $3 ORDER BY commit_id LIMIT $4`,
+		s.branchID, s.minCommitID+1, branchMaxCommitID, BranchScannerMaxCommitsInFilter+1)
 	if err != nil {
 		return nil, err
 	}
