@@ -2,6 +2,12 @@ package nessie
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,14 +18,9 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/models"
-	"io/ioutil"
-	"net/url"
-	"strings"
-	"testing"
-	"time"
 )
 
-func NewS3Service() *s3.S3 {
+func NewExternalS3Service() *s3.S3 {
 	awsSession := session.Must(session.NewSession())
 	return s3.New(awsSession,
 		aws.NewConfig().
@@ -71,7 +72,7 @@ func TestExport(t *testing.T) {
 	// check exported file exist
 	bucket, keyPath := parsePath(t, exportPath)
 	key := keyPath + "/" + objPath
-	s3Svc := NewS3Service()
+	s3Svc := NewExternalS3Service()
 	objectOutput, err := s3GetObjectRetry(s3Svc, bucket, key)
 	require.NoError(t, err, "failed to get exported file bucket:%s key:%s", bucket, key)
 	body, err := ioutil.ReadAll(objectOutput.Body)
