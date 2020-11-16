@@ -43,6 +43,9 @@ func parsePath(t testing.TB, path string) (string, string) {
 }
 
 func TestExport(t *testing.T) {
+	if viper.GetString("aws_access_key_id") == "" {
+		t.Skip("test export only on s3")
+	}
 	ctx, _, repo := setupTest(t)
 
 	// set export configurations
@@ -73,7 +76,7 @@ func TestExport(t *testing.T) {
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-	require.NoError(t, err, "failed to get exported file")
+	require.NoError(t, err, "failed to get exported file bucket:%s key:%s", bucket, key)
 	body, err := ioutil.ReadAll(objectOutput.Body)
 	require.NoError(t, err, "failed to read exported file")
 	require.Equal(t, objContent, string(body), "unexpected content at %s", objPath)
