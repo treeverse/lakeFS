@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"errors"
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
@@ -21,8 +22,11 @@ type DBLineageScanner struct {
 
 type DBLineageScannerOptions struct {
 	DBScannerOptions
-	Lineage []lineageCommit
+	Lineage    []lineageCommit
+	MinCommits []CommitID
 }
+
+var ErrMinCommitsMismatch = errors.New("MinCommits length mismatch")
 
 func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBLineageScannerOptions) *DBLineageScanner {
 	s := &DBLineageScanner{
@@ -31,6 +35,7 @@ func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBLin
 		commitID: commitID,
 		opts:     opts,
 	}
+	s.buildScanners()
 	return s
 }
 
@@ -45,9 +50,6 @@ func (s *DBLineageScanner) SetAdditionalWhere(part sq.Sqlizer) {
 
 func (s *DBLineageScanner) Next() bool {
 	if s.ended {
-		return false
-	}
-	if !s.ensureBranchScanners() {
 		return false
 	}
 
@@ -102,12 +104,9 @@ func (s *DBLineageScanner) ReadLineage() ([]lineageCommit, error) {
 	return getLineage(s.tx, s.branchID, s.commitID)
 }
 
-func (s *DBLineageScanner) ensureBranchScanners() bool {
-	var lineage []lineageCommit
+func (s *DBLineageScanner) buildScanners() {
 	var err error
-	if s.scanners != nil {
-		return true
-	}
+	var lineage []lineageCommit
 	if s.opts.Lineage != nil {
 		lineage = s.opts.Lineage
 	} else {
@@ -115,12 +114,22 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 	}
 	if err != nil {
 		s.err = fmt.Errorf("getting lineage: %w", err)
-		return false
+		return
 	}
 	s.scanners = make([]*DBBranchScanner, len(lineage)+1)
-	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, s.opts.DBScannerOptions)
+	// use min commits or allocate default
+	minCommits := s.opts.MinCommits
+	if minCommits == nil {
+		minCommits = make([]CommitID, len(s.scanners))
+		for i := 0; i < len(minCommits); i++ {
+			minCommits[i] = 1
+		}
+	} else if len(minCommits) != len(s.scanners) {
+		s.err = ErrMinCommitsMismatch
+	}
+	s.scanners[0] = NewDBBranchScanner(s.tx, s.branchID, s.commitID, minCommits[0], s.opts.DBScannerOptions)
 	for i, bl := range lineage {
-		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, s.opts.DBScannerOptions)
+		s.scanners[i+1] = NewDBBranchScanner(s.tx, bl.BranchID, bl.CommitID, minCommits[i+1], s.opts.DBScannerOptions)
 	}
 	for _, branchScanner := range s.scanners {
 		if branchScanner.Next() {
@@ -128,8 +137,7 @@ func (s *DBLineageScanner) ensureBranchScanners() bool {
 		}
 		if err := branchScanner.Err(); err != nil {
 			s.err = fmt.Errorf("getting entry from branch ID %d: %w", branchScanner.branchID, err)
-			return false
+			return
 		}
 	}
-	return true
 }

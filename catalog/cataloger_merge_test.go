@@ -76,6 +76,11 @@ func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 	}); diff != nil {
 		t.Fatal("Merge Summary", diff)
 	}
+	// merge again - nothing should happen
+	res, err = c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
+	if err != ErrNoDifferenceWasFound {
+		t.Fatal("Merge() expected ErrNoDifferenceWasFound, got:", err)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
