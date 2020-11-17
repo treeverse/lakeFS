@@ -90,6 +90,25 @@ func TestExportConfiguration(t *testing.T) {
 		}
 	})
 
+	t.Run("continuous", func(t *testing.T) {
+		newCfg := ExportConfiguration{
+			Path:                   "/better/to/export",
+			StatusPath:             "/better/for/status",
+			LastKeysInPrefixRegexp: pq.StringArray{"abc", "def", "xyz"},
+			IsContinuous:           true,
+		}
+		if err := c.PutExportConfiguration(repo, defaultBranch, &newCfg); err != nil {
+			t.Fatalf("update configuration with %+v: %s", newCfg, err)
+		}
+		gotCfg, err := c.GetExportConfigurationForBranch(repo, defaultBranch)
+		if err != nil {
+			t.Errorf("get updated configuration for configured branch failed: %s", err)
+		}
+		if diffs := deep.Equal(newCfg, gotCfg); diffs != nil {
+			t.Errorf("got other configuration than expected: %s", diffs)
+		}
+	})
+
 	t.Run("invalid regexp", func(t *testing.T) {
 		badCfg := ExportConfiguration{
 			Path:                   "/better/to/export",

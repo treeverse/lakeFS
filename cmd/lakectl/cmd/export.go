@@ -21,6 +21,8 @@ var exportCmd = &cobra.Command{
 var exportSetCmd = &cobra.Command{
 	Use:   "set <branch uri>",
 	Short: "set continuous export configuration for branch",
+	Long: `Set the entire continuous export configuration for branch.
+Overrides all fields of any previous configuration.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
@@ -36,10 +38,15 @@ var exportSetCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		isContinuous, err := cmd.Flags().GetBool("continuous")
+		if err != nil {
+			DieErr(err)
+		}
 		config := &models.ContinuousExportConfiguration{
 			ExportPath:             strfmt.URI(exportPath),
 			ExportStatusPath:       strfmt.URI(exportStatusPath),
 			LastKeysInPrefixRegexp: prefixRegex,
+			IsContinuous:           isContinuous,
 		}
 		err = client.SetContinuousExport(context.Background(), branchURI.Repository, branchURI.Ref, config)
 		if err != nil {
@@ -53,7 +60,7 @@ var exportConfigurationTemplate = `export configuration for branch "{{.Branch.Re
 Export Path: {{.Configuration.ExportPath|yellow}}
 Export status path: {{.Configuration.ExportStatusPath}}
 Last Keys In Prefix Regexp: {{.Configuration.LastKeysInPrefixRegexp}}
-
+{{.ContinuousMarker}}
 `
 
 // exportGetCmd get continuous export configuration for branch
@@ -68,10 +75,15 @@ var exportGetCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		continuousMarker := ""
+		if configuration.IsContinuous {
+			continuousMarker = "Continuously exported\n"
+		}
 		Write(exportConfigurationTemplate, struct {
-			Branch        *uri.URI
-			Configuration *models.ContinuousExportConfiguration
-		}{branchURI, configuration})
+			Branch           *uri.URI
+			Configuration    *models.ContinuousExportConfiguration
+			ContinuousMarker string
+		}{branchURI, configuration, continuousMarker})
 	},
 }
 
@@ -100,5 +112,7 @@ func init() {
 	exportSetCmd.Flags().String("path", "", "export objects to this path")
 	exportSetCmd.Flags().String("status-path", "", "write export status object to this path")
 	exportSetCmd.Flags().StringArray("prefix-regex", nil, "list of regexps of keys to exported last in each prefix (for signalling)")
+	exportSetCmd.Flags().Bool("continuous", false, "export branch after every commit or merge (...=false to disable)")
 	_ = exportSetCmd.MarkFlagRequired("path")
+	_ = exportSetCmd.MarkFlagRequired("continuous")
 }
