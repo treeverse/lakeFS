@@ -1183,18 +1183,23 @@ func TestCataloger_MergeFromChildAfterMergeFromParent(t *testing.T) {
 	}
 }
 
+type MergeData struct {
+	Repo, Branch string
+	Result       MergeResult
+}
+
 // MergeHookLogger - merge hook that will return an error if set by Err.
 // When no Err is set it will log merge log into Logs.
 type MergeHookLogger struct {
-	Err  error
-	Logs []*catalog.MergeResult
+	Err    error
+	Merges []MergeData
 }
 
-func (h *MergeHookLogger) Hook(_ context.Context, _ db.Tx, log *catalog.MergeResult) error {
+func (h *MergeHookLogger) Hook(_ context.Context, _ db.Tx, repo, branch string, result *MergeResult) error {
 	if h.Err != nil {
 		return h.Err
 	}
-	h.Logs = append(h.Logs, log)
+	h.Merges = append(h.Merges, MergeData{Repo: repo, Branch: branch, Result: *result})
 	return nil
 }
 
@@ -1242,9 +1247,13 @@ func TestCataloger_Merge_Hooks(t *testing.T) {
 				{Path: "/file1"},
 			})
 
-			expected := []*catalog.MergeResult{res}
+			expected := []MergeData{{
+				Repo:   repository,
+				Branch: "master",
+				Result: *res,
+			}}
 			for _, hook := range hooks {
-				if diffs := deep.Equal(expected, hook.Logs); diffs != nil {
+				if diffs := deep.Equal(expected, hook.Merges); diffs != nil {
 					t.Error("hook received unexpected merge result: ", diffs)
 				}
 			}

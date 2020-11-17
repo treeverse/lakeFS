@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"db"
 	"errors"
 	"fmt"
 
@@ -66,13 +67,16 @@ var ErrConflictingRefs = errors.New("conflicting references")
 func ExportBranchDone(parade parade.Parade, cataloger catalog.Cataloger, status catalog.CatalogBranchExportStatus, statusMsg *string, repo, branch, commitRef string) error {
 	if status == catalog.ExportStatusSuccess {
 		// Start the next export if continuous.
-		exportConfiguration, err := cataloger.GetExportConfigurationForBranch(repo, branch)
+		isContinuous, err := hasContinuousExport(cataloger, repo, branch)
 		if err != nil {
-			return fmt.Errorf("check whether export configuration is continuous for repo %s branch %s: %w", repo, branch, err)
+			// Consider branch export failed: it was supposed to be continuous but
+			// might have stopped.  So set an error for the admin to fix before
+			// re-enabling continuous export.
+			return err
 		}
-		if exportConfiguration.IsContinuous {
+		if isContinuous {
 			_, err := ExportBranchStart(parade, cataloger, repo, branch)
-			if err == ErrExportInProgress {
+			if errors.Is(err, ErrExportInProgress) {
 				logging.Default().WithFields(logging.Fields{
 					"repo":   repo,
 					"branch": branch,
@@ -106,4 +110,12 @@ func ExportBranchRepair(cataloger catalog.Cataloger, repo, branch string) error 
 		}
 		return oldRef, catalog.ExportStatusRepaired, nil, nil
 	})
+}
+
+func hasContinuousExport(c catalog.Cataloger, repo, branch string) (bool, error) {
+	exportConfiguration, err := c.GetExportConfigurationForBranch(repo, branch)
+	if err != nil {
+		return false, fmt.Errorf("check whether export configuration is continuous for repo %s branch %s: %w", repo, branch, err)
+	}
+	return exportConfiguration.IsContinuous, nil
 }
