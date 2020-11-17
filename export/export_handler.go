@@ -162,11 +162,11 @@ func getFinishBodyString(repo, branch, commitRef, statusPath string) (string, er
 		CommitRef:  commitRef,
 		StatusPath: statusPath,
 	}
-	finisBody, err := json.Marshal(finishData)
+	finishBody, err := json.Marshal(finishData)
 	if err != nil {
 		return "", err
 	}
-	return string(finisBody), nil
+	return string(finishBody), nil
 }
 
 func (h *Handler) copy(body *string) error {
@@ -245,7 +245,7 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 	if err != nil {
 		return err
 	}
-	return ExportBranchDone(h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
+	return ExportBranchDone(h.parade, h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
 }
 
 var errUnknownAction = errors.New("unknown action")
