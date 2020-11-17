@@ -1446,8 +1446,9 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 func Test_setupLakeFSHandler(t *testing.T) {
 	name := "admin"
 	cases := []struct {
-		name string
-		user models.Setup
+		name               string
+		user               models.Setup
+		expectedStatusCode int
 	}{
 		{name: "simple", user: models.Setup{Username: &name}},
 		{
@@ -1459,6 +1460,23 @@ func Test_setupLakeFSHandler(t *testing.T) {
 					SecretAccessKey: swag.String("cetec astronomy"),
 				},
 			},
+		},
+		{
+			name: "emptyAccessKeyId",
+			user: models.Setup{
+				Username: &name,
+				Key:      &models.SetupKey{SecretAccessKey: swag.String("cetec astronomy")},
+			},
+			expectedStatusCode: 422,
+		},
+		{
+			name: "emptySecretKey", user: models.Setup{
+				Username: &name,
+				Key: &models.SetupKey{
+					AccessKeyID: swag.String("IKEAsneakers"),
+				},
+			},
+			expectedStatusCode: 422,
 		},
 	}
 	for _, c := range cases {
@@ -1483,9 +1501,15 @@ func Test_setupLakeFSHandler(t *testing.T) {
 					_ = res.Body.Close()
 				}()
 
-				const expectedStatusCode = http.StatusOK
+				expectedStatusCode := http.StatusOK
+				if c.expectedStatusCode != 0 {
+					expectedStatusCode = c.expectedStatusCode
+				}
 				if res.StatusCode != expectedStatusCode {
 					t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+				}
+				if res.StatusCode != http.StatusOK {
+					return
 				}
 
 				// read response
@@ -1520,19 +1544,21 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				}
 			})
 
-			// now we ask again - should get status conflict
-			t.Run("existing setup", func(t *testing.T) {
-				// request to setup
-				res := mustSetup(t, reqURI, contentType, req)
-				defer func() {
-					_ = res.Body.Close()
-				}()
+			if c.expectedStatusCode == 0 {
+				// now we ask again - should get status conflict
+				t.Run("existing setup", func(t *testing.T) {
+					// request to setup
+					res := mustSetup(t, reqURI, contentType, req)
+					defer func() {
+						_ = res.Body.Close()
+					}()
 
-				const expectedStatusCode = http.StatusConflict
-				if res.StatusCode != expectedStatusCode {
-					t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
-				}
-			})
+					const expectedStatusCode = http.StatusConflict
+					if res.StatusCode != expectedStatusCode {
+						t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+					}
+				})
+			}
 		})
 	}
 }

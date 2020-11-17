@@ -234,12 +234,12 @@ func AddAdminUser(authService Service, user *model.SuperuserConfiguration) (*mod
 		// Generate and return a key pair
 		creds, err = authService.CreateCredentials(user.Username)
 		if err != nil {
-			return nil, fmt.Errorf("create credentials for %s %w", user.Username, err)
+			return nil, fmt.Errorf("create credentials for %s: %w", user.Username, err)
 		}
 	} else {
 		creds, err = authService.AddCredentials(user.Username, user.AccessKeyID, user.SecretAccessKey)
 		if err != nil {
-			return nil, fmt.Errorf("add credentials for %s %w", user.Username, err)
+			return nil, fmt.Errorf("add credentials for %s: %w", user.Username, err)
 		}
 	}
 	return creds, nil
