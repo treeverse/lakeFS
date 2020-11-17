@@ -337,6 +337,9 @@ definitions:
           type: string
         description: "list of regexps of keys to exported last in each prefix (for signalling)"
         example: [ "^SUCCESS$", ".*/_SUCCESS$" ]
+      isContinuous:
+        type: boolean
+        description: if true, export every commit or merge to branch
 
   retention_policy:
     type: object

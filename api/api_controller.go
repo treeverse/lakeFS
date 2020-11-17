@@ -2211,6 +2211,7 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 			ExportPath:             strfmt.URI(config.Path),
 			ExportStatusPath:       strfmt.URI(config.StatusPath),
 			LastKeysInPrefixRegexp: config.LastKeysInPrefixRegexp,
+			IsContinuous:           config.IsContinuous,
 		}
 		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
 	})
@@ -2258,6 +2259,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 			Path:                   params.Config.ExportPath.String(),
 			StatusPath:             params.Config.ExportStatusPath.String(),
 			LastKeysInPrefixRegexp: params.Config.LastKeysInPrefixRegexp,
+			IsContinuous:           params.Config.IsContinuous,
 		}
 		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
