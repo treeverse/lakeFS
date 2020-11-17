@@ -77,7 +77,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 		}
 
 		for _, hook := range c.hooks.PostCommit {
-			err = hook(ctx, tx, commitLog)
+			err = hook(ctx, tx, repository, branch, commitLog)
 			if err != nil {
 				// Roll tx back if a hook failed
 				return nil, err

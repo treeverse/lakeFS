@@ -145,24 +145,27 @@ type Cataloger interface {
 // ExportStateCallback returns the new ref, state and message regarding the old ref and state
 type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error)
 
+type PostCommitFunc = func(ctx context.Context, tx db.Tx, repo, branch string, commitLog *CommitLog) error
+type PostMergeFunc = func(ctx context.Context, tx db.Tx, repo, branch string, mergeResult *MergeResult) error
+
 // CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
 // called in a current transaction context; if they return an error the transaction is rolled
 // back.  Because these transactions are current, the hook can see the effect the operation only
 // on the passed transaction.
 type CatalogerHooks struct {
 	// PostCommit hooks are called at the end of a commit.
-	PostCommit []func(ctx context.Context, tx db.Tx, commitLog *CommitLog) error
+	PostCommit []PostCommitFunc
 
 	// PostMerge hooks are called at the end of a merge.
-	PostMerge []func(ctx context.Context, tx db.Tx, mergeResult *MergeResult) error
+	PostMerge []PostMergeFunc
 }
 
-func (h *CatalogerHooks) AddPostCommit(f func(context.Context, db.Tx, *CommitLog) error) *CatalogerHooks {
+func (h *CatalogerHooks) AddPostCommit(f PostCommitFunc) *CatalogerHooks {
 	h.PostCommit = append(h.PostCommit, f)
 	return h
 }
 
-func (h *CatalogerHooks) AddPostMerge(f func(context.Context, db.Tx, *MergeResult) error) *CatalogerHooks {
+func (h *CatalogerHooks) AddPostMerge(f PostMergeFunc) *CatalogerHooks {
 	h.PostMerge = append(h.PostMerge, f)
 	return h
 }

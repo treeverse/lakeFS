@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/go-test/deep"
+
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
@@ -112,8 +112,8 @@ func TestCataloger_Commit(t *testing.T) {
 					got.CreationDate = tt.want.CreationDate
 				}
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Commit() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
+			if diffs := deep.Equal(got, tt.want); diffs != nil {
+				t.Errorf("unexpected Commit(): %s", diffs)
 			}
 		})
 	}
@@ -290,18 +290,23 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 	}
 }
 
+type CommitData struct {
+	Repo, Branch string
+	Log          CommitLog
+}
+
 // CommitHookLogger - commit hook that will return an error if set by Err.
 // When no Err is set it will log commit log into Logs.
 type CommitHookLogger struct {
-	Err  error
-	Logs []*catalog.CommitLog
+	Err     error
+	Commits []CommitData
 }
 
-func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, log *catalog.CommitLog) error {
+func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, repo, branch string, log *CommitLog) error {
 	if h.Err != nil {
 		return h.Err
 	}
-	h.Logs = append(h.Logs, log)
+	h.Commits = append(h.Commits, CommitData{Repo: repo, Branch: branch, Log: *log})
 	return nil
 }
 
@@ -349,8 +354,8 @@ func TestCataloger_CommitHooks(t *testing.T) {
 				return
 			}
 			for i := range hooks {
-				if len(hooks[i].Logs) != 1 || hooks[i].Logs[0] != commitLog {
-					t.Errorf("hook %d: expected one commit %+v but got logs: %s", i, commitLog, spew.Sprint(hooks[i].Logs))
+				if diffs := deep.Equal(hooks[i].Commits, []CommitData{{Repo: repository, Branch: "master", Log: *commitLog}}); diffs != nil {
+					t.Errorf("hook %d: unexpected commit logs: %s", i, diffs)
 				}
 			}
 		})
