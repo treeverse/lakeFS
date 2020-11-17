@@ -23,10 +23,8 @@ var exportSetCmd = &cobra.Command{
 	Short: "set continuous export configuration for branch",
 	Long: `Set the entire continuous export configuration for branch.
 Overrides all fields of any previous configuration.`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			Die(`must specify "set <branch uri>"`, 1)
-		}
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
 		exportPath, err := cmd.Flags().GetString("path")
@@ -70,10 +68,8 @@ Last Keys In Prefix Regexp: {{.Configuration.LastKeysInPrefixRegexp}}
 var exportGetCmd = &cobra.Command{
 	Use:   "get <branch uri>",
 	Short: "get continuous export configuration for branch",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			Die(`must specify "get <branch uri>"`, 1)
-		}
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
 		configuration, err := client.GetContinuousExport(context.Background(), branchURI.Repository, branchURI.Ref)
