@@ -18,6 +18,7 @@ type ExportConfiguration struct {
 	Path                   string         `db:"export_path" json:"export_path"`
 	StatusPath             string         `db:"export_status_path" json:"export_status_path"`
 	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp" json:"last_keys_in_prefix_regexp"`
+	IsContinuous           bool           `db:"continuous" json:"is_continuous"`
 }
 
 // ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
@@ -30,6 +31,7 @@ type ExportConfigurationForBranch struct {
 	Path                   string         `db:"export_path"`
 	StatusPath             string         `db:"export_status_path"`
 	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
+	IsContinuous           bool           `db:"continuous"`
 }
 
 type CatalogBranchExportStatus string
@@ -83,7 +85,7 @@ func (c *cataloger) GetExportConfigurationForBranch(repository string, branch st
 			return nil, err
 		}
 		err = c.db.Get(&ret,
-			`SELECT export_path, export_status_path, last_keys_in_prefix_regexp
+			`SELECT export_path, export_status_path, last_keys_in_prefix_regexp, continuous
                          FROM catalog_branches_export
                          WHERE branch_id = $1`, branchID)
 		return &ret, err
@@ -99,7 +101,8 @@ func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, e
 	rows, err := c.db.Query(
 		`SELECT r.name repository, b.name branch,
                      e.export_path export_path, e.export_status_path export_status_path,
-                     e.last_keys_in_prefix_regexp last_keys_in_prefix_regexp
+                     e.last_keys_in_prefix_regexp last_keys_in_prefix_regexp,
+                     e.continuous continuous
                  FROM catalog_branches_export e JOIN catalog_branches b ON e.branch_id = b.id
                     JOIN catalog_repositories r ON b.repository_id = r.id`)
 	if err != nil {
@@ -123,12 +126,12 @@ func (c *cataloger) PutExportConfiguration(repository string, branch string, con
 		}
 		_, err = c.db.Exec(
 			`INSERT INTO catalog_branches_export (
-                             branch_id, export_path, export_status_path, last_keys_in_prefix_regexp)
-                         VALUES ($1, $2, $3, $4)
+                             branch_id, export_path, export_status_path, last_keys_in_prefix_regexp, continuous)
+                         VALUES ($1, $2, $3, $4, $5)
                          ON CONFLICT (branch_id)
-                         DO UPDATE SET (branch_id, export_path, export_status_path, last_keys_in_prefix_regexp) =
-                             (EXCLUDED.branch_id, EXCLUDED.export_path, EXCLUDED.export_status_path, EXCLUDED.last_keys_in_prefix_regexp)`,
-			branchID, conf.Path, conf.StatusPath, conf.LastKeysInPrefixRegexp)
+                         DO UPDATE SET (branch_id, export_path, export_status_path, last_keys_in_prefix_regexp, continuous) =
+                             (EXCLUDED.branch_id, EXCLUDED.export_path, EXCLUDED.export_status_path, EXCLUDED.last_keys_in_prefix_regexp, EXCLUDED.continuous)`,
+			branchID, conf.Path, conf.StatusPath, conf.LastKeysInPrefixRegexp, conf.IsContinuous)
 		return nil, err
 	})
 	return err
