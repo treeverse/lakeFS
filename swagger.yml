@@ -234,6 +234,25 @@ definitions:
       username:
         description: an identifier for the user (e.g. jane.doe)
         type: string
+      key:
+        description: set to pass access_key_id, secret_access_key for testing.
+        type: object
+        properties:
+          # Example values as seen on
+          # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+          access_key_id:
+            description: access key ID to set for user for use in integration testing.
+            example: AKIAIOSFODNN7EXAMPLE
+            type: string
+            minLength: 1
+          secret_access_key:
+            description: secret access key to set for user for use in integration testing.
+            example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+            type: string
+            minLength: 1
+        required:
+          - access_key_id
+          - secret_access_key
     required:
       - username
 
