@@ -68,7 +68,7 @@ If you can't provide such access, lakeFS can be configured to use an AWS key-pai
 | `resources`                                 | Pod resource requests & limits                                                                             | `{}`        |
 | `service.type`                              | Kubernetes service type                                                                                    | ClusterIP   |
 | `service.port`                              | Kubernetes service external port                                                                           | 80          |
-| `extraEnvVarsSecret`                        | A Kubernetes secret name containing extra env variables                                                    |             |
+| `extraEnvVarsSecret`                        | Name of a Kubernetes secret containing extra environment variables                                                    |             |
 
 ## Docker
 To deploy using Docker, create a yaml configuration file.
