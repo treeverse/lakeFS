@@ -24,7 +24,21 @@ var superuserCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		userName, _ := cmd.Flags().GetString("user-name")
+		userName, err := cmd.Flags().GetString("user-name")
+		if err != nil {
+			fmt.Printf("user-name: %s\n", err)
+			os.Exit(1)
+		}
+		accessKeyID, err := cmd.Flags().GetString("access-key-id")
+		if err != nil {
+			fmt.Printf("access-key-id: %s\n", err)
+			os.Exit(1)
+		}
+		secretAccessKey, err := cmd.Flags().GetString("secret-access-key")
+		if err != nil {
+			fmt.Printf("secret-access-key: %s\n", err)
+			os.Exit(1)
+		}
 
 		authService := auth.NewDBAuthService(
 			dbPool,
@@ -33,9 +47,13 @@ var superuserCmd = &cobra.Command{
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(logging.Default(), cfg, authMetadataManager, metadataProvider)
-		credentials, err := auth.AddAdminUser(authService, &model.User{
-			CreatedAt: time.Now(),
-			Username:  userName,
+		credentials, err := auth.AddAdminUser(authService, &model.SuperuserConfiguration{
+			User: model.User{
+				CreatedAt: time.Now(),
+				Username:  userName,
+			},
+			AccessKeyID:     accessKeyID,
+			SecretAccessKey: secretAccessKey,
 		})
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
@@ -59,6 +77,10 @@ var superuserCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(superuserCmd)
-	superuserCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	f := superuserCmd.Flags()
+	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	f.String("access-key-id", "", "create this access key ID for the user (for ease of integration)")
+	f.String("secret-access-key", "", "use this access key secret (potentially insecure, use carefully for ease of integration)")
+
 	_ = superuserCmd.MarkFlagRequired("user-name")
 }

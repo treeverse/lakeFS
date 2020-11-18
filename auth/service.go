@@ -58,6 +58,7 @@ type Service interface {
 
 	// credentials
 	CreateCredentials(username string) (*model.Credential, error)
+	AddCredentials(username, accessKeyID, secretAccessKey string) (*model.Credential, error)
 	DeleteCredentials(username, accessKeyID string) error
 	GetCredentialsForUser(username, accessKeyID string) (*model.Credential, error)
 	GetCredentials(accessKeyID string) (*model.Credential, error)
@@ -639,10 +640,14 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 }
 
 func (s *DBAuthService) CreateCredentials(username string) (*model.Credential, error) {
+	accessKeyID := genAccessKeyID()
+	secretAccessKey := genAccessSecretKey()
+	return s.AddCredentials(username, accessKeyID, secretAccessKey)
+}
+
+func (s *DBAuthService) AddCredentials(username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
 	now := time.Now()
-	accessKey := genAccessKeyID()
-	secretKey := genAccessSecretKey()
-	encryptedKey, err := s.encryptSecret(secretKey)
+	encryptedKey, err := s.encryptSecret(secretAccessKey)
 	if err != nil {
 		return nil, err
 	}
@@ -652,8 +657,8 @@ func (s *DBAuthService) CreateCredentials(username string) (*model.Credential, e
 			return nil, err
 		}
 		c := &model.Credential{
-			AccessKeyID:                   accessKey,
-			AccessSecretKey:               secretKey,
+			AccessKeyID:                   accessKeyID,
+			AccessSecretKey:               secretAccessKey,
 			AccessSecretKeyEncryptedBytes: encryptedKey,
 			IssuedDate:                    now,
 			UserID:                        user.ID,

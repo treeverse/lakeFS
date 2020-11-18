@@ -198,7 +198,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 	return nil
 }
 
-func SetupAdminUser(authService Service, user *model.User) (*model.Credential, error) {
+func SetupAdminUser(authService Service, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
 	// Setup the basic groups and policies
@@ -207,10 +207,10 @@ func SetupAdminUser(authService Service, user *model.User) (*model.Credential, e
 		return nil, err
 	}
 
-	return AddAdminUser(authService, user)
+	return AddAdminUser(authService, superuser)
 }
 
-func AddAdminUser(authService Service, user *model.User) (*model.Credential, error) {
+func AddAdminUser(authService Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
 	const adminGroupName = "Admins"
 
 	// verify admin group exists
@@ -220,7 +220,7 @@ func AddAdminUser(authService Service, user *model.User) (*model.Credential, err
 	}
 
 	// create admin user
-	err = authService.CreateUser(user)
+	err = authService.CreateUser(&user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
@@ -229,18 +229,34 @@ func AddAdminUser(authService Service, user *model.User) (*model.Credential, err
 		return nil, fmt.Errorf("add user to group - %w", err)
 	}
 
-	// Generate and return a key pair
-	creds, err := authService.CreateCredentials(user.Username)
-	if err != nil {
-		return nil, fmt.Errorf("create credentials for %s %w", user.Username, err)
+	var creds *model.Credential
+	if user.AccessKeyID == "" {
+		// Generate and return a key pair
+		creds, err = authService.CreateCredentials(user.Username)
+		if err != nil {
+			return nil, fmt.Errorf("create credentials for %s: %w", user.Username, err)
+		}
+	} else {
+		creds, err = authService.AddCredentials(user.Username, user.AccessKeyID, user.SecretAccessKey)
+		if err != nil {
+			return nil, fmt.Errorf("add credentials for %s: %w", user.Username, err)
+		}
 	}
 	return creds, nil
 }
 
 func CreateInitialAdminUser(authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
-	adminUser := &model.User{
+	return CreateInitialAdminUserWithKeys(authService, metadataManger, username, nil, nil)
+}
+
+func CreateInitialAdminUserWithKeys(authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+	adminUser := &model.SuperuserConfiguration{User: model.User{
 		CreatedAt: time.Now(),
 		Username:  username,
+	}}
+	if accessKeyID != nil && secretAccessKey != nil {
+		adminUser.AccessKeyID = *accessKeyID
+		adminUser.SecretAccessKey = *secretAccessKey
 	}
 	// create first admin user
 	cred, err := SetupAdminUser(authService, adminUser)

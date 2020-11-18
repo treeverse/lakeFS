@@ -31,6 +31,13 @@ type User struct {
 	Username  string    `db:"display_name" json:"display_name"`
 }
 
+// SuperuserConfiguration requests a particular configuration for a superuser.
+type SuperuserConfiguration struct {
+	User
+	AccessKeyID     string
+	SecretAccessKey string
+}
+
 type Group struct {
 	ID          int       `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`

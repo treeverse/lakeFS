@@ -84,11 +84,13 @@ func TestLocalLoad(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	user := &authmodel.User{
-		CreatedAt: time.Now(),
-		Username:  "admin",
+	superuser := &authmodel.SuperuserConfiguration{
+		User: authmodel.User{
+			CreatedAt: time.Now(),
+			Username:  "admin",
+		},
 	}
-	credentials, err := auth.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, superuser)
 	testutil.Must(t, err)
 
 	testConfig := Config{
