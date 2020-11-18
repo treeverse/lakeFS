@@ -157,7 +157,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	var ret interface{}
 	for attempt < SerializationRetryMaxAttempts {
 		if attempt > 0 {
-			duration := time.Duration(int(SerializationRetryStartInterval) * attempt)
+			duration := SerializationRetryStartInterval * time.Duration(attempt)
 			dbRetriesCount.Inc()
 			options.logger.
 				WithField("attempt", attempt).
