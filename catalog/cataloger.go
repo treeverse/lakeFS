@@ -168,24 +168,17 @@ type ExportConfigurator interface {
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 }
 
+type stateCB func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)
+
 type ExportStateHandler interface {
 	// ExportState starts an export operation on branch of repo
 	// calls a callback with the oldRef and state
-	// and ends the export operation
-	ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)) error
-	// ExportStateMarkStart starts an export operation on branch of repo and returns the ref of
-	// the previous export.  If the previous export failed it returns ErrExportFailed.  If
-	// another export is running return state ExportStatusInProgress -- and caller should
-	// clean it up by removing and adding the "next export" withint this transaction.  If
-	// another transaction concurrently runs ExportMarkStart on branchID, one blocks until
-	// the other is done.
-	ExportStateMarkStart(tx db.Tx, repo string, branch string, newRef string) (string, CatalogBranchExportStatus, error)
-	// ExportStateMarkEnd verifies that the current export is of ref and ends an export operation
-	// on branch of repo.
-	ExportStateMarkEnd(tx db.Tx, repo string, branch string, ref string, newState CatalogBranchExportStatus, newMessage *string) error
-	// ExportStateDelete deletes any export state for repo.  Mostly useful in tests: in a
-	// living system the export state is part of the state of the world.
-	ExportStateDelete(tx db.Tx, repo string, branch string) error
+	// sets the new values with the values returned from the callback
+	// in case newRef == "" will will not change ref
+	ExportState(repo, branch, newRef string, cb stateCB) error
+
+	// GetExportState returns the current Export state params
+	GetExportState(repo string, branch string) (ExportState, error)
 }
 
 type Cataloger interface {

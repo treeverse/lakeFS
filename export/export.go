@@ -38,6 +38,9 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 		if state == catalog.ExportStatusInProgress {
 			return state, nil, ErrExportInProgress
 		}
+		if state == catalog.ExportStatusFailed {
+			return state, nil, catalog.ErrExportFailed
+		}
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
 		if err != nil {
 			return "", nil, err
