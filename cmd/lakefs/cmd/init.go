@@ -75,10 +75,24 @@ var initCmd = &cobra.Command{
 	},
 }
 
+const internalErrorCode = 2
+
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(initCmd)
 	f := initCmd.Flags()
 	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	f.String("access-key-id", "", "AWS-format access key ID to create for that user (for integration)")
+	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
+	if err := f.MarkHidden("access-key-id"); err != nil {
+		// (internal error)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(internalErrorCode)
+	}
+	if err := f.MarkHidden("secret-access-key"); err != nil {
+		// (internal error)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(internalErrorCode)
+	}
 	_ = initCmd.MarkFlagRequired("user-name")
 }
