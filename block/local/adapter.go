@@ -86,8 +86,7 @@ func (l *Adapter) getPath(identifier block.ObjectPointer) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := fmt.Sprintf("%s/%s", obj.StorageNamespace, obj.Key)
-	return path.Join(l.path, p), nil
+	return path.Join(l.path, obj.StorageNamespace, obj.Key), nil
 }
 
 // maybeMkdir runs f(path), but if f fails due to file-not-found MkdirAll's its dir and then
