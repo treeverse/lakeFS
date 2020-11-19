@@ -75,6 +75,8 @@ var initCmd = &cobra.Command{
 	},
 }
 
+const internalErrorCode = 2
+
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(initCmd)
@@ -85,12 +87,12 @@ func init() {
 	if err := f.MarkHidden("access-key-id"); err != nil {
 		// (internal error)
 		fmt.Fprint(os.Stderr, err)
-		os.Exit(2)
+		os.Exit(internalErrorCode)
 	}
 	if err := f.MarkHidden("secret-access-key"); err != nil {
 		// (internal error)
 		fmt.Fprint(os.Stderr, err)
-		os.Exit(2)
+		os.Exit(internalErrorCode)
 	}
 	_ = initCmd.MarkFlagRequired("user-name")
 }
