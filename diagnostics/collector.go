@@ -62,6 +62,11 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 		}
 	}
 
+	err = c.writeRawQueryContent(ctx, writer, "db_version", `SELECT version();`)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("get db version %w", err))
+	}
+
 	err = c.writeRawQueryContent(ctx, writer, "table_sizes", `
 SELECT *, pg_size_pretty(total_bytes) AS total
     , pg_size_pretty(index_bytes) AS INDEX
