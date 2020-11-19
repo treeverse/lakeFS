@@ -80,5 +80,9 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 	f := initCmd.Flags()
 	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	f.String("access-key-id", "", "AWS-format access key ID to create for that user (for integration)")
+	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
+	f.MarkHidden("access-key-id")
+	f.MarkHidden("secret-access-key")
 	_ = initCmd.MarkFlagRequired("user-name")
 }
