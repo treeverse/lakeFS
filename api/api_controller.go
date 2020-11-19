@@ -2230,8 +2230,12 @@ func (c *Controller) ExportRunHandler() exportop.RunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("execute_continuous_export")
-
-		exportID, err := export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
+		var exportID string
+		if swag.BoolValue(params.Repair) {
+			exportID, err = export.ExportBranchRepair(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
+		} else {
+			exportID, err = export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
+		}
 		if err != nil {
 			return exportop.NewRunDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

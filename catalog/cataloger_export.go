@@ -40,6 +40,7 @@ const (
 	ExportStatusInProgress = CatalogBranchExportStatus("in-progress")
 	ExportStatusSuccess    = CatalogBranchExportStatus("exported-successfully")
 	ExportStatusFailed     = CatalogBranchExportStatus("export-failed")
+	ExportStatusRepaired   = CatalogBranchExportStatus("export-repaired")
 	ExportStatusUnknown    = CatalogBranchExportStatus("[unknown]")
 )
 

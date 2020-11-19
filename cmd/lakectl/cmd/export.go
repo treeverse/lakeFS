@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -96,7 +97,11 @@ var exportExecuteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		exportID, err := client.RunExport(context.Background(), branchURI.Repository, branchURI.Ref)
+		repair, err := cmd.Flags().GetBool("repair")
+		if err != nil {
+			DieErr(err)
+		}
+		exportID, err := client.RunExport(context.Background(), branchURI.Repository, branchURI.Ref, swag.Bool(repair))
 		if err != nil {
 			DieErr(err)
 		}
@@ -117,4 +122,5 @@ func init() {
 	exportSetCmd.Flags().Bool("continuous", false, "export branch after every commit or merge (...=false to disable)")
 	_ = exportSetCmd.MarkFlagRequired("path")
 	_ = exportSetCmd.MarkFlagRequired("continuous")
+	exportExecuteCmd.Flags().Bool("repair", false, "repair will change current state from failed to repaired before starting a new export")
 }
