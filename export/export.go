@@ -66,3 +66,20 @@ func ExportBranchDone(cataloger catalog.Cataloger, status catalog.CatalogBranchE
 	})
 	return err
 }
+
+var ErrRepairNonFailed = errors.New("branch status is not export-failed, could not be repaired")
+
+// ExportBranchRepair will change state from Failed To Repair and start a new export
+// will return Error in Case current state is not Failed
+func ExportBranchRepair(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) (string, error) {
+	err := cataloger.ExportState(repo, branch, "", func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
+		if state != catalog.ExportStatusFailed {
+			return "", nil, ErrRepairNonFailed
+		}
+		return catalog.ExportStatusRepaired, nil, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return ExportBranchStart(paradeDB, cataloger, repo, branch)
+}

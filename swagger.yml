@@ -2024,6 +2024,10 @@ paths:
         name: branch
         required: true
         type: string
+      - in: query
+        description: will change export status from export-failed to repaired
+        name: repair
+        type: boolean
     post:
       tags:
         - export

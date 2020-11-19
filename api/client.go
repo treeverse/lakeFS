@@ -88,7 +88,7 @@ type RepositoryClient interface {
 
 	SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error
 	GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error)
-	RunExport(ctx context.Context, repository, branchID string) (string, error)
+	RunExport(ctx context.Context, repository, branchID string, repair *bool) (string, error)
 }
 
 type Client interface {
@@ -514,10 +514,11 @@ func (c *client) GetContinuousExport(ctx context.Context, repository, branchID s
 	return resp.GetPayload(), err
 }
 
-func (c *client) RunExport(ctx context.Context, repository, branchID string) (string, error) {
+func (c *client) RunExport(ctx context.Context, repository, branchID string, repair *bool) (string, error) {
 	resp, err := c.remote.Export.Run(&export.RunParams{
 		Branch:     branchID,
 		Repository: repository,
+		Repair:     repair,
 		Context:    ctx,
 		HTTPClient: nil,
 	}, c.auth)
