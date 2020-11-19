@@ -82,7 +82,15 @@ func init() {
 	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	f.String("access-key-id", "", "AWS-format access key ID to create for that user (for integration)")
 	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
-	f.MarkHidden("access-key-id")
-	f.MarkHidden("secret-access-key")
+	if err := f.MarkHidden("access-key-id"); err != nil {
+		// (internal error)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(2)
+	}
+	if err := f.MarkHidden("secret-access-key"); err != nil {
+		// (internal error)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(2)
+	}
 	_ = initCmd.MarkFlagRequired("user-name")
 }
