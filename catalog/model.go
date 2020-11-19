@@ -45,23 +45,6 @@ type MergeResult struct {
 	Reference string
 }
 
-type commitLogRaw struct {
-	BranchName            string    `db:"branch_name"`
-	CommitID              CommitID  `db:"commit_id"`
-	PreviousCommitID      CommitID  `db:"previous_commit_id"`
-	Committer             string    `db:"committer"`
-	Message               string    `db:"message"`
-	CreationDate          time.Time `db:"creation_date"`
-	Metadata              Metadata  `db:"metadata"`
-	MergeSourceBranchName string    `db:"merge_source_branch_name"`
-	MergeSourceCommit     CommitID  `db:"merge_source_commit"`
-}
-
-type lineageCommit struct {
-	BranchID int64    `db:"branch_id"`
-	CommitID CommitID `db:"commit_id"`
-}
-
 type Branch struct {
 	Repository string `db:"repository"`
 	Name       string `db:"name"`
@@ -93,13 +76,6 @@ func (j *Metadata) Scan(src interface{}) error {
 	return json.Unmarshal(data, j)
 }
 
-type DBScannerEntry struct {
-	BranchID int64  `db:"branch_id"`
-	RowCtid  string `db:"ctid"`
-	MinMaxCommit
-	Entry
-}
-
 type MinMaxCommit struct {
 	MinCommit CommitID `db:"min_commit"`
 	MaxCommit CommitID `db:"max_commit"`
@@ -119,10 +95,4 @@ func (m MinMaxCommit) IsCommitted() bool {
 func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
 	// needed for diff, to check if an entry changed after the lineage commit id
 	return m.MinCommit > commitID || (m.IsDeleted() && m.MaxCommit >= commitID)
-}
-
-type entryPathPrefixInfo struct {
-	BranchID   int64  `db:"branch_id"`
-	PathSuffix string `db:"path_suffix"`
-	MinMaxCommit
 }
