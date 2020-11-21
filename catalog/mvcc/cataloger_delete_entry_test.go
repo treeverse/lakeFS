@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -22,13 +23,13 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete uncommitted", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file2",
 			Checksum:        "ff",
 			PhysicalAddress: "/addr2",
 			Size:            2,
 			Metadata:        nil,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repository, "master", "/file2")
@@ -47,13 +48,13 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete committed on branch", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file3",
 			Checksum:        "ffff",
 			PhysicalAddress: "/addr3",
 			Size:            2,
 			Metadata:        nil,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file3", "tester", nil); err != nil {
@@ -69,13 +70,13 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete file committed on parent", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file4",
 			Checksum:        "ffff",
 			PhysicalAddress: "/addr4",
 			Size:            4,
 			Metadata:        nil,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {
@@ -94,8 +95,8 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 }
 
-func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository, branch string, path string) {
-	_, err := c.GetEntry(ctx, repository, MakeReference(branch, UncommittedID), path, GetEntryParams{})
+func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c catalog.Cataloger, repository, branch string, path string) {
+	_, err := c.GetEntry(ctx, repository, catalog.MakeReference(branch, catalog.UncommittedID), path, catalog.GetEntryParams{})
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
@@ -108,12 +109,12 @@ func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c Cataloge
 	}
 }
 
-func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository, branch string, path string) {
+func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c catalog.Cataloger, repository, branch string, path string) {
 	_, err := c.Commit(ctx, repository, branch, "commit before expect not found "+path, "tester", nil)
 	if err != nil {
 		t.Fatal("Failed to commit before expect not found:", err)
 	}
-	_, err = c.GetEntry(ctx, repository, branch+CommittedSuffix, path, GetEntryParams{})
+	_, err = c.GetEntry(ctx, repository, branch+catalog.CommittedSuffix, path, catalog.GetEntryParams{})
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)

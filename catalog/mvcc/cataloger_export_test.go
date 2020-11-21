@@ -12,6 +12,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lib/pq"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -22,7 +23,7 @@ const (
 )
 
 // configForBranchSlice adapts a slice to satisfy sort.Interface
-type configForBranchSlice []ExportConfigurationForBranch
+type configForBranchSlice []catalog.ExportConfigurationForBranch
 
 func (s configForBranchSlice) Len() int { return len(s) }
 
@@ -45,7 +46,7 @@ func TestExportConfiguration(t *testing.T) {
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
 
-	cfg := ExportConfiguration{
+	cfg := catalog.ExportConfiguration{
 		Path:                   "/path/to/export",
 		StatusPath:             "/path/to/status",
 		LastKeysInPrefixRegexp: pq.StringArray{"xyz+y"},
@@ -73,7 +74,7 @@ func TestExportConfiguration(t *testing.T) {
 	})
 
 	t.Run("reconfigured branch", func(t *testing.T) {
-		newCfg := ExportConfiguration{
+		newCfg := catalog.ExportConfiguration{
 			Path:                   "/better/to/export",
 			StatusPath:             "/better/for/status",
 			LastKeysInPrefixRegexp: pq.StringArray{"abc", "def", "xyz"},
@@ -91,7 +92,7 @@ func TestExportConfiguration(t *testing.T) {
 	})
 
 	t.Run("continuous", func(t *testing.T) {
-		newCfg := ExportConfiguration{
+		newCfg := catalog.ExportConfiguration{
 			Path:                   "/better/to/export",
 			StatusPath:             "/better/for/status",
 			LastKeysInPrefixRegexp: pq.StringArray{"abc", "def", "xyz"},
@@ -110,7 +111,7 @@ func TestExportConfiguration(t *testing.T) {
 	})
 
 	t.Run("invalid regexp", func(t *testing.T) {
-		badCfg := ExportConfiguration{
+		badCfg := catalog.ExportConfiguration{
 			Path:                   "/better/to/export",
 			StatusPath:             "/better/for/status",
 			LastKeysInPrefixRegexp: pq.StringArray{"(unclosed"},
@@ -130,11 +131,11 @@ func TestExportConfiguration(t *testing.T) {
 		if _, err := c.CreateBranch(ctx, repo, moreBranch, defaultBranch); err != nil {
 			t.Fatalf("create secondary branch: %s", err)
 		}
-		moreCfg := ExportConfiguration{
+		moreCfg := catalog.ExportConfiguration{
 			Path:       "/more/to/export",
 			StatusPath: "/more/for/status",
 		}
-		expected := []ExportConfigurationForBranch{
+		expected := []catalog.ExportConfigurationForBranch{
 			{
 				Repository:             repo,
 				Branch:                 defaultBranch,
@@ -180,16 +181,16 @@ func TestExportState(t *testing.T) {
 	cases := []struct {
 		name         string
 		startRef     string // start with this ref (and state) if set, otherwise start with no row
-		startState   CatalogBranchExportStatus
+		startState   catalog.CatalogBranchExportStatus
 		startMessage *string
 		setRef       string
-		expectState  CatalogBranchExportStatus
+		expectState  catalog.CatalogBranchExportStatus
 		expectErr    func(t *testing.T, err error)
 	}{
 		{
 			name:        "clean",
 			setRef:      ref2,
-			expectState: ExportStatusInProgress,
+			expectState: catalog.ExportStatusInProgress,
 			expectErr: func(t *testing.T, err error) {
 				if err != nil {
 					t.Errorf("unexpected error %s", err)
@@ -199,7 +200,7 @@ func TestExportState(t *testing.T) {
 			name:        "reset",
 			startRef:    ref1,
 			setRef:      ref2,
-			expectState: ExportStatusInProgress,
+			expectState: catalog.ExportStatusInProgress,
 			expectErr: func(t *testing.T, err error) {
 				if err != nil {
 					t.Errorf("unexpected error %s", err)
@@ -208,9 +209,9 @@ func TestExportState(t *testing.T) {
 		}, {
 			name:        "previousSucceeded",
 			startRef:    ref1,
-			startState:  ExportStatusSuccess,
+			startState:  catalog.ExportStatusSuccess,
 			setRef:      ref2,
-			expectState: ExportStatusInProgress,
+			expectState: catalog.ExportStatusInProgress,
 			expectErr: func(t *testing.T, err error) {
 				if err != nil {
 					t.Errorf("unexpected error %s", err)
@@ -219,10 +220,10 @@ func TestExportState(t *testing.T) {
 		}, {
 			name:         "previousFailed",
 			startRef:     ref1,
-			startState:   ExportStatusFailed,
+			startState:   catalog.ExportStatusFailed,
 			startMessage: swag.String("humpty dumpty had a great fall"),
 			setRef:       ref2,
-			expectState:  ExportStatusInProgress,
+			expectState:  catalog.ExportStatusInProgress,
 			expectErr: func(t *testing.T, err error) {
 				if !errors.Is(err, ErrExportFailed) {
 					t.Errorf("expected ErrExportFailed but got %s", err)
@@ -254,7 +255,7 @@ func TestExportState(t *testing.T) {
 						return nil, fmt.Errorf("setup (mark previous): %w", err)
 					}
 					// Test ExportMarkEnd if previous state is configured.
-					if tt.startState != "" && tt.startState != ExportStatusInProgress {
+					if tt.startState != "" && tt.startState != catalog.ExportStatusInProgress {
 						err := c.ExportStateMarkEnd(tx, repo, defaultBranch, tt.startRef, tt.startState, tt.startMessage)
 						if err != nil {
 							return nil, fmt.Errorf("setup (set previous): %w", err)

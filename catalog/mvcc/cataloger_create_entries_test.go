@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -14,15 +15,15 @@ func TestCataloger_CreateEntries(t *testing.T) {
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testutil.MustDo(t, "create entry on master for testing",
 		c.CreateEntry(ctx, repo, "master",
-			Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1},
-			CreateEntryParams{}))
+			catalog.Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1},
+			catalog.CreateEntryParams{}))
 	_, err := c.CreateBranch(ctx, repo, "b1", "master")
 	testutil.MustDo(t, "create branch b1 based on master", err)
 
 	type args struct {
 		repository string
 		branch     string
-		entries    []Entry
+		entries    []catalog.Entry
 	}
 	tests := []struct {
 		name    string
@@ -34,20 +35,20 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			args: args{
 				repository: repo,
 				branch:     "master",
-				entries: []Entry{
+				entries: []catalog.Entry{
 					{
 						Path:            "/aaa/bbb/ccc1",
 						Checksum:        "1231",
 						PhysicalAddress: "5671",
 						Size:            100,
-						Metadata:        Metadata{"k1": "v1"},
+						Metadata:        catalog.Metadata{"k1": "v1"},
 					},
 					{
 						Path:            "/aaa/bbb/ccc2",
 						Checksum:        "1232",
 						PhysicalAddress: "5672",
 						Size:            200,
-						Metadata:        Metadata{"k2": "v2"},
+						Metadata:        catalog.Metadata{"k2": "v2"},
 					},
 				},
 			},
@@ -58,7 +59,7 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			args: args{
 				repository: "norepo",
 				branch:     "master",
-				entries: []Entry{
+				entries: []catalog.Entry{
 					{
 						Path:            "/aaa/bbb/cccX",
 						Checksum:        "1239",
@@ -74,7 +75,7 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			args: args{
 				repository: repo,
 				branch:     "masterX",
-				entries: []Entry{
+				entries: []catalog.Entry{
 					{
 						Path:            "/aaa/bbb/cccX",
 						Checksum:        "1239",
@@ -90,7 +91,7 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			args: args{
 				repository: "",
 				branch:     "master",
-				entries: []Entry{
+				entries: []catalog.Entry{
 					{
 						Path:            "/aaa/bbb/cccX",
 						Checksum:        "1239",
@@ -106,7 +107,7 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			args: args{
 				repository: repo,
 				branch:     "",
-				entries: []Entry{
+				entries: []catalog.Entry{
 					{
 						Path:            "/aaa/bbb/cccX",
 						Checksum:        "1239",
@@ -129,7 +130,7 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			}
 			// check if case there was no error
 			for i, entry := range tt.args.entries {
-				ent, err := c.GetEntry(ctx, repo, tt.args.branch, entry.Path, GetEntryParams{})
+				ent, err := c.GetEntry(ctx, repo, tt.args.branch, entry.Path, catalog.GetEntryParams{})
 				testutil.MustDo(t, "get entry for new created entry", err)
 				if ent.Path != entry.Path {
 					t.Errorf("Entry at pos %d: path '%s', expected '%s'", i, ent.Path, entry.Path)

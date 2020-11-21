@@ -12,6 +12,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -29,18 +30,18 @@ func TestCataloger_Commit(t *testing.T) {
 	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	meta := Metadata{"key1": "val1", "key2": "val2"}
+	meta := catalog.Metadata{"key1": "val1", "key2": "val2"}
 	for i := 0; i < 3; i++ {
 		fileName := "/file" + strconv.Itoa(i)
 		fileAddr := "/addr" + strconv.Itoa(i)
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            fileName,
 			Checksum:        "ff",
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
 			Metadata:        meta,
 			CreationDate:    time.Now(),
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for testing", fileName, err)
 		}
 	}
@@ -55,13 +56,13 @@ func TestCataloger_Commit(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *CommitLog
+		want    *catalog.CommitLog
 		wantErr bool
 	}{
 		{
 			name: "simple",
 			args: args{repository: repository, branch: "master", message: "Simple commit", committer: "tester", metadata: meta},
-			want: &CommitLog{
+			want: &catalog.CommitLog{
 				Reference:    "~KJ8Wd1Rs96a",
 				Committer:    "tester",
 				Message:      "Simple commit",
@@ -133,14 +134,14 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("same file more than once", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		var previousCommitID CommitID
+		var previousCommitID catalog.CommitID
 		for i := 0; i < 3; i++ {
-			if err := c.CreateEntry(ctx, repository, "master", Entry{
+			if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 				Path:            "/file1",
 				Checksum:        strings.Repeat("ff", i),
 				PhysicalAddress: "/addr" + strconv.Itoa(i+1),
 				Size:            int64(i) + 1,
-			}, CreateEntryParams{}); err != nil {
+			}, catalog.CreateEntryParams{}); err != nil {
 				t.Error("create entry for commit twice", err)
 				return
 			}
@@ -151,7 +152,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			}
 
 			// parse commit log and check that the commit id goes up
-			r, err := ParseRef(commitLog.Reference)
+			r, err := catalog.ParseRef(commitLog.Reference)
 			testutil.Must(t, err)
 			if r.CommitID <= previousCommitID {
 				t.Fatalf("Commit ID should go up - %d, previous was %d", r.CommitID, previousCommitID)
@@ -159,7 +160,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			previousCommitID = r.CommitID
 
 			// verify that committed data is found
-			ent, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
+			ent, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", catalog.GetEntryParams{})
 			testutil.MustDo(t, "Get entry we just committed", err)
 			if ent.Size != int64(i+1) {
 				t.Errorf("Committed file size %d, expected %d", ent.Size, i+1)
@@ -169,16 +170,16 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("file per commit", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		var previousCommitID CommitID
+		var previousCommitID catalog.CommitID
 		for i := 0; i < 3; i++ {
 			fileName := fmt.Sprintf("/file%d", i+1)
 			addrName := fmt.Sprintf("/addr%d", i+1)
-			if err := c.CreateEntry(ctx, repository, "master", Entry{
+			if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 				Path:            fileName,
 				Checksum:        "ff",
 				PhysicalAddress: addrName,
 				Size:            42,
-			}, CreateEntryParams{}); err != nil {
+			}, catalog.CreateEntryParams{}); err != nil {
 				t.Error("create entry for file per commit", err)
 				return
 			}
@@ -189,7 +190,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			}
 
 			// check that commit id goes up
-			ref, err := ParseRef(commitLog.Reference)
+			ref, err := catalog.ParseRef(commitLog.Reference)
 			testutil.Must(t, err)
 			if ref.CommitID <= previousCommitID {
 				t.Fatalf("Commit new commit ID %d, should go up - previous %d", ref.CommitID, previousCommitID)
@@ -208,12 +209,12 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("delete on a committed file same branch", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file5",
 			Checksum:        "ffff",
 			PhysicalAddress: "/addr5",
 			Size:            55,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for file per commit", err)
 			return
 		}
@@ -281,7 +282,7 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 	testutil.MustDo(t, "commit delete file", err)
 
 	// verify that the file is deleted
-	ent, err := c.GetEntry(ctx, repository, branchCommit.Reference, "file42", GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, branchCommit.Reference, "file42", catalog.GetEntryParams{})
 	testutil.MustDo(t, "get entry from create branch commit - branch1", err)
 
 	checksumFile42 := testCreateEntryCalcChecksum("file42", t.Name(), "")
@@ -294,10 +295,10 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 // When no Err is set it will log commit log into Logs.
 type CommitHookLogger struct {
 	Err  error
-	Logs []*CommitLog
+	Logs []*catalog.CommitLog
 }
 
-func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, log *CommitLog) error {
+func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, log *catalog.CommitLog) error {
 	if h.Err != nil {
 		return h.Err
 	}
@@ -337,9 +338,9 @@ func TestCataloger_CommitHooks(t *testing.T) {
 			}
 
 			repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-			_ = testCatalogerCreateEntry(t, ctx, c, repository, DefaultBranchName, "/file1", nil, "")
+			_ = testCatalogerCreateEntry(t, ctx, c, repository, catalog.DefaultBranchName, "/file1", nil, "")
 
-			commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", Metadata{"foo": "bar"})
+			commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", catalog.Metadata{"foo": "bar"})
 			// check that hook err is the commit error
 			if !errors.Is(tt.hookErr, err) {
 				t.Fatalf("Commit err=%s, expected=%s", err, tt.hookErr)

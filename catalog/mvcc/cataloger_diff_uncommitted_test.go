@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -15,14 +16,14 @@ func TestCataloger_DiffUncommitted_Pagination(t *testing.T) {
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
 
 	const numOfFiles = 10
-	var expectedDifferences Differences
+	var expectedDifferences catalog.Differences
 	for i := 0; i < numOfFiles; i++ {
 		p := "/file" + strconv.Itoa(i)
 		testCatalogerCreateEntry(t, ctx, c, repository, "master", p, nil, "")
-		expectedDifferences = append(expectedDifferences, Difference{Type: DifferenceTypeAdded, Entry: Entry{Path: p}})
+		expectedDifferences = append(expectedDifferences, catalog.Difference{Type: catalog.DifferenceTypeAdded, Entry: catalog.Entry{Path: p}})
 	}
 	const changesPerPage = 3
-	var differences Differences
+	var differences catalog.Differences
 	var after string
 	for {
 		res, hasMore, err := c.DiffUncommitted(ctx, repository, "master", changesPerPage, after)
@@ -82,10 +83,10 @@ func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
 		t.Fatalf("DiffUncommitted err = %s, expected none", err)
 	}
 
-	changes := Differences{
-		Difference{Type: DifferenceTypeRemoved, Entry: Entry{Path: "/file1"}},
-		Difference{Type: DifferenceTypeChanged, Entry: Entry{Path: "/file2"}},
-		Difference{Type: DifferenceTypeAdded, Entry: Entry{Path: "/file5"}},
+	changes := catalog.Differences{
+		catalog.Difference{Type: catalog.DifferenceTypeRemoved, Entry: catalog.Entry{Path: "/file1"}},
+		catalog.Difference{Type: catalog.DifferenceTypeChanged, Entry: catalog.Entry{Path: "/file2"}},
+		catalog.Difference{Type: catalog.DifferenceTypeAdded, Entry: catalog.Entry{Path: "/file5"}},
 	}
 	if diff := deep.Equal(differences, changes); diff != nil {
 		t.Fatal("DiffUncommitted", diff)

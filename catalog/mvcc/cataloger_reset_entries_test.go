@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -15,25 +16,25 @@ func TestCataloger_ResetEntries_Basics(t *testing.T) {
 
 	const branch = "master"
 	repository := testCatalogerRepo(t, ctx, c, "repository", branch)
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ffff",
 		PhysicalAddress: "/addr1",
 		Size:            111,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, branch, "commit file1", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file2",
 		Checksum:        "eeee",
 		PhysicalAddress: "/addr2",
 		Size:            222,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 
@@ -112,12 +113,12 @@ func TestCataloger_ResetEntries(t *testing.T) {
 	// create master branch with 3 entries committed
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 	for i := 0; i < 3; i++ {
-		testutil.Must(t, c.CreateEntry(ctx, repository, "master", Entry{
+		testutil.Must(t, c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file" + strconv.Itoa(i),
 			Checksum:        strings.Repeat("ff", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}, CreateEntryParams{}))
+		}, catalog.CreateEntryParams{}))
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit changes on master", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
@@ -127,55 +128,55 @@ func TestCataloger_ResetEntries(t *testing.T) {
 	_, err := c.CreateBranch(ctx, repository, "b1", "master")
 	testutil.MustDo(t, "Create branch b1 for ResetEntries", err)
 	for i := 3; i < 6; i++ {
-		testutil.Must(t, c.CreateEntry(ctx, repository, "b1", Entry{
+		testutil.Must(t, c.CreateEntry(ctx, repository, "b1", catalog.Entry{
 			Path:            "/file" + strconv.Itoa(i),
 			Checksum:        strings.Repeat("ff", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}, CreateEntryParams{}))
+		}, catalog.CreateEntryParams{}))
 	}
 	if _, err := c.Commit(ctx, repository, "b1", "commit changes on b1", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
 	}
-	testutil.Must(t, c.CreateEntry(ctx, repository, "master", Entry{
+	testutil.Must(t, c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file2",
 		Checksum:        "eeee",
 		PhysicalAddress: "/addr2",
 		Size:            222,
 		Metadata:        nil,
-	}, CreateEntryParams{}))
+	}, catalog.CreateEntryParams{}))
 
 	// update file on both branches
-	testutil.Must(t, c.CreateEntry(ctx, repository, "master", Entry{
+	testutil.Must(t, c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file0",
 		Checksum:        "ee",
 		PhysicalAddress: "/addr0",
 		Size:            11,
 		Metadata:        nil,
-	}, CreateEntryParams{}))
-	testutil.Must(t, c.CreateEntry(ctx, repository, "b1", Entry{
+	}, catalog.CreateEntryParams{}))
+	testutil.Must(t, c.CreateEntry(ctx, repository, "b1", catalog.Entry{
 		Path:            "/file3",
 		Checksum:        "ee",
 		PhysicalAddress: "/addr3",
 		Size:            33,
 		Metadata:        nil,
-	}, CreateEntryParams{}))
+	}, catalog.CreateEntryParams{}))
 
 	// create new file on both branches
-	testutil.Must(t, c.CreateEntry(ctx, repository, "master", Entry{
+	testutil.Must(t, c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file10",
 		Checksum:        "eeee",
 		PhysicalAddress: "/addr10",
 		Size:            111,
 		Metadata:        nil,
-	}, CreateEntryParams{}))
-	testutil.Must(t, c.CreateEntry(ctx, repository, "b1", Entry{
+	}, catalog.CreateEntryParams{}))
+	testutil.Must(t, c.CreateEntry(ctx, repository, "b1", catalog.Entry{
 		Path:            "/file13",
 		Checksum:        "eeee",
 		PhysicalAddress: "/addr13",
 		Size:            333,
 		Metadata:        nil,
-	}, CreateEntryParams{}))
+	}, catalog.CreateEntryParams{}))
 
 	// delete file on both branches
 	testutil.Must(t, c.DeleteEntry(ctx, repository, "master", "/file1"))
@@ -186,7 +187,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, MakeReference("master", UncommittedID), "", "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
 			t.Fatal("List entries of master branch after reset should return 3 items, got", len(entries))
@@ -202,7 +203,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, catalog.MakeReference("b1", catalog.UncommittedID), "", "", "", -1)
 		testutil.Must(t, err)
 		expectedEntriesLen := 6
 		if len(entries) != expectedEntriesLen {

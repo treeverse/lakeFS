@@ -3,6 +3,8 @@ package mvcc
 import (
 	"context"
 	"testing"
+
+	"github.com/treeverse/lakefs/catalog"
 )
 
 func TestCataloger_GetEntry(t *testing.T) {
@@ -18,25 +20,25 @@ func TestCataloger_GetEntry(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Entry
+		want    *catalog.Entry
 		wantErr bool
 	}{
 		{
 			name:    "uncommitted - uncommitted file",
 			args:    args{repository: repository, reference: "master", path: "/file3"},
-			want:    &Entry{Path: "/file3", PhysicalAddress: "/addr3", Size: 42, Checksum: "ffff"},
+			want:    &catalog.Entry{Path: "/file3", PhysicalAddress: "/addr3", Size: 42, Checksum: "ffff"},
 			wantErr: false,
 		},
 		{
 			name:    "uncommitted - committed file",
 			args:    args{repository: repository, reference: "master", path: "/file1"},
-			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
+			want:    &catalog.Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},
 		{
 			name:    "committed - committed file",
 			args:    args{repository: repository, reference: "master:HEAD", path: "/file2"},
-			want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
+			want:    &catalog.Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
 			wantErr: false,
 		},
 		{
@@ -78,7 +80,7 @@ func TestCataloger_GetEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path, GetEntryParams{})
+			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path, catalog.GetEntryParams{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -107,45 +109,45 @@ func TestCataloger_GetEntry(t *testing.T) {
 	}
 }
 
-func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
+func setupReadEntryData(t *testing.T, ctx context.Context, c catalog.Cataloger) string {
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            42,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file2",
 		Checksum:        "ee",
 		PhysicalAddress: "/addr2",
 		Size:            24,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1 and 2", "tester", nil); err != nil {
 		t.Fatal("failed to commit for get entry:", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file3",
 		Checksum:        "ffff",
 		PhysicalAddress: "/addr3",
 		Size:            42,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file4",
 		Checksum:        "eeee",
 		PhysicalAddress: "/addr4",
 		Size:            24,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	return repository

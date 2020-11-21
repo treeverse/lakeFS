@@ -11,6 +11,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -28,13 +29,13 @@ func TestCataloger_ListEntries(t *testing.T) {
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := int64(n) * 10
 		testutil.MustDo(t, "create test entry",
-			c.CreateEntry(ctx, "repo1", "master", Entry{
+			c.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 				Path:            filePath,
 				Checksum:        fileChecksum,
 				PhysicalAddress: fileAddress,
 				Size:            fileSize,
 				Metadata:        nil,
-			}, CreateEntryParams{}))
+			}, catalog.CreateEntryParams{}))
 		if i == 2 {
 			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
 			testutil.MustDo(t, "commit test files", err)
@@ -53,7 +54,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		wantEntries []Entry
+		wantEntries []catalog.Entry
 		wantMore    bool
 		wantErr     bool
 	}{
@@ -66,7 +67,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 				after:      "",
 				limit:      -1,
 			},
-			wantEntries: []Entry{
+			wantEntries: []catalog.Entry{
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
 				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
 				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
@@ -84,7 +85,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 				after:      "",
 				limit:      2,
 			},
-			wantEntries: []Entry{
+			wantEntries: []catalog.Entry{
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
 				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
 			},
@@ -100,7 +101,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 				after:      "/file3",
 				limit:      2,
 			},
-			wantEntries: []Entry{
+			wantEntries: []catalog.Entry{
 				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
 				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d"},
 			},
@@ -116,7 +117,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 				after:      "/file1",
 				limit:      -1,
 			},
-			wantEntries: []Entry{
+			wantEntries: []catalog.Entry{
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
 				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
 			},
@@ -131,12 +132,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			// copy the Entry's fields we like to compare
-			var gotEntries []Entry
+			var gotEntries []catalog.Entry
 			for i, ent := range got {
 				if ent == nil {
 					t.Fatalf("Expected entry at index %d, found nil", i)
 				}
-				gotEntries = append(gotEntries, Entry{
+				gotEntries = append(gotEntries, catalog.Entry{
 					CommonLevel:     ent.CommonLevel,
 					Path:            ent.Path,
 					PhysicalAddress: ent.PhysicalAddress,
@@ -170,13 +171,13 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := int64(n) * 10
 		testutil.MustDo(t, "create test entry",
-			c.CreateEntry(ctx, repo, "master", Entry{
+			c.CreateEntry(ctx, repo, "master", catalog.Entry{
 				Path:            filePath,
 				Checksum:        fileChecksum,
 				PhysicalAddress: fileAddress,
 				Size:            fileSize,
 				Metadata:        nil,
-			}, CreateEntryParams{}))
+			}, catalog.CreateEntryParams{}))
 
 		if i == 3 {
 			_, err := c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
@@ -335,14 +336,14 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, DefaultPathDelimiter, tt.args.limit)
+			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, catalog.DefaultPathDelimiter, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() err = %s, expected error %t", err, tt.wantErr)
 			}
 			// test that directories have null entries, and vice versa
 			var gotNames []string
 			for _, res := range got {
-				if strings.HasSuffix(res.Path, DefaultPathDelimiter) != res.CommonLevel {
+				if strings.HasSuffix(res.Path, catalog.DefaultPathDelimiter) != res.CommonLevel {
 					t.Errorf("%s suffix doesn't match the CommonLevel = %t", res.Path, res.CommonLevel)
 				}
 				if !strings.HasSuffix(res.Path, res.Path) {
@@ -380,7 +381,7 @@ func TestCataloger_ListEntries_ByLevel_Deleted(t *testing.T) {
 	_, err = c.Commit(ctx, repo, "master", "commit two more files", "tester", nil)
 	testutil.MustDo(t, "commit 2 files", err)
 
-	entries, hasMore, err := c.ListEntries(ctx, repo, "master", "place/to/", "", DefaultPathDelimiter, -1)
+	entries, hasMore, err := c.ListEntries(ctx, repo, "master", "place/to/", "", catalog.DefaultPathDelimiter, -1)
 	testutil.MustDo(t, "list entries under place/to/", err)
 	if len(entries) != 2 {
 		t.Errorf("Expected two entries, got = %s", spew.Sdump(entries))
@@ -467,7 +468,7 @@ func TestCataloger_ListByLevel_DirectoriesAndTombstones(t *testing.T) {
 	testCatalogerListEntriesVerifyResponse(t, got, gotMore, err, wantEntries)
 }
 
-func testCatalogerListEntriesVerifyResponse(t *testing.T, got []*Entry, gotMore bool, gotErr error, entries []string) {
+func testCatalogerListEntriesVerifyResponse(t *testing.T, got []*catalog.Entry, gotMore bool, gotErr error, entries []string) {
 	t.Helper()
 	if gotErr != nil {
 		t.Fatalf("Got expected error: %s", gotErr)
@@ -533,7 +534,7 @@ func TestCataloger_ListEntries_Prefix(t *testing.T) {
 		})
 		// by level
 		t.Run(tt.name+"-by level", func(t *testing.T) {
-			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", DefaultPathDelimiter, -1)
+			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", catalog.DefaultPathDelimiter, -1)
 			if err != nil {
 				t.Fatalf("ListEntries by level - err = %s, expected no error", err)
 			}
@@ -548,7 +549,7 @@ func TestCataloger_ListEntries_Prefix(t *testing.T) {
 	}
 }
 
-func extractEntriesPaths(entries []*Entry) []string {
+func extractEntriesPaths(entries []*catalog.Entry) []string {
 	result := make([]string, len(entries))
 	for i, ent := range entries {
 		result[i] = ent.Path
@@ -571,7 +572,7 @@ func TestCataloger_ListEntries_ByLevelAfter(t *testing.T) {
 	}
 
 	const testLimit = 2
-	delimiters := []string{"", DefaultPathDelimiter}
+	delimiters := []string{"", catalog.DefaultPathDelimiter}
 	for _, delimiter := range delimiters {
 		t.Run("delimiter_"+strconv.FormatBool(delimiter != ""), func(t *testing.T) {
 			var after string
@@ -611,7 +612,7 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 	testutil.MustDo(t, "delete the first committed file",
 		c.DeleteEntry(ctx, repo, "master", "my_entry"))
 	// an uncommitted tombstone "hides" a committed entry
-	got, _, err := c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	got, _, err := c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.MustDo(t, "ListEntries", err)
 	if len(got) != 0 {
 		t.Fatalf("ListEntries %d entries, expected none", len(got))
@@ -619,7 +620,7 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
 	// an uncommitted entry is detected
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.MustDo(t, "ListEntries", err)
 	expectedPaths := []string{"my_entry"}
 	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
@@ -633,7 +634,7 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 	_, err = c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
 	testutil.MustDo(t, "commit my_entry deletion", err)
 	// deleted entry will not be displayed
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.MustDo(t, "ListEntries", err)
 	if len(got) != 0 {
 		t.Fatalf("ListEntries %d entries, expected none", len(got))
@@ -641,7 +642,7 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 
 	// an uncommitted entry is detected even if the entry is deleted
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.MustDo(t, "ListEntries", err)
 	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
 		t.Fatal("ListEntries", diff)
@@ -686,7 +687,7 @@ func TestCataloger_ListEntries_ReadingUncommittedFromLineage(t *testing.T) {
 		path := "my_entry" + z
 		testCatalogerCreateEntry(t, ctx, c, repo, "master", path, nil, "abcd"+z)
 	}
-	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 11 {
 		t.Fatalf("expected 11 entries, read %d", len(got))
@@ -701,7 +702,7 @@ func TestCataloger_ListEntries_MultipleDelete(t *testing.T) {
 	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
 	testListEntriesCreateEntries(t, ctx, c, repo, "br_1", 51, 100, 2)
 
-	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 100 {
 		t.Fatalf("expected 100 entries, read %d", len(got))
@@ -722,7 +723,7 @@ func TestCataloger_ListEntries_MultipleDelete(t *testing.T) {
 		p := fmt.Sprintf("my_entry%03d", i)
 		testutil.MustDo(t, "delete files in br_1", c.DeleteEntry(ctx, repo, "br_1", p))
 	}
-	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 50 {
 		t.Fatalf("expected 50 entries, read %d", len(got))
@@ -735,7 +736,7 @@ func TestCataloger_ListEntries_MultipleDelete(t *testing.T) {
 	// check it can identify committed tombstones
 	_, err = c.Commit(ctx, repo, "br_1", "commit  br_1 after delete ", "tester", nil)
 	testutil.MustDo(t, "commit br_1 after delete ", err)
-	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 50 {
 		t.Fatalf("expected 50 entries, read %d", len(got))
@@ -750,7 +751,7 @@ func TestCataloger_ListEntries_MultipleDelete(t *testing.T) {
 		p := fmt.Sprintf("my_entry%03d", i)
 		testutil.MustDo(t, "delete files in br_1", c.DeleteEntry(ctx, repo, "br_1", p))
 	}
-	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 0 {
 		t.Fatalf("expected 0 entries, read %d", len(got))
@@ -758,12 +759,12 @@ func TestCataloger_ListEntries_MultipleDelete(t *testing.T) {
 	// check after commit
 	_, err = c.Commit(ctx, repo, "br_1", "commit br_1 after delete ", "tester", nil)
 	testutil.MustDo(t, "commit br_1 after delete ", err)
-	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 0 {
 		t.Fatalf("expected 0 entries, read %d", len(got))
 	}
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 100 {
 		t.Fatalf("expected 100 entries, read %d", len(got))
@@ -781,13 +782,13 @@ func TestCataloger_ListEntries_IgnoreDeleteByLineage(t *testing.T) {
 		testutil.MustDo(t, "delete files in master", c.DeleteEntry(ctx, repo, "master", p))
 	}
 	// br_1 ignores uncommitted tombstones on master
-	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 100 {
 		t.Fatalf("expected 100 entries on br_1, read %d", len(got))
 	}
 	// master is really deleted
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 0 {
 		t.Fatalf("expected 0 entries on master, read %d", len(got))
@@ -795,7 +796,7 @@ func TestCataloger_ListEntries_IgnoreDeleteByLineage(t *testing.T) {
 	_, err = c.Commit(ctx, repo, "master", "commit master", "tester", nil)
 	testutil.MustDo(t, "commit master ", err)
 	// br_1 ignores deleted committed entries on master
-	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 100 {
 		t.Fatalf("expected 100 entries on br_1, read %d", len(got))
@@ -803,21 +804,21 @@ func TestCataloger_ListEntries_IgnoreDeleteByLineage(t *testing.T) {
 	// now merge master to br_1
 	_, err = c.Merge(ctx, repo, "master", "br_1", "tester", "merge deletions", nil)
 	testutil.Must(t, err)
-	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", catalog.DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 0 {
 		t.Fatalf("expected 0 entries on br_1, read %d", len(got))
 	}
 }
 
-func testListEntriesCreateEntries(t *testing.T, ctx context.Context, c Cataloger, repo, branch string, numIterations, numEntries, skip int) {
+func testListEntriesCreateEntries(t *testing.T, ctx context.Context, c catalog.Cataloger, repo, branch string, numIterations, numEntries, skip int) {
 	t.Helper()
 	for i := 0; i < numIterations; i++ {
 		for j := 0; j < numEntries; j += skip {
 			path := fmt.Sprintf("my_entry%03d", j)
 			seed := strconv.Itoa(i)
 			checksum := testCreateEntryCalcChecksum(path, t.Name(), seed)
-			err := c.CreateEntry(ctx, repo, branch, Entry{Path: path, Checksum: checksum, PhysicalAddress: checksum, Size: int64(i)}, CreateEntryParams{})
+			err := c.CreateEntry(ctx, repo, branch, catalog.Entry{Path: path, Checksum: checksum, PhysicalAddress: checksum, Size: int64(i)}, catalog.CreateEntryParams{})
 			if err != nil {
 				t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repo, err)
 			}

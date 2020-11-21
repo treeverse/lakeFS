@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -25,7 +26,7 @@ func TestCataloger_GetCommit(t *testing.T) {
 	for i := 0; i < testCommitsLen; i++ {
 		n := strconv.Itoa(i)
 		testPath := "/file" + n
-		meta := Metadata{"k" + n: "v" + n}
+		meta := catalog.Metadata{"k" + n: "v" + n}
 		msg := "Commit" + n
 		committer := "tester" + n
 		testCatalogerCreateEntry(t, ctx, c, repository, testBranch, testPath, meta, "")
@@ -37,18 +38,18 @@ func TestCataloger_GetCommit(t *testing.T) {
 	tests := []struct {
 		name      string
 		reference string
-		want      *CommitLog
+		want      *catalog.CommitLog
 		wantErr   bool
 	}{
 		{
 			name:      "first",
 			reference: "~KJ8Wd1Rs96a",
-			want: &CommitLog{
+			want: &catalog.CommitLog{
 				Reference:    "~KJ8Wd1Rs96a",
 				Committer:    "tester0",
 				Message:      "Commit0",
 				CreationDate: time.Now(),
-				Metadata:     Metadata{"k0": "v0"},
+				Metadata:     catalog.Metadata{"k0": "v0"},
 				Parents:      []string{"~KJ8Wd1Rs96Z"},
 			},
 			wantErr: false,
@@ -56,12 +57,12 @@ func TestCataloger_GetCommit(t *testing.T) {
 		{
 			name:      "second",
 			reference: "~KJ8Wd1Rs96b",
-			want: &CommitLog{
+			want: &catalog.CommitLog{
 				Reference:    "~KJ8Wd1Rs96b",
 				Committer:    "tester1",
 				Message:      "Commit1",
 				CreationDate: time.Now(),
-				Metadata:     Metadata{"k1": "v1"},
+				Metadata:     catalog.Metadata{"k1": "v1"},
 				Parents:      []string{"~KJ8Wd1Rs96a"},
 			},
 			wantErr: false,
@@ -81,12 +82,12 @@ func TestCataloger_GetCommit(t *testing.T) {
 		{
 			name:      "branch uncommitted",
 			reference: "master",
-			want: &CommitLog{
+			want: &catalog.CommitLog{
 				Reference:    "~KJ8Wd1Rs96b",
 				Committer:    "tester1",
 				Message:      "Commit1",
 				CreationDate: time.Now(),
-				Metadata:     Metadata{"k1": "v1"},
+				Metadata:     catalog.Metadata{"k1": "v1"},
 				Parents:      []string{"~KJ8Wd1Rs96a"},
 			},
 			wantErr: false,
@@ -94,12 +95,12 @@ func TestCataloger_GetCommit(t *testing.T) {
 		{
 			name:      "branch committed",
 			reference: "master:HEAD",
-			want: &CommitLog{
+			want: &catalog.CommitLog{
 				Reference:    "~KJ8Wd1Rs96b",
 				Committer:    "tester1",
 				Message:      "Commit1",
 				CreationDate: time.Now(),
-				Metadata:     Metadata{"k1": "v1"},
+				Metadata:     catalog.Metadata{"k1": "v1"},
 				Parents:      []string{"~KJ8Wd1Rs96a"},
 			},
 			wantErr: false,

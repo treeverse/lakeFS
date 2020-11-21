@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/treeverse/lakefs/catalog"
 )
 
 func TestCataloger_ListBranches(t *testing.T) {
@@ -42,7 +44,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{
 			name:         "all",
 			args:         args{repository: "repo1", prefix: "", limit: -1, after: ""},
-			wantBranches: []string{"b1", "b2", "b3", DefaultImportBranchName, "master", "z1", "z2", "z3"},
+			wantBranches: []string{"b1", "b2", "b3", catalog.DefaultImportBranchName, "master", "z1", "z2", "z3"},
 			wantMore:     false,
 			wantErr:      false,
 		},

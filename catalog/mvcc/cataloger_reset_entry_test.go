@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -14,25 +15,25 @@ func TestCataloger_ResetEntry(t *testing.T) {
 
 	const branch = "master"
 	repository := testCatalogerRepo(t, ctx, c, "repository", branch)
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ffff",
 		PhysicalAddress: "/addr1",
 		Size:            111,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, branch, "commit file1", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file2",
 		Checksum:        "eeee",
 		PhysicalAddress: "/addr2",
 		Size:            222,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 
@@ -115,19 +116,19 @@ func TestCataloger_ResetEntry_NewToNone(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            1,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if err := c.ResetEntry(ctx, repository, "master", "/file1"); err != nil {
 		t.Fatal("ResetEntry should reset new uncommitted file:", err)
 	}
-	_, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", GetEntryParams{})
+	_, err := c.GetEntry(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
 	expectedErr := db.ErrNotFound
 	if !errors.As(err, &expectedErr) {
 		t.Fatalf("ResetEntry expecting the file to be gone with %s, got = %s", expectedErr, err)
@@ -139,13 +140,13 @@ func TestCataloger_ResetEntry_NewToPrevious(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            1,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -153,16 +154,16 @@ func TestCataloger_ResetEntry_NewToPrevious(t *testing.T) {
 	}
 	const newChecksum = "eeee"
 	const newPhysicalAddress = "/addrNew"
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        newChecksum,
 		PhysicalAddress: newPhysicalAddress,
 		Size:            2,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
 	if err != nil {
 		t.Fatal("ResetEntry expecting previous file to be found:", err)
 	}
@@ -179,13 +180,13 @@ func TestCataloger_ResetEntry_Committed(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            1,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -203,13 +204,13 @@ func TestCataloger_ResetEntry_CommittedParentBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            1,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -231,13 +232,13 @@ func TestCataloger_ResetEntry_UncommittedDeleteSameBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            1,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -251,12 +252,12 @@ func TestCataloger_ResetEntry_UncommittedDeleteSameBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("ResetEntry expected successful reset on delete entry:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
 	if err != nil {
 		t.Fatal("get entry for reset entry test:", err)
 	}
 	if ent.Path != "/file1" || ent.PhysicalAddress != "/addr1" {
-		t.Fatalf("Entry should be reseted back to /file1 /addr1, got %+v", ent)
+		t.Fatalf("catalog.Entry should be reseted back to /file1 /addr1, got %+v", ent)
 	}
 }
 
@@ -265,13 +266,13 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "ff",
 		PhysicalAddress: "/addr1",
 		Size:            1,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -288,11 +289,11 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("ResetEntry expected successful reset on delete entry:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, MakeReference("b1", UncommittedID), "/file1", GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, catalog.MakeReference("b1", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
 	if err != nil {
 		t.Fatal("get entry for reset entry test:", err)
 	}
 	if ent.Path != "/file1" || ent.PhysicalAddress != "/addr1" {
-		t.Fatalf("Entry should be reseted back to /file1 /addr1, got %+v", ent)
+		t.Fatalf("catalog.Entry should be reseted back to /file1 /addr1, got %+v", ent)
 	}
 }

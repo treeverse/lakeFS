@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -19,7 +20,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 
-	importInitialCommitReference, err := c.GetBranchReference(ctx, repository, DefaultImportBranchName)
+	importInitialCommitReference, err := c.GetBranchReference(ctx, repository, catalog.DefaultImportBranchName)
 	testutil.MustDo(t, "get import branch reference", err)
 
 	initialCommitReference, err := c.GetBranchReference(ctx, repository, "master")
@@ -36,7 +37,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     args
-		want     []*CommitLog
+		want     []*catalog.CommitLog
 		wantMore bool
 		wantErr  bool
 	}{
@@ -48,12 +49,12 @@ func TestCataloger_ListCommits(t *testing.T) {
 				fromReference: "",
 				limit:         -1,
 			},
-			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96b"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
-				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}, Parents: []string{"~3BJEPkwHYMdLDpaBrwnpTPmfarYET3yz"}},
-				{Reference: importInitialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryImportCommitMessage, Metadata: Metadata{}},
+			want: []*catalog.CommitLog{
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: catalog.Metadata{}, Parents: []string{"~KJ8Wd1Rs96b"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: catalog.Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1 on branch master", Metadata: catalog.Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: initialCommitReference, Committer: catalog.CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: catalog.Metadata{}, Parents: []string{"~3BJEPkwHYMdLDpaBrwnpTPmfarYET3yz"}},
+				{Reference: importInitialCommitReference, Committer: catalog.CatalogerCommitter, Message: createRepositoryImportCommitMessage, Metadata: catalog.Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -66,9 +67,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 				fromReference: "",
 				limit:         2,
 			},
-			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96b"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+			want: []*catalog.CommitLog{
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: catalog.Metadata{}, Parents: []string{"~KJ8Wd1Rs96b"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: catalog.Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -81,8 +82,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				fromReference: initialCommitReference,
 				limit:         1,
 			},
-			want: []*CommitLog{
-				{Reference: importInitialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryImportCommitMessage, Metadata: Metadata{}},
+			want: []*catalog.CommitLog{
+				{Reference: importInitialCommitReference, Committer: catalog.CatalogerCommitter, Message: createRepositoryImportCommitMessage, Metadata: catalog.Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -95,8 +96,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				fromReference: commits[2].Reference,
 				limit:         1,
 			},
-			want: []*CommitLog{
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+			want: []*catalog.CommitLog{
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: catalog.Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -175,12 +176,12 @@ func TestCataloger_ListCommits(t *testing.T) {
 		t.Fatalf("ListCommits() error = %s", err)
 	}
 
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "master-file",
 		Checksum:        "ssss",
 		PhysicalAddress: "xxxxxxx",
 		Size:            10000,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("Write entry for list repository commits failed", err)
 	}
 	commitLog, err := c.Commit(ctx, repository, "master", "commit master", "tester", nil)
@@ -196,17 +197,17 @@ func TestCataloger_ListCommits(t *testing.T) {
 	testutil.Must(t, err)
 }
 
-func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository, branch string) []*CommitLog {
-	var commits []*CommitLog
+func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c catalog.Cataloger, repository, branch string) []*catalog.CommitLog {
+	var commits []*catalog.CommitLog
 	for i := 0; i < 3; i++ {
 		fileName := fmt.Sprintf("/file%d", i)
 		fileAddr := fmt.Sprintf("/addr%d", i)
-		if err := c.CreateEntry(ctx, repository, branch, Entry{
+		if err := c.CreateEntry(ctx, repository, branch, catalog.Entry{
 			Path:            fileName,
 			Checksum:        strings.Repeat("ff", i),
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("Write entry for list repository commits failed", err)
 		}
 		message := "commit" + strconv.Itoa(i+1) + " on branch " + branch
@@ -246,12 +247,12 @@ func TestCataloger_ListCommits_Lineage(t *testing.T) {
 		t.Error("br_2 did not inherit commits correctly", diff)
 	}
 
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "master-file",
 		Checksum:        "ssss",
 		PhysicalAddress: "xxxxxxx",
 		Size:            10000,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("Write entry for list repository commits failed", err)
 	}
 	_, err = c.Commit(ctx, repository, "master", "commit master-file", "tester", nil)
@@ -303,12 +304,12 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 		t.Error("br_1_2 did not inherit commits correctly", diff)
 	}
 
-	if err := c.CreateEntry(ctx, repository, "master", Entry{
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 		Path:            "master-file",
 		Checksum:        "ssss",
 		PhysicalAddress: "xxxxxxx",
 		Size:            10000,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("Write entry for list repository commits failed", err)
 	}
 	_, err = c.Commit(ctx, repository, "master", "commit master-file on master", "tester", nil)
@@ -334,12 +335,12 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 
 	testCatalogerBranch(t, ctx, c, repository, "br_2_1", "master")
 	testCatalogerBranch(t, ctx, c, repository, "br_2_2", "br_2_1")
-	if err := c.CreateEntry(ctx, repository, "br_2_2", Entry{
+	if err := c.CreateEntry(ctx, repository, "br_2_2", catalog.Entry{
 		Path:            "master-file",
 		Checksum:        "zzzzz",
 		PhysicalAddress: "yyyyy",
 		Size:            20000,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("Write entry to br_2_2 failed", err)
 	}
 	_, err = c.Commit(ctx, repository, "br_2_2", "commit master-file to br_2_2", "tester", nil)
@@ -366,8 +367,8 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
-	if diff := deep.Equal(merge2.Summary, map[DifferenceType]int{
-		DifferenceTypeChanged: 1,
+	if diff := deep.Equal(merge2.Summary, map[catalog.DifferenceType]int{
+		catalog.DifferenceTypeChanged: 1,
 	}); diff != nil {
 		t.Fatal("Merge Summary", diff)
 	}
@@ -375,7 +376,7 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//
-	//if differences[0].Type != DifferenceTypeChanged || differences[0].Path != "master-file" {
+	//if differences[0].Type != catalog.DifferenceTypeChanged || differences[0].Path != "master-file" {
 	//	t.Error("merge br_2_1 into master with unexpected results", differences[0])
 	//}
 
@@ -401,12 +402,12 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 		t.Error("master 5 first different from br_1_1 [1:6]", diff)
 	}
 	// test that a change to br_2_2 does not propagate to master
-	if err := c.CreateEntry(ctx, repository, "br_2_2", Entry{
+	if err := c.CreateEntry(ctx, repository, "br_2_2", catalog.Entry{
 		Path:            "no-propagate-file",
 		Checksum:        "aaaaaaaa",
 		PhysicalAddress: "yybbbbbbyyy",
 		Size:            20000,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("Write no-propagate-file to br_2_2 failed", err)
 	}
 	_, err = c.Commit(ctx, repository, "br_2_2", "commit master-file to br_2_2", "tester", nil)

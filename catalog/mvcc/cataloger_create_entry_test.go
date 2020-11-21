@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -18,7 +19,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 	// test data
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testutil.MustDo(t, "create entry on master for testing",
-		c.CreateEntry(ctx, repo, "master", Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1}, CreateEntryParams{}))
+		c.CreateEntry(ctx, repo, "master", catalog.Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1}, catalog.CreateEntryParams{}))
 	_, err := c.CreateBranch(ctx, repo, "b1", "master")
 	testutil.MustDo(t, "create branch b1 based on master", err)
 
@@ -29,7 +30,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 		checksum        string
 		physicalAddress string
 		size            int64
-		metadata        Metadata
+		metadata        catalog.Metadata
 	}
 	tests := []struct {
 		name    string
@@ -45,7 +46,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: false,
 		},
@@ -58,7 +59,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: false,
 		},
@@ -71,7 +72,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"kk": "vv"},
+				metadata:        catalog.Metadata{"kk": "vv"},
 			},
 			wantErr: false,
 		},
@@ -84,7 +85,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: true,
 		},
@@ -97,7 +98,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: true,
 		},
@@ -110,7 +111,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: true,
 		},
@@ -123,7 +124,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: true,
 		},
@@ -136,7 +137,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "1234",
 				physicalAddress: "5678",
 				size:            100,
-				metadata:        Metadata{"k": "v"},
+				metadata:        catalog.Metadata{"k": "v"},
 			},
 			wantErr: true,
 		},
@@ -149,20 +150,20 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				checksum:        "0000",
 				physicalAddress: "0000",
 				size:            1,
-				metadata:        Metadata{},
+				metadata:        catalog.Metadata{},
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := c.CreateEntry(ctx, tt.args.repository, tt.args.branch, Entry{
+			err := c.CreateEntry(ctx, tt.args.repository, tt.args.branch, catalog.Entry{
 				Path:            tt.args.path,
 				Checksum:        tt.args.checksum,
 				PhysicalAddress: tt.args.physicalAddress,
 				Size:            tt.args.size,
 				Metadata:        tt.args.metadata,
-			}, CreateEntryParams{})
+			}, catalog.CreateEntryParams{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -171,8 +172,8 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				return
 			}
 			// in case there is no error - get the entry and compare
-			ref := MakeReference(tt.args.branch, UncommittedID)
-			ent, err := c.GetEntry(ctx, tt.args.repository, ref, tt.args.path, GetEntryParams{})
+			ref := catalog.MakeReference(tt.args.branch, catalog.UncommittedID)
+			ent, err := c.GetEntry(ctx, tt.args.repository, ref, tt.args.path, catalog.GetEntryParams{})
 			testutil.MustDo(t, "get entry we just created", err)
 			if ent.Size != tt.args.size {
 				t.Fatalf("entry size %d, expected %d", ent.Size, tt.args.size)
@@ -201,30 +202,30 @@ func TestCataloger_CreateEntry_Dedup(t *testing.T) {
 	const firstAddr = "1"
 	const secondAddr = "2"
 	// add first entry
-	ent1 := Entry{
+	ent1 := catalog.Entry{
 		Path:            "file1",
 		PhysicalAddress: firstAddr,
 		Checksum:        "aa",
 	}
-	dedup1 := DedupParams{
+	dedup1 := catalog.DedupParams{
 		ID:               "aa",
 		StorageNamespace: "s1",
 	}
 	testutil.MustDo(t, "create first entry",
-		c.CreateEntry(ctx, repo, testBranch, ent1, CreateEntryParams{Dedup: dedup1}))
+		c.CreateEntry(ctx, repo, testBranch, ent1, catalog.CreateEntryParams{Dedup: dedup1}))
 
 	// add second entry with the same dedup id
-	dedup2 := DedupParams{
+	dedup2 := catalog.DedupParams{
 		ID:               "aa",
 		StorageNamespace: "s2",
 	}
-	ent2 := Entry{
+	ent2 := catalog.Entry{
 		Path:            "file2",
 		PhysicalAddress: secondAddr,
 		Checksum:        "aa",
 	}
 	testutil.MustDo(t, "create second entry, same content",
-		c.CreateEntry(ctx, repo, testBranch, ent2, CreateEntryParams{Dedup: dedup2}))
+		c.CreateEntry(ctx, repo, testBranch, ent2, catalog.CreateEntryParams{Dedup: dedup2}))
 	select {
 	case report := <-c.DedupReportChannel():
 		if report.Entry.Path != "file2" && report.NewPhysicalAddress == "" {

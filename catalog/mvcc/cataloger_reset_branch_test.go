@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/treeverse/lakefs/catalog"
 )
 
 func TestCataloger_ResetBranch_NoChanges(t *testing.T) {
@@ -24,12 +26,12 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 
 	// commit data
 	for i := 0; i < 3; i++ {
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file" + strconv.Itoa(i),
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -43,12 +45,12 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 		t.Fatal("delete for ResetBranch:", err)
 	}
 	for i := 3; i < 6; i++ {
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file" + strconv.Itoa(i),
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -56,7 +58,7 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 	if err := c.ResetBranch(ctx, repository, "master"); err != nil {
 		t.Fatal("Reset branch should work on empty branch")
 	}
-	reference := MakeReference("master", UncommittedID)
+	reference := catalog.MakeReference("master", catalog.UncommittedID)
 	entries, _, err := c.ListEntries(ctx, repository, reference, "", "", "", -1)
 	if err != nil {
 		t.Fatal("ListEntries for ResetBranch test:", err)
@@ -74,12 +76,12 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 
 	// commit data
 	for i := 0; i < 3; i++ {
-		if err := c.CreateEntry(ctx, repository, "master", Entry{
+		if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 			Path:            "/file" + strconv.Itoa(i),
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -98,13 +100,13 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 		t.Fatal("delete for ResetBranch:", err)
 	}
 	for i := 3; i < 6; i++ {
-		if err := c.CreateEntry(ctx, repository, "b1", Entry{
+		if err := c.CreateEntry(ctx, repository, "b1", catalog.Entry{
 			Path:            "/file" + strconv.Itoa(i),
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
 			Metadata:        nil,
-		}, CreateEntryParams{}); err != nil {
+		}, catalog.CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -112,7 +114,7 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 	if err := c.ResetBranch(ctx, repository, "b1"); err != nil {
 		t.Fatal("Reset branch should work on empty branch")
 	}
-	entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", "", -1)
+	entries, _, err := c.ListEntries(ctx, repository, catalog.MakeReference("b1", catalog.UncommittedID), "", "", "", -1)
 	if err != nil {
 		t.Fatal("ListEntries for ResetBranch test:", err)
 	}

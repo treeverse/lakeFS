@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -21,7 +22,7 @@ type testEntryInfo struct {
 }
 
 type TestCataloger struct {
-	Cataloger
+	catalog.Cataloger
 	DbConnURI string
 }
 
@@ -35,7 +36,7 @@ func testCatalogerUniqueID() string {
 	return strings.ReplaceAll(uuid.New().String(), "-", "")[0:7]
 }
 
-func testCatalogerRepo(t testing.TB, ctx context.Context, c Cataloger, prefix string, branch string) string {
+func testCatalogerRepo(t testing.TB, ctx context.Context, c catalog.Cataloger, prefix string, branch string) string {
 	t.Helper()
 	name := prefix + "-" + testCatalogerUniqueID()
 	_, err := c.CreateRepository(ctx, name, "s3://bucket", branch)
@@ -45,7 +46,7 @@ func testCatalogerRepo(t testing.TB, ctx context.Context, c Cataloger, prefix st
 	return name
 }
 
-func testCatalogerBranch(t testing.TB, ctx context.Context, c Cataloger, repository, name, source string) {
+func testCatalogerBranch(t testing.TB, ctx context.Context, c catalog.Cataloger, repository, name, source string) {
 	t.Helper()
 	_, err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
@@ -54,29 +55,29 @@ func testCatalogerBranch(t testing.TB, ctx context.Context, c Cataloger, reposit
 }
 
 // testCatalogerCreateEntry creates a test entry on cataloger, returning a (fake) checksum based on the path, the test name, and a seed.
-func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) string {
+func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c catalog.Cataloger, repository, branch, path string, metadata catalog.Metadata, seed string) string {
 	t.Helper()
 	checksum := testCreateEntryCalcChecksum(path, t.Name(), seed)
 	var size int64
 	for i := range checksum {
 		size += int64(checksum[i])
 	}
-	err := c.CreateEntry(ctx, repository, branch, Entry{
+	err := c.CreateEntry(ctx, repository, branch, catalog.Entry{
 		Path:            path,
 		Checksum:        checksum,
 		PhysicalAddress: checksum,
 		Size:            size,
 		Metadata:        metadata,
-	}, CreateEntryParams{})
+	}, catalog.CreateEntryParams{})
 	if err != nil {
 		t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repository, err)
 	}
 	return checksum
 }
 
-func testCatalogerGetEntry(t testing.TB, ctx context.Context, c Cataloger, repository, reference, path string, expect bool) {
+func testCatalogerGetEntry(t testing.TB, ctx context.Context, c catalog.Cataloger, repository, reference, path string, expect bool) {
 	t.Helper()
-	entry, err := c.GetEntry(ctx, repository, reference, path, GetEntryParams{ReturnExpired: true})
+	entry, err := c.GetEntry(ctx, repository, reference, path, catalog.GetEntryParams{ReturnExpired: true})
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("get entry from repository: %s, reference: %s, path: %s - %s", repository, path, reference, err)
 	}
@@ -93,10 +94,10 @@ func testCreateEntryCalcChecksum(key string, testName string, seed string) strin
 	return checksum
 }
 
-func testVerifyEntries(t testing.TB, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
+func testVerifyEntries(t testing.TB, ctx context.Context, c catalog.Cataloger, repository string, reference string, entries []testEntryInfo) {
 	t.Helper()
 	for _, entry := range entries {
-		ent, err := c.GetEntry(ctx, repository, reference, entry.Path, GetEntryParams{})
+		ent, err := c.GetEntry(ctx, repository, reference, entry.Path, catalog.GetEntryParams{})
 		if entry.Deleted {
 			if !errors.As(err, &db.ErrNotFound) {
 				t.Fatalf("Get entry '%s', err = %s, expected not found", entry.Path, err)

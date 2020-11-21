@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/treeverse/lakefs/catalog"
 )
 
 func TestCataloger_GetMultipartUpload(t *testing.T) {
@@ -27,13 +29,13 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *MultipartUpload
+		want    *catalog.MultipartUpload
 		wantErr bool
 	}{
 		{
 			name: "exists",
 			args: args{repository: "repo1", uploadID: "upload1"},
-			want: &MultipartUpload{
+			want: &catalog.MultipartUpload{
 				Repository:      "repo1",
 				UploadID:        "upload1",
 				Path:            "/path1",

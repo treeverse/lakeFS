@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -28,13 +29,13 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 	}
 	testCatalogerBranch(t, ctx, c, "repo1", "b1", "master")
 
-	if err := c.CreateEntry(ctx, "repo1", "b1", Entry{
+	if err := c.CreateEntry(ctx, "repo1", "b1", catalog.Entry{
 		Path:            "/file1",
 		Checksum:        "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1",
 		PhysicalAddress: "/file1abc",
 		Size:            42,
 		Metadata:        nil,
-	}, CreateEntryParams{}); err != nil {
+	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for testing", err)
 	}
 
