@@ -175,7 +175,7 @@ type ExportStateHandler interface {
 	// calls a callback with the oldRef and state
 	// sets the new values with the values returned from the callback
 	// in case newRef == "" will will not change ref
-	ExportState(repo, branch, newRef string, cb stateCB) error
+	ExportStateSet(repo, branch, newRef string, cb stateCB) error
 
 	// GetExportState returns the current Export state params
 	GetExportState(repo string, branch string) (ExportState, error)
