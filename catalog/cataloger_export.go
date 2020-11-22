@@ -185,7 +185,7 @@ func (c *cataloger) ExportState(repo string, branch string, newRef string, cb st
 			branchID)
 		missing := errors.Is(err, db.ErrNotFound)
 		if err != nil && !missing {
-			err = fmt.Errorf("ExportStateuMarkStart: failed to get existing state: %w", err)
+			err = fmt.Errorf("ExportStateSet: failed to get existing state: %w", err)
 			return nil, err
 		}
 		oldRef := res.CurrentRef
