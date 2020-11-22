@@ -80,7 +80,6 @@ func (trees TreesRepoType) NewScanner(tree TreeID, start string) (*treeScanner, 
 		TreeType:   tr,
 		currentKey: []byte(start),
 	}
-
 }
 
 /*
