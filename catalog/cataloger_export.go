@@ -165,7 +165,7 @@ func (c *cataloger) GetExportState(repo string, branch string) (ExportState, err
 	return res.(ExportState), err
 }
 
-func (c *cataloger) ExportState(repo string, branch string, newRef string, cb stateCB) error {
+func (c *cataloger) ExportStateSet(repo, branch string, cb ExportStateCallback) error {
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var res struct {
 			CurrentRef   string
@@ -192,13 +192,9 @@ func (c *cataloger) ExportState(repo string, branch string, newRef string, cb st
 		state := res.State
 
 		// run callback
-		newState, newMsg, err := cb(oldRef, state)
+		newRef, newState, newMsg, err := cb(oldRef, state)
 		if err != nil {
 			return nil, err
-		}
-		// in case newRef was not set leave oldRef
-		if newRef == "" {
-			newRef = oldRef
 		}
 		// update new state
 		var query string
@@ -216,10 +212,10 @@ func (c *cataloger) ExportState(repo string, branch string, newRef string, cb st
 		tag, err := tx.Exec(query,
 			branchID, newRef, newState, newMsg)
 		if err != nil {
-			return nil, fmt.Errorf("ExportState: update state: %w", err)
+			return nil, fmt.Errorf("ExportStateSet: update state: %w", err)
 		}
 		if tag.RowsAffected() != 1 {
-			return nil, fmt.Errorf("ExportState: could not update single row %s: %w", tag, ErrExportFailed)
+			return nil, fmt.Errorf("ExportStateSet: could not update single row %s: %w", tag, ErrExportFailed)
 		}
 		return nil, err
 	})

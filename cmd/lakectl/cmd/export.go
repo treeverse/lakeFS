@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-openapi/swag"
-
 	"github.com/go-openapi/strfmt"
 	"github.com/treeverse/lakefs/api/gen/models"
 
@@ -19,7 +17,6 @@ var exportCmd = &cobra.Command{
 	Long:  `Read set and update continuous export configurations and trigger exports`,
 }
 
-// exportGetCmd get continuous export configuration for branch
 var exportSetCmd = &cobra.Command{
 	Use:   "set <branch uri>",
 	Short: "set continuous export configuration for branch",
@@ -66,7 +63,6 @@ Last Keys In Prefix Regexp: {{.Configuration.LastKeysInPrefixRegexp}}
 {{.ContinuousMarker}}
 `
 
-// exportGetCmd get continuous export configuration for branch
 var exportGetCmd = &cobra.Command{
 	Use:   "get <branch uri>",
 	Short: "get continuous export configuration for branch",
@@ -91,22 +87,30 @@ var exportGetCmd = &cobra.Command{
 	},
 }
 
-// exportSetCmd get continuous export configuration for branch
 var exportExecuteCmd = &cobra.Command{
 	Use:   "run",
 	Short: "export requested branch now",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		repair, err := cmd.Flags().GetBool("repair")
-		if err != nil {
-			DieErr(err)
-		}
-		exportID, err := client.RunExport(context.Background(), branchURI.Repository, branchURI.Ref, swag.Bool(repair))
+		exportID, err := client.RunExport(context.Background(), branchURI.Repository, branchURI.Ref)
 		if err != nil {
 			DieErr(err)
 		}
 		fmt.Printf("Export-ID:%s\n", exportID)
+	},
+}
+
+var exportRepairCmd = &cobra.Command{
+	Use:   "repair",
+	Short: "marks failed export as repaired",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		branchURI := uri.Must(uri.Parse(args[0]))
+		err := client.RepairExport(context.Background(), branchURI.Repository, branchURI.Ref)
+		if err != nil {
+			DieErr(err)
+		}
 	},
 }
 
@@ -116,6 +120,7 @@ func init() {
 	exportCmd.AddCommand(exportGetCmd)
 	exportCmd.AddCommand(exportSetCmd)
 	exportCmd.AddCommand(exportExecuteCmd)
+	exportCmd.AddCommand(exportRepairCmd)
 
 	exportSetCmd.Flags().String("path", "", "export objects to this path")
 	exportSetCmd.Flags().String("status-path", "", "write export status object to this path")
@@ -123,5 +128,4 @@ func init() {
 	exportSetCmd.Flags().Bool("continuous", false, "export branch after every commit or merge (...=false to disable)")
 	_ = exportSetCmd.MarkFlagRequired("path")
 	_ = exportSetCmd.MarkFlagRequired("continuous")
-	exportExecuteCmd.Flags().Bool("repair", false, "repair will change current state from failed to repaired before starting a new export")
 }

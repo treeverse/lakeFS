@@ -168,14 +168,12 @@ type ExportConfigurator interface {
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 }
 
-type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)
+// ExportStateCallback returns the new ref, state and message regarding the old ref and state
+type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error)
 
 type ExportStateHandler interface {
-	// ExportState starts an export operation on branch of repo
-	// calls a callback with the oldRef and state
-	// ExportStateSet sets the new values with the values returned from the callback.  It sets the ref when newRef != ""
-	ExportStateSet(repo, branch, newRef string, cb stateCB) error
-
+	// ExportStateSet sets the new values with the values returned from the callback.
+	ExportStateSet(repo, branch string, cb ExportStateCallback) error
 	// GetExportState returns the current Export state params
 	GetExportState(repo string, branch string) (ExportState, error)
 }
