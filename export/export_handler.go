@@ -11,6 +11,7 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
 )
@@ -299,6 +300,8 @@ func (h *Handler) ActorID() parade.ActorID {
 
 // exportCommitHook is a cataloger PostCommit hook for continuous export.
 func (h *Handler) exportCommitHook(ctx context.Context, _ db.Tx, repo, branch string, log *catalog.CommitLog) error {
+	l := logging.Default().
+		WithFields(logging.Fields{"repo": repo, "branch": branch, "message": log.Message, "at": log.CreationDate.String()})
 	isContinuous, err := hasContinuousExport(h.cataloger, repo, branch)
 	if err != nil {
 		// FAIL this commit: if we were meant to export it and did not then in practice
@@ -308,7 +311,8 @@ func (h *Handler) exportCommitHook(ctx context.Context, _ db.Tx, repo, branch st
 	if !isContinuous {
 		return nil
 	}
-	_, err = ExportBranchStart(h.parade, h.cataloger, repo, branch)
+	exportID, err := ExportBranchStart(h.parade, h.cataloger, repo, branch)
+	l.WithField("export_id", exportID).Info("continuous export started")
 	if errors.Is(err, ErrExportInProgress) {
 		err = nil
 	}
