@@ -2025,7 +2025,7 @@ paths:
         required: true
         type: string
       - in: query
-        description: will change export status from export-failed to repaired and start a new export
+        description: if set, change export status from export-failed to repaired and start a new export
         name: repair
         type: boolean
     post:
@@ -2118,4 +2118,3 @@ paths:
             $ref: "#/definitions/config"
         401:
           $ref: "#/responses/Unauthorized"
-
