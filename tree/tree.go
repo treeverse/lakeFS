@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"io/ioutil"
+	"sort"
 
 	"github.com/treeverse/lakefs/tree/sstable"
 )
@@ -52,14 +53,14 @@ func (trees TreesRepoType) loadTreeIfNeeded(treeID TreeID) (TreeType, error) {
 	fName := base64.StdEncoding.EncodeToString(treeID[:]) + ".json"
 	jsonBytes, err := ioutil.ReadFile(fName)
 	if err != nil {
-		return nil, err
+		return TreeType{}, err
 	}
 	treeSlice := make(treeSliceType, 0)
 	err = json.Unmarshal(jsonBytes, &treeSlice)
 	if err != nil {
-		return nil, err
+		return TreeType{}, err
 	}
-	t := TreeType{
+	t = TreeType{
 		treeID,
 		treeSlice,
 	}
@@ -72,14 +73,26 @@ func (trees TreesRepoType) NewScanner(tree TreeID, start string) (*treeScanner, 
 	if err != nil {
 		return nil, err
 	}
-	tr := TreeType{
-		TreeID:    tree,
-		TreeSlice: t,
+	sst := findSST(t, start)
+	if sst == nil {
+		return nil, ErrPathBiggerThanMaxPath
 	}
 	scanner := &treeScanner{
-		TreeType:   tr,
+		TreeType:   t,
 		currentKey: []byte(start),
 	}
+	return scanner, nil
+}
+
+func findSST(tree TreeType, path string) *string {
+	n := len(tree.TreeSlice)
+	pos := sort.Search(n, func(i int) bool {
+		return tree.TreeSlice[i].MaxPath >= path
+	})
+	if pos < n {
+		return &tree.TreeSlice[pos].PartName
+	}
+	return nil
 }
 
 /*
