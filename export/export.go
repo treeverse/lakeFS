@@ -34,35 +34,40 @@ func ExportBranchStart(paradeDB parade.Parade, cataloger catalog.Cataloger, repo
 	if err != nil {
 		return "", err
 	}
-	err = cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
+	err = cataloger.ExportStateSet(repo, branch, func(oldRef string, state catalog.CatalogBranchExportStatus) (newRef string, newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
 		if state == catalog.ExportStatusInProgress {
-			return state, nil, ErrExportInProgress
+			return oldRef, state, nil, ErrExportInProgress
 		}
 		if state == catalog.ExportStatusFailed {
-			return state, nil, catalog.ErrExportFailed
+			return oldRef, state, nil, catalog.ErrExportFailed
 		}
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
 		if err != nil {
-			return "", nil, err
+			return oldRef, "", nil, err
 		}
 		tasks, err := GetStartTasks(repo, branch, oldRef, commitRef, exportID, config)
 		if err != nil {
-			return "", nil, err
+			return oldRef, "", nil, err
 		}
 
 		err = paradeDB.InsertTasks(context.Background(), tasks)
 		if err != nil {
-			return "", nil, err
+			return "", "", nil, err
 		}
-		return catalog.ExportStatusInProgress, nil, nil
+		return commitRef, catalog.ExportStatusInProgress, nil, nil
 	})
 	return exportID, err
 }
 
+var ErrConflictingRefs = errors.New("conflicting references")
+
 // ExportBranchDone ends the export branch process by changing the status
 func ExportBranchDone(cataloger catalog.Cataloger, status catalog.CatalogBranchExportStatus, statusMsg *string, repo, branch, commitRef string) error {
-	err := cataloger.ExportState(repo, branch, commitRef, func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
-		return status, statusMsg, nil
+	err := cataloger.ExportStateSet(repo, branch, func(oldRef string, state catalog.CatalogBranchExportStatus) (newRef string, newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
+		if commitRef != oldRef {
+			return "", "", nil, fmt.Errorf("ExportBranchDone: currentRef:%s, newRef:%s: %w", oldRef, commitRef, ErrConflictingRefs)
+		}
+		return oldRef, status, statusMsg, nil
 	})
 	return err
 }
@@ -71,15 +76,11 @@ var ErrRepairWrongStatus = errors.New("incorrect status")
 
 // ExportBranchRepair will change state from Failed To Repair and start a new export
 // will return Error in Case current state is not Failed
-func ExportBranchRepair(paradeDB parade.Parade, cataloger catalog.Cataloger, repo, branch string) (string, error) {
-	err := cataloger.ExportState(repo, branch, "", func(oldRef string, state catalog.CatalogBranchExportStatus) (newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
+func ExportBranchRepair(cataloger catalog.Cataloger, repo, branch string) error {
+	return cataloger.ExportStateSet(repo, branch, func(oldRef string, state catalog.CatalogBranchExportStatus) (newRef string, newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
 		if state != catalog.ExportStatusFailed {
-			return "", nil, ErrRepairNonFailed
+			return oldRef, "", nil, ErrRepairWrongStatus
 		}
-		return catalog.ExportStatusRepaired, nil, nil
+		return oldRef, catalog.ExportStatusRepaired, nil, nil
 	})
-	if err != nil {
-		return "", err
-	}
-	return ExportBranchStart(paradeDB, cataloger, repo, branch)
 }

@@ -174,28 +174,28 @@ func TestExportState(t *testing.T) {
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
 
-	var insertStart stateCB
-	insertStart = func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error) {
-		return ExportStatusInProgress, nil, nil
+	var insertStart ExportStateCallback
+	insertStart = func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error) {
+		return ref1, ExportStatusInProgress, nil, nil
 	}
 
-	if err := c.ExportState(repo, defaultBranch, ref1, insertStart); err != nil {
+	if err := c.ExportStateSet(repo, defaultBranch, insertStart); err != nil {
 		t.Fatal(err)
 	}
 
-	var InProgressToSuccess stateCB
-	InProgressToSuccess = func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error) {
+	var InProgressToSuccess ExportStateCallback
+	InProgressToSuccess = func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error) {
 		// check that first is returned
 		if oldRef != ref1 {
-			return "", nil, fmt.Errorf("expected:%s got:%s", ref1, oldRef)
+			return oldRef, "", nil, fmt.Errorf("expected:%s got:%s", ref1, oldRef)
 		}
 		if state != ExportStatusInProgress {
-			return "", nil, fmt.Errorf("expected:%s got:%s", ExportStatusInProgress, state)
+			return "", "", nil, fmt.Errorf("expected:%s got:%s", ExportStatusInProgress, state)
 		}
-		return ExportStatusSuccess, nil, nil
+		return ref2, ExportStatusSuccess, nil, nil
 	}
 
-	if err := c.ExportState(repo, defaultBranch, ref2, InProgressToSuccess); err != nil {
+	if err := c.ExportStateSet(repo, defaultBranch, InProgressToSuccess); err != nil {
 		t.Fatal(err)
 	}
 

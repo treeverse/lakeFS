@@ -88,7 +88,8 @@ type RepositoryClient interface {
 
 	SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error
 	GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error)
-	RunExport(ctx context.Context, repository, branchID string, repair *bool) (string, error)
+	RunExport(ctx context.Context, repository, branchID string) (string, error)
+	RepairExport(ctx context.Context, repository, branchID string) error
 }
 
 type Client interface {
@@ -514,11 +515,10 @@ func (c *client) GetContinuousExport(ctx context.Context, repository, branchID s
 	return resp.GetPayload(), err
 }
 
-func (c *client) RunExport(ctx context.Context, repository, branchID string, repair *bool) (string, error) {
+func (c *client) RunExport(ctx context.Context, repository, branchID string) (string, error) {
 	resp, err := c.remote.Export.Run(&export.RunParams{
 		Branch:     branchID,
 		Repository: repository,
-		Repair:     repair,
 		Context:    ctx,
 		HTTPClient: nil,
 	}, c.auth)
@@ -526,6 +526,19 @@ func (c *client) RunExport(ctx context.Context, repository, branchID string, rep
 		return "", err
 	}
 	return resp.GetPayload(), nil
+}
+
+func (c *client) RepairExport(ctx context.Context, repository, branchID string) error {
+	_, err := c.remote.Export.Repair(&export.RepairParams{
+		Branch:     branchID,
+		Repository: repository,
+		Context:    ctx,
+		HTTPClient: nil,
+	}, c.auth)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *client) Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error) {
