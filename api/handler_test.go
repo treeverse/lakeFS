@@ -9,12 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
-	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/dedup"
-	"github.com/treeverse/lakefs/stats"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -27,9 +21,13 @@ import (
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/mvcc"
 	"github.com/treeverse/lakefs/db"
+	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
 

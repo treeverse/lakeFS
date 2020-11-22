@@ -64,21 +64,25 @@ type CreateEntryParams struct {
 }
 
 type Cataloger interface {
-	// RepositoryCataloger
+	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
+
+	// GetRepository get repository information
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
+
+	// DeleteRepository delete a repository
 	DeleteRepository(ctx context.Context, repository string) error
+
+	// ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
+	// In this case pass the last repository name as 'after' on the next call to ListRepositories
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
 
-	// BranchCataloger
 	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
 	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
 	GetBranchReference(ctx context.Context, repository, branch string) (string, error)
 	ResetBranch(ctx context.Context, repository, branch string) error
-
-	// EntryCataloger
 
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
@@ -127,13 +131,9 @@ type Cataloger interface {
 
 	Hooks() *CatalogerHooks
 
-	// ExportConfigurator
-
 	GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error)
 	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
-
-	// ExportStateHandler
 
 	// ExportState starts an export operation on branch of repo
 	// calls a callback with the oldRef and state
