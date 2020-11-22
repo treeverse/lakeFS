@@ -11,6 +11,31 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
+func TestCataloger_DiffEmpty(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	// create N files and commit
+	commitChanges := func(n int, msg, branch string) {
+		for i := 0; i < n; i++ {
+			testCatalogerCreateEntry(t, ctx, c, repository, branch, "/file"+strconv.Itoa(i), nil, branch)
+		}
+		_, err := c.Commit(ctx, repository, branch, msg, "tester", nil)
+		testutil.MustDo(t, msg, err)
+	}
+	commitChanges(10, "Changes on master", "master")
+
+	res, hasMore, err := c.Diff(ctx, repository, "master", "master", DiffParams{Limit: 10})
+	testutil.MustDo(t, "Diff", err)
+	if len(res) != 0 {
+		t.Errorf("Diff: got %+v but expected nothing", res)
+	}
+	if hasMore {
+		t.Errorf("Diff: got *more* diffs but expected nothing")
+	}
+}
+
 func TestCataloger_Diff(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
