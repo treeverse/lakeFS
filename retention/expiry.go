@@ -135,12 +135,12 @@ func WriteExpiryManifestsFromRows(ctx context.Context, repository *catalog.Repos
 		encodingData.CsvWriter.Flush()
 		err := encodingData.CsvWriter.Error()
 		if err != nil {
-			bucketLogger.WithError(err).Error("failed to flush encoded CSV; lose all bucket expires")
+			bucketLogger.WithError(err).Error("failed to flush encoded CSV; lose all bucket expiries")
 			continue
 		}
 		resetableReader, count, err := encodingData.Writer.StartReading()
 		if err != nil {
-			bucketLogger.WithError(err).Error("failed to start reading encoded CSVs; lose all bucket expires")
+			bucketLogger.WithError(err).Error("failed to start reading encoded CSVs; lose all bucket expiries")
 			continue
 		}
 		bucketLogger.WithField("bytes", count).Info("wrote encoded CSV for bucket expiry")

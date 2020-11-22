@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -17,6 +15,7 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog/mvcc"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"

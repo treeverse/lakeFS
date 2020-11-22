@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
 	"github.com/go-test/deep"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/mvcc"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
