@@ -2,16 +2,15 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4/source"
-
 	"github.com/golang-migrate/migrate/v4"
-
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/db/params"
@@ -99,6 +98,18 @@ func GetLastMigrationAvailable() (uint, error) {
 	}
 }
 
+func getMigrateUsingEnvVariables(src source.Driver) (*migrate.Migrate, error) {
+	db, err := sql.Open("postgres", "")
+	if err != nil {
+		return nil, err
+	}
+	migrateDriver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return nil, err
+	}
+	return migrate.NewWithInstance("httpfs", src, "", migrateDriver)
+}
+
 func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	src, err := getStatikSrc()
 	if err != nil {
@@ -107,8 +118,12 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	defer func() {
 		_ = src.Close()
 	}()
-
-	m, err := migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
+	var m *migrate.Migrate
+	if params.ConnectionString == "" {
+		m, err = getMigrateUsingEnvVariables(src)
+	} else {
+		m, err = migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
+	}
 	if err != nil {
 		return nil, err
 	}
