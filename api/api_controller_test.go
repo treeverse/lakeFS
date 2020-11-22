@@ -1444,72 +1444,123 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 }
 
 func Test_setupLakeFSHandler(t *testing.T) {
-	// get handler with DB without apply the DDL
-	handler, deps := getHandler(t, "", testutil.WithGetDBApplyDDL(false))
-
-	srv := httptest.NewServer(handler)
-	defer srv.Close()
-
 	name := "admin"
-	user := models.Setup{
-		Username: &name,
+	cases := []struct {
+		name               string
+		user               models.Setup
+		expectedStatusCode int
+	}{
+		{name: "simple", user: models.Setup{Username: &name}},
+		{
+			name: "accessKeyAndSecret",
+			user: models.Setup{
+				Username: &name,
+				Key: &models.SetupKey{
+					AccessKeyID:     swag.String("IKEAsneakers"),
+					SecretAccessKey: swag.String("cetec astronomy"),
+				},
+			},
+		},
+		{
+			name: "emptyAccessKeyId",
+			user: models.Setup{
+				Username: &name,
+				Key:      &models.SetupKey{SecretAccessKey: swag.String("cetec astronomy")},
+			},
+			expectedStatusCode: 422,
+		},
+		{
+			name: "emptySecretKey", user: models.Setup{
+				Username: &name,
+				Key: &models.SetupKey{
+					AccessKeyID: swag.String("IKEAsneakers"),
+				},
+			},
+			expectedStatusCode: 422,
+		},
 	}
-	req, err := json.Marshal(user)
-	if err != nil {
-		t.Fatal("JSON marshal request", err)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// get handler with DB without applying the DDL
+			handler, deps := getHandler(t, "", testutil.WithGetDBApplyDDL(false))
+
+			srv := httptest.NewServer(handler)
+			defer srv.Close()
+
+			req, err := json.Marshal(c.user)
+			if err != nil {
+				t.Fatal("JSON marshal request", err)
+			}
+
+			reqURI := srv.URL + client.DefaultBasePath + "/setup_lakefs"
+			const contentType = "application/json"
+			t.Run("fresh start", func(t *testing.T) {
+				// request to setup
+				res := mustSetup(t, reqURI, contentType, req)
+				defer func() {
+					_ = res.Body.Close()
+				}()
+
+				expectedStatusCode := http.StatusOK
+				if c.expectedStatusCode != 0 {
+					expectedStatusCode = c.expectedStatusCode
+				}
+				if res.StatusCode != expectedStatusCode {
+					t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+				}
+				if res.StatusCode != http.StatusOK {
+					return
+				}
+
+				// read response
+				var credKeys *models.CredentialsWithSecret
+
+				err = json.NewDecoder(res.Body).Decode(&credKeys)
+				if err != nil {
+					t.Fatal("Decode response", err)
+				}
+
+				if len(credKeys.AccessKeyID) == 0 {
+					t.Fatal("Credential key id is missing")
+				}
+
+				if c.user.Key != nil {
+					if *c.user.Key.AccessKeyID != credKeys.AccessKeyID {
+						t.Errorf("got access key ID %s != %s", credKeys.AccessKeyID, *c.user.Key.AccessKeyID)
+					}
+					if *c.user.Key.SecretAccessKey != credKeys.AccessSecretKey {
+						t.Errorf("got secret key %s != %s", credKeys.AccessSecretKey, *c.user.Key.SecretAccessKey)
+					}
+				}
+				foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyID)
+				if err != nil {
+					t.Fatal("Get API credentials key id for created access key", err)
+				}
+				if foundCreds == nil {
+					t.Fatal("Get API credentials secret key for created access key")
+				}
+				if foundCreds.AccessSecretKey != credKeys.AccessSecretKey {
+					t.Fatalf("Access secret key '%s', expected '%s'", foundCreds.AccessSecretKey, credKeys.AccessSecretKey)
+				}
+			})
+
+			if c.expectedStatusCode == 0 {
+				// now we ask again - should get status conflict
+				t.Run("existing setup", func(t *testing.T) {
+					// request to setup
+					res := mustSetup(t, reqURI, contentType, req)
+					defer func() {
+						_ = res.Body.Close()
+					}()
+
+					const expectedStatusCode = http.StatusConflict
+					if res.StatusCode != expectedStatusCode {
+						t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+					}
+				})
+			}
+		})
 	}
-
-	reqURI := srv.URL + client.DefaultBasePath + "/setup_lakefs"
-	const contentType = "application/json"
-	t.Run("fresh start", func(t *testing.T) {
-		// request to setup
-		res := mustSetup(t, reqURI, contentType, req)
-		defer func() {
-			_ = res.Body.Close()
-		}()
-
-		const expectedStatusCode = http.StatusOK
-		if res.StatusCode != expectedStatusCode {
-			t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
-		}
-
-		// read response
-		var credKeys *models.CredentialsWithSecret
-
-		err = json.NewDecoder(res.Body).Decode(&credKeys)
-		if err != nil {
-			t.Fatal("Decode response", err)
-		}
-
-		if len(credKeys.AccessKeyID) == 0 {
-			t.Fatal("Credential key id is missing")
-		}
-
-		foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyID)
-		if err != nil {
-			t.Fatal("Get API credentials key id for created access key", err)
-		}
-		if foundCreds == nil {
-			t.Fatal("Get API credentials secret key for created access key")
-		}
-		if foundCreds.AccessSecretKey != credKeys.AccessSecretKey {
-			t.Fatalf("Access secret key '%s', expected '%s'", foundCreds.AccessSecretKey, credKeys.AccessSecretKey)
-		}
-	})
-
-	// now we ask again - should get status conflict
-	t.Run("existing setup", func(t *testing.T) {
-		// request to setup
-		res := mustSetup(t, reqURI, contentType, req)
-		defer func() {
-			_ = res.Body.Close()
-		}()
-
-		const expectedStatusCode = http.StatusConflict
-		if res.StatusCode != expectedStatusCode {
-			t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
-		}
-	})
 }
 
 func mustSetup(t *testing.T, reqURI string, contentType string, req []byte) *http.Response {
