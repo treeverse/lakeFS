@@ -539,7 +539,7 @@ func TestCataloger_MarkEntriesExpired(t *testing.T) {
 	}
 
 	for _, e := range expireResults {
-		ref, err := catalog.ParseInternalObjectRef(e.InternalReference)
+		ref, err := ParseInternalObjectRef(e.InternalReference)
 		if err != nil {
 			t.Fatalf("couldn't parse returned internal object ref in %+v", e)
 		}

@@ -9,13 +9,13 @@ import (
 )
 
 func (c *cataloger) GetCommit(ctx context.Context, repository, reference string) (*catalog.CommitLog, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: catalog.ValidateReference(reference)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
 	}); err != nil {
 		return nil, err
 	}
-	ref, err := catalog.ParseRef(reference)
+	ref, err := ParseRef(reference)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		}
 
 		// for branch (committed or uncommitted) we reference last commit
-		if ref.CommitID == catalog.UncommittedID || ref.CommitID == catalog.CommittedID {
+		if ref.CommitID == UncommittedID || ref.CommitID == CommittedID {
 			lastCommitID, err := getLastCommitIDByBranchID(tx, branchID)
 			if err != nil {
 				return nil, fmt.Errorf("get last commit id: %w", err)
@@ -59,18 +59,18 @@ func convertRawCommit(raw commitLogRaw) *catalog.CommitLog {
 		metadata = make(catalog.Metadata)
 	}
 	c := &catalog.CommitLog{
-		Reference:    catalog.MakeReference(raw.BranchName, raw.CommitID),
+		Reference:    MakeReference(raw.BranchName, raw.CommitID),
 		Committer:    raw.Committer,
 		Message:      raw.Message,
 		CreationDate: raw.CreationDate,
 		Metadata:     metadata,
 	}
 	if raw.MergeSourceBranchName != "" && raw.MergeSourceCommit > 0 {
-		reference := catalog.MakeReference(raw.MergeSourceBranchName, raw.MergeSourceCommit)
+		reference := MakeReference(raw.MergeSourceBranchName, raw.MergeSourceCommit)
 		c.Parents = append(c.Parents, reference)
 	}
 	if raw.PreviousCommitID > 0 {
-		reference := catalog.MakeReference(raw.BranchName, raw.PreviousCommitID)
+		reference := MakeReference(raw.BranchName, raw.PreviousCommitID)
 		c.Parents = append(c.Parents, reference)
 	}
 	return c

@@ -6,14 +6,13 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
 type DBLineageScanner struct {
 	tx       db.Tx
 	branchID int64
-	commitID catalog.CommitID
+	commitID CommitID
 	scanners []*DBBranchScanner
 	ended    bool
 	err      error
@@ -24,12 +23,12 @@ type DBLineageScanner struct {
 type DBLineageScannerOptions struct {
 	DBScannerOptions
 	Lineage    []lineageCommit
-	MinCommits []catalog.CommitID
+	MinCommits []CommitID
 }
 
 var ErrMinCommitsMismatch = errors.New("MinCommits length mismatch")
 
-func NewDBLineageScanner(tx db.Tx, branchID int64, commitID catalog.CommitID, opts DBLineageScannerOptions) *DBLineageScanner {
+func NewDBLineageScanner(tx db.Tx, branchID int64, commitID CommitID, opts DBLineageScannerOptions) *DBLineageScanner {
 	s := &DBLineageScanner{
 		tx:       tx,
 		branchID: branchID,
@@ -121,7 +120,7 @@ func (s *DBLineageScanner) buildScanners() {
 	// use min commits or allocate default
 	minCommits := s.opts.MinCommits
 	if minCommits == nil {
-		minCommits = make([]catalog.CommitID, len(s.scanners))
+		minCommits = make([]CommitID, len(s.scanners))
 		for i := 0; i < len(minCommits); i++ {
 			minCommits[i] = 1
 		}

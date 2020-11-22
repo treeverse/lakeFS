@@ -128,7 +128,7 @@ func TestCataloger_ResetEntry_NewToNone(t *testing.T) {
 	if err := c.ResetEntry(ctx, repository, "master", "/file1"); err != nil {
 		t.Fatal("ResetEntry should reset new uncommitted file:", err)
 	}
-	_, err := c.GetEntry(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
+	_, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", catalog.GetEntryParams{})
 	expectedErr := db.ErrNotFound
 	if !errors.As(err, &expectedErr) {
 		t.Fatalf("ResetEntry expecting the file to be gone with %s, got = %s", expectedErr, err)
@@ -163,7 +163,7 @@ func TestCataloger_ResetEntry_NewToPrevious(t *testing.T) {
 	}, catalog.CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", catalog.GetEntryParams{})
 	if err != nil {
 		t.Fatal("ResetEntry expecting previous file to be found:", err)
 	}
@@ -252,7 +252,7 @@ func TestCataloger_ResetEntry_UncommittedDeleteSameBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("ResetEntry expected successful reset on delete entry:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", catalog.GetEntryParams{})
 	if err != nil {
 		t.Fatal("get entry for reset entry test:", err)
 	}
@@ -289,7 +289,7 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("ResetEntry expected successful reset on delete entry:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, catalog.MakeReference("b1", catalog.UncommittedID), "/file1", catalog.GetEntryParams{})
+	ent, err := c.GetEntry(ctx, repository, MakeReference("b1", UncommittedID), "/file1", catalog.GetEntryParams{})
 	if err != nil {
 		t.Fatal("get entry for reset entry test:", err)
 	}

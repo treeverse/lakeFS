@@ -22,11 +22,11 @@ type mergeBatchRecords []*catalog.DiffResultRecord
 // the table holds entry ctid to reference entries in case of changed/added and source branch in case of delete.
 // That information is used to address cases where we need to create new entry or tombstone as part of the merge
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata catalog.Metadata) (*catalog.MergeResult, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "leftBranch", IsValid: catalog.ValidateBranchName(leftBranch)},
-		{Name: "rightBranch", IsValid: catalog.ValidateBranchName(rightBranch)},
-		{Name: "committer", IsValid: catalog.ValidateCommitter(committer)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
+		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}
@@ -45,9 +45,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		}
 		params := doDiffParams{
 			Repository:    repository,
-			LeftCommitID:  catalog.CommittedID,
+			LeftCommitID:  CommittedID,
 			LeftBranchID:  leftID,
-			RightCommitID: catalog.UncommittedID,
+			RightCommitID: UncommittedID,
 			RightBranchID: rightID,
 			DiffParams: catalog.DiffParams{
 				Limit: -1,
@@ -88,7 +88,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		mergeResult.Reference = catalog.MakeReference(rightBranch, nextCommitID)
+		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
 		for _, hook := range c.hooks.PostMerge {
 			err = hook(ctx, tx, mergeResult)
 			if err != nil {
@@ -101,7 +101,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	return mergeResult, err
 }
 
-func (c *cataloger) doMerge(ctx context.Context, tx db.Tx, params doDiffParams, mergeResult *catalog.MergeResult, previousMaxCommitID catalog.CommitID, nextCommitID catalog.CommitID, relation RelationType) (int, error) {
+func (c *cataloger) doMerge(ctx context.Context, tx db.Tx, params doDiffParams, mergeResult *catalog.MergeResult, previousMaxCommitID CommitID, nextCommitID CommitID, relation RelationType) (int, error) {
 	mergeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	mergeBatchChan, errChan := c.initDiffWorker(mergeCtx, params)
@@ -197,7 +197,7 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 	return hasCommitDifferences, nil
 }
 
-func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previousMaxCommitID, nextCommitID catalog.CommitID, rightID int64, relation RelationType) error {
+func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previousMaxCommitID, nextCommitID CommitID, rightID int64, relation RelationType) error {
 	// collect changes to apply  on the branch
 	paths := make([]string, 0, MergeBatchSize)
 	ctidArray := make([]string, 0, MergeBatchSize)
@@ -221,7 +221,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 		// set entries that exist in the right branch as deleted by entries that were removed or changed
 		setMaxCommit := sq.Update("catalog_entries").
 			Set("max_commit", previousMaxCommitID).
-			Where("branch_id = ? and max_commit = ?", rightID, catalog.MaxCommitID).
+			Where("branch_id = ? and max_commit = ?", rightID, MaxCommitID).
 			Where(sq.Eq{"path": paths})
 		sql, args, err := setMaxCommit.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
@@ -263,7 +263,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	}
 	return nil
 }
-func insertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID int64, nextCommitID catalog.CommitID, previousMaxCommitID catalog.CommitID, committer string, msg string, metadata catalog.Metadata) error {
+func insertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID int64, nextCommitID CommitID, previousMaxCommitID CommitID, committer string, msg string, metadata catalog.Metadata) error {
 	var childNewLineage []int64
 	leftLastCommitID, err := getLastCommitIDByBranchID(tx, leftID)
 	if err != nil {

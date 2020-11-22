@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -12,7 +11,7 @@ import (
 // 1. Union all the branches in the lineage.
 // 2. if multiple branches have this path - select the one closest to the requested branch
 // 3. filterDeleted param = true will remove results that were deleted
-func sqEntryLineageSelect(tx db.Tx, branchID int64, commitID catalog.CommitID, filterDeleted bool, paths []string) (sq.SelectBuilder, error) {
+func sqEntryLineageSelect(tx db.Tx, branchID int64, commitID CommitID, filterDeleted bool, paths []string) (sq.SelectBuilder, error) {
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
 		return sq.SelectBuilder{}, err
@@ -32,7 +31,7 @@ func sqEntryLineageSelect(tx db.Tx, branchID int64, commitID catalog.CommitID, f
 	finalSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		FromSelect(distinctSelect, "t")
 	if filterDeleted {
-		finalSelect = finalSelect.Where("max_commit = ?", catalog.MaxCommitID)
+		finalSelect = finalSelect.Where("max_commit = ?", MaxCommitID)
 	}
 	return finalSelect, nil
 }
@@ -41,7 +40,7 @@ func sqEntryLineageSelect(tx db.Tx, branchID int64, commitID catalog.CommitID, f
 // 1. Get the requested commit
 // 2. If a path has multiple versions in various commits - Return the row with highest min commit
 // 3. If the version was deleted after the requested commit - the row max-commit will be set to uncommitted
-func sqEntryBranchSelect(branchID int64, commitID catalog.CommitID, paths []string) sq.SelectBuilder {
+func sqEntryBranchSelect(branchID int64, commitID CommitID, paths []string) sq.SelectBuilder {
 	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		Distinct().Options("ON (branch_id,path)").
 		From("catalog_entries").
@@ -57,14 +56,14 @@ func sqEntryBranchSelect(branchID int64, commitID catalog.CommitID, paths []stri
 		rawSelect = rawSelect.Where(sq.Eq{"path": paths})
 	}
 	switch commitID {
-	case catalog.CommittedID:
-		rawSelect = rawSelect.Where("min_commit < ?", catalog.MaxCommitID).
+	case CommittedID:
+		rawSelect = rawSelect.Where("min_commit < ?", MaxCommitID).
 			Column("max_commit")
-	case catalog.UncommittedID:
+	case UncommittedID:
 		rawSelect = rawSelect.Column("max_commit")
 	default:
 		rawSelect = rawSelect.Where("min_commit between 1 and ?", commitID).
-			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", commitID, catalog.MaxCommitID)
+			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", commitID, MaxCommitID)
 	}
 	return rawSelect
 }

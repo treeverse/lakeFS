@@ -33,7 +33,7 @@ type readBatch struct {
 
 type bufferingKey struct {
 	repository string
-	ref        catalog.Ref
+	ref        Ref
 }
 
 type batchReadMessage struct {
@@ -122,7 +122,7 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 	}
 }
 
-func (c *cataloger) dbSelectBatchEntries(repository string, ref catalog.Ref, pathReqList []pathRequest) ([]*catalog.Entry, error) {
+func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList []pathRequest) ([]*catalog.Entry, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {

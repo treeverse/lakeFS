@@ -10,10 +10,10 @@ import (
 )
 
 func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
-		{Name: "message", IsValid: catalog.ValidateCommitMessage(message)},
-		{Name: "committer", IsValid: catalog.ValidateCommitter(committer)},
+	if err := Validate(ValidateFields{
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "message", IsValid: ValidateCommitMessage(message)},
+		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			return nil, err
 		}
 
-		reference := catalog.MakeReference(branch, commitID)
-		parentReference := catalog.MakeReference(branch, lastCommitID)
+		reference := MakeReference(branch, commitID)
+		parentReference := MakeReference(branch, lastCommitID)
 		commitLog := &catalog.CommitLog{
 			Committer:    committer,
 			Message:      message,
@@ -92,19 +92,19 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 	return res.(*catalog.CommitLog), nil
 }
 
-func commitUpdateCommittedEntriesWithMaxCommit(tx db.Tx, branchID int64, commitID catalog.CommitID) (int64, error) {
+func commitUpdateCommittedEntriesWithMaxCommit(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`UPDATE catalog_entries_v SET max_commit = $2
 			WHERE branch_id = $1 AND is_committed
 				AND max_commit = $3
 				AND path in (SELECT path FROM catalog_entries_v WHERE branch_id = $1 AND NOT is_committed)`,
-		branchID, commitID, catalog.MaxCommitID)
+		branchID, commitID, MaxCommitID)
 	if err != nil {
 		return 0, err
 	}
 	return res.RowsAffected(), nil
 }
 
-func commitDeleteUncommittedTombstones(tx db.Tx, branchID int64, commitID catalog.CommitID) (int64, error) {
+func commitDeleteUncommittedTombstones(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`DELETE FROM catalog_entries_v WHERE branch_id = $1 AND NOT is_committed AND is_tombstone AND path IN (
 		SELECT path FROM catalog_entries_v WHERE branch_id = $1 AND is_committed AND max_commit = $2)`,
 		branchID, commitID)
@@ -114,7 +114,7 @@ func commitDeleteUncommittedTombstones(tx db.Tx, branchID int64, commitID catalo
 	return res.RowsAffected(), nil
 }
 
-func commitEntries(tx db.Tx, branchID int64, commitID catalog.CommitID) (int64, error) {
+func commitEntries(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed`,
 		branchID, commitID)
 	if err != nil {

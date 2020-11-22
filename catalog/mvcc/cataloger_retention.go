@@ -62,11 +62,11 @@ func byExpiration(hours catalog.TimePeriodHours) sq.Sqlizer {
 }
 
 type retentionQueryRecord struct {
-	PhysicalAddress string           `db:"physical_address"`
-	Branch          string           `db:"branch"`
-	BranchID        int64            `db:"branch_id"`
-	MinCommit       catalog.CommitID `db:"min_commit"`
-	Path            string           `db:"path"`
+	PhysicalAddress string   `db:"physical_address"`
+	Branch          string   `db:"branch"`
+	BranchID        int64    `db:"branch_id"`
+	MinCommit       CommitID `db:"min_commit"`
+	Path            string   `db:"path"`
 }
 
 func buildRetentionQuery(repositoryName string, policy *catalog.Policy, afterRow sq.RowScanner, limit *uint64) (sq.SelectBuilder, error) {
@@ -83,8 +83,8 @@ func buildRetentionQuery(repositoryName string, policy *catalog.Policy, afterRow
 		}
 		if rule.Expiration.Noncurrent != nil {
 			byNonCurrent := sq.And{
-				sq.NotEq{"min_commit": catalog.MinCommitUncommittedIndicator},
-				sq.Lt{"max_commit": catalog.MaxCommitID},
+				sq.NotEq{"min_commit": MinCommitUncommittedIndicator},
+				sq.Lt{"max_commit": MaxCommitID},
 			}
 			expirationExprs = append(expirationExprs,
 				sq.And{
@@ -93,7 +93,7 @@ func buildRetentionQuery(repositoryName string, policy *catalog.Policy, afterRow
 				})
 		}
 		if rule.Expiration.Uncommitted != nil {
-			byUncommitted := sq.Eq{"min_commit": catalog.MinCommitUncommittedIndicator}
+			byUncommitted := sq.Eq{"min_commit": MinCommitUncommittedIndicator}
 			expirationExprs = append(expirationExprs,
 				sq.And{
 					byExpiration(*rule.Expiration.Uncommitted),
@@ -161,7 +161,7 @@ func (e *expiryRows) Read() (*catalog.ExpireResult, error) {
 		Repository:      e.RepositoryName,
 		Branch:          record.Branch,
 		PhysicalAddress: record.PhysicalAddress,
-		InternalReference: (&catalog.InternalObjectRef{
+		InternalReference: (&InternalObjectRef{
 			BranchID:  record.BranchID,
 			MinCommit: record.MinCommit,
 			Path:      record.Path,
@@ -236,7 +236,7 @@ func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName strin
 		//     entire transaction.
 		insert := psql.Insert("temp_expiry").Columns("branch_id", "min_commit", "path")
 		for _, expire := range expireResults {
-			ref, err := catalog.ParseInternalObjectRef(expire.InternalReference)
+			ref, err := ParseInternalObjectRef(expire.InternalReference)
 			if err != nil {
 				logger.WithField("record", expire).WithError(err).Error("bad reference - skip")
 				continue

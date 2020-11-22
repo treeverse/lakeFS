@@ -55,14 +55,14 @@ func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	return repoID, err
 }
 
-func getLastCommitIDByBranchID(tx db.Tx, branchID int64) (catalog.CommitID, error) {
-	var commitID catalog.CommitID
+func getLastCommitIDByBranchID(tx db.Tx, branchID int64) (CommitID, error) {
+	var commitID CommitID
 	err := tx.GetPrimitive(&commitID, `SELECT max(commit_id) FROM catalog_commits where branch_id=$1`, branchID)
 	return commitID, err
 }
 
-func getNextCommitID(tx db.Tx) (catalog.CommitID, error) {
-	var commitID catalog.CommitID
+func getNextCommitID(tx db.Tx) (CommitID, error) {
+	var commitID CommitID
 	err := tx.GetPrimitive(&commitID, `SELECT nextval('catalog_commit_id_seq');`)
 	return commitID, err
 }
@@ -99,10 +99,10 @@ func paginateSlice(s interface{}, limit int) bool {
 	return false
 }
 
-func getLineage(tx db.Tx, branchID int64, commitID catalog.CommitID) ([]lineageCommit, error) {
+func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, error) {
 	effectiveCommit := commitID
 	if commitID <= 0 {
-		effectiveCommit = catalog.MaxCommitID
+		effectiveCommit = MaxCommitID
 	}
 	sql := `SELECT * FROM UNNEST(
 				(SELECT lineage from catalog_branches WHERE id=$1),
@@ -116,7 +116,7 @@ func getLineage(tx db.Tx, branchID int64, commitID catalog.CommitID) ([]lineageC
 	return requestedLineage, nil
 }
 
-func getLineageAsValues(lineage []lineageCommit, branchID int64, commitID catalog.CommitID) string {
+func getLineageAsValues(lineage []lineageCommit, branchID int64, commitID CommitID) string {
 	valArray := make([]string, 1, len(lineage)+1)
 	valArray[0] = fmt.Sprintf("(0,%d::bigint,%d::bigint)", branchID, commitID)
 	for precedence, lineageBranch := range lineage {

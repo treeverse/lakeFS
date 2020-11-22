@@ -75,24 +75,3 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	return json.Unmarshal(data, j)
 }
-
-type MinMaxCommit struct {
-	MinCommit CommitID `db:"min_commit"`
-	MaxCommit CommitID `db:"max_commit"`
-}
-
-func (m MinMaxCommit) IsDeleted() bool {
-	return m.MaxCommit != MaxCommitID
-}
-func (m MinMaxCommit) IsTombstone() bool {
-	return m.MaxCommit == TombstoneCommitID
-}
-
-func (m MinMaxCommit) IsCommitted() bool {
-	return m.MinCommit != MaxCommitID
-}
-
-func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
-	// needed for diff, to check if an entry changed after the lineage commit id
-	return m.MinCommit > commitID || (m.IsDeleted() && m.MaxCommit >= commitID)
-}

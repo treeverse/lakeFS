@@ -11,9 +11,9 @@ import (
 )
 
 func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, path string) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}
@@ -28,20 +28,20 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 
 		// delete uncommitted entry, if found first
 		res, err := tx.Exec("DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=$3 AND max_commit=$4",
-			branchID, path, catalog.MinCommitUncommittedIndicator, catalog.MaxCommitID)
+			branchID, path, MinCommitUncommittedIndicator, MaxCommitID)
 		if err != nil {
 			return nil, fmt.Errorf("uncommitted: %w", err)
 		}
 		deletedUncommittedCount := res.RowsAffected()
 
 		// get uncommitted entry based on path
-		lineage, err := getLineage(tx, branchID, catalog.UncommittedID)
+		lineage, err := getLineage(tx, branchID, UncommittedID)
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
 		sql, args, err := psql.
 			Select("is_committed").
-			FromSelect(sqEntriesLineage(branchID, catalog.UncommittedID, lineage), "entries").
+			FromSelect(sqEntriesLineage(branchID, UncommittedID, lineage), "entries").
 			// Expired objects *can* be successfully deleted!
 			Where(sq.Eq{"path": path, "is_deleted": false}).
 			ToSql()
@@ -61,7 +61,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		if isCommitted {
 			_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit)
 					VALUES ($1,$2,'','',0,'{}',$3,0)`,
-				branchID, path, catalog.MaxCommitID)
+				branchID, path, MaxCommitID)
 			if err != nil {
 				return nil, fmt.Errorf("tombstone: %w", err)
 			}

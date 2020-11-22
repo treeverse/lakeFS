@@ -187,7 +187,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, catalog.MakeReference("master", catalog.UncommittedID), "", "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, MakeReference("master", UncommittedID), "", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
 			t.Fatal("List entries of master branch after reset should return 3 items, got", len(entries))
@@ -203,7 +203,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, catalog.MakeReference("b1", catalog.UncommittedID), "", "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", "", -1)
 		testutil.Must(t, err)
 		expectedEntriesLen := 6
 		if len(entries) != expectedEntriesLen {

@@ -9,9 +9,9 @@ import (
 )
 
 func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string, uploadID string) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "uploadID", IsValid: catalog.ValidateUploadID(uploadID)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "uploadID", IsValid: ValidateUploadID(uploadID)},
 	}); err != nil {
 		return err
 	}

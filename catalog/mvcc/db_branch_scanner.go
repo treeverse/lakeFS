@@ -2,7 +2,6 @@ package mvcc
 
 import (
 	sq "github.com/Masterminds/squirrel"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -15,8 +14,8 @@ type DBBranchScanner struct {
 	opts         DBScannerOptions
 	tx           db.Tx
 	branchID     int64
-	commitID     catalog.CommitID
-	minCommitID  catalog.CommitID
+	commitID     CommitID
+	minCommitID  CommitID
 	commitsWhere sq.Sqlizer
 	buf          []*DBScannerEntry
 	idx          int
@@ -26,7 +25,7 @@ type DBBranchScanner struct {
 	value        *DBScannerEntry
 }
 
-func NewDBBranchScanner(tx db.Tx, branchID int64, commitID, minCommitID catalog.CommitID, opts DBScannerOptions) *DBBranchScanner {
+func NewDBBranchScanner(tx db.Tx, branchID int64, commitID, minCommitID CommitID, opts DBScannerOptions) *DBBranchScanner {
 	s := &DBBranchScanner{
 		tx:          tx,
 		branchID:    branchID,
@@ -49,12 +48,12 @@ func (s *DBBranchScanner) SetAdditionalWhere(part sq.Sqlizer) {
 }
 
 func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
-	if s.commitID == catalog.UncommittedID {
+	if s.commitID == UncommittedID {
 		return nil, nil
 	}
-	var branchMaxCommitID catalog.CommitID
-	if s.commitID == catalog.CommittedID {
-		branchMaxCommitID = catalog.MaxCommitID
+	var branchMaxCommitID CommitID
+	if s.commitID == CommittedID {
+		branchMaxCommitID = MaxCommitID
 	} else {
 		branchMaxCommitID = s.commitID
 	}
@@ -66,8 +65,8 @@ func (s *DBBranchScanner) buildCommitsWherePart() (sq.Sqlizer, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.commitID == catalog.UncommittedID {
-		commits = append(commits, int64(catalog.MaxCommitID))
+	if s.commitID == UncommittedID {
+		commits = append(commits, int64(MaxCommitID))
 	}
 	if len(commits) == 0 {
 		// this will actually never happen, since each branch has an initial branch
@@ -103,7 +102,7 @@ func (s *DBBranchScanner) Next() bool {
 	s.value = s.buf[s.idx]
 	// if entry was deleted after the max commit that can be read, it must be set to undeleted
 	if s.shouldAlignMaxCommit() && s.value.MaxCommit >= s.commitID {
-		s.value.MaxCommit = catalog.MaxCommitID
+		s.value.MaxCommit = MaxCommitID
 	}
 	s.after = s.value.Path
 	s.idx++
@@ -126,7 +125,7 @@ func (s *DBBranchScanner) hasEnded() bool {
 }
 
 func (s *DBBranchScanner) shouldAlignMaxCommit() bool {
-	return s.commitID != catalog.CommittedID && s.commitID != catalog.UncommittedID
+	return s.commitID != CommittedID && s.commitID != UncommittedID
 }
 
 func (s *DBBranchScanner) readBufferIfNeeded() bool {

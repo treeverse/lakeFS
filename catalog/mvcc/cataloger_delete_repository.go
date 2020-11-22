@@ -9,8 +9,8 @@ import (
 )
 
 func (c *cataloger) DeleteRepository(ctx context.Context, repository string) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 	}); err != nil {
 		return err
 	}

@@ -58,7 +58,7 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 	if err := c.ResetBranch(ctx, repository, "master"); err != nil {
 		t.Fatal("Reset branch should work on empty branch")
 	}
-	reference := catalog.MakeReference("master", catalog.UncommittedID)
+	reference := MakeReference("master", UncommittedID)
 	entries, _, err := c.ListEntries(ctx, repository, reference, "", "", "", -1)
 	if err != nil {
 		t.Fatal("ListEntries for ResetBranch test:", err)
@@ -114,7 +114,7 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 	if err := c.ResetBranch(ctx, repository, "b1"); err != nil {
 		t.Fatal("Reset branch should work on empty branch")
 	}
-	entries, _, err := c.ListEntries(ctx, repository, catalog.MakeReference("b1", catalog.UncommittedID), "", "", "", -1)
+	entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", "", -1)
 	if err != nil {
 		t.Fatal("ListEntries for ResetBranch test:", err)
 	}

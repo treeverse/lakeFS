@@ -10,10 +10,10 @@ import (
 )
 
 func (c *cataloger) CreateEntry(ctx context.Context, repository, branch string, entry catalog.Entry, params catalog.CreateEntryParams) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
-		{Name: "path", IsValid: catalog.ValidatePath(entry.Path)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "path", IsValid: ValidatePath(entry.Path)},
 	}); err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func insertEntry(tx db.Tx, branchID int64, entry *catalog.Entry) (string, error)
 			ON CONFLICT (branch_id,path,min_commit)
 			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, min_commit=EXCLUDED.min_commit, max_commit=$9
 			RETURNING ctid`,
-		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, dbTime, entry.Expired, catalog.MaxCommitID)
+		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, dbTime, entry.Expired, MaxCommitID)
 	if err != nil {
 		return "", fmt.Errorf("insert entry: %w", err)
 	}

@@ -133,7 +133,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("same file more than once", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		var previousCommitID catalog.CommitID
+		var previousCommitID CommitID
 		for i := 0; i < 3; i++ {
 			if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
 				Path:            "/file1",
@@ -151,7 +151,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			}
 
 			// parse commit log and check that the commit id goes up
-			r, err := catalog.ParseRef(commitLog.Reference)
+			r, err := ParseRef(commitLog.Reference)
 			testutil.Must(t, err)
 			if r.CommitID <= previousCommitID {
 				t.Fatalf("Commit ID should go up - %d, previous was %d", r.CommitID, previousCommitID)
@@ -169,7 +169,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("file per commit", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		var previousCommitID catalog.CommitID
+		var previousCommitID CommitID
 		for i := 0; i < 3; i++ {
 			fileName := fmt.Sprintf("/file%d", i+1)
 			addrName := fmt.Sprintf("/addr%d", i+1)
@@ -189,7 +189,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			}
 
 			// check that commit id goes up
-			ref, err := catalog.ParseRef(commitLog.Reference)
+			ref, err := ParseRef(commitLog.Reference)
 			testutil.Must(t, err)
 			if ref.CommitID <= previousCommitID {
 				t.Fatalf("Commit new commit ID %d, should go up - previous %d", ref.CommitID, previousCommitID)

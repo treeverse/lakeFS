@@ -17,14 +17,14 @@ const (
 )
 
 func (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: catalog.ValidateReference(reference)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
 	}); err != nil {
 		return nil, false, err
 	}
 
-	ref, err := catalog.ParseRef(reference)
+	ref, err := ParseRef(reference)
 	if err != nil {
 		return nil, false, err
 	}
@@ -50,7 +50,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 	return result, moreToRead, nil
 }
 
-func (c *cataloger) listEntries(ctx context.Context, repository string, ref *catalog.Ref, prefix string, after string, limit int) (interface{}, error) {
+func (c *cataloger) listEntries(ctx context.Context, repository string, ref *Ref, prefix string, after string, limit int) (interface{}, error) {
 	return c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
@@ -81,7 +81,7 @@ func (c *cataloger) listEntries(ctx context.Context, repository string, ref *cat
 	}, c.txOpts(ctx, db.ReadOnly())...)
 }
 
-func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, ref *catalog.Ref, prefix string, after string, delimiter string, limit int) (interface{}, error) {
+func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, ref *Ref, prefix string, after string, delimiter string, limit int) (interface{}, error) {
 	branchName := ref.Branch
 	commitID := ref.CommitID
 	return c.db.Transact(func(tx db.Tx) (interface{}, error) {
@@ -107,18 +107,18 @@ type readParamsType struct {
 	tx              db.Tx
 	prefix          string
 	branchBatchSize int
-	topCommitID     catalog.CommitID
+	topCommitID     CommitID
 	branchID        int64
 	branchQueryMap  map[int64]sq.SelectBuilder
 }
 
-func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit catalog.CommitID, lineage []lineageCommit) ([]string, error) {
+func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
 	// jump from prefix to prefix
 	topCommitID := requestedCommit
-	if requestedCommit == catalog.UncommittedID {
-		topCommitID = catalog.MaxCommitID
-	} else if requestedCommit == catalog.CommittedID {
-		topCommitID = catalog.MaxCommitID - 1 // do not take uncommitted min_commit
+	if requestedCommit == UncommittedID {
+		topCommitID = MaxCommitID
+	} else if requestedCommit == CommittedID {
+		topCommitID = MaxCommitID - 1 // do not take uncommitted min_commit
 	}
 
 	// list of branches ordered from child to ancestors
@@ -284,7 +284,7 @@ func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, br
 }
 
 func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int,
-	topCommitID catalog.CommitID, prefixLen int, endOfPrefixRange string) map[int64]sq.SelectBuilder {
+	topCommitID CommitID, prefixLen int, endOfPrefixRange string) map[int64]sq.SelectBuilder {
 	unionMap := make(map[int64]sq.SelectBuilder)
 	unionMap[baseBranchID] = selectSingleBranch(baseBranchID, true, branchEntryLimit, topCommitID, prefixLen, endOfPrefixRange)
 	for _, l := range lineage {
@@ -293,7 +293,7 @@ func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntr
 	return unionMap
 }
 
-func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, topCommitID catalog.CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
+func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
 	rawSelect := sq.Select("branch_id", "min_commit").
 		Distinct().Options(" ON (branch_id,path)").
 		Column("substr(path,?) as path_suffix", prefixLen+1).
@@ -308,12 +308,12 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 		query = rawSelect.Column("max_commit")
 	} else {
 		query = rawSelect.
-			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", topCommitID, catalog.MaxCommitID)
+			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", topCommitID, MaxCommitID)
 	}
 	return query
 }
 
-func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID catalog.CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*catalog.Entry, error) {
+func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*catalog.Entry, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int
 		startEntryRun, endEntryRun string

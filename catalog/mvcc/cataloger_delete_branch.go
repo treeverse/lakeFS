@@ -10,9 +10,9 @@ import (
 )
 
 func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}

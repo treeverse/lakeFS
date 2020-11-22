@@ -13,16 +13,16 @@ import (
 const useEntryReadBatched = true
 
 func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params catalog.GetEntryParams) (*catalog.Entry, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: catalog.ValidateReference(reference)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
 	}); err != nil {
 		return nil, err
 	}
 	if path == "" {
 		return nil, db.ErrNotFound
 	}
-	ref, err := catalog.ParseRef(reference)
+	ref, err := ParseRef(reference)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 	return entry, err
 }
 
-func (c *cataloger) getEntryBatchMaybeExpired(ctx context.Context, repository string, ref catalog.Ref, path string) (*catalog.Entry, error) {
+func (c *cataloger) getEntryBatchMaybeExpired(ctx context.Context, repository string, ref Ref, path string) (*catalog.Entry, error) {
 	replyChan := make(chan readResponse, 1) // used for a single return status message.
 	// channel written to and closed by readEntriesBatch
 	request := &readRequest{
@@ -63,7 +63,7 @@ func (c *cataloger) getEntryBatchMaybeExpired(ctx context.Context, repository st
 	}
 }
 
-func (c *cataloger) getEntryMaybeExpired(ctx context.Context, repository string, ref catalog.Ref, path string) (*catalog.Entry, error) {
+func (c *cataloger) getEntryMaybeExpired(ctx context.Context, repository string, ref Ref, path string) (*catalog.Entry, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {

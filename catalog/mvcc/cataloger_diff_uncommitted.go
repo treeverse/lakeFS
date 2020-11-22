@@ -11,9 +11,9 @@ import (
 )
 
 func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (catalog.Differences, bool, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -27,15 +27,15 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch stri
 			return nil, err
 		}
 
-		lineage, err := getLineage(tx, branchID, catalog.CommittedID)
+		lineage, err := getLineage(tx, branchID, CommittedID)
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
 
 		q := psql.Select("CASE WHEN e.max_commit=0 THEN 1 WHEN v.path IS NOT NULL THEN 2 ELSE 0 END AS diff_type", "e.path").
-			FromSelect(sqEntriesV(catalog.UncommittedID), "e").
+			FromSelect(sqEntriesV(UncommittedID), "e").
 			JoinClause(
-				sqEntriesLineageV(branchID, catalog.CommittedID, lineage).
+				sqEntriesLineageV(branchID, CommittedID, lineage).
 					Prefix("LEFT JOIN (").Suffix(") AS v ON v.path=e.path")).
 			Where(sq.And{
 				sq.Eq{"e.branch_id": branchID, "e.is_committed": false},

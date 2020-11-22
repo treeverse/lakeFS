@@ -1,4 +1,4 @@
-package catalog
+package mvcc
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mr-tron/base58"
+	"github.com/treeverse/lakefs/catalog"
 )
 
 type CommitID int64
@@ -66,19 +67,19 @@ func ParseRef(ref string) (*Ref, error) {
 	// specific commit
 	refData, err := base58.Decode(ref[1:])
 	if err != nil {
-		return nil, fmt.Errorf("%w: ref decode", ErrInvalidReference)
+		return nil, fmt.Errorf("%w: ref decode", catalog.ErrInvalidReference)
 	}
 	if !utf8.Valid(refData) {
-		return nil, fmt.Errorf("%w: ref utf8", ErrInvalidReference)
+		return nil, fmt.Errorf("%w: ref utf8", catalog.ErrInvalidReference)
 	}
 	const refPartsCount = 2
 	parts := strings.SplitN(string(refData), ":", refPartsCount)
 	if len(parts) != refPartsCount {
-		return nil, fmt.Errorf("%w: missing commit id", ErrInvalidReference)
+		return nil, fmt.Errorf("%w: missing commit id", catalog.ErrInvalidReference)
 	}
 	id, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid commit id", ErrInvalidReference)
+		return nil, fmt.Errorf("%w: invalid commit id", catalog.ErrInvalidReference)
 	}
 	return &Ref{
 		Branch:   parts[0],
@@ -113,7 +114,7 @@ func ParseInternalObjectRef(refString string) (InternalObjectRef, error) {
 	parts := strings.SplitN(internalRef, InternalObjectRefSeparator, InternalObjectRefParts)
 	if len(parts) < InternalObjectRefParts {
 		return InternalObjectRef{}, fmt.Errorf("%w: expected %d parts in internal object content, found %d",
-			ErrInvalidReference, InternalObjectRefParts, len(parts))
+			catalog.ErrInvalidReference, InternalObjectRefParts, len(parts))
 	}
 	branchID, err := strconv.ParseInt(parts[0], 16, 64)
 	if err != nil {

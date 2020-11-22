@@ -13,9 +13,9 @@ import (
 // CreateEntries add multiple entries into the catalog, this process doesn't pass through de-dup mechanism.
 //   It is mainly used by import mass entries into the catalog.
 func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string, entries []catalog.Entry) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 	entriesMap := make(map[string]*catalog.Entry, len(entries))
 	for i := len(entries) - 1; i >= 0; i-- {
 		p := entries[i].Path
-		if !catalog.IsNonEmptyString(p) {
+		if !IsNonEmptyString(p) {
 			return fmt.Errorf("entry at pos %d, path: %w", i, catalog.ErrInvalidValue)
 		}
 		entriesMap[p] = &entries[i]
@@ -66,10 +66,10 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 					dbTime.Valid = true
 				}
 				sqInsert = sqInsert.Values(branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata,
-					sq.Expr("COALESCE(?,NOW())", dbTime), entry.Expired, catalog.MaxCommitID)
+					sq.Expr("COALESCE(?,NOW())", dbTime), entry.Expired, MaxCommitID)
 			}
 			query, args, err := sqInsert.Suffix(`ON CONFLICT (branch_id,path,min_commit)
-DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, min_commit=EXCLUDED.min_commit, max_commit=?`, catalog.MaxCommitID).
+DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, min_commit=EXCLUDED.min_commit, max_commit=?`, MaxCommitID).
 				ToSql()
 			if err != nil {
 				return nil, fmt.Errorf("build query: %w", err)

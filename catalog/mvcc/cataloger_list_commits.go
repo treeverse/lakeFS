@@ -11,14 +11,14 @@ import (
 const ListCommitsMaxLimit = 10000
 
 func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
-		{Name: "fromReference", IsValid: catalog.ValidateOptionalString(fromReference, catalog.IsValidReference)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "fromReference", IsValid: ValidateOptionalString(fromReference, IsValidReference)},
 	}); err != nil {
 		return nil, false, err
 	}
-	ref, err := catalog.ParseRef(fromReference)
+	ref, err := ParseRef(fromReference)
 	if err != nil {
 		return nil, false, err
 	}
@@ -26,7 +26,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		limit = ListCommitsMaxLimit
 	}
 	// we start from the newest to the oldest
-	fromCommitID := catalog.MaxCommitID
+	fromCommitID := MaxCommitID
 	if ref.CommitID > 0 {
 		fromCommitID = ref.CommitID
 	}

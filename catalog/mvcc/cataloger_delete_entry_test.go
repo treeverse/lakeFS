@@ -96,7 +96,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 }
 
 func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c catalog.Cataloger, repository, branch string, path string) {
-	_, err := c.GetEntry(ctx, repository, catalog.MakeReference(branch, catalog.UncommittedID), path, catalog.GetEntryParams{})
+	_, err := c.GetEntry(ctx, repository, MakeReference(branch, UncommittedID), path, catalog.GetEntryParams{})
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
@@ -114,7 +114,7 @@ func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c
 	if err != nil {
 		t.Fatal("Failed to commit before expect not found:", err)
 	}
-	_, err = c.GetEntry(ctx, repository, branch+catalog.CommittedSuffix, path, catalog.GetEntryParams{})
+	_, err = c.GetEntry(ctx, repository, branch+CommittedSuffix, path, catalog.GetEntryParams{})
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)

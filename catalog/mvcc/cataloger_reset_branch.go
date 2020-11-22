@@ -3,14 +3,13 @@ package mvcc
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) ResetBranch(ctx context.Context, repository, branch string) error {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}
@@ -19,7 +18,7 @@ func (c *cataloger) ResetBranch(ctx context.Context, repository, branch string) 
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`DELETE FROM catalog_entries WHERE branch_id=$1 AND min_commit=$2`, branchID, catalog.MinCommitUncommittedIndicator)
+		_, err = tx.Exec(`DELETE FROM catalog_entries WHERE branch_id=$1 AND min_commit=$2`, branchID, MinCommitUncommittedIndicator)
 		return nil, err
 	}, c.txOpts(ctx)...)
 	return err

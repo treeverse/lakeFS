@@ -8,7 +8,7 @@ import (
 type DBScannerEntry struct {
 	BranchID int64  `db:"branch_id"`
 	RowCtid  string `db:"ctid"`
-	catalog.MinMaxCommit
+	MinMaxCommit
 	catalog.Entry
 }
 

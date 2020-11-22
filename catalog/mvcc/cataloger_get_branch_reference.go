@@ -8,9 +8,9 @@ import (
 )
 
 func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch string) (string, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return "", err
 	}
@@ -21,7 +21,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 			return "", err
 		}
 
-		var commitID catalog.CommitID
+		var commitID CommitID
 		err = tx.GetPrimitive(&commitID, `SELECT COALESCE(MAX(commit_id),0) as commit_id FROM catalog_commits WHERE branch_id=$1`, branchID)
 		if err != nil {
 			return "", err
@@ -29,7 +29,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 		if commitID == 0 {
 			return "", catalog.ErrCommitNotFound
 		}
-		return catalog.MakeReference(branch, commitID), nil
+		return MakeReference(branch, commitID), nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return "", err

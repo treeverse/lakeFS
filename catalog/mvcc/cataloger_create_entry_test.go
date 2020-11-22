@@ -172,7 +172,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				return
 			}
 			// in case there is no error - get the entry and compare
-			ref := catalog.MakeReference(tt.args.branch, catalog.UncommittedID)
+			ref := MakeReference(tt.args.branch, UncommittedID)
 			ent, err := c.GetEntry(ctx, tt.args.repository, ref, tt.args.path, catalog.GetEntryParams{})
 			testutil.MustDo(t, "get entry we just created", err)
 			if ent.Size != tt.args.size {

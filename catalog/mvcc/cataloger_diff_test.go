@@ -325,7 +325,7 @@ func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
 	}
 	commitLog, err := c.GetCommit(ctx, repository, res.Reference)

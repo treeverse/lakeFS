@@ -12,9 +12,9 @@ import (
 type doDiffParams struct {
 	catalog.DiffParams
 	Repository    string
-	LeftCommitID  catalog.CommitID
+	LeftCommitID  CommitID
 	LeftBranchID  int64
-	RightCommitID catalog.CommitID
+	RightCommitID CommitID
 	RightBranchID int64
 }
 
@@ -29,17 +29,17 @@ type DiffScanner struct {
 	value                       *catalog.DiffResultRecord
 	evaluator                   diffEvaluator
 	childLineage                []lineageCommit       // used by diff from parent to child
-	childLastFromParentCommitID catalog.CommitID      // used by diff from parent to child
+	childLastFromParentCommitID CommitID              // used by diff from parent to child
 	effectiveCommits            *diffEffectiveCommits // used by diff from child to parent
 }
 
 type diffEffectiveCommits struct {
 	// ParentEffectiveCommit last commit parent merged from child.
 	// When no sync commit is found - set the commit ID to the point child's branch was created.
-	ParentEffectiveCommit catalog.CommitID `db:"parent_effective_commit"`
+	ParentEffectiveCommit CommitID `db:"parent_effective_commit"`
 	// ChildEffectiveCommit last commit child merged from parent.
 	// If the child never synced with parent, the commit ID is set to 1.
-	ChildEffectiveCommit catalog.CommitID `db:"child_effective_commit"`
+	ChildEffectiveCommit CommitID `db:"child_effective_commit"`
 
 	// ParentEffectiveLineage lineage at the ParentEffectiveCommit
 	ParentEffectiveLineage []lineageCommit
@@ -89,11 +89,11 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	if err != nil {
 		return nil, fmt.Errorf("get child last commit: %w", err)
 	}
-	rightLineage, err := getLineage(tx, params.RightBranchID, catalog.UncommittedID)
+	rightLineage, err := getLineage(tx, params.RightBranchID, UncommittedID)
 	if err != nil {
 		return nil, fmt.Errorf("get right branch lineage: %w", err)
 	}
-	leftLineage, err := getLineage(tx, params.LeftBranchID, catalog.CommittedID)
+	leftLineage, err := getLineage(tx, params.LeftBranchID, CommittedID)
 	if err != nil {
 		return nil, fmt.Errorf("get left branch lineage: %w", err)
 	}
@@ -102,7 +102,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	if len(rightLineage)-len(leftLineage) != 1 || len(rightLineage) == 0 {
 		return nil, catalog.ErrLineageCorrupted
 	}
-	minMinCommit := []catalog.CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
+	minMinCommit := []CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
 	for i := range leftLineage {
 		if leftLineage[i].CommitID == rightLineage[i+1].CommitID {
 			leftLineage = leftLineage[:i]
@@ -113,12 +113,12 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 
 	rightOpts := scannerOpts
 	rightOpts.Lineage = rightLineage
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, catalog.UncommittedID, rightOpts)
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, rightOpts)
 
 	leftOpts := scannerOpts
 	leftOpts.Lineage = leftLineage
 	leftOpts.MinCommits = minMinCommit
-	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, catalog.CommittedID, leftOpts)
+	s.leftScanner = NewDBLineageScanner(tx, params.LeftBranchID, CommittedID, leftOpts)
 	return s, nil
 }
 
@@ -130,8 +130,8 @@ func (s *DiffScanner) diffFromChild(tx db.Tx, params doDiffParams, scannerOpts D
 	if err != nil {
 		return nil, err
 	}
-	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, catalog.CommittedID, 1, scannerOpts.DBScannerOptions)
-	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, catalog.UncommittedID, scannerOpts)
+	s.leftScanner = NewDBBranchScanner(tx, params.LeftBranchID, CommittedID, 1, scannerOpts.DBScannerOptions)
+	s.rightScanner = NewDBLineageScanner(tx, params.RightBranchID, UncommittedID, scannerOpts)
 	return s, nil
 }
 
@@ -242,7 +242,7 @@ func (s *DiffScanner) evaluateChildToParent(leftEntry *DBScannerEntry, rightEntr
 	if rightEntry != nil {
 		// matched target was updated after client - conflict
 		effectiveCommitID := s.effectiveCommits.ParentEffectiveCommitByBranchID(rightEntry.BranchID)
-		if effectiveCommitID > catalog.UncommittedID && rightEntry.MinCommit > effectiveCommitID {
+		if effectiveCommitID > UncommittedID && rightEntry.MinCommit > effectiveCommitID {
 			return catalog.DifferenceTypeConflict
 		}
 	}
@@ -339,13 +339,13 @@ func selectChildEffectiveCommits(tx db.Tx, childID int64, parentID int64) (*diff
 
 // lineageCommitIDByBranchID lookup the branch ID in lineage and returns the commit ID.
 //   If branch ID not found UncommittedID is returned.
-func lineageCommitIDByBranchID(lineage []lineageCommit, branchID int64) catalog.CommitID {
+func lineageCommitIDByBranchID(lineage []lineageCommit, branchID int64) CommitID {
 	for _, l := range lineage {
 		if l.BranchID == branchID {
 			return l.CommitID
 		}
 	}
-	return catalog.UncommittedID
+	return UncommittedID
 }
 
 // prepareDiffAdditionalFields - make sure we have checksum field for diff
@@ -388,7 +388,7 @@ func getRefsRelationType(tx db.Tx, params doDiffParams) (RelationType, error) {
 	return RelationTypeNotDirect, nil
 }
 
-func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) catalog.CommitID {
+func (c *diffEffectiveCommits) ParentEffectiveCommitByBranchID(branchID int64) CommitID {
 	for _, l := range c.ParentEffectiveLineage {
 		if l.BranchID == branchID {
 			return l.CommitID

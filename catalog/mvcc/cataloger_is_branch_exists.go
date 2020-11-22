@@ -4,15 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) BranchExists(ctx context.Context, repository, branch string) (bool, error) {
-	if err := catalog.Validate(catalog.ValidateFields{
-		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return false, err
 	}

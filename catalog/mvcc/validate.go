@@ -1,8 +1,10 @@
-package catalog
+package mvcc
 
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/treeverse/lakefs/catalog"
 )
 
 var (
@@ -22,7 +24,7 @@ type ValidateFields []ValidateField
 func Validate(validators ValidateFields) error {
 	for _, v := range validators {
 		if !v.IsValid() {
-			return fmt.Errorf("%w: %s", ErrInvalidValue, v.Name)
+			return fmt.Errorf("%w: %s", catalog.ErrInvalidValue, v.Name)
 		}
 	}
 	return nil

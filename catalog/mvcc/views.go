@@ -6,7 +6,6 @@ import (
 	"unicode/utf8"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/treeverse/lakefs/catalog"
 )
 
 const (
@@ -14,16 +13,16 @@ const (
 	DirectoryTermination      = string(rune(DirectoryTerminationValue))
 )
 
-func sqEntriesV(requestedCommit catalog.CommitID) sq.SelectBuilder {
+func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
-		fmt.Sprintf("min_commit != %d AS is_committed", catalog.MinCommitUncommittedIndicator),
+		fmt.Sprintf("min_commit != %d AS is_committed", MinCommitUncommittedIndicator),
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
-		fmt.Sprintf("max_commit < %d AS is_deleted", catalog.MaxCommitID)).
+		fmt.Sprintf("max_commit < %d AS is_deleted", MaxCommitID)).
 		From("catalog_entries")
 	switch requestedCommit {
-	case catalog.UncommittedID: // no further filtering is required
-	case catalog.CommittedID:
+	case UncommittedID: // no further filtering is required
+	case CommittedID:
 		entriesQ = sq.Select("*").FromSelect(entriesQ, "t2").Where("is_committed")
 	default:
 		entriesQ = sq.Select("*").FromSelect(entriesQ, "t2").Where("? >=  min_commit and is_committed", requestedCommit)
@@ -31,7 +30,7 @@ func sqEntriesV(requestedCommit catalog.CommitID) sq.SelectBuilder {
 	return entriesQ
 }
 
-func sqEntriesLineage(branchID int64, requestedCommit catalog.CommitID, lineage []lineageCommit) sq.SelectBuilder {
+func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
 	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
 	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
 	isDeletedExpr := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
@@ -44,7 +43,7 @@ func sqEntriesLineage(branchID int64, requestedCommit catalog.CommitID, lineage 
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
-	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", catalog.MaxCommitID))
+	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", MaxCommitID))
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
@@ -74,14 +73,14 @@ func sqLineageConditions(branchID int64, lineage []lineageCommit) (string, sq.Sq
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
-	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", catalog.MaxCommitID))
+	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", MaxCommitID))
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
 	return lineageFilter, maxCommitAlias, isDeletedAlias
 }
 
-func sqEntriesLineageV(branchID int64, requestedCommit catalog.CommitID, lineage []lineageCommit) sq.SelectBuilder {
+func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
 	lineageFilter,
 		maxCommitAlias,
 		isDeletedAlias := sqLineageConditions(branchID, lineage)

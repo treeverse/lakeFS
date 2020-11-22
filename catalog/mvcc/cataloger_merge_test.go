@@ -55,7 +55,7 @@ func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 	if err != nil {
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 
@@ -154,7 +154,7 @@ func TestCataloger_Merge_FromParentNoChangesInParent(t *testing.T) {
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("Merge err = %s, expected %s", err, expectedErr)
 	}
-	if catalog.IsValidReference(res.Reference) {
+	if IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	// TODO(barak): enable test after diff between commits is supported
@@ -214,7 +214,7 @@ func TestCataloger_Merge_FromParentChangesInBoth(t *testing.T) {
 	if err != nil {
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected a reference commit number", res.Reference)
 	}
 	commitLog, err := c.GetCommit(ctx, repository, res.Reference)
@@ -296,7 +296,7 @@ func TestCataloger_Merge_FromParentThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "Merge changes from master to branch1", err)
 
 	// verify valid commit id
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
 	}
 	commitLog, err := c.GetCommit(ctx, repository, res.Reference)
@@ -396,7 +396,7 @@ func TestCataloger_Merge_FromChildChangesOnChild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{
@@ -470,7 +470,7 @@ func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 	res, err := c.Merge(ctx, repository, "branch2", "branch1", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch2 to branch1", err)
 
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
 	}
 	commitLog, err := c.GetCommit(ctx, repository, res.Reference)
@@ -514,7 +514,7 @@ func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
 	// verify valid commit id
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	if diff := deep.Equal(res.Summary, map[catalog.DifferenceType]int{
@@ -570,7 +570,7 @@ func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0"}})
@@ -605,7 +605,7 @@ func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0", Deleted: true}})
@@ -649,7 +649,7 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0"}})
@@ -684,7 +684,7 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	commitLog, err = c.GetCommit(ctx, repository, res.Reference)
@@ -734,7 +734,7 @@ func TestCataloger_Merge_FromChildDelModifyGrandparentFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch2 to branch1 err=%s, expected none", err)
 	}
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	// verify that the file is deleted (tombstone)
@@ -856,7 +856,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	testutil.MustDo(t, "Merge changes from master to branch1", err)
 
 	// verify valid commit id
-	if !catalog.IsValidReference(res.Reference) {
+	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
 	}
 	commitLog, err := c.GetCommit(ctx, repository, res.Reference)
