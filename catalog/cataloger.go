@@ -156,13 +156,6 @@ type Cataloger interface {
 	io.Closer
 }
 
-type CacheConfig struct {
-	Enabled bool
-	Size    int
-	Expiry  time.Duration
-	Jitter  time.Duration
-}
-
 // CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
 // called in a current transaction context; if they return an error the transaction is rolled
 // back.  Because these transactions are current, the hook can see the effect the operation only

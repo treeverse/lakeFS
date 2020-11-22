@@ -76,3 +76,10 @@ func (c *DummyCache) RepositoryID(repository string, setFn GetRepositoryIDFn) (i
 func (c *DummyCache) BranchID(repository string, branch string, setFn GetBranchIDFn) (int64, error) {
 	return setFn(repository, branch)
 }
+
+type CacheConfig struct {
+	Enabled bool
+	Size    int
+	Expiry  time.Duration
+	Jitter  time.Duration
+}
