@@ -30,12 +30,16 @@ type Manager interface {
 // EntryIterator returns ordered iteration of the SSTable entries
 type EntryIterator interface {
 	// SeekGE advances the iterator to point to the given path.
-	// Returns the next path and entry.
-	SeekGE(rocks3.Path) (*rocks3.Path, *rocks3.Entry)
+	// Returns true iff if the iterator is pointing at a valid entry.
+	SeekGE(rocks3.Path) bool
 
-	// Next advances the iterator and returns the next path and entry.
-	// If iterator reached the end, returns (nil, nil)
-	Next() (*rocks3.Path, *rocks3.Entry)
+	// Next advances the iterator.
+	// Returns true iff if the iterator is pointing at a valid entry.
+	Next() bool
+
+	// Value returns the last read path and entry.
+	// Must return non-nil results after Next() or SeekGE(path) returned true.
+	Value() (*rocks3.Path, *rocks3.Entry)
 
 	// Error returns any accumulated error.
 	Error() error
