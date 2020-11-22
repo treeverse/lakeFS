@@ -29,9 +29,6 @@ type Manager interface {
 
 // EntryIterator returns ordered iteration of the SSTable entries
 type EntryIterator interface {
-	// First returns the first path and entry of the iterator
-	First() (*rocks3.Path, *rocks3.Entry)
-
 	// SeekGE advances the iterator to point to the given path.
 	// Returns the next path and entry.
 	SeekGE(rocks3.Path) (*rocks3.Path, *rocks3.Entry)
@@ -40,12 +37,8 @@ type EntryIterator interface {
 	// If iterator reached the end, returns (nil, nil)
 	Next() (*rocks3.Path, *rocks3.Entry)
 
-	// HasNext returns true iff more entries are available.
-	// If returned true, Peek() and Next() must return non-nil results.
-	HasNext() bool
-
-	// Peek returns the next path and entry without advancing the cursor.
-	Peek() (*rocks3.Path, *rocks3.Entry)
+	// Error returns any accumulated error.
+	Error() error
 
 	io.Closer
 }
