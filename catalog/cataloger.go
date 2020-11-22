@@ -168,7 +168,7 @@ type ExportConfigurator interface {
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 }
 
-type stateCB func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)
+type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)
 
 type ExportStateHandler interface {
 	// ExportState starts an export operation on branch of repo
