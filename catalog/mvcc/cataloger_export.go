@@ -128,7 +128,7 @@ func (c *cataloger) ExportStateMarkStart(tx db.Tx, repo string, branch string, n
 		return oldRef, state, err
 	}
 	if tag.RowsAffected() != 1 {
-		err = fmt.Errorf("[I] ExportMarkStart: could not update single row %s: %w", tag, ErrEntryNotFound)
+		err = fmt.Errorf("[I] ExportMarkStart: could not update single row %s: %w", tag, catalog.ErrEntryNotFound)
 		return oldRef, state, err
 	}
 	if state == catalog.ExportStatusFailed {
@@ -172,7 +172,7 @@ func (c *cataloger) ExportStateDelete(tx db.Tx, repo string, branch string) erro
 		return err
 	}
 	if tag.RowsAffected() != 1 {
-		return fmt.Errorf("[I] ExportStateDelete: could not delete single row %s: %w", tag, ErrEntryNotFound)
+		return fmt.Errorf("[I] ExportStateDelete: could not delete single row %s: %w", tag, catalog.ErrEntryNotFound)
 	}
 	return nil
 }

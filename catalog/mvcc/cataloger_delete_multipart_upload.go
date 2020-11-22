@@ -3,13 +3,15 @@ package mvcc
 import (
 	"context"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string, uploadID string) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "uploadID", IsValid: ValidateUploadID(uploadID)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "uploadID", IsValid: catalog.ValidateUploadID(uploadID)},
 	}); err != nil {
 		return err
 	}
@@ -26,7 +28,7 @@ func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string
 		}
 		affected := res.RowsAffected()
 		if affected != 1 {
-			return nil, ErrMultipartUploadNotFound
+			return nil, catalog.ErrMultipartUploadNotFound
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)

@@ -1,10 +1,8 @@
-package mvcc
+package catalog
 
 import (
 	"fmt"
 	"regexp"
-
-	"github.com/treeverse/lakefs/catalog"
 )
 
 var (
@@ -61,14 +59,14 @@ func ValidateReference(reference string) ValidateFunc {
 }
 
 func IsValidReference(reference string) bool {
-	ref, err := catalog.ParseRef(reference)
+	ref, err := ParseRef(reference)
 	if err != nil {
 		return false
 	}
 	if !IsValidBranchName(ref.Branch) {
 		return false
 	}
-	if ref.CommitID < catalog.CommittedID {
+	if ref.CommitID < CommittedID {
 		return false
 	}
 	return true

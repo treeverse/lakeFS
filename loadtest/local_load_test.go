@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog/mvcc"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -15,7 +17,6 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
@@ -56,7 +57,7 @@ func TestLocalLoad(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger := catalog.NewCataloger(conn)
+	cataloger := mvcc.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)

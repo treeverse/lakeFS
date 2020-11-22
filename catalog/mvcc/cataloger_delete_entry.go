@@ -11,9 +11,9 @@ import (
 )
 
 func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, path string) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 			return nil, nil
 		}
 		if deletedUncommittedCount == 0 {
-			return nil, ErrEntryNotFound
+			return nil, catalog.ErrEntryNotFound
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)

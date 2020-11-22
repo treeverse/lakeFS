@@ -1,4 +1,4 @@
-package mvcc
+package catalog
 
 import (
 	"testing"

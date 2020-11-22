@@ -22,11 +22,11 @@ type mergeBatchRecords []*catalog.DiffResultRecord
 // the table holds entry ctid to reference entries in case of changed/added and source branch in case of delete.
 // That information is used to address cases where we need to create new entry or tombstone as part of the merge
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata catalog.Metadata) (*catalog.MergeResult, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
-		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
-		{Name: "committer", IsValid: ValidateCommitter(committer)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "leftBranch", IsValid: catalog.ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: catalog.ValidateBranchName(rightBranch)},
+		{Name: "committer", IsValid: catalog.ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, err
 		}
 		if relation == RelationTypeSame {
-			return nil, ErrSameBranchMergeNotSupported
+			return nil, catalog.ErrSameBranchMergeNotSupported
 		}
 		nextCommitID, err := getNextCommitID(tx)
 		if err != nil {
@@ -81,7 +81,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 				return nil, err
 			}
 			if !commitDifferences {
-				return nil, ErrNoDifferenceWasFound
+				return nil, catalog.ErrNoDifferenceWasFound
 			}
 		}
 		err = insertMergeCommit(tx, relation, leftID, rightID, nextCommitID, previousMaxCommitID, committer, message, metadata)
@@ -116,7 +116,7 @@ func (c *cataloger) doMerge(ctx context.Context, tx db.Tx, params doDiffParams, 
 					mergeResult.Summary[d.Type]++
 					rowsCounter++
 					if d.Type == catalog.DifferenceTypeConflict {
-						return rowsCounter, ErrConflictFound
+						return rowsCounter, catalog.ErrConflictFound
 					}
 				}
 				err := applyDiffChangesToRightBranch(tx, buf, previousMaxCommitID, nextCommitID, params.RightBranchID, relation)

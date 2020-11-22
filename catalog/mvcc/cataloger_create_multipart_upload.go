@@ -4,15 +4,17 @@ import (
 	"context"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string, uploadID, path, physicalAddress string, creationTime time.Time) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "uploadID", IsValid: ValidateUploadID(uploadID)},
-		{Name: "path", IsValid: ValidatePath(path)},
-		{Name: "physicalAddress", IsValid: ValidatePhysicalAddress(physicalAddress)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "uploadID", IsValid: catalog.ValidateUploadID(uploadID)},
+		{Name: "path", IsValid: catalog.ValidatePath(path)},
+		{Name: "physicalAddress", IsValid: catalog.ValidatePhysicalAddress(physicalAddress)},
 	}); err != nil {
 		return err
 	}

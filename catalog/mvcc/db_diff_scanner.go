@@ -51,7 +51,7 @@ func NewDiffScanner(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 		return nil, err
 	}
 	if relation == RelationTypeNotDirect {
-		return nil, ErrNonDirectNotSupported
+		return nil, catalog.ErrNonDirectNotSupported
 	}
 	scanner := &DiffScanner{
 		Relation: relation,
@@ -71,7 +71,7 @@ func NewDiffScanner(tx db.Tx, params doDiffParams) (*DiffScanner, error) {
 	case RelationTypeSame:
 		return scanner.diffSameBranch(tx, params, scannerOpts)
 	default:
-		return nil, ErrFeatureNotSupported
+		return nil, catalog.ErrFeatureNotSupported
 	}
 }
 
@@ -100,7 +100,7 @@ func (s *DiffScanner) diffFromParent(tx db.Tx, params doDiffParams, scannerOpts 
 	// If some ancestor branch commit id is the same for parent and child - then the parent does not need to read it
 	// so it is trimmed from the parent lineage
 	if len(rightLineage)-len(leftLineage) != 1 || len(rightLineage) == 0 {
-		return nil, ErrLineageCorrupted
+		return nil, catalog.ErrLineageCorrupted
 	}
 	minMinCommit := []catalog.CommitID{rightLineage[0].CommitID} // commit ID of parent, as known to child
 	for i := range leftLineage {

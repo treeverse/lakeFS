@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -33,19 +35,19 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			name:    "unknown branch",
 			args:    args{name: "repo3", storage: "s3://bucket3", branch: ""},
 			wantErr: true,
-			asErr:   ErrInvalidValue,
+			asErr:   catalog.ErrInvalidValue,
 		},
 		{
 			name:    "missing repo",
 			args:    args{name: "", storage: "s3://bucket1", branch: "master"},
 			wantErr: true,
-			asErr:   ErrInvalidValue,
+			asErr:   catalog.ErrInvalidValue,
 		},
 		{
 			name:    "missing storage",
 			args:    args{name: "repo1", storage: "", branch: "master"},
 			wantErr: true,
-			asErr:   ErrInvalidValue,
+			asErr:   catalog.ErrInvalidValue,
 		},
 	}
 

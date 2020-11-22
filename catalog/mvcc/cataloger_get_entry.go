@@ -13,9 +13,9 @@ import (
 const useEntryReadBatched = true
 
 func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params catalog.GetEntryParams) (*catalog.Entry, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: ValidateReference(reference)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: catalog.ValidateReference(reference)},
 	}); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *cataloger) getEntryBatchMaybeExpired(ctx context.Context, repository st
 	case response := <-replyChan:
 		return response.entry, response.err
 	case <-time.After(c.BatchRead.EntryMaxWait):
-		return nil, ErrReadEntryTimeout
+		return nil, catalog.ErrReadEntryTimeout
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}

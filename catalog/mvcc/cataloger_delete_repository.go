@@ -3,12 +3,14 @@ package mvcc
 import (
 	"context"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) DeleteRepository(ctx context.Context, repository string) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
 	}); err != nil {
 		return err
 	}
@@ -20,7 +22,7 @@ func (c *cataloger) DeleteRepository(ctx context.Context, repository string) err
 		}
 		affected := res.RowsAffected()
 		if affected != 1 {
-			return nil, ErrRepositoryNotFound
+			return nil, catalog.ErrRepositoryNotFound
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)

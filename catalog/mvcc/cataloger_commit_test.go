@@ -127,7 +127,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 	t.Run("nothing", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 		_, err := c.Commit(ctx, repository, "master", "in a bottle", "tester1", nil)
-		if !errors.Is(err, ErrNothingToCommit) {
+		if !errors.Is(err, catalog.ErrNothingToCommit) {
 			t.Fatal("Expect nothing to commit error, got", err)
 		}
 	})

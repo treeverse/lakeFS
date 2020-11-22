@@ -58,7 +58,7 @@ func TestExportConfiguration(t *testing.T) {
 
 	t.Run("unconfigured branch", func(t *testing.T) {
 		gotCfg, err := c.GetExportConfigurationForBranch(repo, anotherBranch)
-		if !errors.Is(err, ErrBranchNotFound) {
+		if !errors.Is(err, catalog.ErrBranchNotFound) {
 			t.Errorf("get configuration for unconfigured branch failed: expected ErrBranchNotFound but got %s (and %+v)", err, gotCfg)
 		}
 	})
@@ -244,7 +244,7 @@ func TestExportState(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err = d.Transact(func(tx db.Tx) (interface{}, error) {
 				// Clean up any existing state
-				if err := c.ExportStateDelete(tx, repo, defaultBranch); err != nil && !errors.Is(err, ErrEntryNotFound) {
+				if err := c.ExportStateDelete(tx, repo, defaultBranch); err != nil && !errors.Is(err, catalog.ErrEntryNotFound) {
 					return nil, fmt.Errorf("setup (delete): %w", err)
 				}
 

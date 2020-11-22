@@ -11,9 +11,9 @@ import (
 )
 
 func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (catalog.Differences, bool, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
 	}); err != nil {
 		return nil, false, err
 	}

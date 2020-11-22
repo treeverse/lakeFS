@@ -44,7 +44,7 @@ func formatSQLWithLockType(sql string, lockType LockType) (string, error) {
 	case LockTypeUpdate:
 		q = sql + " FOR UPDATE"
 	default:
-		return "", ErrInvalidLockValue
+		return "", catalog.ErrInvalidLockValue
 	}
 	return q, nil
 }

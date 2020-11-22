@@ -12,10 +12,10 @@ import (
 const DiffMaxLimit = 1000
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "leftReference", IsValid: ValidateReference(leftReference)},
-		{Name: "rightReference", IsValid: ValidateReference(rightReference)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "leftReference", IsValid: catalog.ValidateReference(leftReference)},
+		{Name: "rightReference", IsValid: catalog.ValidateReference(rightReference)},
 	}); err != nil {
 		return nil, false, err
 	}

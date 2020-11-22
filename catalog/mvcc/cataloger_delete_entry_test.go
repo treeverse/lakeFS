@@ -16,7 +16,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 
 	t.Run("delete file not exists", func(t *testing.T) {
 		err := c.DeleteEntry(ctx, repository, "master", "/file1")
-		wantErr := ErrEntryNotFound
+		wantErr := catalog.ErrEntryNotFound
 		if !errors.As(err, &wantErr) {
 			t.Errorf("DeleteEntry() error = %s, want = %s", err, wantErr)
 		}
@@ -42,8 +42,8 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 
 		// if we try to commit we should fail - there was no change
 		_, err = c.Commit(ctx, repository, "master", "commit nothing", "tester", nil)
-		if !errors.Is(err, ErrNothingToCommit) {
-			t.Fatalf("Commit returned err=%s, expected=%s", err, ErrNothingToCommit)
+		if !errors.Is(err, catalog.ErrNothingToCommit) {
+			t.Fatalf("Commit returned err=%s, expected=%s", err, catalog.ErrNothingToCommit)
 		}
 	})
 
@@ -103,7 +103,7 @@ func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c catalog.
 	}
 	// expect a second delete to fail on entry not found
 	err = c.DeleteEntry(ctx, repository, branch, path)
-	wantErr = ErrEntryNotFound
+	wantErr = catalog.ErrEntryNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() error = %s, want = %s", err, wantErr)
 	}

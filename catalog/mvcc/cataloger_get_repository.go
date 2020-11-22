@@ -8,8 +8,8 @@ import (
 )
 
 func (c *cataloger) GetRepository(ctx context.Context, repository string) (*catalog.Repository, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
 	}); err != nil {
 		return nil, err
 	}

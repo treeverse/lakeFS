@@ -11,10 +11,10 @@ import (
 const ListCommitsMaxLimit = 10000
 
 func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "fromReference", IsValid: ValidateOptionalString(fromReference, IsValidReference)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+		{Name: "fromReference", IsValid: catalog.ValidateOptionalString(fromReference, catalog.IsValidReference)},
 	}); err != nil {
 		return nil, false, err
 	}

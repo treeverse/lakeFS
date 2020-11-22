@@ -10,10 +10,10 @@ import (
 )
 
 func (c *cataloger) CreateEntry(ctx context.Context, repository, branch string, entry catalog.Entry, params catalog.CreateEntryParams) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "path", IsValid: ValidatePath(entry.Path)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+		{Name: "path", IsValid: catalog.ValidatePath(entry.Path)},
 	}); err != nil {
 		return err
 	}

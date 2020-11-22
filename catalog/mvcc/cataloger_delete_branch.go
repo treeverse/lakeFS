@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}
@@ -28,7 +30,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 			return nil, err
 		}
 		if legacyCount == 0 {
-			return nil, fmt.Errorf("delete default branch: %w", ErrOperationNotPermitted)
+			return nil, fmt.Errorf("delete default branch: %w", catalog.ErrOperationNotPermitted)
 		}
 
 		// check we don't have branch depends on us by count lineage records we are part of
@@ -40,7 +42,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 			return nil, fmt.Errorf("dependent check: %w", err)
 		}
 		if childBranches > 0 {
-			return nil, fmt.Errorf("branch has dependent branch: %w", ErrOperationNotPermitted)
+			return nil, fmt.Errorf("branch has dependent branch: %w", catalog.ErrOperationNotPermitted)
 		}
 
 		// delete branch entries
@@ -56,7 +58,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 		}
 		affected := res.RowsAffected()
 		if affected != 1 {
-			return nil, ErrBranchNotFound
+			return nil, catalog.ErrBranchNotFound
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)

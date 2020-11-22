@@ -13,9 +13,9 @@ import (
 // CreateEntries add multiple entries into the catalog, this process doesn't pass through de-dup mechanism.
 //   It is mainly used by import mass entries into the catalog.
 func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string, entries []catalog.Entry) error {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}
@@ -29,8 +29,8 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 	entriesMap := make(map[string]*catalog.Entry, len(entries))
 	for i := len(entries) - 1; i >= 0; i-- {
 		p := entries[i].Path
-		if !IsNonEmptyString(p) {
-			return fmt.Errorf("entry at pos %d, path: %w", i, ErrInvalidValue)
+		if !catalog.IsNonEmptyString(p) {
+			return fmt.Errorf("entry at pos %d, path: %w", i, catalog.ErrInvalidValue)
 		}
 		entriesMap[p] = &entries[i]
 	}

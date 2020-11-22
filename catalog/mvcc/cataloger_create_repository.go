@@ -15,10 +15,10 @@ const (
 )
 
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*catalog.Repository, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "storageNamespace", IsValid: ValidateStorageNamespace(storageNamespace)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "storageNamespace", IsValid: catalog.ValidateStorageNamespace(storageNamespace)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
 	}); err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		err := tx.GetPrimitive(&importCommitID, `INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
 			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0)
 			RETURNING commit_id`,
-			importBranchID, catalog.CatalogerCommitter, createRepositoryImportCommitMessage)
+			importBranchID, catalog.DefaultCommitter, createRepositoryImportCommitMessage)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}
@@ -82,7 +82,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 				previous_commit_id,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0,$4,'from_parent',$5,$6)
 			RETURNING creation_date`,
-			branchID, catalog.CatalogerCommitter, createRepositoryCommitMessage, importBranchID, []int64{int64(importCommitID)}, importCommitID)
+			branchID, catalog.DefaultCommitter, createRepositoryCommitMessage, importBranchID, []int64{int64(importCommitID)}, importCommitID)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}

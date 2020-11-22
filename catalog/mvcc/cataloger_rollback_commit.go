@@ -3,6 +3,8 @@ package mvcc
 import (
 	"context"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -11,5 +13,5 @@ func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference st
 		"repository": repository,
 		"reference":  reference,
 	}).Debug("Rollback commit - feature not supported")
-	return ErrFeatureNotSupported
+	return catalog.ErrFeatureNotSupported
 }

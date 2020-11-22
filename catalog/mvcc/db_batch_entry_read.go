@@ -114,7 +114,7 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			case err != nil:
 				response.err = err
 			default:
-				response.err = ErrEntryNotFound
+				response.err = catalog.ErrEntryNotFound
 			}
 			pathReq.replyChan <- response
 			close(pathReq.replyChan)

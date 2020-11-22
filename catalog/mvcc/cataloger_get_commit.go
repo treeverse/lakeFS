@@ -9,9 +9,9 @@ import (
 )
 
 func (c *cataloger) GetCommit(ctx context.Context, repository, reference string) (*catalog.CommitLog, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: ValidateReference(reference)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: catalog.ValidateReference(reference)},
 	}); err != nil {
 		return nil, err
 	}

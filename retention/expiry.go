@@ -81,11 +81,10 @@ func (bw *BucketWriters) GetWriter(bucketName string) (*csv.Writer, error) {
 
 // WriteExpiryManifestFromSeekableReader reads from r ExpiryResults and returns Readers to CSV
 // files suitable for passing to AWS S3 batch tagging.
-func WriteExpiryManifestsFromRows(ctx context.Context, c catalog.Cataloger, repository *catalog.Repository, rows catalog.StringRows) (map[string]fileutil.RewindableReader, error) {
+func WriteExpiryManifestsFromRows(ctx context.Context, repository *catalog.Repository, rows catalog.StringIterator) (map[string]fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
 	bucketWriters := BucketWriters{}
 
-	var err error
 	recordNumber := 0
 	for ; rows.Next(); recordNumber++ {
 		recordLogger := logger.WithField("record_number", recordNumber)
@@ -95,13 +94,9 @@ func WriteExpiryManifestsFromRows(ctx context.Context, c catalog.Cataloger, repo
 			continue
 		}
 		recordLogger = recordLogger.WithField("physical_path", physicalAddress)
-		if err != nil {
-			recordLogger.WithError(err).Warning("failed to get repository URI; keep going, lose this expiry")
-			continue
-		}
 		recordLogger = recordLogger.WithField("repository", repository.Name)
 		if !block.IsResolvableKey(physicalAddress) {
-			recordLogger.Warning("expiry requested for nonresolvable key %s; ignore it (possible misconfiguration)", physicalAddress)
+			recordLogger.Warning("expiry requested for non-resolvable key %s; ignore it (possible misconfiguration)", physicalAddress)
 			continue
 		}
 		qualifiedKey, err := block.ResolveNamespace(repository.StorageNamespace, physicalAddress)
@@ -130,7 +125,7 @@ func WriteExpiryManifestsFromRows(ctx context.Context, c catalog.Cataloger, repo
 	}
 	logger = logger.WithFields(logging.Fields{"num_records": recordNumber, "num_files": len(bucketWriters)})
 	logger.Info("encoded CSVs")
-	if err != nil && !errors.Is(err, io.EOF) {
+	if err := rows.Err(); err != nil && !errors.Is(err, io.EOF) {
 		return nil, err
 	}
 	ret := map[string]fileutil.RewindableReader{}
@@ -140,12 +135,12 @@ func WriteExpiryManifestsFromRows(ctx context.Context, c catalog.Cataloger, repo
 		encodingData.CsvWriter.Flush()
 		err := encodingData.CsvWriter.Error()
 		if err != nil {
-			bucketLogger.WithError(err).Error("failed to flush encoded CSV; lose all bucket expiries")
+			bucketLogger.WithError(err).Error("failed to flush encoded CSV; lose all bucket expires")
 			continue
 		}
 		resetableReader, count, err := encodingData.Writer.StartReading()
 		if err != nil {
-			bucketLogger.WithError(err).Error("failed to start reading encoded CSVs; lose all bucket expiries")
+			bucketLogger.WithError(err).Error("failed to start reading encoded CSVs; lose all bucket expires")
 			continue
 		}
 		bucketLogger.WithField("bytes", count).Info("wrote encoded CSV for bucket expiry")
@@ -374,7 +369,7 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 			return
 		}
 
-		manifests, err := WriteExpiryManifestsFromRows(ctx, c, repository, expiryPhysicalAddressRows)
+		manifests, err := WriteExpiryManifestsFromRows(ctx, repository, expiryPhysicalAddressRows)
 		if err != nil {
 			errCh <- MapError{
 				Fields:       errFields,

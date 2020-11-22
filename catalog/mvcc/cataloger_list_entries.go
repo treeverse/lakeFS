@@ -17,9 +17,9 @@ const (
 )
 
 func (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: ValidateReference(reference)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: catalog.ValidateReference(reference)},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -40,7 +40,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 	case catalog.DefaultPathDelimiter:
 		res, err = c.listEntriesByLevel(ctx, repository, ref, prefix, after, delimiter, limit)
 	default:
-		err = ErrUnsupportedDelimiter
+		err = catalog.ErrUnsupportedDelimiter
 	}
 	if err != nil {
 		return nil, false, err
@@ -366,7 +366,7 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 			return nil, fmt.Errorf("select entries: %w", err)
 		}
 		if len(entriesList) != r.runLength {
-			return nil, fmt.Errorf("%w: read %d entries, got %d", ErrUnexpected, r.runLength, len(entriesList))
+			return nil, fmt.Errorf("%w: read %d entries, got %d", catalog.ErrUnexpected, r.runLength, len(entriesList))
 		}
 		for i := 0; i < r.runLength; i++ {
 			entries[r.startRunIndex+i] = &entriesList[i]

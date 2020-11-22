@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 const (
-	CatalogerCommitter      = ""
+	DefaultCommitter        = ""
 	DefaultBranchName       = "master"
 	DefaultImportBranchName = "import-from-inventory"
 	DefaultPathDelimiter    = "/"
@@ -43,24 +42,6 @@ type ExpireResult struct {
 	InternalReference string
 }
 
-type RepositoryCataloger interface {
-	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
-	GetRepository(ctx context.Context, repository string) (*Repository, error)
-	DeleteRepository(ctx context.Context, repository string) error
-	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
-}
-
-type BranchCataloger interface {
-	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error)
-	DeleteBranch(ctx context.Context, repository, branch string) error
-	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
-	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
-	GetBranchReference(ctx context.Context, repository, branch string) (string, error)
-	ResetBranch(ctx context.Context, repository, branch string) error
-}
-
-var ErrExpired = errors.New("expired from storage")
-
 // ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
 type ExpiryRows interface {
 	Close()
@@ -82,7 +63,23 @@ type CreateEntryParams struct {
 	Dedup DedupParams
 }
 
-type EntryCataloger interface {
+type Cataloger interface {
+	// RepositoryCataloger
+	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
+	GetRepository(ctx context.Context, repository string) (*Repository, error)
+	DeleteRepository(ctx context.Context, repository string) error
+	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
+
+	// BranchCataloger
+	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error)
+	DeleteBranch(ctx context.Context, repository, branch string) error
+	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
+	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
+	GetBranchReference(ctx context.Context, repository, branch string) (string, error)
+	ResetBranch(ctx context.Context, repository, branch string) error
+
+	// EntryCataloger
+
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error)
@@ -113,41 +110,31 @@ type EntryCataloger interface {
 	DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (StringIterator, error)
 
 	DedupReportChannel() chan *DedupReport
-}
 
-type MultipartUpdateCataloger interface {
 	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
 	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
 	DeleteMultipartUpload(ctx context.Context, repository, uploadID string) error
-}
 
-type Committer interface {
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
 	RollbackCommit(ctx context.Context, repository, reference string) error
-}
 
-type Differ interface {
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
-}
 
-type Merger interface {
 	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
-}
 
-type Hookser interface {
 	Hooks() *CatalogerHooks
-}
 
-type ExportConfigurator interface {
+	// ExportConfigurator
+
 	GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error)
 	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
-}
 
-type ExportStateHandler interface {
+	// ExportStateHandler
+
 	// ExportState starts an export operation on branch of repo
 	// calls a callback with the oldRef and state
 	// and ends the export operation
@@ -165,19 +152,7 @@ type ExportStateHandler interface {
 	// ExportStateDelete deletes any export state for repo.  Mostly useful in tests: in a
 	// living system the export state is part of the state of the world.
 	ExportStateDelete(tx db.Tx, repo string, branch string) error
-}
 
-type Cataloger interface {
-	RepositoryCataloger
-	BranchCataloger
-	EntryCataloger
-	Committer
-	MultipartUpdateCataloger
-	Differ
-	Merger
-	Hookser
-	ExportConfigurator
-	ExportStateHandler
 	io.Closer
 }
 

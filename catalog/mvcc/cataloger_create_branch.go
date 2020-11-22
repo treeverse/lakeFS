@@ -14,10 +14,10 @@ const (
 )
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*catalog.CommitLog, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "sourceBranch", IsValid: ValidateBranchName(sourceBranch)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+		{Name: "sourceBranch", IsValid: catalog.ValidateBranchName(sourceBranch)},
 	}); err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 						where branch_id=$4 and merge_type='from_parent' order by branch_id,commit_id desc))
 						,(select max(commit_id) from catalog_commits where branch_id=$4 ))
 			RETURNING commit_id,merge_source_commit,transaction_timestamp()`,
-			branchID, catalog.CatalogerCommitter, commitMsg, sourceBranchID)
+			branchID, catalog.DefaultCommitter, commitMsg, sourceBranchID)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}
@@ -75,7 +75,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		parentReference := catalog.MakeReference(sourceBranch, insertReturns.MergeSourceCommit)
 
 		commitLog := &catalog.CommitLog{
-			Committer:    catalog.CatalogerCommitter,
+			Committer:    catalog.DefaultCommitter,
 			Message:      commitMsg,
 			CreationDate: insertReturns.TransactionTimestamp,
 			Reference:    reference,

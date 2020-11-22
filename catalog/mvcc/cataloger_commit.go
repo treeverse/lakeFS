@@ -10,10 +10,10 @@ import (
 )
 
 func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
-	if err := Validate(ValidateFields{
-		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "message", IsValid: ValidateCommitMessage(message)},
-		{Name: "committer", IsValid: ValidateCommitter(committer)},
+	if err := catalog.Validate(catalog.ValidateFields{
+		{Name: "branch", IsValid: catalog.ValidateBranchName(branch)},
+		{Name: "message", IsValid: catalog.ValidateCommitMessage(message)},
+		{Name: "committer", IsValid: catalog.ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			return nil, fmt.Errorf("commit entries: %w", err)
 		}
 		if (affectedNew + committedAffected) == 0 {
-			return nil, ErrNothingToCommit
+			return nil, catalog.ErrNothingToCommit
 		}
 
 		// insert commit record
