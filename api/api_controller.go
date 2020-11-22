@@ -266,7 +266,12 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		c.deps.Collector.CollectEvent("global", "init")
 
 		username := swag.StringValue(setupReq.User.Username)
-		cred, err := auth.CreateInitialAdminUser(c.deps.Auth, c.deps.MetadataManager, username)
+		var cred *model.Credential
+		if setupReq.User.Key == nil {
+			cred, err = auth.CreateInitialAdminUser(c.deps.Auth, c.deps.MetadataManager, username)
+		} else {
+			cred, err = auth.CreateInitialAdminUserWithKeys(c.deps.Auth, c.deps.MetadataManager, username, setupReq.User.Key.AccessKeyID, setupReq.User.Key.SecretAccessKey)
+		}
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})

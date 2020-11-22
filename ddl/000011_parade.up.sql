@@ -57,7 +57,7 @@ LANGUAGE sql VOLATILE AS $$
     SET actor_id = owner_id,
         status_code = 'in-progress',
         num_tries = num_tries + 1,
-        performance_token = gen_random_uuid(),
+        performance_token = public.gen_random_uuid(),
         action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
     WHERE id IN (
         SELECT id
