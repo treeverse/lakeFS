@@ -173,8 +173,7 @@ type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (n
 type ExportStateHandler interface {
 	// ExportState starts an export operation on branch of repo
 	// calls a callback with the oldRef and state
-	// sets the new values with the values returned from the callback
-	// in case newRef == "" will will not change ref
+	// ExportStateSet sets the new values with the values returned from the callback.  It sets the ref when newRef != ""
 	ExportStateSet(repo, branch, newRef string, cb stateCB) error
 
 	// GetExportState returns the current Export state params
