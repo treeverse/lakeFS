@@ -20,8 +20,8 @@ type Manager interface {
 	// If path not found, (nil, ErrPathNotFound) is returned.
 	GetEntry(path rocks3.Path, tid SSTableID) (*rocks3.Entry, error)
 
-	// ListEntries takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-	ListEntries(tid SSTableID, from rocks3.Path) (EntryIterator, error)
+	// SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
+	SSTableIterator(tid SSTableID, from rocks3.Path) (EntryIterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)
