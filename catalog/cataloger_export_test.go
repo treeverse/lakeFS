@@ -174,8 +174,7 @@ func TestExportState(t *testing.T) {
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, prefix, defaultBranch)
 
-	var insertStart ExportStateCallback
-	insertStart = func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error) {
+	insertStart := func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error) {
 		return ref1, ExportStatusInProgress, nil, nil
 	}
 
@@ -183,8 +182,7 @@ func TestExportState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var InProgressToSuccess ExportStateCallback
-	InProgressToSuccess = func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error) {
+	inProgressToSuccess := func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error) {
 		// check that first is returned
 		if oldRef != ref1 {
 			return oldRef, "", nil, fmt.Errorf("expected:%s got:%s", ref1, oldRef)
@@ -195,7 +193,7 @@ func TestExportState(t *testing.T) {
 		return ref2, ExportStatusSuccess, nil, nil
 	}
 
-	if err := c.ExportStateSet(repo, defaultBranch, InProgressToSuccess); err != nil {
+	if err := c.ExportStateSet(repo, defaultBranch, inProgressToSuccess); err != nil {
 		t.Fatal(err)
 	}
 
