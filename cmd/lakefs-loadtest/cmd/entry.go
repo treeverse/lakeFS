@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog/mvcc"
+
 	"github.com/google/uuid"
 	"github.com/jamiealquiza/tachymeter"
 	nanoid "github.com/matoous/go-nanoid"
@@ -54,7 +56,7 @@ var entryCmd = &cobra.Command{
 		defer database.Close()
 
 		conf := config.NewConfig()
-		c := catalog.NewCataloger(database, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		c := mvcc.NewCataloger(database, mvcc.WithParams(conf.GetMvccCatalogerCatalogParams()))
 
 		// validate repository and branch
 		_, err := c.GetRepository(ctx, u.Repository)
