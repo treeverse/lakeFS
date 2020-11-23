@@ -154,7 +154,7 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			return
 		}
-		if err == nil && commit != nil && commit.Committer == catalog.CatalogerCommitter {
+		if err == nil && commit != nil && commit.Committer == catalog.DefaultCommitter {
 			// branch initial commit, ignore
 			return nil, nil
 		}

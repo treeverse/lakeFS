@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/treeverse/lakefs/catalog/mvcc"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/spf13/cobra"
 
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -26,7 +27,7 @@ var expireCmd = &cobra.Command{
 		conf := config.NewConfig()
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		cataloger := mvcc.NewCataloger(dbPool, mvcc.WithParams(conf.GetMvccCatalogerCatalogParams()))
 
 		awsRetentionConfig := config.NewConfig().GetAwsS3RetentionConfig()
 
