@@ -198,6 +198,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.ExportGetContinuousExportHandler = c.ExportGetContinuousExportHandler()
 	api.ExportSetContinuousExportHandler = c.ExportSetContinuousExportHandler()
 	api.ExportRunHandler = c.ExportRunHandler()
+	api.ExportRepairHandler = c.ExportRepairHandler()
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
@@ -2231,11 +2232,10 @@ func (c *Controller) ExportRunHandler() exportop.RunHandler {
 			},
 		})
 		if err != nil {
-			return exportop.NewSetContinuousExportUnauthorized().
+			return exportop.NewRunUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		deps.LogAction("execute_continuous_export")
-
+		deps.LogAction("execute_single_export")
 		exportID, err := export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
 		if err != nil {
 			return exportop.NewRunDefault(http.StatusInternalServerError).
@@ -2245,6 +2245,28 @@ func (c *Controller) ExportRunHandler() exportop.RunHandler {
 	})
 }
 
+func (c *Controller) ExportRepairHandler() exportop.RepairHandler {
+	return exportop.RepairHandlerFunc(func(params exportop.RepairParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateCommitAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return exportop.NewRepairUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("repair_export")
+
+		err = export.ExportBranchRepair(deps.Cataloger, params.Repository, params.Branch)
+		if err != nil {
+			return exportop.NewRepairDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return exportop.NewRepairCreated()
+	})
+}
 func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandlerFunc {
 	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
