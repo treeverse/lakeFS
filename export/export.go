@@ -74,8 +74,8 @@ func ExportBranchDone(cataloger catalog.Cataloger, status catalog.CatalogBranchE
 
 var ErrRepairWrongStatus = errors.New("incorrect status")
 
-// ExportBranchRepair will change state from Failed To Repair and start a new export
-// will return Error in Case current state is not Failed
+// ExportBranchRepair changes state from Failed To Repair and starts a new export.
+// It fails if the current state is not ExportStatusFailed.
 func ExportBranchRepair(cataloger catalog.Cataloger, repo, branch string) error {
 	return cataloger.ExportStateSet(repo, branch, func(oldRef string, state catalog.CatalogBranchExportStatus) (newRef string, newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
 		if state != catalog.ExportStatusFailed {
