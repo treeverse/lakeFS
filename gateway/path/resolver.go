@@ -6,8 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/treeverse/lakefs/catalog/mvcc"
+
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 )
 
 const (
@@ -26,7 +27,7 @@ var (
 
 type Ref struct {
 	Branch   string
-	CommitID catalog.CommitID
+	CommitID mvcc.CommitID
 }
 
 type ResolvedPath struct {

@@ -17,13 +17,11 @@ import (
 	"github.com/spf13/viper"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	blockparams "github.com/treeverse/lakefs/block/params"
-	catalogparams "github.com/treeverse/lakefs/catalog/params"
+	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
 )
 
 const (
-	DefaultDatabaseConnString = "postgres://localhost:5432/postgres?sslmode=disable"
-
 	DefaultBlockStoreType                    = "local"
 	DefaultBlockStoreLocalPath               = "~/lakefs/data"
 	DefaultBlockStoreS3Region                = "us-east-1"
@@ -78,8 +76,6 @@ func setDefaults() {
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
-	viper.SetDefault("database.connection_string", DefaultDatabaseConnString)
-
 	viper.SetDefault("auth.cache.enabled", DefaultAuthCacheEnabled)
 	viper.SetDefault("auth.cache.size", DefaultAuthCacheSize)
 	viper.SetDefault("auth.cache.ttl", DefaultAuthCacheTTL)
@@ -111,7 +107,7 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
-func (c *Config) GetCatalogerCatalogParams() catalogparams.Catalog {
+func (c *Config) GetMvccCatalogerCatalogParams() catalogparams.Catalog {
 	return catalogparams.Catalog{
 		BatchRead: catalogparams.BatchRead{
 			EntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),

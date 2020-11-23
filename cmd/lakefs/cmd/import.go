@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/treeverse/lakefs/catalog/mvcc"
+
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
@@ -58,7 +60,7 @@ var importCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		cataloger := mvcc.NewCataloger(dbPool, mvcc.WithParams(conf.GetMvccCatalogerCatalogParams()))
 		defer func() { _ = cataloger.Close() }()
 
 		u := uri.Must(uri.Parse(args[0]))
