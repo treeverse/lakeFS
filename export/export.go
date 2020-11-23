@@ -135,7 +135,7 @@ func hasContinuousExport(c catalog.Cataloger, repo, branch string) (bool, error)
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("check whether export configuration is continuous for repo %s branch %s: %w", repo, branch, err)
+		return false, fmt.Errorf("check if export configuration is continuous for repo %s branch %s %w", repo, branch, err)
 	}
 	return exportConfiguration.IsContinuous, nil
 }
