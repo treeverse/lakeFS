@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	DefaultDatabaseConnString = "postgres://localhost:5432/postgres?sslmode=disable"
-
 	DefaultBlockStoreType                    = "local"
 	DefaultBlockStoreLocalPath               = "~/lakefs/data"
 	DefaultBlockStoreS3Region                = "us-east-1"
@@ -77,8 +75,6 @@ func setDefaults() {
 	viper.SetDefault("logging.format", DefaultLoggingFormat)
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
-
-	viper.SetDefault("database.connection_string", DefaultDatabaseConnString)
 
 	viper.SetDefault("auth.cache.enabled", DefaultAuthCacheEnabled)
 	viper.SetDefault("auth.cache.size", DefaultAuthCacheSize)
