@@ -103,7 +103,7 @@ var exportExecuteCmd = &cobra.Command{
 
 var exportRepairCmd = &cobra.Command{
 	Use:   "repair",
-	Short: "marks failed export as repaired",
+	Short: "mark failed export as repaired",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
