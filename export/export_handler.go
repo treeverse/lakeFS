@@ -74,7 +74,7 @@ func (h *Handler) start(body *string) error {
 	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr, repo.StorageNamespace)
 }
 
-func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string, storageNamespace string) error {
+func (h *Handler) generateTasks(startData StartData, config catalog.Cataloger, finishBodyStr *string, storageNamespace string) error {
 	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr, storageNamespace)
 	var diffs catalog.Differences
 	var err error
@@ -298,20 +298,17 @@ func (h *Handler) ActorID() parade.ActorID {
 	return actorName
 }
 
-// exportCommitHook is a cataloger PostCommit hook for continuous export.
-func (h *Handler) exportCommitHook(ctx context.Context, _ db.Tx, repo, branch string, log *catalog.CommitLog) error {
-	l := logging.Default().
-		WithFields(logging.Fields{"repo": repo, "branch": branch, "message": log.Message, "at": log.CreationDate.String()})
-	isContinuous, err := hasContinuousExport(h.cataloger, repo, branch)
+func startExport(l logging.Logger, p parade.Parade, c catalog.Cataloger, op interface{}, repo, branch string) error {
+	isContinuous, err := hasContinuousExport(c, repo, branch)
 	if err != nil {
 		// FAIL this commit: if we were meant to export it and did not then in practice
 		// there was no commit.
-		return fmt.Errorf("check continuous export for commit %+v: %w", *log, err)
+		return fmt.Errorf("check continuous export for %+v: %w", op, err)
 	}
 	if !isContinuous {
 		return nil
 	}
-	exportID, err := ExportBranchStart(h.parade, h.cataloger, repo, branch)
+	exportID, err := ExportBranchStart(p, c, repo, branch)
 	l.WithField("export_id", exportID).Info("continuous export started")
 	if errors.Is(err, ErrExportInProgress) {
 		err = nil
@@ -319,20 +316,16 @@ func (h *Handler) exportCommitHook(ctx context.Context, _ db.Tx, repo, branch st
 	return err
 }
 
+// exportCommitHook is a cataloger PostCommit hook for continuous export.
+func (h *Handler) exportCommitHook(ctx context.Context, _ db.Tx, repo, branch string, log *catalog.CommitLog) error {
+	l := logging.Default().
+		WithFields(logging.Fields{"repo": repo, "branch": branch, "message": log.Message, "at": log.CreationDate.String()})
+	return startExport(l, h.parade, h.cataloger, *log, repo, branch)
+}
+
 // exportMergeHook is a cataloger PostMerge hook for continuous export.
 func (h *Handler) exportMergeHook(ctx context.Context, _ db.Tx, repo, branch string, merge *catalog.MergeResult) error {
-	isContinuous, err := hasContinuousExport(h.cataloger, repo, branch)
-	if err != nil {
-		// FAIL this merge: if we were meant to export it and did not then in practice
-		// there was no merge.
-		return fmt.Errorf("check continuous export for merge %+v: %w", *merge, err)
-	}
-	if !isContinuous {
-		return nil
-	}
-	_, err = ExportBranchStart(h.parade, h.cataloger, repo, branch)
-	if errors.Is(err, ErrExportInProgress) {
-		err = nil
-	}
-	return err
+	l := logging.Default().
+		WithFields(logging.Fields{"repo": repo, "branch": branch, "reference": merge.Reference})
+	return startExport(l, h.parade, h.cataloger, *merge, repo, branch)
 }

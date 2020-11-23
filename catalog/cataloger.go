@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"io"
 	"time"
 
 	"github.com/treeverse/lakefs/db"
