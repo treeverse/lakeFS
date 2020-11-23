@@ -7,11 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4/source"
-
 	"github.com/golang-migrate/migrate/v4"
-
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/db/params"
@@ -107,8 +105,11 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	defer func() {
 		_ = src.Close()
 	}()
-
-	m, err := migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
+	connectionString := params.ConnectionString
+	if connectionString == "" {
+		connectionString = "postgres://:/"
+	}
+	m, err := migrate.NewWithSourceInstance("httpfs", src, connectionString)
 	if err != nil {
 		return nil, err
 	}
