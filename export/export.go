@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
 	nanoid "github.com/matoous/go-nanoid"
 
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
 
@@ -131,7 +131,7 @@ func ExportBranchRepair(cataloger catalog.Cataloger, repo, branch string) error 
 
 func hasContinuousExport(c catalog.Cataloger, repo, branch string) (bool, error) {
 	exportConfiguration, err := c.GetExportConfigurationForBranch(repo, branch)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, db.ErrNotFound) {
 		return false, nil
 	}
 	if err != nil {
