@@ -2033,6 +2033,36 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/branches/{branch}/repair-export:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - export
+        - branches
+      operationId: repair
+      summary: set continuous export state as repaired
+      responses:
+        201:
+          description: continuous export status successfully changed to repaired
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repository}/branches/{branch}/export-hook:
     parameters:
       - in: path

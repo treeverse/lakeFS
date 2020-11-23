@@ -31,4 +31,6 @@ var (
 	ErrConflictFound               = errors.New("conflict found")
 	ErrUnsupportedRelation         = errors.New("unsupported relation")
 	ErrUnsupportedDelimiter        = errors.New("unsupported delimiter")
+	ErrBadTypeConversion           = errors.New("bad type")
+	ErrExportFailed                = errors.New("export failed")
 )

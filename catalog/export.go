@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -37,6 +36,7 @@ const (
 	ExportStatusInProgress = CatalogBranchExportStatus("in-progress")
 	ExportStatusSuccess    = CatalogBranchExportStatus("exported-successfully")
 	ExportStatusFailed     = CatalogBranchExportStatus("export-failed")
+	ExportStatusRepaired   = CatalogBranchExportStatus("export-repaired")
 	ExportStatusUnknown    = CatalogBranchExportStatus("[unknown]")
 )
 
@@ -47,7 +47,11 @@ type ExportStatus struct {
 	State      CatalogBranchExportStatus
 }
 
-var ErrBadTypeConversion = errors.New("bad type")
+type ExportState struct {
+	CurrentRef   string
+	State        CatalogBranchExportStatus
+	ErrorMessage *string
+}
 
 // nolint: stylecheck
 func (dst *CatalogBranchExportStatus) Scan(src interface{}) error {

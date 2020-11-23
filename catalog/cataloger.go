@@ -135,26 +135,15 @@ type Cataloger interface {
 	GetExportConfigurations() ([]ExportConfigurationForBranch, error)
 	PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error
 
-	// ExportState starts an export operation on branch of repo
-	// calls a callback with the oldRef and state
-	// and ends the export operation
-	ExportState(repo, branch, newRef string, cb func(oldRef string, state CatalogBranchExportStatus) (newState CatalogBranchExportStatus, newMessage *string, err error)) error
-	// ExportStateMarkStart starts an export operation on branch of repo and returns the ref of
-	// the previous export.  If the previous export failed it returns ErrExportFailed.  If
-	// another export is running return state ExportStatusInProgress -- and caller should
-	// clean it up by removing and adding the "next export" withint this transaction.  If
-	// another transaction concurrently runs ExportMarkStart on branchID, one blocks until
-	// the other is done.
-	ExportStateMarkStart(tx db.Tx, repo string, branch string, newRef string) (string, CatalogBranchExportStatus, error)
-	// ExportStateMarkEnd verifies that the current export is of ref and ends an export operation
-	// on branch of repo.
-	ExportStateMarkEnd(tx db.Tx, repo string, branch string, ref string, newState CatalogBranchExportStatus, newMessage *string) error
-	// ExportStateDelete deletes any export state for repo.  Mostly useful in tests: in a
-	// living system the export state is part of the state of the world.
-	ExportStateDelete(tx db.Tx, repo string, branch string) error
+	ExportStateSet(repo, branch string, cb ExportStateCallback) error
+	// GetExportState returns the current Export state params
+	GetExportState(repo string, branch string) (ExportState, error)
 
 	io.Closer
 }
+
+// ExportStateCallback returns the new ref, state and message regarding the old ref and state
+type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error)
 
 // CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
 // called in a current transaction context; if they return an error the transaction is rolled
