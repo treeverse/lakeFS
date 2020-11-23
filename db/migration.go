@@ -105,10 +105,11 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	defer func() {
 		_ = src.Close()
 	}()
-	if params.ConnectionString == "" {
-		params.ConnectionString = "postgres://:/"
+	connectionString := params.ConnectionString
+	if connectionString == "" {
+		connectionString = "postgres://:/"
 	}
-	m, err := migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
+	m, err := migrate.NewWithSourceInstance("httpfs", src, connectionString)
 	if err != nil {
 		return nil, err
 	}
