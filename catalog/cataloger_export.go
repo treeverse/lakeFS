@@ -209,8 +209,7 @@ func (c *cataloger) ExportStateSet(repo, branch string, cb ExportStateCallback) 
 			WHERE branch_id=$1`
 		}
 
-		tag, err := tx.Exec(query,
-			branchID, newRef, newState, newMsg)
+		tag, err := tx.Exec(query, branchID, newRef, newState, newMsg)
 		if err != nil {
 			return nil, fmt.Errorf("ExportStateSet: update state: %w", err)
 		}
