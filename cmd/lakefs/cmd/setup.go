@@ -14,10 +14,11 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
-// initCmd represents the init command
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize a LakeFS instance, and setup an admin credentials",
+// setupCmd represents the init command
+var setupCmd = &cobra.Command{
+	Use:     "setup",
+	Aliases: []string{"init"},
+	Short:   "Setup a new LakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 
@@ -79,8 +80,8 @@ const internalErrorCode = 2
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(initCmd)
-	f := initCmd.Flags()
+	rootCmd.AddCommand(setupCmd)
+	f := setupCmd.Flags()
 	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	f.String("access-key-id", "", "AWS-format access key ID to create for that user (for integration)")
 	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
@@ -94,5 +95,5 @@ func init() {
 		fmt.Fprint(os.Stderr, err)
 		os.Exit(internalErrorCode)
 	}
-	_ = initCmd.MarkFlagRequired("user-name")
+	_ = setupCmd.MarkFlagRequired("user-name")
 }
