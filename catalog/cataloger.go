@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/treeverse/lakefs/db"
@@ -144,13 +145,11 @@ type Cataloger interface {
 // ExportStateCallback returns the new ref, state and message regarding the old ref and state
 type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error)
 
-type PostCommitFunc = func(ctx context.Context, tx db.Tx, repo, branch string, commitLog *CommitLog) error
-type PostMergeFunc = func(ctx context.Context, tx db.Tx, repo, branch string, mergeResult *MergeResult) error
+type PostCommitFunc = func(ctx context.Context, repo, branch string, commitLog *CommitLog) error
+type PostMergeFunc = func(ctx context.Context, repo, branch string, mergeResult *MergeResult) error
 
 // CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
-// called in a current transaction context; if they return an error the transaction is rolled
-// back.  Because these transactions are current, the hook can see the effect the operation only
-// on the passed transaction.
+// called after the transaction ends; if they return an error they do not affect commit/merge.
 type CatalogerHooks struct {
 	// PostCommit hooks are called at the end of a commit.
 	PostCommit []PostCommitFunc
