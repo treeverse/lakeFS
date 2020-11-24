@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -74,7 +73,9 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"took":  time.Since(start),
 	})
 	err := pgxscan.Get(context.Background(), d.tx, dest, query, args...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if pgxscan.NotFound(err) {
+		// Don't wrap err: it might come from a different version of pgx and then
+		// !errors.Is(err, pgx.ErrNoRows).
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
@@ -97,7 +98,9 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 	})
 	row := d.tx.QueryRow(context.Background(), query, args...)
 	err := row.Scan(dest)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if pgxscan.NotFound(err) {
+		// Don't wrap err: it might come from a different version of pgx and then
+		// !errors.Is(err, pgx.ErrNoRows).
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
