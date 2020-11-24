@@ -14,7 +14,7 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
-// setupCmd represents the init command
+// setupCmd initial lakeFS system setup - build database, load initial data and create first superuser
 var setupCmd = &cobra.Command{
 	Use:     "setup",
 	Aliases: []string{"init"},
