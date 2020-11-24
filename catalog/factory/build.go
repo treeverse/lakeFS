@@ -8,10 +8,13 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func BuildCatalog(c *config.Config, db db.Database) catalog.Cataloger {
+func BuildCataloger(db db.Database, c *config.Config) catalog.Cataloger {
 	catType := c.GetCatalogerType()
 	if catType == "rocks" {
 		return rocks.NewCataloger()
+	}
+	if c == nil {
+		return mvcc.NewCataloger(db, mvcc.WithCacheEnabled(false))
 	}
 	return mvcc.NewCataloger(db, mvcc.WithParams(c.GetMvccCatalogerCatalogParams()))
 }

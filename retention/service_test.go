@@ -9,7 +9,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/catalog/mvcc"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
@@ -37,7 +37,7 @@ func setupService(t *testing.T, opts ...testutil.GetDBOption) *retention.DBReten
 	t.Helper()
 	ctx := context.Background()
 	cdb, _ := testutil.GetDB(t, databaseURI, opts...)
-	cataloger := mvcc.NewCataloger(cdb)
+	cataloger := catalogfactory.BuildCataloger(cdb, nil)
 	_, err := cataloger.CreateRepository(ctx, "repo", "s3://repo", "master")
 	testutil.MustDo(t, "create repository", err)
 	return retention.NewDBRetentionService(cdb)
