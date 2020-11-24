@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	nanoid "github.com/matoous/go-nanoid"
 
 	"github.com/treeverse/lakefs/db"
@@ -22,7 +23,10 @@ func getExportID(repo, branch, commitRef string) (string, error) {
 	return fmt.Sprintf("%s-%s-%s-%s", repo, branch, commitRef, nid), nil
 }
 
-var ErrExportInProgress = errors.New("export currently in progress")
+var (
+	ErrExportInProgress = errors.New("export currently in progress")
+	ErrNothingToExport  = errors.New("nothing to export")
+)
 
 // ExportBranchStart inserts a start task on branch, sets branch export state to pending.
 // It returns ErrExportInProgress if an export is already in progress.
@@ -39,17 +43,24 @@ func ExportBranchStart(parade parade.Parade, cataloger catalog.Cataloger, repo, 
 	l := logging.Default().WithFields(logging.Fields{
 		"repo":       repo,
 		"branch":     branch,
-		"commit_ref": commit,
+		"commit_ref": commitRef,
 		"export_id":  exportID,
 	})
 
 	err = cataloger.ExportStateSet(repo, branch, func(oldRef string, state catalog.CatalogBranchExportStatus) (newRef string, newState catalog.CatalogBranchExportStatus, newMessage *string, err error) {
-		l.WithField("initial_state", state).Info("export update state")
+		l.WithFields(logging.Fields{
+			"initial_state": state,
+			"old_ref":       oldRef,
+			"old_state":     state,
+		}).Info("export update state")
 		if state == catalog.ExportStatusInProgress {
 			return oldRef, state, nil, ErrExportInProgress
 		}
 		if state == catalog.ExportStatusFailed {
 			return oldRef, state, nil, catalog.ErrExportFailed
+		}
+		if oldRef == commitRef {
+			return oldRef, state, nil, ErrNothingToExport
 		}
 		config, err := cataloger.GetExportConfigurationForBranch(repo, branch)
 		if err != nil {
@@ -80,6 +91,22 @@ var (
 // ExportBranchDone ends the export branch process by changing the status
 func ExportBranchDone(parade parade.Parade, cataloger catalog.Cataloger, status catalog.CatalogBranchExportStatus, statusMsg *string, repo, branch, commitRef string) error {
 	l := logging.Default().WithFields(logging.Fields{"repo": repo, "branch": branch, "commit_ref": commitRef, "status": status, "status_message": statusMsg})
+
+	err := cataloger.ExportStateSet(repo, branch, func(oldRef string, oldStatus catalog.CatalogBranchExportStatus) (newRef string, newStatus catalog.CatalogBranchExportStatus, newMessage *string, err error) {
+		if commitRef != oldRef {
+			return "", "", nil, fmt.Errorf("ExportBranchDone: currentRef: %s, newRef: %s: %w", oldRef, commitRef, ErrConflictingRefs)
+		}
+		if oldStatus != catalog.ExportStatusInProgress {
+			l.WithField("old_state", oldStatus).Error("expected old_state to be in-progress")
+			return "", "", nil, fmt.Errorf("expected old status to be in-progress not %s: %w", oldStatus, ErrWrongStatus)
+		}
+		l.WithField("old_state", oldStatus).Info("updating branch export")
+		return oldRef, status, statusMsg, nil
+	})
+	if err != nil {
+		return err
+	}
+
 	if status == catalog.ExportStatusSuccess {
 		// Start the next export if continuous.
 		isContinuous, err := hasContinuousExport(cataloger, repo, branch)
@@ -95,6 +122,9 @@ func ExportBranchDone(parade parade.Parade, cataloger catalog.Cataloger, status 
 			if errors.Is(err, ErrExportInProgress) {
 				l.Info("export already in progress when restarting continuous export (unlikely)")
 				err = nil
+			} else if errors.Is(err, ErrNothingToExport) {
+				l.Info("nothing further to export continuously; stop (likely)")
+				err = nil
 			}
 			if err != nil {
 				return fmt.Errorf("restart continuous export repo %s branch %s: %w", repo, branch, err)
@@ -104,18 +134,7 @@ func ExportBranchDone(parade parade.Parade, cataloger catalog.Cataloger, status 
 		return err
 	}
 
-	err := cataloger.ExportStateSet(repo, branch, func(oldRef string, oldStatus catalog.CatalogBranchExportStatus) (newRef string, newStatus catalog.CatalogBranchExportStatus, newMessage *string, err error) {
-		if commitRef != oldRef {
-			return "", "", nil, fmt.Errorf("ExportBranchDone: currentRef: %s, newRef: %s: %w", oldRef, commitRef, ErrConflictingRefs)
-		}
-		if oldStatus != catalog.ExportStatusInProgress {
-			l.WithField("old_state", oldStatus).Error("expected old_state to be in-progress")
-			return "", "", nil, fmt.Errorf("expected old status to be in-progress not %s: %w", oldStatus, ErrWrongStatus)
-		}
-		l.WithField("old_state", oldStatus).Info("updating branch export")
-		return oldRef, status, statusMsg, nil
-	})
-	return err
+	return nil
 }
 
 // ExportBranchRepair changes state from Failed To Repair and starts a new export.
@@ -131,7 +150,7 @@ func ExportBranchRepair(cataloger catalog.Cataloger, repo, branch string) error 
 
 func hasContinuousExport(c catalog.Cataloger, repo, branch string) (bool, error) {
 	exportConfiguration, err := c.GetExportConfigurationForBranch(repo, branch)
-	if errors.Is(err, db.ErrNotFound) {
+	if errors.Is(err, db.ErrNotFound) || errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
 	if err != nil {

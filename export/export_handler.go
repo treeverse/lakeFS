@@ -71,6 +71,13 @@ func (h *Handler) start(body *string) error {
 	if err != nil {
 		return err
 	}
+	logging.Default().WithFields(logging.Fields{
+		"repo":      startData.Repo,
+		"branch":    startData.Branch,
+		"from_ref":  startData.FromCommitRef,
+		"to_ref":    startData.ToCommitRef,
+		"export_id": startData.ExportID,
+	}).Info("action: start export")
 	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr, repo.StorageNamespace)
 }
 
@@ -247,6 +254,14 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 		return err
 	}
 	status, msg := getStatus(signalledErrors)
+	logging.Default().WithFields(logging.Fields{
+		"repo":           finishData.Repo,
+		"branch":         finishData.Branch,
+		"commit_ref":     finishData.CommitRef,
+		"status_path":    finishData.StatusPath,
+		"status":         status,
+		"status_message": msg,
+	}).Info("action: export done")
 	err = h.updateStatus(finishData, status, signalledErrors)
 	if err != nil {
 		return err
@@ -309,10 +324,17 @@ func startExport(l logging.Logger, p parade.Parade, c catalog.Cataloger, op inte
 		return nil
 	}
 	exportID, err := ExportBranchStart(p, c, repo, branch)
-	l.WithField("export_id", exportID).Info("continuous export started")
+	if err != nil {
+		l = l.WithError(err)
+	}
 	if errors.Is(err, ErrExportInProgress) {
+		l = l.WithField("skipped", "export already in progress")
+		err = nil
+	} else if errors.Is(err, ErrNothingToExport) {
+		l = l.WithField("skipped", "nothing further to export")
 		err = nil
 	}
+	l.WithField("export_id", exportID).Info("continuous export started")
 	return err
 }
 
