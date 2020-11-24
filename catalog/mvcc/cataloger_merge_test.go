@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -139,8 +138,12 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	if !errors.Is(err, catalog.ErrConflictFound) {
 		t.Errorf("Merge err = %s, expected conflict with err = %s", err, catalog.ErrConflictFound)
 	}
-	if res.Reference != "" {
-		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
+	if res == nil {
+		t.Errorf("Merge returned nil, err %s", err)
+	} else {
+		if res.Reference != "" {
+			t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
+		}
 	}
 }
 
@@ -1195,7 +1198,7 @@ type MergeHookLogger struct {
 	Merges []MergeData
 }
 
-func (h *MergeHookLogger) Hook(_ context.Context, _ db.Tx, repo, branch string, result *MergeResult) error {
+func (h *MergeHookLogger) Hook(_ context.Context, repo, branch string, result *MergeResult) error {
 	if h.Err != nil {
 		return h.Err
 	}

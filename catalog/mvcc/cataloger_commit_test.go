@@ -12,7 +12,6 @@ import (
 	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -292,72 +291,41 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 
 type CommitData struct {
 	Repo, Branch string
-	Log          CommitLog
+	Log          catalog.CommitLog
 }
 
 // CommitHookLogger - commit hook that will return an error if set by Err.
 // When no Err is set it will log commit log into Logs.
 type CommitHookLogger struct {
-	Err     error
 	Commits []CommitData
 }
 
-func (h *CommitHookLogger) Hook(_ context.Context, _ db.Tx, repo, branch string, log *CommitLog) error {
-	if h.Err != nil {
-		return h.Err
-	}
+func (h *CommitHookLogger) Hook(_ context.Context, repo, branch string, log *catalog.CommitLog) error {
 	h.Commits = append(h.Commits, CommitData{Repo: repo, Branch: branch, Log: *log})
 	return nil
 }
 
 func TestCataloger_CommitHooks(t *testing.T) {
-	errHookFailed := errors.New("for testing")
-	tests := []struct {
-		name    string
-		path    string
-		hookErr error
-		wantErr error
-	}{
-		{
-			name:    "no_block",
-			hookErr: nil,
-		},
-		{
-			name:    "block",
-			hookErr: errHookFailed,
-		},
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	// register hooks (more than one to verify all get called)
+	hooks := make([]CommitHookLogger, 2)
+	for i := range hooks {
+		c.Hooks().AddPostCommit(hooks[i].Hook)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			c := testCataloger(t)
 
-			// register hooks (more than one to verify all get called)
-			hooks := []CommitHookLogger{
-				{Err: tt.hookErr},
-				{Err: tt.hookErr},
-			}
-			for i := range hooks {
-				c.Hooks().AddPostCommit(hooks[i].Hook)
-			}
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	_ = testCatalogerCreateEntry(t, ctx, c, repository, catalog.DefaultBranchName, "/file1", nil, "")
 
-			repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-			_ = testCatalogerCreateEntry(t, ctx, c, repository, catalog.DefaultBranchName, "/file1", nil, "")
+	commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", catalog.Metadata{"foo": "bar"})
+	if err != nil {
+		t.Fatalf("Commit err=%s", err)
+	}
 
-			commitLog, err := c.Commit(ctx, repository, "master", "commit "+t.Name(), "tester", catalog.Metadata{"foo": "bar"})
-			// check that hook err is the commit error
-			if !errors.Is(tt.hookErr, err) {
-				t.Fatalf("Commit err=%s, expected=%s", err, tt.hookErr)
-			}
-			// on successful commit the commit log should be found on hook's logs
-			if err != nil {
-				return
-			}
-			for i := range hooks {
-				if diffs := deep.Equal(hooks[i].Commits, []CommitData{{Repo: repository, Branch: "master", Log: *commitLog}}); diffs != nil {
-					t.Errorf("hook %d: unexpected commit logs: %s", i, diffs)
-				}
-			}
-		})
+	for i := range hooks {
+		if diffs := deep.Equal(hooks[i].Commits, []CommitData{{Repo: repository, Branch: "master", Log: *commitLog}}); diffs != nil {
+			t.Errorf("hook %d: unexpected commit logs: %s", i, diffs)
+		}
 	}
 }
