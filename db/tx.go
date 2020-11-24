@@ -100,8 +100,6 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 	row := d.tx.QueryRow(context.Background(), query, args...)
 	err := row.Scan(dest)
 	if errors.Is(err, pgx.ErrNoRows) {
-		// This err comes directly from pgx, not via scany, so *cannot* use
-		// pgxscan.NotFound.
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
