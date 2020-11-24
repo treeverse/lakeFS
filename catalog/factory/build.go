@@ -9,12 +9,12 @@ import (
 )
 
 func BuildCataloger(db db.Database, c *config.Config) catalog.Cataloger {
+	if c == nil {
+		return mvcc.NewCataloger(db, mvcc.WithCacheEnabled(false))
+	}
 	catType := c.GetCatalogerType()
 	if catType == "rocks" {
 		return rocks.NewCataloger()
-	}
-	if c == nil {
-		return mvcc.NewCataloger(db, mvcc.WithCacheEnabled(false))
 	}
 	return mvcc.NewCataloger(db, mvcc.WithParams(c.GetMvccCatalogerCatalogParams()))
 }
