@@ -19,7 +19,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog/mvcc"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
@@ -49,7 +49,6 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
-		conf := config.NewConfig()
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
@@ -65,12 +64,12 @@ var runCmd = &cobra.Command{
 		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
 		defer dbPool.Close()
+
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		// init catalog
-		cataloger := mvcc.NewCataloger(dbPool, mvcc.WithParams(conf.GetMvccCatalogerCatalogParams()))
+		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(cfg)
