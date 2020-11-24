@@ -10,14 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
 	"github.com/google/uuid"
 	"github.com/jamiealquiza/tachymeter"
 	nanoid "github.com/matoous/go-nanoid"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/uri"
@@ -56,7 +55,7 @@ var entryCmd = &cobra.Command{
 		defer database.Close()
 
 		conf := config.NewConfig()
-		c := mvcc.NewCataloger(database, mvcc.WithParams(conf.GetMvccCatalogerCatalogParams()))
+		c := catalogfactory.BuildCataloger(database, conf)
 
 		// validate repository and branch
 		_, err := c.GetRepository(ctx, u.Repository)
