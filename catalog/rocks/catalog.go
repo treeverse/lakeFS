@@ -11,7 +11,7 @@ import (
 type Repository struct {
 	StorageNamespace StorageNamespace
 	CreationDate     time.Time
-	DefaultBranch    string
+	DefaultBranch    BranchID
 }
 
 // Entry represents metadata or a given object (modified date, physical address, etc)
@@ -34,7 +34,8 @@ type Commit struct {
 
 // Branch is a pointer to a commit.
 type Branch struct {
-	CommitID     CommitID
+	CommitID CommitID
+	// nolint: structcheck, unused
 	stagingToken StagingToken
 }
 
@@ -117,6 +118,13 @@ type Catalog interface {
 }
 
 // internal structures used by Catalog
+type RepositoryIterator interface {
+	First() (RepositoryID, Repository)
+	Next() (RepositoryID, Repository)
+	SeekGE(BranchID) (RepositoryID, Repository)
+	Close()
+}
+
 type EntryIterator interface {
 	First() (*Path, *Entry)
 	SeekGE(Path) (*Path, *Entry)
@@ -155,14 +163,23 @@ type RefManager interface {
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
 
+	// ListRepositories lists repositories
+	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
+
+	// DeleteRepository deletes the repository
+	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+
 	// Dereference translates Ref to the corresponding CommitID
 	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
 
-	// CreateBranch points the given BranchID at the given Branch metadata
-	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
+	// SetBranch points the given BranchID at the given Branch metadata
+	SetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
+
+	// DeleteBranch deletes the branch
+	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
@@ -179,7 +196,7 @@ type RefManager interface {
 	FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error)
 
 	// Log returns an iterator that reads all parents up to the first commit
-	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repositoryID RepositoryID, from CommitID) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -192,7 +209,7 @@ type CommittedManager interface {
 	ListEntries(ctx context.Context, ns StorageNamespace, treeID TreeID, from Path) (EntryIterator, error)
 
 	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
-	//it tracks changes from left to right, returning an iterator of Diff entries
+	// it tracks changes from left to right, returning an iterator of Diff entries
 	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Path) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
