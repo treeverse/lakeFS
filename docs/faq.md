@@ -17,7 +17,7 @@ Since it is important to us to align expectations, we have gathered our thoughts
 Thank you for your interest in contributing to our project. We are excited to build a community of users and contributors around lakeFS. We trust the common wisdom of the community to evolve lakeFS to the best platform it can possibly be. Don't hesitate to get started. Check out our [contribution guide](contributing.md)
 
 ### 4. How do I get support for my lakeFS installation?
-We are extremely responsive on our slack channel, and we make sure to prioritize and with the community the issues most urgent for it. For SLA based support, please contact us at [support@treeverse,io](mailto:support@lakefs.io).
+We are extremely responsive on our slack channel, and we make sure to prioritize and with the community the issues most urgent for it. For SLA based support, please contact us at [support@treeverse.io](mailto:support@lakefs.io).
 
 ### 5. Can I get lakeFS as SAAS?
 We’d be happy to speak and learn more about your requirements. Email us at [support@treeverse.io](mailto:support@treeverse.io).

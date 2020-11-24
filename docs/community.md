@@ -13,7 +13,7 @@ lakeFS and lakectl are both available as Docker images on the [Treeverse Docker 
 
 ### Support
 
-Feedback and questions are welcome at [support@treeverse.io](mailto:support@treeverse.io).
+For SLA based support, please contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
 ### Slack Channel
 
