@@ -14,11 +14,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
@@ -112,7 +111,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	cataloger := mvcc.NewCataloger(conn)
+	cataloger := catalogfactory.BuildCataloger(conn, nil)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
