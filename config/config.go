@@ -107,6 +107,10 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
+func (c *Config) GetCatalogerType() string {
+	return viper.GetString("cataloger.type")
+}
+
 func (c *Config) GetMvccCatalogerCatalogParams() catalogparams.Catalog {
 	return catalogparams.Catalog{
 		BatchRead: catalogparams.BatchRead{
