@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/rakyll/statik/fs"
@@ -176,6 +176,17 @@ func MigrateTo(p params.Database, version uint, force bool) error {
 }
 
 func MigrateVersion(params params.Database) (uint, bool, error) {
+	// getting
+	dbPool := BuildDatabaseConnection(params)
+	defer dbPool.Close()
+
+	var rows int
+	err := dbPool.Get(&rows, `SELECT COUNT(*) FROM `+postgres.DefaultMigrationsTable)
+	if err != nil || rows == 0 {
+		return 0, false, migrate.ErrNilVersion
+	}
+
+	// get version from migrate
 	m, err := getMigrate(params)
 	if err != nil {
 		return 0, false, err
