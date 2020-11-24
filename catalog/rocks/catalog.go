@@ -2,8 +2,6 @@ package rocks3
 
 import (
 	"context"
-	"encoding/hex"
-	"io"
 	"time"
 )
 
@@ -12,25 +10,26 @@ import (
 // Repository represents repository metadata
 type Repository struct {
 	StorageNamespace StorageNamespace
-	CreationDate     int64
+	CreationDate     time.Time
 	DefaultBranch    string
 }
 
 // Entry represents metadata or a given object (modified date, physical address, etc)
 type Entry struct {
-	LastModified    time.Time
-	PhysicalAddress string
-	Metadata        map[string]string
-	ETag            []byte
+	LastModified time.Time
+	Address      string
+	Metadata     map[string]string
+	ETag         string
 }
 
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
-	Author   string
-	TreeID   TreeID
-	Created  time.Time
-	Parents  []CommitID
-	Metadata map[string]string
+	Committer    string
+	Message      string
+	TreeID       TreeID
+	CreationDate time.Time
+	Parents      []CommitID
+	Metadata     map[string]string
 }
 
 // Branch is a pointer to a commit.
@@ -54,12 +53,7 @@ type Diff struct {
 	Type DiffType
 }
 
-type Hash [32]byte
-
-func (h Hash) String() string {
-	return hex.EncodeToString(h[:])
-}
-
+// StorageNamespace is the URI to the storage location
 type StorageNamespace string
 
 // RepositoryID is an identifier for a repo
@@ -75,13 +69,13 @@ type Ref string
 type TagID string
 
 // CommitID is a content addressable hash representing a Commit object
-type CommitID Hash
+type CommitID string
 
 // BranchID is an identifier for a branch
 type BranchID string
 
 // TreeID represents a snapshot of the tree, referenced by a commit
-type TreeID Hash
+type TreeID string
 
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
@@ -98,28 +92,28 @@ type Listing struct {
 // Interfaces
 type Catalog interface {
 	// entries
-	GetEntry(RepositoryID, Ref, Path) (*Entry, error)
-	SetEntry(RepositoryID, BranchID, Path, Entry) error
-	DeleteEntry(RepositoryID, BranchID, Path) error
-	ListEntries(repo RepositoryID, ref Ref, prefix, from, delimiter string, amount int) ([]Listing, bool, error)
+	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
+	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry Entry) error
+	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
+	ListEntries(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter string, amount int) ([]Listing, bool, error)
 
 	// refs
-	CreateBranch(RepositoryID, BranchID, Ref) (Branch, error)
-	GetBranch(RepositoryID, BranchID) (Branch, error)
-	Dereference(RepositoryID, Ref) (CommitID, error)
-	ListLog(repo RepositoryID, commitID CommitID, amount int) ([]Commit, bool, error)
-	ListBranches(repo RepositoryID, from BranchID, amount int) ([]Branch, bool, error)
-	DeleteBranch(RepositoryID, BranchID) error
+	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
+	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
+	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
+	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID, amount int) ([]Commit, bool, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID, amount int) ([]Branch, bool, error)
+	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// commits
-	Commit(RepositoryID, BranchID, Commit) (CommitID, error)
-	Reset(RepositoryID, BranchID) error
-	Revert(RepositoryID, BranchID, Ref) error
+	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error)
+	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
+	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) error
 
 	// diffs and merges
-	Merge(repo RepositoryID, from Ref, to BranchID) (CommitID, error)
-	DiffUncommitted(repo RepositoryID, branch BranchID, from Path, amount int) ([]Diff, bool, error)
-	Diff(repo RepositoryID, left, right Ref, from Path, amount int) ([]Diff, bool, error)
+	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Path, amount int) ([]Diff, bool, error)
+	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Path, amount int) ([]Diff, bool, error)
 }
 
 // internal structures used by Catalog
@@ -127,27 +121,27 @@ type EntryIterator interface {
 	First() (*Path, *Entry)
 	SeekGE(Path) (*Path, *Entry)
 	Next() (*Path, *Entry)
-	io.Closer
+	Close()
 }
 
 type DiffIterator interface {
 	First() (*Path, *DiffType)
 	SeekGE(Path) (*Path, *DiffType)
 	Next() (*Path, *DiffType)
-	io.Closer
+	Close()
 }
 
 type BranchIterator interface {
 	First() (*BranchID, *Branch)
 	Next() (*BranchID, *Branch)
 	SeekGE(BranchID) (*BranchID, *Branch)
-	io.Closer
+	Close()
 }
 
 type CommitIterator interface {
 	First() (*CommitID, *Commit)
 	Next() (*CommitID, *Commit)
-	io.Closer
+	Close()
 }
 
 // These are the more complex internal components that compose the functionality of the Catalog
@@ -156,36 +150,36 @@ type CommitIterator interface {
 // it also handles the structure of the commit graph and its traversal (notably, merge-base and log)
 type RefManager interface {
 	// GetRepository returns the Repository metadata object for the given RepositoryID
-	GetRepository(RepositoryID) (*Repository, error)
+	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
-	// SetRepository points the given RepositoryID at the given Repository
-	SetRepository(RepositoryID, Repository) error
+	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
 
-	// Dereference takes a Ref and translates it to the corresponding CommitID
-	Dereference(RepositoryID, Ref) (CommitID, error)
+	// Dereference translates Ref to the corresponding CommitID
+	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
-	GetBranch(RepositoryID, BranchID) (*Commit, error)
+	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
 
-	// SetBranch points the given BranchID at the given Branch metadata
-	SetBranch(RepositoryID, BranchID, Branch) error
+	// CreateBranch points the given BranchID at the given Branch metadata
+	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error
 
 	// GetCommit returns the Commit metadata object for the given CommitID
-	GetCommit(RepositoryID, CommitID) (*Commit, error)
+	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
-	// SetCommit stores the Commit object, returning its ID
-	SetCommit(RepositoryID, Commit) (CommitID, error)
+	// AddCommit stores the Commit object, returning its ID
+	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
 
 	// ListBranches lists branches
-	ListBranches(repo RepositoryID, from BranchID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
 	// FindMergeBase returns the merge-base for the given CommitIDs
 	// see: https://git-scm.com/docs/git-merge-base
 	// and internally: https://github.com/treeverse/lakeFS/blob/09954804baeb36ada74fa17d8fdc13a38552394e/index/dag/commits.go
-	FindMergeBase(RepositoryID, ...CommitID) (*Commit, error)
+	FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error)
 
 	// Log returns an iterator that reads all parents up to the first commit
-	Log(RepositoryID, CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -216,15 +210,15 @@ type CommittedManager interface {
 // provides basic CRUD abilities, with deletes being written as tombstones (null entry)
 type StagingManager interface {
 	// GetEntry returns the provided path, if exists, for the given StagingToken
-	GetEntry(sit StagingToken, from Path) (*Entry, error)
+	GetEntry(ctx context.Context, st StagingToken, from Path) (*Entry, error)
 
 	// ListEntries takes a given BranchID and returns an EntryIterator seeked to >= "from" path
-	ListEntries(sid StagingToken, from Path) (EntryIterator, error)
+	ListEntries(ctx context.Context, st StagingToken, from Path) (EntryIterator, error)
 
 	// SetEntry writes an entry (or null entry to represent a tombstone)
-	SetEntry(sid StagingToken, path Path, entry *Entry) error
+	SetEntry(ctx context.Context, st StagingToken, path Path, entry *Entry) error
 
 	// DropStaging deletes all entries and tombstones for a given StagingToken
 	// This is useful in a `lakefs reset` operation, and potentially as a last step of a commit
-	DropStaging(sid StagingToken) error
+	DropStaging(ctx context.Context, st StagingToken) error
 }
