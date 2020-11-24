@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -74,6 +75,8 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 	})
 	err := pgxscan.Get(context.Background(), d.tx, dest, query, args...)
 	if pgxscan.NotFound(err) {
+		// This err comes directly from scany, not directly from pgx, so *must* use
+		// pgxscan.NotFound.
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
@@ -96,9 +99,9 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 	})
 	row := d.tx.QueryRow(context.Background(), query, args...)
 	err := row.Scan(dest)
-	if pgxscan.NotFound(err) {
-		// Don't wrap err: it might come from a different version of pgx and then
-		// !errors.Is(err, pgx.ErrNoRows).
+	if errors.Is(err, pgx.ErrNoRows) {
+		// This err comes directly from pgx, not via scany, so *cannot* use
+		// pgxscan.NotFound.
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
