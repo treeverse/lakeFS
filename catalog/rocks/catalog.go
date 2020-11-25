@@ -1,4 +1,4 @@
-package rocks3
+package rocks
 
 import (
 	"context"
@@ -54,35 +54,38 @@ type Diff struct {
 	Type DiffType
 }
 
-// StorageNamespace is the URI to the storage location
-type StorageNamespace string
+// function/methods receiving the following basic types could assume they passed validation
+type (
+	// StorageNamespace is the URI to the storage location
+	StorageNamespace string
 
-// RepositoryID is an identifier for a repo
-type RepositoryID string
+	// RepositoryID is an identifier for a repo
+	RepositoryID string
 
-// Path represents a logical path for an entry
-type Path string
+	// Path represents a logical path for an entry
+	Path string
 
-// Ref could be a commit ID, a branch name, a Tag
-type Ref string
+	// Ref could be a commit ID, a branch name, a Tag
+	Ref string
 
-// TagID represents a named tag pointing at a commit
-type TagID string
+	// TagID represents a named tag pointing at a commit
+	TagID string
 
-// CommitID is a content addressable hash representing a Commit object
-type CommitID string
+	// CommitID is a content addressable hash representing a Commit object
+	CommitID string
 
-// BranchID is an identifier for a branch
-type BranchID string
+	// BranchID is an identifier for a branch
+	BranchID string
 
-// TreeID represents a snapshot of the tree, referenced by a commit
-type TreeID string
+	// TreeID represents a snapshot of the tree, referenced by a commit
+	TreeID string
 
-// StagingToken represents a namespace for writes to apply as uncommitted
-type StagingToken string
+	// StagingToken represents a namespace for writes to apply as uncommitted
+	StagingToken string
 
-// CommonPrefix represents a path prefixing one or more Entry objects
-type CommonPrefix string
+	// CommonPrefix represents a path prefixing one or more Entry objects
+	CommonPrefix string
+)
 
 // Listing represents either an entry or a CommonPrefix
 type Listing struct {
