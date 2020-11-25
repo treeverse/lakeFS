@@ -93,7 +93,7 @@ type CommitRecord struct {
 	*Commit
 }
 
-// Branch is a pointer to a commit.
+// Branch is a pointer to a commit
 type Branch struct {
 	CommitID CommitID
 	// nolint: structcheck, unused
