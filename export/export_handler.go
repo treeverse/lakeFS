@@ -338,15 +338,15 @@ func startExport(l logging.Logger, p parade.Parade, c catalog.Cataloger, op inte
 }
 
 // exportCommitHook is a cataloger PostCommit hook for continuous export.
-func (h *Handler) exportCommitHook(ctx context.Context, repo, branch string, log *catalog.CommitLog) error {
+func (h *Handler) exportCommitHook(ctx context.Context, repo, branch string, log catalog.CommitLog) error {
 	l := logging.Default().
 		WithFields(logging.Fields{"repo": repo, "branch": branch, "message": log.Message, "at": log.CreationDate.String()})
-	return startExport(l, h.parade, h.cataloger, *log, repo, branch)
+	return startExport(l, h.parade, h.cataloger, log, repo, branch)
 }
 
 // exportMergeHook is a cataloger PostMerge hook for continuous export.
-func (h *Handler) exportMergeHook(ctx context.Context, repo, branch string, merge *catalog.MergeResult) error {
+func (h *Handler) exportMergeHook(ctx context.Context, repo, branch string, merge catalog.MergeResult) error {
 	l := logging.Default().
 		WithFields(logging.Fields{"repo": repo, "branch": branch, "reference": merge.Reference})
-	return startExport(l, h.parade, h.cataloger, *merge, repo, branch)
+	return startExport(l, h.parade, h.cataloger, merge, repo, branch)
 }
