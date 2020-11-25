@@ -145,7 +145,7 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 func (s *Handler) setupHandler(api http.Handler, ui http.Handler) {
 	mux := http.NewServeMux()
 	// health check
-	mux.Handle("/_health", http.HandlerFunc(httputil.HealthHandler))
+	mux.Handle("/_health", httputil.ServeHealth())
 	// metrics
 	mux.Handle("/metrics", promhttp.Handler())
 	// pprof endpoint

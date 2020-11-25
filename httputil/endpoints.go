@@ -13,11 +13,13 @@ func SetHealthHandlerInfo(info string) {
 	healthInfo = info
 }
 
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	_, _ = io.WriteString(w, "alive!")
-	if healthInfo != "" {
-		_, _ = io.WriteString(w, " "+healthInfo)
-	}
+func ServeHealth() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "alive!")
+		if healthInfo != "" {
+			_, _ = io.WriteString(w, " "+healthInfo)
+		}
+	})
 }
 
 func ServePPROF(pprofPrefix string) http.Handler {
