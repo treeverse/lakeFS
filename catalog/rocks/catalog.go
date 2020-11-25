@@ -7,41 +7,10 @@ import (
 
 // Basic Types
 
-// Repository represents repository metadata
-type Repository struct {
-	StorageNamespace StorageNamespace
-	CreationDate     time.Time
-	DefaultBranch    BranchID
-}
-
-// Entry represents metadata or a given object (modified date, physical address, etc)
-type Entry struct {
-	LastModified time.Time
-	Address      string
-	Metadata     map[string]string
-	ETag         string
-}
-
-// Commit represents commit metadata (author, time, tree ID)
-type Commit struct {
-	Committer    string
-	Message      string
-	TreeID       TreeID
-	CreationDate time.Time
-	Parents      []CommitID
-	Metadata     map[string]string
-}
-
-// Branch is a pointer to a commit.
-type Branch struct {
-	CommitID CommitID
-	// nolint: structcheck, unused
-	stagingToken StagingToken
-}
-
 // Diff represents a changed state for a given entry (added, removed, changed, conflict)
 type DiffType uint8
 
+//goland:noinspection GoUnusedConst
 const (
 	DiffTypeAdded DiffType = iota
 	DiffTypeRemoved
@@ -87,6 +56,61 @@ type (
 	CommonPrefix string
 )
 
+// Repository represents repository metadata
+type Repository struct {
+	StorageNamespace StorageNamespace
+	CreationDate     time.Time
+	DefaultBranchID  BranchID
+}
+
+type RepositoryRecord struct {
+	RepositoryID
+	*Repository
+}
+
+// Entry represents metadata or a given object (modified date, physical address, etc)
+type Entry struct {
+	LastModified time.Time
+	Address      string
+	Metadata     map[string]string
+	ETag         string
+}
+
+// EntryRecord holds Path with the associated Entry information
+type EntryRecord struct {
+	Path string
+	*Entry
+}
+
+// Commit represents commit metadata (author, time, tree ID)
+type Commit struct {
+	Committer    string
+	Message      string
+	TreeID       TreeID
+	CreationDate time.Time
+	Parents      []CommitID
+	Metadata     map[string]string
+}
+
+// CommitRecords holds CommitID with the associated Commit data
+type CommitRecord struct {
+	CommitID
+	*Commit
+}
+
+// Branch is a pointer to a commit.
+type Branch struct {
+	CommitID CommitID
+	// nolint: structcheck, unused
+	stagingToken StagingToken
+}
+
+// BranchRecord holds BranchID with the associated Branch data
+type BranchRecord struct {
+	BranchID BranchID
+	*Branch
+}
+
 // Listing represents either an entry or a CommonPrefix
 type Listing struct {
 	CommonPrefix
@@ -120,38 +144,58 @@ type Catalog interface {
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Path, amount int) ([]Diff, bool, error)
 }
 
-// internal structures used by Catalog
+// Internal structures used by Catalog
+// xxxIterator used as follow:
+// ```
+// it := NewXXXIterator(data)
+// for it.Next() {
+//    data := it.Value()
+//    process(data)
+// }
+// if it.Err() {
+//   return fmt.Errorf("stopped because of an error %w", it.Err())
+// }
+// ```
+// Calling SeekGE() returns true, like calling Next() - we can process 'Value()' when true and check Err() in case of false
+// When Next() or SeekGE() returns false (doesn't matter if it because of an error) calling Value() should return nil
+
 type RepositoryIterator interface {
-	First() (RepositoryID, Repository)
-	Next() (RepositoryID, Repository)
-	SeekGE(BranchID) (RepositoryID, Repository)
+	Next() bool
+	SeekGE(id RepositoryID) bool
+	Value() *RepositoryRecord
+	Err() error
 	Close()
 }
 
 type EntryIterator interface {
-	First() (*Path, *Entry)
-	SeekGE(Path) (*Path, *Entry)
-	Next() (*Path, *Entry)
+	Next() bool
+	SeekGE(id Path) bool
+	Value() *EntryRecord
+	Err() error
 	Close()
 }
 
 type DiffIterator interface {
-	First() (*Path, *DiffType)
-	SeekGE(Path) (*Path, *DiffType)
-	Next() (*Path, *DiffType)
+	Next() bool
+	SeekGE(id Path) bool
+	Value() *Diff
+	Err() error
 	Close()
 }
 
 type BranchIterator interface {
-	First() (*BranchID, *Branch)
-	Next() (*BranchID, *Branch)
-	SeekGE(BranchID) (*BranchID, *Branch)
+	Next() bool
+	SeekGE(id BranchID) bool
+	Value() *BranchRecord
+	Err() error
 	Close()
 }
 
 type CommitIterator interface {
-	First() (*CommitID, *Commit)
-	Next() (*CommitID, *Commit)
+	Next() bool
+	SeekGE(id CommitID) bool
+	Value() *CommitRecord
+	Err() error
 	Close()
 }
 
