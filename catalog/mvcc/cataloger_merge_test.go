@@ -140,10 +140,9 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	}
 	if res == nil {
 		t.Errorf("Merge returned nil, err %s", err)
-	} else {
-		if res.Reference != "" {
-			t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
-		}
+	} else if res.Reference != "" {
+		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
+	}
 	}
 }
 
