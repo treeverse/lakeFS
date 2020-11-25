@@ -59,7 +59,7 @@ type Repository struct {
 }
 
 type RepositoryRecord struct {
-	RepositoryID
+	RepositoryID RepositoryID
 	*Repository
 }
 
@@ -71,9 +71,13 @@ type Entry struct {
 	ETag         string
 }
 
+func (e *Entry) IsTombstone() bool {
+	return e == nil
+}
+
 // EntryRecord holds Path with the associated Entry information
 type EntryRecord struct {
-	Path string
+	Path Path
 	*Entry
 }
 
@@ -89,7 +93,7 @@ type Commit struct {
 
 // CommitRecords holds CommitID with the associated Commit data
 type CommitRecord struct {
-	CommitID
+	CommitID CommitID
 	*Commit
 }
 
@@ -229,14 +233,14 @@ type RefManager interface {
 	// DeleteBranch deletes the branch
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
+	// ListBranches lists branches
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
+
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
 	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
-
-	// ListBranches lists branches
-	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
 	// FindMergeBase returns the merge-base for the given CommitIDs
 	// see: https://git-scm.com/docs/git-merge-base
@@ -274,16 +278,22 @@ type CommittedManager interface {
 // StagingManager handles changes to a branch that aren't yet committed
 // provides basic CRUD abilities, with deletes being written as tombstones (null entry)
 type StagingManager interface {
-	// GetEntry returns the provided path, if exists, for the given StagingToken
-	GetEntry(ctx context.Context, st StagingToken, from Path) (*Entry, error)
+	// GetEntry returns the provided path (or nil entry to represent a tombstone)
+	//   Returns ErrNotFound if no entry found on path
+	GetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (*Entry, error)
+
+	// SetEntry writes an entry (or nil entry to represent a tombstone)
+	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry *Entry) error
+
+	// DeleteEntry deletes an entry by path
+	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
 
 	// ListEntries takes a given BranchID and returns an EntryIterator seeked to >= "from" path
-	ListEntries(ctx context.Context, st StagingToken, from Path) (EntryIterator, error)
+	ListEntries(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
 
-	// SetEntry writes an entry (or null entry to represent a tombstone)
-	SetEntry(ctx context.Context, st StagingToken, path Path, entry *Entry) error
+	// Snapshot returns a new snapshot and returns it's ID
+	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
 
-	// DropStaging deletes all entries and tombstones for a given StagingToken
-	// This is useful in a `lakefs reset` operation, and potentially as a last step of a commit
-	DropStaging(ctx context.Context, st StagingToken) error
+	// ListSnapshot returns an iterator to scan the snapshot entries
+	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
 }
