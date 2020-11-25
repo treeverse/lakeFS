@@ -39,7 +39,7 @@ type Branch struct {
 	stagingToken StagingToken
 }
 
-// Diff represents a changed state for a given entry (added, removed, changed, conflict)
+// DiffType represents a changed state for a given entry (added, removed, changed, conflict)
 type DiffType uint8
 
 const (
