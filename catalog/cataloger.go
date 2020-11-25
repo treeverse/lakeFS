@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/treeverse/lakefs/db"
+	"github.com/lib/pq"
 )
 
 const (
@@ -144,6 +144,28 @@ type Cataloger interface {
 
 // ExportStateCallback returns the new ref, state and message regarding the old ref and state
 type ExportStateCallback func(oldRef string, state CatalogBranchExportStatus) (newRef string, newState CatalogBranchExportStatus, newMessage *string, err error)
+
+// ExportConfiguration describes the export configuration of a branch, as passed on wire, used
+// internally, and stored in DB.
+type ExportConfiguration struct {
+	Path                   string         `db:"export_path" json:"export_path"`
+	StatusPath             string         `db:"export_status_path" json:"export_status_path"`
+	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp" json:"last_keys_in_prefix_regexp"`
+	IsContinuous           bool           `db:"continuous" json:"is_continuous"`
+}
+
+// ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
+// Unfortunately golang sql doesn't know about embedded structs, so you get a useless copy of
+// ExportConfiguration embedded here.
+type ExportConfigurationForBranch struct {
+	Repository string `db:"repository"`
+	Branch     string `db:"branch"`
+
+	Path                   string         `db:"export_path"`
+	StatusPath             string         `db:"export_status_path"`
+	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
+	IsContinuous           bool           `db:"continuous"`
+}
 
 type PostCommitFunc = func(ctx context.Context, repo, branch string, commitLog *CommitLog) error
 type PostMergeFunc = func(ctx context.Context, repo, branch string, mergeResult *MergeResult) error
