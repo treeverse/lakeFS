@@ -1,16 +1,23 @@
 package httputil
 
 import (
+	"io"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 )
 
-func ServeHealth() http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte("alive!"))
-	})
+var healthInfo string
+
+func SetHealthHandlerInfo(info string) {
+	healthInfo = info
+}
+
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	_, _ = io.WriteString(w, "alive!")
+	if healthInfo != "" {
+		_, _ = io.WriteString(w, " "+healthInfo)
+	}
 }
 
 func ServePPROF(pprofPrefix string) http.Handler {
