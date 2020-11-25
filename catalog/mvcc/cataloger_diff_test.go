@@ -26,7 +26,7 @@ func TestCataloger_DiffEmpty(t *testing.T) {
 	}
 	commitChanges(10, "Changes on master", "master")
 
-	res, hasMore, err := c.Diff(ctx, repository, "master", "master", DiffParams{Limit: 10})
+	res, hasMore, err := c.Diff(ctx, repository, "master", "master", catalog.DiffParams{Limit: 10})
 	testutil.MustDo(t, "Diff", err)
 	if len(res) != 0 {
 		t.Errorf("Diff: got %+v but expected nothing", res)

@@ -80,7 +80,7 @@ func (h *Handler) start(body *string) error {
 	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr, repo.StorageNamespace)
 }
 
-func (h *Handler) generateTasks(startData StartData, config catalog.Cataloger, finishBodyStr *string, storageNamespace string) error {
+func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfiguration, finishBodyStr *string, storageNamespace string) error {
 	tasksGenerator := NewTasksGenerator(startData.ExportID, config.Path, getGenerateSuccess(config.LastKeysInPrefixRegexp), finishBodyStr, storageNamespace)
 	var diffs catalog.Differences
 	var err error

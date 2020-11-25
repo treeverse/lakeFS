@@ -1188,7 +1188,7 @@ func TestCataloger_MergeFromChildAfterMergeFromParent(t *testing.T) {
 
 type MergeData struct {
 	Repo, Branch string
-	Result       MergeResult
+	Result       catalog.MergeResult
 }
 
 // MergeHookLogger - merge hook that will return an error if set by Err.
@@ -1198,7 +1198,7 @@ type MergeHookLogger struct {
 	Merges []MergeData
 }
 
-func (h *MergeHookLogger) Hook(_ context.Context, repo, branch string, result *MergeResult) error {
+func (h *MergeHookLogger) Hook(_ context.Context, repo, branch string, result *catalog.MergeResult) error {
 	if h.Err != nil {
 		return h.Err
 	}
