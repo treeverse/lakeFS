@@ -83,7 +83,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 	}
 	commitLog := res.(*catalog.CommitLog)
 	for _, hook := range c.Hooks().PostCommit {
-		anotherErr := hook(ctx, repository, branch, commitLog)
+		anotherErr := hook(ctx, repository, branch, *commitLog)
 		if anotherErr != nil && err == nil {
 			err = anotherErr
 		}

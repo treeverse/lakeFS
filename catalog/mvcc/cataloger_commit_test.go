@@ -290,8 +290,9 @@ func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
 }
 
 type CommitData struct {
-	Repo, Branch string
-	Log          catalog.CommitLog
+	Repo   string
+	Branch string
+	Log    catalog.CommitLog
 }
 
 // CommitHookLogger - commit hook that will return an error if set by Err.
@@ -300,8 +301,8 @@ type CommitHookLogger struct {
 	Commits []CommitData
 }
 
-func (h *CommitHookLogger) Hook(_ context.Context, repo, branch string, log *catalog.CommitLog) error {
-	h.Commits = append(h.Commits, CommitData{Repo: repo, Branch: branch, Log: *log})
+func (h *CommitHookLogger) Hook(_ context.Context, repo, branch string, log catalog.CommitLog) error {
+	h.Commits = append(h.Commits, CommitData{Repo: repo, Branch: branch, Log: log})
 	return nil
 }
 

@@ -167,8 +167,8 @@ type ExportConfigurationForBranch struct {
 	IsContinuous           bool           `db:"continuous"`
 }
 
-type PostCommitFunc = func(ctx context.Context, repo, branch string, commitLog *CommitLog) error
-type PostMergeFunc = func(ctx context.Context, repo, branch string, mergeResult *MergeResult) error
+type PostCommitFunc func(ctx context.Context, repo, branch string, commitLog CommitLog) error
+type PostMergeFunc func(ctx context.Context, repo, branch string, mergeResult MergeResult) error
 
 // CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
 // called after the transaction ends; if they return an error they do not affect commit/merge.

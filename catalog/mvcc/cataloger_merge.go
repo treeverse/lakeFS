@@ -94,7 +94,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 
 	if err == nil {
 		for _, hook := range c.Hooks().PostMerge {
-			anotherErr := hook(ctx, repository, rightBranch, mergeResult)
+			anotherErr := hook(ctx, repository, rightBranch, *mergeResult)
 			if anotherErr != nil && err == nil {
 				err = anotherErr
 			}
