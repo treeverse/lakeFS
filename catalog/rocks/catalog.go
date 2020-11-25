@@ -7,7 +7,7 @@ import (
 
 // Basic Types
 
-// Diff represents a changed state for a given entry (added, removed, changed, conflict)
+// DiffType represents a changed state for a given entry (added, removed, changed, conflict)
 type DiffType uint8
 
 //goland:noinspection GoUnusedConst
@@ -17,11 +17,6 @@ const (
 	DiffTypeChanged
 	DiffTypeConflict
 )
-
-type Diff struct {
-	Path Path
-	Type DiffType
-}
 
 // function/methods receiving the following basic types could assume they passed validation
 type (
@@ -115,6 +110,12 @@ type BranchRecord struct {
 type Listing struct {
 	CommonPrefix
 	*Entry
+}
+
+// Diff represents a change in path
+type Diff struct {
+	Path Path
+	Type DiffType
 }
 
 // Interfaces
