@@ -16,7 +16,7 @@ We believe in bottom up adoption of technologies.
 We believe collaborative communities have the power to bring the best solutions to the community.
 We believe small organizations should be able to use cutting edge technologies for free, so they can innovate in their domain and compete with well established companies that can afford paying for technology.
 
-As a commercial organization, we intend to use an open core model
+As a commercial organization, we intend to use an open core model.
 
 ![Open Core Model](assets/img/open_core.png)
 
