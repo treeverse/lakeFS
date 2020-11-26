@@ -36,10 +36,10 @@ export const uploadDone = () => {
 let yoffset = 0;
 
 export const deleteObject = (repoId, branchId, path) => {
-    constructor() {
-      super();
+    constructor(props) {
+      super(props);
       this.state = {yoffset: 0};
-    };
+    }
     storeScroll = () => {
       console.log(window.pageYOffset);
       yoffset = window.pageYOffset;
