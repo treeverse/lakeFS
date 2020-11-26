@@ -1,13 +1,17 @@
 package tree
 
+import (
+	"github.com/treeverse/lakefs/catalog/rocks"
+)
+
 type TreePartsBookKeeper struct {
-	baseTree  TreePartsType
-	newParts  TreePartsType
-	baseIndex int
-	trees     *TreesRepoType
+	baseTree      TreePartsType
+	partsForReuse TreePartsType
+	baseIndex     int
+	trees         *TreesRepoType
 }
 
-func (trees *TreesRepoType) newTreePartsBookKeeper(treeID TreeID) (*TreePartsBookKeeper, error) {
+func (trees *TreesRepoType) newTreePartsBookKeeper(treeID rocks.TreeID) (*TreePartsBookKeeper, error) {
 	var baseParts TreePartsType
 	if treeID == "" {
 		baseParts = make(TreePartsType, 0)
@@ -19,41 +23,43 @@ func (trees *TreesRepoType) newTreePartsBookKeeper(treeID TreeID) (*TreePartsBoo
 		baseParts = *baseTree.TreeParts
 	}
 	return &TreePartsBookKeeper{
-		baseTree: baseParts,
-		newParts: make(TreePartsType, 0),
-		trees:    trees,
+		baseTree:      baseParts,
+		partsForReuse: make(TreePartsType, 0),
+		trees:         trees,
 	}, nil
 }
 
-func (bk *TreePartsBookKeeper) getPartForKey(key string) (EntryIterator, string, error) {
+func (bk *TreePartsBookKeeper) getPartForKey(key rocks.Path) (rocks.EntryIterator, rocks.Path, error) {
 	for ; bk.baseIndex < len(bk.baseTree) && bk.baseTree[bk.baseIndex].MaxPath < key; bk.baseIndex++ {
-		bk.newParts = append(bk.newParts, bk.baseTree[bk.baseIndex])
+		bk.partsForReuse = append(bk.partsForReuse, bk.baseTree[bk.baseIndex])
 	}
 	if len(bk.baseTree) <= bk.baseIndex {
-		return EntryIterator{}, "", InfoNoTreeParts
+		return nil, rocks.Path(""), InfoNoTreeParts
 	}
-	return bk.internalGetIterator()
+	p := bk.baseTree[bk.baseIndex]
+	basePartIter, err := bk.trees.PartManger.ListEntries(p.PartName, "")
+	bk.baseIndex++
+	return basePartIter, p.MaxPath, err
 }
-func (bk *TreePartsBookKeeper) getNewParts() TreePartsType {
-	return bk.newParts
+func (bk *TreePartsBookKeeper) getPartsForReuse() TreePartsType {
+	return bk.partsForReuse
 }
-func (bk *TreePartsBookKeeper) peekToNextPart() *string {
+
+func (bk *TreePartsBookKeeper) peekToNextPart() *rocks.Path {
 	if len(bk.baseTree) <= bk.baseIndex {
 		return nil
 	} else {
 		return &bk.baseTree[bk.baseIndex].MaxPath
 	}
 }
-func (bk *TreePartsBookKeeper) getNextPart() (EntryIterator, string, error) {
-	if len(bk.baseTree) <= bk.baseIndex {
-		return EntryIterator{}, "", InfoNoTreeParts
-	}
-	return bk.internalGetIterator()
-}
 
-func (bk *TreePartsBookKeeper) internalGetIterator() (EntryIterator, string, error) {
-	p := bk.baseTree[bk.baseIndex]
-	basePartIter, err := bk.trees.PartManger.ListEntries(p.PartName, "")
-	bk.baseIndex++
-	return basePartIter, p.MaxPath, err
-}
+//func (bk *TreePartsBookKeeper) getNextPart() (rocks.EntryIterator, rocks.Path, error) {
+//	if len(bk.baseTree) <= bk.baseIndex {
+//		return nil, "", InfoNoTreeParts
+//	}
+//	return bk.internalGetIterator()
+//}
+//
+//func (bk *TreePartsBookKeeper) internalGetIterator() (rocks.EntryIterator, rocks.Path, error) {
+//
+//}

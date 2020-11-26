@@ -3,6 +3,7 @@ package tree
 import (
 	"hash/fnv"
 
+	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/tree/sstable"
 )
 
@@ -16,7 +17,7 @@ type partsWriter struct {
 	pendingCloseNum int
 	activeWriter    *sstable.Writer
 	partEntryNum    int
-	lastKey         []byte
+	lastKey         rocks.Path
 }
 
 func newPartsWriter() *partsWriter {
@@ -29,7 +30,7 @@ func (p *partsWriter) hasOpenWriter() bool {
 	return !(p.activeWriter == nil)
 }
 
-func (p *partsWriter) writeEntry(k, v []byte) error {
+func (p *partsWriter) writeEntry(k rocks.Path, v *rocks.Entry) error {
 	var err error
 	p.lastKey = k
 	if p.activeWriter == nil {
