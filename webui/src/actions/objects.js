@@ -39,7 +39,7 @@ export const deleteObject = (repoId, branchId, path) => {
     constructor(props) {
       super(props);
       this.state = {yoffset: 0};
-    }
+    };
     storeScroll = () => {
       console.log(window.pageYOffset);
       yoffset = window.pageYOffset;
