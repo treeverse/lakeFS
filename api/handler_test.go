@@ -21,7 +21,7 @@ import (
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/catalog/mvcc"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
@@ -83,7 +83,8 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	}
 	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger := mvcc.NewCataloger(conn, mvcc.WithCacheEnabled(false))
+	cataloger := catalogfactory.BuildCataloger(conn, nil)
+
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})

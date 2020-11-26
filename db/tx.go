@@ -74,7 +74,9 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"took":  time.Since(start),
 	})
 	err := pgxscan.Get(context.Background(), d.tx, dest, query, args...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if pgxscan.NotFound(err) {
+		// This err comes directly from scany, not directly from pgx, so *must* use
+		// pgxscan.NotFound.
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}

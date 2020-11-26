@@ -434,21 +434,28 @@ func TestCataloger_ListCommits_Order(t *testing.T) {
 
 	var wg sync.WaitGroup
 	const concurrency = 5
+	errors := make([]error, concurrency)
 	wg.Add(concurrency)
 	for i := 0; i < concurrency; i++ {
-		go func() {
+		go func(id int) {
 			defer wg.Done()
 			repository := testCatalogerRepo(t, ctx, c, "repo", "master")
 
 			testCatalogerCreateEntry(t, ctx, c, repository, "master", "files/first", nil, "")
 			const commit1Msg = "first"
 			_, err := c.Commit(ctx, repository, "master", commit1Msg, "barak.amar", nil)
-			testutil.MustDo(t, commit1Msg, err)
+			if err != nil {
+				errors[id] = fmt.Errorf("%s: %w", commit1Msg, err)
+				return
+			}
 
 			testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
 
 			commitsLog, _, err := c.ListCommits(ctx, repository, "branch1", "", 300)
-			testutil.MustDo(t, "list branch1 commits", err)
+			if err != nil {
+				errors[id] = fmt.Errorf("list branch1 commits: %w", err)
+				return
+			}
 
 			// get all commits without the first one
 			commits := make([]string, len(commitsLog))
@@ -463,9 +470,14 @@ func TestCataloger_ListCommits_Order(t *testing.T) {
 			}
 
 			if diff := deep.Equal(commits, expectedCommits); diff != nil {
-				t.Error("branch1 did not had the expected commits", diff)
+				errors[id] = fmt.Errorf("branch1 did not had the expected commits: %s", diff)
 			}
-		}()
+		}(i)
 	}
 	wg.Wait()
+	for i, err := range errors {
+		if err != nil {
+			t.Errorf("worker %d failed: %s", i, err)
+		}
+	}
 }

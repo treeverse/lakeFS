@@ -11,8 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
@@ -50,7 +49,6 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
-		conf := config.NewConfig()
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
@@ -66,12 +64,12 @@ var runCmd = &cobra.Command{
 		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
 		defer dbPool.Close()
+
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		// init catalog
-		cataloger := mvcc.NewCataloger(dbPool, mvcc.WithParams(conf.GetMvccCatalogerCatalogParams()))
+		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(cfg)
@@ -90,6 +88,8 @@ var runCmd = &cobra.Command{
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+		// update health info with installation ID
+		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 

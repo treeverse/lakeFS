@@ -1,15 +1,24 @@
 package httputil
 
 import (
+	"io"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 )
 
+var healthInfo string
+
+func SetHealthHandlerInfo(info string) {
+	healthInfo = info
+}
+
 func ServeHealth() http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte("alive!"))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "alive!")
+		if healthInfo != "" {
+			_, _ = io.WriteString(w, " "+healthInfo)
+		}
 	})
 }
 
