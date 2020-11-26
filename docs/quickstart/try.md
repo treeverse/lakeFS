@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Try without installing
+description: Learn how to use lakeFS using the CLI and an interactive Spark shell - all from your browser, without installing anything
 parent: Quick Start
 nav_order: 99
 has_children: false

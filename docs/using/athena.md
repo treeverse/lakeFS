@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Amazon Athena
+description: This section covers how you can start using lakeFS with Amazon Athena, a serverless, interactive query service in Amazon S3
 parent: Using lakeFS with...
 nav_order: 9
 has_children: false
@@ -17,6 +18,5 @@ In order to support querying data from lakeFS with Amazon Athena, we will use [c
 
 create-symlink receives a table in glue pointing to lakeFS and creates a copy of the table in glue pointing to the underlying S3 bucket.
 We can then query the new created table with Athena
-
 
 

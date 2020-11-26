@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Introduction
+description: When creating a new branch in lakeFS, we are actually creating a consistent snapshot of the entire repository
 parent: Branching Model
 has_children: false
 nav_order: 1
