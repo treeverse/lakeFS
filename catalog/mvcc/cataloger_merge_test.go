@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -139,8 +138,12 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	if !errors.Is(err, catalog.ErrConflictFound) {
 		t.Errorf("Merge err = %s, expected conflict with err = %s", err, catalog.ErrConflictFound)
 	}
-	if res.Reference != "" {
-		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
+	if res == nil {
+		t.Errorf("Merge returned nil, err %s", err)
+	} else {
+		if res.Reference != "" {
+			t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
+		}
 	}
 }
 
@@ -1183,18 +1186,24 @@ func TestCataloger_MergeFromChildAfterMergeFromParent(t *testing.T) {
 	}
 }
 
+type MergeData struct {
+	Repo   string
+	Branch string
+	Result catalog.MergeResult
+}
+
 // MergeHookLogger - merge hook that will return an error if set by Err.
 // When no Err is set it will log merge log into Logs.
 type MergeHookLogger struct {
-	Err  error
-	Logs []*catalog.MergeResult
+	Err    error
+	Merges []MergeData
 }
 
-func (h *MergeHookLogger) Hook(_ context.Context, _ db.Tx, log *catalog.MergeResult) error {
+func (h *MergeHookLogger) Hook(_ context.Context, repo, branch string, result catalog.MergeResult) error {
 	if h.Err != nil {
 		return h.Err
 	}
-	h.Logs = append(h.Logs, log)
+	h.Merges = append(h.Merges, MergeData{Repo: repo, Branch: branch, Result: result})
 	return nil
 }
 
@@ -1242,9 +1251,13 @@ func TestCataloger_Merge_Hooks(t *testing.T) {
 				{Path: "/file1"},
 			})
 
-			expected := []*catalog.MergeResult{res}
+			expected := []MergeData{{
+				Repo:   repository,
+				Branch: "master",
+				Result: *res,
+			}}
 			for _, hook := range hooks {
-				if diffs := deep.Equal(expected, hook.Logs); diffs != nil {
+				if diffs := deep.Equal(expected, hook.Merges); diffs != nil {
 					t.Error("hook received unexpected merge result: ", diffs)
 				}
 			}

@@ -4,31 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
-
-	"github.com/lib/pq"
 )
-
-// ExportConfiguration describes the export configuration of a branch, as passed on wire, used
-// internally, and stored in DB.
-type ExportConfiguration struct {
-	Path                   string         `db:"export_path" json:"export_path"`
-	StatusPath             string         `db:"export_status_path" json:"export_status_path"`
-	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp" json:"last_keys_in_prefix_regexp"`
-	IsContinuous           bool           `db:"continuous" json:"is_continuous"`
-}
-
-// ExportConfigurationForBranch describes how to export BranchID.  It is stored in the database.
-// Unfortunately golang sql doesn't know about embedded structs, so you get a useless copy of
-// ExportConfiguration embedded here.
-type ExportConfigurationForBranch struct {
-	Repository string `db:"repository"`
-	Branch     string `db:"branch"`
-
-	Path                   string         `db:"export_path"`
-	StatusPath             string         `db:"export_status_path"`
-	LastKeysInPrefixRegexp pq.StringArray `db:"last_keys_in_prefix_regexp"`
-	IsContinuous           bool           `db:"continuous"`
-}
 
 type CatalogBranchExportStatus string
 
@@ -42,15 +18,10 @@ const (
 
 // ExportStatus describes the current export status of a branch, as passed on wire, used
 // internally, and stored in DB.
-type ExportStatus struct {
-	CurrentRef string `db:"current_ref"`
-	State      CatalogBranchExportStatus
-}
-
 type ExportState struct {
-	CurrentRef   string
-	State        CatalogBranchExportStatus
-	ErrorMessage *string
+	CurrentRef   string                    `db:"current_ref"`
+	State        CatalogBranchExportStatus `db:"state"`
+	ErrorMessage *string                   `db:"error_message"`
 }
 
 // nolint: stylecheck

@@ -76,20 +76,20 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			Parents:      []string{parentReference},
 		}
 
-		for _, hook := range c.hooks.PostCommit {
-			err = hook(ctx, tx, commitLog)
-			if err != nil {
-				// Roll tx back if a hook failed
-				return nil, err
-			}
-		}
-
 		return commitLog, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
 	}
-	return res.(*catalog.CommitLog), nil
+	commitLog := res.(*catalog.CommitLog)
+	for _, hook := range c.Hooks().PostCommit {
+		anotherErr := hook(ctx, repository, branch, *commitLog)
+		if anotherErr != nil && err == nil {
+			err = anotherErr
+		}
+	}
+
+	return commitLog, nil
 }
 
 func commitUpdateCommittedEntriesWithMaxCommit(tx db.Tx, branchID int64, commitID CommitID) (int64, error) {
