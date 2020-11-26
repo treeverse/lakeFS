@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Installing lakeFS
+description: Installing lakeFS is easy. This section covers commom deployment options for installing lakeFS.
 parent: AWS Deployment
 nav_order: 20
 has_children: false

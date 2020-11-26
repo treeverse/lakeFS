@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Object Retention
+description: LakeFS allows configuration of object retention policies using a lifecycle configuration. 
 parent: Reference
 nav_order: 10
 has_children: false

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Roadmap
+description: New features and improvements are lined up next for lakeFS. We would love you to be part of building lakeFS’s roadmap.
 nav_order: 8
 has_children: false
 ---

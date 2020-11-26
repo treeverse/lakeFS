@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Glue / Hive metastore 
+description: When working with Glue or Hive metastore, each table can point only to one lakeFS branch. 
 parent: Using lakeFS with...
 nav_order: 11
 has_children: false

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Hive
+description: This section covers how you can start using lakeFS with Apache Hive, a distributed data warehouse system that enables analytics at a massive scale.
 parent: Using lakeFS with...
 nav_order: 4
 has_children: false

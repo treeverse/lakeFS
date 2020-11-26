@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Command (CLI) Reference
+description: lakeFS comes with its own native CLI client. Here you can see the complete command reference.
 parent: Reference
 nav_order: 3
 has_children: false

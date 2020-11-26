@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Create Repository
+description: In this guide, we’re going to run an initial setup and then create a new repository using lakeFS.
 parent: Quick Start
 nav_order: 20
 has_children: false
