@@ -128,7 +128,7 @@ type Diff struct {
 // Interfaces
 type Catalog interface {
 	// GetEntry returns entry from repository / reference by path, nil entry is a valid value for tombstone
-	// returns error if entry does not exist 
+	// returns error if entry does not exist
 	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
 
 	// SetEntry stores entry on repository / branch by path. nil entry is a valid value for tombstone
