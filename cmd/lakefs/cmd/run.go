@@ -88,6 +88,8 @@ var runCmd = &cobra.Command{
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+		// update health info with installation ID
+		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 
