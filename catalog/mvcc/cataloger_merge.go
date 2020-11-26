@@ -89,15 +89,18 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, err
 		}
 		mergeResult.Reference = MakeReference(rightBranch, nextCommitID)
-		for _, hook := range c.hooks.PostMerge {
-			err = hook(ctx, tx, mergeResult)
-			if err != nil {
-				// Roll tx back if a hook failed
-				return nil, err
-			}
-		}
 		return nil, nil
 	}, c.txOpts(ctx, db.ReadCommitted())...)
+
+	if err == nil {
+		for _, hook := range c.Hooks().PostMerge {
+			anotherErr := hook(ctx, repository, rightBranch, *mergeResult)
+			if anotherErr != nil && err == nil {
+				err = anotherErr
+			}
+		}
+	}
+
 	return mergeResult, err
 }
 

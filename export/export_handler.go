@@ -9,9 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
 )
@@ -25,11 +24,17 @@ type Handler struct {
 }
 
 func NewHandler(adapter block.Adapter, cataloger catalog.Cataloger, parade parade.Parade) *Handler {
-	return &Handler{
+	ret := &Handler{
 		adapter:   adapter,
 		cataloger: cataloger,
 		parade:    parade,
 	}
+	if cataloger != nil {
+		hooks := cataloger.Hooks()
+		hooks.AddPostCommit(ret.exportCommitHook)
+		hooks.AddPostMerge(ret.exportMergeHook)
+	}
+	return ret
 }
 
 type TaskBody struct {
@@ -65,6 +70,13 @@ func (h *Handler) start(body *string) error {
 	if err != nil {
 		return err
 	}
+	logging.Default().WithFields(logging.Fields{
+		"repo":      startData.Repo,
+		"branch":    startData.Branch,
+		"from_ref":  startData.FromCommitRef,
+		"to_ref":    startData.ToCommitRef,
+		"export_id": startData.ExportID,
+	}).Info("action: start export")
 	return h.generateTasks(startData, startData.ExportConfig, &finishBodyStr, repo.StorageNamespace)
 }
 
@@ -162,11 +174,11 @@ func getFinishBodyString(repo, branch, commitRef, statusPath string) (string, er
 		CommitRef:  commitRef,
 		StatusPath: statusPath,
 	}
-	finisBody, err := json.Marshal(finishData)
+	finishBody, err := json.Marshal(finishData)
 	if err != nil {
 		return "", err
 	}
-	return string(finisBody), nil
+	return string(finishBody), nil
 }
 
 func (h *Handler) copy(body *string) error {
@@ -241,11 +253,19 @@ func (h *Handler) done(body *string, signalledErrors int) error {
 		return err
 	}
 	status, msg := getStatus(signalledErrors)
+	logging.Default().WithFields(logging.Fields{
+		"repo":           finishData.Repo,
+		"branch":         finishData.Branch,
+		"commit_ref":     finishData.CommitRef,
+		"status_path":    finishData.StatusPath,
+		"status":         status,
+		"status_message": msg,
+	}).Info("action: export done")
 	err = h.updateStatus(finishData, status, signalledErrors)
 	if err != nil {
 		return err
 	}
-	return ExportBranchDone(h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
+	return ExportBranchDone(h.parade, h.cataloger, status, msg, finishData.Repo, finishData.Branch, finishData.CommitRef)
 }
 
 var errUnknownAction = errors.New("unknown action")
@@ -290,4 +310,43 @@ func (h *Handler) Actions() []string {
 
 func (h *Handler) ActorID() parade.ActorID {
 	return actorName
+}
+
+func startExport(l logging.Logger, p parade.Parade, c catalog.Cataloger, op interface{}, repo, branch string) error {
+	isContinuous, err := hasContinuousExport(c, repo, branch)
+	if err != nil {
+		// FAIL this commit: if we were meant to export it and did not then in practice
+		// there was no commit.
+		return fmt.Errorf("check continuous export for %+v: %w", op, err)
+	}
+	if !isContinuous {
+		return nil
+	}
+	exportID, err := ExportBranchStart(p, c, repo, branch)
+	if err != nil {
+		l = l.WithError(err)
+	}
+	if errors.Is(err, ErrExportInProgress) {
+		l = l.WithField("skipped", "export already in progress")
+		err = nil
+	} else if errors.Is(err, ErrNothingToExport) {
+		l = l.WithField("skipped", "nothing further to export")
+		err = nil
+	}
+	l.WithField("export_id", exportID).Info("continuous export started")
+	return err
+}
+
+// exportCommitHook is a cataloger PostCommit hook for continuous export.
+func (h *Handler) exportCommitHook(ctx context.Context, repo, branch string, log catalog.CommitLog) error {
+	l := logging.Default().
+		WithFields(logging.Fields{"repo": repo, "branch": branch, "message": log.Message, "at": log.CreationDate.String()})
+	return startExport(l, h.parade, h.cataloger, log, repo, branch)
+}
+
+// exportMergeHook is a cataloger PostMerge hook for continuous export.
+func (h *Handler) exportMergeHook(ctx context.Context, repo, branch string, merge catalog.MergeResult) error {
+	l := logging.Default().
+		WithFields(logging.Fields{"repo": repo, "branch": branch, "reference": merge.Reference})
+	return startExport(l, h.parade, h.cataloger, merge, repo, branch)
 }

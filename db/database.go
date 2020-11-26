@@ -28,6 +28,11 @@ type Database interface {
 	Pool() *pgxpool.Pool
 }
 
+// Void wraps a procedure with no return value as a TxFunc
+func Void(fn func(tx Tx) error) TxFunc {
+	return func(tx Tx) (interface{}, error) { return nil, fn(tx) }
+}
+
 type QueryOptions struct {
 	logger logging.Logger
 	ctx    context.Context
@@ -157,7 +162,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	var ret interface{}
 	for attempt < SerializationRetryMaxAttempts {
 		if attempt > 0 {
-			duration := time.Duration(int(SerializationRetryStartInterval) * attempt)
+			duration := SerializationRetryStartInterval * time.Duration(attempt)
 			dbRetriesCount.Inc()
 			options.logger.
 				WithField("attempt", attempt).
