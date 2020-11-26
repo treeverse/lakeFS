@@ -128,30 +128,31 @@ type Diff struct {
 // Interfaces
 type Catalog interface {
 	// GetEntry returns entry from repository / reference by path, nil entry is a valid value for tombstone
+	// returns error if entry does not exist 
 	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
 
-	// SetEntry store entry on repository / branch by path. nil entry is a valid value for tombstone
+	// SetEntry stores entry on repository / branch by path. nil entry is a valid value for tombstone
 	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry Entry) error
 
-	// DeleteEntry entry on repository / branch by path
+	// DeleteEntry deletes entry on repository / branch by path
 	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
 
-	// ListEntries list entries on repository / ref will filter by prefix, from path 'from'.
+	// ListEntries lists entries on repository / ref will filter by prefix, from path 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
 	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
 	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last path from the previous call.
 	ListEntries(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter string, amount int) ([]Listing, bool, error)
 
-	// CreateBranch create branch on repository pointing to ref
+	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
 
-	// UpdateBranch update branch on repository pointing to ref
+	// UpdateBranch updates branch on repository pointing to ref
 	UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
 
-	// GetBranch get branch information by branch / repository id
+	// GetBranch gets branch information by branch / repository id
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
 
-	// Dereference translate ref to commit id
+	// Dereference translates ref to commit id
 	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
 
 	// Log lists commits in repository
@@ -160,13 +161,13 @@ type Catalog interface {
 	// 	 Returns commits, has more boolean and an error
 	Log(ctx context.Context, repositoryID RepositoryID, from CommitID, amount int) ([]Commit, bool, error)
 
-	// ListBranches list branches on repositories
+	// ListBranches lists branches on repositories
 	//   The 'from' is used to get all branches after this branch id
 	//   The 'amount' specifies the maximum number of branches the call will return
 	//   Returns branches, has more boolean and an error
 	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID, amount int) ([]Branch, bool, error)
 
-	// DeleteBranch delete branch from repository
+	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// Commit the staged data and returns a commit ID that references that change
