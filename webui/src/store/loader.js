@@ -4,7 +4,7 @@ const initialState = {
     inFlight: 0,
 };
 
-export default  (state = initialState, action) => {
+const store = (state = initialState, action) => {
     let inFlight = state.inFlight;
     if (!!action.asyncStart) {
         inFlight = state.inFlight + 1;
@@ -16,3 +16,5 @@ export default  (state = initialState, action) => {
         inFlight,
     };
 };
+
+export default store;

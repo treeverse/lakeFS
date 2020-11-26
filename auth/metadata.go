@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -33,6 +32,7 @@ func NewDBMetadataManager(version string, database db.Database) *DBMetadataManag
 		db:      database,
 	}
 }
+
 func generateInstallationID() string {
 	installationID := config.GetFixedInstallationID()
 	if installationID == "" {
@@ -40,6 +40,7 @@ func generateInstallationID() string {
 	}
 	return installationID
 }
+
 func insertOrGetInstallationID(tx db.Tx) (string, error) {
 	newInstallationID := generateInstallationID()
 	res, err := tx.Exec(`INSERT INTO auth_installation_metadata (key_name, key_value)
@@ -49,9 +50,8 @@ func insertOrGetInstallationID(tx db.Tx) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if affected, err := res.RowsAffected(); err != nil {
-		return "", err
-	} else if affected == 1 {
+	affected := res.RowsAffected()
+	if affected == 1 {
 		return newInstallationID, nil
 	}
 	return getInstallationID(tx)
@@ -59,14 +59,14 @@ func insertOrGetInstallationID(tx db.Tx) (string, error) {
 
 func getInstallationID(tx db.Tx) (string, error) {
 	var installationID string
-	err := tx.Get(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
+	err := tx.GetPrimitive(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
 		InstallationIDKeyName)
 	return installationID, err
 }
 
 func getSetupTimestamp(tx db.Tx) (time.Time, error) {
 	var value string
-	err := tx.Get(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
+	err := tx.GetPrimitive(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
 		SetupTimestampKeyName)
 	if err != nil {
 		return time.Time{}, err
@@ -74,7 +74,7 @@ func getSetupTimestamp(tx db.Tx) (time.Time, error) {
 	return time.Parse(time.RFC3339, value)
 }
 
-func writeMetadata(tx sqlx.Execer, items map[string]string) error {
+func writeMetadata(tx db.Tx, items map[string]string) error {
 	for key, value := range items {
 		_, err := tx.Exec(`
 			INSERT INTO auth_installation_metadata (key_name, key_value)

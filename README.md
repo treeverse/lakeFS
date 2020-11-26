@@ -11,6 +11,8 @@
 		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" alt="Node">
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" /></a>
+	<a href="https://artifacthub.io/packages/search?repo=lakefs" alt="Artifact HUB">
+		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" /></a>
 </p>
 
 
@@ -42,6 +44,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 **Continuous Data Integration**
 * **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
 * **Metadata validation** - prevent breaking changes from entering the production data environment.
+
 * [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-integration)
 
 **Continuous Data Deployment**

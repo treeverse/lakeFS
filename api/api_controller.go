@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/parade"
+
+	"github.com/treeverse/lakefs/export"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
@@ -60,6 +64,7 @@ type Dependencies struct {
 	BlockAdapter    block.Adapter
 	Stats           stats.Collector
 	Retention       retention.Service
+	Parade          parade.Parade
 	Dedup           *dedup.Cleaner
 	MetadataManager auth.MetadataManager
 	Migrator        db.Migrator
@@ -75,6 +80,7 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
 		Stats:           d.Stats,
 		Retention:       d.Retention,
+		Parade:          d.Parade,
 		Dedup:           d.Dedup,
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
@@ -95,8 +101,7 @@ type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service,
-	dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, parade parade.Parade, dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
 			ctx:             context.Background(),
@@ -105,6 +110,7 @@ func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter 
 			BlockAdapter:    blockAdapter,
 			Stats:           stats,
 			Retention:       retention,
+			Parade:          parade,
 			Dedup:           dedupCleaner,
 			MetadataManager: metadataManager,
 			Migrator:        migrator,
@@ -191,7 +197,8 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.ExportGetContinuousExportHandler = c.ExportGetContinuousExportHandler()
 	api.ExportSetContinuousExportHandler = c.ExportSetContinuousExportHandler()
-
+	api.ExportRunHandler = c.ExportRunHandler()
+	api.ExportRepairHandler = c.ExportRepairHandler()
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
@@ -258,29 +265,22 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 
 		c.deps.Collector.CollectEvent("global", "init")
 
-		// setup admin user
-		adminUser := &model.User{
-			CreatedAt: time.Now(),
-			Username:  *setupReq.User.Username,
+		username := swag.StringValue(setupReq.User.Username)
+		var cred *model.Credential
+		if setupReq.User.Key == nil {
+			cred, err = auth.CreateInitialAdminUser(c.deps.Auth, c.deps.MetadataManager, username)
+		} else {
+			cred, err = auth.CreateInitialAdminUserWithKeys(c.deps.Auth, c.deps.MetadataManager, username, setupReq.User.Key.AccessKeyID, setupReq.User.Key.SecretAccessKey)
 		}
-
-		cred, err := auth.SetupAdminUser(c.deps.Auth, adminUser)
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
-				WithPayload(&models.Error{
-					Message: err.Error(),
-				})
-		}
-
-		// update setup completed timestamp
-		if err := c.deps.MetadataManager.UpdateSetupTimestamp(time.Now()); err != nil {
-			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
+				WithPayload(&models.Error{Message: err.Error()})
 		}
 
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
-			CreationDate:    adminUser.CreatedAt.Unix(),
+			CreationDate:    cred.IssuedDate.Unix(),
 		})
 	})
 }
@@ -464,7 +464,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		deps.LogAction("get_branch")
+		deps.LogAction("get_branch_commit_log")
 		cataloger := deps.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
@@ -532,7 +532,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
-				Resource: permissions.RepoArn(swag.StringValue(params.Repository.ID)),
+				Resource: permissions.RepoArn(swag.StringValue(params.Repository.Name)),
 			},
 		})
 		if err != nil {
@@ -550,7 +550,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
 		repo, err := deps.Cataloger.CreateRepository(c.Context(),
-			swag.StringValue(params.Repository.ID),
+			swag.StringValue(params.Repository.Name),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
 		if err != nil {
@@ -2192,7 +2192,7 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 	return exportop.GetContinuousExportHandlerFunc(func(params exportop.GetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.ListBranchesAction,
+				Action:   permissions.ReadBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
@@ -2217,16 +2217,61 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 			ExportPath:             strfmt.URI(config.Path),
 			ExportStatusPath:       strfmt.URI(config.StatusPath),
 			LastKeysInPrefixRegexp: config.LastKeysInPrefixRegexp,
+			IsContinuous:           config.IsContinuous,
 		}
 		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
 	})
 }
 
+func (c *Controller) ExportRunHandler() exportop.RunHandler {
+	return exportop.RunHandlerFunc(func(params exportop.RunParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateCommitAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return exportop.NewRunUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("execute_single_export")
+		exportID, err := export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
+		if err != nil {
+			return exportop.NewRunDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return exportop.NewRunCreated().WithPayload(exportID)
+	})
+}
+
+func (c *Controller) ExportRepairHandler() exportop.RepairHandler {
+	return exportop.RepairHandlerFunc(func(params exportop.RepairParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateCommitAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return exportop.NewRepairUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("repair_export")
+
+		err = export.ExportBranchRepair(deps.Cataloger, params.Repository, params.Branch)
+		if err != nil {
+			return exportop.NewRepairDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return exportop.NewRepairCreated()
+	})
+}
 func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandlerFunc {
 	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.CreateBranchAction,
+				Action:   permissions.ExportConfigAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
@@ -2241,6 +2286,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 			Path:                   params.Config.ExportPath.String(),
 			StatusPath:             params.Config.ExportStatusPath.String(),
 			LastKeysInPrefixRegexp: params.Config.LastKeysInPrefixRegexp,
+			IsContinuous:           params.Config.IsContinuous,
 		}
 		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {

@@ -9,8 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/spf13/cobra"
-
-	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -23,10 +22,9 @@ var expireCmd = &cobra.Command{
 	Short: "Apply configured retention policies to expire objects",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
-		conf := config.NewConfig()
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
 
 		awsRetentionConfig := config.NewConfig().GetAwsS3RetentionConfig()
 

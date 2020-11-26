@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -46,15 +47,19 @@ var importCmd = &cobra.Command{
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
+		if errors.Is(err, db.ErrSchemaNotCompatible) {
+			fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
+			os.Exit(1)
+		}
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
 		}
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer func() { _ = dbPool.Close() }()
+		defer dbPool.Close()
 
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
 		defer func() { _ = cataloger.Close() }()
 
 		u := uri.Must(uri.Parse(args[0]))

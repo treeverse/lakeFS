@@ -1,25 +1,18 @@
-import React, {useEffect} from 'react';
-
+import React from 'react';
 import {connect} from 'react-redux';
 import Navbar from 'react-bootstrap/Navbar';
 import Container from "react-bootstrap/Container";
 import {BrowserRouter as Router, Switch, Route, Redirect, useLocation, useHistory, Link} from "react-router-dom";
-
-
-
-
 import LoginForm from "./components/Login";
 import SetupPage from "./components/SetupPage";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import { logout, redirected } from './actions/auth';
-import {getConfig} from "./actions/config";
 import {IndexPage} from "./components/IndexPage";
 
 // css imports
 import 'bootswatch/dist/lumen/bootstrap.css';
 import './App.css';
 import Nav from "react-bootstrap/Nav";
-
 
 const NavUserInfo = connect(
     ({ auth }) => ({ user: auth.user }),
@@ -97,12 +90,7 @@ const TopBar = ({ user }) => {
 }
 
 
-const App = ({ user, redirectTo, redirected, getConfig }) => {
-
-    useEffect(() => {
-        getConfig();
-      }, [getConfig]);
-
+const App = ({ user, redirectTo, redirected }) => {
     return (
         <Router className="App">
             <TopBar user={user}/>
@@ -127,4 +115,4 @@ export default connect(
     ({ auth }) => ({
         user: auth.user,
         redirectTo: auth.redirectTo,
-    }), ({ redirected, getConfig }))(App);
+    }), ({ redirected }))(App);

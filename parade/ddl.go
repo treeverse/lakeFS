@@ -9,9 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 	nanoid "github.com/matoous/go-nanoid"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -114,6 +118,7 @@ type TaskData struct {
 	Status             *string             `db:"status"`
 	StatusCode         TaskStatusCodeValue `db:"status_code"`
 	NumTries           int                 `db:"num_tries"`
+	NumFailures        int                 `db:"num_failures"`
 	MaxTries           *int                `db:"max_tries"`
 	NumSignals         int                 `db:"num_signals"` // Internal; set (only) in tests
 	TotalDependencies  *int                `db:"total_dependencies"`
@@ -178,6 +183,7 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 	}, nil
 }
 
+// TaskDataColumnNames holds the names of columns in tasks as they appear in the database.
 var TaskDataColumnNames = []string{
 	"id", "action", "body", "status", "status_code", "num_tries", "max_tries",
 	"num_signals", "total_dependencies",
@@ -187,60 +193,52 @@ var TaskDataColumnNames = []string{
 
 var tasksTable = pgx.Identifier{"tasks"}
 
-func InsertTasks(ctx context.Context, conn *pgx.Conn, source pgx.CopyFromSource) error {
+func InsertTasks(ctx context.Context, conn *pgxpool.Conn, source pgx.CopyFromSource) error {
 	_, err := conn.CopyFrom(ctx, tasksTable, TaskDataColumnNames, source)
 	return err
 }
 
 // OwnedTaskData is a row returned from "SELECT * FROM own_tasks(...)".
 type OwnedTaskData struct {
-	ID     TaskID           `db:"task_id"`
-	Token  PerformanceToken `db:"token"`
-	Action string           `db:"action"`
-	Body   *string
+	ID                   TaskID           `db:"task_id"`
+	Token                PerformanceToken `db:"token"`
+	NumSignalledFailures int              `db:"num_failures"`
+	Action               string           `db:"action"`
+	Body                 *string
 }
 
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions.
-func OwnTasks(conn *sqlx.DB, actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
-	// Use sqlx.In to expand slice actions
-	query, args, err := sqlx.In(`SELECT * FROM own_tasks(?, ARRAY[?], ?, ?)`, maxTasks, actions, actor, maxDuration)
+func OwnTasks(conn pgxscan.Querier, actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
+	ctx := context.Background()
+	rows, err := conn.Query(
+		ctx, `SELECT * FROM own_tasks($1, $2, $3, $4)`, maxTasks, actions, actor, maxDuration)
 	if err != nil {
-		return nil, fmt.Errorf("expand own tasks query: %w", err)
-	}
-	query = conn.Rebind(query)
-	rows, err := conn.Queryx(query, args...)
-	if err != nil {
+		var pgerr *pgconn.PgError
+		if errors.As(err, &pgerr) && pgerr.Code == pgerrcode.UndefinedFunction {
+			return nil, ErrServiceUnavailable
+		}
 		return nil, fmt.Errorf("try to own tasks: %w", err)
 	}
 	tasks := make([]OwnedTaskData, 0, maxTasks)
-	for rows.Next() {
-		var task OwnedTaskData
-		if err = rows.StructScan(&task); err != nil {
-			return nil, fmt.Errorf("failed to scan row %+v: %w", rows, err)
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks, nil
+	err = pgxscan.ScanAll(&tasks, rows)
+
+	return tasks, err
 }
 
 // ExtendTaskDeadline extends the deadline for completing taskID which was acquired with the
 // specified token, for maxDuration longer.  It returns nil if the task is still owned and its
 // deadline was extended, or an SQL error, or ErrInvalidToken.
-func ExtendTaskDeadline(conn *sqlx.DB, taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
-	var res *bool
-	query, args, err := sqlx.In(`SELECT * FROM extend_task_deadline(?, ?, ?)`, taskID, token, maxDuration)
-	if err != nil {
-		return fmt.Errorf("create extend_task_deadline query: %w", err)
-	}
-	query = conn.Rebind(query)
-	err = conn.Get(&res, query, args...)
+func ExtendTaskDeadline(conn *pgxpool.Conn, taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
+	ctx := context.Background()
+	row := conn.QueryRow(ctx, `SELECT * FROM extend_task_deadline($1, $2, $3)`, taskID, token, maxDuration)
+	var res sql.NullBool
+	err := row.Scan(&res)
 	if err != nil {
 		return fmt.Errorf("extend_task_deadline: %w", err)
 	}
 
-	if res == nil {
-		return fmt.Errorf("extend task %s token %s for %s: %w",
-			taskID, token, maxDuration, ErrInvalidToken)
+	if !res.Valid || !res.Bool {
+		return fmt.Errorf("extend task %s token %s for %s: %w", taskID, token, maxDuration, ErrInvalidToken)
 	}
 	return nil
 }
@@ -249,14 +247,11 @@ func ExtendTaskDeadline(conn *sqlx.DB, taskID TaskID, token PerformanceToken, ma
 // resultStatus and resultStatusCode.  It returns ErrInvalidToken if the performanceToken is
 // invalid; this happens when ReturnTask is called after its deadline expires, or due to a logic
 // error.
-func ReturnTask(conn *sqlx.DB, taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
+func ReturnTask(conn *pgxpool.Conn, taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
+	ctx := context.Background()
+	row := conn.QueryRow(ctx, `SELECT return_task($1, $2, $3, $4)`, taskID, token, resultStatus, resultStatusCode)
 	var res int
-	query, args, err := sqlx.In(`SELECT return_task(?, ?, ?, ?)`, taskID, token, resultStatus, resultStatusCode)
-	if err != nil {
-		return fmt.Errorf("create return_task query: %w", err)
-	}
-	query = conn.Rebind(query)
-	err = conn.Get(&res, query, args...)
+	err := row.Scan(&res)
 	if err != nil {
 		return fmt.Errorf("return_task: %w", err)
 	}
@@ -287,14 +282,10 @@ type TaskDBWaiter struct {
 
 // NewWaiter returns TaskWaiter to wait for id on conn.  conn is owned by the returned
 // TaskWaiter until the waiter is done or cancelled.
-func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaiter, error) {
+func NewWaiter(ctx context.Context, conn *pgxpool.Conn, taskID TaskID) (*TaskDBWaiter, error) {
 	defer func() {
 		if conn != nil {
-			if err := conn.Close(ctx); err != nil {
-				logging.FromContext(ctx).
-					WithFields(logging.Fields{"taskID": taskID, "error": err}).
-					Error("failed to close conn after failure")
-			}
+			conn.Release()
 		}
 	}()
 	tx, err := conn.Begin(ctx)
@@ -359,9 +350,9 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaite
 		result:     nil,
 	}
 
-	go func(conn *pgx.Conn) {
-		defer conn.Close(ctx) // Closing should *not* be cancelled.
-		_, err := conn.WaitForNotification(waitCtx)
+	go func(conn *pgxpool.Conn) {
+		defer conn.Release()
+		_, err := conn.Conn().WaitForNotification(waitCtx)
 		if err != nil {
 			ret.result = &waitResult{
 				err:        fmt.Errorf("wait for notification %s: %w", notifyChannel, err),

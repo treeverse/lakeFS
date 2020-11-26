@@ -27,6 +27,7 @@ const (
 	ReadBranchAction       = "fs:ReadBranch"
 	RevertBranchAction     = "fs:RevertBranch"
 	ListBranchesAction     = "fs:ListBranches"
+	ExportConfigAction     = "fs:ExportConfig"
 
 	RetentionReadPolicyAction  = "retention:GetPolicy"
 	RetentionWritePolicyAction = "retention:WritePolicy"

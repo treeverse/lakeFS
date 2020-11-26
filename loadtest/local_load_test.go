@@ -15,7 +15,7 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
@@ -56,7 +56,7 @@ func TestLocalLoad(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger := catalog.NewCataloger(conn)
+	cataloger := catalogfactory.BuildCataloger(conn, nil)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
@@ -76,6 +76,7 @@ func TestLocalLoad(t *testing.T) {
 		&mockCollector{},
 		retentionService,
 		migrator,
+		nil,
 		dedupCleaner,
 		logging.Default(),
 	)
@@ -83,11 +84,13 @@ func TestLocalLoad(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	user := &authmodel.User{
-		CreatedAt: time.Now(),
-		Username:  "admin",
+	superuser := &authmodel.SuperuserConfiguration{
+		User: authmodel.User{
+			CreatedAt: time.Now(),
+			Username:  "admin",
+		},
 	}
-	credentials, err := auth.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, superuser)
 	testutil.Must(t, err)
 
 	testConfig := Config{

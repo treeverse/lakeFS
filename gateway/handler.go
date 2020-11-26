@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog/mvcc"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -363,10 +365,10 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 		repository := parts[0]
 		ref := parts[1]
 		key := parts[2]
-		if err := catalog.Validate(catalog.ValidateFields{
-			{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
-			{Name: "reference", IsValid: catalog.ValidateReference(ref)},
-			{Name: "path", IsValid: catalog.ValidatePath(key)},
+		if err := mvcc.Validate(mvcc.ValidateFields{
+			{Name: "repository", IsValid: mvcc.ValidateRepositoryName(repository)},
+			{Name: "reference", IsValid: mvcc.ValidateReference(ref)},
+			{Name: "path", IsValid: mvcc.ValidatePath(key)},
 		}); err != nil {
 			return h.NotFoundHandler
 		}
@@ -410,7 +412,7 @@ func (h *handler) serveVirtualHost(r *http.Request) http.Handler {
 
 	// remove bare domain suffix
 	repository := strings.TrimSuffix(host, "."+ourHost)
-	if !catalog.IsValidRepositoryName(repository) {
+	if !mvcc.IsValidRepositoryName(repository) {
 		return h.NotFoundHandler
 	}
 
@@ -419,9 +421,9 @@ func (h *handler) serveVirtualHost(r *http.Request) http.Handler {
 		// validate ref, key
 		ref := parts[0]
 		key := parts[1]
-		if err := catalog.Validate(catalog.ValidateFields{
-			{Name: "reference", IsValid: catalog.ValidateReference(ref)},
-			{Name: "path", IsValid: catalog.ValidatePath(key)},
+		if err := mvcc.Validate(mvcc.ValidateFields{
+			{Name: "reference", IsValid: mvcc.ValidateReference(ref)},
+			{Name: "path", IsValid: mvcc.ValidatePath(key)},
 		}); err != nil {
 			return h.NotFoundHandler
 		}
@@ -458,7 +460,7 @@ func (h *handler) pathBasedHandler(method, repository, ref, path string) http.Ha
 }
 
 func (h *handler) repositoryBasedHandlerIfValid(method, repository string) http.Handler {
-	if !catalog.IsValidRepositoryName(repository) {
+	if !mvcc.IsValidRepositoryName(repository) {
 		return h.NotFoundHandler
 	}
 

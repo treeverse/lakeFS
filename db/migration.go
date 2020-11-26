@@ -7,11 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4/source"
-
 	"github.com/golang-migrate/migrate/v4"
-
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/db/params"
@@ -107,8 +105,11 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	defer func() {
 		_ = src.Close()
 	}()
-
-	m, err := migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
+	connectionString := params.ConnectionString
+	if connectionString == "" {
+		connectionString = "postgres://:/"
+	}
+	m, err := migrate.NewWithSourceInstance("httpfs", src, connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -151,21 +152,23 @@ func MigrateDown(params params.Database) error {
 	return nil
 }
 
-func MigrateTo(p params.Database, version uint) error {
+func MigrateTo(p params.Database, version uint, force bool) error {
 	// make sure we have schema by calling connect
 	mdb, err := ConnectDB(p)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = mdb.Close()
-	}()
+	defer mdb.Close()
 	m, err := getMigrate(p)
 	if err != nil {
 		return err
 	}
 	defer closeMigrate(m)
-	err = m.Migrate(version)
+	if force {
+		err = m.Force(int(version))
+	} else {
+		err = m.Migrate(version)
+	}
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
@@ -173,6 +176,17 @@ func MigrateTo(p params.Database, version uint) error {
 }
 
 func MigrateVersion(params params.Database) (uint, bool, error) {
+	// validate that default migrations table exists with information - a workaround
+	// so we will not create the migration table as the package will ensure the table exists
+	dbPool := BuildDatabaseConnection(params)
+	defer dbPool.Close()
+	var rows int
+	err := dbPool.Get(&rows, `SELECT COUNT(*) FROM `+postgres.DefaultMigrationsTable)
+	if err != nil || rows == 0 {
+		return 0, false, migrate.ErrNilVersion
+	}
+
+	// get version from migrate
 	m, err := getMigrate(params)
 	if err != nil {
 		return 0, false, err

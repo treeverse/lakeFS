@@ -31,6 +31,13 @@ type User struct {
 	Username  string    `db:"display_name" json:"display_name"`
 }
 
+// SuperuserConfiguration requests a particular configuration for a superuser.
+type SuperuserConfiguration struct {
+	User
+	AccessKeyID     string
+	SecretAccessKey string
+}
+
 type Group struct {
 	ID          int       `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`
@@ -76,7 +83,7 @@ func (s *Statements) Scan(src interface{}) error {
 
 type Credential struct {
 	AccessKeyID                   string    `db:"access_key_id"`
-	AccessSecretKey               string    `json:"-"`
+	AccessSecretKey               string    `db:"-" json:"-"`
 	AccessSecretKeyEncryptedBytes []byte    `db:"access_secret_key" json:"-"`
 	IssuedDate                    time.Time `db:"issued_date"`
 	UserID                        int       `db:"user_id"`

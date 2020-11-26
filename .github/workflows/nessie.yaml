@@ -117,6 +117,8 @@ jobs:
       - name: Run Nessie S3
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
+          NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: go test -v ./nessie --system-tests
       - name: Check files in S3 bucket
         env:
@@ -125,6 +127,10 @@ jobs:
         run: |
             FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
+      - name: lakeFS Logs
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
       - name: Export DB
         if: ${{ always() }}
         env:
@@ -133,6 +139,24 @@ jobs:
         run: |
             cd nessie/ops
             docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
+      - name: Run lakeFS S3 to use with local API key
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          # Setting Account_ID as a secret as a way to avoid specifying it here
+          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          docker-compose -f nessie/ops/docker-compose.yaml down -v
+          docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
+      - name: Run Nessie S3 with local API key
+        env:
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
+        run: go test -v ./nessie --system-tests --use-local-credentials
       - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}

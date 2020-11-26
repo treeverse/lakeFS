@@ -1,6 +1,8 @@
 package export
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,11 +22,21 @@ var (
 const successFilename = "_lakefs_success"
 
 const (
+	StartAction  = "export:start"
 	CopyAction   = "export:copy"
 	DeleteAction = "export:delete"
 	TouchAction  = "export:touch"
 	DoneAction   = "export:done"
 )
+
+type StartData struct {
+	Repo          string `json:"repo"`
+	Branch        string `json:"branch"`
+	FromCommitRef string `json:"from"`
+	ToCommitRef   string `json:"to"`
+	ExportID      string `json:"export_id"`
+	ExportConfig  catalog.ExportConfiguration
+}
 
 type CopyData struct {
 	From string `json:"from"`
@@ -38,6 +50,13 @@ type DeleteData struct {
 
 type SuccessData struct {
 	File string `json:"file"`
+}
+
+type FinishData struct {
+	Repo       string `json:"repo"`
+	Branch     string `json:"branch"`
+	CommitRef  string `json:"commitRef"`
+	StatusPath string `json:"status_path"`
 }
 
 // Returns the "dirname" of path: everything up to the last "/" (excluding that slash).  If
@@ -95,36 +114,43 @@ func NewDirMatchCache(pred func(path string) bool) *DirMatchCache {
 }
 
 // taskIdGenerator generates IDs for export tasks based on its exportID.
-type taskIDGenerator string
+type TaskIDGenerator string
 
-func (exportID taskIDGenerator) makeSuccessTaskID(path string) parade.TaskID {
+func (exportID TaskIDGenerator) makeSuccessTaskID(path string) parade.TaskID {
 	return parade.TaskID(fmt.Sprintf("%s:make-success:%s", exportID, path))
 }
 
-func (exportID taskIDGenerator) finishedTaskID() parade.TaskID {
-	return parade.TaskID(fmt.Sprintf("%s:finished", exportID))
+func (exportID TaskIDGenerator) finishedTaskID() parade.TaskID {
+	return parade.TaskID(fmt.Sprintf("%s:finish", exportID))
 }
 
-func (exportID taskIDGenerator) copyTaskID(physicalAddress string) parade.TaskID {
-	return parade.TaskID(fmt.Sprintf("%s:copy:%s", exportID, physicalAddress))
+func (exportID TaskIDGenerator) startedTaskID() parade.TaskID {
+	return parade.TaskID(fmt.Sprintf("%s:start", exportID))
+}
+func (exportID TaskIDGenerator) CopyTaskID(path string) parade.TaskID {
+	shaHash := sha256.Sum256([]byte(path))
+	shaHashInString := hex.EncodeToString(shaHash[:])
+	return parade.TaskID(fmt.Sprintf("%s:copy:%s", exportID, shaHashInString))
 }
 
-func (exportID taskIDGenerator) deleteTaskID(physicalAddress string) parade.TaskID {
-	return parade.TaskID(fmt.Sprintf("%s:delete:%s", exportID, physicalAddress))
+func (exportID TaskIDGenerator) DeleteTaskID(path string) parade.TaskID {
+	shaHash := sha256.Sum256([]byte(path))
+	shaHashInString := hex.EncodeToString(shaHash[:])
+	return parade.TaskID(fmt.Sprintf("%s:delete:%s", exportID, shaHashInString))
 }
 
 // SuccessTasksTreeGenerator accumulates success tasks during task generator.  It is exported
 // (only) for testing.
 type SuccessTasksTreeGenerator struct {
-	idGen                   taskIDGenerator
+	idGen                   TaskIDGenerator
 	successDirectoriesCache *DirMatchCache
 	makeDestination         func(string) string
 	finishedTask            parade.TaskData
 	successTaskForDirectory map[string]parade.TaskData
 }
 
-func NewSuccessTasksTreeGenerator(exportID string, generateSuccessFor func(path string) bool, makeDestination func(string) string) SuccessTasksTreeGenerator {
-	idGen := taskIDGenerator(exportID)
+func NewSuccessTasksTreeGenerator(exportID string, generateSuccessFor func(path string) bool, makeDestination func(string) string, finishBody *string) SuccessTasksTreeGenerator {
+	idGen := TaskIDGenerator(exportID)
 	zero, one := 0, 1
 	return SuccessTasksTreeGenerator{
 		idGen:                   idGen,
@@ -133,7 +159,7 @@ func NewSuccessTasksTreeGenerator(exportID string, generateSuccessFor func(path 
 		finishedTask: parade.TaskData{
 			ID:                idGen.finishedTaskID(),
 			Action:            DoneAction,
-			Body:              nil,
+			Body:              finishBody,
 			StatusCode:        parade.TaskPending,
 			MaxTries:          &one,
 			TotalDependencies: &zero,
@@ -196,21 +222,21 @@ func (s *SuccessTasksTreeGenerator) GenerateTasksTo(tasks []parade.TaskData) []p
 
 // makeDiffTaskBody fills TaskData *out with id, action and a body to make it a task to
 // perform diff.
-func makeDiffTaskBody(out *parade.TaskData, idGen taskIDGenerator, diff catalog.Difference, makeDestination func(string) string) error {
+func makeDiffTaskBody(out *parade.TaskData, idGen TaskIDGenerator, diff catalog.Difference, makeDestination func(string) string, makeSource func(string) string) error {
 	var data interface{}
 	switch diff.Type {
 	case catalog.DifferenceTypeAdded, catalog.DifferenceTypeChanged:
 		data = CopyData{
-			From: diff.PhysicalAddress,
+			From: makeSource(diff.PhysicalAddress),
 			To:   makeDestination(diff.Path),
 		}
-		out.ID = idGen.copyTaskID(diff.PhysicalAddress)
+		out.ID = idGen.CopyTaskID(diff.Path)
 		out.Action = CopyAction
 	case catalog.DifferenceTypeRemoved:
 		data = DeleteData{
 			File: makeDestination(diff.Path),
 		}
-		out.ID = idGen.deleteTaskID(diff.PhysicalAddress)
+		out.ID = idGen.DeleteTaskID(diff.Path)
 		out.Action = DeleteAction
 	case catalog.DifferenceTypeConflict:
 		return fmt.Errorf("%+v: %w", diff, ErrConflict)
@@ -224,28 +250,83 @@ func makeDiffTaskBody(out *parade.TaskData, idGen taskIDGenerator, diff catalog.
 	return nil
 }
 
-// GenerateTasksFromDiffs converts diffs into many tasks that depend on startTaskID, with a
-// "generate success" task after generating all files in each directory that matches
-// generateSuccessFor.
-func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Differences, generateSuccessFor func(path string) bool) ([]parade.TaskData, error) {
-	const initialSize = 1_000
+// TasksGenerator generates tasks from diffs iteratively.
+type TasksGenerator struct {
+	ExportID              string
+	DstPrefix             string
+	GenerateSuccessFor    func(path string) bool
+	NumTries              int
+	makeSource            func(string) string
+	makeDestination       func(string) string
+	idGen                 TaskIDGenerator
+	successTasksGenerator SuccessTasksTreeGenerator
+}
 
-	one := 1 // Number of dependencies of many tasks.  This will *not* change.
-	numTries := 5
+func GetStartTasks(repo, branch, fromCommitRef, toCommitRef, exportID string, config catalog.ExportConfiguration) ([]parade.TaskData, error) {
+	one, zero := 1, 0
+	data := StartData{
+		Repo:          repo,
+		Branch:        branch,
+		FromCommitRef: fromCommitRef,
+		ToCommitRef:   toCommitRef,
+		ExportID:      exportID,
+		ExportConfig:  config,
+	}
+	body, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize %+v: %w", data, err)
+	}
 
+	bodyStr := string(body)
+	idGen := TaskIDGenerator(exportID)
+	tasks := make([]parade.TaskData, 1)
+	tasks[0] = parade.TaskData{
+		ID:                idGen.startedTaskID(),
+		Action:            StartAction,
+		Body:              &bodyStr,
+		StatusCode:        parade.TaskPending,
+		MaxTries:          &one,
+		TotalDependencies: &zero,
+	}
+	return tasks, nil
+}
+
+// NewTasksGenerator returns a generator that exports tasks from diffs to file operations under
+// dstPrefix.  It generates success files for files in directories matched by
+// "generateSuccessFor".
+func NewTasksGenerator(exportID string, dstPrefix string, generateSuccessFor func(path string) bool, finishBody *string, storageNamespace string) *TasksGenerator {
+	const numTries = 5
 	dstPrefix = strings.TrimRight(dstPrefix, "/")
+	storageNamespace = strings.TrimRight(storageNamespace, "/")
+	makeSource := func(path string) string {
+		return fmt.Sprintf("%s/%s", storageNamespace, path)
+	}
 	makeDestination := func(path string) string {
 		return fmt.Sprintf("%s/%s", dstPrefix, path)
 	}
 
-	idGen := taskIDGenerator(exportID)
+	return &TasksGenerator{
+		ExportID:              exportID,
+		DstPrefix:             dstPrefix,
+		GenerateSuccessFor:    generateSuccessFor,
+		NumTries:              numTries,
+		makeDestination:       makeDestination,
+		makeSource:            makeSource,
+		idGen:                 TaskIDGenerator(exportID),
+		successTasksGenerator: NewSuccessTasksTreeGenerator(exportID, generateSuccessFor, makeDestination, finishBody),
+	}
+}
 
-	successTasksGenerator := NewSuccessTasksTreeGenerator(
-		exportID, generateSuccessFor, makeDestination)
+// Add translates diffs into many tasks and remembers "generate success" tasks for Finish.  It
+// returns some tasks that can already be added.
+func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, error) {
+	const initialSize = 1_000
+
+	zero := 0
 
 	ret := make([]parade.TaskData, 0, initialSize)
 
-	// Create the file operation tasks
+	// Create file operation tasks to return
 	for _, diff := range diffs {
 		if diff.Path == "" {
 			return nil, fmt.Errorf("no \"Path\" in %+v: %w", diff, ErrMissingColumns)
@@ -253,14 +334,14 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 
 		task := parade.TaskData{
 			StatusCode:        parade.TaskPending,
-			MaxTries:          &numTries,
-			TotalDependencies: &one, // Depends only on a start task
+			MaxTries:          &e.NumTries,
+			TotalDependencies: &zero, // Depends only on a start task
 		}
-		err := makeDiffTaskBody(&task, idGen, diff, makeDestination)
+		err := makeDiffTaskBody(&task, e.idGen, diff, e.makeDestination, e.makeSource)
 		if err != nil {
 			return ret, err
 		}
-		id, err := successTasksGenerator.AddFor(diff.Path)
+		id, err := e.successTasksGenerator.AddFor(diff.Path)
 		if err != nil {
 			return ret, fmt.Errorf("generate tasks after %+v: %w", diff, err)
 		}
@@ -269,7 +350,13 @@ func GenerateTasksFromDiffs(exportID string, dstPrefix string, diffs catalog.Dif
 		ret = append(ret, task)
 	}
 
-	ret = successTasksGenerator.GenerateTasksTo(ret)
+	return ret, nil
+}
+
+// Finish ends tasks generation, releasing any tasks for success and finish.
+func (e *TasksGenerator) Finish() ([]parade.TaskData, error) {
+	ret := make([]parade.TaskData, 0)
+	ret = e.successTasksGenerator.GenerateTasksTo(ret)
 
 	return ret, nil
 }

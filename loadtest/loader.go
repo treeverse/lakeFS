@@ -103,7 +103,7 @@ func (t *Loader) createRepo(apiClient api.Client) (string, error) {
 	t.NewRepoName = uuid.New().String()
 	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
 		DefaultBranch:    "master",
-		ID:               &t.NewRepoName,
+		Name:             &t.NewRepoName,
 		StorageNamespace: &t.Config.StorageNamespace,
 	})
 	if err != nil {

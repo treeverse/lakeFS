@@ -16,6 +16,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/uri"
@@ -51,12 +52,10 @@ var entryCmd = &cobra.Command{
 
 		ctx := context.Background()
 		database := connectToDB(connectionString)
-		defer func() {
-			_ = database.Close()
-		}()
+		defer database.Close()
 
 		conf := config.NewConfig()
-		c := catalog.NewCataloger(database, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		c := catalogfactory.BuildCataloger(database, conf)
 
 		// validate repository and branch
 		_, err := c.GetRepository(ctx, u.Repository)

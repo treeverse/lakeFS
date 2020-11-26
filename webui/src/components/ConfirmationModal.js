@@ -2,7 +2,7 @@ import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import React from "react";
 
-export default ({ show, onHide, msg, onConfirm }) => {
+const ConfirmationModal = ({ show, onHide, msg, onConfirm }) => {
     return (
         <Modal show={show} onHide={onHide}>
             <Modal.Header>
@@ -18,3 +18,5 @@ export default ({ show, onHide, msg, onConfirm }) => {
         </Modal>
     )
 };
+
+export default ConfirmationModal;

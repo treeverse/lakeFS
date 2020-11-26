@@ -12,20 +12,23 @@ import (
 	"time"
 
 	"github.com/dlmiddlecote/sqlstats"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
+	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 )
@@ -46,23 +49,27 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
-		conf := config.NewConfig()
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
 
+		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
+		} else if errors.Is(err, migrate.ErrNilVersion) {
+			logger.Debug("No migration, setup required")
+		} else if err != nil {
+			logger.WithError(err).Warn("Failed on schema validation")
+		}
 		dbPool := db.BuildDatabaseConnection(dbParams)
-		defer func() {
-			_ = dbPool.Close()
-		}()
+		defer dbPool.Close()
+
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		// init catalog
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(cfg)
@@ -81,12 +88,21 @@ var runCmd = &cobra.Command{
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+		// update health info with installation ID
+		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
+
+		// parade
+		paradeDB := parade.NewParadeDB(dbPool.Pool())
+		// export handler
+		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
+		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
 		defer func() {
 			// order is important - close cataloger channel before dedup
 			_ = cataloger.Close()
 			_ = dedupCleaner.Close()
+			exportActionManager.Close()
 		}()
 
 		// start API server
@@ -102,6 +118,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			retention,
 			migrator,
+			paradeDB,
 			dedupCleaner,
 			logger.WithField("service", "api_gateway"),
 		)
@@ -170,7 +187,7 @@ const runBanner = `
 `
 
 func printWelcome(w io.Writer) {
-	fmt.Fprint(w, runBanner)
+	_, _ = fmt.Fprint(w, runBanner)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {

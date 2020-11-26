@@ -1,16 +1,16 @@
 swagger: "2.0"
 
 consumes:
-- application/json
+  - application/json
 info:
   description: lakeFS HTTP API
   title: lakeFS API
   version: 0.1.0
 produces:
-- application/json
+  - application/json
 schemes:
-- http
-- https
+  - http
+  - https
 basePath: /api/v1
 
 
@@ -24,8 +24,8 @@ securityDefinitions:
 
 
 security:
-  - basic_auth: []
-  - jwt_token: []
+  - basic_auth: [ ]
+  - jwt_token: [ ]
 
 responses:
   Unauthorized:
@@ -86,11 +86,12 @@ definitions:
   repository_creation:
     type: object
     required:
-      - id
+      - name
       - storage_namespace
     properties:
-      id:
+      name:
         type: string
+        pattern: '^[a-z0-9][a-z0-9-]{2,62}$'
       storage_namespace:
         type: string
         description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
@@ -115,7 +116,7 @@ definitions:
         format: int64
       path_type:
         type: string
-        enum: [common_prefix, object]
+        enum: [ common_prefix, object ]
 
   underlying_object_properties:
     type: object
@@ -129,12 +130,12 @@ definitions:
     properties:
       type:
         type: string
-        enum: [added, removed, changed, conflict]
+        enum: [ added, removed, changed, conflict ]
       path:
         type: string
       path_type:
         type: string
-        enum: [common_prefix, object]
+        enum: [ common_prefix, object ]
 
   revert_creation:
     type: object
@@ -143,7 +144,7 @@ definitions:
     properties:
       type:
         type: string
-        enum: [object, common_prefix, commit, reset]
+        enum: [ object, common_prefix, commit, reset ]
       commit:
         type: string
       path:
@@ -233,6 +234,25 @@ definitions:
       username:
         description: an identifier for the user (e.g. jane.doe)
         type: string
+      key:
+        description: set to pass access_key_id, secret_access_key for testing.
+        type: object
+        properties:
+          # Example values as seen on
+          # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+          access_key_id:
+            description: access key ID to set for user for use in integration testing.
+            example: AKIAIOSFODNN7EXAMPLE
+            type: string
+            minLength: 1
+          secret_access_key:
+            description: secret access key to set for user for use in integration testing.
+            example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+            type: string
+            minLength: 1
+        required:
+          - access_key_id
+          - secret_access_key
     required:
       - username
 
@@ -278,7 +298,7 @@ definitions:
     properties:
       effect:
         type: string
-        enum: [allow, deny]
+        enum: [ allow, deny ]
       resource:
         type: string
       action:
@@ -317,12 +337,12 @@ definitions:
         type: string
         format: uri
         x-nullable: false       # Override https://github.com/go-swagger/go-swagger/issues/1188
-                                # go-swagger totally not a bug.  This causes the generated field
-                                # *not* to be a pointer.  Then the regular (incorrect, in this
-                                # case) JSON parser parses it as an empty field, and validation
-                                # verifies the value is non-empty.  In *this particular case* it
-                                # works because a URI cannot be empty (at least not an absolute
-                                # URI, which is what we require).
+        # go-swagger totally not a bug.  This causes the generated field
+        # *not* to be a pointer.  Then the regular (incorrect, in this
+        # case) JSON parser parses it as an empty field, and validation
+        # verifies the value is non-empty.  In *this particular case* it
+        # works because a URI cannot be empty (at least not an absolute
+        # URI, which is what we require).
         description: export objects to this path
         example: s3://company-bucket/path/to/export
       exportStatusPath:
@@ -335,7 +355,10 @@ definitions:
         items:
           type: string
         description: "list of regexps of keys to exported last in each prefix (for signalling)"
-        example: ["^SUCCESS$", ".*/_SUCCESS$"]
+        example: [ "^SUCCESS$", ".*/_SUCCESS$" ]
+      isContinuous:
+        type: boolean
+        description: if true, export every commit or merge to branch
 
   retention_policy:
     type: object
@@ -368,7 +391,7 @@ definitions:
     properties:
       status:
         type: string
-        enum: [enabled, disabled]
+        enum: [ enabled, disabled ]
       filter:
         type: object
         properties:
@@ -388,8 +411,8 @@ definitions:
   time_period:
     type: object
     description: |
-        a number of days, which can be broken up into a sum of weeks
-        and days
+      a number of days, which can be broken up into a sum of weeks
+      and days
     properties:
       weeks:
         type: integer
@@ -400,10 +423,10 @@ definitions:
     minProperties: 1
 
   config:
-      type: object
-      properties:
-        blockstore.type:
-          type: string
+    type: object
+    properties:
+      blockstore.type:
+        type: string
 
 paths:
 
@@ -413,7 +436,7 @@ paths:
         - setup
       operationId: setupLakeFS
       summary: setup lakeFS and create the first user
-      security: []
+      security: [ ]
       parameters:
         - in: body
           name: user
@@ -2010,6 +2033,69 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/branches/{branch}/repair-export:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - export
+        - branches
+      operationId: repair
+      summary: set continuous export state as repaired
+      responses:
+        201:
+          description: continuous export status successfully changed to repaired
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/export-hook:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - export
+        - branches
+      operationId: run
+      summary: hook to be called in order to execute continuous export on branch
+      responses:
+        201:
+          description: continuous export successfully started
+          schema:
+            description: "export ID"
+            type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repository}/retention:
     parameters:
       - in: path
@@ -2056,14 +2142,14 @@ paths:
   /healthcheck:
     get:
       operationId: healthCheck
-      security: []
+      security: [ ]
       tags:
         - healthCheck
       description: check that the API server is up and running
       responses:
         204:
           description: NoContent
-          
+
   /config:
     get:
       tags:

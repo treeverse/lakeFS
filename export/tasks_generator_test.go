@@ -24,14 +24,23 @@ func TestDirMatchCache(t *testing.T) {
 		numCalls int
 	}{
 		{
+			name: "no delimiter",
+			pred: func(path string) bool { return strings.HasSuffix(path, "match") },
+			lookups: []L{
+				{"a", "", false}, // +1 calls
+				{"", "", false},  // +0 calls
+			},
+			numCalls: 1,
+		},
+		{
 			name: "leaves",
 			pred: func(path string) bool { return strings.HasSuffix(path, "match") },
 			lookups: []L{
-				{"/a/b/match", "", false},                    // +3 calls
-				{"/a/b/match/c", "/a/b/match", true},         // +1 call
-				{"/a/b/match/c/d/e/f/g", "/a/b/match", true}, // +4 calls
-				{"", "", false},                              // +0 calls
-				{"/a/match/b/match", "/a/match", true},       // +2 calls
+				{"a/b/match", "", false},                   // +3 calls
+				{"a/b/match/c", "a/b/match", true},         // +1 call
+				{"a/b/match/c/d/e/f/g", "a/b/match", true}, // +4 calls
+				{"", "", false},                            // +0 calls
+				{"a/match/b/match", "a/match", true},       // +2 calls
 			},
 			numCalls: 10,
 		},
@@ -52,9 +61,9 @@ func TestDirMatchCache(t *testing.T) {
 				return strings.HasSuffix(path, "x") || path == ""
 			},
 			lookups: []L{
-				{"", "", true},              // +1 call
-				{"/a/b/c/file", "", true},   // +3 calls
-				{"/a/x/file", "/a/x", true}, // +1 call
+				{"", "", true},            // +1 call
+				{"a/b/c/file", "", true},  // +3 calls
+				{"a/x/file", "a/x", true}, // +1 call
 			},
 			numCalls: 5,
 		},
@@ -200,11 +209,9 @@ var zero int = 0
 var one int = 1
 
 func TestTasksGenerator_Empty(t *testing.T) {
-	tasks, err := export.GenerateTasksFromDiffs(
-		"empty",
-		"testfs://prefix/",
-		catalog.Differences{},
-		func(_ string) bool { return true })
+	gen := export.NewTasksGenerator("empty", "testfs://prefix/", func(_ string) bool { return true }, nil, "")
+
+	tasks, err := gen.Finish()
 	if err != nil {
 		t.Fatalf("failed to GenerateTasksFromDiffs: %s", err)
 	}
@@ -223,7 +230,7 @@ func TestTasksGenerator_Empty(t *testing.T) {
 	}
 	doneTasks := getTasks(isDone, tasks)
 	if diffs := deep.Equal(taskPtrs{
-		&parade.TaskData{ID: "empty:finished", Action: export.DoneAction, StatusCode: parade.TaskPending, MaxTries: &one, TotalDependencies: &zero},
+		&parade.TaskData{ID: "empty:finish", Action: export.DoneAction, StatusCode: parade.TaskPending, MaxTries: &one, TotalDependencies: &zero},
 	}, doneTasks); diffs != nil {
 		t.Error("unexpected done tasks", diffs)
 	}
@@ -245,48 +252,50 @@ func toJSON(t testing.TB, v interface{}) *string {
 func TestTasksGenerator_Simple(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
 		Type:  catalog.DifferenceTypeAdded,
-		Entry: catalog.Entry{Path: "add1", PhysicalAddress: "/add1"},
+		Entry: catalog.Entry{Path: "add1", PhysicalAddress: "add1"},
 	}, {
 		Type:  catalog.DifferenceTypeChanged,
-		Entry: catalog.Entry{Path: "change1", PhysicalAddress: "/change1"},
+		Entry: catalog.Entry{Path: "change1", PhysicalAddress: "change1"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "/remove1"},
+		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "remove1"},
 	}}
-	tasksWithIDs, err := export.GenerateTasksFromDiffs(
-		"simple",
-		"testfs://prefix/",
-		catalogDiffs,
-		func(_ string) bool { return false })
+	gen := export.NewTasksGenerator("simple", "testfs://prefix/", func(_ string) bool { return false }, nil, "testsrc://prefix/")
+	tasksWithIDs, err := gen.Add(catalogDiffs)
 	if err != nil {
-		t.Fatalf("failed to GenerateTasksFromDiffs: %s", err)
+		t.Fatalf("failed to add tasks: %s", err)
 	}
-
+	finishTasks, err := gen.Finish()
+	if err != nil {
+		t.Fatalf("failed to finish generating tasks: %s", err)
+	}
+	tasksWithIDs = append(tasksWithIDs, finishTasks...)
 	tasks := cleanup(tasksWithIDs)
 
 	copyTasks := getTasks(isCopy, tasks)
+	idGen := export.TaskIDGenerator("simple")
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
-			ID:     "simple:copy:/add1",
+			ID:     idGen.CopyTaskID("add1"),
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
-				From: "/add1",
+				From: "testsrc://prefix/add1",
 				To:   "testfs://prefix/add1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
-			ToSignalAfter:     []parade.TaskID{"simple:finished"},
+			TotalDependencies: &zero,
+			ToSignalAfter:     []parade.TaskID{"simple:finish"},
 		},
 		&parade.TaskData{
-			ID:     "simple:copy:/change1",
+			ID:     idGen.CopyTaskID("change1"),
 			Action: export.CopyAction,
 			Body: toJSON(t, export.CopyData{
-				From: "/change1",
+				From: "testsrc://prefix/change1",
 				To:   "testfs://prefix/change1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
-			ToSignalAfter:     []parade.TaskID{"simple:finished"},
+			TotalDependencies: &zero,
+			ToSignalAfter:     []parade.TaskID{"simple:finish"},
 		},
 	}, copyTasks); diffs != nil {
 		t.Error("unexpected copy tasks", diffs)
@@ -294,14 +303,14 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	deleteTasks := getTasks(isDelete, tasks)
 	if diffs := deep.Equal(taskPtrs{
 		&parade.TaskData{
-			ID:     "simple:delete:/remove1",
+			ID:     idGen.DeleteTaskID("remove1"),
 			Action: export.DeleteAction,
 			Body: toJSON(t, export.DeleteData{
 				File: "testfs://prefix/remove1",
 			}),
 			StatusCode:        parade.TaskPending,
-			TotalDependencies: &one,
-			ToSignalAfter:     []parade.TaskID{"simple:finished"},
+			TotalDependencies: &zero,
+			ToSignalAfter:     []parade.TaskID{"simple:finish"},
 		}}, deleteTasks); diffs != nil {
 		t.Error("unexpected delete tasks", diffs)
 	}
@@ -312,7 +321,7 @@ func TestTasksGenerator_Simple(t *testing.T) {
 	doneTasks := getTasks(isDone, tasks)
 	totalDeps := len(catalogDiffs)
 	if diffs := deep.Equal(taskPtrs{
-		&parade.TaskData{ID: "simple:finished", Action: export.DoneAction, StatusCode: parade.TaskPending, TotalDependencies: &totalDeps},
+		&parade.TaskData{ID: "simple:finish", Action: export.DoneAction, StatusCode: parade.TaskPending, TotalDependencies: &totalDeps},
 	}, doneTasks); diffs != nil {
 		t.Error("unexpected done tasks", diffs)
 	}
@@ -325,61 +334,73 @@ func TestTasksGenerator_Simple(t *testing.T) {
 func TestTasksGenerator_SuccessFiles(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/1", PhysicalAddress: "/remove1"},
+		Entry: catalog.Entry{Path: "a/success/1", PhysicalAddress: "remove1"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/plain/1", PhysicalAddress: "/remove2"},
+		Entry: catalog.Entry{Path: "a/plain/1", PhysicalAddress: "remove2"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/sub/success/11", PhysicalAddress: "/remove11"},
+		Entry: catalog.Entry{Path: "a/success/sub/success/11", PhysicalAddress: "remove11"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/sub/success/12", PhysicalAddress: "/remove12"},
+		Entry: catalog.Entry{Path: "a/success/sub/success/12", PhysicalAddress: "remove12"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "b/success/1", PhysicalAddress: "/remove3"},
+		Entry: catalog.Entry{Path: "b/success/1", PhysicalAddress: "remove3"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/2", PhysicalAddress: "/remove4"},
+		Entry: catalog.Entry{Path: "a/success/2", PhysicalAddress: "remove4"},
 	}, {
 		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/plain/2", PhysicalAddress: "/remove5"},
+		Entry: catalog.Entry{Path: "a/plain/2", PhysicalAddress: "remove5"},
 	}}
-
+	idGen := export.TaskIDGenerator("foo")
 	expectedDeps := []struct {
 		before, after parade.TaskID
 		avoid         bool
 	}{
-		{before: "foo:delete:/remove1", after: "foo:make-success:a/success"},
-		{before: "foo:delete:/remove1", after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:make-success:a/success"},
+		{before: idGen.DeleteTaskID("a/success/1"), after: "foo:finish"},
 
-		{before: "foo:delete:/remove2", after: "foo:make-success:a/plain", avoid: true},
-		{before: "foo:delete:/remove2", after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:make-success:a/plain", avoid: true},
+		{before: idGen.DeleteTaskID("a/plain/1"), after: "foo:finish"},
 
-		{before: "foo:delete:/remove11", after: "foo:make-success:a/success/sub/success"},
-		{before: "foo:delete:/remove11", after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:make-success:a/success/sub/success"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/11"), after: "foo:finish"},
 
-		{before: "foo:delete:/remove12", after: "foo:make-success:a/success/sub/success"},
-		{before: "foo:delete:/remove12", after: "foo:finished"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:make-success:a/success/sub/success"},
+		{before: idGen.DeleteTaskID("a/success/sub/success/12"), after: "foo:finish"},
 
 		{before: "foo:make-success:a/success/sub/success", after: "foo:make-success:a/success"},
 
-		{before: "foo:delete:/remove3", after: "foo:make-success:b/success"},
-		{before: "foo:delete:/remove3", after: "foo:finished"},
-		{before: "foo:delete:/remove4", after: "foo:make-success:a/success"},
-		{before: "foo:delete:/remove4", after: "foo:finished"},
-		{before: "foo:delete:/remove5", after: "foo:make-success:a/plain", avoid: true},
-		{before: "foo:delete:/remove5", after: "foo:finished"},
+		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:make-success:b/success"},
+		{before: idGen.DeleteTaskID("b/success/1"), after: "foo:finish"},
+		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:make-success:a/success"},
+		{before: idGen.DeleteTaskID("a/success/2"), after: "foo:finish"},
+		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:make-success:a/plain", avoid: true},
+		{before: idGen.DeleteTaskID("a/plain/2"), after: "foo:finish"},
 	}
-	tasksWithIDs, err := export.GenerateTasksFromDiffs(
-		"foo",
-		"testfs://prefix/",
-		catalogDiffs,
-		func(path string) bool { return strings.HasSuffix(path, "success") },
-	)
+	gen := export.NewTasksGenerator("foo", "testfs://prefix/", func(path string) bool { return strings.HasSuffix(path, "success") }, nil, "")
+
+	tasksWithIDs := make([]parade.TaskData, 0, len(catalogDiffs))
+
+	for o := 0; o < len(catalogDiffs); o += 3 {
+		end := o + 3
+		if end > len(catalogDiffs) {
+			end = len(catalogDiffs)
+		}
+		slice := catalogDiffs[o:end]
+		moreTasks, err := gen.Add(slice)
+		if err != nil {
+			t.Fatalf("failed to add tasks %d..%d: %+v: %s", o, end, catalogDiffs[o:o+3], err)
+		}
+		tasksWithIDs = append(tasksWithIDs, moreTasks...)
+	}
+	moreTasks, err := gen.Finish()
 	if err != nil {
-		t.Fatalf("failed to GenerateTasksFromDiffs: %s", err)
+		t.Fatalf("failed to finish generating tasks: %s", err)
 	}
+	tasksWithIDs = append(tasksWithIDs, moreTasks...)
 
 	for i, task := range tasksWithIDs {
 		t.Logf("task %d: %+v", i, task)

@@ -50,7 +50,6 @@ faster" or "Add update regarding Hacktoberfest".  Communication is key: If you a
 please open a discussion: ask us on the PR or on the issue.
 
 Thanks!
-</div>
 
 ## Getting Started
 

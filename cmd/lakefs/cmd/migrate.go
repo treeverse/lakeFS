@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/db"
 )
 
 // migrateCmd represents the migrate command
@@ -67,8 +66,9 @@ var gotoCmd = &cobra.Command{
 			fmt.Printf("Failed to get value for 'version': %s\n", err)
 			os.Exit(1)
 		}
+		force, _ := cmd.Flags().GetBool("force")
 		uri := cfg.GetDatabaseParams()
-		err = db.MigrateTo(uri, version)
+		err = db.MigrateTo(uri, version, force)
 		if err != nil {
 			fmt.Printf("Failed to migrate to version %d.\n%s\n", version, err)
 			os.Exit(1)
@@ -85,4 +85,5 @@ func init() {
 	migrateCmd.AddCommand(gotoCmd)
 	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")
+	_ = gotoCmd.Flags().Bool("force", false, "force migrate")
 }

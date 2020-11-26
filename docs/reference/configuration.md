@@ -27,7 +27,6 @@ This reference uses `.` to denote the nesting of values.
 * `database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
 * `database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
 * `database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
-* `database.disable_auto_migrate` `(bool : false)` - Disable the database migrate to latest on connect
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
@@ -48,6 +47,8 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.credentials.access_key_id` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.access_secret_key` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
+* `blockstore.s3.endpoint` `(string : )` - If specified, custom endpoint for the AWS S3 API (https://s3_compatible_service_endpoint:port)
+* `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to S3 (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.retention.role_arn` - ARN of IAM role to use to
   perform AWS S3 Batch tagging operations.  This role must be
@@ -164,6 +165,38 @@ blockstore:
   type: gs
   gs:
     credentials_file: /secrets/lakefs-service-account.json
+
+gateways:
+  s3:
+    domain_name: s3.my-company.com
+    region: us-east-1
+```
+
+## Example: MinIO
+
+```yaml
+---
+logging:
+  format: json
+  level: WARN
+  output: "-"
+
+database:
+  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+
+auth:
+  encrypt:
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+
+blockstore:
+  type: s3
+  s3:
+    region: us-east-1
+    force_path_style: true
+    endpoint: http://localhost:9000
+    credentials:
+      access_key_id: minioadmin
+      access_secret_key: minioadmin
 
 gateways:
   s3:

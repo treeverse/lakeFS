@@ -44,7 +44,10 @@ func main() {
 	viper.SetDefault("files_amount", defaultFiles)
 	viper.SetDefault("global_timeout", defaultGlobalTimeout)
 
-	logger, client, _ = testutil.SetupTestingEnv("benchmark", "lakefs-benchmarking")
+	logger, client, _ = testutil.SetupTestingEnv(&testutil.SetupTestingEnvParams{
+		Name:      "benchmark",
+		StorageNS: "lakefs-benchmarking",
+	})
 	logger.Info("Setup succeeded, running the tests")
 
 	if err := testBenchmarkLakeFS(); err != nil {
@@ -73,7 +76,7 @@ func testBenchmarkLakeFS() error {
 	repo, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
 		WithRepository(&models.RepositoryCreation{
 			DefaultBranch:    "master",
-			ID:               swag.String(repoName),
+			Name:             swag.String(repoName),
 			StorageNamespace: swag.String(ns),
 		}), nil)
 	if err != nil {

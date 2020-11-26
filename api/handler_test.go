@@ -9,10 +9,6 @@ import (
 	"testing"
 	"time"
 
-	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/dedup"
-	"github.com/treeverse/lakefs/stats"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -25,9 +21,13 @@ import (
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/db"
+	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -65,7 +65,7 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 		Username:  "admin",
 	}
 
-	creds, err := auth.SetupAdminUser(authService, user)
+	creds, err := auth.SetupAdminUser(authService, &authmodel.SuperuserConfiguration{User: *user})
 	testutil.Must(t, err)
 	return creds
 }
@@ -83,7 +83,8 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	}
 	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger := catalog.NewCataloger(conn, catalog.WithCacheEnabled(false))
+	cataloger := catalogfactory.BuildCataloger(conn, nil)
+
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
@@ -106,6 +107,7 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		&mockCollector{},
 		retentionService,
 		migrator,
+		nil,
 		dedupCleaner,
 		logging.Default(),
 	)
