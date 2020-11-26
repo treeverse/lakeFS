@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Importing data from S3
+description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
 parent: Reference
 nav_order: 8
 has_children: false
