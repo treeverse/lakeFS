@@ -18,13 +18,15 @@ const (
 	TreeAccessAdditionlWeight = 16
 	TreeBufferSize            = 1_000
 	TreeBufferTrimOff         = 100 // when buffer eviction kicks in - number of trees that will be removed
+	TreeInitialWeight         = 64
+	NilPath                   = rocks.Path("")
 )
 
-var largestByteArray = []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
+var largestByteArray = []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
 
 type TreePartType struct {
-	PartName string     `json:"part_name"`
-	MaxPath  rocks.Path `json:"max_path"`
+	PartName sstable.SSTableID `json:"part_name"`
+	MaxPath  rocks.Path        `json:"max_path"`
 }
 type TreePartsType []TreePartType
 type TreeContrainer struct {
@@ -40,7 +42,7 @@ type TreesRepoType struct {
 
 var treesRepository TreesRepoType
 
-func InitTreeRepository() {
+func InitTreesRepository() {
 	treesRepository = TreesRepoType{
 		TreesMap:   make(map[rocks.TreeID]TreeContrainer, 100),
 		PartManger: &sstable.PebbleSSTableManager{},
@@ -64,70 +66,62 @@ func (trees TreesRepoType) loadTreeIfNeeded(treeID rocks.TreeID) (TreeContrainer
 	}
 	t = TreeContrainer{
 		treeID,
-		0,
+		TreeInitialWeight,
 		&treeSlice,
 	}
 	trees.TreesMap[treeID] = t
 	return t, nil
 }
 
-/*
-baseExausted
-baseIndex ?
-outputPratOpen
-InputPartOpen
-IteratorExausted
-*/
-func (trees TreesRepoType) Apply(treeID rocks.TreeID, inputIter rocks.EntryIterator) (rocks.TreeID, error) {
-	//var baseExausted, iteratorExausted bool
+func (trees TreesRepoType) Apply(treeID rocks.TreeID, InputIter rocks.EntryIterator) (rocks.TreeID, error) {
 	var basePartIter rocks.EntryIterator
-	//var baseIndex int
-	//var baseTree, newTree TreeContrainer
-	//var baseParts, newParts TreePartsType
-	//var doingMerge, terminateApply bool
+	var maxKeyCurrentPart rocks.Path
 	var err error
+	pushbackInputIter := newPushbackEntryIterator(InputIter)
 	// INITIALIZATION
 	bk, err := trees.newTreePartsBookKeeper(treeID)
 	if err != nil {
 		return "", err
 	}
-	//if !inputIter.Next() {
-	//	return nil, ErrEmptyInputToApply
-	//}
 	outputPartsWriter := newPartsWriter()
-	maxKeyCurrentPart := rocks.Path("") // indication this is the first iterration
-	if err != nil {
-		return "", err
-	}
 	// PROCESS INPUT
-	for inputIter.Next() {
-		input := inputIter.Value()
+	for pushbackInputIter.Next() {
+		input := pushbackInputIter.Value()
 		if maxKeyCurrentPart < input.Path {
 			// flush all updates targeted comming from  current base part
-			if maxKeyCurrentPart != rocks.Path("") { // empty max key indicates this is first iteration
-				err = flushIterToPartsWriter(outputPartsWriter, basePartIter)
+			if basePartIter != nil { // nil  basePartIter indicates this is first iteration
+				err = outputPartsWriter.flushIterToPartsWriter(basePartIter)
 				if err != nil {
 					return "", err
 				}
 			}
 			if outputPartsWriter.hasOpenWriter() {
-				nextPartMaxKey := bk.peekToNextPart()
-				if nextPartMaxKey == nil { // base finished - just copy remaining input to output
-					break
-				}
-				if input.Path > *nextPartMaxKey {
+				// indicates that writing to this file did not close naturally with a splitter
+				// may happen if:
+				// 1. the splitter was deleted
+				// 2. It is the last part of the base
+				// 3 the original base part did not terminate with a splitter
+				nextPartMaxKey := bk.peekToNextPart() // max key of next part
+				if nextPartMaxKey != nil && input.Path > *nextPartMaxKey {
 					// next update will go past the next part. so we prefer to force close
 					// the current part, and keep the next part/s as is, and not continue writing to same part
 					// this way - al least next part will be reused
 					outputPartsWriter.forceCloseCurrentPart()
 				}
 			}
-			basePartIter, maxKeyCurrentPart, err = bk.getPartForKey(input.Path)
-			if err != nil {
+			basePartIter, maxKeyCurrentPart, err = bk.getBasePartForKey(input.Path)
+			if err == InfoNoTreeParts {
+				pushbackInputIter.pushBack()
+				err = outputPartsWriter.flushIterToPartsWriter(pushbackInputIter)
+				if err != nil {
+					return "", err
+				}
+			} else if err != nil {
 				return "", err
 			}
 		}
 		// handle single input update
+		didUpdate := false
 		for basePartIter.Next() {
 			base := basePartIter.Value()
 			if base.Path < input.Path {
@@ -137,17 +131,16 @@ func (trees TreesRepoType) Apply(treeID rocks.TreeID, inputIter rocks.EntryItera
 				}
 				continue
 			} else {
-				if input.Entry != nil {
+				didUpdate = true
+				if input.Entry != nil { // not a delete operation
 					err = outputPartsWriter.writeEntry(input.Path, input.Entry)
 					if err != nil {
 						return "", err
 					}
 				}
-				if base.Path == input.Path {
-					basePartIter.Next() // result of next is dont care
-					//if !basePartIter.Next() {
-					//	return "", ErrTreeCorrupted // The tree contains a maximum key for this part that is not in it
-					//}
+				if base.Path != input.Path {
+					// base iterator already contains a path bigger than the current input path, it has to be processed in the next cycle
+					basePartIter.Pushback()
 				}
 			}
 		}
@@ -172,16 +165,6 @@ func (trees TreesRepoType) Apply(treeID rocks.TreeID, inputIter rocks.EntryItera
 		//}
 
 	}
-}
-
-func flushIterToPartsWriter(pw *partsWriter, iter EntryIterator) error {
-	for iter.Next() {
-		err := pw.writeEntry(iter.Value())
-		if err != nil {
-			return err
-		}
-	}
-	return iter.Error()
 }
 
 func copyPartUntil(sentinel []byte, newParts *TreePartsType) {

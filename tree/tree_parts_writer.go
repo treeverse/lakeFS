@@ -92,3 +92,13 @@ func isSplitPath(path []byte, rowNum int) bool {
 	i := fnv.Sum32()
 	return (i%SplitFactor) == 0 && rowNum > (SplitFactor/SplitMinFactor)
 }
+
+func (pw *partsWriter) flushIterToPartsWriter(iter rocks.EntryIterator) error {
+	for iter.Next() {
+		err := pw.writeEntry(iter.Value())
+		if err != nil {
+			return err
+		}
+	}
+	return iter.Err()
+}
