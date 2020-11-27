@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Install lakeFS
+description: Installing lakeFS is easy. This section covers how to install lakeFS using docker compose.
 parent: Quick Start
 nav_order: 10
 has_children: false

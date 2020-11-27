@@ -1,20 +1,29 @@
 ---
 layout: default
 title: Community
+description: lakeFS community. Join the community on the lakeFS slack channel and feel free to ask questions and get help.
 nav_order: 10
 has_children: false
 ---
 
 # Community
 
+We're excited to hear from you!
+
+### Get in touch with the lakeFS team
+
+Join our public slack [channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw). We’re extremely responsive and you can expect a fast reply.
+
+### Contribute
+
+Whether it’s a bug report, new feature, correction, or additional documentation, we greatly value feedback and contributions from our community. Our [Contributing Guide](https://docs.lakefs.io/contributing.html) is a great place to get started. 
+
+### Ask a question
+
+If you have any questions or need technical support, feel free to message us in the [slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw)#help channel. 
+
 ### DockerHub
 
 lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/u/treeverse/).
 
-### Support
 
-Feedback and questions are welcome at [support@treeverse.io](mailto:support@treeverse.io).
-
-### Slack Channel
-
-Join our [channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) to get help from our team and other users

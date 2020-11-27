@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Downloads
+description: This section provides information on downloads of binary packeges and official docker images.
 nav_order: 3
 has_children: false
 ---
