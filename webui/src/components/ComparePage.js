@@ -2,7 +2,7 @@ import React, {useEffect, useState, useCallback} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 import {Alert, ButtonToolbar, Button, OverlayTrigger, Tooltip} from "react-bootstrap";
-import {SyncIcon, GitMergeIcon} from "@primer/octicons-react";
+import {SyncIcon, GitMergeIcon, ArrowLeftIcon} from "@primer/octicons-react";
 import {diff, diffPaginate, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Changes from "./Changes";
@@ -106,7 +106,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
                 params.delete('compareBranch');
                 history.push({...location, search: params.toString()})
             }}/>
-
+            <ArrowLeftIcon className="mr-2 mt-2"/>
             <RefDropdown
                 repo={repo} 
                 selected={compare}
