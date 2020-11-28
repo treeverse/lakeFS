@@ -29,7 +29,7 @@ func (trees *TreesRepoType) newTreePartsBookKeeper(treeID rocks.TreeID) (*TreePa
 	}, nil
 }
 
-func (bk *TreePartsBookKeeper) getBasePartForKey(key rocks.Path) (rocks.EntryIterator, rocks.Path, error) {
+func (bk *TreePartsBookKeeper) getBasePartForKey(key rocks.Path) (*pushBackEntryIterator, rocks.Path, error) {
 	for bk.baseIndex < len(bk.baseTree) && bk.baseTree[bk.baseIndex].MaxPath < key {
 		bk.partsForReuse = append(bk.partsForReuse, bk.baseTree[bk.baseIndex])
 		bk.baseIndex++
@@ -40,7 +40,7 @@ func (bk *TreePartsBookKeeper) getBasePartForKey(key rocks.Path) (rocks.EntryIte
 	p := bk.baseTree[bk.baseIndex]
 	basePartIter, err := bk.trees.PartManger.SSTableIterator(p.PartName, NilPath)
 	bk.baseIndex++
-	return basePartIter, p.MaxPath, err
+	return newPushbackEntryIterator(basePartIter), p.MaxPath, err
 }
 func (bk *TreePartsBookKeeper) getPartsForReuse() TreePartsType {
 	return bk.partsForReuse

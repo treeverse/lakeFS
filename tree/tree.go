@@ -2,6 +2,7 @@ package tree
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"sort"
 
@@ -74,7 +75,7 @@ func (trees TreesRepoType) loadTreeIfNeeded(treeID rocks.TreeID) (TreeContrainer
 }
 
 func (trees TreesRepoType) Apply(treeID rocks.TreeID, InputIter rocks.EntryIterator) (rocks.TreeID, error) {
-	var basePartIter rocks.EntryIterator
+	var basePartIter *pushBackEntryIterator
 	var maxKeyCurrentPart rocks.Path
 	var err error
 	pushbackInputIter := newPushbackEntryIterator(InputIter)
@@ -87,6 +88,7 @@ func (trees TreesRepoType) Apply(treeID rocks.TreeID, InputIter rocks.EntryItera
 	// PROCESS INPUT
 	for pushbackInputIter.Next() {
 		input := pushbackInputIter.Value()
+		// check if this input is higher than the current base part maximum
 		if maxKeyCurrentPart < input.Path {
 			// flush all updates targeted comming from  current base part
 			if basePartIter != nil { // nil  basePartIter indicates this is first iteration
@@ -112,26 +114,29 @@ func (trees TreesRepoType) Apply(treeID rocks.TreeID, InputIter rocks.EntryItera
 			basePartIter, maxKeyCurrentPart, err = bk.getBasePartForKey(input.Path)
 			if err == InfoNoTreeParts {
 				pushbackInputIter.pushBack()
-				err = outputPartsWriter.flushIterToPartsWriter(pushbackInputIter)
-				if err != nil {
-					return "", err
-				}
+				break
+				//err = outputPartsWriter.flushIterToPartsWriter(pushbackInputIter)
+				//if err != nil {
+				//	return "", err
+				//}
 			} else if err != nil {
 				return "", err
 			}
 		}
 		// handle single input update
-		didUpdate := false
-		for basePartIter.Next() {
+		//assert: input path is smaller than max path of current base part. It is not possible that base part
+		// will be exausted (Next return false) before reaching an entry that >= input path.
+		for {
+			if !basePartIter.Next() {
+				return "", fmt.Errorf("base reading ends before reaching input key : %w", basePartIter.Err())
+			}
 			base := basePartIter.Value()
 			if base.Path < input.Path {
 				err = outputPartsWriter.writeEntry(base.Path, base.Entry)
 				if err != nil {
 					return "", err
 				}
-				continue
-			} else {
-				didUpdate = true
+			} else { // reached inserion point of input record
 				if input.Entry != nil { // not a delete operation
 					err = outputPartsWriter.writeEntry(input.Path, input.Entry)
 					if err != nil {
@@ -142,33 +147,24 @@ func (trees TreesRepoType) Apply(treeID rocks.TreeID, InputIter rocks.EntryItera
 					// base iterator already contains a path bigger than the current input path, it has to be processed in the next cycle
 					basePartIter.Pushback()
 				}
+				break // after handling input raw, exit base reading loop, go back to reading
 			}
 		}
-		if basePartIter.Error() != nil {
-			return "", basePartIter.Error()
-		}
-
-		//for len(baseParts) > 0 && baseParts[0].MaxPath < inputKey && !doingMerge {
-		//	newParts = append(newParts, baseParts[0])
-		//	baseParts = baseParts[1:]
-		//	continue
-		//}
-		//if len(baseParts) == 0 { // wrong
-		//	//copyUntil()
-		//	break
-		//}
-		//
-		//nextPart := baseParts[0].PartName
-		//basePartIter, err = treesRepository.PartManger.ListEntries(nextPart, "")
-		//if err != nil {
-		//	return "", err
-		//}
-
 	}
-}
-
-func copyPartUntil(sentinel []byte, newParts *TreePartsType) {
-
+	if pushbackInputIter.Err() != nil {
+		return "", fmt.Errorf(" apply input erroe: %w", pushbackInputIter.Err())
+	}
+	err = outputPartsWriter.flushIterToPartsWriter(pushbackInputIter)
+	if err != nil {
+		return "", fmt.Errorf(" input flushing error : %w", err)
+	}
+	newParts, err := outputPartsWriter.waitCloseTermination()
+	if err != nil {
+		return "", fmt.Errorf(" closing of apply parts failed : %w", err)
+	}
+	newTree := append(newParts, bk.getPartsForReuse()...)
+	sort.Slice(newTree, func(i, j int) bool { return newTree[i].MaxPath < newTree[j].MaxPath })
+	// todo: calculate tree name, write tree to disk
 }
 
 func (trees TreesRepoType) NewScanner(tree TreeID, start string) (*treeScanner, error) {
@@ -259,61 +255,3 @@ func (t *treeScanner) Value() (*rocks.Path, *rocks.Entry) {
 //
 //	return
 //}
-/*func (trees TreesRepoType) ApplyOld(treeID TreeID, iter EntryIterator) (TreeID, error) {
-	var currentBaseTreeIndex int
-	var numOfPartsDiff int //???????
-	var inPartMerge bool
-	var baseExusted bool
-	var baseTree TreeContrainer
-	var baseSlice *TreePartsType
-	if treeID == "" {
-		baseExusted = true
-	} else {
-		baseTree, err := trees.loadTreeIfNeeded(treeID)
-		if err != nil {
-			return "", err
-		}
-		baseSlice = baseTree.TreeParts
-	}
-	newTree := TreeContrainer{TreeParts: new(TreePartsType)}
-	newTreeSlice := newTree.TreeParts
-	for iter.Next() {
-		k, v := iter.Value()
-		splitPath := isSplitPath(k)
-
-		if inPartMerge && !baseExusted && k > (*baseSlice)[currentBaseTreeIndex].MaxPath {
-			partName, err := copyRemaining()
-			if err != nil {
-				return "", err
-			}
-			newPart := TreePartType{MaxPath: (*baseSlice)[currentBaseTreeIndex].MaxPath,
-				PartName: partName}
-			*newTreeSlice = append(*newTreeSlice, newPart)
-			inPartMerge = false
-			currentBaseTreeIndex++
-			if currentBaseTreeIndex == len(*baseSlice) {
-				baseExusted = true
-			}
-		}
-		if !baseExusted && k > (*baseSlice)[currentBaseTreeIndex].MaxPath {
-			*newTreeSlice = append(*newTreeSlice)
-		}
-		for ; k > (*baseSlice)[currentBaseTreeIndex].MaxPath; currentBaseTreeIndex++ {
-			*newTreeSlice = append(*newTreeSlice, (*baseSlice)[currentBaseTreeIndex])
-		}
-		if len(*baseSlice) > currentBaseTreeIndex {
-
-		}
-		//newPathBaseTreeIndex := findPartNumForPath(baseTree.TreeParts, k)
-		if newPathBaseTreeIndex > currentBaseTreeIndex {
-
-			additionalParts := baseTree
-			copySlice := baseSlice[baseTree]
-		}
-
-		if baseTreeIndex > newTreeIndex-numOfPartsDiff {
-
-		}
-
-	}
-}*/
