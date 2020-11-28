@@ -73,10 +73,6 @@ type Entry struct {
 	ETag         string
 }
 
-func (e *Entry) IsTombstone() bool {
-	return e == nil
-}
-
 // EntryRecord holds Path with the associated Entry information
 type EntryRecord struct {
 	Path Path
