@@ -10,7 +10,6 @@ import (
 // DiffType represents a changed state for a given entry (added, removed, changed, conflict)
 type DiffType uint8
 
-//goland:noinspection GoUnusedConst
 const (
 	DiffTypeAdded DiffType = iota
 	DiffTypeRemoved
