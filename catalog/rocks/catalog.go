@@ -7,7 +7,7 @@ import (
 
 // Basic Types
 
-// DiffType represents a changed state for a given entry (added, removed, changed, conflict)
+// DiffType represents a changed state for a given entry
 type DiffType uint8
 
 const (
@@ -16,6 +16,21 @@ const (
 	DiffTypeChanged
 	DiffTypeConflict
 )
+
+// ReferenceType represents the type of the reference
+type ReferenceType uint8
+
+const (
+	ReferenceTypeCommit ReferenceType = iota
+	ReferenceTypeTag
+	ReferenceTypeBranch
+)
+
+type Reference interface {
+	Type() ReferenceType
+	Branch() Branch
+	CommitID() CommitID
+}
 
 // function/methods receiving the following basic types could assume they passed validation
 type (
@@ -147,9 +162,6 @@ type Catalog interface {
 	// GetBranch gets branch information by branch / repository id
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
 
-	// Dereference translates ref to commit id
-	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
-
 	// Log lists commits in repository
 	//   The 'from' is used to get all commits after the specified commit id
 	//   The 'amount' specifies the maximum number of commits the call will return
@@ -260,8 +272,8 @@ type RefManager interface {
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
-	// Dereference translates Ref to the corresponding CommitID
-	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
+	// RevParse returns the Reference matching the given Ref
+	RevParse(ctx context.Context, repositoryID RepositoryID, ref Ref) (Reference, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
