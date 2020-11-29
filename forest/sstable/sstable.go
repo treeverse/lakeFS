@@ -39,7 +39,7 @@ type WriteResult struct {
 // Written entries must be sorted by path.
 type Writer interface {
 	// WriteEntry appends the given entry to the SSTable
-	WriteEntry(path rocks.Path, entry rocks.Entry) error
+	WriteEntry(entry rocks.EntryRecord) error
 
 	// Close flushes all entries to the disk and returns the WriteResult.
 	Close() (*WriteResult, error)
