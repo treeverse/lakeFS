@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Recommended Branching Models
+description: The brnaching modles listed below are often used to help improve organization's data developmet and CI/CD 
 parent: Branching Model
 has_children: false
 nav_order: 2

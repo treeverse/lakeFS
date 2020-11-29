@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Authentication & Authorization
+description: This section covers authorization (using AWS IAM) and Authentication of your lakeFS server. 
 parent: Reference
 nav_order: 4
 has_children: false

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Licensing
+description: lakeFS is an open source project under the Apache 2.0 license. As a commercial organization, we intend to use an open core model.
 nav_order: 13
 has_children: false
 ---

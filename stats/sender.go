@@ -62,10 +62,6 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 }
 
 func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
-	if len(installationID) == 0 {
-		return ErrNoInstallationID
-	}
-
 	event := &InputEvent{
 		InstallationID: installationID,
 		ProcessID:      processID,

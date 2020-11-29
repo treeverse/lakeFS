@@ -1,6 +1,7 @@
 ---
 layout: default
 title: FAQ
+description: Frequently Asked Questions (FAQ). Have a question about lakeFS? Find our what others where asking
 nav_order: 11
 has_children: false
 ---

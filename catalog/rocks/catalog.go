@@ -10,7 +10,6 @@ import (
 // DiffType represents a changed state for a given entry (added, removed, changed, conflict)
 type DiffType uint8
 
-//goland:noinspection GoUnusedConst
 const (
 	DiffTypeAdded DiffType = iota
 	DiffTypeRemoved
@@ -49,6 +48,9 @@ type (
 
 	// CommonPrefix represents a path prefixing one or more Entry objects
 	CommonPrefix string
+
+	// Metadata key/value strings to holds metadata information on entry and commit
+	Metadata map[string]string
 )
 
 // Repository represents repository metadata
@@ -67,12 +69,8 @@ type RepositoryRecord struct {
 type Entry struct {
 	LastModified time.Time
 	Address      string
-	Metadata     map[string]string
+	Metadata     Metadata
 	ETag         string
-}
-
-func (e *Entry) IsTombstone() bool {
-	return e == nil
 }
 
 // EntryRecord holds Path with the associated Entry information
@@ -124,28 +122,69 @@ type Diff struct {
 
 // Interfaces
 type Catalog interface {
-	// entries
+	// GetEntry returns entry from repository / reference by path, nil entry is a valid value for tombstone
+	// returns error if entry does not exist
 	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
+
+	// SetEntry stores entry on repository / branch by path. nil entry is a valid value for tombstone
 	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry Entry) error
+
+	// DeleteEntry deletes entry on repository / branch by path
 	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
+
+	// ListEntries lists entries on repository / ref will filter by prefix, from path 'from'.
+	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
+	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
+	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last path from the previous call.
 	ListEntries(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter string, amount int) ([]Listing, bool, error)
 
-	// refs
+	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
+
+	// UpdateBranch updates branch on repository pointing to ref
+	UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
+
+	// GetBranch gets branch information by branch / repository id
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
+
+	// Dereference translates ref to commit id
 	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
-	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID, amount int) ([]Commit, bool, error)
+
+	// Log lists commits in repository
+	//   The 'from' is used to get all commits after the specified commit id
+	//   The 'amount' specifies the maximum number of commits the call will return
+	// 	 Returns commits, has more boolean and an error
+	Log(ctx context.Context, repositoryID RepositoryID, from CommitID, amount int) ([]Commit, bool, error)
+
+	// ListBranches lists branches on repositories
+	//   The 'from' is used to get all branches after this branch id
+	//   The 'amount' specifies the maximum number of branches the call will return
+	//   Returns branches, has more boolean and an error
 	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID, amount int) ([]Branch, bool, error)
+
+	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
-	// commits
-	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error)
-	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
-	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) error
+	// Commit the staged data and returns a commit ID that references that change
+	//   ErrNothingToCommit in case there is no data in stage
+	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error)
 
-	// diffs and merges
+	// Reset throw all staged data on the repository / branch
+	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
+
+	// Revert commits a change that will revert all the changes make from 'ref' specified
+	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error)
+
+	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
+
+	// DiffUncommitted returns the changes as 'Diff' slice on a repository / branch
+	//   List the differences 'from' path, with 'amount' of result.
+	//   Returns differences found, true (boolean) in case there are more differences - use 'from' with last path from previous call to get the next differences
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Path, amount int) ([]Diff, bool, error)
+
+	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' path with no more than 'amount' per call.
+	//   Returns the list of changes, true (boolean) in case there are more differences - use last path as 'from' in the next call to continue getting differences
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Path, amount int) ([]Diff, bool, error)
 }
 

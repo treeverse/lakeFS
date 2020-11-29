@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Load Balancing and DNS
+description: Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.
 parent: AWS Deployment
 nav_order: 25
 has_children: false

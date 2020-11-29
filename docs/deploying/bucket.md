@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Configuring the S3 bucket
+description: For information on configuring the S3 bucket to provide the data storage layer for our installation. 
 parent: AWS Deployment
 nav_order: 15
 has_children: false
