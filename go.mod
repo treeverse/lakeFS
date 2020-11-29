@@ -10,7 +10,6 @@ require (
 	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
-	github.com/cockroachdb/pebble v0.0.0-20201119153812-62f2e316b532
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
@@ -79,6 +78,7 @@ require (
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
+	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
