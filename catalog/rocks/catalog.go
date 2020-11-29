@@ -7,9 +7,8 @@ import (
 
 // Basic Types
 
-// DiffType represents a changed state for a given entry (added, removed, changed, conflict)
+// DiffType represents a changed state for a given entry
 type DiffType uint8
-type ReferenceType uint8
 
 const (
 	DiffTypeAdded DiffType = iota
@@ -17,6 +16,9 @@ const (
 	DiffTypeChanged
 	DiffTypeConflict
 )
+
+// ReferenceType represents the type of the reference
+type ReferenceType uint8
 
 const (
 	ReferenceTypeCommit ReferenceType = iota
