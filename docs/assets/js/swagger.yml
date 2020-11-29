@@ -2048,7 +2048,7 @@ paths:
         - export
         - branches
       operationId: repair
-      summary: mark failed export as repaired
+      summary: set continuous export state as repaired
       responses:
         201:
           description: continuous export status successfully changed to repaired
@@ -2163,3 +2163,4 @@ paths:
             $ref: "#/definitions/config"
         401:
           $ref: "#/responses/Unauthorized"
+

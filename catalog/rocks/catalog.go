@@ -2,6 +2,9 @@ package rocks
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"regexp"
 	"time"
 )
 
@@ -9,6 +12,7 @@ import (
 
 // DiffType represents a changed state for a given entry (added, removed, changed, conflict)
 type DiffType uint8
+type ReferenceType uint8
 
 const (
 	DiffTypeAdded DiffType = iota
@@ -16,6 +20,18 @@ const (
 	DiffTypeChanged
 	DiffTypeConflict
 )
+
+const (
+	ReferenceTypeCommit ReferenceType = iota
+	ReferenceTypeTag
+	ReferenceTypeBranch
+)
+
+type Reference interface {
+	Type() ReferenceType
+	Branch() Branch
+	CommitID() CommitID
+}
 
 // function/methods receiving the following basic types could assume they passed validation
 type (
@@ -71,6 +87,7 @@ type Entry struct {
 	Address      string
 	Metadata     Metadata
 	ETag         string
+	Size         int64
 }
 
 // EntryRecord holds Path with the associated Entry information
@@ -122,6 +139,19 @@ type Diff struct {
 
 // Interfaces
 type Catalog interface {
+	// GetRepository returns the Repository metadata object for the given RepositoryID
+	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
+
+	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, stoargeNamespace StorageNamespace, branchID BranchID) (*Repository, error)
+
+	// ListRepositories lists repositories starting with 'from' returns maximum 'amount' results and true (boolean)
+	// in case more results exist
+	ListRepositories(ctx context.Context, from RepositoryID, amount int) ([]RepositoryRecord, bool, error)
+
+	// DeleteRepository deletes the repository
+	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+
 	// GetEntry returns entry from repository / reference by path, nil entry is a valid value for tombstone
 	// returns error if entry does not exist
 	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
@@ -147,9 +177,6 @@ type Catalog interface {
 	// GetBranch gets branch information by branch / repository id
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
 
-	// Dereference translates ref to commit id
-	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
-
 	// Log lists commits in repository
 	//   The 'from' is used to get all commits after the specified commit id
 	//   The 'amount' specifies the maximum number of commits the call will return
@@ -168,6 +195,12 @@ type Catalog interface {
 	// Commit the staged data and returns a commit ID that references that change
 	//   ErrNothingToCommit in case there is no data in stage
 	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error)
+
+	// GetCommit returns the Commit metadata object for the given CommitID
+	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
+
+	// Dereference returns the commit ID based on 'ref' reference
+	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
 
 	// Reset throw all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -260,8 +293,8 @@ type RefManager interface {
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
-	// Dereference translates Ref to the corresponding CommitID
-	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
+	// RevParse returns the Reference matching the given Ref
+	RevParse(ctx context.Context, repositoryID RepositoryID, ref Ref) (Reference, error)
 
 	// GetBranch returns the Branch metadata object for the given BranchID
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
@@ -335,4 +368,82 @@ type StagingManager interface {
 
 	// ListSnapshot returns an iterator to scan the snapshot entries
 	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
+}
+
+var (
+	reValidBranchID     = regexp.MustCompile(`^\w[-\w]*$`)
+	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
+)
+
+// Catalog errors
+var (
+	ErrNotFound                = errors.New("not found")
+	ErrInvalidValue            = errors.New("invalid value")
+	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace %w", ErrInvalidValue)
+	ErrInvalidRepositoryID     = fmt.Errorf("repository id %w", ErrInvalidValue)
+	ErrInvalidBranchID         = fmt.Errorf("branch id %w", ErrInvalidValue)
+	ErrInvalidRef              = fmt.Errorf("ref %w", ErrInvalidValue)
+	ErrCommitNotFound          = fmt.Errorf("commit %w", ErrNotFound)
+)
+
+func NewRepositoryID(id string) (RepositoryID, error) {
+	if !reValidRepositoryID.MatchString(id) {
+		return "", ErrInvalidRepositoryID
+	}
+	return RepositoryID(id), nil
+}
+
+func (id RepositoryID) String() string {
+	return string(id)
+}
+
+func NewStorageNamespace(ns string) (StorageNamespace, error) {
+	if ns == "" {
+		return "", ErrInvalidStorageNamespace
+	}
+	return StorageNamespace(ns), nil
+}
+
+func (ns StorageNamespace) String() string {
+	return string(ns)
+}
+
+func NewBranchID(id string) (BranchID, error) {
+	if !reValidBranchID.MatchString(id) {
+		return "", ErrInvalidBranchID
+	}
+	return BranchID(id), nil
+}
+
+func (id BranchID) String() string {
+	return string(id)
+}
+
+func NewRef(id string) (Ref, error) {
+	// TODO(barak): check with git what is a valid ref value
+	if !reValidBranchID.MatchString(id) {
+		return "", ErrInvalidRef
+	}
+	return Ref(id), nil
+}
+
+func (id Ref) String() string {
+	return string(id)
+}
+
+func NewPath(id string) (Path, error) {
+	// TODO(barak): do we like to check for empty value or valid utf-8?
+	return Path(id), nil
+}
+
+func (id Path) String() string {
+	return string(id)
+}
+
+func NewCommitID(id string) (CommitID, error) {
+	return CommitID(id), nil
+}
+
+func (id CommitID) String() string {
+	return string(id)
 }
