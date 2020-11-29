@@ -2,10 +2,14 @@ package rocks
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/treeverse/lakefs/uri"
 )
 
 // Basic Types
@@ -385,6 +389,7 @@ var (
 	ErrInvalidRepositoryID     = fmt.Errorf("repository id %w", ErrInvalidValue)
 	ErrInvalidBranchID         = fmt.Errorf("branch id %w", ErrInvalidValue)
 	ErrInvalidRef              = fmt.Errorf("ref %w", ErrInvalidValue)
+	ErrInvalidCommitID         = fmt.Errorf("commit id %w", ErrInvalidValue)
 	ErrCommitNotFound          = fmt.Errorf("commit %w", ErrNotFound)
 )
 
@@ -400,7 +405,8 @@ func (id RepositoryID) String() string {
 }
 
 func NewStorageNamespace(ns string) (StorageNamespace, error) {
-	if ns == "" {
+	u, err := uri.Parse(ns)
+	if err != nil || u.Protocol == "" {
 		return "", ErrInvalidStorageNamespace
 	}
 	return StorageNamespace(ns), nil
@@ -422,8 +428,7 @@ func (id BranchID) String() string {
 }
 
 func NewRef(id string) (Ref, error) {
-	// TODO(barak): check with git what is a valid ref value
-	if !reValidBranchID.MatchString(id) {
+	if id == "" || strings.ContainsAny(id, " \t\r\n") {
 		return "", ErrInvalidRef
 	}
 	return Ref(id), nil
@@ -434,7 +439,6 @@ func (id Ref) String() string {
 }
 
 func NewPath(id string) (Path, error) {
-	// TODO(barak): do we like to check for empty value or valid utf-8?
 	return Path(id), nil
 }
 
@@ -443,6 +447,10 @@ func (id Path) String() string {
 }
 
 func NewCommitID(id string) (CommitID, error) {
+	_, err := hex.DecodeString(id)
+	if err != nil {
+		return "", ErrInvalidCommitID
+	}
 	return CommitID(id), nil
 }
 
