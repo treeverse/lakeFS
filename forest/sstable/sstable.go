@@ -12,8 +12,8 @@ type Manager interface {
 	// If path not found, (nil, ErrPathNotFound) is returned.
 	GetEntry(path rocks.Path, tid SSTableID) (*rocks.Entry, error)
 
-	// SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-	SSTableIterator(tid SSTableID, from rocks.Path) (rocks.EntryIterator, error)
+	// NewSSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
+	NewSSTableIterator(tid SSTableID, from rocks.Path) (rocks.EntryIterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)
@@ -42,9 +42,5 @@ type Writer interface {
 	WriteEntry(path rocks.Path, entry rocks.Entry) error
 
 	// Close flushes all entries to the disk and returns the WriteResult.
-	Close() error
-
-	// Result returns the sstable statistics for the table.
-	// If table isn't closed yet and there are more pending writes, result is bound to change.
-	Result() WriteResult
+	Close() (*WriteResult, error)
 }
