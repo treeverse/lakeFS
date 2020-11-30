@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/db"
 )
 
