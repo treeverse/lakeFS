@@ -2,11 +2,17 @@ package rocks
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
+
+	"github.com/treeverse/lakefs/catalog"
+
 	"time"
 
 	"github.com/treeverse/lakefs/uri"
@@ -59,6 +65,9 @@ type (
 	// CommitID is a content addressable hash representing a Commit object
 	CommitID string
 
+	// CommitParents
+	CommitParents []CommitID
+
 	// BranchID is an identifier for a branch
 	BranchID string
 
@@ -77,13 +86,13 @@ type (
 
 // Repository represents repository metadata
 type Repository struct {
-	StorageNamespace StorageNamespace
-	CreationDate     time.Time
-	DefaultBranchID  BranchID
+	StorageNamespace StorageNamespace `db:"storage_namespace"`
+	CreationDate     time.Time        `db:"creation_date"`
+	DefaultBranchID  BranchID         `db:"default_branch"`
 }
 
 type RepositoryRecord struct {
-	RepositoryID RepositoryID
+	RepositoryID RepositoryID `db:"id"`
 	*Repository
 }
 
@@ -104,17 +113,50 @@ type EntryRecord struct {
 
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
-	Committer    string
-	Message      string
-	TreeID       TreeID
-	CreationDate time.Time
-	Parents      []CommitID
-	Metadata     map[string]string
+	Committer    string           `db:"committer"`
+	Message      string           `db:"message"`
+	TreeID       TreeID           `db:"tree_id"`
+	CreationDate time.Time        `db:"creation_date"`
+	Parents      CommitParents    `db:"parents"`
+	Metadata     catalog.Metadata `db:"metadata"`
+}
+
+func (c Commit) ID() CommitID {
+	// TODO(ozkatz): move the hashing logic and encoding to a module others can use
+	h := sha256.New()
+	h.Write([]byte(c.Committer))
+	h.Write([]byte{0})
+	h.Write([]byte(c.Message))
+	h.Write([]byte{0})
+	h.Write([]byte(c.TreeID))
+	h.Write([]byte{0})
+	binary.Write(h, binary.BigEndian, c.CreationDate.Unix())
+	h.Write([]byte{0})
+	for _, p := range c.Parents {
+		h.Write([]byte(p))
+		h.Write([]byte{0})
+	}
+	if c.Metadata != nil {
+		keys := make([]string, len(c.Metadata))
+		i := 0
+		for k, _ := range c.Metadata {
+			keys[i] = k
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			h.Write([]byte(k))
+			h.Write([]byte{0})
+			h.Write([]byte(c.Metadata[k]))
+			h.Write([]byte{0})
+		}
+	}
+	sum := h.Sum(nil)
+	return CommitID(hex.EncodeToString(sum))
 }
 
 // CommitRecords holds CommitID with the associated Commit data
 type CommitRecord struct {
-	CommitID CommitID
+	CommitID CommitID `db:"id"`
 	*Commit
 }
 
@@ -314,7 +356,9 @@ type RefManager interface {
 	// ListBranches lists branches
 	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
-	// GetCommit returns the Commit metadata object for the given CommitID
+	// GetCommit returns the Commit metadata object for the given CommitID.
+	// The given CommitID may be arbitrarily truncated and should return a valid commit as long
+	// as results are not ambiguous
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
