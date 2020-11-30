@@ -5,27 +5,76 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/logging"
 )
 
-type cataloger struct{}
+type cataloger struct {
+	Catalog      Catalog
+	log          logging.Logger
+	dummyDedupCh chan *catalog.DedupReport
+	hooks        catalog.CatalogerHooks
+}
 
 func NewCataloger() catalog.Cataloger {
-	return &cataloger{}
+	return &cataloger{
+		log:          logging.Default(),
+		dummyDedupCh: make(chan *catalog.DedupReport),
+	}
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*catalog.Repository, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return nil, err
+	}
+	storageNS, err := NewStorageNamespace(storageNamespace)
+	if err != nil {
+		return nil, err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := c.Catalog.CreateRepository(ctx, repositoryID, storageNS, branchID)
+	if err != nil {
+		return nil, err
+	}
+	catalogRepo := &catalog.Repository{
+		Name:             repositoryID.String(),
+		StorageNamespace: storageNS.String(),
+		DefaultBranch:    branchID.String(),
+		CreationDate:     repo.CreationDate,
+	}
+	return catalogRepo, nil
 }
 
 // GetRepository get repository information
 func (c *cataloger) GetRepository(ctx context.Context, repository string) (*catalog.Repository, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := c.Catalog.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	catalogRepository := &catalog.Repository{
+		Name:             repositoryID.String(),
+		StorageNamespace: repo.StorageNamespace.String(),
+		DefaultBranch:    repo.DefaultBranchID.String(),
+		CreationDate:     repo.CreationDate,
+	}
+	return catalogRepository, nil
 }
 
 // DeleteRepository delete a repository
 func (c *cataloger) DeleteRepository(ctx context.Context, repository string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	return c.Catalog.DeleteRepository(ctx, repositoryID)
 }
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
@@ -35,11 +84,48 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 }
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*catalog.CommitLog, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return nil, err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return nil, err
+	}
+	sourceRef, err := NewRef(sourceBranch)
+	if err != nil {
+		return nil, err
+	}
+	newBranch, err := c.Catalog.CreateBranch(ctx, repositoryID, branchID, sourceRef)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := c.Catalog.GetCommit(ctx, repositoryID, newBranch.CommitID)
+	if err != nil {
+		return nil, err
+	}
+	catalogCommitLog := &catalog.CommitLog{
+		Reference: newBranch.CommitID.String(),
+		Committer: commit.Committer,
+		Message:   commit.Message,
+		Metadata:  commit.Metadata,
+	}
+	for _, parent := range commit.Parents {
+		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
+	}
+	return catalogCommitLog, nil
 }
 
 func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	return c.Catalog.DeleteBranch(ctx, repositoryID, branchID)
 }
 
 func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*catalog.Branch, bool, error) {
@@ -47,11 +133,32 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 }
 
 func (c *cataloger) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return false, err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return false, err
+	}
+	_, err = c.Catalog.GetBranch(ctx, repositoryID, branchID)
+	return err != nil, err
 }
 
 func (c *cataloger) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return "", err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return "", err
+	}
+	b, err := c.Catalog.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return "", err
+	}
+	return string(b.CommitID), nil
 }
 
 func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch string) error {
@@ -60,20 +167,97 @@ func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch s
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
-func (c *cataloger) GetEntry(ctx context.Context, repository string, reference string, path string, params catalog.GetEntryParams) (*catalog.Entry, error) {
-	panic("not implemented") // TODO: Implement
+func (c *cataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ catalog.GetEntryParams) (*catalog.Entry, error) {
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return nil, err
+	}
+	ref, err := NewRef(reference)
+	if err != nil {
+		return nil, err
+	}
+	p, err := NewPath(path)
+	if err != nil {
+		return nil, err
+	}
+	ent, err := c.Catalog.GetEntry(ctx, repositoryID, ref, p)
+	if err != nil {
+		return nil, err
+	}
+	catalogEntry := &catalog.Entry{
+		Path:            p.String(),
+		PhysicalAddress: ent.Address,
+		CreationDate:    ent.LastModified,
+		Size:            ent.Size,
+		Checksum:        ent.ETag,
+		Metadata:        map[string]string(ent.Metadata),
+	}
+	return catalogEntry, nil
 }
 
-func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, params catalog.CreateEntryParams) error {
-	panic("not implemented") // TODO: Implement
+func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, _ catalog.CreateEntryParams) error {
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	p, err := NewPath(entry.Path)
+	if err != nil {
+		return err
+	}
+	ent := Entry{
+		Address:  entry.PhysicalAddress,
+		Metadata: map[string]string(entry.Metadata),
+		ETag:     entry.Checksum,
+		Size:     entry.Size,
+	}
+	return c.Catalog.SetEntry(ctx, repositoryID, branchID, p, ent)
 }
 
 func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []catalog.Entry) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		p, err := NewPath(entry.Path)
+		if err != nil {
+			return err
+		}
+		ent := Entry{
+			Address:  entry.PhysicalAddress,
+			Metadata: map[string]string(entry.Metadata),
+			ETag:     entry.Checksum,
+			Size:     entry.Size,
+		}
+		if err := c.Catalog.SetEntry(ctx, repositoryID, branchID, p, ent); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	p, err := NewPath(path)
+	if err != nil {
+		return err
+	}
+	return c.Catalog.DeleteEntry(ctx, repositoryID, branchID, p)
 }
 
 func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
@@ -119,7 +303,7 @@ func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, reposi
 }
 
 func (c *cataloger) DedupReportChannel() chan *catalog.DedupReport {
-	panic("not implemented") // TODO: Implement
+	return c.dummyDedupCh
 }
 
 func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string, uploadID string, path string, physicalAddress string, creationTime time.Time) error {
@@ -135,11 +319,64 @@ func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string
 }
 
 func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return nil, err
+	}
+	branchID, err := NewBranchID(branch)
+	if err != nil {
+		return nil, err
+	}
+	commitID, err := c.Catalog.Commit(ctx, repositoryID, branchID, committer, message, map[string]string(metadata))
+	if err != nil {
+		return nil, err
+	}
+	catalogCommitLog := &catalog.CommitLog{
+		Reference: commitID.String(),
+		Committer: committer,
+		Message:   message,
+		Metadata:  metadata,
+	}
+	// in order to return commit log we need the commit creation time and parents
+	commit, err := c.Catalog.GetCommit(ctx, repositoryID, commitID)
+	if err != nil {
+		return catalogCommitLog, ErrCommitNotFound
+	}
+	for _, parent := range commit.Parents {
+		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
+	}
+	catalogCommitLog.CreationDate = commit.CreationDate
+	return catalogCommitLog, nil
 }
 
 func (c *cataloger) GetCommit(ctx context.Context, repository string, reference string) (*catalog.CommitLog, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := NewRepositoryID(repository)
+	if err != nil {
+		return nil, err
+	}
+	ref, err := NewRef(reference)
+	if err != nil {
+		return nil, err
+	}
+	commitID, err := c.Catalog.Dereference(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := c.Catalog.GetCommit(ctx, repositoryID, commitID)
+	if err != nil {
+		return nil, err
+	}
+	catalogCommitLog := &catalog.CommitLog{
+		Reference:    ref.String(),
+		Committer:    commit.Committer,
+		Message:      commit.Message,
+		CreationDate: commit.CreationDate,
+		Metadata:     commit.Metadata,
+	}
+	for _, parent := range commit.Parents {
+		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
+	}
+	return catalogCommitLog, nil
 }
 
 func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
@@ -163,7 +400,7 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 }
 
 func (c *cataloger) Hooks() *catalog.CatalogerHooks {
-	panic("not implemented") // TODO: Implement
+	return &c.hooks
 }
 
 func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (catalog.ExportConfiguration, error) {
@@ -188,5 +425,6 @@ func (c *cataloger) GetExportState(repo string, branch string) (catalog.ExportSt
 }
 
 func (c *cataloger) Close() error {
-	panic("not implemented") // TODO: Implement
+	close(c.dummyDedupCh)
+	return nil
 }
