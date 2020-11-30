@@ -10,7 +10,7 @@ type evictionControl struct {
 	cache *ristretto.Cache
 }
 
-func newEvictionControl(capacity, estimatedFileSize int64, evict func(filename string)) (*evictionControl, error) {
+func newEvictionControl(capacity, estimatedFileSize int64, evict func(rPath relativePath)) (*evictionControl, error) {
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 10 * capacity / estimatedFileSize,
 		MaxCost:     capacity,
@@ -25,17 +25,17 @@ func newEvictionControl(capacity, estimatedFileSize int64, evict func(filename s
 	}, nil
 }
 
-func onEvict(evict func(localpath string)) func(uint64, uint64, interface{}, int64) {
+func onEvict(evict func(rPath relativePath)) func(uint64, uint64, interface{}, int64) {
 	return func(_, _ uint64, value interface{}, _ int64) {
-		evict(value.(string))
+		evict(value.(relativePath))
 	}
 }
 
 // touch updates last access time for the file
-func (am *evictionControl) touch(localpath string) {
-	am.cache.Get(localpath)
+func (am *evictionControl) touch(rPath relativePath) {
+	am.cache.Get(rPath)
 }
 
-func (am *evictionControl) store(localpath string, filesize int64) {
-	am.cache.Set(localpath, localpath, filesize)
+func (am *evictionControl) store(rPath relativePath, filesize int64) {
+	am.cache.Set(rPath, rPath, filesize)
 }

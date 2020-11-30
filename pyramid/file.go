@@ -7,19 +7,19 @@ type File struct {
 	fh     *os.File
 	access *evictionControl
 
-	localpath string
+	rPath relativePath
 
 	close func(size int64) error
 	size  int64
 }
 
 func (f *File) Read(p []byte) (n int, err error) {
-	f.access.touch(f.localpath)
+	f.access.touch(f.rPath)
 	return f.fh.Read(p)
 }
 
 func (f *File) ReadAt(p []byte, off int64) (n int, err error) {
-	f.access.touch(f.localpath)
+	f.access.touch(f.rPath)
 	return f.fh.ReadAt(p, off)
 }
 
