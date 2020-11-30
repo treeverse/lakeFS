@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api"
+	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
@@ -90,6 +92,28 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
+func upload(client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
+	var fp io.Reader
+	if strings.EqualFold(sourcePathname, "-") {
+		// upload from stdin
+		fp = os.Stdin
+	} else {
+		file, err := os.Open(sourcePathname)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			_ = file.Close()
+		}()
+		fp = file
+	}
+
+	// read
+	stat, err := client.UploadObject(context.Background(), destURI.Repository, destURI.Ref, destURI.Path, fp)
+
+	return stat, err
+}
+
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
@@ -101,23 +125,7 @@ var fsUploadCmd = &cobra.Command{
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
 		source, _ := cmd.Flags().GetString("source")
-		var fp io.Reader
-		if strings.EqualFold(source, "-") {
-			// upload from stdin
-			fp = os.Stdin
-		} else {
-			file, err := os.Open(source)
-			if err != nil {
-				DieErr(err)
-			}
-			defer func() {
-				_ = file.Close()
-			}()
-			fp = file
-		}
-
-		// read
-		stat, err := client.UploadObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, fp)
+		stat, err := upload(client, source, pathURI)
 		if err != nil {
 			DieErr(err)
 		}
@@ -158,5 +166,6 @@ func init() {
 	fsCmd.AddCommand(fsRmCmd)
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
+	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 }
