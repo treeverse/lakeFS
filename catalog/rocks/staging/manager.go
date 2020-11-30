@@ -27,7 +27,7 @@ func (p *Manager) GetEntry(ctx context.Context, st rocks.StagingToken, path rock
 		entry := &rocks.Entry{}
 		err := tx.Get(entry, "SELECT address, last_modified_date, size, checksum, metadata FROM staging_entries WHERE staging_token=$1 AND path=$2", st, path)
 		return entry, err
-	}, p.txOpts(ctx)...)
+	}, p.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (p *Manager) listEntries(ctx context.Context, st rocks.StagingToken, from r
 		err := tx.Select(&res, "SELECT path, address, last_modified_date, size, checksum, metadata "+
 			"FROM staging_entries WHERE staging_token=$1 AND path >= $2 ORDER BY path LIMIT $3", st, from, limit+1)
 		return res, err
-	}, p.txOpts(ctx)...)
+	}, p.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return nil, err
 	}
