@@ -28,11 +28,11 @@ func TestStagingSetGet(t *testing.T) {
 	}
 	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("abcdef1111"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	entry, err := s.GetEntry(context.Background(), "t1", "a/b/c")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	if entry.Address != "abcdef1111" {
 		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", entry.Address)
@@ -47,29 +47,29 @@ func TestMultiToken(t *testing.T) {
 	}
 	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("abcdef1111"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	e, err := s.GetEntry(context.Background(), "t1", "a/b/c")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	if e.Address != "abcdef1111" {
 		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", e.Address)
 	}
 	err = s.SetEntry(context.Background(), "t2", "a/b/c", entry("jfsadkjfksd"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	e, err = s.GetEntry(context.Background(), "t1", "a/b/c")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	if e.Address != "abcdef1111" {
 		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", e.Address)
 	}
 	e, err = s.GetEntry(context.Background(), "t2", "a/b/c")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	if e.Address != "jfsadkjfksd" {
 		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", e.Address)
@@ -82,18 +82,18 @@ func TestDropStaging(t *testing.T) {
 	for i := 0; i < numOfEntries; i++ {
 		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	for i := 0; i < numOfEntries; i++ {
 		err := s.SetEntry(context.Background(), "t2", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	err := s.Drop(context.Background(), "t1")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got unexpected error: %v", err)
 	}
 	e, err := s.GetEntry(context.Background(), "t1", "entry0000")
 	if !errors.Is(err, db.ErrNotFound) {
@@ -119,7 +119,7 @@ func TestStagingList(t *testing.T) {
 	for i := 0; i < numOfEntries; i++ {
 		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	res := make([]*rocks.EntryRecord, 0, numOfEntries)
@@ -146,11 +146,10 @@ func TestSeek(t *testing.T) {
 	for i := 0; i < numOfEntries; i++ {
 		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	it, _ := s.ListEntries(context.Background(), "t1", "")
-
 	if !it.SeekGE("entry0050") {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
@@ -174,6 +173,44 @@ func TestSeek(t *testing.T) {
 	}
 	if !it.Next() {
 		t.Fatal("iterator next expected to return true, got false")
+	}
+}
+
+func TestDeleteAndTombstone(t *testing.T) {
+	s := prepareMgr(t)
+	_, err := s.GetEntry(context.Background(), "t1", "entry1")
+	if !errors.Is(err, db.ErrNotFound) {
+		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
+	}
+	err = s.SetEntry(context.Background(), "t1", "entry1", nil)
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	e, err := s.GetEntry(context.Background(), "t1", "entry1")
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	if e != nil {
+		t.Fatalf("expected nil but got entry: %v", e)
+	}
+	err = s.SetEntry(context.Background(), "t1", "entry1", entry("bababa"))
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	e, err = s.GetEntry(context.Background(), "t1", "entry1")
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	if e.Address != "bababa" {
+		t.Fatalf("got unexpected entry address. expected=%s, got=%s", "bababa", e.Address)
+	}
+	err = s.DeleteEntry(context.Background(), "t1", "entry1")
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	_, err = s.GetEntry(context.Background(), "t1", "entry1")
+	if !errors.Is(err, db.ErrNotFound) {
+		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
 }
 
