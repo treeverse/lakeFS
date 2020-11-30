@@ -23,7 +23,7 @@ func NewPostgresStagingManager(db db.Database) *PostgresStagingManager {
 }
 
 func (p *PostgresStagingManager) GetEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path) (*rocks.Entry, error) {
-	entry, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
+	res, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		entry := &rocks.Entry{}
 		err := tx.Get(entry, "SELECT address, last_modified_date, size, checksum, metadata FROM staging_entries WHERE staging_token=$1 AND path=$2", st, path)
 		return entry, err
@@ -31,10 +31,17 @@ func (p *PostgresStagingManager) GetEntry(ctx context.Context, st rocks.StagingT
 	if err != nil {
 		return nil, err
 	}
-	return entry.(*rocks.Entry), nil
+	entry := res.(*rocks.Entry)
+	if entry.Address == "" {
+		return nil, nil
+	}
+	return entry, nil
 }
 
 func (p *PostgresStagingManager) SetEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path, entry *rocks.Entry) error {
+	if entry == nil {
+		entry = &rocks.Entry{}
+	}
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("INSERT INTO staging_entries"+
 			"(staging_token, path, address, last_modified_date, size, checksum, metadata) "+
