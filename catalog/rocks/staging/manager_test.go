@@ -17,16 +17,16 @@ import (
 func prepareMgr(t *testing.T) rocks.StagingManager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return NewPostgresStagingManager(conn)
+	return NewManager(conn)
 }
 
-func TestStagingSetGet(t *testing.T) {
+func TestSetGet(t *testing.T) {
 	s := prepareMgr(t)
 	_, err := s.GetEntry(context.Background(), "t1", "a/b/c")
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("abcdef1111"))
+	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("addr1"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -34,8 +34,8 @@ func TestStagingSetGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if entry.Address != "abcdef1111" {
-		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", entry.Address)
+	if entry.Address != "addr1" {
+		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", entry.Address)
 	}
 }
 
@@ -45,7 +45,7 @@ func TestMultiToken(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("abcdef1111"))
+	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("addr1"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -53,10 +53,10 @@ func TestMultiToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if e.Address != "abcdef1111" {
-		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", e.Address)
+	if e.Address != "addr1" {
+		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", e.Address)
 	}
-	err = s.SetEntry(context.Background(), "t2", "a/b/c", entry("jfsadkjfksd"))
+	err = s.SetEntry(context.Background(), "t2", "a/b/c", entry("addr2"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -64,29 +64,29 @@ func TestMultiToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if e.Address != "abcdef1111" {
-		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", e.Address)
+	if e.Address != "addr1" {
+		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", e.Address)
 	}
 	e, err = s.GetEntry(context.Background(), "t2", "a/b/c")
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if e.Address != "jfsadkjfksd" {
-		t.Errorf("got wrong entry address. expected=%s, got=%s", "abcdef1111", e.Address)
+	if e.Address != "addr2" {
+		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", e.Address)
 	}
 }
 
-func TestDropStaging(t *testing.T) {
+func TestDrop(t *testing.T) {
 	s := prepareMgr(t)
 	numOfEntries := 1400
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
+		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t2", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
+		err := s.SetEntry(context.Background(), "t2", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -113,11 +113,11 @@ func TestDropStaging(t *testing.T) {
 	}
 }
 
-func TestStagingList(t *testing.T) {
+func TestList(t *testing.T) {
 	s := prepareMgr(t)
 	numOfEntries := 100
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
+		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -144,7 +144,7 @@ func TestSeek(t *testing.T) {
 	s := prepareMgr(t)
 	numOfEntries := 100
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("abcdef1111"))
+		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -193,7 +193,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if e != nil {
 		t.Fatalf("expected nil but got entry: %v", e)
 	}
-	err = s.SetEntry(context.Background(), "t1", "entry1", entry("bababa"))
+	err = s.SetEntry(context.Background(), "t1", "entry1", entry("addr3"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -201,8 +201,8 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if e.Address != "bababa" {
-		t.Fatalf("got unexpected entry address. expected=%s, got=%s", "bababa", e.Address)
+	if e.Address != "addr3" {
+		t.Fatalf("got unexpected entry address. expected=%s, got=%s", "addr3", e.Address)
 	}
 	err = s.DeleteEntry(context.Background(), "t1", "entry1")
 	if err != nil {

@@ -10,19 +10,19 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-type PostgresStagingManager struct {
+type Manager struct {
 	db  db.Database
 	log logging.Logger
 }
 
-func NewPostgresStagingManager(db db.Database) *PostgresStagingManager {
-	return &PostgresStagingManager{
+func NewManager(db db.Database) *Manager {
+	return &Manager{
 		db:  db,
 		log: logging.Default().WithField("service_name", "postgres_staging_manager"),
 	}
 }
 
-func (p *PostgresStagingManager) GetEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path) (*rocks.Entry, error) {
+func (p *Manager) GetEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path) (*rocks.Entry, error) {
 	res, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		entry := &rocks.Entry{}
 		err := tx.Get(entry, "SELECT address, last_modified_date, size, checksum, metadata FROM staging_entries WHERE staging_token=$1 AND path=$2", st, path)
@@ -38,7 +38,7 @@ func (p *PostgresStagingManager) GetEntry(ctx context.Context, st rocks.StagingT
 	return entry, nil
 }
 
-func (p *PostgresStagingManager) SetEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path, entry *rocks.Entry) error {
+func (p *Manager) SetEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path, entry *rocks.Entry) error {
 	if entry == nil {
 		entry = &rocks.Entry{}
 	}
@@ -55,15 +55,15 @@ func (p *PostgresStagingManager) SetEntry(ctx context.Context, st rocks.StagingT
 	return err
 }
 
-func (p *PostgresStagingManager) DeleteEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path) error {
+func (p *Manager) DeleteEntry(ctx context.Context, st rocks.StagingToken, path rocks.Path) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM staging_entries WHERE staging_token=$1 AND path=$2", st, path)
 	}, p.txOpts(ctx)...)
 	return err
 }
 
-func (p *PostgresStagingManager) ListEntries(ctx context.Context, st rocks.StagingToken, from rocks.Path) (rocks.EntryIterator, error) {
-	return NewSnapshotIterator(from, p, ctx, st), nil
+func (p *Manager) ListEntries(ctx context.Context, st rocks.StagingToken, from rocks.Path) (rocks.EntryIterator, error) {
+	return NewIterator(ctx, p, st, from), nil
 }
 
 type listEntriesResult struct {
@@ -72,7 +72,7 @@ type listEntriesResult struct {
 	nextPath rocks.Path
 }
 
-func (p *PostgresStagingManager) listEntries(ctx context.Context, st rocks.StagingToken, from rocks.Path, limit int) (*listEntriesResult, error) {
+func (p *Manager) listEntries(ctx context.Context, st rocks.StagingToken, from rocks.Path, limit int) (*listEntriesResult, error) {
 	queryResult, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var res []*rocks.EntryRecord
 		err := tx.Select(&res, "SELECT path, address, last_modified_date, size, checksum, metadata "+
@@ -97,14 +97,14 @@ func (p *PostgresStagingManager) listEntries(ctx context.Context, st rocks.Stagi
 	}, nil
 }
 
-func (p *PostgresStagingManager) Drop(ctx context.Context, st rocks.StagingToken) error {
+func (p *Manager) Drop(ctx context.Context, st rocks.StagingToken) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM staging_entries WHERE staging_token=$1", st)
 	}, p.txOpts(ctx)...)
 	return err
 }
 
-func (p *PostgresStagingManager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
+func (p *Manager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 	o := []db.TxOpt{
 		db.WithContext(ctx),
 		db.WithLogger(p.log),

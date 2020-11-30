@@ -8,22 +8,22 @@ import (
 
 const batchSize = 1000
 
-type SnapshotIterator struct {
-	buffer      []*rocks.EntryRecord
+type Iterator struct {
+	mgr         *Manager
 	nextFrom    rocks.Path
 	idxInBuffer int
 	err         error
-	mgr         *PostgresStagingManager
 	ctx         context.Context
 	st          rocks.StagingToken
 	dbHasNext   bool
+	buffer      []*rocks.EntryRecord
 }
 
-func NewSnapshotIterator(nextFrom rocks.Path, mgr *PostgresStagingManager, ctx context.Context, st rocks.StagingToken) *SnapshotIterator {
-	return &SnapshotIterator{nextFrom: nextFrom, mgr: mgr, ctx: ctx, st: st, dbHasNext: true}
+func NewIterator(ctx context.Context, mgr *Manager, st rocks.StagingToken, nextFrom rocks.Path) *Iterator {
+	return &Iterator{nextFrom: nextFrom, mgr: mgr, ctx: ctx, st: st, dbHasNext: true}
 }
 
-func (s *SnapshotIterator) Next() bool {
+func (s *Iterator) Next() bool {
 	s.idxInBuffer++
 	if s.idxInBuffer >= len(s.buffer) {
 		if !s.dbHasNext {
@@ -48,7 +48,7 @@ func (s *SnapshotIterator) Next() bool {
 	return true
 }
 
-func (s *SnapshotIterator) SeekGE(path rocks.Path) bool {
+func (s *Iterator) SeekGE(path rocks.Path) bool {
 	s.buffer = nil
 	s.idxInBuffer = 0
 	s.nextFrom = path
@@ -56,13 +56,13 @@ func (s *SnapshotIterator) SeekGE(path rocks.Path) bool {
 	return s.Next()
 }
 
-func (s *SnapshotIterator) Value() *rocks.EntryRecord {
+func (s *Iterator) Value() *rocks.EntryRecord {
 	return s.buffer[s.idxInBuffer]
 }
 
-func (s *SnapshotIterator) Err() error {
+func (s *Iterator) Err() error {
 	return s.err
 }
 
-func (s *SnapshotIterator) Close() {
+func (s *Iterator) Close() {
 }
