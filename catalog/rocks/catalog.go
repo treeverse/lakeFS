@@ -67,15 +67,16 @@ type RepositoryRecord struct {
 
 // Entry represents metadata or a given object (modified date, physical address, etc)
 type Entry struct {
-	LastModified time.Time
-	Address      string
-	Metadata     Metadata
-	ETag         string
+	LastModified time.Time `db:"last_modified_date"`
+	Address      string    `db:"address"`
+	Metadata     Metadata  `db:"metadata"`
+	ETag         string    `db:"checksum"`
+	Size         int64     `db:"size"`
 }
 
 // EntryRecord holds Path with the associated Entry information
 type EntryRecord struct {
-	Path Path
+	Path Path `db:"path"`
 	*Entry
 }
 
@@ -314,25 +315,22 @@ type CommittedManager interface {
 	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, entryIterator EntryIterator) (TreeID, error)
 }
 
-// StagingManager handles changes to a branch that aren't yet committed
+// StagingManager manages entries in a staging area, denoted by a staging token
 // provides basic CRUD abilities, with deletes being written as tombstones (null entry)
 type StagingManager interface {
 	// GetEntry returns the provided path (or nil entry to represent a tombstone)
-	//   Returns ErrNotFound if no entry found on path
-	GetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (*Entry, error)
+	// Returns ErrNotFound if no entry found on path
+	GetEntry(ctx context.Context, st StagingToken, path Path) (*Entry, error)
 
 	// SetEntry writes an entry (or nil entry to represent a tombstone)
-	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry *Entry) error
+	SetEntry(ctx context.Context, st StagingToken, path Path, entry *Entry) error
 
-	// DeleteEntry deletes an entry by path
-	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
+	// DeleteEntry clears the entry from the staging area
+	DeleteEntry(ctx context.Context, st StagingToken, path Path) error
 
-	// ListEntries takes a given BranchID and returns an EntryIterator seeked to >= "from" path
-	ListEntries(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
+	// ListEntries returns an EntryIterator for the given staging token, starting at the first entry with a path >= "from"
+	ListEntries(ctx context.Context, st StagingToken, from Path) (EntryIterator, error)
 
-	// Snapshot returns a new snapshot and returns it's ID
-	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
-
-	// ListSnapshot returns an iterator to scan the snapshot entries
-	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
+	// Drop clears the given staging area
+	Drop(ctx context.Context, st StagingToken) error
 }
