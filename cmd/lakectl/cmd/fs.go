@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -100,28 +101,40 @@ var fsUploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		source, _ := cmd.Flags().GetString("source")
-		var fp io.Reader
-		if strings.EqualFold(source, "-") {
-			// upload from stdin
-			fp = os.Stdin
-		} else {
-			file, err := os.Open(source)
+		pathIsDir := strings.HasSuffix(pathURI.Path, "/")
+		sources, _ := cmd.Flags().GetStringArray("source")
+		if len(sources) > 1 {
+			if !pathIsDir {
+				DieFmt("cannot copy multiple files to %s because it does not end with a slash `/'", args[0])
+			}
+		}
+		for _, source := range sources {
+			var fp io.Reader
+			if strings.EqualFold(source, "-") {
+				// upload from stdin
+				fp = os.Stdin
+			} else {
+				file, err := os.Open(source)
+				if err != nil {
+					DieErr(err)
+				}
+				defer func() {
+					_ = file.Close()
+				}()
+				fp = file
+			}
+
+			// read
+			remotePath := pathURI.Path
+			if pathIsDir {
+				remotePath = path.Join(remotePath, path.Base(source))
+			}
+			stat, err := client.UploadObject(context.Background(), pathURI.Repository, pathURI.Ref, remotePath, fp)
 			if err != nil {
 				DieErr(err)
 			}
-			defer func() {
-				_ = file.Close()
-			}()
-			fp = file
+			Write(fsStatTemplate, stat)
 		}
-
-		// read
-		stat, err := client.UploadObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, fp)
-		if err != nil {
-			DieErr(err)
-		}
-		Write(fsStatTemplate, stat)
 	},
 }
 
@@ -157,6 +170,6 @@ func init() {
 	fsCmd.AddCommand(fsUploadCmd)
 	fsCmd.AddCommand(fsRmCmd)
 
-	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
+	fsUploadCmd.Flags().StringArrayP("source", "s", nil, "local file(s) to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 }
