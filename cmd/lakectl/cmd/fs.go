@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -19,6 +21,11 @@ Modified Time: {{.Mtime|date}}
 Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
 Checksum: {{.Checksum}}
+`
+
+const fsRecursiveTemplate = `Files: {{.Count}}
+Total Size: {{.Bytes}} bytes
+Human Total Size: {{.Bytes|human_bytes}}
 `
 
 var fsStatCmd = &cobra.Command{
@@ -125,11 +132,42 @@ var fsUploadCmd = &cobra.Command{
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
 		source, _ := cmd.Flags().GetString("source")
-		stat, err := upload(client, source, pathURI)
+		recursive, _ := cmd.Flags().GetBool("recursive")
+		if !recursive {
+			stat, err := upload(client, source, pathURI)
+			if err != nil {
+				DieErr(err)
+			}
+			Write(fsStatTemplate, stat)
+			return
+		}
+		// copy recursively
+		var totals struct {
+			Bytes int64
+			Count int64
+		}
+		err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return fmt.Errorf("traverse %s: %w", path, err)
+			}
+			if info.IsDir() {
+				return nil
+			}
+			relPath := strings.TrimPrefix(path, source)
+			uri := *pathURI
+			uri.Path = filepath.Join(uri.Path, relPath)
+			stat, err := upload(client, path, &uri)
+			if err != nil {
+				return fmt.Errorf("upload %s: %w", path, err)
+			}
+			totals.Bytes += stat.SizeBytes
+			totals.Count++
+			return nil
+		})
 		if err != nil {
 			DieErr(err)
 		}
-		Write(fsStatTemplate, stat)
+		Write(fsRecursiveTemplate, totals)
 	},
 }
 
