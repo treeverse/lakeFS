@@ -13,8 +13,8 @@ import (
 // All files are stored in the block storage. Local paths are treated as a
 // cache layer that will be evicted according to the given eviction algorithm.
 type ImmutableTierFS struct {
-	adaptor block.Adapter
-	access  *accessManager
+	adaptor  block.Adapter
+	eviction *evictionControl
 
 	fsName string
 
@@ -25,23 +25,38 @@ type ImmutableTierFS struct {
 const (
 	fsBlockStoragePrefix = "_lakeFS"
 
-	// TODO: to flag
-	localBaseDir = "/local/lakeFS"
+	// TODO: to flags
+	localBaseDir      = "/local/lakeFS"
+	estimatedFilesize = 10 * 1024 * 1024
 )
 
-func NewTierFS(fsName string, adaptor block.Adapter) (FS, error) {
+func NewTierFS(fsName string, adaptor block.Adapter, allocatedDiskSize int64) (FS, error) {
 	fsLocalBaseDir := path.Join(localBaseDir, fsName)
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating base dir: %w", err)
 	}
 
-	return &ImmutableTierFS{
+	// TODO(itai): handle files that exist in dir on start-up:
+	// 1. discover namespaces
+	// 2. fill eviction-control with the files
+
+	tierFS := &ImmutableTierFS{
 		adaptor:        adaptor,
-		access:         newAccessManager(),
 		fsName:         fsName,
 		fsLocalBaseDir: fsLocalBaseDir,
 		remotePrefix:   path.Join(fsBlockStoragePrefix, fsName),
-	}, nil
+	}
+	eviction, err := newEvictionControl(allocatedDiskSize, estimatedFilesize, tierFS.removeFromLocal)
+	if err != nil {
+		return nil, fmt.Errorf("creating eviction control :%w", err)
+	}
+
+	tierFS.eviction = eviction
+	return tierFS, nil
+}
+
+func (tfs *ImmutableTierFS) removeFromLocal(localPath string) {
+	_ = os.Remove(localPath)
 }
 
 // Store adds the local file to the FS.
@@ -73,6 +88,7 @@ func (tfs *ImmutableTierFS) Store(namespace, originalPath, filename string) erro
 		return fmt.Errorf("rename file: %w", err)
 	}
 
+	tfs.eviction.store(filename, stat.Size())
 	return nil
 }
 
@@ -87,15 +103,19 @@ func (tfs *ImmutableTierFS) Create(namespace, filename string) (*File, error) {
 		return nil, fmt.Errorf("creating file: %w", err)
 	}
 
-	tfs.access.addRef(filename)
 	return &File{
-		fh:       fh,
-		filename: filename,
-		access:   tfs.access,
-		close: func(size int64) error {
-			return tfs.adaptor.Put(tfs.objPointer(namespace, filename), size, fh, block.PutOpts{})
-		},
+		fh:        fh,
+		localpath: localpath,
+		access:    tfs.eviction,
+		close:     tfs.adapterStore(namespace, filename, localpath, fh),
 	}, nil
+}
+
+func (tfs *ImmutableTierFS) adapterStore(namespace string, filename string, localpath string, fh *os.File) func(size int64) error {
+	return func(size int64) error {
+		tfs.eviction.store(localpath, size)
+		return tfs.adaptor.Put(tfs.objPointer(namespace, filename), size, fh, block.PutOpts{})
+	}
 }
 
 // Load returns the a file descriptor to the local file.
@@ -104,7 +124,7 @@ func (tfs *ImmutableTierFS) Open(namespace, filename string) (*File, error) {
 	localPath := tfs.localpath(namespace, filename)
 	fh, err := os.Open(localPath)
 	if err == nil {
-		return tfs.openFile(filename, fh)
+		return tfs.openFile(localPath, fh)
 	}
 	if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("open file: %w", err)
@@ -115,15 +135,22 @@ func (tfs *ImmutableTierFS) Open(namespace, filename string) (*File, error) {
 		return nil, err
 	}
 
-	return tfs.openFile(filename, fh)
+	tfs.eviction.touch(localPath)
+	return tfs.openFile(localPath, fh)
 }
 
-func (tfs *ImmutableTierFS) openFile(filename string, fh *os.File) (*File, error) {
-	tfs.access.addRef(filename)
+func (tfs *ImmutableTierFS) openFile(localPath string, fh *os.File) (*File, error) {
+	stat, err := fh.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("file stat: %w", err)
+	}
+
+	tfs.eviction.store(localPath, stat.Size())
+
 	return &File{
-		fh:       fh,
-		filename: filename,
-		access:   tfs.access,
+		fh:        fh,
+		localpath: localPath,
+		access:    tfs.eviction,
 	}, nil
 }
 
