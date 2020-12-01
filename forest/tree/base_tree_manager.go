@@ -48,7 +48,7 @@ func (bm *baseTreeManagerType) getBasePartForPath(path rocks.Path) (*pushBackEnt
 	return newPushbackEntryIterator(basePartIter), p.MaxPath, err
 }
 func (bm *baseTreeManagerType) getPartsForReuse() TreeType {
-	if bm.baseIndex < len(bm.baseTree)-1 { // the apply loop did not reach the last parts of base, they will be reused
+	if bm.baseIndex < len(bm.baseTree)-1 { // the apply loop did not reach the last parts of base, they will be added to reused
 		bm.partsForReuse = append(bm.partsForReuse, bm.baseTree[bm.baseIndex:]...)
 	}
 	return bm.partsForReuse

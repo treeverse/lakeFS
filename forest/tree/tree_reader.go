@@ -12,7 +12,7 @@ import (
 
 var treesRepository TreesRepoType
 
-func InitTreesRepository(manager *sstable.Manager) {
+func InitTreesRepository(manager sstable.Manager) {
 	treesRepository = TreesRepoType{
 		TreesMap:   make(map[rocks.TreeID]TreeContainer, 1000),
 		PartManger: manager,
@@ -21,7 +21,7 @@ func InitTreesRepository(manager *sstable.Manager) {
 
 type treeIterator struct {
 	treeID          rocks.TreeID
-	TreeParts       *TreeType
+	TreeParts       TreeType
 	currentIter     rocks.EntryIterator
 	currentPart     int
 	err             error
@@ -35,10 +35,10 @@ func (trees *TreesRepoType) NewScanner(treeID rocks.TreeID, start rocks.Path) (*
 		return nil, err
 	}
 	partNum := findPartNumForPath(treeSlice, start)
-	if partNum >= len(*treeSlice) {
+	if partNum >= len(treeSlice) {
 		return nil, ErrPathBiggerThanMaxPath
 	}
-	partIterator, err := (*treesRepository.PartManger).NewSSTableIterator((*treeSlice)[partNum].PartName, start)
+	partIterator, err := (treesRepository.PartManger).NewSSTableIterator((treeSlice)[partNum].PartName, start)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (t *treeIterator) SeekGE(start rocks.Path) bool {
 	if partNum != t.currentPart {
 		t.currentPart = partNum
 		t.currentIter.Close()
-		t.currentIter, err = (*t.treesRepository.PartManger).NewSSTableIterator((*t.TreeParts)[partNum].PartName, start)
+		t.currentIter, err = t.treesRepository.PartManger.NewSSTableIterator(t.TreeParts[partNum].PartName, start)
 		if err != nil {
 			t.err = err
 			return false
@@ -68,10 +68,10 @@ func (t *treeIterator) SeekGE(start rocks.Path) bool {
 	return t.currentIter.SeekGE(start)
 }
 
-func findPartNumForPath(tree *TreeType, path rocks.Path) int {
-	n := len(*tree)
+func findPartNumForPath(tree TreeType, path rocks.Path) int {
+	n := len(tree)
 	pos := sort.Search(n, func(i int) bool {
-		return (*tree)[i].MaxPath >= path
+		return tree[i].MaxPath >= path
 	})
 	return pos
 }
@@ -92,12 +92,12 @@ func (t *treeIterator) Next() bool {
 		return false
 	}
 	// assert: the current part end of data. Go to next
-	if t.currentPart >= len(*t.TreeParts)-1 {
+	if t.currentPart >= len(t.TreeParts)-1 {
 		t.closed = true
 		return false
 	}
 	t.currentPart++
-	t.currentIter, err = (*treesRepository.PartManger).NewSSTableIterator((*t.TreeParts)[t.currentPart].PartName, "")
+	t.currentIter, err = treesRepository.PartManger.NewSSTableIterator(t.TreeParts[t.currentPart].PartName, "")
 	if err != nil {
 		t.currentIter.Close()
 		t.closed = true
@@ -138,7 +138,6 @@ func (trees TreesRepoType) loadTreeIfNeeded(treeID rocks.TreeID) (TreeType, erro
 	}
 	t = TreeContainer{
 		treeID,
-		TreeInitialWeight,
 		treeSlice,
 	}
 	trees.TreesMap[treeID] = t
