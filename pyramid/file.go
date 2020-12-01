@@ -1,32 +1,45 @@
 package pyramid
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 // File is pyramid wrapper for os.file that triggers pyramid hooks for file actions.
 type File struct {
-	fh     *os.File
-	access *evictionControl
+	fh       *os.File
+	eviction *lruSizeEviction
 
-	rPath relativePath
+	readOnly bool
+	rPath    relativePath
 
-	close func(size int64) error
-	size  int64
+	store func() error
 }
 
+var ErrReadOnlyFile = errors.New("file is read-only")
+
 func (f *File) Read(p []byte) (n int, err error) {
-	f.access.touch(f.rPath)
+	if !f.readOnly {
+		// file is being written, eviction policies don't apply to it
+		f.eviction.touch(f.rPath)
+	}
 	return f.fh.Read(p)
 }
 
 func (f *File) ReadAt(p []byte, off int64) (n int, err error) {
-	f.access.touch(f.rPath)
+	if !f.readOnly {
+		// file is being written, eviction policies don't apply to it
+		f.eviction.touch(f.rPath)
+	}
 	return f.fh.ReadAt(p, off)
 }
 
 func (f *File) Write(p []byte) (n int, err error) {
-	s, err := f.fh.Write(p)
-	f.size += int64(s)
-	return s, err
+	if f.readOnly {
+		return 0, ErrReadOnlyFile
+	}
+
+	return f.fh.Write(p)
 }
 
 func (f *File) Stat() (os.FileInfo, error) {
@@ -38,11 +51,12 @@ func (f *File) Sync() error {
 }
 
 func (f *File) Close() error {
-	if f.close != nil {
-		if err := f.close(f.size); err != nil {
-			return err
-		}
+	if err := f.fh.Close(); err != nil {
+		return err
 	}
 
-	return f.fh.Close()
+	if f.store == nil {
+		return nil
+	}
+	return f.store()
 }

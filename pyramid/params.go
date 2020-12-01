@@ -3,8 +3,8 @@ package pyramid
 // Params is pyramid.FS params that are identical for all file-systems
 // in a single lakeFS instance.
 type Params struct {
-	// AllocatedSize is the disk size in bytes that lakeFS is allowed to use.
-	AllocatedSize int64
+	// AllocatedBytes is the disk size in bytes that lakeFS is allowed to use.
+	AllocatedBytes int64
 
 	// BaseDir is the local directory where lakeFS app is storing the files.
 	BaseDir string

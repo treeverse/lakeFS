@@ -30,7 +30,7 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultDiskAllocatedSize      = 1 * 1024 * 1024 * 1024
+	DefaultDiskAllocatedBytes     = 1 * 1024 * 1024 * 1024
 	DefaultDiskBaseDir            = "~/lakefs/metadata"
 	DefaultDiskBlockStoragePrefix = "_lakefs"
 
@@ -94,7 +94,7 @@ func setDefaults() {
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
 	viper.SetDefault("blockstore.s3.max_retries", DefaultS3MaxRetries)
 
-	viper.SetDefault("disk.allocated_size", DefaultDiskAllocatedSize)
+	viper.SetDefault("disk.allocated_bytes", DefaultDiskAllocatedBytes)
 	viper.SetDefault("disk.base_dir", DefaultDiskBaseDir)
 	viper.SetDefault("disk.block_storage_prefix", DefaultDiskBlockStoragePrefix)
 
@@ -119,7 +119,7 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 
 func (c *Config) GetLocalDiskParams() pyramid.Params {
 	return pyramid.Params{
-		AllocatedSize:      viper.GetInt64("disk.allocated_size"),
+		AllocatedBytes:     viper.GetInt64("disk.allocated_bytes"),
 		BaseDir:            viper.GetString("disk.base_dir"),
 		BlockStoragePrefix: viper.GetString("disk.block_storage_prefix"),
 	}
