@@ -263,8 +263,6 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
-		c.deps.Collector.CollectEvent("global", "init")
-
 		username := swag.StringValue(setupReq.User.Username)
 		var cred *model.Credential
 		if setupReq.User.Key == nil {
@@ -276,7 +274,13 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
-
+		metadata, err := c.deps.MetadataManager.Write()
+		if err != nil {
+			c.deps.logger.Error("failed to write metadata after setup")
+		} else {
+			c.deps.Collector.SetInstallationID(metadata[auth.InstallationIDKeyName])
+		}
+		c.deps.Collector.CollectEvent("global", "init")
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
