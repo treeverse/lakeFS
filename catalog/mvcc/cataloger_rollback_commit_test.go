@@ -91,8 +91,10 @@ func TestCataloger_RollbackCommit_AfterMerge(t *testing.T) {
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
 
 	// create and commit a file - fileFile
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file1", nil, "")
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file2", nil, "")
+	filenames := []string{"file1", "file2"}
+	for _, filename := range filenames {
+		testCatalogerCreateEntry(t, ctx, c, repository, "master", filename, nil, "")
+	}
 	firstCommit, err := c.Commit(ctx, repository, "master", "first file", "tester", nil)
 	testutil.MustDo(t, "first commit", err)
 
@@ -118,17 +120,14 @@ func TestCataloger_RollbackCommit_AfterMerge(t *testing.T) {
 	err = c.RollbackCommit(ctx, repository, firstCommit.Reference)
 	testutil.MustDo(t, "rollback to first commit", err)
 
-	entries, _, err := c.ListEntries(ctx, repository, "master", "", "", "", -1)
-	testutil.MustDo(t, "list entries on master", err)
-	t.Log("list entries len()=", len(entries), "after revert to commit", firstCommit.Reference)
-	for _, ent := range entries {
-		t.Log("ENT", ent)
-	}
-
 	// check we have our original files
-	_, err = c.GetEntry(ctx, repository, "master", "file1", catalog.GetEntryParams{})
-	testutil.MustDo(t, "get file1 should work", err)
+	for _, filename := range filenames {
+		ent, err := c.GetEntry(ctx, repository, "master", filename, catalog.GetEntryParams{})
+		testutil.MustDo(t, filename+" get should work", err)
 
-	_, err = c.GetEntry(ctx, repository, "master", "file2", catalog.GetEntryParams{})
-	testutil.MustDo(t, "get file2 should work", err)
+		expectedChecksum := testCreateEntryCalcChecksum(filename, t.Name(), "")
+		if expectedChecksum != ent.Checksum {
+			t.Fatalf("Entry file1 after revert checksum %s, expected %s", ent.Checksum, expectedChecksum)
+		}
+	}
 }

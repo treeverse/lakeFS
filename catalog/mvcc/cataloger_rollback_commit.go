@@ -58,7 +58,7 @@ func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference st
 		}
 
 		// update max_commit to infinite
-		_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $1 WHERE branch_id = $2 AND max_commit > $3`,
+		_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $1 WHERE branch_id = $2 AND max_commit >= $3 AND NOT max_commit = $1`,
 			MaxCommitID, branchID, ref.CommitID)
 		if err != nil {
 			return nil, fmt.Errorf("clear entries %d, max commit %d: %w", branchID, ref.CommitID, err)
