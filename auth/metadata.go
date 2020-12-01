@@ -64,13 +64,6 @@ func getInstallationID(tx db.Tx) (string, error) {
 	return installationID, err
 }
 
-func (d *DBMetadataManager) InstallationID() (string, error) {
-	installationID, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return getInstallationID(tx)
-	})
-	return installationID.(string), err
-}
-
 func getSetupTimestamp(tx db.Tx) (time.Time, error) {
 	var value string
 	err := tx.GetPrimitive(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
