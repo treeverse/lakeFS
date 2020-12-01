@@ -46,9 +46,6 @@ func NewMetadata(logger logging.Logger, c *config.Config, authMetadataManager au
 	return res
 }
 
-func WithBlockstoreType(blockstoreType string) {
-
-}
 func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.MetadataProvider {
 	switch c.GetBlockstoreType() {
 	case gs.BlockstoreType:
