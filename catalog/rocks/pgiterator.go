@@ -53,34 +53,32 @@ func (ri *PGRepositoryIterator) Next() bool {
 	// stage a value and increment offset
 	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.RepositoryID)
-	if len(ri.buf) >= 2 {
+	if len(ri.buf) > 1 {
 		ri.buf = ri.buf[1:]
 	} else {
 		ri.buf = make([]*RepositoryRecord, 0)
 	}
 
 	return true
-
 }
 
-func (ri *PGRepositoryIterator) prefetch() bool {
+func (ri *PGRepositoryIterator) prefetch() {
 	if !ri.prefetchRequired {
-		return false
+		return
 	}
 	err := ri.db.WithContext(ri.ctx).Select(&ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
 			FROM kv_repositories
-			WHERE id > $1
+			WHERE id >= $1
 			ORDER BY id ASC
 			LIMIT $2`, ri.offset, ri.prefetchSize)
 	if err != nil {
 		ri.err = err
-		return false
+		return
 	}
 	if len(ri.buf) < ri.prefetchSize {
 		ri.prefetchRequired = false
 	}
-	return len(ri.buf) > 0
 }
 
 func (ri *PGRepositoryIterator) SeekGE(id RepositoryID) bool {
@@ -94,9 +92,13 @@ func (ri *PGRepositoryIterator) SeekGE(id RepositoryID) bool {
 	}
 
 	// stage a value and increment offset
-	ri.value = ri.buf[len(ri.buf)-1]
+	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.RepositoryID)
-	ri.buf = ri.buf[0 : len(ri.buf)-1]
+	if len(ri.buf) > 1 {
+		ri.buf = ri.buf[0 : len(ri.buf)-1]
+	} else {
+		ri.buf = make([]*RepositoryRecord, 0)
+	}
 	return true
 }
 
@@ -151,7 +153,7 @@ func (ri *PGBranchIterator) Next() bool {
 	// stage a value and increment offset
 	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.BranchID)
-	if len(ri.buf) >= 2 {
+	if len(ri.buf) > 1 {
 		ri.buf = ri.buf[1:]
 	} else {
 		ri.buf = make([]*BranchRecord, 0)
@@ -160,9 +162,9 @@ func (ri *PGBranchIterator) Next() bool {
 	return true
 }
 
-func (ri *PGBranchIterator) prefetch() bool {
+func (ri *PGBranchIterator) prefetch() {
 	if !ri.prefetchRequired {
-		return false
+		return
 	}
 	buf := make([]*pgBranchRecord, 0)
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
@@ -174,7 +176,7 @@ func (ri *PGBranchIterator) prefetch() bool {
 			LIMIT $3`, ri.repositoryID, ri.offset, ri.prefetchSize)
 	if err != nil {
 		ri.err = err
-		return false
+		return
 	}
 	if len(buf) < ri.prefetchSize {
 		ri.prefetchRequired = false
@@ -189,7 +191,6 @@ func (ri *PGBranchIterator) prefetch() bool {
 			},
 		}
 	}
-	return len(ri.buf) > 0
 }
 
 func (ri *PGBranchIterator) SeekGE(id BranchID) bool {

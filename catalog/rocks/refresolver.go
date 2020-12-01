@@ -2,6 +2,9 @@ package rocks
 
 import (
 	"context"
+	"errors"
+
+	"github.com/treeverse/lakefs/ident"
 )
 
 type RefStore interface {
@@ -40,12 +43,12 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 	var baseCommit CommitID
 	if isAHash(parsed.BaseRev) {
 		commit, err := store.GetCommit(ctx, repositoryID, CommitID(parsed.BaseRev))
-		if err != nil && err != ErrNotFound {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			// couldn't check if it's a commit
 			return nil, err
 		}
 		if err == nil {
-			baseCommit = commit.ID()
+			baseCommit = CommitID(ident.ContentAddress(commit))
 		}
 		// otherwise, simply not a commit. Moving on.
 	}
@@ -53,7 +56,7 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 	if baseCommit == "" {
 		// check if it's a branch
 		branch, err := store.GetBranch(ctx, repositoryID, BranchID(parsed.BaseRev))
-		if err != nil && err != ErrNotFound {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return nil, err
 		}
 		if err == nil {
@@ -79,7 +82,6 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 		switch mod.Type {
 		case RevModTypeTilde:
 			// skip mod.ValueNumeric iterations
-			//iter := NewCommitIterator(ctx, m.db, repositoryID, baseCommit)
 			iter, err := store.Log(ctx, repositoryID, baseCommit)
 			if err != nil {
 				return nil, err

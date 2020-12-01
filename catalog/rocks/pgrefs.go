@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/treeverse/lakefs/ident"
+
 	"github.com/jackc/pgtype"
 	"github.com/treeverse/lakefs/db"
 )
@@ -161,6 +163,8 @@ func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID Repository
 func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
 	commit, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		records := make([]*CommitRecord, 0)
+		// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
+		// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
 		err := tx.Select(&records, `
 					SELECT id, committer, message, creation_date, parents, tree_id, metadata
 					FROM kv_commits
@@ -202,14 +206,14 @@ func (m *PGRefManager) AddCommit(ctx context.Context, repositoryID RepositoryID,
 				(repository_id, id, committer, message, creation_date, parents, tree_id, metadata)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT DO NOTHING`,
-			repositoryID, commit.ID(), commit.Committer, commit.Message,
+			repositoryID, ident.ContentAddress(commit), commit.Committer, commit.Message,
 			commit.CreationDate, commit.Parents, commit.TreeID, commit.Metadata)
 		return nil, err
 	}, db.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
-	return commit.ID(), err
+	return CommitID(ident.ContentAddress(commit)), err
 }
 
 func (m *PGRefManager) FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error) {

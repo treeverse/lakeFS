@@ -2,14 +2,13 @@ package rocks
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
+
+	"github.com/treeverse/lakefs/ident"
 
 	"github.com/treeverse/lakefs/catalog"
 
@@ -121,37 +120,19 @@ type Commit struct {
 	Metadata     catalog.Metadata `db:"metadata"`
 }
 
-func (c Commit) ID() CommitID {
-	// TODO(ozkatz): move the hashing logic and encoding to a module others can use
-	h := sha256.New()
-	h.Write([]byte(c.Committer))
-	h.Write([]byte{0})
-	h.Write([]byte(c.Message))
-	h.Write([]byte{0})
-	h.Write([]byte(c.TreeID))
-	h.Write([]byte{0})
-	binary.Write(h, binary.BigEndian, c.CreationDate.Unix())
-	h.Write([]byte{0})
+func (c Commit) Identity() []byte {
+	b := ident.NewBuffer()
+	b.WriteString("commit")
+	b.WriteString(c.Committer)
+	b.WriteString(c.Message)
+	b.WriteString(string(c.TreeID))
+	b.WriteInt64(c.CreationDate.Unix())
+	b.WriteStringMap(c.Metadata)
+	b.WriteInt64(int64(len(c.Parents)))
 	for _, p := range c.Parents {
-		h.Write([]byte(p))
-		h.Write([]byte{0})
+		b.WriteString(string(p))
 	}
-	if c.Metadata != nil {
-		keys := make([]string, len(c.Metadata))
-		i := 0
-		for k, _ := range c.Metadata {
-			keys[i] = k
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			h.Write([]byte(k))
-			h.Write([]byte{0})
-			h.Write([]byte(c.Metadata[k]))
-			h.Write([]byte{0})
-		}
-	}
-	sum := h.Sum(nil)
-	return CommitID(hex.EncodeToString(sum))
+	return b.Identity()
 }
 
 // CommitRecords holds CommitID with the associated Commit data
