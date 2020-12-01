@@ -35,7 +35,8 @@ func (bm *baseTreeManagerType) isEndOfBase() bool {
 }
 
 func (bm *baseTreeManagerType) getBasePartForPath(path rocks.Path) (*pushBackEntryIterator, rocks.Path, error) {
-	for bm.baseIndex < len(bm.baseTree) && bm.baseTree[bm.baseIndex].MaxPath < path {
+	for bm.baseIndex < len(bm.baseTree) &&
+		bm.baseTree[bm.baseIndex].MaxPath < path {
 		bm.partsForReuse = append(bm.partsForReuse, bm.baseTree[bm.baseIndex])
 		bm.baseIndex++
 	}
