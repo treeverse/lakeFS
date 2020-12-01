@@ -274,7 +274,6 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
-
 		metadata, err := c.deps.MetadataManager.Write()
 		if err != nil {
 			c.deps.logger.Error("failed to write metadata after setup")

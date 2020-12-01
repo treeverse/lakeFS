@@ -199,9 +199,6 @@ func makeMetrics(counters keyIndex) []Metric {
 func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	if s.installationID == "" {
-		s.installationID = accountMetadata.InstallationID
-	}
 	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
 		logging.Default().
