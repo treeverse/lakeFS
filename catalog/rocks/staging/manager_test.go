@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/treeverse/lakefs/db"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
