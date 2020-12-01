@@ -52,8 +52,9 @@ function scrollToPageOffset(){
   yoffset = 0;
 };
 export const deleteObjectDone = () => {
-    return (
-      scrollToPageOffset;
-      OBJECTS_DELETE.resetAction();
-    );
+    return OBJECTS_DELETE.execute(async () => {
+        resetAction();
+        scrollToPageOffset;
+    });
 };
+
