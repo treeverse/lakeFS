@@ -1,6 +1,6 @@
 import * as api from "./api";
 import {AsyncActionType} from "./request";
-import { Link,  Element, Events, scrollSpy, scroller, animateScroll as scroll } from "react-scroll";
+import { Element, Events, scrollSpy, scroller, animateScroll as scroll } from "react-scroll";
 import * as Scroll from 'react-scroll';
 
 export const PAGINATION_AMOUNT = 300;
@@ -34,30 +34,26 @@ export const uploadDone = () => {
 };
 
 let yoffset = 0;
+function storeScroll(){
+  console.log(window.pageYOffset);
+  yoffset = window.pageYOffset;
+};
+
+function scrollToPageOffset(){
+  scroll.scrollTo(yoffset);
+  yoffset = 0;
+};
 
 export const deleteObject = (repoId, branchId, path) => {
-    constructor(props) {
-      super(props);
-      this.state = {yoffset: 0};
-    }
-    storeScroll = () => {
-      console.log(window.pageYOffset);
-      yoffset = window.pageYOffset;
-      this.setState({yoffset: window.pageYOffset});
-    };
     return OBJECTS_DELETE.execute(async () => {
-        this.storeScroll;
+        storeScroll;
         return await api.objects.delete(repoId, branchId, path);
     });
 };
 
 export const deleteObjectDone = () => {
-    scrollToPageOffset = offset_val => e =>  {
-      scroll.scrollTo(offset_val);
-    };
     return (
       OBJECTS_DELETE.resetAction();
-      this.scrollToPageOffset(yoffset);
-      yoffset = 0;
-    )
+      scrollToPageOffset;
+    );
 };
