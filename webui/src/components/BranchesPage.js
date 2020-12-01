@@ -6,12 +6,13 @@ import {listBranches, listBranchesPaginate, createBranch, resetBranch} from "../
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {GitBranchIcon, LinkIcon, LinkExternalIcon, BrowserIcon} from "@primer/octicons-react";
+import {GitBranchIcon, LinkIcon, LinkExternalIcon, BrowserIcon, TrashcanIcon} from "@primer/octicons-react";
 import Alert from "react-bootstrap/Alert";
 import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import Badge from "react-bootstrap/Badge";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
+import ConfirmationModal from "./ConfirmationModal";
 
 import ClipboardButton from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
@@ -96,9 +97,18 @@ const CreateBranchButton = connect(
     );
 });
 
-const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, createStatus }) => {
+const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, createStatus, deleteBranch }) => {
 
     const buttonVariant = "secondary";
+    const [show, setShow] = useState(false);
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [selectedBranch, setSelectedBranch] = useState("");
+
+    const onSubmit = () => {
+
+        handleClose();
+    }
 
     useEffect(() => {
         listBranches(repo.id, "");
@@ -131,6 +141,17 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
                                 </div>
                                 <div className="float-right">
                                     <ButtonGroup className="branch-actions">
+                                        {(repo.default_branch !== branch) ? (
+                                        <OverlayTrigger placement="bottom" overlay={<Tooltip>Delete branch</Tooltip>}>
+                                            <Button variant={buttonVariant} 
+                                                    onClick={e => {
+                                                    e.preventDefault();
+                                                    handleShow();
+                                                    setSelectedBranch(branch);
+                                                    }}>
+                                                <TrashcanIcon/>
+                                            </Button>
+                                        </OverlayTrigger> ) : (<span/>)}
                                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={branch} tooltip="copy ID to clipboard"/>
@@ -145,6 +166,7 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
                                             </Button>
                                         </OverlayTrigger>
                                     </ButtonGroup>
+                                    <ConfirmationModal show={show} onHide={handleClose} msg={`are you sure you wish to delete branch ${selectedBranch}?`} onConfirm={onSubmit} />
                                 </div>
                             </div>
                         </ListGroupItem>
