@@ -54,6 +54,6 @@ function scrollToPageOffset(){
 export const deleteObjectDone = () => {
     return (
       OBJECTS_DELETE.resetAction(), 
-      scrollToPageOffset;
+      scrollToPageOffset,
     );
 };
