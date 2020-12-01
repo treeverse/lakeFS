@@ -3,11 +3,9 @@ package staging
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type Manager struct {
