@@ -33,15 +33,11 @@ export const uploadDone = () => {
     return OBJECTS_UPLOAD.resetAction();
 };
 
+
 let yoffset = 0;
 function storeScroll(){
   console.log(window.pageYOffset);
   yoffset = window.pageYOffset;
-};
-
-function scrollToPageOffset(){
-  scroll.scrollTo(yoffset);
-  yoffset = 0;
 };
 
 export const deleteObject = (repoId, branchId, path) => {
@@ -51,6 +47,10 @@ export const deleteObject = (repoId, branchId, path) => {
     });
 };
 
+function scrollToPageOffset(){
+  scroll.scrollTo(yoffset);
+  yoffset = 0;
+};
 export const deleteObjectDone = () => {
     return (
       OBJECTS_DELETE.resetAction();
