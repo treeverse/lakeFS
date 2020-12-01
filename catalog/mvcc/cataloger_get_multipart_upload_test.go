@@ -15,10 +15,7 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 
 	creationTime := time.Now().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data
-	if _, err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
-		t.Fatal("create repository for testing failed", err)
-	}
-	if err := c.CreateMultipartUpload(ctx, "repo1", "upload1", "/path1", "/file1", creationTime); err != nil {
+	if err := c.CreateMultipartUpload(ctx, "", "upload1", "/path1", "/file1", creationTime); err != nil {
 		t.Fatal("create multipart upload for testing", err)
 	}
 
@@ -34,9 +31,8 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 	}{
 		{
 			name: "exists",
-			args: args{repository: "repo1", uploadID: "upload1"},
+			args: args{uploadID: "upload1"},
 			want: &catalog.MultipartUpload{
-				Repository:      "repo1",
 				UploadID:        "upload1",
 				Path:            "/path1",
 				CreationDate:    creationTime,
@@ -46,13 +42,13 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 		},
 		{
 			name:    "not exists",
-			args:    args{repository: "repo1", uploadID: "upload2"},
+			args:    args{uploadID: "upload2"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "no repository",
-			args:    args{repository: "repo2", uploadID: "upload1"},
+			name:    "no upload id",
+			args:    args{uploadID: ""},
 			want:    nil,
 			wantErr: true,
 		},

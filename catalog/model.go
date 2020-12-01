@@ -51,7 +51,6 @@ type Branch struct {
 }
 
 type MultipartUpload struct {
-	Repository      string    `db:"repository"`
 	UploadID        string    `db:"upload_id"`
 	Path            string    `db:"path"`
 	CreationDate    time.Time `db:"creation_date"`
