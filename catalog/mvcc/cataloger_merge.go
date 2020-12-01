@@ -266,6 +266,7 @@ func applyDiffChangesToRightBranch(tx db.Tx, mergeBatch mergeBatchRecords, previ
 	}
 	return nil
 }
+
 func insertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID int64, nextCommitID CommitID, previousMaxCommitID CommitID, committer string, msg string, metadata catalog.Metadata) error {
 	var childNewLineage []int64
 	leftLastCommitID, err := getLastCommitIDByBranchID(tx, leftID)
