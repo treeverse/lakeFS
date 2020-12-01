@@ -97,7 +97,7 @@ const CreateBranchButton = connect(
     );
 });
 
-const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, createStatus, deleteBranch }) => {
+const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, createStatus}) => {
 
     const buttonVariant = "secondary";
     const [show, setShow] = useState(false);
@@ -106,7 +106,7 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
     const [selectedBranch, setSelectedBranch] = useState("");
 
     const onSubmit = () => {
-
+    //delete(repo.id,selectedBranch)
         handleClose();
     }
 
