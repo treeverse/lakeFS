@@ -2,7 +2,7 @@ import React, {useEffect, useState, useCallback} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 import {Alert, ButtonToolbar, Button, OverlayTrigger, Tooltip} from "react-bootstrap";
-import {SyncIcon, GitMergeIcon} from "@primer/octicons-react";
+import {SyncIcon, GitMergeIcon, ArrowLeftIcon} from "@primer/octicons-react";
 import {diff, diffPaginate, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Changes from "./Changes";
@@ -21,8 +21,8 @@ const MergeButton = connect(
     }
 
     const diffItems = diffResults.payload ? diffResults.payload.results : [];
-    const destinationBranchId = compare.id;
-    const sourceBranchId = refId.id;
+    const destinationBranchId = refId.id;
+    const sourceBranchId = compare.id;
     let mergeDisabled = true;
     let mergeVariant = 'light';
     let mergeText;
@@ -91,6 +91,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
             <RefDropdown
                 repo={repo}
                 selected={refId}
+                prefix={'Base '}
                 withWorkspace={false}
                 selectRef={(ref) => {
                 const params = new URLSearchParams(location.search);
@@ -106,7 +107,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
                 params.delete('compareBranch');
                 history.push({...location, search: params.toString()})
             }}/>
-
+            <ArrowLeftIcon className="mr-2 mt-2"/>
             <RefDropdown
                 repo={repo} 
                 selected={compare}
@@ -144,7 +145,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
 const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, resetMerge, mergeResults }) => {
     const refreshData = useCallback(() => {
         if (compareRef) {
-            diff(repo.id, refId.id, compareRef.id);
+            diff(repo.id, compareRef.id, refId.id);
         }
     }, [repo.id, refId.id, diff, compareRef]);
 

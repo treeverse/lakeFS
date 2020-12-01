@@ -23,6 +23,7 @@ const (
 type Collector interface {
 	CollectEvent(class, action string)
 	CollectMetadata(accountMetadata *Metadata)
+	SetInstallationID(installationID string)
 }
 
 type Metric struct {
@@ -216,6 +217,10 @@ func (s *BufferedCollector) collectHeartbeat(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (s *BufferedCollector) SetInstallationID(installationID string) {
+	s.installationID = installationID
 }
 
 func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
