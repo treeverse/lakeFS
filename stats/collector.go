@@ -23,7 +23,7 @@ const (
 type Collector interface {
 	CollectEvent(class, action string)
 	CollectMetadata(accountMetadata *Metadata)
-	SetInstallationID(installationId string)
+	SetInstallationID(installationID string)
 }
 
 type Metric struct {
