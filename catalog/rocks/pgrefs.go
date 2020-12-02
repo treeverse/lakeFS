@@ -217,8 +217,11 @@ func (m *PGRefManager) AddCommit(ctx context.Context, repositoryID RepositoryID,
 }
 
 func (m *PGRefManager) FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error) {
-	// TODO(ozkatz): This actually has some logic to it!
-	panic("implement me")
+	const allowedCommitsToCompare = 2
+	if len(commitIDs) != allowedCommitsToCompare {
+		return nil, ErrInvalidMergeBase
+	}
+	return FindLowestCommonAncestor(ctx, m, repositoryID, commitIDs[0], commitIDs[1])
 }
 
 func (m *PGRefManager) Log(ctx context.Context, repositoryID RepositoryID, from CommitID) (CommitIterator, error) {

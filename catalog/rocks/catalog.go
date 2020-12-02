@@ -417,6 +417,7 @@ var (
 var (
 	ErrNotFound                = errors.New("not found")
 	ErrInvalidValue            = errors.New("invalid value")
+	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
 	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace %w", ErrInvalidValue)
 	ErrInvalidRepositoryID     = fmt.Errorf("repository id %w", ErrInvalidValue)
 	ErrInvalidBranchID         = fmt.Errorf("branch id %w", ErrInvalidValue)
