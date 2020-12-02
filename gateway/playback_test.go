@@ -20,6 +20,7 @@ import (
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
@@ -112,6 +113,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 
 	conn, _ := testutil.GetDB(t, databaseURI)
 	cataloger := catalogfactory.BuildCataloger(conn, nil)
+	multipartsTracker := multiparts.NewTracker(conn)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
@@ -131,9 +133,11 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 
 	_, err := cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
+
 	handler := gateway.NewHandler(
 		authService.Region,
 		cataloger,
+		multipartsTracker,
 		blockAdapter,
 		authService,
 		authService.BareDomain,
