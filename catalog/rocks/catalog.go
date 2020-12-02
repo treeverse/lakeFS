@@ -143,7 +143,8 @@ type Diff struct {
 }
 
 // Interfaces
-type Catalog interface {
+
+type RepositoryCatalog interface {
 	// GetRepository returns the Repository metadata object for the given RepositoryID
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
@@ -156,7 +157,9 @@ type Catalog interface {
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+}
 
+type KeyValueCatalog interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
 	Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error)
@@ -172,7 +175,9 @@ type Catalog interface {
 	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
 	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last key from the previous call.
 	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from Key, delimiter Delimiter, amount int) ([]Listing, bool, error)
+}
 
+type VersionControlCatalog interface {
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
 
@@ -224,6 +229,12 @@ type Catalog interface {
 	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' key with no more than 'amount' per call.
 	//   Returns the list of changes, true (boolean) in case there are more differences - use last key as 'from' in the next call to continue getting differences
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key, amount int) ([]Diff, bool, error)
+}
+
+type Catalog interface {
+	RepositoryCatalog
+	KeyValueCatalog
+	VersionControlCatalog
 }
 
 // Internal structures used by Catalog

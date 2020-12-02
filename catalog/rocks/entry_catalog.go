@@ -21,7 +21,8 @@ type EntryListing struct {
 
 // EntryCatalog
 type EntryCatalog interface {
-	Catalog
+	RepositoryCatalog
+	VersionControlCatalog
 
 	// Get returns entry from repository / reference by path, nil entry is a valid value for tombstone
 	// returns error if entry does not exist
