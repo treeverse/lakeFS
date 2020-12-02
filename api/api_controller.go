@@ -1293,7 +1293,7 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 		ctx := c.Context()
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCommit:
-			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
+			err = cataloger.RollbackCommit(ctx, params.Repository, params.Branch, params.Revert.Commit)
 		case models.RevertCreationTypeCommonPrefix:
 			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeReset:
