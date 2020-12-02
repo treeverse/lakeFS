@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	hashRegexp = regexp.MustCompile("^[a-fA-F0-9]{1,64}$")
+	hashRegexp      = regexp.MustCompile("^[a-fA-F0-9]{1,64}$")
+	modifiersRegexp = regexp.MustCompile("(^|[~^])[^^~]*")
 )
 
 type RevModType uint8
@@ -59,47 +60,17 @@ func RevParse(r Ref) (ParsedRev, error) {
 	p := ParsedRev{
 		Modifiers: make([]RevModifier, 0),
 	}
-	buf := ""
-	statusInBase := true
-	for _, ch := range r {
-		switch ch {
-		case '~', '^':
-			// this is a modifier, finalize previous state. error if no previous state
-			if statusInBase {
-				if buf == "" {
-					// no base found
-					return p, ErrInvalidRef
-				}
-				p.BaseRev = buf
-				statusInBase = false
-				buf = string(ch)
-			} else {
-				// starting a new modifier while in another modifier
-				mod, err := parseMod(buf)
-				if err != nil {
-					return p, err
-				}
-				p.Modifiers = append(p.Modifiers, mod)
-				buf = string(ch)
-			}
-		default:
-			buf += string(ch)
+	parts := modifiersRegexp.FindAllString(string(r), -1)
+	p.BaseRev = parts[0]
+	if p.BaseRev == "" {
+		return p, ErrInvalidRef
+	}
+	for _, part := range parts[1:] {
+		mod, err := parseMod(part)
+		if err != nil {
+			return p, err
 		}
+		p.Modifiers = append(p.Modifiers, mod)
 	}
-	// finalize previous state
-	if statusInBase {
-		if buf == "" {
-			return p, ErrInvalidRef
-		}
-		p.BaseRev = buf
-		return p, nil
-	}
-
-	// was in a modifier
-	mod, err := parseMod(buf)
-	if err != nil {
-		return p, err
-	}
-	p.Modifiers = append(p.Modifiers, mod)
 	return p, nil
 }
