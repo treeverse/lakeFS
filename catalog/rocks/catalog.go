@@ -366,8 +366,8 @@ type StagingManager interface {
 	// DeleteEntry clears the entry from the staging area
 	DeleteEntry(ctx context.Context, st StagingToken, path Path) error
 
-	// ListEntries returns an EntryIterator for the given staging token, starting at the first entry with a path >= "from"
-	ListEntries(ctx context.Context, st StagingToken, from Path) (EntryIterator, error)
+	// ListEntries returns an EntryIterator for the given staging token
+	ListEntries(ctx context.Context, st StagingToken) (EntryIterator, error)
 
 	// Drop clears the given staging area
 	Drop(ctx context.Context, st StagingToken) error

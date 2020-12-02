@@ -1,3 +1,3 @@
 BEGIN;
-DROP TABLE staging_entries;
+DROP TABLE IF EXISTS staging_entries;
 COMMIT;

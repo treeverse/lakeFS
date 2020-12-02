@@ -97,11 +97,11 @@ func TestDrop(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("after dropping staging area, expected ErrNotFound in GetEntry. got err=%v, got entry=%v", err, e)
 	}
-	it, _ := s.ListEntries(context.Background(), "t1", "")
+	it, _ := s.ListEntries(context.Background(), "t1")
 	if it.Next() {
 		t.Fatal("expected staging area with token t1 to be empty, got non-empty iterator")
 	}
-	it, _ = s.ListEntries(context.Background(), "t2", "")
+	it, _ = s.ListEntries(context.Background(), "t2")
 	res := make([]*rocks.EntryRecord, 0, numOfEntries)
 	for it.Next() {
 		res = append(res, it.Value())
@@ -121,7 +121,7 @@ func TestList(t *testing.T) {
 		}
 	}
 	res := make([]*rocks.EntryRecord, 0, numOfEntries)
-	it, _ := s.ListEntries(context.Background(), "t1", "")
+	it, _ := s.ListEntries(context.Background(), "t1")
 	for it.Next() {
 		res = append(res, it.Value())
 	}
@@ -147,7 +147,7 @@ func TestSeek(t *testing.T) {
 			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
-	it, _ := s.ListEntries(context.Background(), "t1", "")
+	it, _ := s.ListEntries(context.Background(), "t1")
 	if !it.SeekGE("entry0050") {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
