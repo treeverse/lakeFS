@@ -10,6 +10,6 @@ var (
 	ErrCloseCrashed          = errors.New(" close GoRoutine crashed")
 	ErrEmptyInputToApply     = errors.New(" apply got no input")
 	ErrTreeCorrupted         = errors.New(" highest path in tree not in ssTable")
-	InfoNoTreeParts          = errors.New(" no tree parts remain")
+	InfoBaseTreeExhausted    = errors.New(" no tree parts remain")
 	ErrPushBackTwice         = errors.New(" can't push back twice with no intervening Next")
 )
