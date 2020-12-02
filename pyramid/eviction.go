@@ -6,18 +6,14 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-// evictionControl is in charge of limiting the size of local files in TierFS.
-type evictionControl interface {
-	// touch updates the last time the path was read.
-	touch(rPath relativePath)
-
-	// store updates the eviction control with the path and the file size.
-	store(rPath relativePath, filesize int64)
-}
-
 type lruSizeEviction struct {
 	cache *ristretto.Cache
 }
+
+const (
+	// Per ristretto, this is the optimized (static) buffer items
+	bufferItems = 64
+)
 
 func newLRUSizeEviction(capacity, estimatedFileBytes int64, evict func(rPath relativePath)) (*lruSizeEviction, error) {
 	cache, err := ristretto.NewCache(&ristretto.Config{
@@ -26,6 +22,7 @@ func newLRUSizeEviction(capacity, estimatedFileBytes int64, evict func(rPath rel
 		MaxCost:     capacity,
 		Metrics:     false,
 		OnEvict:     onEvict(evict),
+		BufferItems: bufferItems,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating cache: %w", err)
@@ -42,9 +39,11 @@ func onEvict(evict func(rPath relativePath)) func(uint64, uint64, interface{}, i
 }
 
 func (am *lruSizeEviction) touch(rPath relativePath) {
-	am.cache.Get(rPath)
+	am.cache.Get(string(rPath))
 }
 
-func (am *lruSizeEviction) store(rPath relativePath, filesize int64) {
-	am.cache.Set(rPath, rPath, filesize)
+func (am *lruSizeEviction) store(rPath relativePath, filesize int64) bool {
+	// must store the path as value since the returned key is the hash,
+	// not the actual key.
+	return am.cache.Set(string(rPath), rPath, filesize)
 }

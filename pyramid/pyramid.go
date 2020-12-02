@@ -2,6 +2,7 @@ package pyramid
 
 // FS is pyramid abstraction of filesystem where the persistent storage-layer is the block storage.
 // Files on the local disk are transient and might be cleaned up by the eviction policy.
+// File structure under a namespace and namespace itself are flat (no directories).
 type FS interface {
 	// Store adds the file from the originalPath to the FS. It uploads the file to the
 	// block-storage and to the localpath.

@@ -1,19 +1,21 @@
 package pyramid
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/treeverse/lakefs/block"
 )
 
-// ImmutableTierFS is a filesystem where written files are never edited.
+// TierFS is a filesystem where written files are never edited.
 // All files are stored in the block storage. Local paths are treated as a
 // cache layer that will be evicted according to the eviction control.
-type ImmutableTierFS struct {
+type TierFS struct {
 	adaptor  block.Adapter
 	eviction *lruSizeEviction
 
@@ -49,16 +51,16 @@ type Config struct {
 
 const workspaceDir = "workspace"
 
-// NewTierFS creates a new TierFS.
+// NewFS creates a new TierFS.
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
-func NewTierFS(c *Config) (FS, error) {
+func NewFS(c *Config) (FS, error) {
 	fsLocalBaseDir := path.Join(c.localBaseDir, c.fsName)
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating base dir: %w", err)
 	}
 
-	tierFS := &ImmutableTierFS{
+	tierFS := &TierFS{
 		adaptor:        c.adaptor,
 		fsName:         c.fsName,
 		fsLocalBaseDir: fsLocalBaseDir,
@@ -66,7 +68,7 @@ func NewTierFS(c *Config) (FS, error) {
 	}
 	eviction, err := newLRUSizeEviction(c.allocatedDiskBytes, c.estimatedFileBytes, tierFS.removeFromLocal)
 	if err != nil {
-		return nil, fmt.Errorf("creating eviction control :%w", err)
+		return nil, fmt.Errorf("creating eviction control: %w", err)
 	}
 
 	if err := handleExistingFiles(eviction, fsLocalBaseDir); err != nil {
@@ -82,9 +84,9 @@ func NewTierFS(c *Config) (FS, error) {
 // 1. Adds stored files to the eviction control
 // 2. Remove workspace directories and all its content if it
 //	  exist under the namespace dir.
-func handleExistingFiles(eviction *lruSizeEviction, dir string) error {
+func handleExistingFiles(eviction *lruSizeEviction, fsLocalBaseDir string) error {
 	var workspaceDirs []string
-	if err := filepath.Walk(dir, func(rPath string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(fsLocalBaseDir, func(rPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -92,11 +94,17 @@ func handleExistingFiles(eviction *lruSizeEviction, dir string) error {
 			if info.Name() == workspaceDir {
 				// skipping workspaces and saving them for later delete
 				workspaceDirs = append(workspaceDirs, rPath)
+				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		eviction.store(relativePath(rPath), info.Size())
+		if !eviction.store(relativePath(rPath), info.Size()) {
+			// Cache rejected the file, can be removed from local storage.
+			// Should be relatively rare, as cache sum cost on startup should accurately
+			// represent previous cost limitations.
+			removeFromLocal(fsLocalBaseDir, relativePath(rPath))
+		}
 		return nil
 	}); err != nil {
 		return fmt.Errorf("walking the fs dir: %w", err)
@@ -111,17 +119,24 @@ func handleExistingFiles(eviction *lruSizeEviction, dir string) error {
 	return nil
 }
 
-func (tfs *ImmutableTierFS) removeFromLocal(rPath relativePath) {
-	_ = os.Remove(path.Join(tfs.fsLocalBaseDir, string(rPath)))
+func (tfs *TierFS) removeFromLocal(rPath relativePath) {
+	removeFromLocal(tfs.fsLocalBaseDir, rPath)
+}
+
+func removeFromLocal(fsLocalBaseDir string, rPath relativePath) {
+	_ = os.Remove(path.Join(fsLocalBaseDir, string(rPath)))
 }
 
 // Store adds the local file to the FS.
 // on successful operation, file will no longer be available under the originalPath.
-func (tfs *ImmutableTierFS) Store(namespace, originalPath, filename string) error {
+func (tfs *TierFS) Store(namespace, originalPath, filename string) error {
+	if err := tfs.validateArgs(namespace, filename); err != nil {
+		return fmt.Errorf("invalid args: %w", err)
+	}
 	return tfs.store(namespace, originalPath, filename)
 }
 
-func (tfs *ImmutableTierFS) store(namespace, originalPath, filename string) error {
+func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 	f, err := os.Open(originalPath)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
@@ -145,18 +160,30 @@ func (tfs *ImmutableTierFS) store(namespace, originalPath, filename string) erro
 	}
 
 	fileRef := tfs.newLocalFileRef(namespace, filename)
-	if err := os.Rename(originalPath, fileRef.fullPath); err != nil {
-		return fmt.Errorf("rename file: %w", err)
+
+	if tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+		if err := os.Rename(originalPath, fileRef.fullPath); err != nil {
+			return fmt.Errorf("rename file: %w", err)
+		}
+	} else {
+		// cache rejected the insert, but that's ok -
+		// it's already stored in the block storage.
+		if err := os.Remove(originalPath); err != nil {
+			return fmt.Errorf("remove file: %w", err)
+		}
 	}
 
-	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
 	return nil
 }
 
 // Create creates a new file in TierFS.
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
-func (tfs *ImmutableTierFS) Create(namespace, filename string) (*File, error) {
+func (tfs *TierFS) Create(namespace, filename string) (*File, error) {
+	if err := tfs.validateArgs(namespace, filename); err != nil {
+		return nil, fmt.Errorf("invalid args: %w", err)
+	}
+
 	if err := tfs.createNSWorkspaceDir(namespace); err != nil {
 		return nil, fmt.Errorf("create namespace dir: %w", err)
 	}
@@ -179,7 +206,7 @@ func (tfs *ImmutableTierFS) Create(namespace, filename string) (*File, error) {
 
 // Load returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
-func (tfs *ImmutableTierFS) Open(namespace, filename string) (*File, error) {
+func (tfs *TierFS) Open(namespace, filename string) (*File, error) {
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
@@ -198,12 +225,14 @@ func (tfs *ImmutableTierFS) Open(namespace, filename string) (*File, error) {
 }
 
 // openFile converts an os.File to pyramid.File and updates the eviction control.
-func (tfs *ImmutableTierFS) openFile(fileRef localFileRef, fh *os.File) (*File, error) {
+func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*File, error) {
 	stat, err := fh.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
+	// No need to check for the store output here,
+	// we already have the file.
 	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
 	return &File{
 		fh:       fh,
@@ -216,7 +245,7 @@ func (tfs *ImmutableTierFS) openFile(fileRef localFileRef, fh *os.File) (*File, 
 // readFromBlockStorage reads the referenced file from the block storage
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
-func (tfs *ImmutableTierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
+func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
 	reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 	if err != nil {
 		return nil, fmt.Errorf("read from block storage: %w", err)
@@ -242,6 +271,29 @@ func (tfs *ImmutableTierFS) readFromBlockStorage(fileRef localFileRef) (*os.File
 	return fh, nil
 }
 
+func (tfs *TierFS) validateArgs(namespace, filename string) error {
+	if err := tfs.validateNamespace(namespace); err != nil {
+		return err
+	}
+
+	return tfs.validateFilename(filename)
+}
+
+func (tfs *TierFS) validateFilename(filename string) error {
+	return tfs.containsSeparator(filename)
+}
+
+func (tfs *TierFS) validateNamespace(ns string) error {
+	return tfs.containsSeparator(ns)
+}
+
+func (tfs *TierFS) containsSeparator(str string) error {
+	if strings.ContainsRune(str, os.PathSeparator) {
+		return errors.New("path contains separator")
+	}
+	return nil
+}
+
 // relativePath is the path of the file under TierFS
 type relativePath string
 
@@ -254,7 +306,7 @@ type localFileRef struct {
 	fsRelativePath relativePath
 }
 
-func (tfs *ImmutableTierFS) newLocalFileRef(namespace, filename string) localFileRef {
+func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
 	relative := path.Join(namespace, filename)
 	return localFileRef{
 		namespace: namespace,
@@ -265,25 +317,25 @@ func (tfs *ImmutableTierFS) newLocalFileRef(namespace, filename string) localFil
 	}
 }
 
-func (tfs *ImmutableTierFS) objPointer(namespace, filename string) block.ObjectPointer {
+func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
 	return block.ObjectPointer{
 		StorageNamespace: namespace,
 		Identifier:       tfs.blockStoragePath(filename),
 	}
 }
 
-func (tfs *ImmutableTierFS) blockStoragePath(filename string) string {
+func (tfs *TierFS) blockStoragePath(filename string) string {
 	return path.Join(tfs.remotePrefix, filename)
 }
 
-func (tfs *ImmutableTierFS) createNSWorkspaceDir(namespace string) error {
+func (tfs *TierFS) createNSWorkspaceDir(namespace string) error {
 	return os.MkdirAll(tfs.workspaceDirPath(namespace), os.ModePerm)
 }
 
-func (tfs *ImmutableTierFS) workspaceDirPath(namespace string) string {
+func (tfs *TierFS) workspaceDirPath(namespace string) string {
 	return path.Join(tfs.fsLocalBaseDir, namespace, workspaceDir)
 }
 
-func (tfs *ImmutableTierFS) workspaceFilePath(namespace string, filename string) string {
+func (tfs *TierFS) workspaceFilePath(namespace string, filename string) string {
 	return path.Join(tfs.workspaceDirPath(namespace), filename)
 }

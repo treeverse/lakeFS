@@ -19,7 +19,7 @@ type File struct {
 var ErrReadOnlyFile = errors.New("file is read-only")
 
 func (f *File) Read(p []byte) (n int, err error) {
-	if !f.readOnly {
+	if f.readOnly {
 		// file is being written, eviction policies don't apply to it
 		f.eviction.touch(f.rPath)
 	}
@@ -27,7 +27,7 @@ func (f *File) Read(p []byte) (n int, err error) {
 }
 
 func (f *File) ReadAt(p []byte, off int64) (n int, err error) {
-	if !f.readOnly {
+	if f.readOnly {
 		// file is being written, eviction policies don't apply to it
 		f.eviction.touch(f.rPath)
 	}
