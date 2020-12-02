@@ -287,9 +287,11 @@ func (tfs *TierFS) validateNamespace(ns string) error {
 	return tfs.containsSeparator(ns)
 }
 
+var errSeparatorInFS = errors.New("path contains separator")
+
 func (tfs *TierFS) containsSeparator(str string) error {
 	if strings.ContainsRune(str, os.PathSeparator) {
-		return errors.New("path contains separator")
+		return errSeparatorInFS
 	}
 	return nil
 }
