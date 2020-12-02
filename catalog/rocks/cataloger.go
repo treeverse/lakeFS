@@ -2,7 +2,6 @@ package rocks
 
 import (
 	"context"
-	"time"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
@@ -304,18 +303,6 @@ func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, reposi
 
 func (c *cataloger) DedupReportChannel() chan *catalog.DedupReport {
 	return c.dummyDedupCh
-}
-
-func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string, uploadID string, path string, physicalAddress string, creationTime time.Time) error {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) GetMultipartUpload(ctx context.Context, repository string, uploadID string) (*catalog.MultipartUpload, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string, uploadID string) error {
-	panic("not implemented") // TODO: Implement
 }
 
 func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {

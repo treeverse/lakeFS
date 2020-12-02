@@ -47,7 +47,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	err = o.Cataloger.CreateMultipartUpload(o.Context(), o.Repository.Name, uploadID, o.Path, objName, time.Now())
+	err = o.MultipartsTracker.Create(o.Context(), uploadID, o.Path, objName, time.Now())
 	if err != nil {
 		o.Log().WithError(err).Error("could not write multipart upload to DB")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -70,7 +70,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	o.Incr("complete_mpu")
 	uploadID := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
 	o.AddLogFields(logging.Fields{"upload_id": uploadID})
-	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
+	multiPart, err := o.MultipartsTracker.Get(o.Context(), uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -104,7 +104,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	err = o.Cataloger.DeleteMultipartUpload(o.Context(), o.Repository.Name, uploadID)
+	err = o.MultipartsTracker.Delete(o.Context(), uploadID)
 	if err != nil {
 		o.Log().WithError(err).Warn("could not delete multipart record")
 	}

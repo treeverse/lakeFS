@@ -50,14 +50,6 @@ type Branch struct {
 	Name       string `db:"name"`
 }
 
-type MultipartUpload struct {
-	Repository      string    `db:"repository"`
-	UploadID        string    `db:"upload_id"`
-	Path            string    `db:"path"`
-	CreationDate    time.Time `db:"creation_date"`
-	PhysicalAddress string    `db:"physical_address"`
-}
-
 func (j Metadata) Value() (driver.Value, error) {
 	if j == nil {
 		return json.Marshal(struct{}{})
