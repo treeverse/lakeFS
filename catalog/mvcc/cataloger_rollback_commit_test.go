@@ -79,7 +79,7 @@ func TestCataloger_RollbackCommit_BlockedByBranch(t *testing.T) {
 	testutil.MustDo(t, "merge master to branch1", err)
 
 	// rollback to initial commit should fail
-	err = c.eweRollbackCommit(ctx, repository, masterReference)
+	err = c.RollbackCommit(ctx, repository, "master", masterReference)
 	if err == nil {
 		t.Fatal("Rollback with blocked branch should fail with error")
 	}
