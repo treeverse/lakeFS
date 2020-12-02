@@ -2,10 +2,10 @@ package multiparts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -26,7 +26,10 @@ type tracker struct {
 	db db.Database
 }
 
-var ErrMultipartUploadNotFound = fmt.Errorf("multipart upload %w", db.ErrNotFound)
+var (
+	ErrMultipartUploadNotFound = fmt.Errorf("multipart upload %w", db.ErrNotFound)
+	ErrInvalidUploadID         = errors.New("invalid upload id")
+)
 
 func NewTracker(adb db.Database) Tracker {
 	return &tracker{
@@ -35,14 +38,9 @@ func NewTracker(adb db.Database) Tracker {
 }
 
 func (m *tracker) Create(ctx context.Context, uploadID, path, physicalAddress string, creationTime time.Time) error {
-	if err := mvcc.Validate(mvcc.ValidateFields{
-		{Name: "uploadID", IsValid: mvcc.ValidateUploadID(uploadID)},
-		{Name: "path", IsValid: mvcc.ValidatePath(path)},
-		{Name: "physicalAddress", IsValid: mvcc.ValidatePhysicalAddress(physicalAddress)},
-	}); err != nil {
-		return err
+	if uploadID == "" {
+		return ErrInvalidUploadID
 	}
-
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`INSERT INTO gateway_multiparts (upload_id,path,creation_date,physical_address)
 			VALUES ($1, $2, $3, $4)`,
@@ -53,12 +51,9 @@ func (m *tracker) Create(ctx context.Context, uploadID, path, physicalAddress st
 }
 
 func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, error) {
-	if err := mvcc.Validate(mvcc.ValidateFields{
-		{Name: "uploadID", IsValid: mvcc.ValidateUploadID(uploadID)},
-	}); err != nil {
-		return nil, err
+	if uploadID == "" {
+		return nil, ErrInvalidUploadID
 	}
-
 	res, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var m MultipartUpload
 		if err := tx.Get(&m, `
@@ -77,12 +72,9 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 }
 
 func (m *tracker) Delete(ctx context.Context, uploadID string) error {
-	if err := mvcc.Validate(mvcc.ValidateFields{
-		{Name: "uploadID", IsValid: mvcc.ValidateUploadID(uploadID)},
-	}); err != nil {
-		return err
+	if uploadID == "" {
+		return ErrInvalidUploadID
 	}
-
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		res, err := tx.Exec(`DELETE FROM gateway_multiparts WHERE upload_id = $1`, uploadID)
 		if err != nil {
