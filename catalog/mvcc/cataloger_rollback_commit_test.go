@@ -32,7 +32,7 @@ func TestCataloger_RollbackCommit_Basic(t *testing.T) {
 	for i := 0; i < len(refs); i++ {
 		filesCount := len(refs) - i
 		ref := refs[filesCount-1]
-		err := c.RollbackCommit(ctx, repository, ref)
+		err := c.RollbackCommit(ctx, repository, "master", ref)
 		testutil.MustDo(t, "rollback", err)
 
 		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", "", -1)
@@ -79,7 +79,7 @@ func TestCataloger_RollbackCommit_BlockedByBranch(t *testing.T) {
 	testutil.MustDo(t, "merge master to branch1", err)
 
 	// rollback to initial commit should fail
-	err = c.RollbackCommit(ctx, repository, masterReference)
+	err = c.eweRollbackCommit(ctx, repository, masterReference)
 	if err == nil {
 		t.Fatal("Rollback with blocked branch should fail with error")
 	}
@@ -117,7 +117,7 @@ func TestCataloger_RollbackCommit_AfterMerge(t *testing.T) {
 	testutil.MustDo(t, "merge branch1 to master", err)
 
 	// rollback to first commit
-	err = c.RollbackCommit(ctx, repository, firstCommit.Reference)
+	err = c.RollbackCommit(ctx, repository, "master", firstCommit.Reference)
 	testutil.MustDo(t, "rollback to first commit", err)
 
 	// check we have our original files
