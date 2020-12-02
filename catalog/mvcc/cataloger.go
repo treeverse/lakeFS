@@ -31,7 +31,6 @@ type cataloger struct {
 	dedupReportCh        chan *catalog.DedupReport
 	readEntryRequestChan chan *readRequest
 	hooks                catalog.CatalogerHooks
-	multiparts           catalog.Multiparts
 }
 
 const (
@@ -107,7 +106,6 @@ func NewCataloger(db db.Database, options ...CatalogerOption) catalog.Cataloger 
 		db:                 db,
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
 		dedupReportEnabled: true,
-		multiparts:         NewMultiparts(db),
 		Catalog: params.Catalog{
 			BatchRead: params.BatchRead{
 				EntryMaxWait:  defaultBatchReadEntryMaxWait,
