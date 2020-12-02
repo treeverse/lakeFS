@@ -38,22 +38,7 @@ func (s *Iterator) Next() bool {
 	if !s.dbHasNext {
 		return false
 	}
-	res, err := s.listEntries(s.ctx, s.st, s.nextFrom, batchSize)
-	if err != nil {
-		s.err = err
-		return false
-	}
-	if len(res.entries) == 0 {
-		s.dbHasNext = false
-		return false
-	}
-	if res.hasNext {
-		s.nextFrom = res.nextPath
-	}
-	s.dbHasNext = res.hasNext
-	s.idxInBuffer = 0
-	s.buffer = res.entries
-	return true
+	return s.loadBuffer()
 }
 
 func (s *Iterator) SeekGE(path rocks.Path) bool {
@@ -79,34 +64,25 @@ func (s *Iterator) Err() error {
 func (s *Iterator) Close() {
 }
 
-func (s *Iterator) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
-	o := []db.TxOpt{
-		db.WithContext(ctx),
-		db.WithLogger(s.log),
-	}
-	return append(o, opts...)
-}
-func (s *Iterator) listEntries(ctx context.Context, st rocks.StagingToken, from rocks.Path, limit int) (*listEntriesResult, error) {
+func (s *Iterator) loadBuffer() bool {
 	queryResult, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var res []*rocks.EntryRecord
 		err := tx.Select(&res, "SELECT path, address, last_modified_date, size, checksum, metadata "+
-			"FROM staging_entries WHERE staging_token=$1 AND path >= $2 ORDER BY path LIMIT $3", st, from, limit+1)
+			"FROM staging_entries WHERE staging_token=$1 AND path >= $2 ORDER BY path LIMIT $3", s.st, s.nextFrom, batchSize+1)
 		return res, err
-	}, s.txOpts(ctx, db.ReadOnly())...)
+	}, db.WithLogger(s.log), db.WithContext(s.ctx), db.ReadOnly())
 	if err != nil {
-		return nil, err
+		s.err = err
+		return false
 	}
 	entries := queryResult.([]*rocks.EntryRecord)
-	hasNext := false
-	var nextPath rocks.Path
-	if len(entries) == limit+1 {
-		hasNext = true
-		nextPath = entries[len(entries)-1].Path
-		entries = entries[:len(entries)-1]
+	s.idxInBuffer = 0
+	if len(entries) == batchSize+1 {
+		s.nextFrom = entries[len(entries)-1].Path
+		s.buffer = entries[:len(entries)-1]
+		return true
 	}
-	return &listEntriesResult{
-		entries:  entries,
-		hasNext:  hasNext,
-		nextPath: nextPath,
-	}, nil
+	s.dbHasNext = false
+	s.buffer = entries
+	return len(entries) > 0
 }
