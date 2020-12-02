@@ -92,7 +92,7 @@ type Entry struct {
 	LastModified time.Time `db:"last_modified_date"`
 	Address      string    `db:"address"`
 	Metadata     Metadata  `db:"metadata"`
-	ETag         string    `db:"checksum"`
+	ETag         string    `db:"e_tag"`
 	Size         int64     `db:"size"`
 }
 

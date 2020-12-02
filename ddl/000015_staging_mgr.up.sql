@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS staging_entries
     address            varchar                                not null,
     last_modified_date timestamp with time zone default now() not null,
     size               bigint                                 not null,
-    checksum           varchar(64)                            not null,
+    e_tag              varchar(64)                            not null,
     metadata           jsonb
 ) PARTITION BY HASH (staging_token);
 CREATE TABLE IF NOT EXISTS staging_entries_p0 PARTITION OF staging_entries FOR VALUES WITH (MODULUS 10, REMAINDER 0);

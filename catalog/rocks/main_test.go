@@ -1,4 +1,4 @@
-package staging
+package rocks
 
 import (
 	"flag"

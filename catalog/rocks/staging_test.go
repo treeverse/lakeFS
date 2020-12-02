@@ -1,4 +1,4 @@
-package staging
+package rocks
 
 import (
 	"context"
@@ -7,15 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func prepareMgr(t *testing.T) rocks.StagingManager {
+var entryMetadata = map[string]string{"metadata_field": "metadata_value"}
+
+func prepareMgr(t *testing.T) StagingManager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return NewManager(conn)
+	return NewStageManager(conn)
 }
 
 func TestSetGet(t *testing.T) {
@@ -28,12 +29,18 @@ func TestSetGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	entry, err := s.GetEntry(context.Background(), "t1", "a/b/c")
+	e, err := s.GetEntry(context.Background(), "t1", "a/b/c")
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if entry.Address != "addr1" {
-		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", entry.Address)
+	if e.Address != "addr1" {
+		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", e.Address)
+	}
+	if e.Size != 1000 {
+		t.Errorf("got wrong entry size. expected=1000, got=%d", e.Size)
+	}
+	if e.Metadata == nil || e.Metadata["metadata_field"] != "metadata_value" {
+		t.Errorf("got wrong entry metadata. expected=%s, got=%s", entryMetadata, e.Metadata)
 	}
 }
 
@@ -78,13 +85,13 @@ func TestDrop(t *testing.T) {
 	s := prepareMgr(t)
 	numOfEntries := 1400
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t2", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t2", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -102,7 +109,7 @@ func TestDrop(t *testing.T) {
 		t.Fatal("expected staging area with token t1 to be empty, got non-empty iterator")
 	}
 	it, _ = s.ListEntries(context.Background(), "t2")
-	res := make([]*rocks.EntryRecord, 0, numOfEntries)
+	res := make([]*EntryRecord, 0, numOfEntries)
 	for it.Next() {
 		res = append(res, it.Value())
 	}
@@ -115,12 +122,12 @@ func TestList(t *testing.T) {
 	s := prepareMgr(t)
 	numOfEntries := 100
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
-	res := make([]*rocks.EntryRecord, 0, numOfEntries)
+	res := make([]*EntryRecord, 0, numOfEntries)
 	it, _ := s.ListEntries(context.Background(), "t1")
 	for it.Next() {
 		res = append(res, it.Value())
@@ -132,7 +139,7 @@ func TestList(t *testing.T) {
 		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfEntries, len(res))
 	}
 	for i, e := range res {
-		if e.Path != rocks.Path(fmt.Sprintf("entry%04d", i)) {
+		if e.Path != Path(fmt.Sprintf("entry%04d", i)) {
 			t.Fatalf("got unexpected entry from list at index %d: expected entry%04d, got: %s", i, i, e.Path)
 		}
 	}
@@ -142,7 +149,7 @@ func TestSeek(t *testing.T) {
 	s := prepareMgr(t)
 	numOfEntries := 100
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", rocks.Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -212,11 +219,11 @@ func TestDeleteAndTombstone(t *testing.T) {
 	}
 }
 
-func entry(addr string) *rocks.Entry {
-	return &rocks.Entry{
+func entry(addr string) *Entry {
+	return &Entry{
 		LastModified: time.Now(),
 		Address:      addr,
-		Metadata:     nil,
+		Metadata:     entryMetadata,
 		ETag:         "abcdefghijklmnop",
 		Size:         1000,
 	}
