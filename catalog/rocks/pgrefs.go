@@ -183,7 +183,7 @@ func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID,
 				startWith = append(startWith, c.Commit)
 			}
 		}
-		if len(startWith) == 0 || len(startWith) > 1 {
+		if len(startWith) != 1 {
 			return "", ErrNotFound // empty or ambiguous
 		}
 		return startWith[0], nil
