@@ -145,8 +145,6 @@ definitions:
       type:
         type: string
         enum: [ object, common_prefix, commit, reset ]
-      branch:
-        type: string
       commit:
         type: string
       path:
