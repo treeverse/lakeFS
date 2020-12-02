@@ -383,7 +383,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	panic("not implemented") // TODO: Implement
 }
 
-func (c *cataloger) RollbackCommit(ctx context.Context, repository string, reference string) error {
+func (c *cataloger) RollbackCommit(ctx context.Context, repository string, branch string, reference string) error {
 	panic("not implemented") // TODO: Implement
 }
 

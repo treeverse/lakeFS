@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference string) error {
+func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch, reference string) error {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
@@ -21,6 +21,9 @@ func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference st
 		return err
 	}
 	if ref.CommitID <= UncommittedID {
+		return catalog.ErrInvalidReference
+	}
+	if ref.Branch != branch {
 		return catalog.ErrInvalidReference
 	}
 
