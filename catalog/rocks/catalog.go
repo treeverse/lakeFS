@@ -110,9 +110,9 @@ type EntryRecord struct {
 	*Entry
 }
 
-func (p CommitParents) Identity() []byte {
-	strings := make([]string, len(p))
-	for i, v := range p {
+func (ps CommitParents) Identity() []byte {
+	strings := make([]string, len(ps))
+	for i, v := range ps {
 		strings[i] = string(v)
 	}
 	buf := ident.NewBuffer()
