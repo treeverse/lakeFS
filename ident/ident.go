@@ -27,17 +27,17 @@ func NewBuffer() *Buffer {
 	}
 }
 
-func (b *Buffer) WriteBytes(v []byte) {
-	b.WriteInt64(int64(len(v)))
+func (b *Buffer) MarshalBytes(v []byte) {
+	b.MarshalInt64(int64(len(v)))
 	b.buf = append(b.buf, v...)
 }
 
-func (b *Buffer) WriteString(v string) {
-	b.WriteInt64(int64(len(v)))
+func (b *Buffer) MarshalString(v string) {
+	b.MarshalInt64(int64(len(v)))
 	b.buf = append(b.buf, []byte(v)...)
 }
 
-func (b *Buffer) WriteInt64(v int64) {
+func (b *Buffer) MarshalInt64(v int64) {
 	bytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(bytes, 8)
 	b.buf = append(b.buf, bytes...)
@@ -45,8 +45,15 @@ func (b *Buffer) WriteInt64(v int64) {
 	b.buf = append(b.buf, bytes...)
 }
 
-func (b *Buffer) WriteStringMap(v map[string]string) {
-	b.WriteInt64(int64(len(v)))
+func (b *Buffer) MarshalStringList(v []string) {
+	b.MarshalInt64(int64(len(v)))
+	for _, item := range v {
+		b.MarshalString(item)
+	}
+}
+
+func (b *Buffer) MarshalStringMap(v map[string]string) {
+	b.MarshalInt64(int64(len(v)))
 	keys := make([]string, len(v))
 	i := 0
 	for k := range v {
@@ -54,15 +61,15 @@ func (b *Buffer) WriteStringMap(v map[string]string) {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		b.WriteString(k)
-		b.WriteString(v[k])
+		b.MarshalString(k)
+		b.MarshalString(v[k])
 	}
+}
+
+func (b *Buffer) MarshalIdentifiable(v Identifiable) {
+	b.MarshalBytes(v.Identity())
 }
 
 func (b *Buffer) Identity() []byte {
 	return b.buf
-}
-
-func (b *Buffer) Address() string {
-	return ContentAddress(b)
 }

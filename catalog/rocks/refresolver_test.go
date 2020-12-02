@@ -53,33 +53,33 @@ func TestPGRefManager_Dereference(t *testing.T) {
 	}
 
 	//  commit log:
-	//  "c5262f504dd81a34e6e7578ad66a8395bee18ea3d198c5f5d74830eb43098279",
-	//  "f2712b1cace8d1d6aa2638a1fe12d2428a1a001943f890c086702eb6eb0a5606",
-	//  "1f3a725fe62d9e5bfe5abc74ad75162d27416935d16d842afa808c6f2f880084",
-	//  "992ac1278647b8a7f374b1bfed8d8bed82e6cb16f8d50f272fc48d5f998182f0",
-	//  "d5e1ff6470911b0a5d3f587a3db09504f8d3fef9a34ab9025a003b3bc1636023",
-	//  "5ce8db7eeacafa343783adcb885aa6239f5df70c416826a5d78519a3ca2a6313",
-	//  "a42282eab74cfd036ab0fa6ddc070fd3541632ee008f3a3f7de611ad4f395653",
-	//  "798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c",
-	//  "a4f672a9a1ceb49729dfd159fc0d9786765a09c8b178abd731953cf4c72e1542",
-	//  "2fee5fd15a7bc6802ba4d4f8febc46519a8334012cba5b942fb03ed1ebd2b2b9",
-	//  "cbebc01677dd5f39736f48e59620258aef5603de91fc713c5002330c0ed0103d",
-	//  "680d546cf6cb876a6def445f8b15dc6ceab61a4193af9b623dcdfa1abc0a6d01",
-	//  "36669c265362c2e07f8ffd413c125eac2ac90eacf65cf51b7f79c56f815813b2",
-	//  "2077138a1aa3fb43c1ab7e2ba616c56d46bd069a1197ba00de8744c79f493c5c",
-	//  "fb63f72ba0994dcbcbab8d63ce166dbff114ad2f390a175902134bc85d96fbb2",
-	//  "7fc0e540820668488479f86c41828a85144993b196a5bf2405d37847438a78f4",
-	//  "128233c82d80f91d62cb9bb49fd589ad8249fb4567a915f2a7dafd88d82c7527",
-	//  "0dcaed021298fa2c4a4d99bbecb5630646363b6a0acc64e9113251d1511260c7",
-	//  "f17975abb9442d7cd838c3e5ef63449f4ace261bd6975a51ddd343a2e654e2ad",
-	//  "a66bb92bd9b389f942adb2d5e9e50e63d04d510dd2945da104b7f35c1302378c",
+	//  "c607be9a1103b8bac51399a386648729e2bc9b7503dde5cd3de6318c58b79fd6",
+	//	"c3c52217e0b35f3abdffdbe2d304e4114a6232b3d3063622eff0212f4e384321",
+	//	"19d18225090199f0054588771a85df04c5dc13dda396b6d2b096e2ce0e95c654",
+	//	"fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb",
+	//	"d0891d8aef006e532e4816ada3babe8dfb0c382f0f941458abc0a608af48c96e",
+	//	"958a88c4c7506772b15fde2b4095ce984a0cfa101cc6fc1a50573f68dc289872",
+	//	"25898c1fcb316d782f9e522be6e4a0c7c316ec5a4b9bfecdd6f3577de70cfd34",
+	//	"b3794a3cdd7fad101ed64e07b7d42010362adb0228b64b7db92b29699c06ffa7",
+	//	"9385029ea6e0171ae75557fda1ea55774c5e57745a56bff6630b050a80d0370a",
+	//	"c6b747a1caafef68942a03af99f274174cbbe593d6d1c9cbc836b3a127c79581",
+	//	"f42efb7a556bc638c94ea46e121bb388bff2dbf39be01226274ced570417d3c8",
+	//	"0c6efef612a3d6a6a6b3985208d27d456c76c7338839d51bb49ce33d06fbaae8",
+	//	"84d304a943f4ecac7e3ad5f7489bef55ec0034c659d8c2b16680d1a9d2fe4fcc",
+	//	"48714265f7e6d219e32e5ac7ac011056e2837638711b61fb0a3b5baf2ec0c78d",
+	//	"689d81325fecd7bea9ef3acc1f0975476f40996ad0ca57703556b512aff2a1f7",
+	//	"24f9a7d15802c298430185dafb35b1c3c625385525d973c855152e23eef47ca2",
+	//	"95a5b23c5cc6a890de6868b07dc787b13fca078429cf69c41bcce04cd4094f1e",
+	//	"a4085647a9868ae5b1c13abee15918377cdba065e26c37b1fc9e4d868851ea98",
+	//	"a404202e948cad8dfbeed76a6686079fc63960484120017b7f9b387bab996b38",
+	//	"5acae1bce3f1ebbc67371dab00b1474323e776bf09fd4a1bdee3de1549566938",
 
 	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch1", rocks.Branch{
-		CommitID: "798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c",
+		CommitID: "fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb",
 	}))
 
 	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", rocks.Branch{
-		CommitID: "2077138a1aa3fb43c1ab7e2ba616c56d46bd069a1197ba00de8744c79f493c5c",
+		CommitID: "0c6efef612a3d6a6a6b3985208d27d456c76c7338839d51bb49ce33d06fbaae8",
 	}))
 
 	table := []struct {
@@ -91,7 +91,7 @@ func TestPGRefManager_Dereference(t *testing.T) {
 		{
 			Name:     "branch_exist",
 			Ref:      rocks.Ref("branch1"),
-			Expected: rocks.CommitID("798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c"),
+			Expected: rocks.CommitID("fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb"),
 		},
 		{
 			Name:        "branch_doesnt_exist",
@@ -100,17 +100,17 @@ func TestPGRefManager_Dereference(t *testing.T) {
 		},
 		{
 			Name:     "commit",
-			Ref:      rocks.Ref("798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c"),
-			Expected: rocks.CommitID("798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c"),
+			Ref:      rocks.Ref("fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb"),
+			Expected: rocks.CommitID("fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb"),
 		},
 		{
 			Name:     "commit_prefix_good",
-			Ref:      rocks.Ref("798300f7"),
-			Expected: rocks.CommitID("798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c"),
+			Ref:      rocks.Ref("fc51d"),
+			Expected: rocks.CommitID("fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb"),
 		},
 		{
 			Name:        "commit_prefix_ambiguous",
-			Ref:         rocks.Ref("a4"),
+			Ref:         rocks.Ref("a40"),
 			ExpectedErr: rocks.ErrNotFound,
 		},
 		{
@@ -121,21 +121,21 @@ func TestPGRefManager_Dereference(t *testing.T) {
 		{
 			Name:     "branch_with_modifier",
 			Ref:      rocks.Ref("branch1~2"),
-			Expected: rocks.CommitID("2fee5fd15a7bc6802ba4d4f8febc46519a8334012cba5b942fb03ed1ebd2b2b9"),
+			Expected: rocks.CommitID("958a88c4c7506772b15fde2b4095ce984a0cfa101cc6fc1a50573f68dc289872"),
 		},
 		{
 			Name:     "commit_with_modifier",
-			Ref:      rocks.Ref("798300f78bf9c1c6f4df8b87976fa9efa1b317070d49b7c54cd282b25c4db39c~2"),
-			Expected: rocks.CommitID("2fee5fd15a7bc6802ba4d4f8febc46519a8334012cba5b942fb03ed1ebd2b2b9"),
+			Ref:      rocks.Ref("fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb~2"),
+			Expected: rocks.CommitID("958a88c4c7506772b15fde2b4095ce984a0cfa101cc6fc1a50573f68dc289872"),
 		},
 		{
 			Name:     "commit_prefix_with_modifier",
-			Ref:      rocks.Ref("798300f~2"),
-			Expected: rocks.CommitID("2fee5fd15a7bc6802ba4d4f8febc46519a8334012cba5b942fb03ed1ebd2b2b9"),
+			Ref:      rocks.Ref("fc51d~2"),
+			Expected: rocks.CommitID("958a88c4c7506772b15fde2b4095ce984a0cfa101cc6fc1a50573f68dc289872"),
 		},
 		{
 			Name:        "commit_prefix_with_modifier_too_big",
-			Ref:         rocks.Ref("2fee5fd15a7bc6802ba4d4f8febc46519a8334012cba5b942fb03ed1ebd2b2b9~200"),
+			Ref:         rocks.Ref("fc51d43fb19e5b28410663ff1df1a34665b36d86c684ddbcdef520ec170081cb~200"),
 			ExpectedErr: rocks.ErrNotFound,
 		},
 	}

@@ -110,6 +110,16 @@ type EntryRecord struct {
 	*Entry
 }
 
+func (p CommitParents) Identity() []byte {
+	strings := make([]string, len(p))
+	for i, v := range p {
+		strings[i] = string(v)
+	}
+	buf := ident.NewBuffer()
+	buf.MarshalStringList(strings)
+	return buf.Identity()
+}
+
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
 	Committer    string           `db:"committer"`
@@ -122,16 +132,13 @@ type Commit struct {
 
 func (c Commit) Identity() []byte {
 	b := ident.NewBuffer()
-	b.WriteString("commit")
-	b.WriteString(c.Committer)
-	b.WriteString(c.Message)
-	b.WriteString(string(c.TreeID))
-	b.WriteInt64(c.CreationDate.Unix())
-	b.WriteStringMap(c.Metadata)
-	b.WriteInt64(int64(len(c.Parents)))
-	for _, p := range c.Parents {
-		b.WriteString(string(p))
-	}
+	b.MarshalString("commit:v1")
+	b.MarshalString(c.Committer)
+	b.MarshalString(c.Message)
+	b.MarshalString(string(c.TreeID))
+	b.MarshalInt64(c.CreationDate.Unix())
+	b.MarshalStringMap(c.Metadata)
+	b.MarshalIdentifiable(c.Parents)
 	return b.Identity()
 }
 
