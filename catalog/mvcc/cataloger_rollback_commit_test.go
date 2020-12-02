@@ -127,7 +127,7 @@ func TestCataloger_RollbackCommit_AfterMerge(t *testing.T) {
 
 		expectedChecksum := testCreateEntryCalcChecksum(filename, t.Name(), "")
 		if expectedChecksum != ent.Checksum {
-			t.Fatalf("Entry file1 after revert checksum %s, expected %s", ent.Checksum, expectedChecksum)
+			t.Fatalf("Value file1 after revert checksum %s, expected %s", ent.Checksum, expectedChecksum)
 		}
 	}
 }

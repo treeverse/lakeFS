@@ -129,9 +129,9 @@ func TestCataloger_ListEntries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, "", tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("List() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			// copy the Entry's fields we like to compare
+			// copy the Value's fields we like to compare
 			var gotEntries []catalog.Entry
 			for i, ent := range got {
 				if ent == nil {
@@ -147,10 +147,10 @@ func TestCataloger_ListEntries(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotEntries, tt.wantEntries) {
-				t.Errorf("ListEntries() got = %s, want = %s", spew.Sdump(gotEntries), spew.Sdump(tt.wantEntries))
+				t.Errorf("List() got = %s, want = %s", spew.Sdump(gotEntries), spew.Sdump(tt.wantEntries))
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListEntries() gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf("List() gotMore = %v, want = %v", gotMore, tt.wantMore)
 			}
 		})
 	}
@@ -338,7 +338,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, catalog.DefaultPathDelimiter, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("ListEntries() err = %s, expected error %t", err, tt.wantErr)
+				t.Fatalf("List() err = %s, expected error %t", err, tt.wantErr)
 			}
 			// test that directories have null entries, and vice versa
 			var gotNames []string
@@ -353,10 +353,10 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("ListEntries got = %s, want = %s", spew.Sdump(gotNames), spew.Sdump(tt.wantEntries))
+				t.Errorf("List got = %s, want = %s", spew.Sdump(gotNames), spew.Sdump(tt.wantEntries))
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListEntries gotMore = %t, want = %t", gotMore, tt.wantMore)
+				t.Errorf("List gotMore = %t, want = %t", gotMore, tt.wantMore)
 			}
 		})
 	}
@@ -387,7 +387,7 @@ func TestCataloger_ListEntries_ByLevel_Deleted(t *testing.T) {
 		t.Errorf("Expected two entries, got = %s", spew.Sdump(entries))
 	}
 	if hasMore {
-		t.Errorf("ListEntries() hasMore = %t, expected fasle", hasMore)
+		t.Errorf("List() hasMore = %t, expected fasle", hasMore)
 	}
 }
 
@@ -478,7 +478,7 @@ func testCatalogerListEntriesVerifyResponse(t *testing.T, got []*catalog.Entry, 
 	}
 	for i, p := range entries {
 		if p != got[i].Path {
-			t.Fatalf("Entry path '%s', expected '%s'", p, got[i].Path)
+			t.Fatalf("Value path '%s', expected '%s'", p, got[i].Path)
 		}
 	}
 	if gotMore {
@@ -522,28 +522,28 @@ func TestCataloger_ListEntries_Prefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", "", -1)
 			if err != nil {
-				t.Fatalf("ListEntries err = %s, expected no error", err)
+				t.Fatalf("List err = %s, expected no error", err)
 			}
 			gotPaths := extractEntriesPaths(got)
 			if diff := deep.Equal(gotPaths, tt.wantByLevel); diff != nil {
-				t.Fatal("ListEntries", diff)
+				t.Fatal("List", diff)
 			}
 			if gotMore != false {
-				t.Fatal("ListEntries got more should be false")
+				t.Fatal("List got more should be false")
 			}
 		})
 		// by level
 		t.Run(tt.name+"-by level", func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", catalog.DefaultPathDelimiter, -1)
 			if err != nil {
-				t.Fatalf("ListEntries by level - err = %s, expected no error", err)
+				t.Fatalf("List by level - err = %s, expected no error", err)
 			}
 			gotPaths := extractEntriesPaths(got)
 			if diff := deep.Equal(gotPaths, tt.wantByLevel); diff != nil {
-				t.Fatal("ListEntries by level", diff)
+				t.Fatal("List by level", diff)
 			}
 			if gotMore != false {
-				t.Fatal("ListEntries got more should be false")
+				t.Fatal("List got more should be false")
 			}
 		})
 	}
@@ -583,9 +583,9 @@ func TestCataloger_ListEntries_ByLevelAfter(t *testing.T) {
 				// compare the names we got so far
 				for i, ent := range entries {
 					if namesIdx >= len(names) {
-						t.Fatalf("ListEntries exceeded range of expected names. Index %d, when %d names", namesIdx, len(names))
+						t.Fatalf("List exceeded range of expected names. Index %d, when %d names", namesIdx, len(names))
 					} else if names[namesIdx] != ent.Path {
-						t.Fatalf("ListEntries pos %d, path %s - expected %s (index %d)", i, ent.Path, names[namesIdx], namesIdx)
+						t.Fatalf("List pos %d, path %s - expected %s (index %d)", i, ent.Path, names[namesIdx], namesIdx)
 					}
 					namesIdx += 1
 				}
@@ -594,7 +594,7 @@ func TestCataloger_ListEntries_ByLevelAfter(t *testing.T) {
 					break
 				}
 				if len(entries) == 0 {
-					t.Fatal("ListEntries got more, but got no entries")
+					t.Fatal("List got more, but got no entries")
 				}
 				after = entries[len(entries)-1].Path
 			}
@@ -613,18 +613,18 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 		c.DeleteEntry(ctx, repo, "master", "my_entry"))
 	// an uncommitted tombstone "hides" a committed entry
 	got, _, err := c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
-	testutil.MustDo(t, "ListEntries", err)
+	testutil.MustDo(t, "List", err)
 	if len(got) != 0 {
-		t.Fatalf("ListEntries %d entries, expected none", len(got))
+		t.Fatalf("List %d entries, expected none", len(got))
 	}
 
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
 	// an uncommitted entry is detected
 	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
-	testutil.MustDo(t, "ListEntries", err)
+	testutil.MustDo(t, "List", err)
 	expectedPaths := []string{"my_entry"}
 	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
-		t.Fatal("ListEntries", diff)
+		t.Fatal("List", diff)
 	}
 
 	_, err = c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
@@ -635,17 +635,17 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 	testutil.MustDo(t, "commit my_entry deletion", err)
 	// deleted entry will not be displayed
 	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
-	testutil.MustDo(t, "ListEntries", err)
+	testutil.MustDo(t, "List", err)
 	if len(got) != 0 {
-		t.Fatalf("ListEntries %d entries, expected none", len(got))
+		t.Fatalf("List %d entries, expected none", len(got))
 	}
 
 	// an uncommitted entry is detected even if the entry is deleted
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
 	got, _, err = c.ListEntries(ctx, repo, "master", "", "", catalog.DefaultPathDelimiter, -1)
-	testutil.MustDo(t, "ListEntries", err)
+	testutil.MustDo(t, "List", err)
 	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
-		t.Fatal("ListEntries", diff)
+		t.Fatal("List", diff)
 	}
 }
 

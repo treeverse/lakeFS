@@ -9,7 +9,7 @@ import (
 )
 
 type cataloger struct {
-	Catalog      Catalog
+	Catalog      EntryCatalog
 	log          logging.Logger
 	dummyDedupCh chan *catalog.DedupReport
 	hooks        catalog.CatalogerHooks
@@ -176,7 +176,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	if err != nil {
 		return nil, err
 	}
-	p, err := NewPath(path)
+	p, err := NewKey(path)
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +204,11 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	p, err := NewPath(entry.Path)
+	p, err := NewKey(entry.Path)
 	if err != nil {
 		return err
 	}
-	ent := Entry{
+	ent := &Entry{
 		Address:  entry.PhysicalAddress,
 		Metadata: map[string]string(entry.Metadata),
 		ETag:     entry.Checksum,
@@ -227,11 +227,11 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 		return err
 	}
 	for _, entry := range entries {
-		p, err := NewPath(entry.Path)
+		p, err := NewKey(entry.Path)
 		if err != nil {
 			return err
 		}
-		ent := Entry{
+		ent := &Entry{
 			Address:  entry.PhysicalAddress,
 			Metadata: map[string]string(entry.Metadata),
 			ETag:     entry.Checksum,
@@ -253,11 +253,11 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	p, err := NewPath(path)
+	p, err := NewKey(path)
 	if err != nil {
 		return err
 	}
-	return c.Catalog.DeleteEntry(ctx, repositoryID, branchID, p)
+	return c.Catalog.Delete(ctx, repositoryID, branchID, p)
 }
 
 func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {

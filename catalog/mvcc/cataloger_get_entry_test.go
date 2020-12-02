@@ -82,11 +82,11 @@ func TestCataloger_GetEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path, catalog.GetEntryParams{})
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if (got == nil && tt.want != nil) || (got != nil && tt.want == nil) {
-				t.Errorf("GetEntry() got = %+v, want = %+v", got, tt.want)
+				t.Errorf("Get() got = %+v, want = %+v", got, tt.want)
 				return
 			}
 			if tt.want == nil || got == nil {
@@ -94,16 +94,16 @@ func TestCataloger_GetEntry(t *testing.T) {
 			}
 			// compare just specific fields
 			if tt.want.Path != got.Path {
-				t.Errorf("GetEntry() got Path = %v, want = %v", got.Path, tt.want.Path)
+				t.Errorf("Get() got Key = %v, want = %v", got.Path, tt.want.Path)
 			}
 			if tt.want.PhysicalAddress != got.PhysicalAddress {
-				t.Errorf("GetEntry() got PhysicalAddress = %v, want = %v", got.PhysicalAddress, tt.want.PhysicalAddress)
+				t.Errorf("Get() got PhysicalAddress = %v, want = %v", got.PhysicalAddress, tt.want.PhysicalAddress)
 			}
 			if tt.want.Size != got.Size {
-				t.Errorf("GetEntry() got Size = %v, want = %v", got.Size, tt.want.Size)
+				t.Errorf("Get() got Size = %v, want = %v", got.Size, tt.want.Size)
 			}
 			if tt.want.Checksum != got.Checksum {
-				t.Errorf("GetEntry() got Checksum = %v, want = %v", got.Checksum, tt.want.Checksum)
+				t.Errorf("Get() got Checksum = %v, want = %v", got.Checksum, tt.want.Checksum)
 			}
 		})
 	}

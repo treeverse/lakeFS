@@ -14,7 +14,7 @@ import (
 
 // Basic Types
 
-// DiffType represents a changed state for a given entry
+// DiffType represents the type of the change
 type DiffType uint8
 
 const (
@@ -47,8 +47,8 @@ type (
 	// RepositoryID is an identifier for a repo
 	RepositoryID string
 
-	// Path represents a logical path for an entry
-	Path string
+	// Key represents a logical path for an value
+	Key []byte
 
 	// Ref could be a commit ID, a branch name, a Tag
 	Ref string
@@ -68,11 +68,13 @@ type (
 	// StagingToken represents a namespace for writes to apply as uncommitted
 	StagingToken string
 
-	// CommonPrefix represents a path prefixing one or more Entry objects
-	CommonPrefix string
+	// CommonPrefix represents one or more keys with the same key prefix
+	CommonPrefix []byte
 
-	// Metadata key/value strings to holds metadata information on entry and commit
+	// Metadata key/value strings to holds metadata information on value and commit
 	Metadata map[string]string
+
+	Delimiter []byte
 )
 
 // Repository represents repository metadata
@@ -87,19 +89,16 @@ type RepositoryRecord struct {
 	*Repository
 }
 
-// Entry represents metadata or a given object (modified date, physical address, etc)
-type Entry struct {
-	LastModified time.Time
-	Address      string
-	Metadata     Metadata
-	ETag         string
-	Size         int64
+// Value represents metadata or a given object (modified date, physical address, etc)
+type Value struct {
+	Identity []byte
+	Data     []byte
 }
 
-// EntryRecord holds Path with the associated Entry information
-type EntryRecord struct {
-	Path Path
-	*Entry
+// ValueRecord holds Key with the associated Value information
+type ValueRecord struct {
+	Key Key
+	*Value
 }
 
 // Commit represents commit metadata (author, time, tree ID)
@@ -131,15 +130,15 @@ type BranchRecord struct {
 	*Branch
 }
 
-// Listing represents either an entry or a CommonPrefix
+// Listing represents CommonPrefix as a key without a Value (nil) or a CommonPrefix as common prefix
 type Listing struct {
 	CommonPrefix
-	*Entry
+	*Value
 }
 
-// Diff represents a change in path
+// Diff represents a change in value based on key
 type Diff struct {
-	Path Path
+	Key  Key
 	Type DiffType
 }
 
@@ -149,7 +148,7 @@ type Catalog interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, stoargeNamespace StorageNamespace, branchID BranchID) (*Repository, error)
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
 
 	// ListRepositories lists repositories starting with 'from' returns maximum 'amount' results and true (boolean)
 	// in case more results exist
@@ -158,21 +157,21 @@ type Catalog interface {
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
-	// GetEntry returns entry from repository / reference by path, nil entry is a valid value for tombstone
-	// returns error if entry does not exist
-	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
+	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
+	// returns error if value does not exist
+	Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error)
 
-	// SetEntry stores entry on repository / branch by path. nil entry is a valid value for tombstone
-	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry Entry) error
+	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
+	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error
 
-	// DeleteEntry deletes entry on repository / branch by path
-	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
+	// Delete deletes value from repository / branch by key
+	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// ListEntries lists entries on repository / ref will filter by prefix, from path 'from'.
+	// List lists entries on repository / ref will filter by prefix, from key 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
 	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
-	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last path from the previous call.
-	ListEntries(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter string, amount int) ([]Listing, bool, error)
+	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last key from the previous call.
+	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from Key, delimiter Delimiter, amount int) ([]Listing, bool, error)
 
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
@@ -218,13 +217,13 @@ type Catalog interface {
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
 
 	// DiffUncommitted returns the changes as 'Diff' slice on a repository / branch
-	//   List the differences 'from' path, with 'amount' of result.
-	//   Returns differences found, true (boolean) in case there are more differences - use 'from' with last path from previous call to get the next differences
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Path, amount int) ([]Diff, bool, error)
+	//   List the differences 'from' key, with 'amount' of result.
+	//   Returns differences found, true (boolean) in case there are more differences - use 'from' with last key from previous call to get the next differences
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key, amount int) ([]Diff, bool, error)
 
-	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' path with no more than 'amount' per call.
-	//   Returns the list of changes, true (boolean) in case there are more differences - use last path as 'from' in the next call to continue getting differences
-	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Path, amount int) ([]Diff, bool, error)
+	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' key with no more than 'amount' per call.
+	//   Returns the list of changes, true (boolean) in case there are more differences - use last key as 'from' in the next call to continue getting differences
+	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key, amount int) ([]Diff, bool, error)
 }
 
 // Internal structures used by Catalog
@@ -250,17 +249,17 @@ type RepositoryIterator interface {
 	Close()
 }
 
-type EntryIterator interface {
+type Iterator interface {
 	Next() bool
-	SeekGE(id Path) bool
-	Value() *EntryRecord
+	SeekGE(id Key) bool
+	Value() *ValueRecord
 	Err() error
 	Close()
 }
 
 type DiffIterator interface {
 	Next() bool
-	SeekGE(id Path) bool
+	SeekGE(id Key) bool
 	Value() *Diff
 	Err() error
 	Close()
@@ -332,15 +331,15 @@ type RefManager interface {
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
-	// GetEntry returns the provided path, if exists, from the provided TreeID
-	GetEntry(ctx context.Context, ns StorageNamespace, treeID TreeID, path Path) (*Entry, error)
+	// Get returns the provided key, if exists, from the provided TreeID
+	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
-	// ListEntries takes a given tree and returns an EntryIterator seeked to >= "from" path
-	ListEntries(ctx context.Context, ns StorageNamespace, treeID TreeID, from Path) (EntryIterator, error)
+	// List takes a given tree and returns an Iterator seeked to >= "from" key
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (Iterator, error)
 
 	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Path) (DiffIterator, error)
+	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Key) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
@@ -350,30 +349,30 @@ type CommittedManager interface {
 	// Apply is the act of taking an existing tree (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new treeID that is expected to be immediately addressable
-	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, entryIterator EntryIterator) (TreeID, error)
+	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, iterator Iterator) (TreeID, error)
 }
 
 // StagingManager handles changes to a branch that aren't yet committed
-// provides basic CRUD abilities, with deletes being written as tombstones (null entry)
+// provides basic CRUD abilities, with deletes being written as tombstones (null value)
 type StagingManager interface {
-	// GetEntry returns the provided path (or nil entry to represent a tombstone)
-	//   Returns ErrNotFound if no entry found on path
-	GetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (*Entry, error)
+	// Get returns the provided key (or nil value to represent a tombstone)
+	//   Returns ErrNotFound if no value found on key
+	Get(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (*Value, error)
 
-	// SetEntry writes an entry (or nil entry to represent a tombstone)
-	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry *Entry) error
+	// Set writes an value (or nil value to represent a tombstone)
+	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value *Value) error
 
-	// DeleteEntry deletes an entry by path
-	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
+	// Delete deletes an value by key
+	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// ListEntries takes a given BranchID and returns an EntryIterator seeked to >= "from" path
-	ListEntries(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
+	// List takes a given BranchID and returns an Iterator seeked to >= "from" key
+	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (Iterator, error)
 
 	// Snapshot returns a new snapshot and returns it's ID
 	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
 
 	// ListSnapshot returns an iterator to scan the snapshot entries
-	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Path) (EntryIterator, error)
+	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (Iterator, error)
 }
 
 var (
@@ -438,11 +437,11 @@ func (id Ref) String() string {
 	return string(id)
 }
 
-func NewPath(id string) (Path, error) {
-	return Path(id), nil
+func NewKey(id string) (Key, error) {
+	return Key(id), nil
 }
 
-func (id Path) String() string {
+func (id Key) String() string {
 	return string(id)
 }
 

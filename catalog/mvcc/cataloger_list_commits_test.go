@@ -376,7 +376,7 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//
-	//if differences[0].Type != catalog.DifferenceTypeChanged || differences[0].Path != "master-file" {
+	//if differences[0].Type != catalog.DifferenceTypeChanged || differences[0].Key != "master-file" {
 	//	t.Error("merge br_2_1 into master with unexpected results", differences[0])
 	//}
 

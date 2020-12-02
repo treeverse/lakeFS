@@ -61,10 +61,10 @@ func TestDBBranchScanner(t *testing.T) {
 			for scanner.Next() {
 				ent := scanner.Value()
 				if ent.Checksum == "" {
-					t.Fatalf("Entry missing value for Checksum: %s", spew.Sdump(ent))
+					t.Fatalf("Value missing value for Checksum: %s", spew.Sdump(ent))
 				}
 				if ent.PhysicalAddress == "" {
-					t.Fatalf("Entry missing value for PhysicalAddress: %s", spew.Sdump(ent))
+					t.Fatalf("Value missing value for PhysicalAddress: %s", spew.Sdump(ent))
 				}
 				if !testedSomething {
 					testedSomething = true

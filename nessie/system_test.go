@@ -3,10 +3,11 @@ package nessie
 import (
 	"context"
 	"fmt"
-	"github.com/go-openapi/strfmt"
-	"github.com/treeverse/lakefs/api/gen/client/export"
 	"strings"
 	"testing"
+
+	"github.com/go-openapi/strfmt"
+	"github.com/treeverse/lakefs/api/gen/client/export"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
@@ -63,7 +64,7 @@ func setExportPath(ctx context.Context, t *testing.T, repo, branch, path, status
 		"branch":      branch,
 		"export-path": path,
 		"status-path": statusPath,
-	}).Debug("Create Export Path for test")
+	}).Debug("Create Export Key for test")
 
 	config := models.ContinuousExportConfiguration{
 		ExportPath:             strfmt.URI(path),
