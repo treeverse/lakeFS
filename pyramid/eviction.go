@@ -6,6 +6,12 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
+// eviction is an abstraction of the eviction control for easy testing
+type eviction interface {
+	touch(rPath relativePath)
+	store(rPath relativePath, filesize int64) bool
+}
+
 type lruSizeEviction struct {
 	cache *ristretto.Cache
 }
