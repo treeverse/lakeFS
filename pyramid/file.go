@@ -8,7 +8,7 @@ import (
 // File is pyramid wrapper for os.file that triggers pyramid hooks for file actions.
 type File struct {
 	fh       *os.File
-	eviction *lruSizeEviction
+	eviction eviction
 
 	readOnly bool
 	rPath    relativePath

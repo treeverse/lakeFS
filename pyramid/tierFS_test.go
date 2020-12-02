@@ -21,7 +21,7 @@ var (
 )
 
 const blockStoragePrefix = "prefix"
-const allocatedDiskBytes = 16 * 1024 * 1024
+const allocatedDiskBytes = 4 * 1024 * 1024
 const estimatedFileBytes = 1 * 1024 * 1024
 
 func TestMain(m *testing.M) {
