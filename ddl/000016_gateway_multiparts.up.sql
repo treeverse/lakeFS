@@ -10,4 +10,6 @@ CREATE TABLE IF NOT EXISTS gateway_multiparts (
 ALTER TABLE ONLY gateway_multiparts
     ADD CONSTRAINT gateway_multiparts_pk PRIMARY KEY (upload_id);
 
+DROP TABLE IF EXISTS catalog_multipart_uploads;
+
 COMMIT;
