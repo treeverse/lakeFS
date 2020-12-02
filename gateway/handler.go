@@ -75,14 +75,15 @@ func NewHandler(
 	dedupCleaner *dedup.Cleaner,
 ) http.Handler {
 	sc := &ServerContext{
-		ctx:          context.Background(),
-		cataloger:    cataloger,
-		region:       region,
-		bareDomain:   bareDomain,
-		blockStore:   blockStore,
-		authService:  authService,
-		stats:        stats,
-		dedupCleaner: dedupCleaner,
+		ctx:               context.Background(),
+		cataloger:         cataloger,
+		multipartsTracker: multipartsTracker,
+		region:            region,
+		bareDomain:        bareDomain,
+		blockStore:        blockStore,
+		authService:       authService,
+		stats:             stats,
+		dedupCleaner:      dedupCleaner,
 	}
 
 	// setup routes
@@ -116,13 +117,14 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perms []permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
-		Request:        request,
-		ResponseWriter: writer,
-		Region:         s.region,
-		FQDN:           s.bareDomain,
-		Cataloger:      s.cataloger,
-		BlockStore:     s.blockStore,
-		Auth:           s.authService,
+		Request:           request,
+		ResponseWriter:    writer,
+		Region:            s.region,
+		FQDN:              s.bareDomain,
+		Cataloger:         s.cataloger,
+		MultipartsTracker: s.multipartsTracker,
+		BlockStore:        s.blockStore,
+		Auth:              s.authService,
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
