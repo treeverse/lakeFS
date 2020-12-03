@@ -39,6 +39,11 @@ func (f *File) Close() error {
 	return f.fh.Close()
 }
 
+var (
+	errAlreadyPersisted = fmt.Errorf("file is already persisted")
+	errFileNotClosed    = fmt.Errorf("file isn't closed")
+)
+
 // Store copies the closed file to all tiers of the pyramid.
 func (f *File) Store(filename string) error {
 	if err := validateFilename(filename); err != nil {
@@ -46,10 +51,10 @@ func (f *File) Store(filename string) error {
 	}
 
 	if f.persisted {
-		return fmt.Errorf("file is already persisted")
+		return errAlreadyPersisted
 	}
 	if !f.closed {
-		return fmt.Errorf("file isn't closed")
+		return errFileNotClosed
 	}
 
 	err := f.store(filename)
