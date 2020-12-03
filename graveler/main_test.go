@@ -1,4 +1,4 @@
-package rocks
+package graveler
 
 import (
 	"flag"

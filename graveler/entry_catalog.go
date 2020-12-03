@@ -1,10 +1,8 @@
-package rocks
+package graveler
 
 import (
 	"context"
 	"time"
-
-	"github.com/treeverse/lakefs/graveler"
 )
 
 type Path string
@@ -13,7 +11,7 @@ type Path string
 type Entry struct {
 	LastModified time.Time
 	Address      string
-	Metadata     graveler.Metadata
+	Metadata     Metadata
 	ETag         string
 	Size         int64
 }
@@ -39,21 +37,21 @@ type EntryListingIterator interface {
 
 // EntryCatalog
 type EntryCatalog interface {
-	graveler.VersionController
+	VersionController
 
 	// Get returns entry from repository / reference by path, nil entry is a valid entry for tombstone
 	// returns error if entry does not exist
-	GetEntry(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, path Path) (*Entry, error)
+	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
 
 	// Set stores entry on repository / branch by path. nil entry is a valid entry for tombstone
-	SetEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path, entry *Entry) error
+	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry *Entry) error
 
 	// DeleteEntry deletes entry from repository / branch by path
-	DeleteEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error
+	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
 
 	// List lists entries on repository / ref will filter by prefix, from path 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
-	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path) (EntryListingIterator, error)
+	ListEntries(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Path) (EntryListingIterator, error)
 }
 
 func NewPath(id string) (Path, error) {

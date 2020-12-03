@@ -9,7 +9,7 @@ import (
 )
 
 type cataloger struct {
-	EntryCatalog EntryCatalog
+	EntryCatalog graveler.EntryCatalog
 	log          logging.Logger
 	dummyDedupCh chan *catalog.DedupReport
 	hooks        catalog.CatalogerHooks
@@ -176,7 +176,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	if err != nil {
 		return nil, err
 	}
-	p, err := NewPath(path)
+	p, err := graveler.NewPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +204,11 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	p, err := NewPath(entry.Path)
+	p, err := graveler.NewPath(entry.Path)
 	if err != nil {
 		return err
 	}
-	ent := &Entry{
+	ent := &graveler.Entry{
 		Address:  entry.PhysicalAddress,
 		Metadata: map[string]string(entry.Metadata),
 		ETag:     entry.Checksum,
@@ -227,11 +227,11 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 		return err
 	}
 	for _, entry := range entries {
-		p, err := NewPath(entry.Path)
+		p, err := graveler.NewPath(entry.Path)
 		if err != nil {
 			return err
 		}
-		ent := &Entry{
+		ent := &graveler.Entry{
 			Address:  entry.PhysicalAddress,
 			Metadata: map[string]string(entry.Metadata),
 			ETag:     entry.Checksum,
@@ -253,7 +253,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	p, err := NewPath(path)
+	p, err := graveler.NewPath(path)
 	if err != nil {
 		return err
 	}

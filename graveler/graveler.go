@@ -87,13 +87,13 @@ type RepositoryRecord struct {
 
 // Value represents metadata or a given object (modified date, physical address, etc)
 type Value struct {
-	Identity []byte
-	Data     []byte
+	Identity []byte `db:"identity"`
+	Data     []byte `db:"data"`
 }
 
 // ValueRecord holds Key with the associated Value information
 type ValueRecord struct {
-	Key Key
+	Key Key `db:"key"`
 	*Value
 }
 
