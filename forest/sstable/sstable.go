@@ -12,8 +12,8 @@ type Manager interface {
 	// If path not found, (nil, ErrPathNotFound) is returned.
 	GetEntry(path graveler.Key, tid SSTableID) (*graveler.Value, error)
 
-	// NewSSTableIterator takes a given SSTable and returns an Iterator seeked to >= "from" path
-	NewSSTableIterator(tid SSTableID, from graveler.Key) (graveler.Iterator, error)
+	// NewSSTableIterator takes a given SSTable and returns an ValueIterator seeked to >= "from" path
+	NewSSTableIterator(tid SSTableID, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)

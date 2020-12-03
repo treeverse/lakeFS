@@ -24,13 +24,21 @@ type EntryRecord struct {
 }
 
 type EntryListing struct {
-	graveler.CommonPrefix
+	Path
 	*Entry
+}
+
+type EntryListingIterator interface {
+	Next() bool
+	SeekGE(id Path) bool
+	Value() *EntryListing
+	Err() error
+	Close()
 }
 
 // EntryCatalog
 type EntryCatalog interface {
-	graveler.VersionControler
+	graveler.VersionController
 
 	// Get returns entry from repository / reference by path, nil entry is a valid entry for tombstone
 	// returns error if entry does not exist
@@ -44,9 +52,7 @@ type EntryCatalog interface {
 
 	// List lists entries on repository / ref will filter by prefix, from path 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
-	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
-	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last path from the previous call.
-	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path, amount int) ([]EntryListing, bool, error)
+	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path) (EntryListingIterator, error)
 }
 
 func NewPath(id string) (Path, error) {

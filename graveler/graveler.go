@@ -39,42 +39,39 @@ type Reference interface {
 }
 
 // function/methods receiving the following basic types could assume they passed validation
-type (
-	// StorageNamespace is the URI to the storage location
-	StorageNamespace string
 
-	// RepositoryID is an identifier for a repo
-	RepositoryID string
+// StorageNamespace is the URI to the storage location
+type StorageNamespace string
 
-	// Key represents a logical path for an value
-	Key []byte
+// RepositoryID is an identifier for a repo
+type RepositoryID string
 
-	// Ref could be a commit ID, a branch name, a Tag
-	Ref string
+// Key represents a logical path for an value
+type Key []byte
 
-	// TagID represents a named tag pointing at a commit
-	TagID string
+// Ref could be a commit ID, a branch name, a Tag
+type Ref string
 
-	// CommitID is a content addressable hash representing a Commit object
-	CommitID string
+// TagID represents a named tag pointing at a commit
+type TagID string
 
-	// BranchID is an identifier for a branch
-	BranchID string
+// CommitID is a content addressable hash representing a Commit object
+type CommitID string
 
-	// TreeID represents a snapshot of the tree, referenced by a commit
-	TreeID string
+// BranchID is an identifier for a branch
+type BranchID string
 
-	// StagingToken represents a namespace for writes to apply as uncommitted
-	StagingToken string
+// TreeID represents a snapshot of the tree, referenced by a commit
+type TreeID string
 
-	// CommonPrefix represents one or more keys with the same key prefix
-	CommonPrefix []byte
+// StagingToken represents a namespace for writes to apply as uncommitted
+type StagingToken string
 
-	// Metadata key/value strings to holds metadata information on value and commit
-	Metadata map[string]string
+// CommonPrefix represents one or more keys with the same key prefix
+type CommonPrefix []byte
 
-	Delimiter []byte
-)
+// Metadata key/value strings to holds metadata information on value and commit
+type Metadata map[string]string
 
 // Repository represents repository metadata
 type Repository struct {
@@ -137,8 +134,9 @@ type Listing struct {
 
 // Diff represents a change in value based on key
 type Diff struct {
-	Key  Key
-	Type DiffType
+	Type  DiffType
+	Key   Key
+	Value *Value
 }
 
 // Interfaces
@@ -156,12 +154,10 @@ type KeyValueStore interface {
 
 	// List lists entries on repository / ref will filter by prefix, from key 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
-	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
-	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last key from the previous call.
-	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from Key, delimiter Delimiter, amount int) ([]Listing, bool, error)
+	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error)
 }
 
-type VersionControler interface {
+type VersionController interface {
 	// GetRepository returns the Repository metadata object for the given RepositoryID
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
@@ -192,9 +188,7 @@ type VersionControler interface {
 
 	// ListBranches lists branches on repositories
 	//   The 'from' is used to get all branches after this branch id
-	//   The 'amount' specifies the maximum number of branches the call will return
-	//   Returns branches, has more boolean and an error
-	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID, amount int) ([]Branch, bool, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -221,16 +215,16 @@ type VersionControler interface {
 	// DiffUncommitted returns the changes as 'Diff' slice on a repository / branch
 	//   List the differences 'from' key, with 'amount' of result.
 	//   Returns differences found, true (boolean) in case there are more differences - use 'from' with last key from previous call to get the next differences
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key, amount int) ([]Diff, bool, error)
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' key with no more than 'amount' per call.
 	//   Returns the list of changes, true (boolean) in case there are more differences - use last key as 'from' in the next call to continue getting differences
-	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key, amount int) ([]Diff, bool, error)
+	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error)
 }
 
 type Graveler interface {
 	KeyValueStore
-	VersionControler
+	VersionController
 }
 
 // Internal structures used by Graveler
@@ -256,7 +250,7 @@ type RepositoryIterator interface {
 	Close()
 }
 
-type Iterator interface {
+type ValueIterator interface {
 	Next() bool
 	SeekGE(id Key) bool
 	Value() *ValueRecord
@@ -284,6 +278,14 @@ type CommitIterator interface {
 	Next() bool
 	SeekGE(id CommitID) bool
 	Value() *CommitRecord
+	Err() error
+	Close()
+}
+
+type ListingIterator interface {
+	Next() bool
+	SeekGE(id Key) bool
+	Value() *Listing
 	Err() error
 	Close()
 }
@@ -341,8 +343,8 @@ type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided TreeID
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
-	// List takes a given tree and returns an Iterator seeked to >= "from" key
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (Iterator, error)
+	// List takes a given tree and returns an ValueIterator seeked to >= "from" key
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (ValueIterator, error)
 
 	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
@@ -356,7 +358,7 @@ type CommittedManager interface {
 	// Apply is the act of taking an existing tree (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new treeID that is expected to be immediately addressable
-	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, iterator Iterator) (TreeID, error)
+	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, iterator ValueIterator) (TreeID, error)
 }
 
 // StagingManager handles changes to a branch that aren't yet committed
@@ -372,14 +374,14 @@ type StagingManager interface {
 	// Delete deletes an value by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// List takes a given BranchID and returns an Iterator seeked to >= "from" key
-	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (Iterator, error)
+	// List takes a given BranchID and returns an ValueIterator seeked to >= "from" key
+	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (ValueIterator, error)
 
 	// Snapshot returns a new snapshot and returns it's ID
 	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
 
 	// ListSnapshot returns an iterator to scan the snapshot entries
-	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (Iterator, error)
+	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (ValueIterator, error)
 }
 
 var (
