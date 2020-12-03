@@ -411,7 +411,6 @@ class Branches {
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
-        return response.json();
     }
 
     async revert(repoId, branch, options) {

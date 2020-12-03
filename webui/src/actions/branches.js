@@ -26,15 +26,15 @@ export const createBranch = (repoId, branchName, sourceRefId) => {
     })
 };
 
+export const resetBranch = () => ({
+    ...BRANCHES_CREATE.resetAction(),
+});
+
 export const deleteBranch = (repoId, branchName) => {
     return BRANCHES_DELETE.execute(async () => {
         return await api.branches.delete(repoId, branchName)
     })
 };
-
-export const resetBranch = () => ({
-    ...BRANCHES_CREATE.resetAction(),
-});
 
 export const revertBranch = (repoId, branchName, options) =>
     BRANCHES_REVERT.execute(() => api.branches.revert(repoId, branchName, options));

@@ -41,9 +41,7 @@ const CreateBranchButton = connect(
 
     const onSubmit = () => {
         if (disabled) return;
-        console.log(status);
         createBranch(repo.id, textRef.current.value, (!!selectedBranch) ? selectedBranch.id : "");
-        console.log(status);
     };
 
     useEffect(() => {
@@ -108,10 +106,15 @@ const BranchesPage = connect(
     const [selectedBranch, setSelectedBranch] = useState("");
     const [show,setShow] = useState(false);
 
-    const handleClose = () => setShow(false);
+    const inProgress = deleteStatus.inProgress;
+
+    const handleClose = () => {
+        setShow(false);
+    }
     const handleShow = () => setShow(true);
 
     const onSubmit = () => {
+        if (inProgress) return;
         deleteBranch(repo.id, selectedBranch);
         handleClose();
     }
@@ -122,13 +125,11 @@ const BranchesPage = connect(
 
     useEffect(() => {
         if (createStatus.done)
-        {   console.log(createStatus);
-            listBranches(repo.id, "");}
+            listBranches(repo.id, "");
     }, [listBranches, createStatus.done, repo.id]);
 
     useEffect(() => {
         if (deleteStatus.done){
-            handleClose();
             listBranches(repo.id, "");
             }
     }, [listBranches, deleteStatus.done, repo.id]);
@@ -179,7 +180,7 @@ const BranchesPage = connect(
                                             </Button>
                                         </OverlayTrigger>
                                     </ButtonGroup>
-                                    <ConfirmationModal show={show} onHide={handleClose} msg={`are you sure you wish to delete branch ${selectedBranch}`} onConfirm={onSubmit}/>
+                                    <ConfirmationModal show={show} onHide={handleClose} msg={`are you sure you wish to delete branch ${selectedBranch}?`} onConfirm={onSubmit}/>
                                 </div>
                             </div>
                         </ListGroupItem>
@@ -211,5 +212,5 @@ const BranchesPage = connect(
 
 export default connect(
     ({ branches }) => ({ branches: branches.list, createStatus: branches.create}),
-    ({ listBranches, listBranchesPaginate })
+    ({ listBranches, listBranchesPaginate})
 )(BranchesPage);
