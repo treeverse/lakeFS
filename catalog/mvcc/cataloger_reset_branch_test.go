@@ -61,11 +61,11 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 	reference := MakeReference("master", UncommittedID)
 	entries, _, err := c.ListEntries(ctx, repository, reference, "", "", "", -1)
 	if err != nil {
-		t.Fatal("List for ResetBranch test:", err)
+		t.Fatal("ListEntries for ResetBranch test:", err)
 	}
 	expectedEntriesLen := 3
 	if len(entries) != expectedEntriesLen {
-		t.Fatalf("List for ResetBranch should return %d items, got %d", expectedEntriesLen, len(entries))
+		t.Fatalf("ListEntries for ResetBranch should return %d items, got %d", expectedEntriesLen, len(entries))
 	}
 }
 
@@ -116,10 +116,10 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 	}
 	entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", "", -1)
 	if err != nil {
-		t.Fatal("List for ResetBranch test:", err)
+		t.Fatal("ListEntries for ResetBranch test:", err)
 	}
 	expectedEntriesLen := 3
 	if len(entries) != expectedEntriesLen {
-		t.Fatalf("List for ResetBranch should return %d items, got %d", expectedEntriesLen, len(entries))
+		t.Fatalf("ListEntries for ResetBranch should return %d items, got %d", expectedEntriesLen, len(entries))
 	}
 }

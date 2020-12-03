@@ -133,13 +133,13 @@ func TestCataloger_CreateEntries(t *testing.T) {
 				ent, err := c.GetEntry(ctx, repo, tt.args.branch, entry.Path, catalog.GetEntryParams{})
 				testutil.MustDo(t, "get entry for new created entry", err)
 				if ent.Path != entry.Path {
-					t.Errorf("Value at pos %d: path '%s', expected '%s'", i, ent.Path, entry.Path)
+					t.Errorf("Entry at pos %d: path '%s', expected '%s'", i, ent.Path, entry.Path)
 				}
 				if ent.PhysicalAddress != entry.PhysicalAddress {
-					t.Errorf("Value at pos %d: address '%s', expected '%s'", i, ent.PhysicalAddress, entry.PhysicalAddress)
+					t.Errorf("Entry at pos %d: address '%s', expected '%s'", i, ent.PhysicalAddress, entry.PhysicalAddress)
 				}
 				if ent.Size != entry.Size {
-					t.Errorf("Value at pos %d: size '%d', expected '%d'", i, ent.Size, entry.Size)
+					t.Errorf("Entry at pos %d: size '%d', expected '%d'", i, ent.Size, entry.Size)
 				}
 			}
 		})

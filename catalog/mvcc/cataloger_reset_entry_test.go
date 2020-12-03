@@ -257,7 +257,7 @@ func TestCataloger_ResetEntry_UncommittedDeleteSameBranch(t *testing.T) {
 		t.Fatal("get entry for reset entry test:", err)
 	}
 	if ent.Path != "/file1" || ent.PhysicalAddress != "/addr1" {
-		t.Fatalf("catalog.Value should be reseted back to /file1 /addr1, got %+v", ent)
+		t.Fatalf("catalog.Entry should be reseted back to /file1 /addr1, got %+v", ent)
 	}
 }
 
@@ -294,6 +294,6 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 		t.Fatal("get entry for reset entry test:", err)
 	}
 	if ent.Path != "/file1" || ent.PhysicalAddress != "/addr1" {
-		t.Fatalf("catalog.Value should be reseted back to /file1 /addr1, got %+v", ent)
+		t.Fatalf("catalog.Entry should be reseted back to /file1 /addr1, got %+v", ent)
 	}
 }

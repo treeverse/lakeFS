@@ -106,7 +106,7 @@ func TestCataloger_Diff(t *testing.T) {
 			expectedType = catalog.DifferenceTypeChanged
 		}
 		if d.Type != expectedType {
-			t.Fatalf("Key '%s' diff type=%d, expected=%d", d.Path, d.Type, expectedType)
+			t.Fatalf("Path '%s' diff type=%d, expected=%d", d.Path, d.Type, expectedType)
 		}
 	}
 
@@ -369,15 +369,15 @@ func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
-	//	catalog.Difference{Type: catalog.DifferenceTypeChanged, Key: "/file2"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file3"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file4"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file5"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file555"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file6"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file7"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Key: "/file8"},
-	//	catalog.Difference{Type: catalog.DifferenceTypeRemoved, Key: "/file1"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeChanged, Path: "/file2"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file3"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file4"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file5"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file555"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file6"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file7"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeAdded, Path: "/file8"},
+	//	catalog.Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file1"},
 	//}
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
