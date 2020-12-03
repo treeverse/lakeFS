@@ -115,8 +115,8 @@ func (ps CommitParents) Identity() []byte {
 	for i, v := range ps {
 		strings[i] = string(v)
 	}
-	buf := ident.NewBuffer()
-	buf.MarshalStringList(strings)
+	buf := ident.NewAddressWriter()
+	buf.MarshalStringSlice(strings)
 	return buf.Identity()
 }
 
@@ -131,7 +131,7 @@ type Commit struct {
 }
 
 func (c Commit) Identity() []byte {
-	b := ident.NewBuffer()
+	b := ident.NewAddressWriter()
 	b.MarshalString("commit:v1")
 	b.MarshalString(c.Committer)
 	b.MarshalString(c.Message)

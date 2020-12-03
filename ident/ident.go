@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"hash"
 	"sort"
 )
 
@@ -12,47 +13,62 @@ type Identifiable interface {
 }
 
 func ContentAddress(entity Identifiable) string {
-	h := sha256.New()
-	_, _ = h.Write(entity.Identity())
-	return hex.EncodeToString(h.Sum(nil))
+	return hex.EncodeToString(entity.Identity())
 }
 
-type Buffer struct {
-	buf []byte
+type AddressType uint8
+
+const (
+	AddressTypeBytes AddressType = iota
+	AddressTypeString
+	AddressTypeInt64
+	AddressTypeStringSlice
+	AddressTypeStringMap
+	AddressTypeEmbeddedIdentifiable
+)
+
+type AddressWriter struct {
+	hash.Hash
 }
 
-func NewBuffer() *Buffer {
-	return &Buffer{
-		buf: make([]byte, 0),
-	}
+func NewAddressWriter() *AddressWriter {
+	return &AddressWriter{sha256.New()}
 }
 
-func (b *Buffer) MarshalBytes(v []byte) {
+func (b *AddressWriter) marshalType(addressType AddressType) {
+	_, _ = b.Write([]byte{byte(addressType)})
+}
+
+func (b *AddressWriter) MarshalBytes(v []byte) {
+	b.marshalType(AddressTypeBytes)
 	b.MarshalInt64(int64(len(v)))
-	b.buf = append(b.buf, v...)
+	_, _ = b.Write(v)
 }
 
-func (b *Buffer) MarshalString(v string) {
+func (b *AddressWriter) MarshalString(v string) {
+	b.marshalType(AddressTypeString)
 	b.MarshalInt64(int64(len(v)))
-	b.buf = append(b.buf, []byte(v)...)
+	_, _ = b.Write([]byte(v))
 }
 
-func (b *Buffer) MarshalInt64(v int64) {
+func (b *AddressWriter) MarshalInt64(v int64) {
+	b.marshalType(AddressTypeInt64)
+	_, _ = b.Write([]byte{8})
 	bytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(bytes, 8)
-	b.buf = append(b.buf, bytes...)
 	binary.BigEndian.PutUint64(bytes, uint64(v))
-	b.buf = append(b.buf, bytes...)
+	_, _ = b.Write(bytes)
 }
 
-func (b *Buffer) MarshalStringList(v []string) {
+func (b *AddressWriter) MarshalStringSlice(v []string) {
+	b.marshalType(AddressTypeStringSlice)
 	b.MarshalInt64(int64(len(v)))
 	for _, item := range v {
 		b.MarshalString(item)
 	}
 }
 
-func (b *Buffer) MarshalStringMap(v map[string]string) {
+func (b *AddressWriter) MarshalStringMap(v map[string]string) {
+	b.marshalType(AddressTypeStringMap)
 	b.MarshalInt64(int64(len(v)))
 	keys := make([]string, len(v))
 	i := 0
@@ -66,10 +82,11 @@ func (b *Buffer) MarshalStringMap(v map[string]string) {
 	}
 }
 
-func (b *Buffer) MarshalIdentifiable(v Identifiable) {
+func (b *AddressWriter) MarshalIdentifiable(v Identifiable) {
+	b.marshalType(AddressTypeEmbeddedIdentifiable)
 	b.MarshalBytes(v.Identity())
 }
 
-func (b *Buffer) Identity() []byte {
-	return b.buf
+func (b *AddressWriter) Identity() []byte {
+	return b.Sum(nil)
 }
