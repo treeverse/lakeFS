@@ -3,32 +3,23 @@ package pyramid
 import (
 	"fmt"
 
-	"github.com/dgraph-io/ristretto"
+	lru "github.com/treeverse/golang-lru"
+	"github.com/treeverse/golang-lru/simplelru"
 )
 
 // eviction is an abstraction of the eviction control for easy testing
 type eviction interface {
 	touch(rPath relativePath)
-	store(rPath relativePath, filesize int64) bool
+	store(rPath relativePath, filesize int64) int
 }
 
 type lruSizeEviction struct {
-	cache *ristretto.Cache
+	cache simplelru.LRUCache
 }
 
-const (
-	// Per ristretto, this is the optimized (static) buffer items
-	bufferItems = 64
-)
-
-func newLRUSizeEviction(capacity, estimatedFileBytes int64, evict func(rPath relativePath)) (*lruSizeEviction, error) {
-	cache, err := ristretto.NewCache(&ristretto.Config{
-		// Per ristretto, this is the optimized counters num
-		NumCounters: int64(10.0 * float64(capacity) / float64(estimatedFileBytes)),
-		MaxCost:     capacity,
-		Metrics:     false,
-		OnEvict:     onEvict(evict),
-		BufferItems: bufferItems,
+func newLRUSizeEviction(capacity int64, evict func(rPath relativePath)) (eviction, error) {
+	cache, err := lru.NewWithEvict(capacity, func(key interface{}, _ interface{}, _ int64) {
+		evict(key.(relativePath))
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating cache: %w", err)
@@ -38,18 +29,11 @@ func newLRUSizeEviction(capacity, estimatedFileBytes int64, evict func(rPath rel
 	}, nil
 }
 
-func onEvict(evict func(rPath relativePath)) func(uint64, uint64, interface{}, int64) {
-	return func(_, _ uint64, value interface{}, _ int64) {
-		evict(value.(relativePath))
-	}
-}
-
 func (am *lruSizeEviction) touch(rPath relativePath) {
-	am.cache.Get(string(rPath))
+	// update last access time, value is meaningless
+	am.cache.Get(rPath)
 }
 
-func (am *lruSizeEviction) store(rPath relativePath, filesize int64) bool {
-	// must store the path as value since the returned key is the hash,
-	// not the actual key.
-	return am.cache.Set(string(rPath), rPath, filesize)
+func (am *lruSizeEviction) store(rPath relativePath, filesize int64) int {
+	return am.cache.Add(rPath, nil, filesize)
 }

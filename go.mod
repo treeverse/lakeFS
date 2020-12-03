@@ -14,7 +14,6 @@ require (
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dgraph-io/ristretto v0.0.3
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
 	github.com/georgysavva/scany v0.2.6
@@ -74,6 +73,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
+	github.com/treeverse/golang-lru v0.6.1
 	github.com/tsenart/vegeta/v12 v12.8.3
 	github.com/vbauerster/mpb/v5 v5.3.0
 	github.com/xitongsys/parquet-go v1.5.2

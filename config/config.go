@@ -31,7 +31,7 @@ const (
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
 	DefaultDiskAllocatedBytes     = 1 * 1024 * 1024 * 1024
-	DefaultDiskBaseDir            = "~/lakefs/metadata"
+	DefaultDiskBaseDir            = "~/lakefs/local_tier"
 	DefaultDiskBlockStoragePrefix = "_lakefs"
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"

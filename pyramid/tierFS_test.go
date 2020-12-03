@@ -22,7 +22,6 @@ var (
 
 const blockStoragePrefix = "prefix"
 const allocatedDiskBytes = 4 * 1024 * 1024
-const estimatedFileBytes = 1 * 1024 * 1024
 
 func TestMain(m *testing.M) {
 	fsName := uuid.Must(uuid.NewRandom()).String()
@@ -42,7 +41,6 @@ func TestMain(m *testing.M) {
 		fsBlockStoragePrefix: blockStoragePrefix,
 		localBaseDir:         "/tmp",
 		allocatedDiskBytes:   allocatedDiskBytes,
-		estimatedFileBytes:   estimatedFileBytes,
 	})
 	if err != nil {
 		panic(err)
@@ -55,33 +53,17 @@ func TestMain(m *testing.M) {
 
 func TestSimpleWriteRead(t *testing.T) {
 	namespace := uuid.Must(uuid.NewRandom()).String()
-	filename := "file1"
+	filename := "1/2/file1.txt"
 
 	content := "hello world!"
 	writeToFile(t, namespace, filename, content)
 	checkContent(t, namespace, filename, content)
 }
 
-func TestSimpleStoreRead(t *testing.T) {
-	tempFilename := path.Join("/tmp/", uuid.Must(uuid.NewRandom()).String())
-	namespace := uuid.Must(uuid.NewRandom()).String()
-	filename := "file1"
-	content := "hello world!"
-
-	require.NoError(t, ioutil.WriteFile(tempFilename, []byte(content), os.ModePerm))
-	require.NoError(t, fs.Store(namespace, tempFilename, filename))
-
-	_, err := os.Stat(tempFilename)
-	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
-
-	checkContent(t, namespace, filename, content)
-}
-
 func TestReadFailDuringWrite(t *testing.T) {
 	namespace := uuid.Must(uuid.NewRandom()).String()
 	filename := "file1"
-	f, err := fs.Create(namespace, filename)
+	f, err := fs.Create(namespace)
 	require.NoError(t, err)
 
 	content := "some content"
@@ -94,6 +76,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.Error(t, err)
 
 	require.NoError(t, f.Close())
+	require.NoError(t, f.store(filename))
 	checkContent(t, namespace, filename, content)
 }
 
@@ -139,7 +122,6 @@ func TestStartup(t *testing.T) {
 		fsBlockStoragePrefix: blockStoragePrefix,
 		localBaseDir:         "/tmp",
 		allocatedDiskBytes:   allocatedDiskBytes,
-		estimatedFileBytes:   estimatedFileBytes,
 	})
 	if err != nil {
 		panic(err)
@@ -161,12 +143,13 @@ func TestStartup(t *testing.T) {
 
 func testEviction(t *testing.T, namespaces ...string) {
 	// making sure to fill the cache
-	numFiles := 5 * allocatedDiskBytes / estimatedFileBytes
+	fileBytes := 512 * 1024
+	numFiles := 5 * allocatedDiskBytes / fileBytes
 	// write
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
 
-		content := randstr.String(estimatedFileBytes, "abcdefghijklmnopqrstuvwxyz")
+		content := randstr.String(fileBytes, "abcdefghijklmnopqrstuvwxyz")
 		writeToFile(t, namespaces[i%len(namespaces)], filename, content)
 	}
 
@@ -184,23 +167,13 @@ func testEviction(t *testing.T, namespaces ...string) {
 }
 
 func TestInvalidArgs(t *testing.T) {
-	f, err := fs.Create("not/a/valid/namespace", "validfilename")
+	f, err := fs.Create("not/a/valid/namespace")
 	require.Nil(t, f)
-	require.Error(t, err)
-
-	f, err = fs.Create("namespace", "not/a/valid/filename")
-	require.Nil(t, f)
-	require.Error(t, err)
-
-	err = fs.Store("not/a/valid/namespace", "paths/are/valid/here", "filename")
-	require.Error(t, err)
-
-	err = fs.Store("namespace", "paths/are/valid/here", "not/a/valid/filename")
 	require.Error(t, err)
 }
 
 func writeToFile(t *testing.T, namespace, filename, content string) {
-	f, err := fs.Create(namespace, filename)
+	f, err := fs.Create(namespace)
 	require.NoError(t, err)
 
 	n, err := f.Write([]byte(content))
@@ -208,12 +181,13 @@ func writeToFile(t *testing.T, namespace, filename, content string) {
 	require.Equal(t, len(content), n)
 
 	require.NoError(t, f.Close())
+	require.NoError(t, f.Store(filename))
 }
 
 func checkContent(t *testing.T, namespace string, filename string, content string) {
 	f, err := fs.Open(namespace, filename)
-	defer f.Close()
 	require.NoError(t, err)
+	defer f.Close()
 
 	bytes, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
