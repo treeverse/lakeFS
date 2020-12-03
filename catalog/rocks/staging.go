@@ -62,12 +62,6 @@ func (p *PGStagingManager) ListEntries(ctx context.Context, st StagingToken) (En
 	return NewStagingIterator(ctx, p.db, p.log, st), nil
 }
 
-type listEntriesResult struct {
-	entries  []*EntryRecord
-	hasNext  bool
-	nextPath Path
-}
-
 func (p *PGStagingManager) Drop(ctx context.Context, st StagingToken) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM staging_entries WHERE staging_token=$1", st)
