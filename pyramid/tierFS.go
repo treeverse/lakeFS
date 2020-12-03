@@ -114,7 +114,9 @@ func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
 }
 
 func (tfs *TierFS) removeFromLocal(rPath relativePath) {
-	removeFromLocal(tfs.logger, tfs.fsLocalBaseDir, rPath)
+	// This will be called by the cache eviction mechanism during entry insert.
+	// We don't want to wait while the file is being removed from the local disk.
+	go removeFromLocal(tfs.logger, tfs.fsLocalBaseDir, rPath)
 }
 
 func removeFromLocal(logger logging.Logger, fsLocalBaseDir string, rPath relativePath) {

@@ -73,11 +73,11 @@ func TestWriteValidate(t *testing.T) {
 
 	require.NoError(t, sut.Close())
 	require.Error(t, sut.Store("workspace"+string(os.PathSeparator)))
+	require.False(t, storeCalled)
+
 	require.Error(t, sut.Close())
 	require.NoError(t, sut.Store("validfilename"))
 	require.Error(t, sut.Store("validfilename"))
-
-	require.False(t, storeCalled)
 }
 
 func TestPyramidReadFile(t *testing.T) {
