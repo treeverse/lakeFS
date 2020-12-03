@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/treeverse/lakefs/logging"
@@ -74,7 +75,7 @@ func NewFS(c *Config) (FS, error) {
 		return nil, fmt.Errorf("creating eviction control: %w", err)
 	}
 
-	if err := handleExistingFiles(c.logger, eviction, fsLocalBaseDir); err != nil {
+	if err := handleExistingFiles(eviction, fsLocalBaseDir); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 
@@ -87,7 +88,7 @@ func NewFS(c *Config) (FS, error) {
 // 1. Adds stored files to the eviction control
 // 2. Remove workspace directories and all its content if it
 //	  exist under the namespace dir.
-func handleExistingFiles(logger logging.Logger, eviction eviction, fsLocalBaseDir string) error {
+func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
 	if err := filepath.Walk(fsLocalBaseDir, func(rPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -258,14 +259,17 @@ func validateArgs(namespace, filename string) error {
 	return validateFilename(filename)
 }
 
+var (
+	errSeparatorInFS   = errors.New("path contains separator")
+	errPathInWorkspace = errors.New("file cannot be located in the workspace")
+)
+
 func validateFilename(filename string) error {
-	if strings.HasPrefix(filename, workspaceDir+"/") {
-		return fmt.Errorf("file %s cannot be located in the workspace", filename)
+	if strings.HasPrefix(filename, workspaceDir+string(os.PathSeparator)) {
+		return errPathInWorkspace
 	}
 	return nil
 }
-
-var errSeparatorInFS = errors.New("path contains separator")
 
 func validateNamespace(ns string) error {
 	if strings.ContainsRune(ns, os.PathSeparator) {
@@ -298,6 +302,10 @@ func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
 }
 
 func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
+	if runtime.GOOS == "windows" {
+		filename = strings.ReplaceAll(filename, `\\'`, "/")
+	}
+
 	return block.ObjectPointer{
 		StorageNamespace: namespace,
 		Identifier:       tfs.blockStoragePath(filename),

@@ -72,7 +72,7 @@ func TestWriteValidate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, sut.Close())
-	require.Error(t, sut.Store("workspace/"))
+	require.Error(t, sut.Store("workspace"+string(os.PathSeparator)))
 	require.Error(t, sut.Close())
 	require.NoError(t, sut.Store("validfilename"))
 	require.Error(t, sut.Store("validfilename"))
