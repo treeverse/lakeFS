@@ -1,9 +1,11 @@
 package sstable
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
-	"sync"
+
+	"github.com/cockroachdb/pebble"
 
 	"github.com/treeverse/lakefs/pyramid"
 
@@ -15,19 +17,14 @@ type PebbleSSTableManager struct {
 	// maximum size in bytes for the in-memory cache for SSTables
 	cacheMaxSize int64
 
-	fs pyramid.FS
-
-	tableReaders map[SSTableID]*sstable.Reader
-
-	loadingReaders sync.Map
+	fs    pyramid.FS
+	cache *pebble.Cache
 }
 
 const sstableTierFSNamespace = "sstables"
 
 func NewPebbleSSTableManager() *PebbleSSTableManager {
-	return &PebbleSSTableManager{
-		loadingReaders: sync.Map{},
-	}
+	return &PebbleSSTableManager{}
 }
 
 var (
@@ -37,7 +34,7 @@ var (
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *PebbleSSTableManager) GetEntry(path rocks.Path, tid SSTableID) (*rocks.Entry, error) {
+func (m *PebbleSSTableManager) GetEntry(path rocks.Path, tid ID) (*rocks.Entry, error) {
 	reader, err := m.getReader(tid)
 	if err != nil {
 		return nil, err
@@ -69,16 +66,15 @@ func (m *PebbleSSTableManager) GetEntry(path rocks.Path, tid SSTableID) (*rocks.
 	return deserializeEntry(val)
 }
 
-func (m *PebbleSSTableManager) getReader(tid SSTableID) (*sstable.Reader, error) {
-	if !m.isReaderLoaded(tid) {
-		err := m.loadReader(tid)
-		if err != nil {
-			return nil, fmt.Errorf("load sstable: %w", err)
-		}
+func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, error) {
+	f, err := m.fs.Open(sstableTierFSNamespace, string(tid))
+	if err != nil {
+		return nil, fmt.Errorf("open sstable %s: %w", tid, err)
 	}
 
-	return m.tableReaders[tid], nil
+	return sstable.NewReader(f, sstable.ReaderOptions{		Cache:      m.cache	})
 }
+
 
 func deserializeEntry(val []byte) (*rocks.Entry, error) {
 	// TODO: pending serialization
@@ -91,7 +87,7 @@ func serializeEntry(entry rocks.Entry) ([]byte, error) {
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *PebbleSSTableManager) SSTableIterator(tid SSTableID, from rocks.Path) (rocks.EntryIterator, error) {
+func (m *PebbleSSTableManager) SSTableIterator(tid ID, from rocks.Path) (rocks.EntryIterator, error) {
 	reader, err := m.getReader(tid)
 	if err != nil {
 		return nil, err
@@ -107,87 +103,5 @@ func (m *PebbleSSTableManager) SSTableIterator(tid SSTableID, from rocks.Path) (
 
 // GetWriter returns a new SSTable writer instance
 func (m *PebbleSSTableManager) GetWriter() (Writer, error) {
-	return new
-}
-
-type dispatcher struct {
-	sync.Mutex
-	chs        []chan bool
-	dispatched bool
-}
-
-func (d *dispatcher) register() (<-chan bool, bool) {
-	d.Lock()
-	defer d.Unlock()
-	if d.dispatched {
-		return nil, false
-	}
-
-	ch := make(chan bool)
-	d.chs = append(d.chs, ch)
-
-	return ch, true
-}
-
-func (d *dispatcher) dispatch() {
-	d.Lock()
-	defer d.Unlock()
-
-	for _, ch := range d.chs {
-		ch <- true
-	}
-	d.dispatched = true
-}
-
-func (m *PebbleSSTableManager) loadReader(tid SSTableID) error {
-	// the goroutine that stored the dispatcher is the one in-charge of loading the reader
-	val, loaded := m.loadingReaders.LoadOrStore(tid, &dispatcher{})
-	dispatcher, ok := val.(*dispatcher)
-	if !ok {
-		return fmt.Errorf("unkown value")
-	}
-
-	if loaded {
-		return m.waitUntilReaderLoaded(tid, dispatcher)
-	}
-
-	// we're in-charge of initiating the reader
-	defer dispatcher.dispatch()
-	defer m.loadingReaders.Delete(tid)
-
-	// checking again before actual loading
-	if m.isReaderLoaded(tid) {
-		return nil
-	}
-
-	reader, err := m.disk.loadReader(tid)
-	if err != nil {
-		return fmt.Errorf("load reader: %w", err)
-	}
-	m.tableReaders[tid] = reader
-	return nil
-}
-
-func (m *PebbleSSTableManager) waitUntilReaderLoaded(tid SSTableID, dispatcher *dispatcher) error {
-	// need to wait until someone else loads the reader
-	ch, ok := dispatcher.register()
-	if !ok {
-		// dispatcher was invalidated, need to retry
-		return m.loadReader(tid)
-	}
-
-	select {
-	case <-ch:
-		if m.isReaderLoaded(tid) {
-			return nil
-		}
-		// Loading reader failed in primary flow.
-		// We should start initiating reader again.
-		return m.loadReader(tid)
-	}
-}
-
-func (m *PebbleSSTableManager) isReaderLoaded(tid SSTableID) bool {
-	_, ok := m.tableReaders[tid]
-	return ok
+	return newDiskWriter(m.fs, sha256.New())
 }

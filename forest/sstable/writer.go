@@ -41,9 +41,9 @@ func newDiskWriter(tierFS pyramid.FS, hash hash.Hash) (*DiskWriter, error) {
 	}, nil
 }
 
-func (dw *DiskWriter) WriteEntry(path rocks.Path, entry rocks.Entry) error {
-	pathBytes := []byte(path)
-	entryBytes, err := serializeEntry(entry)
+func (dw *DiskWriter) WriteEntry(entry rocks.EntryRecord) error {
+	pathBytes := []byte(entry.Path)
+	entryBytes, err := serializeEntry(*entry.Entry)
 	if err != nil {
 		return fmt.Errorf("serializing entry: %w", err)
 	}
@@ -53,9 +53,9 @@ func (dw *DiskWriter) WriteEntry(path rocks.Path, entry rocks.Entry) error {
 
 	// updating stats
 	if dw.count == 0 {
-		dw.first = path
+		dw.first = entry.Path
 	}
-	dw.last = path
+	dw.last = entry.Path
 	dw.count++
 
 	if _, err := dw.hash.Write(pathBytes); err != nil {
@@ -79,7 +79,7 @@ func (dw *DiskWriter) Close() (*WriteResult, error) {
 	}
 
 	return &WriteResult{
-		SSTableID: SSTableID(sstableID),
+		SSTableID: ID(sstableID),
 		First:     dw.first,
 		Last:      dw.last,
 		Count:     dw.count,

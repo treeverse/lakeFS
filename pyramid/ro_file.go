@@ -30,3 +30,11 @@ func (f *ROFile) Stat() (os.FileInfo, error) {
 func (f *ROFile) Close() error {
 	return f.fh.Close()
 }
+
+func (f *ROFile) Write(p []byte) (n int, err error) {
+	return f.fh.Write(p)
+}
+
+func (f *ROFile) Sync() error {
+	return f.fh.Sync()
+}
