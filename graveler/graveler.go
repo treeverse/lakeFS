@@ -180,11 +180,8 @@ type VersionController interface {
 	// GetBranch gets branch information by branch / repository id
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
 
-	// Log lists commits in repository
-	//   The 'from' is used to get all commits after the specified commit id
-	//   The 'amount' specifies the maximum number of commits the call will return
-	// 	 Returns commits, has more boolean and an error
-	Log(ctx context.Context, repositoryID RepositoryID, from CommitID, amount int) ([]Commit, bool, error)
+	// Log returns an iterator starting at commit ID up to repository root
+	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
 	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
@@ -329,8 +326,8 @@ type RefManager interface {
 	// and internally: https://github.com/treeverse/lakeFS/blob/09954804baeb36ada74fa17d8fdc13a38552394e/index/dag/commits.go
 	FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error)
 
-	// Log returns an iterator that reads all parents up to the first commit
-	Log(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
+	// Log returns an iterator starting at commit ID up to repository root
+	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
