@@ -211,6 +211,6 @@ const BranchesPage = connect(
 });
 
 export default connect(
-    ({ branches }) => ({ branches: branches.list, createStatus: branches.create}),
-    ({ listBranches, listBranchesPaginate})
+    ({ branches }) => ({ branches: branches.list, createStatus: branches.create }),
+    ({ listBranches, listBranchesPaginate })
 )(BranchesPage);
