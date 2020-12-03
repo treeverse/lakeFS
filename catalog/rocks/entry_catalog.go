@@ -24,6 +24,7 @@ type EntryRecord struct {
 }
 
 type EntryListing struct {
+	CommonPrefix bool
 	Path
 	*Entry
 }

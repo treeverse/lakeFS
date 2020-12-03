@@ -38,6 +38,14 @@ type Reference interface {
 	CommitID() CommitID
 }
 
+// ListingType
+type ListingType uint8
+
+const (
+	ListingTypePath ListingType = iota
+	ListingTypeCommonPrefix
+)
+
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
@@ -126,9 +134,10 @@ type BranchRecord struct {
 	*Branch
 }
 
-// Listing represents CommonPrefix as a key without a Value (nil) or a CommonPrefix as common prefix
+// Listing of key/value when common prefix is true, value is nil
 type Listing struct {
-	CommonPrefix
+	CommonPrefix bool
+	Key
 	*Value
 }
 
@@ -149,7 +158,7 @@ type KeyValueStore interface {
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
 	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error
 
-	// Delete deletes value from repository / branch by key
+	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// List lists entries on repository / ref will filter by prefix, from key 'from'.
@@ -164,9 +173,8 @@ type VersionController interface {
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
 
-	// ListRepositories lists repositories starting with 'from' returns maximum 'amount' results and true (boolean)
-	// in case more results exist
-	ListRepositories(ctx context.Context, from RepositoryID, amount int) ([]RepositoryRecord, bool, error)
+	// ListRepositories returns iterator to scan repositories
+	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
@@ -188,7 +196,7 @@ type VersionController interface {
 
 	// ListBranches lists branches on repositories
 	//   The 'from' is used to get all branches after this branch id
-	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -212,10 +220,8 @@ type VersionController interface {
 	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
 
-	// DiffUncommitted returns the changes as 'Diff' slice on a repository / branch
-	//   List the differences 'from' key, with 'amount' of result.
-	//   Returns differences found, true (boolean) in case there are more differences - use 'from' with last key from previous call to get the next differences
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error)
+	// DiffUncommitted returns iterator to scan the changes made on the branch
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' key with no more than 'amount' per call.
 	//   Returns the list of changes, true (boolean) in case there are more differences - use last key as 'from' in the next call to continue getting differences
@@ -302,7 +308,7 @@ type RefManager interface {
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
 
 	// ListRepositories lists repositories
-	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
+	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
@@ -320,7 +326,7 @@ type RefManager interface {
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
@@ -334,7 +340,7 @@ type RefManager interface {
 	FindMergeBase(ctx context.Context, repositoryID RepositoryID, commitIDs ...CommitID) (*Commit, error)
 
 	// Log returns an iterator that reads all parents up to the first commit
-	Log(ctx context.Context, repositoryID RepositoryID, from CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -343,12 +349,12 @@ type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided TreeID
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
-	// List takes a given tree and returns an ValueIterator seeked to >= "from" key
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (ValueIterator, error)
+	// List takes a given tree and returns an ValueIterator
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
 
 	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Key) (DiffIterator, error)
+	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
@@ -366,7 +372,7 @@ type CommittedManager interface {
 type StagingManager interface {
 	// Get returns the provided key (or nil value to represent a tombstone)
 	//   Returns ErrNotFound if no value found on key
-	Get(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (*Value, error)
+	Get(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, key Key) (*Value, error)
 
 	// Set writes an value (or nil value to represent a tombstone)
 	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value *Value) error
@@ -374,14 +380,14 @@ type StagingManager interface {
 	// Delete deletes an value by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// List takes a given BranchID and returns an ValueIterator seeked to >= "from" key
-	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (ValueIterator, error)
+	// List takes a given repository / branch and returns an ValueIterator
+	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (ValueIterator, error)
 
-	// Snapshot returns a new snapshot and returns it's ID
+	// Snapshot take a snapshot of the current staging and returns a new staging token
 	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
 
 	// ListSnapshot returns an iterator to scan the snapshot entries
-	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (ValueIterator, error)
+	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (ValueIterator, error)
 }
 
 var (
