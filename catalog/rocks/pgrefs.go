@@ -73,6 +73,9 @@ func (m *PGRefManager) CreateRepository(ctx context.Context, repositoryID Reposi
 		_, err := tx.Exec(
 			`INSERT INTO kv_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
 			repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
+		if errors.Is(err, db.ErrAlreadyExists) {
+			return nil, ErrNotUnique
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -148,10 +151,16 @@ func (m *PGRefManager) SetBranch(ctx context.Context, repositoryID RepositoryID,
 
 func (m *PGRefManager) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(
+		r, err := tx.Exec(
 			`DELETE FROM kv_branches WHERE repository_id = $1 AND id = $2`,
 			repositoryID, branchID)
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		if r.RowsAffected() == 0 {
+			return nil, ErrNotFound
+		}
+		return nil, nil
 	}, db.WithContext(ctx))
 	return err
 }
@@ -160,7 +169,7 @@ func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID Repository
 	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
 }
 
-func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
+func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error) {
 	commit, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		records := make([]*CommitRecord, 0)
 		// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
@@ -170,7 +179,7 @@ func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID,
 					FROM kv_commits
 					WHERE repository_id = $1 AND id >= $2
 					LIMIT 2`,
-			repositoryID, commitID)
+			repositoryID, prefix)
 		if errors.Is(err, db.ErrNotFound) {
 			return nil, ErrNotFound
 		}
@@ -179,7 +188,7 @@ func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID,
 		}
 		startWith := make([]*Commit, 0)
 		for _, c := range records {
-			if strings.HasPrefix(string(c.CommitID), string(commitID)) {
+			if strings.HasPrefix(string(c.CommitID), string(prefix)) {
 				startWith = append(startWith, c.Commit)
 			}
 		}
@@ -187,6 +196,30 @@ func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID,
 			return "", ErrNotFound // empty or ambiguous
 		}
 		return startWith[0], nil
+	}, db.ReadOnly(), db.WithContext(ctx))
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*Commit), nil
+}
+
+func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
+	commit, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		commit := &Commit{}
+		err := tx.Get(commit, `
+					SELECT committer, message, creation_date, parents, tree_id, metadata
+					FROM kv_commits WHERE repository_id = $1 AND id = $2`,
+			repositoryID, commitID)
+		if errors.Is(err, db.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return commit, nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, ErrNotFound

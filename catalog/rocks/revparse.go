@@ -1,6 +1,7 @@
 package rocks
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 )
@@ -37,7 +38,7 @@ func parseMod(buf string) (RevModifier, error) {
 	if len(buf) > 1 {
 		amount, err = strconv.Atoi(buf[1:])
 		if err != nil {
-			return RevModifier{}, ErrInvalidRef
+			return RevModifier{}, fmt.Errorf("could not parse modifier %s: %w", buf, ErrInvalidRef)
 		}
 	}
 	var typ RevModType

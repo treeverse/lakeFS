@@ -345,8 +345,6 @@ type RefManager interface {
 	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID.
-	// The given CommitID may be arbitrarily truncated and should return a valid commit as long
-	// as results are not ambiguous
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
@@ -416,6 +414,7 @@ var (
 // Catalog errors
 var (
 	ErrNotFound                = errors.New("not found")
+	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
 	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
 	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace %w", ErrInvalidValue)

@@ -9,7 +9,7 @@ import (
 
 type RefStore interface {
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
-	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
+	GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error)
 	Log(ctx context.Context, repositoryID RepositoryID, from CommitID) (CommitIterator, error)
 }
 
@@ -42,7 +42,7 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 
 	var baseCommit CommitID
 	if isAHash(parsed.BaseRev) {
-		commit, err := store.GetCommit(ctx, repositoryID, CommitID(parsed.BaseRev))
+		commit, err := store.GetCommitByPrefix(ctx, repositoryID, CommitID(parsed.BaseRev))
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			// couldn't check if it's a commit
 			return nil, err
@@ -110,7 +110,7 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 				continue // ^0 = the commit itself
 			default:
 				// get the commit and extract parents
-				c, err := store.GetCommit(ctx, repositoryID, baseCommit)
+				c, err := store.GetCommitByPrefix(ctx, repositoryID, baseCommit)
 				if err != nil {
 					return nil, err
 				}

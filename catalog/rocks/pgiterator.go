@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// IteratorPrefetchSize is the amount of records to prefetch from PG
+	// IteratorPrefetchSize is the amount of records to fetch from PG
 	IteratorPrefetchSize = 1000
 )
 
@@ -23,27 +23,29 @@ type PGRepositoryIterator struct {
 	value *RepositoryRecord
 	buf   []*RepositoryRecord
 
-	offset           string
-	prefetchSize     int
-	prefetchRequired bool
+	offset      string
+	fetchSize   int
+	shouldFetch bool
 
 	err error
 }
 
-func NewRepositoryIterator(ctx context.Context, db db.Database, prefetchSize int, offset string) *PGRepositoryIterator {
+func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int, offset string) *PGRepositoryIterator {
 	return &PGRepositoryIterator{
-		db:               db,
-		ctx:              ctx,
-		prefetchSize:     prefetchSize,
-		prefetchRequired: true,
-		offset:           offset,
+		db:          db,
+		ctx:         ctx,
+		fetchSize:   fetchSize,
+		shouldFetch: true,
+		offset:      offset,
 	}
 }
 
 func (ri *PGRepositoryIterator) Next() bool {
 	// no buffer is initialized
-	if ri.buf == nil || len(ri.buf) == 0 {
-		ri.prefetch()
+	if ri.buf == nil {
+		ri.fetch(true) // initial fetch
+	} else if len(ri.buf) == 0 {
+		ri.fetch(false) // paginating since we're out of values
 	}
 
 	if len(ri.buf) == 0 {
@@ -62,30 +64,38 @@ func (ri *PGRepositoryIterator) Next() bool {
 	return true
 }
 
-func (ri *PGRepositoryIterator) prefetch() {
-	if !ri.prefetchRequired {
+func (ri *PGRepositoryIterator) fetch(initial bool) {
+	const (
+		offsetGE = ">="
+		offsetGT = ">"
+	)
+	if !ri.shouldFetch {
 		return
+	}
+	offsetCondition := offsetGT
+	if initial {
+		offsetCondition = offsetGE
 	}
 	err := ri.db.WithContext(ri.ctx).Select(&ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
 			FROM kv_repositories
-			WHERE id >= $1
+			WHERE id `+offsetCondition+` $1
 			ORDER BY id ASC
-			LIMIT $2`, ri.offset, ri.prefetchSize)
+			LIMIT $2`, ri.offset, ri.fetchSize)
 	if err != nil {
 		ri.err = err
 		return
 	}
-	if len(ri.buf) < ri.prefetchSize {
-		ri.prefetchRequired = false
+	if len(ri.buf) < ri.fetchSize {
+		ri.shouldFetch = false
 	}
 }
 
 func (ri *PGRepositoryIterator) SeekGE(id RepositoryID) bool {
 	ri.offset = string(id)
-	ri.prefetchRequired = true
+	ri.shouldFetch = true
 	ri.buf = make([]*RepositoryRecord, 0)
-	ri.prefetch()
+	ri.fetch(true) // do a new initial fetch
 
 	if len(ri.buf) == 0 {
 		return false
@@ -122,28 +132,30 @@ type PGBranchIterator struct {
 	value        *BranchRecord
 	buf          []*BranchRecord
 
-	offset           string
-	prefetchSize     int
-	prefetchRequired bool
+	offset      string
+	fetchSize   int
+	shouldFetch bool
 
 	err error
 }
 
 func NewBranchIterator(ctx context.Context, db db.Database, repositoryID RepositoryID, prefetchSize int, offset string) *PGBranchIterator {
 	return &PGBranchIterator{
-		db:               db,
-		ctx:              ctx,
-		repositoryID:     repositoryID,
-		prefetchSize:     prefetchSize,
-		prefetchRequired: true,
-		offset:           offset,
+		db:           db,
+		ctx:          ctx,
+		repositoryID: repositoryID,
+		fetchSize:    prefetchSize,
+		shouldFetch:  true,
+		offset:       offset,
 	}
 }
 
 func (ri *PGBranchIterator) Next() bool {
 	// no buffer is initialized
-	if ri.buf == nil || len(ri.buf) == 0 {
-		ri.prefetch()
+	if ri.buf == nil {
+		ri.fetch(true) // initial fetch
+	} else if len(ri.buf) == 0 {
+		ri.fetch(false) // paging size we're out of values
 	}
 
 	if len(ri.buf) == 0 {
@@ -162,24 +174,32 @@ func (ri *PGBranchIterator) Next() bool {
 	return true
 }
 
-func (ri *PGBranchIterator) prefetch() {
-	if !ri.prefetchRequired {
+func (ri *PGBranchIterator) fetch(initial bool) {
+	const (
+		offsetGE = ">="
+		offsetGT = ">"
+	)
+	if !ri.shouldFetch {
 		return
+	}
+	offsetCondition := offsetGT
+	if initial {
+		offsetCondition = offsetGE
 	}
 	buf := make([]*pgBranchRecord, 0)
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
 			SELECT id, staging_token, commit_id
 			FROM kv_branches
 			WHERE repository_id = $1
-			AND id > $2
+			AND id `+offsetCondition+` $2
 			ORDER BY id ASC
-			LIMIT $3`, ri.repositoryID, ri.offset, ri.prefetchSize)
+			LIMIT $3`, ri.repositoryID, ri.offset, ri.fetchSize)
 	if err != nil {
 		ri.err = err
 		return
 	}
-	if len(buf) < ri.prefetchSize {
-		ri.prefetchRequired = false
+	if len(buf) < ri.fetchSize {
+		ri.shouldFetch = false
 	}
 	ri.buf = make([]*BranchRecord, len(buf))
 	for i, b := range buf {
@@ -195,18 +215,22 @@ func (ri *PGBranchIterator) prefetch() {
 
 func (ri *PGBranchIterator) SeekGE(id BranchID) bool {
 	ri.offset = string(id)
-	ri.prefetchRequired = true
+	ri.shouldFetch = true
 	ri.buf = make([]*BranchRecord, 0)
-	ri.prefetch()
+	ri.fetch(true) // do a new initial fetch
 
 	if len(ri.buf) == 0 {
 		return false
 	}
 
 	// stage a value and increment offset
-	ri.value = ri.buf[len(ri.buf)-1]
+	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.BranchID)
-	ri.buf = ri.buf[0 : len(ri.buf)-1]
+	if len(ri.buf) > 1 {
+		ri.buf = ri.buf[0 : len(ri.buf)-1]
+	} else {
+		ri.buf = make([]*BranchRecord, 0)
+	}
 	return true
 }
 

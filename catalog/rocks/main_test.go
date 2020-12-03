@@ -2,6 +2,7 @@ package rocks_test
 
 import (
 	"flag"
+	"github.com/treeverse/lakefs/db"
 	"log"
 	"os"
 	"testing"
@@ -22,6 +23,12 @@ func testRefManager(t testing.TB) rocks.RefManager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
 	return rocks.NewPGRefManager(conn)
+}
+
+func testRefManagerWithDB(t testing.TB) (rocks.RefManager, db.Database) {
+	t.Helper()
+	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
+	return rocks.NewPGRefManager(conn), conn
 }
 
 func TestMain(m *testing.M) {
