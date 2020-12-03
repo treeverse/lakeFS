@@ -187,7 +187,6 @@ type VersionController interface {
 	Log(ctx context.Context, repositoryID RepositoryID, from CommitID, amount int) ([]Commit, bool, error)
 
 	// ListBranches lists branches on repositories
-	//   The 'from' is used to get all branches after this branch id
 	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
@@ -215,8 +214,7 @@ type VersionController interface {
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
 
-	// Diff returns the changes between 'left' and 'right' ref, list changes 'from' key with no more than 'amount' per call.
-	//   Returns the list of changes, true (boolean) in case there are more differences - use last key as 'from' in the next call to continue getting differences
+	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error)
 }
 
