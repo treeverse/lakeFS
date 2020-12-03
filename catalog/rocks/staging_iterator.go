@@ -53,7 +53,11 @@ func (s *StagingIterator) Value() *EntryRecord {
 	if s.err != nil || s.idxInBuffer >= len(s.buffer) {
 		return nil
 	}
-	return s.buffer[s.idxInBuffer]
+	record := s.buffer[s.idxInBuffer]
+	if record.Entry.Address == "" {
+		record.Entry = nil
+	}
+	return record
 }
 
 func (s *StagingIterator) Err() error {

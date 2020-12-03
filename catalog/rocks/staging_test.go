@@ -11,21 +11,22 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-var entryMetadata = map[string]string{"metadata_field": "metadata_value"}
-
-func prepareMgr(t *testing.T) StagingManager {
+func newTestStagingManager(t *testing.T) StagingManager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	return NewStageManager(conn)
 }
 
 func TestSetGet(t *testing.T) {
-	s := prepareMgr(t)
+	entryMetadata := map[string]string{"metadata_field": "metadata_value"}
+	s := newTestStagingManager(t)
 	_, err := s.GetEntry(context.Background(), "t1", "a/b/c")
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("addr1"))
+	entry := newTestEntry("addr1")
+	entry.Metadata = entryMetadata
+	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry)
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -45,12 +46,12 @@ func TestSetGet(t *testing.T) {
 }
 
 func TestMultiToken(t *testing.T) {
-	s := prepareMgr(t)
+	s := newTestStagingManager(t)
 	_, err := s.GetEntry(context.Background(), "t1", "a/b/c")
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	err = s.SetEntry(context.Background(), "t1", "a/b/c", entry("addr1"))
+	err = s.SetEntry(context.Background(), "t1", "a/b/c", newTestEntry("addr1"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -61,7 +62,7 @@ func TestMultiToken(t *testing.T) {
 	if e.Address != "addr1" {
 		t.Errorf("got wrong entry address. expected=%s, got=%s", "addr1", e.Address)
 	}
-	err = s.SetEntry(context.Background(), "t2", "a/b/c", entry("addr2"))
+	err = s.SetEntry(context.Background(), "t2", "a/b/c", newTestEntry("addr2"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -82,16 +83,16 @@ func TestMultiToken(t *testing.T) {
 }
 
 func TestDrop(t *testing.T) {
-	s := prepareMgr(t)
+	s := newTestStagingManager(t)
 	numOfEntries := 1400
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), newTestEntry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t2", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t2", Path(fmt.Sprintf("entry%04d", i)), newTestEntry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -108,48 +109,53 @@ func TestDrop(t *testing.T) {
 	if it.Next() {
 		t.Fatal("expected staging area with token t1 to be empty, got non-empty iterator")
 	}
+	it.Close()
 	it, _ = s.ListEntries(context.Background(), "t2")
 	res := make([]*EntryRecord, 0, numOfEntries)
 	for it.Next() {
 		res = append(res, it.Value())
 	}
+	it.Close()
 	if len(res) != numOfEntries {
 		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfEntries, len(res))
 	}
+
 }
 
 func TestList(t *testing.T) {
-	s := prepareMgr(t)
-	numOfEntries := 100
-	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
+	s := newTestStagingManager(t)
+	for _, numOfEntries := range []int{1, 100, 1000, 1500, 2500} {
+		token := StagingToken(fmt.Sprintf("t_%d", numOfEntries))
+		for i := 0; i < numOfEntries; i++ {
+			err := s.SetEntry(context.Background(), token, Path(fmt.Sprintf("entry%04d", i)), newTestEntry("addr1"))
+			if err != nil {
+				t.Fatalf("got unexpected error: %v", err)
+			}
 		}
-	}
-	res := make([]*EntryRecord, 0, numOfEntries)
-	it, _ := s.ListEntries(context.Background(), "t1")
-	for it.Next() {
-		res = append(res, it.Value())
-	}
-	if it.Err() != nil {
-		t.Fatalf("got unexpected error from list: %v", it.Err())
-	}
-	if len(res) != numOfEntries {
-		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfEntries, len(res))
-	}
-	for i, e := range res {
-		if e.Path != Path(fmt.Sprintf("entry%04d", i)) {
-			t.Fatalf("got unexpected entry from list at index %d: expected entry%04d, got: %s", i, i, e.Path)
+		res := make([]*EntryRecord, 0, numOfEntries)
+		it, _ := s.ListEntries(context.Background(), token)
+		for it.Next() {
+			res = append(res, it.Value())
+		}
+		if it.Err() != nil {
+			t.Fatalf("got unexpected error from list: %v", it.Err())
+		}
+		if len(res) != numOfEntries {
+			t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfEntries, len(res))
+		}
+		for i, e := range res {
+			if e.Path != Path(fmt.Sprintf("entry%04d", i)) {
+				t.Fatalf("got unexpected entry from list at index %d: expected entry%04d, got: %s", i, i, e.Path)
+			}
 		}
 	}
 }
 
 func TestSeek(t *testing.T) {
-	s := prepareMgr(t)
+	s := newTestStagingManager(t)
 	numOfEntries := 100
 	for i := 0; i < numOfEntries; i++ {
-		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), entry("addr1"))
+		err := s.SetEntry(context.Background(), "t1", Path(fmt.Sprintf("entry%04d", i)), newTestEntry("addr1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -182,7 +188,7 @@ func TestSeek(t *testing.T) {
 }
 
 func TestDeleteAndTombstone(t *testing.T) {
-	s := prepareMgr(t)
+	s := newTestStagingManager(t)
 	_, err := s.GetEntry(context.Background(), "t1", "entry1")
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
@@ -198,7 +204,21 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if e != nil {
 		t.Fatalf("expected nil but got entry: %v", e)
 	}
-	err = s.SetEntry(context.Background(), "t1", "entry1", entry("addr3"))
+	it, err := s.ListEntries(context.Background(), "t1")
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	if !it.Next() {
+		t.Fatalf("expected to get entry from list")
+	}
+	if it.Err() != nil {
+		t.Fatalf("unexpected error from iterator: %v", it.Err())
+	}
+	if it.Value().Entry != nil {
+		t.Fatalf("expected nil entry from iterator, got: %v", it.Value().Entry)
+	}
+	it.Close()
+	err = s.SetEntry(context.Background(), "t1", "entry1", newTestEntry("addr3"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -219,11 +239,10 @@ func TestDeleteAndTombstone(t *testing.T) {
 	}
 }
 
-func entry(addr string) *Entry {
+func newTestEntry(addr string) *Entry {
 	return &Entry{
 		LastModified: time.Now(),
 		Address:      addr,
-		Metadata:     entryMetadata,
 		ETag:         "abcdefghijklmnop",
 		Size:         1000,
 	}
