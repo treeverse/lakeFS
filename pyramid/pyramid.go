@@ -4,16 +4,11 @@ package pyramid
 // Files on the local disk are transient and might be cleaned up by the eviction policy.
 // File structure under a namespace and namespace itself are flat (no directories).
 type FS interface {
-	// Store adds the file from the originalPath to the FS. It uploads the file to the
-	// block-storage and to the localpath.
-	// Once completed, it will not be available from the original path.
-	Store(namespace, originalPath, filename string) error
-
 	// Create creates a new file in the FS.
-	// It will only be persistent after the returned file is closed.
-	Create(namespace, filename string) (*File, error)
+	// It will only be persistent after the returned file is stored.
+	Create(namespace string) (*File, error)
 
-	// Open finds the referenced file and returns the file descriptor.
+	// Open finds the referenced file and returns its read-only File.
 	// If file isn't in the local disk, it is fetched from the block storage.
-	Open(namespace, filename string) (*File, error)
+	Open(namespace, filename string) (*ROFile, error)
 }

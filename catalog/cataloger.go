@@ -115,10 +115,6 @@ type Cataloger interface {
 
 	DedupReportChannel() chan *DedupReport
 
-	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
-	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
-	DeleteMultipartUpload(ctx context.Context, repository, uploadID string) error
-
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)

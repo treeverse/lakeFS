@@ -1,44 +1,28 @@
 package pyramid
 
 import (
-	"errors"
+	"fmt"
 	"os"
 )
 
 // File is pyramid wrapper for os.file that triggers pyramid hooks for file actions.
 type File struct {
-	fh       *os.File
-	eviction eviction
+	fh *os.File
 
-	readOnly bool
-	rPath    relativePath
-
-	store func() error
+	closed    bool
+	persisted bool
+	store     func(string) error
 }
 
-var ErrReadOnlyFile = errors.New("file is read-only")
-
 func (f *File) Read(p []byte) (n int, err error) {
-	if f.readOnly {
-		// file is being written, eviction policies don't apply to it
-		f.eviction.touch(f.rPath)
-	}
 	return f.fh.Read(p)
 }
 
 func (f *File) ReadAt(p []byte, off int64) (n int, err error) {
-	if f.readOnly {
-		// file is being written, eviction policies don't apply to it
-		f.eviction.touch(f.rPath)
-	}
 	return f.fh.ReadAt(p, off)
 }
 
 func (f *File) Write(p []byte) (n int, err error) {
-	if f.readOnly {
-		return 0, ErrReadOnlyFile
-	}
-
 	return f.fh.Write(p)
 }
 
@@ -51,12 +35,31 @@ func (f *File) Sync() error {
 }
 
 func (f *File) Close() error {
-	if err := f.fh.Close(); err != nil {
+	f.closed = true
+	return f.fh.Close()
+}
+
+var (
+	errAlreadyPersisted = fmt.Errorf("file is already persisted")
+	errFileNotClosed    = fmt.Errorf("file isn't closed")
+)
+
+// Store copies the closed file to all tiers of the pyramid.
+func (f *File) Store(filename string) error {
+	if err := validateFilename(filename); err != nil {
 		return err
 	}
 
-	if f.store == nil {
-		return nil
+	if f.persisted {
+		return errAlreadyPersisted
 	}
-	return f.store()
+	if !f.closed {
+		return errFileNotClosed
+	}
+
+	err := f.store(filename)
+	if err == nil {
+		f.persisted = true
+	}
+	return err
 }

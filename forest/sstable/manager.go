@@ -107,7 +107,7 @@ func (m *PebbleSSTableManager) SSTableIterator(tid SSTableID, from rocks.Path) (
 
 // GetWriter returns a new SSTable writer instance
 func (m *PebbleSSTableManager) GetWriter() (Writer, error) {
-	return m.disk.newSSTableWriter()
+	return new
 }
 
 type dispatcher struct {
