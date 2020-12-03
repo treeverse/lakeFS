@@ -3,7 +3,6 @@ package sstable
 import (
 	"fmt"
 	"hash"
-	"os"
 
 	"github.com/treeverse/lakefs/pyramid"
 
@@ -21,11 +20,11 @@ type DiskWriter struct {
 	hash  hash.Hash
 
 	tempPath string
+	fh       *pyramid.File
 }
 
 func newDiskWriter(tierFS pyramid.FS, hash hash.Hash) (*DiskWriter, error) {
-	tempPath := getTempPath()
-	fh, err := os.OpenFile(tempPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
+	fh, err := tierFS.Create(sstableTierFSNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
@@ -35,15 +34,11 @@ func newDiskWriter(tierFS pyramid.FS, hash hash.Hash) (*DiskWriter, error) {
 	})
 
 	return &DiskWriter{
-		w:        writer,
-		tierFS:   tierFS,
-		hash:     hash,
-		tempPath: tempPath,
+		w:      writer,
+		fh:     fh,
+		tierFS: tierFS,
+		hash:   hash,
 	}, nil
-}
-
-func getTempPath() string {
-	return ""
 }
 
 func (dw *DiskWriter) WriteEntry(path rocks.Path, entry rocks.Entry) error {
@@ -63,8 +58,12 @@ func (dw *DiskWriter) WriteEntry(path rocks.Path, entry rocks.Entry) error {
 	dw.last = path
 	dw.count++
 
-	dw.hash.Sum(pathBytes)
-	dw.hash.Sum(entryBytes)
+	if _, err := dw.hash.Write(pathBytes); err != nil {
+		return err
+	}
+	if _, err := dw.hash.Write(entryBytes); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -75,7 +74,7 @@ func (dw *DiskWriter) Close() (*WriteResult, error) {
 	}
 
 	sstableID := fmt.Sprintf("%x", dw.hash.Sum(nil))
-	if err := dw.tierFS.Store(sstableTierFSNamespace, dw.tempPath, sstableID); err != nil {
+	if err := dw.fh.Store(sstableID); err != nil {
 		return nil, fmt.Errorf("error storing sstable: %w", err)
 	}
 

@@ -303,7 +303,7 @@ func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
 
 func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
 	if runtime.GOOS == "windows" {
-		filename = strings.Replace(filename, `\\'`, "/", -1)
+		filename = strings.ReplaceAll(filename, `\\'`, "/")
 	}
 
 	return block.ObjectPointer{
