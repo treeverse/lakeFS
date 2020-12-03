@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -347,6 +348,32 @@ func notFound(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
+var commaSeparator = regexp.MustCompile(`,\s*`)
+
+func selectContentType(acceptable []string) *string {
+	for _, acceptableTypes := range acceptable {
+		acceptable := commaSeparator.Split(acceptableTypes, -1)
+		for _, a := range acceptable {
+			if a == "text/xml" || a == "application/xml" {
+				return &a
+			}
+		}
+	}
+	return nil
+}
+
+func setContentType(w http.ResponseWriter, r *http.Request) {
+	acceptable, ok := r.Header["Accept"]
+	if ok {
+		contentType := selectContentType(acceptable)
+		if contentType != nil {
+			w.Header().Set("Content-Type", *contentType)
+		} else {
+			w.WriteHeader(http.StatusNotAcceptable)
+		}
+	}
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// pprof endpoints
 	handler := h.servePathBased(r)
@@ -358,6 +385,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
+	setContentType(mrw, r)
 	handler.ServeHTTP(mrw, r)
 	requestHistograms.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }
