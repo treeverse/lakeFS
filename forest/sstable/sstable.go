@@ -1,7 +1,7 @@
 package sstable
 
 import (
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/graveler"
 )
 
 // SSTableID is an identifier for an SSTable
@@ -10,10 +10,10 @@ type SSTableID string
 type Manager interface {
 	// GetEntry returns the entry matching the path in the SSTable referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetEntry(path rocks.Key, tid SSTableID) (*rocks.Value, error)
+	GetEntry(path graveler.Key, tid SSTableID) (*graveler.Value, error)
 
 	// NewSSTableIterator takes a given SSTable and returns an Iterator seeked to >= "from" path
-	NewSSTableIterator(tid SSTableID, from rocks.Key) (rocks.Iterator, error)
+	NewSSTableIterator(tid SSTableID, from graveler.Key) (graveler.Iterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)
@@ -26,10 +26,10 @@ type WriteResult struct {
 	SSTableID SSTableID
 
 	// First is the Key of the first entry in the SSTable.
-	First rocks.Key
+	First graveler.Key
 
 	// Last is the Key of the last entry in the SSTable.
-	Last rocks.Key
+	Last graveler.Key
 
 	// Count is the number of entries in the SSTable.
 	Count int
@@ -39,7 +39,7 @@ type WriteResult struct {
 // Written entries must be sorted by path.
 type Writer interface {
 	// WriteEntry appends the given entry to the SSTable
-	WriteEntry(entry rocks.ValueRecord) error
+	WriteEntry(entry graveler.ValueRecord) error
 
 	// Close flushes all entries to the disk and returns the WriteResult.
 	Close() (*WriteResult, error)

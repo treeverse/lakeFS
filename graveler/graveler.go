@@ -1,15 +1,14 @@
-package rocks
+package graveler
 
 import (
 	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/treeverse/lakefs/uri"
 )
 
 // Basic Types
@@ -144,22 +143,7 @@ type Diff struct {
 
 // Interfaces
 
-type RepositoryCatalog interface {
-	// GetRepository returns the Repository metadata object for the given RepositoryID
-	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
-
-	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
-
-	// ListRepositories lists repositories starting with 'from' returns maximum 'amount' results and true (boolean)
-	// in case more results exist
-	ListRepositories(ctx context.Context, from RepositoryID, amount int) ([]RepositoryRecord, bool, error)
-
-	// DeleteRepository deletes the repository
-	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
-}
-
-type KeyValueCatalog interface {
+type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
 	Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error)
@@ -177,7 +161,20 @@ type KeyValueCatalog interface {
 	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from Key, delimiter Delimiter, amount int) ([]Listing, bool, error)
 }
 
-type VersionControlCatalog interface {
+type VersionControler interface {
+	// GetRepository returns the Repository metadata object for the given RepositoryID
+	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
+
+	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
+
+	// ListRepositories lists repositories starting with 'from' returns maximum 'amount' results and true (boolean)
+	// in case more results exist
+	ListRepositories(ctx context.Context, from RepositoryID, amount int) ([]RepositoryRecord, bool, error)
+
+	// DeleteRepository deletes the repository
+	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
 
@@ -231,13 +228,12 @@ type VersionControlCatalog interface {
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key, amount int) ([]Diff, bool, error)
 }
 
-type Catalog interface {
-	RepositoryCatalog
-	KeyValueCatalog
-	VersionControlCatalog
+type Graveler interface {
+	KeyValueStore
+	VersionControler
 }
 
-// Internal structures used by Catalog
+// Internal structures used by Graveler
 // xxxIterator used as follow:
 // ```
 // it := NewXXXIterator(data)
@@ -292,7 +288,7 @@ type CommitIterator interface {
 	Close()
 }
 
-// These are the more complex internal components that compose the functionality of the Catalog
+// These are the more complex internal components that compose the functionality of the Graveler
 
 // RefManager handles references: branches, commits, probably tags in the future
 // it also handles the structure of the commit graph and its traversal (notably, merge-base and log)
@@ -391,7 +387,7 @@ var (
 	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
-// Catalog errors
+// Graveler errors
 var (
 	ErrNotFound                = errors.New("not found")
 	ErrInvalidValue            = errors.New("invalid value")
@@ -415,8 +411,8 @@ func (id RepositoryID) String() string {
 }
 
 func NewStorageNamespace(ns string) (StorageNamespace, error) {
-	u, err := uri.Parse(ns)
-	if err != nil || u.Protocol == "" {
+	u, err := url.Parse(ns)
+	if err != nil || u.Scheme == "" {
 		return "", ErrInvalidStorageNamespace
 	}
 	return StorageNamespace(ns), nil

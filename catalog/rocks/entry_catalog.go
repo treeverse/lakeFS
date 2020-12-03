@@ -3,6 +3,8 @@ package rocks
 import (
 	"context"
 	"time"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type Path string
@@ -11,7 +13,7 @@ type Path string
 type Entry struct {
 	LastModified time.Time
 	Address      string
-	Metadata     Metadata
+	Metadata     graveler.Metadata
 	ETag         string
 	Size         int64
 }
@@ -22,30 +24,29 @@ type EntryRecord struct {
 }
 
 type EntryListing struct {
-	CommonPrefix
+	graveler.CommonPrefix
 	*Entry
 }
 
 // EntryCatalog
 type EntryCatalog interface {
-	RepositoryCatalog
-	VersionControlCatalog
+	graveler.VersionControler
 
 	// Get returns entry from repository / reference by path, nil entry is a valid entry for tombstone
 	// returns error if entry does not exist
-	GetEntry(ctx context.Context, repositoryID RepositoryID, ref Ref, path Path) (*Entry, error)
+	GetEntry(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, path Path) (*Entry, error)
 
 	// Set stores entry on repository / branch by path. nil entry is a valid entry for tombstone
-	SetEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path, entry *Entry) error
+	SetEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path, entry *Entry) error
 
 	// DeleteEntry deletes entry from repository / branch by path
-	DeleteEntry(ctx context.Context, repositoryID RepositoryID, branchID BranchID, path Path) error
+	DeleteEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error
 
 	// List lists entries on repository / ref will filter by prefix, from path 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
 	//   The 'amount' specifies the maximum amount of listing per call that the API will return (no more than ListEntriesMaxAmount, -1 will use the server default).
 	//   Returns the list of entries, boolean specify if there are more results which will require another call with 'from' set to the last path from the previous call.
-	ListEntries(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from Path, delimiter string, amount int) ([]EntryListing, bool, error)
+	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path, amount int) ([]EntryListing, bool, error)
 }
 
 func NewPath(id string) (Path, error) {
