@@ -57,7 +57,7 @@ Overrides all fields of any previous configuration.`,
 
 var exportConfigurationTemplate = `export configuration for branch "{{.Branch.Ref}}" completed.
 
-Export Key: {{.Configuration.ExportPath|yellow}}
+Export Path: {{.Configuration.ExportPath|yellow}}
 Export status path: {{.Configuration.ExportStatusPath}}
 Last Keys In Prefix Regexp: {{.Configuration.LastKeysInPrefixRegexp}}
 {{.ContinuousMarker}}
