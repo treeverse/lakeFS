@@ -38,14 +38,6 @@ type Reference interface {
 	CommitID() CommitID
 }
 
-// ListingType
-type ListingType uint8
-
-const (
-	ListingTypePath ListingType = iota
-	ListingTypeCommonPrefix
-)
-
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
