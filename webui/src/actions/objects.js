@@ -1,7 +1,5 @@
 import * as api from "./api";
 import {AsyncActionType} from "./request";
-import { Element, Events, scrollSpy, scroller, animateScroll as scroll } from "react-scroll";
-import * as Scroll from 'react-scroll';
 
 export const PAGINATION_AMOUNT = 300;
 export const OBJECTS_LIST_TREE = new AsyncActionType('OBJECTS_GET_TREE');
@@ -48,7 +46,7 @@ export const deleteObject = (repoId, branchId, path) => {
 };
 
 function scrollToPageOffset(){
-  scroll.scrollTo(yoffset);
+  window.scrollTo(0,yoffset);
   yoffset = 0;
 };
 export const deleteObjectDone = () => {
