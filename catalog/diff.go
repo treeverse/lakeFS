@@ -11,7 +11,7 @@ const (
 )
 
 type Difference struct {
-	Entry                // Partially filled. Key is always set.
+	Entry                // Partially filled. Path is always set.
 	Type  DifferenceType `db:"diff_type"`
 }
 

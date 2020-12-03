@@ -32,7 +32,7 @@ type DedupParams struct {
 type DiffParams struct {
 	Limit            int
 	After            string
-	AdditionalFields []string // db fields names that will be load in additional to Key on Difference's Entry
+	AdditionalFields []string // db fields names that will be load in additional to Path on Difference's Entry
 }
 
 type ExpireResult struct {
@@ -52,9 +52,9 @@ type ExpiryRows interface {
 	Read() (*ExpireResult, error)
 }
 
-// GetEntryParams configures what entries Get returns.
+// GetEntryParams configures what entries GetEntry returns.
 type GetEntryParams struct {
-	// For entries to expired objects the Expired bit is set.  If true, Get returns
+	// For entries to expired objects the Expired bit is set.  If true, GetEntry returns
 	// successfully for expired entries, otherwise it returns the entry with ErrExpired.
 	ReturnExpired bool
 }
