@@ -329,7 +329,7 @@ func (e *TasksGenerator) Add(diffs catalog.Differences) ([]parade.TaskData, erro
 	// Create file operation tasks to return
 	for _, diff := range diffs {
 		if diff.Path == "" {
-			return nil, fmt.Errorf("no \"Key\" in %+v: %w", diff, ErrMissingColumns)
+			return nil, fmt.Errorf("no \"Path\" in %+v: %w", diff, ErrMissingColumns)
 		}
 
 		task := parade.TaskData{

@@ -162,7 +162,7 @@ type BatchTagOnS3BucketParams struct {
 	// Name of bucket holding objects to tag
 	BucketName string
 
-	// Key to use for manifest on S3, in "S3BatchOperations_CSV_20180820" format
+	// Path to use for manifest on S3, in "S3BatchOperations_CSV_20180820" format
 	ManifestURL string
 
 	// If present, S3 prefix for reporting

@@ -37,7 +37,7 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 	catalogCallData.mux.Lock()
 	defer catalogCallData.mux.Unlock()
 	catalogCallData.deletedEntries[path] = true
-	atomic.AddInt32(catalogCallData.callLog["Delete"], 1)
+	atomic.AddInt32(catalogCallData.callLog["DeleteEntry"], 1)
 	return nil
 }
 
@@ -98,7 +98,7 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			catalogCallData.addedEntries = make(map[string]catalog.Entry)
 			catalogCallData.deletedEntries = make(map[string]bool)
 			catalogCallData.callLog = make(map[string]*int32)
-			catalogCallData.callLog["Delete"] = swag.Int32(0)
+			catalogCallData.callLog["DeleteEntry"] = swag.Int32(0)
 			catalogCallData.callLog["CreateEntries"] = swag.Int32(0)
 			now := time.Now()
 			lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour)}
@@ -124,8 +124,8 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			if *catalogCallData.callLog["CreateEntries"] != expectedAddCalls {
 				t.Fatalf("unexpected number of CreateEntries calls. expected=%d, got=%d", expectedAddCalls, *catalogCallData.callLog["CreateEntries"])
 			}
-			if *catalogCallData.callLog["Delete"] != expectedDeleteCalls {
-				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, *catalogCallData.callLog["Delete"])
+			if *catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
+				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, *catalogCallData.callLog["DeleteEntry"])
 			}
 			if stats.AddedOrChanged != len(test.AddedRows) {
 				t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), stats.AddedOrChanged)
