@@ -9,7 +9,7 @@ import (
 )
 
 type cataloger struct {
-	Catalog      EntryCatalog
+	EntryCatalog EntryCatalog
 	log          logging.Logger
 	dummyDedupCh chan *catalog.DedupReport
 	hooks        catalog.CatalogerHooks
@@ -36,7 +36,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 	if err != nil {
 		return nil, err
 	}
-	repo, err := c.Catalog.CreateRepository(ctx, repositoryID, storageNS, branchID)
+	repo, err := c.EntryCatalog.CreateRepository(ctx, repositoryID, storageNS, branchID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (c *cataloger) GetRepository(ctx context.Context, repository string) (*cata
 	if err != nil {
 		return nil, err
 	}
-	repo, err := c.Catalog.GetRepository(ctx, repositoryID)
+	repo, err := c.EntryCatalog.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (c *cataloger) DeleteRepository(ctx context.Context, repository string) err
 	if err != nil {
 		return err
 	}
-	return c.Catalog.DeleteRepository(ctx, repositoryID)
+	return c.EntryCatalog.DeleteRepository(ctx, repositoryID)
 }
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
@@ -96,11 +96,11 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch 
 	if err != nil {
 		return nil, err
 	}
-	newBranch, err := c.Catalog.CreateBranch(ctx, repositoryID, branchID, sourceRef)
+	newBranch, err := c.EntryCatalog.CreateBranch(ctx, repositoryID, branchID, sourceRef)
 	if err != nil {
 		return nil, err
 	}
-	commit, err := c.Catalog.GetCommit(ctx, repositoryID, newBranch.CommitID)
+	commit, err := c.EntryCatalog.GetCommit(ctx, repositoryID, newBranch.CommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch 
 	if err != nil {
 		return err
 	}
-	return c.Catalog.DeleteBranch(ctx, repositoryID, branchID)
+	return c.EntryCatalog.DeleteBranch(ctx, repositoryID, branchID)
 }
 
 func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*catalog.Branch, bool, error) {
@@ -141,7 +141,7 @@ func (c *cataloger) BranchExists(ctx context.Context, repository string, branch 
 	if err != nil {
 		return false, err
 	}
-	_, err = c.Catalog.GetBranch(ctx, repositoryID, branchID)
+	_, err = c.EntryCatalog.GetBranch(ctx, repositoryID, branchID)
 	return err != nil, err
 }
 
@@ -154,7 +154,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository string, b
 	if err != nil {
 		return "", err
 	}
-	b, err := c.Catalog.GetBranch(ctx, repositoryID, branchID)
+	b, err := c.EntryCatalog.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return "", err
 	}
@@ -176,11 +176,11 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	if err != nil {
 		return nil, err
 	}
-	p, err := NewKey(path)
+	p, err := NewPath(path)
 	if err != nil {
 		return nil, err
 	}
-	ent, err := c.Catalog.GetEntry(ctx, repositoryID, ref, p)
+	ent, err := c.EntryCatalog.GetEntry(ctx, repositoryID, ref, p)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	p, err := NewKey(entry.Path)
+	p, err := NewPath(entry.Path)
 	if err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 		ETag:     entry.Checksum,
 		Size:     entry.Size,
 	}
-	return c.Catalog.SetEntry(ctx, repositoryID, branchID, p, ent)
+	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent)
 }
 
 func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []catalog.Entry) error {
@@ -227,7 +227,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 		return err
 	}
 	for _, entry := range entries {
-		p, err := NewKey(entry.Path)
+		p, err := NewPath(entry.Path)
 		if err != nil {
 			return err
 		}
@@ -237,7 +237,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 			ETag:     entry.Checksum,
 			Size:     entry.Size,
 		}
-		if err := c.Catalog.SetEntry(ctx, repositoryID, branchID, p, ent); err != nil {
+		if err := c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent); err != nil {
 			return err
 		}
 	}
@@ -253,11 +253,11 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	p, err := NewKey(path)
+	p, err := NewPath(path)
 	if err != nil {
 		return err
 	}
-	return c.Catalog.Delete(ctx, repositoryID, branchID, p)
+	return c.EntryCatalog.DeleteEntry(ctx, repositoryID, branchID, p)
 }
 
 func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
@@ -327,7 +327,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 	if err != nil {
 		return nil, err
 	}
-	commitID, err := c.Catalog.Commit(ctx, repositoryID, branchID, committer, message, map[string]string(metadata))
+	commitID, err := c.EntryCatalog.Commit(ctx, repositoryID, branchID, committer, message, map[string]string(metadata))
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 		Metadata:  metadata,
 	}
 	// in order to return commit log we need the commit creation time and parents
-	commit, err := c.Catalog.GetCommit(ctx, repositoryID, commitID)
+	commit, err := c.EntryCatalog.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return catalogCommitLog, ErrCommitNotFound
 	}
@@ -358,11 +358,11 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 	if err != nil {
 		return nil, err
 	}
-	commitID, err := c.Catalog.Dereference(ctx, repositoryID, ref)
+	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
-	commit, err := c.Catalog.GetCommit(ctx, repositoryID, commitID)
+	commit, err := c.EntryCatalog.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, err
 	}
