@@ -16,7 +16,6 @@ var (
 	ErrBranchNotFound              = fmt.Errorf("branch %w", db.ErrNotFound)
 	ErrCommitNotFound              = fmt.Errorf("commit %w", db.ErrNotFound)
 	ErrRepositoryNotFound          = fmt.Errorf("repository %w", db.ErrNotFound)
-	ErrMultipartUploadNotFound     = fmt.Errorf("multipart upload %w", db.ErrNotFound)
 	ErrEntryNotFound               = fmt.Errorf("entry %w", db.ErrNotFound)
 	ErrUnexpected                  = errors.New("unexpected error")
 	ErrReadEntryTimeout            = errors.New("read entry timeout")
@@ -33,4 +32,5 @@ var (
 	ErrUnsupportedDelimiter        = errors.New("unsupported delimiter")
 	ErrBadTypeConversion           = errors.New("bad type")
 	ErrExportFailed                = errors.New("export failed")
+	ErrRollbackWithActiveBranch    = fmt.Errorf("%w: rollback with active branch", ErrFeatureNotSupported)
 )

@@ -49,6 +49,8 @@ func (m *mockCollector) CollectMetadata(_ *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
+func (m *mockCollector) SetInstallationID(_ string) {}
+
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")

@@ -25,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -70,6 +71,7 @@ var runCmd = &cobra.Command{
 		migrator := db.NewDatabaseMigrator(dbParams)
 
 		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
+		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(cfg)
@@ -127,6 +129,7 @@ var runCmd = &cobra.Command{
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
 			cataloger,
+			multipartsTracker,
 			blockStore,
 			authService,
 			cfg.GetS3GatewayDomainName(),
