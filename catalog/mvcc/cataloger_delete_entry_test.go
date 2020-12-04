@@ -129,13 +129,16 @@ func TestCataloger_DeleteEntryVerifyExisting(t *testing.T) {
 
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file1", nil, "")
 	commit1, err := c.Commit(ctx, repository, "master", "add file1", "committer", nil)
-	testutil.MustDo(t, "commit file1", err)
+	testutil.MustDo(t, "commit add file1", err)
 
 	_, err = c.CreateBranch(ctx, repository, "branch1", "master")
 	testutil.MustDo(t, "create branch1", err)
 
 	err = c.DeleteEntry(ctx, repository, "master", "file1")
 	testutil.MustDo(t, "delete file1", err)
+
+	_, err = c.Commit(ctx, repository, "master", "delete file1", "committer", nil)
+	testutil.MustDo(t, "commit delete file1", err)
 
 	// check file exists using reference, branch and listing
 	_, err = c.GetEntry(ctx, repository, commit1.Reference, "file1", catalog.GetEntryParams{})
