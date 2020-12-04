@@ -155,4 +155,10 @@ func TestCataloger_DeleteEntryVerifyExisting(t *testing.T) {
 	if len(entriesBranch) != 1 {
 		t.Error("ListEntries of branch before delete should include a file")
 	}
+
+	// check the file is deleted on master
+	_, err = c.GetEntry(ctx, repository, "master", "file1", catalog.GetEntryParams{})
+	if !errors.Is(err, db.ErrNotFound) {
+		t.Error("GetEntry should return not found on master branch:", err)
+	}
 }
