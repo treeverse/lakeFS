@@ -7,6 +7,7 @@ import (
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_DeleteEntry(t *testing.T) {
@@ -118,5 +119,40 @@ func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
+	}
+}
+
+func TestCataloger_DeleteEntryVerifyExisting(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file1", nil, "")
+	commit1, err := c.Commit(ctx, repository, "master", "add file1", "committer", nil)
+	testutil.MustDo(t, "commit file1", err)
+
+	_, err = c.CreateBranch(ctx, repository, "branch1", "master")
+	testutil.MustDo(t, "create branch1", err)
+
+	err = c.DeleteEntry(ctx, repository, "master", "file1")
+	testutil.MustDo(t, "delete file1", err)
+
+	// check file exists using reference, branch and listing
+	_, err = c.GetEntry(ctx, repository, commit1.Reference, "file1", catalog.GetEntryParams{})
+	testutil.MustDo(t, "get file1 by ref", err)
+
+	_, err = c.GetEntry(ctx, repository, "branch1", "file1", catalog.GetEntryParams{})
+	testutil.MustDo(t, "get file1 by branch", err)
+
+	entriesRef, _, err := c.ListEntries(ctx, repository, commit1.Reference, "", "", "", -1)
+	testutil.MustDo(t, "list using ref", err)
+	if len(entriesRef) != 1 {
+		t.Error("ListEntries of ref before delete should include a file")
+	}
+
+	entriesBranch, _, err := c.ListEntries(ctx, repository, "branch1", "", "", "", -1)
+	testutil.MustDo(t, "list using branch1", err)
+	if len(entriesBranch) != 1 {
+		t.Error("ListEntries of branch before delete should include a file")
 	}
 }
