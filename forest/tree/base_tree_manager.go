@@ -35,7 +35,8 @@ func (bm *baseTreeManagerType) isEndOfBase() bool {
 }
 
 func (bm *baseTreeManagerType) getBasePartForPath(path rocks.Path) (*pushBackEntryIterator, rocks.Path, error) {
-	for ; bm.baseIndex < len(bm.baseTree) &&
+	lenBaseTree := len(bm.baseTree)
+	for ; bm.baseIndex < lenBaseTree &&
 		bm.baseTree[bm.baseIndex].MaxPath < path; bm.baseIndex++ {
 		bm.partsForReuse = append(bm.partsForReuse, bm.baseTree[bm.baseIndex])
 	}
@@ -47,11 +48,11 @@ func (bm *baseTreeManagerType) getBasePartForPath(path rocks.Path) (*pushBackEnt
 	bm.baseIndex++
 	return newPushbackEntryIterator(basePartIter), p.MaxPath, err
 }
-func (bm *baseTreeManagerType) getPartsForReuse() TreeType {
+func (bm *baseTreeManagerType) getPartsForReuse() *TreeType {
 	if bm.baseIndex < len(bm.baseTree)-1 { // the apply loop did not reach the last parts of base, they will be added to reused
 		bm.partsForReuse = append(bm.partsForReuse, bm.baseTree[bm.baseIndex:]...)
 	}
-	return bm.partsForReuse
+	return &bm.partsForReuse
 }
 
 func (bm *baseTreeManagerType) isPathInNextPart(path rocks.Path) bool {
@@ -60,4 +61,17 @@ func (bm *baseTreeManagerType) isPathInNextPart(path rocks.Path) bool {
 	} else {
 		return path < bm.baseTree[bm.baseIndex].MaxPath
 	}
+}
+
+func (bm *baseTreeManagerType) getBaseMaxPath() rocks.Path {
+	return bm.baseTree[len(bm.baseTree)-1].MaxPath
+}
+
+func (bm *baseTreeManagerType) wasLastPartProcessed() bool {
+	return len(bm.baseTree) == bm.baseIndex
+}
+
+func (bm *baseTreeManagerType) getLastPartIter() (*pushBackEntryIterator, error) {
+	baseIter, _, err := bm.getBasePartForPath(bm.baseTree[len(bm.baseTree)-1].MaxPath)
+	return baseIter, err
 }

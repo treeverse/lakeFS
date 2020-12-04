@@ -33,6 +33,7 @@ type TreeWriter struct {
 	currentPartNumOfEntries int
 	closeAsync              sstable.BatchWriterCloser
 	isSplitPathFunc         IsSplitPathFunc
+	splitFactor             uint32
 }
 
 func (tw *TreeWriter) hasOpenWriter() bool {
@@ -68,13 +69,16 @@ func (tw *TreeWriter) isSplitPath(path rocks.Path, rowNum int) bool {
 	if tw.isSplitPathFunc != nil {
 		return tw.isSplitPathFunc(path, rowNum)
 	}
-	if rowNum >= SplitFactor*SplitMaxfactor {
+	if tw.splitFactor == 0 {
+		tw.splitFactor = SplitFactor
+	}
+	if uint32(rowNum) >= tw.splitFactor*SplitMaxfactor {
 		return true
 	}
 	fnvHash := fnv.New32a()
 	fnvHash.Write([]byte(path))
 	i := fnvHash.Sum32()
-	return (i%SplitFactor) == 0 && rowNum > (SplitFactor/SplitMinFactor)
+	return (i%tw.splitFactor) == 0 && rowNum > (SplitFactor/SplitMinFactor)
 }
 
 func (tw *TreeWriter) flushIterToNewTree(iter rocks.EntryIterator) error {
@@ -87,7 +91,7 @@ func (tw *TreeWriter) flushIterToNewTree(iter rocks.EntryIterator) error {
 	return iter.Err()
 }
 
-func (tw *TreeWriter) finalizeTree(reuseParts TreeType) (rocks.TreeID, error) {
+func (tw *TreeWriter) finalizeTree(reuseParts *TreeType) (rocks.TreeID, error) {
 	var newParts TreeType
 	closeResults, err := tw.closeAsync.Wait()
 	if err != nil {
@@ -100,12 +104,17 @@ func (tw *TreeWriter) finalizeTree(reuseParts TreeType) (rocks.TreeID, error) {
 		}
 		newParts = append(newParts, t)
 	}
-	newTree := append(newParts, reuseParts...)
-	sort.Slice(newTree, func(i, j int) bool { return newTree[i].MaxPath < newTree[j].MaxPath })
-	return serializeTreeToDisk(newTree)
+	if reuseParts != nil {
+		newParts = append(newParts, *reuseParts...)
+		sort.Slice(newParts, func(i, j int) bool { return newParts[i].MaxPath < newParts[j].MaxPath })
+	}
+	return serializeTreeToDisk(newParts)
 }
 
 func serializeTreeToDisk(tree TreeType) (rocks.TreeID, error) {
+	if len(tree) == 0 {
+		return "", ErrEmptyTree
+	}
 	sha := sha256.New()
 	for _, p := range tree {
 		sha.Write([]byte(p.PartName))

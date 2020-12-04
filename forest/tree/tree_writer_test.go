@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/treeverse/lakefs/catalog/rocks"
 
@@ -19,43 +18,40 @@ func TestSimpleTree(t *testing.T) {
 	b := mocks.NewBatchCloser()
 	//tw := TreeWriter{closeAsync: b,
 	//	isSplitPathFunc: testSplitter}
-	tw := TreeWriter{closeAsync: b}
+	tw := TreeWriter{closeAsync: b,
+		splitFactor: 150_003}
 	input := make(chan []string, 10)
 	go readGzip(input)
 	var lastKey string
 	//var repeatCount int
-	var lineCount int
+	var lineCount, lastLineCount int
 	for inp := range input {
-		lineCount++
-		if lineCount%100_000 == 0 {
-			timeStr := time.Now().Format("15 04:05")
-			fmt.Printf("%s: lines number %d\n", timeStr, lineCount)
+		if lastKey == inp[0] {
+			continue
 		}
+		lineCount++
 		if inp[0] < lastKey {
 			panic(" unsorted keys:" + lastKey + inp[0])
 		}
 		lastKey = inp[0]
-		//if inp[0] == lastKey{
-		//	repeatCount++
-		//	inp[0] += strconv.Itoa(repeatCount)
-		//} else {
-		//	lastKey = inp[0]
-		//	repeatCount = 0
-		//}
+
 		r := rocks.EntryRecord{
 			Path: rocks.Path(inp[0]),
 		}
 		if err := tw.writeEntry(r); err != nil {
 			log.Fatal(err)
 		}
+		if !tw.hasOpenWriter() {
+			diff := lineCount - lastLineCount
+			lastLineCount = lineCount
+			fmt.Printf("writer closed line %d diff %d\n", lineCount, diff)
+		}
 	}
-	x := make(TreeType, 0)
-	tw.finalizeTree(x)
-	//for i := 0; i < 10; i++ {
-	//	t := rocks.EntryRecord{Path: rocks.Path(strconv.Itoa(i)),
-	//		Entry: &rocks.Entry{}}
-	//	tw.writeEntry(t)
-	//}
+	_, err := tw.finalizeTree(nil)
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 //func testSplitter(path rocks.Path, rowNum int) bool {

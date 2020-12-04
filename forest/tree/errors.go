@@ -12,4 +12,5 @@ var (
 	ErrTreeCorrupted         = errors.New(" highest path in tree not in ssTable")
 	InfoBaseTreeExhausted    = errors.New(" no tree parts remain")
 	ErrPushBackTwice         = errors.New(" can't push back twice with no intervening Next")
+	ErrEmptyTree             = errors.New(" Empty tree")
 )

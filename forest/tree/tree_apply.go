@@ -17,13 +17,20 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 		return "", err
 	}
 	treeWriter := &TreeWriter{}
+	baseTreeMaxPath := baseTreeManager.getBaseMaxPath()
 	// PROCESS INPUT
+	// Create a new tree by  merging an input entries stream with an existing  tree.
+	// entries from the input are merged into parts of the base tree.
+	// if a part of the base tree does not contain any updates from input stream, it can be copied as is into
+	// the resulting tree.
+	// the high level flow is:
+	// 1. Read an entry from the input stream.
+	// 2. If it matches the currently open base part - merge the input with the existing part into the new tree
+	// 3. Else - match the input with another base part, and merge into it
 	for pushbackInputIter.Next() { // check exit handling
 		input := pushbackInputIter.Value()
-		// check if this input is higher than the current base part maximum
-		if maxCurrentBaseKey < input.Path {
-			//todo: solve the issue of writing to the last part
-
+		// adjust the input to the correct base and output parts
+		if maxCurrentBaseKey < input.Path { // not is current base part
 			// flush all updates that remained in  current base part
 			if basePartIter != nil { // nil  basePartIter indicates this is first iteration
 				err = treeWriter.flushIterToNewTree(basePartIter)
@@ -32,23 +39,42 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 				}
 				basePartIter.Close()
 			}
+			// indicates that writing to this part did not close naturally with a splitter,even though a base part was finished
 			if treeWriter.hasOpenWriter() {
-				// indicates that writing to this file did not close naturally with a splitter
+				// next update will go past the next part of base tree. This means that the next part has no
+				// updates and can be reused in the new tree. for that to happen - the current output part must be closed
+				// so we close the current part
+				// a special case is when the current base part is the last in the tree, and the new path is bigger than
+				// any path in the tree. This too is considered as it the path is in next part
 				if !baseTreeManager.isPathInNextPart(input.Path) {
-					// next update will go past the next part of base tree. This means that the next part has no
-					//updates and can be reused in the new tree. for that to happen - the current part must be closed
-					//so we prefer to force close
 					treeWriter.forceCloseCurrentPart()
 				}
 			}
-			basePartIter, maxCurrentBaseKey, err = baseTreeManager.getBasePartForPath(input.Path)
-			if err == InfoBaseTreeExhausted {
+			// a special case when the input path is bigger than maximum part in the base tree
+			if baseTreeMaxPath < input.Path {
+				// we want to insert the new entries into the last part of the base tree, so we do not generate tiny
+				// parts each run that gets to this situation
+				if !baseTreeManager.wasLastPartProcessed() {
+					basePartIter, err = baseTreeManager.getLastPartIter()
+					if err != nil {
+						return "", err
+					}
+				}
+				if basePartIter != nil {
+					err = treeWriter.flushIterToNewTree(basePartIter)
+					if err != nil {
+						return "", err
+					}
+					basePartIter.Close()
+				}
 				err = pushbackInputIter.pushBack()
 				if err != nil {
 					return "", err
 				}
-				break
-			} else if err != nil {
+				break // exit the main loop after all base was read
+			}
+			basePartIter, maxCurrentBaseKey, err = baseTreeManager.getBasePartForPath(input.Path)
+			if err != nil {
 				return "", err
 			}
 		}
@@ -61,7 +87,6 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 			}
 			base := basePartIter.Value()
 			if base.Path < input.Path {
-
 				err = treeWriter.writeEntry(*base)
 				if err != nil {
 					return "", err

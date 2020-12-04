@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/cockroachdb/pebble"
 	table "github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/forest/sstable"
@@ -18,6 +19,10 @@ func (b *Bwc) CloseWriterAsync(_ sstable.Writer) error {
 	b.counter++
 	return nil
 }
+
+var Cache *pebble.Cache
+
+var firstSSTactivation bool = true
 
 func (b *Bwc) Wait() ([]sstable.WriteResult, error) {
 	res := make([]sstable.WriteResult, 0)
@@ -43,7 +48,23 @@ func (s *SstMgr) GetEntry(path rocks.Path, tid sstable.SSTableID) (*rocks.Entry,
 }
 
 func (s *SstMgr) NewSSTableIterator(tid sstable.SSTableID, from rocks.Path) (rocks.EntryIterator, error) {
-	return &DummyIter{MaxNum: s.NumToRead}, nil
+	if firstSSTactivation {
+		var cacheSize int64 = 1 << 31 // 2 GB cache size
+		Cache = pebble.NewCache(cacheSize)
+		firstSSTactivation = false
+	}
+	f, err := os.Open(string(tid) + ".json")
+	if err != nil {
+		return nil, err
+	}
+	r, err := table.NewReader(f, table.ReaderOptions{Cache: Cache})
+	if err != nil {
+		return nil, err
+	}
+	i, err := r.NewIter(nil, nil)
+	return &DummyIter{f: f,
+		r: r,
+		i: i}, nil
 }
 
 func (s *SstMgr) GetWriter() (sstable.Writer, error) {
@@ -60,7 +81,12 @@ func (s *SstMgr) GetWriter() (sstable.Writer, error) {
 }
 
 type DummyIter struct {
-	MaxNum int
+	f      *os.File
+	r      *table.Reader
+	i      table.Iterator
+	err    error
+	closed bool
+	value  rocks.EntryRecord
 	Count  int
 }
 
@@ -93,12 +119,17 @@ type DummyWriter struct {
 	lastKey  rocks.Path
 	filename string
 	f        *os.File
+	RowNum   int
 }
 
-func (d DummyWriter) WriteEntry(entry rocks.EntryRecord) error {
-	if d.lastKey >= entry.Path {
+func (d *DummyWriter) WriteEntry(entry rocks.EntryRecord) error {
+	if d.lastKey == entry.Path {
+		return nil
+	}
+	if d.lastKey > entry.Path {
 		log.Fatal("unsorted keys ", d.lastKey, " , ", entry.Path, "\n")
 	}
+	d.RowNum++
 	d.lastKey = entry.Path
 	t := string(entry.Path)
 	l := len(t)
@@ -125,14 +156,15 @@ func NewBatchCloser() *DummyBatchCloser {
 	return &DummyBatchCloser{parts: make([]sstable.WriteResult, 0, 10)}
 }
 
-func (d DummyBatchCloser) CloseWriterAsync(w sstable.Writer) error {
-	z := w.(DummyWriter)
+func (d *DummyBatchCloser) CloseWriterAsync(w sstable.Writer) error {
+	z := w.(*DummyWriter)
 	d.parts = append(d.parts, sstable.WriteResult{SSTableID: sstable.SSTableID(z.filename),
 		Last: rocks.Path(z.lastKey),
 	})
+	fmt.Printf("file %s  number of lines: %d\n", z.filename, z.RowNum)
 	return z.writer.Close()
 }
 
-func (d DummyBatchCloser) Wait() ([]sstable.WriteResult, error) {
+func (d *DummyBatchCloser) Wait() ([]sstable.WriteResult, error) {
 	return d.parts, nil
 }
