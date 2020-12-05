@@ -123,7 +123,7 @@ func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c
 	}
 }
 
-func TestCataloger_DeleteEntryAndCheckItRemainsInCommis(t *testing.T) {
+func TestCataloger_DeleteEntryAndCheckItRemainsInCommits(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
