@@ -209,7 +209,7 @@ func TestCataloger_DeleteEntryVerifyExisting(t *testing.T) {
 
 	// check the file is deleted on master
 	_, err = c.GetEntry(ctx, repository, "master", "file1", catalog.GetEntryParams{})
-	if !errors.Is(err, db.ErrNotFound) {
+	if !errors.Is(err, catalog.ErrEntryNotFound) {
 		t.Error("GetEntry should return not found on master branch:", err)
 	}
 }
