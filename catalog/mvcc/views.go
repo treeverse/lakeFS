@@ -1,7 +1,6 @@
 package mvcc
 
 import (
-	"fmt"
 	"strconv"
 	"unicode/utf8"
 
@@ -20,11 +19,11 @@ func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	} else {
 		actualCommit = requestedCommit
 	}
-	entriesQ := sq.Select("*",
-		fmt.Sprintf("min_commit != %d AS is_committed", MinCommitUncommittedIndicator),
-		"max_commit = 0 AS is_tombstone",
-		"ctid AS entry_ctid\n",
-		fmt.Sprintf("max_commit < %d AS is_deleted", actualCommit)).
+	entriesQ := sq.Select("*").
+		Column("min_commit != ? AS is_committed", MinCommitUncommittedIndicator).
+		Column("max_commit = 0 AS is_tombstone").
+		Column("ctid AS entry_ctid\n").
+		Column("max_commit < ? AS is_deleted", actualCommit).
 		From("catalog_entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required

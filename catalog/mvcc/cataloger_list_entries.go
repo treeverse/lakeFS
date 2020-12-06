@@ -286,14 +286,14 @@ func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, br
 func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int,
 	topCommitID CommitID, prefixLen int, endOfPrefixRange string) map[int64]sq.SelectBuilder {
 	unionMap := make(map[int64]sq.SelectBuilder)
-	unionMap[baseBranchID] = selectSingleBranch(baseBranchID, branchEntryLimit, topCommitID, prefixLen, endOfPrefixRange)
+	unionMap[baseBranchID] = buildSingleBranchQuery(baseBranchID, branchEntryLimit, topCommitID, prefixLen, endOfPrefixRange)
 	for _, l := range lineage {
-		unionMap[l.BranchID] = selectSingleBranch(l.BranchID, branchEntryLimit, l.CommitID, prefixLen, endOfPrefixRange)
+		unionMap[l.BranchID] = buildSingleBranchQuery(l.BranchID, branchEntryLimit, l.CommitID, prefixLen, endOfPrefixRange)
 	}
 	return unionMap
 }
 
-func selectSingleBranch(branchID int64, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
+func buildSingleBranchQuery(branchID int64, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
 	query := sq.Select("branch_id", "min_commit").
 		Distinct().Options(" ON (branch_id,path)").
 		Column("substr(path,?) as path_suffix", prefixLen+1).
