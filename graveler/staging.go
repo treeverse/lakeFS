@@ -22,7 +22,7 @@ func NewStagingManager(db db.Database) StagingManager {
 func (p *stagingManager) Get(ctx context.Context, st StagingToken, key Key) (*Value, error) {
 	res, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		value := &Value{}
-		err := tx.Get(value, "SELECT identity, data FROM staging_kv WHERE staging_token=$1 AND key=$2", st, key)
+		err := tx.Get(value, "SELECT identity, data FROM kv_staging WHERE staging_token=$1 AND key=$2", st, key)
 		return value, err
 	}, p.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
@@ -36,7 +36,7 @@ func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, valu
 		return ErrInvalidValue
 	}
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return tx.Exec(`INSERT INTO staging_kv (staging_token, key, identity, data)
+		return tx.Exec(`INSERT INTO kv_staging (staging_token, key, identity, data)
 								VALUES ($1, $2, $3, $4)
 								ON CONFLICT (staging_token, key) DO UPDATE
 									SET (staging_token, key, identity, data) =
@@ -48,7 +48,7 @@ func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, valu
 
 func (p *stagingManager) Delete(ctx context.Context, st StagingToken, key Key) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM staging_kv WHERE staging_token=$1 AND key=$2", st, key)
+		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key=$2", st, key)
 	}, p.txOpts(ctx)...)
 	return err
 }
@@ -59,7 +59,7 @@ func (p *stagingManager) List(ctx context.Context, st StagingToken) (ValueIterat
 
 func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM staging_kv WHERE staging_token=$1", st)
+		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1", st)
 	}, p.txOpts(ctx)...)
 	return err
 }

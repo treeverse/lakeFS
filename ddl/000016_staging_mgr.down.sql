@@ -1,3 +1,3 @@
 BEGIN;
-DROP TABLE IF EXISTS staging_kv;
+DROP TABLE IF EXISTS kv_staging;
 COMMIT;
