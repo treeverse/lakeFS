@@ -277,7 +277,7 @@ func insertMergeCommit(tx db.Tx, relation RelationType, leftID int64, rightID in
 		var parentLastLineage []int64
 		err = tx.Get(&parentLastLineage, `SELECT DISTINCT ON (branch_id) lineage_commits FROM catalog_commits
 												  WHERE branch_id = $1 AND merge_type = 'from_parent' ORDER BY branch_id,commit_id DESC`, leftID)
-		if err != nil && !errors.As(err, &db.ErrNotFound) {
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			return err
 		}
 		childNewLineage = append([]int64{int64(leftLastCommitID)}, parentLastLineage...)
