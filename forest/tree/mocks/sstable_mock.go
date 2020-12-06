@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -100,12 +101,12 @@ func (d *DummyIter) Next() bool {
 	return false
 }
 
-func (d *DummyIter) SeekGE(id rocks.Path) bool {
+func (d *DummyIter) SeekGE(id gr.Key) bool {
 	return true
 }
 
-func (d *DummyIter) Value() *rocks.EntryRecord {
-	return &rocks.EntryRecord{}
+func (d *DummyIter) Value() *gr.ValueRecord {
+	return &gr.ValueRecord{}
 }
 
 func (d *DummyIter) Err() error {
@@ -118,22 +119,22 @@ func (d *DummyIter) Close() {
 
 type DummyWriter struct {
 	writer   *table.Writer
-	lastKey  rocks.Path
+	lastKey  gr.Key
 	filename string
 	f        *os.File
 	RowNum   int
 }
 
-func (d *DummyWriter) WriteEntry(entry rocks.EntryRecord) error {
-	if d.lastKey == entry.Path {
+func (d *DummyWriter) WriteEntry(valueRecord gr.ValueRecord) error {
+	if bytes.Equal(d.lastKey, valueRecord.Key) {
 		return nil
 	}
-	if d.lastKey > entry.Path {
-		log.Fatal("unsorted keys ", d.lastKey, " , ", entry.Path, "\n")
+	if bytes.Compare(d.lastKey, valueRecord.Key) > 0 {
+		log.Fatal("unsorted keys ", d.lastKey, " , ", valueRecord.Key, "\n")
 	}
 	d.RowNum++
-	d.lastKey = entry.Path
-	t := string(entry.Path)
+	d.lastKey = valueRecord.Key
+	t := string(valueRecord.Key)
 	l := len(t)
 	i := l - 50
 	if i < 0 {
