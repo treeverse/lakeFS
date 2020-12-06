@@ -286,30 +286,24 @@ func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, br
 func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int,
 	topCommitID CommitID, prefixLen int, endOfPrefixRange string) map[int64]sq.SelectBuilder {
 	unionMap := make(map[int64]sq.SelectBuilder)
-	unionMap[baseBranchID] = selectSingleBranch(baseBranchID, true, branchEntryLimit, topCommitID, prefixLen, endOfPrefixRange)
+	unionMap[baseBranchID] = buildSingleBranchQuery(baseBranchID, branchEntryLimit, topCommitID, prefixLen, endOfPrefixRange)
 	for _, l := range lineage {
-		unionMap[l.BranchID] = selectSingleBranch(l.BranchID, false, branchEntryLimit, l.CommitID, prefixLen, endOfPrefixRange)
+		unionMap[l.BranchID] = buildSingleBranchQuery(l.BranchID, branchEntryLimit, l.CommitID, prefixLen, endOfPrefixRange)
 	}
 	return unionMap
 }
 
-func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
-	rawSelect := sq.Select("branch_id", "min_commit").
+func buildSingleBranchQuery(branchID int64, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
+	query := sq.Select("branch_id", "min_commit").
 		Distinct().Options(" ON (branch_id,path)").
 		Column("substr(path,?) as path_suffix", prefixLen+1).
+		Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", topCommitID, MaxCommitID).
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
 		Where("min_commit <= ?", topCommitID).
 		Where("path < ?", endOfPrefixRange).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(branchBatchSize))
-	var query sq.SelectBuilder
-	if isBaseBranch {
-		query = rawSelect.Column("max_commit")
-	} else {
-		query = rawSelect.
-			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", topCommitID, MaxCommitID)
-	}
 	return query
 }
 

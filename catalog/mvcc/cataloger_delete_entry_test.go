@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/treeverse/lakefs/testutil"
+
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
@@ -118,5 +120,96 @@ func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c
 	wantErr := db.ErrNotFound
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
+	}
+}
+
+func TestCataloger_DeleteEntryAndCheckItRemainsInCommits(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	if err := c.CreateEntry(ctx, repository, "master", catalog.Entry{
+		Path:            "/file2",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr2",
+		Size:            2,
+		Metadata:        nil,
+	}, catalog.CreateEntryParams{}); err != nil {
+		t.Fatal("create entry for delete entry test:", err)
+	}
+	prevCommit, err := c.Commit(ctx, repository, "master", "commit before deletion test failed ", "tester", nil)
+	if err != nil {
+		t.Fatal("Failed to commit before expect not found:", err)
+	}
+	entry, err := c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
+	_ = entry
+	err = c.DeleteEntry(ctx, repository, "master", "/file2")
+	if err != nil {
+		t.Fatal("delete failed: ", err)
+	}
+	nextCommit, err := c.Commit(ctx, repository, "master", "commit after deletion ", "tester", nil)
+	if err != nil {
+		t.Fatal("Failed to commit after delete:", err)
+	}
+	entry, err = c.GetEntry(ctx, repository, nextCommit.Reference, "/file2", catalog.GetEntryParams{})
+	entry, err = c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
+	list, _, err := c.ListEntries(ctx, repository, nextCommit.Reference, "", "", "", 1000)
+	if len(list) != 0 {
+		t.Fatal("list entries returned deleted object")
+	}
+	list, _, err = c.ListEntries(ctx, repository, prevCommit.Reference, "", "", "", 1000)
+	if len(list) != 1 {
+		t.Fatal("list entries by commitID did not return deleted object from next commit")
+	}
+	list, _, err = c.ListEntries(ctx, repository, nextCommit.Reference, "", "", "/", 1000)
+	if len(list) != 0 {
+		t.Fatal("list entries by prefix returned deleted object")
+	}
+	list, _, err = c.ListEntries(ctx, repository, prevCommit.Reference, "", "", "/", 1000)
+	if len(list) != 1 {
+		t.Fatal("list entries by prefix on commitID did not return deleted object from next commit")
+	}
+}
+
+func TestCataloger_DeleteEntryVerifyExisting(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file1", nil, "")
+	commit1, err := c.Commit(ctx, repository, "master", "add file1", "committer", nil)
+	testutil.MustDo(t, "commit add file1", err)
+
+	_, err = c.CreateBranch(ctx, repository, "branch1", "master")
+	testutil.MustDo(t, "create branch1", err)
+
+	err = c.DeleteEntry(ctx, repository, "master", "file1")
+	testutil.MustDo(t, "delete file1", err)
+
+	_, err = c.Commit(ctx, repository, "master", "delete file1", "committer", nil)
+	testutil.MustDo(t, "commit delete file1", err)
+
+	// check file exists using reference, branch and listing
+	_, err = c.GetEntry(ctx, repository, commit1.Reference, "file1", catalog.GetEntryParams{})
+	testutil.MustDo(t, "get file1 by ref", err)
+
+	_, err = c.GetEntry(ctx, repository, "branch1", "file1", catalog.GetEntryParams{})
+	testutil.MustDo(t, "get file1 by branch", err)
+
+	entriesRef, _, err := c.ListEntries(ctx, repository, commit1.Reference, "", "", "", -1)
+	testutil.MustDo(t, "list using ref", err)
+	if len(entriesRef) != 1 {
+		t.Error("ListEntries of ref before delete should include a file")
+	}
+
+	entriesBranch, _, err := c.ListEntries(ctx, repository, "branch1", "", "", "", -1)
+	testutil.MustDo(t, "list using branch1", err)
+	if len(entriesBranch) != 1 {
+		t.Error("ListEntries of branch before delete should include a file")
+	}
+
+	// check the file is deleted on master
+	_, err = c.GetEntry(ctx, repository, "master", "file1", catalog.GetEntryParams{})
+	if !errors.Is(err, catalog.ErrEntryNotFound) {
+		t.Error("GetEntry should return not found on master branch:", err)
 	}
 }
