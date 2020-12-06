@@ -130,7 +130,7 @@ func TestCataloger_ResetEntry_NewToNone(t *testing.T) {
 	}
 	_, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1", catalog.GetEntryParams{})
 	expectedErr := db.ErrNotFound
-	if !errors.As(err, &expectedErr) {
+	if !errors.Is(err, expectedErr) {
 		t.Fatalf("ResetEntry expecting the file to be gone with %s, got = %s", expectedErr, err)
 	}
 }
@@ -194,7 +194,7 @@ func TestCataloger_ResetEntry_Committed(t *testing.T) {
 	}
 	err := c.ResetEntry(ctx, repository, "master", "/file1")
 	expectedErr := db.ErrNotFound
-	if !errors.As(err, &expectedErr) {
+	if !errors.Is(err, expectedErr) {
 		t.Fatal("ResetEntry expected not to find file in case nothing to reset: ", err)
 	}
 }
@@ -222,7 +222,7 @@ func TestCataloger_ResetEntry_CommittedParentBranch(t *testing.T) {
 	}
 	err = c.ResetEntry(ctx, repository, "b1", "/file1")
 	expectedErr := db.ErrNotFound
-	if !errors.As(err, &expectedErr) {
+	if !errors.Is(err, expectedErr) {
 		t.Fatal("ResetEntry expected not to find file in case nothing to reset:", err)
 	}
 }
