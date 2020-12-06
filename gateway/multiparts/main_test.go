@@ -1,13 +1,10 @@
-package rocks_test
+package multiparts
 
 import (
 	"flag"
-	"github.com/treeverse/lakefs/db"
 	"log"
 	"os"
 	"testing"
-
-	"github.com/treeverse/lakefs/catalog/rocks"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
@@ -18,18 +15,6 @@ var (
 	pool        *dockertest.Pool
 	databaseURI string
 )
-
-func testRefManager(t testing.TB) rocks.RefManager {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return rocks.NewPGRefManager(conn)
-}
-
-func testRefManagerWithDB(t testing.TB) (rocks.RefManager, db.Database) {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return rocks.NewPGRefManager(conn), conn
-}
 
 func TestMain(m *testing.M) {
 	flag.Parse()

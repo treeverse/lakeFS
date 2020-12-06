@@ -1,4 +1,4 @@
-package rocks_test
+package graveler_test
 
 import (
 	"context"
@@ -6,27 +6,27 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/treeverse/lakefs/catalog"
 
 	"github.com/treeverse/lakefs/testutil"
-
-	"github.com/treeverse/lakefs/catalog/rocks"
 )
 
 func TestPGRefManager_GetRepository(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("repo_doesnt_exist", func(t *testing.T) {
 		_, err := r.GetRepository(context.Background(), "example-repo")
-		if err != rocks.ErrNotFound {
+		if err != graveler.ErrNotFound {
 			t.Fatalf("expected ErrNotFound got error: %v", err)
 		}
 	})
 	t.Run("repo_exists", func(t *testing.T) {
-		testutil.Must(t, r.CreateRepository(context.Background(), "example-repo", rocks.Repository{
+		testutil.Must(t, r.CreateRepository(context.Background(), "example-repo", graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "weird-branch",
-		}, rocks.Branch{}))
+		}, graveler.Branch{}))
 
 		repo, err := r.GetRepository(context.Background(), "example-repo")
 		if err != nil {
@@ -41,13 +41,13 @@ func TestPGRefManager_GetRepository(t *testing.T) {
 
 func TestPGRefManager_ListRepositories(t *testing.T) {
 	r := testRefManager(t)
-	repos := []rocks.RepositoryID{"a", "aa", "b", "c", "e", "d"}
+	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
 	for _, repoId := range repos {
-		testutil.Must(t, r.CreateRepository(context.Background(), repoId, rocks.Repository{
+		testutil.Must(t, r.CreateRepository(context.Background(), repoId, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "master",
-		}, rocks.Branch{}))
+		}, graveler.Branch{}))
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		repoIds := make([]rocks.RepositoryID, 0)
+		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
 			repoIds = append(repoIds, repo.RepositoryID)
@@ -66,7 +66,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(repoIds, []rocks.RepositoryID{"a", "aa", "b", "c", "d", "e"}) {
+		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e"}) {
 			t.Fatalf("got wrong list of repo IDs")
 		}
 	})
@@ -77,7 +77,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		repoIds := make([]rocks.RepositoryID, 0)
+		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
 			repoIds = append(repoIds, repo.RepositoryID)
@@ -87,7 +87,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(repoIds, []rocks.RepositoryID{"b", "c", "d", "e"}) {
+		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}) {
 			t.Fatalf("got wrong list of repo IDs")
 		}
 	})
@@ -96,11 +96,11 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 func TestPGRefManager_DeleteRepository(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("repo_exists", func(t *testing.T) {
-		testutil.Must(t, r.CreateRepository(context.Background(), "example-repo", rocks.Repository{
+		testutil.Must(t, r.CreateRepository(context.Background(), "example-repo", graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "weird-branch",
-		}, rocks.Branch{}))
+		}, graveler.Branch{}))
 
 		_, err := r.GetRepository(context.Background(), "example-repo")
 		if err != nil {
@@ -113,7 +113,7 @@ func TestPGRefManager_DeleteRepository(t *testing.T) {
 		}
 
 		_, err = r.GetRepository(context.Background(), "example-repo")
-		if err != rocks.ErrNotFound {
+		if err != graveler.ErrNotFound {
 			t.Fatalf("expected ErrNotFound, got: %v", err)
 		}
 	})
@@ -130,11 +130,11 @@ func TestPGRefManager_DeleteRepository(t *testing.T) {
 func TestPGRefManager_GetBranch(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("get_branch_exists", func(t *testing.T) {
-		testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+		testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 			StorageNamespace: "s3://",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "master",
-		}, rocks.Branch{
+		}, graveler.Branch{
 			CommitID: "c1",
 		}))
 		branch, err := r.GetBranch(context.Background(), "repo1", "master")
@@ -148,7 +148,7 @@ func TestPGRefManager_GetBranch(t *testing.T) {
 
 	t.Run("get_branch_doesnt_exists", func(t *testing.T) {
 		_, err := r.GetBranch(context.Background(), "repo1", "masterrrrr")
-		if err != rocks.ErrNotFound {
+		if err != graveler.ErrNotFound {
 			t.Fatalf("expected ErrNotFound, got error: %v", err)
 		}
 	})
@@ -156,15 +156,15 @@ func TestPGRefManager_GetBranch(t *testing.T) {
 
 func TestPGRefManager_SetBranch(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{
+	}, graveler.Branch{
 		CommitID: "c1",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", rocks.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
 		CommitID: "c2",
 	}))
 
@@ -178,7 +178,7 @@ func TestPGRefManager_SetBranch(t *testing.T) {
 	}
 
 	// overwrite
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", rocks.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
 		CommitID: "c3",
 	}))
 
@@ -195,22 +195,22 @@ func TestPGRefManager_SetBranch(t *testing.T) {
 
 func TestPGRefManager_DeleteBranch(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{
+	}, graveler.Branch{
 		CommitID: "c1",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", rocks.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
 		CommitID: "c2",
 	}))
 
 	testutil.Must(t, r.DeleteBranch(context.Background(), "repo1", "branch2"))
 
 	_, err := r.GetBranch(context.Background(), "repo1", "branch2")
-	if err != rocks.ErrNotFound {
+	if err != graveler.ErrNotFound {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -218,16 +218,16 @@ func TestPGRefManager_DeleteBranch(t *testing.T) {
 
 func TestPGRefManager_ListBranches(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{
+	}, graveler.Branch{
 		CommitID: "c1",
 	}))
 
-	for _, b := range []rocks.BranchID{"a", "aa", "c", "b", "z", "f"} {
-		testutil.Must(t, r.SetBranch(context.Background(), "repo1", b, rocks.Branch{
+	for _, b := range []graveler.BranchID{"a", "aa", "c", "b", "z", "f"} {
+		testutil.Must(t, r.SetBranch(context.Background(), "repo1", b, graveler.Branch{
 			CommitID: "c2",
 		}))
 	}
@@ -237,7 +237,7 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	var bs []rocks.BranchID
+	var bs []graveler.BranchID
 	for iter.Next() {
 		b := iter.Value()
 		bs = append(bs, b.BranchID)
@@ -245,28 +245,28 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 	if iter.Err() != nil {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
-	if !reflect.DeepEqual(bs, []rocks.BranchID{"a", "aa", "b", "c", "f", "master", "z"}) {
+	if !reflect.DeepEqual(bs, []graveler.BranchID{"a", "aa", "b", "c", "f", "master", "z"}) {
 		t.Fatalf("unexpected branch list: %v", bs)
 	}
 }
 
 func TestPGRefManager_AddCommit(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{
+	}, graveler.Branch{
 		CommitID: "c1",
 	}))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z00:00")
-	c := rocks.Commit{
+	c := graveler.Commit{
 		Committer:    "user1",
 		Message:      "message1",
 		TreeID:       "deadbeef123",
 		CreationDate: ts,
-		Parents:      rocks.CommitParents{"deadbeef1", "deadbeef12"},
+		Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
 		Metadata:     catalog.Metadata{"foo": "bar"},
 	}
 
@@ -295,23 +295,23 @@ func TestPGRefManager_AddCommit(t *testing.T) {
 
 func TestPGRefManager_Log(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{
+	}, graveler.Branch{
 		CommitID: "c1",
 	}))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
-	var previous rocks.CommitID
+	var previous graveler.CommitID
 	for i := 0; i < 20; i++ {
-		c := rocks.Commit{
+		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",
 			TreeID:       "deadbeef123",
 			CreationDate: ts,
-			Parents:      rocks.CommitParents{previous},
+			Parents:      graveler.CommitParents{previous},
 			Metadata:     catalog.Metadata{"foo": "bar"},
 		}
 		cid, err := r.AddCommit(context.Background(), "repo1", c)
@@ -326,7 +326,7 @@ func TestPGRefManager_Log(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	ids := make([]rocks.CommitID, 0)
+	ids := make([]graveler.CommitID, 0)
 	for iter.Next() {
 		c := iter.Value()
 		ids = append(ids, c.CommitID)
@@ -335,7 +335,7 @@ func TestPGRefManager_Log(t *testing.T) {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
 
-	expected := rocks.CommitParents{
+	expected := graveler.CommitParents{
 		"c3f815d633789cd7c1325352277d4de528844c758a9beedfa8a3cfcfb5c75627",
 		"8549d7544244ba1b63b5967b6b328b331658f627369cb89bd442684719c318ae",
 		"13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",

@@ -1,4 +1,4 @@
-package rocks_test
+package graveler_test
 
 import (
 	"context"
@@ -7,28 +7,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestPGRefManager_Dereference(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{}))
+	}, graveler.Branch{}))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
-	var previous rocks.CommitID
+	var previous graveler.CommitID
 	for i := 0; i < 20; i++ {
-		c := rocks.Commit{
+		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",
 			TreeID:       "deadbeef123",
 			CreationDate: ts,
-			Parents:      rocks.CommitParents{previous},
+			Parents:      graveler.CommitParents{previous},
 			Metadata:     catalog.Metadata{"foo": "bar"},
 		}
 		cid, err := r.AddCommit(context.Background(), "repo1", c)
@@ -43,7 +44,7 @@ func TestPGRefManager_Dereference(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	ids := make([]rocks.CommitID, 0)
+	ids := make([]graveler.CommitID, 0)
 	for iter.Next() {
 		c := iter.Value()
 		ids = append(ids, c.CommitID)
@@ -74,69 +75,69 @@ func TestPGRefManager_Dereference(t *testing.T) {
 	//	"df87d5329f4438662d6ecb9b90ee17c0bdc9a78a884acc93c0c4fe9f0f79d059",
 	//	"29706d36de7219e0796c31b278f87201ef835e8cdafbcc3c907d292cd31f77d5",
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch1", rocks.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch1", graveler.Branch{
 		CommitID: "13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", rocks.Branch{
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
 		CommitID: "d420fbf793716d6d53798218d7a247f38a5bbed095d57df71ee79e05446e46ec",
 	}))
 
 	table := []struct {
 		Name        string
-		Ref         rocks.Ref
-		Expected    rocks.CommitID
+		Ref         graveler.Ref
+		Expected    graveler.CommitID
 		ExpectedErr error
 	}{
 		{
 			Name:     "branch_exist",
-			Ref:      rocks.Ref("branch1"),
-			Expected: rocks.CommitID("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
+			Ref:      graveler.Ref("branch1"),
+			Expected: graveler.CommitID("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
 		},
 		{
 			Name:        "branch_doesnt_exist",
-			Ref:         rocks.Ref("branch3"),
-			ExpectedErr: rocks.ErrNotFound,
+			Ref:         graveler.Ref("branch3"),
+			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
 			Name:     "commit",
-			Ref:      rocks.Ref("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
-			Expected: rocks.CommitID("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
+			Ref:      graveler.Ref("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
+			Expected: graveler.CommitID("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
 		},
 		{
 			Name:     "commit_prefix_good",
-			Ref:      rocks.Ref("13daf"),
-			Expected: rocks.CommitID("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
+			Ref:      graveler.Ref("13daf"),
+			Expected: graveler.CommitID("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774"),
 		},
 		{
 			Name:        "commit_prefix_ambiguous",
-			Ref:         rocks.Ref("a"),
-			ExpectedErr: rocks.ErrNotFound,
+			Ref:         graveler.Ref("a"),
+			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
 			Name:        "commit_prefix_missing",
-			Ref:         rocks.Ref("66666"),
-			ExpectedErr: rocks.ErrNotFound,
+			Ref:         graveler.Ref("66666"),
+			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
 			Name:     "branch_with_modifier",
-			Ref:      rocks.Ref("branch1~2"),
-			Expected: rocks.CommitID("94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca"),
+			Ref:      graveler.Ref("branch1~2"),
+			Expected: graveler.CommitID("94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca"),
 		},
 		{
 			Name:     "commit_with_modifier",
-			Ref:      rocks.Ref("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774~2"),
-			Expected: rocks.CommitID("94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca"),
+			Ref:      graveler.Ref("13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774~2"),
+			Expected: graveler.CommitID("94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca"),
 		},
 		{
 			Name:     "commit_prefix_with_modifier",
-			Ref:      rocks.Ref("13dafa~2"),
-			Expected: rocks.CommitID("94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca"),
+			Ref:      graveler.Ref("13dafa~2"),
+			Expected: graveler.CommitID("94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca"),
 		},
 		{
 			Name:        "commit_prefix_with_modifier_too_big",
-			Ref:         rocks.Ref("2c14ddd9b097a8f96db3f27a454877c9513378635d313ba0f0277d793a183e72~200"),
-			ExpectedErr: rocks.ErrNotFound,
+			Ref:         graveler.Ref("2c14ddd9b097a8f96db3f27a454877c9513378635d313ba0f0277d793a183e72~200"),
+			ExpectedErr: graveler.ErrNotFound,
 		},
 	}
 
@@ -185,84 +186,84 @@ func TestPGRefManager_DereferenceWithGraph(t *testing.T) {
 
 	*/
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", rocks.Repository{
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, rocks.Branch{}))
+	}, graveler.Branch{}))
 
-	G, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{},
+	G, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	H, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{},
+	H, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	I, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{},
+	I, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	J, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{},
+	J, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	D, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{G, H},
+	D, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{G, H},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	E, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	F, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{I, J},
+	E, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	B, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{D, E, F},
+	F, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{I, J},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	C, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{F},
+	B, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{D, E, F},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	A, err := r.AddCommit(context.Background(), "repo1", rocks.Commit{
-		Parents: rocks.CommitParents{B, C},
+	C, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{F},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	resolve := func(base rocks.CommitID, mod string, expected rocks.CommitID) {
+	A, err := r.AddCommit(context.Background(), "repo1", graveler.Commit{
+		Parents: graveler.CommitParents{B, C},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	resolve := func(base graveler.CommitID, mod string, expected graveler.CommitID) {
 		ref := fmt.Sprintf("%s%s", base, mod)
-		resolved, err := r.RevParse(context.Background(), "repo1", rocks.Ref(ref))
+		resolved, err := r.RevParse(context.Background(), "repo1", graveler.Ref(ref))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

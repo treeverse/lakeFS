@@ -1,35 +1,35 @@
-package rocks_test
+package graveler_test
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/graveler"
 )
 
 func TestRevParse(t *testing.T) {
 	table := []struct {
 		Name        string
 		Input       string
-		Expected    rocks.ParsedRev
+		Expected    graveler.ParsedRev
 		ExpectedErr error
 	}{
 		{
 			Name:  "just_branch",
 			Input: "master",
-			Expected: rocks.ParsedRev{
+			Expected: graveler.ParsedRev{
 				BaseRev:   "master",
-				Modifiers: make([]rocks.RevModifier, 0),
+				Modifiers: make([]graveler.RevModifier, 0),
 			},
 		},
 		{
 			Name:  "branch_one_caret",
 			Input: "master^",
-			Expected: rocks.ParsedRev{
+			Expected: graveler.ParsedRev{
 				BaseRev: "master",
-				Modifiers: []rocks.RevModifier{
+				Modifiers: []graveler.RevModifier{
 					{
-						Type:  rocks.RevModTypeCaret,
+						Type:  graveler.RevModTypeCaret,
 						Value: 1,
 					},
 				},
@@ -38,15 +38,15 @@ func TestRevParse(t *testing.T) {
 		{
 			Name:  "branch_two_caret",
 			Input: "master^^",
-			Expected: rocks.ParsedRev{
+			Expected: graveler.ParsedRev{
 				BaseRev: "master",
-				Modifiers: []rocks.RevModifier{
+				Modifiers: []graveler.RevModifier{
 					{
-						Type:  rocks.RevModTypeCaret,
+						Type:  graveler.RevModTypeCaret,
 						Value: 1,
 					},
 					{
-						Type:  rocks.RevModTypeCaret,
+						Type:  graveler.RevModTypeCaret,
 						Value: 1,
 					},
 				},
@@ -55,15 +55,15 @@ func TestRevParse(t *testing.T) {
 		{
 			Name:  "branch_two_caret_one_qualified",
 			Input: "master^2^",
-			Expected: rocks.ParsedRev{
+			Expected: graveler.ParsedRev{
 				BaseRev: "master",
-				Modifiers: []rocks.RevModifier{
+				Modifiers: []graveler.RevModifier{
 					{
-						Type:  rocks.RevModTypeCaret,
+						Type:  graveler.RevModTypeCaret,
 						Value: 2,
 					},
 					{
-						Type:  rocks.RevModTypeCaret,
+						Type:  graveler.RevModTypeCaret,
 						Value: 1,
 					},
 				},
@@ -72,19 +72,19 @@ func TestRevParse(t *testing.T) {
 		{
 			Name:  "branch_tilde_caret_tilde",
 			Input: "master~^~3",
-			Expected: rocks.ParsedRev{
+			Expected: graveler.ParsedRev{
 				BaseRev: "master",
-				Modifiers: []rocks.RevModifier{
+				Modifiers: []graveler.RevModifier{
 					{
-						Type:  rocks.RevModTypeTilde,
+						Type:  graveler.RevModTypeTilde,
 						Value: 1,
 					},
 					{
-						Type:  rocks.RevModTypeCaret,
+						Type:  graveler.RevModTypeCaret,
 						Value: 1,
 					},
 					{
-						Type:  rocks.RevModTypeTilde,
+						Type:  graveler.RevModTypeTilde,
 						Value: 3,
 					},
 				},
@@ -93,18 +93,18 @@ func TestRevParse(t *testing.T) {
 		{
 			Name:        "no_base",
 			Input:       "^^^3",
-			ExpectedErr: rocks.ErrInvalidRef,
+			ExpectedErr: graveler.ErrInvalidRef,
 		},
 		{
 			Name:        "non_numeric_qualifier",
 			Input:       "master^a",
-			ExpectedErr: rocks.ErrInvalidRef,
+			ExpectedErr: graveler.ErrInvalidRef,
 		},
 	}
 
 	for _, cas := range table {
 		t.Run(cas.Name, func(t *testing.T) {
-			got, err := rocks.RevParse(rocks.Ref(cas.Input))
+			got, err := graveler.RevParse(graveler.Ref(cas.Input))
 			if cas.ExpectedErr != nil {
 				if !errors.Is(err, cas.ExpectedErr) {
 					t.Fatalf("expected error of type: %s, got %v", cas.ExpectedErr, err)
