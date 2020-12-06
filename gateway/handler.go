@@ -350,16 +350,24 @@ func notFound(w http.ResponseWriter, _ *http.Request) {
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
 
+var (
+	contentTypeApplicationXML = "application/xml"
+	contentTypeTextXML        = "text/xml"
+)
+
 func selectContentType(acceptable []string) *string {
 	for _, acceptableTypes := range acceptable {
 		acceptable := commaSeparator.Split(acceptableTypes, -1)
 		for _, a := range acceptable {
-			if a == "text/xml" || a == "application/xml" {
-				return &a
+			switch a {
+			case contentTypeTextXML:
+				return &contentTypeTextXML
+			case contentTypeApplicationXML:
+				return &contentTypeApplicationXML
 			}
 		}
 	}
-	return nil
+	return &contentTypeApplicationXML
 }
 
 func setContentType(w http.ResponseWriter, r *http.Request) {
