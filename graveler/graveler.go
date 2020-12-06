@@ -361,7 +361,7 @@ type StagingManager interface {
 	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
 	// Set writes a value under the given staging token and key.
-	Set(ctx context.Context, st StagingToken, key Key, value *Value) error
+	Set(ctx context.Context, st StagingToken, key Key, value Value) error
 
 	// Delete deletes a value by staging token and key
 	Delete(ctx context.Context, st StagingToken, key Key) error

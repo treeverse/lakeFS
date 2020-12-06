@@ -17,6 +17,6 @@ CREATE TABLE IF NOT EXISTS kv_staging_p7 PARTITION OF kv_staging FOR VALUES WITH
 CREATE TABLE IF NOT EXISTS kv_staging_p8 PARTITION OF kv_staging FOR VALUES WITH (MODULUS 10, REMAINDER 8);
 CREATE TABLE IF NOT EXISTS kv_staging_p9 PARTITION OF kv_staging FOR VALUES WITH (MODULUS 10, REMAINDER 9);
 
-CREATE UNIQUE index kv_staging_uidx
+CREATE UNIQUE index IF NOT EXISTS kv_staging_uidx
     on kv_staging (staging_token asc, key asc);
 COMMIT;

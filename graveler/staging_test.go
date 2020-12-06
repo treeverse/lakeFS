@@ -186,25 +186,27 @@ func TestSeek(t *testing.T) {
 	}
 }
 
-func TestNilValues(t *testing.T) {
+func TestNilIdentity(t *testing.T) {
 	s := newTestStagingManager(t)
 	err := s.Set(context.Background(), "t1", []byte("key1"), newTestValue("identity1", "value1"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	for _, val := range []*Value{nil, {Identity: nil}} {
-		err = s.Set(context.Background(), "t1", []byte("key1"), val)
-		if !errors.Is(err, ErrInvalidValue) {
-			t.Fatalf("got unexpected error. expected=%v, got=%v", ErrInvalidValue, err)
-		}
-		e, err := s.Get(context.Background(), "t1", []byte("key1"))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
-		if string(e.Identity) != "identity1" {
-			t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
-		}
+	err = s.Set(context.Background(), "t1", []byte("key1"), Value{
+		Identity: nil,
+		Data:     []byte("value1"),
+	})
+	if !errors.Is(err, ErrInvalidValue) {
+		t.Fatalf("got unexpected error. expected=%v, got=%v", ErrInvalidValue, err)
 	}
+	e, err := s.Get(context.Background(), "t1", []byte("key1"))
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	if string(e.Identity) != "identity1" {
+		t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
+	}
+
 }
 
 func TestDeleteAndTombstone(t *testing.T) {
@@ -213,7 +215,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	tombstoneValues := []*Value{
+	tombstoneValues := []Value{
 		{
 			Identity: []byte("identity1"),
 			Data:     make([]byte, 0),
@@ -274,8 +276,8 @@ func TestDeleteAndTombstone(t *testing.T) {
 	}
 }
 
-func newTestValue(identity, data string) *Value {
-	return &Value{
+func newTestValue(identity, data string) Value {
+	return Value{
 		Identity: []byte(identity),
 		Data:     []byte(data),
 	}

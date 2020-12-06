@@ -31,8 +31,8 @@ func (p *stagingManager) Get(ctx context.Context, st StagingToken, key Key) (*Va
 	return res.(*Value), nil
 }
 
-func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, value *Value) error {
-	if value == nil || value.Identity == nil {
+func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, value Value) error {
+	if value.Identity == nil {
 		return ErrInvalidValue
 	}
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
