@@ -2,20 +2,20 @@ package sstable
 
 import (
 	"github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/graveler"
 )
 
 // Iterator returns ordered iteration of the SSTable entries
 type Iterator struct {
 	it sstable.Iterator
 
-	currPath  *rocks.Path
-	currEntry *rocks.Entry
+	currKey   graveler.Key
+	currValue *graveler.Value
 	err       error
 }
 
-func (iter *Iterator) SeekGE(path rocks.Path) bool {
-	return iter.handleKeyVal(iter.it.SeekGE([]byte(path)))
+func (iter *Iterator) SeekGE(key graveler.Key) bool {
+	return iter.handleKeyVal(iter.it.SeekGE([]byte(key)))
 }
 
 func (iter *Iterator) Next() bool {
@@ -24,14 +24,13 @@ func (iter *Iterator) Next() bool {
 
 func (iter *Iterator) handleKeyVal(key *sstable.InternalKey, val []byte) bool {
 	if key == nil && val == nil {
-		iter.currPath = nil
-		iter.currEntry = nil
+		iter.currKey = nil
+		iter.currValue = nil
 		return false
 	}
 
-	path := rocks.Path(key.UserKey)
-	iter.currPath = &path
-	iter.currEntry, iter.err = deserializeEntry(val)
+	iter.currKey = key.UserKey
+	iter.currValue, iter.err = serialize.deserializeValue(val)
 
 	if iter.err != nil {
 		return false
@@ -40,14 +39,14 @@ func (iter *Iterator) handleKeyVal(key *sstable.InternalKey, val []byte) bool {
 	return true
 }
 
-func (iter *Iterator) Value() *rocks.EntryRecord {
-	if iter.currPath == nil {
+func (iter *Iterator) Value() *graveler.ValueRecord {
+	if iter.currKey == nil {
 		return nil
 	}
 
-	return &rocks.EntryRecord{
-		Path:  *iter.currPath,
-		Entry: iter.currEntry,
+	return &graveler.ValueRecord{
+		Key:   iter.currKey,
+		Value: iter.currValue,
 	}
 }
 

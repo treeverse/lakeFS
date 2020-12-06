@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/treeverse/lakefs/pyramid"
-
 	"github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/pyramid"
 )
 
 type DiskWriter struct {
 	w      *sstable.Writer
 	tierFS pyramid.FS
 
-	first rocks.Path
-	last  rocks.Path
+	first graveler.Key
+	last  graveler.Key
 	count int
 	hash  hash.Hash
 
@@ -41,27 +40,27 @@ func newDiskWriter(tierFS pyramid.FS, hash hash.Hash) (*DiskWriter, error) {
 	}, nil
 }
 
-func (dw *DiskWriter) WriteEntry(entry rocks.EntryRecord) error {
-	pathBytes := []byte(entry.Path)
-	entryBytes, err := serializeEntry(*entry.Entry)
+func (dw *DiskWriter) WriteEntry(record graveler.ValueRecord) error {
+	keyBytes := []byte(record.Key)
+	valBytes, err := serializeValue(*record.Value)
 	if err != nil {
 		return fmt.Errorf("serializing entry: %w", err)
 	}
-	if err := dw.w.Set(pathBytes, entryBytes); err != nil {
+	if err := dw.w.Set(keyBytes, valBytes); err != nil {
 		return fmt.Errorf("setting key and value: %w", err)
 	}
 
 	// updating stats
 	if dw.count == 0 {
-		dw.first = entry.Path
+		dw.first = record.Key
 	}
-	dw.last = entry.Path
+	dw.last = record.Identity
 	dw.count++
 
-	if _, err := dw.hash.Write(pathBytes); err != nil {
+	if _, err := dw.hash.Write(keyBytes); err != nil {
 		return err
 	}
-	if _, err := dw.hash.Write(entryBytes); err != nil {
+	if _, err := dw.hash.Write(valBytes); err != nil {
 		return err
 	}
 

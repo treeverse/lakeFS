@@ -1,0 +1,7 @@
+syntax = "proto3";
+package sstable;
+
+message Value{
+  bytes Identity = 1;
+  bytes Data = 2;
+}

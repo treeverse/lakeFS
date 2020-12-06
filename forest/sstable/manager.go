@@ -1,16 +1,18 @@
 package sstable
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
+	"github.com/treeverse/lakefs/graveler"
 
 	"github.com/cockroachdb/pebble"
 
 	"github.com/treeverse/lakefs/pyramid"
 
 	"github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/catalog/rocks"
 )
 
 type PebbleSSTableManager struct {
@@ -34,13 +36,13 @@ var (
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *PebbleSSTableManager) GetEntry(path rocks.Path, tid ID) (*rocks.Entry, error) {
+func (m *PebbleSSTableManager) GetEntry(k graveler.Key, tid ID) (*graveler.Value, error) {
 	reader, err := m.getReader(tid)
 	if err != nil {
 		return nil, err
 	}
 
-	it, err := reader.NewIter([]byte(path), nil)
+	it, err := reader.NewIter(k, nil)
 	defer it.Close()
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
@@ -58,12 +60,12 @@ func (m *PebbleSSTableManager) GetEntry(path rocks.Path, tid ID) (*rocks.Entry, 
 		return nil, ErrPathNotFound
 	}
 
-	if rocks.Path(key.UserKey) != path {
+	if !bytes.Equal(key.UserKey, key.UserKey) {
 		// lookup path in range but key not found
 		return nil, ErrPathNotFound
 	}
 
-	return deserializeEntry(val)
+	return deserializeValue(val)
 }
 
 func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, error) {
@@ -72,22 +74,11 @@ func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, error) {
 		return nil, fmt.Errorf("open sstable %s: %w", tid, err)
 	}
 
-	return sstable.NewReader(f, sstable.ReaderOptions{		Cache:      m.cache	})
-}
-
-
-func deserializeEntry(val []byte) (*rocks.Entry, error) {
-	// TODO: pending serialization
-	return nil, nil
-}
-
-func serializeEntry(entry rocks.Entry) ([]byte, error) {
-	// TODO: serialize in the best compact way
-	return nil, nil
+	return sstable.NewReader(f, sstable.ReaderOptions{Cache: m.cache})
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *PebbleSSTableManager) SSTableIterator(tid ID, from rocks.Path) (rocks.EntryIterator, error) {
+func (m *PebbleSSTableManager) SSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error) {
 	reader, err := m.getReader(tid)
 	if err != nil {
 		return nil, err

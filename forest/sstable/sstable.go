@@ -10,10 +10,10 @@ type ID string
 type Manager interface {
 	// GetEntry returns the entry matching the path in the SSTable referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetEntry(path graveler.Key, tid SSTableID) (*graveler.Value, error)
+	GetEntry(path graveler.Key, tid ID) (*graveler.Value, error)
 
 	// NewSSTableIterator takes a given SSTable and returns an ValueIterator seeked to >= "from" path
-	NewSSTableIterator(tid SSTableID, from graveler.Key) (graveler.ValueIterator, error)
+	NewSSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)

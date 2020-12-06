@@ -46,6 +46,7 @@ require (
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
+	github.com/kataras/iris/v12 v12.0.1
 	github.com/klauspost/compress v1.10.10 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
@@ -80,6 +81,7 @@ require (
 	github.com/xitongsys/parquet-go v1.5.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
+	go.uber.org/atomic v1.6.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
@@ -89,6 +91,7 @@ require (
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	pgregory.net/rapid v0.4.0 // indirect
 )
