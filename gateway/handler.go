@@ -367,23 +367,27 @@ func selectContentType(acceptable []string) *string {
 			}
 		}
 	}
-	return &contentTypeApplicationXML
+	return nil
 }
 
-func setContentType(w http.ResponseWriter, r *http.Request) {
+func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
 	acceptable, ok := r.Header["Accept"]
 	if ok {
-		contentType := selectContentType(acceptable)
-		if contentType != nil {
-			w.Header().Set("Content-Type", *contentType)
-		} else {
-			w.WriteHeader(http.StatusNotAcceptable)
+		defaultContentType := selectContentType(acceptable)
+		// No requested content type matched.  This is OK at least for a GET or
+		// HEAD, so set up to auto-detect.
+		if defaultContentType != nil {
+			w.Header().Set("Content-Type", *defaultContentType)
 		}
+	} else {
+		// For all proxied content the type will be reset according to whatever headers
+		// arrive.  This includes setting an empty content-type if none is specified by
+		// the adapter.
+		w.Header().Set("Content-Type", contentTypeApplicationXML)
 	}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// pprof endpoints
 	handler := h.servePathBased(r)
 	if handler == nil {
 		handler = h.serveVirtualHost(r)
@@ -393,7 +397,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
-	setContentType(mrw, r)
+	setDefaultContentType(mrw, r)
 	handler.ServeHTTP(mrw, r)
 	requestHistograms.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }

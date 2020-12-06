@@ -116,6 +116,11 @@ func (o *Operation) SetHeader(key, value string) {
 	o.ResponseWriter.Header()[key] = []string{value}
 }
 
+// DeleteHeader deletes a header from the response
+func (o *Operation) DeleteHeader(key string) {
+	o.ResponseWriter.Header().Del(key)
+}
+
 // SetHeaders sets a map of headers on the response while preserving the header's case
 func (o *Operation) SetHeaders(headers map[string]string) {
 	for k, v := range headers {
