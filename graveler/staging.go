@@ -32,8 +32,8 @@ func (p *stagingManager) Get(ctx context.Context, st StagingToken, key Key) (*Va
 }
 
 func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, value *Value) error {
-	if value == nil {
-		value = &Value{}
+	if value == nil || value.Identity == nil {
+		return ErrInvalidValue
 	}
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec(`INSERT INTO staging_kv (staging_token, key, identity, data)

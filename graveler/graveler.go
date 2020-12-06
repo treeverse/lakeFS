@@ -153,7 +153,7 @@ type KeyValueStore interface {
 	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// List lists entries on repository / ref will filter by prefix, from key 'from'.
+	// List lists values on repository / ref will filter by prefix, from key 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
 	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error)
 }
@@ -355,16 +355,15 @@ type CommittedManager interface {
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
-// provides basic CRUD abilities, with deletes being written as tombstones (null entry)
 type StagingManager interface {
-	// GetEntry returns the valure for the provided path (or nil entry to represent a tombstone)
-	// Returns ErrNotFound if no value found on key
+	// Get returns the value for the provided staging token and key
+	// Returns ErrNotFound if no value found on key.
 	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
-	// Set writes a value (or a nil value to represent a tombstone)
+	// Set writes a value under the given staging token and key.
 	Set(ctx context.Context, st StagingToken, key Key, value *Value) error
 
-	// Delete deletes a value by key
+	// Delete deletes a value by staging token and key
 	Delete(ctx context.Context, st StagingToken, key Key) error
 
 	// List returns a ValueIterator for the given staging token

@@ -3,8 +3,6 @@ package graveler
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"testing"
@@ -25,7 +23,7 @@ func TestSetGet(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	value := newTestValue("value1")
+	value := newTestValue("identity1", "value1")
 	err = s.Set(context.Background(), "t1", []byte("a/b/c/"), value)
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
@@ -34,8 +32,8 @@ func TestSetGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if hex.EncodeToString(e.Identity) != "9946687e5fa0dab5993ededddb398d2e" {
-		t.Errorf("got wrong value. expected=%s, got=%s", "9946687e5fa0dab5993ededddb398d2e", hex.EncodeToString(e.Identity))
+	if string(e.Identity) != "identity1" {
+		t.Errorf("got wrong value. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
 }
 
@@ -45,7 +43,7 @@ func TestMultiToken(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	err = s.Set(context.Background(), "t1", []byte("a/b/c/"), newTestValue("value1"))
+	err = s.Set(context.Background(), "t1", []byte("a/b/c/"), newTestValue("identity1", "value1"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -53,10 +51,10 @@ func TestMultiToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if hex.EncodeToString(e.Identity) != "9946687e5fa0dab5993ededddb398d2e" {
-		t.Errorf("got wrong identity. expected=%s, got=%s", "9946687e5fa0dab5993ededddb398d2e", string(e.Identity))
+	if string(e.Identity) != "identity1" {
+		t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
-	err = s.Set(context.Background(), "t2", []byte("a/b/c/"), newTestValue("value2"))
+	err = s.Set(context.Background(), "t2", []byte("a/b/c/"), newTestValue("identity2", "value2"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -64,15 +62,16 @@ func TestMultiToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if hex.EncodeToString(e.Identity) != "9946687e5fa0dab5993ededddb398d2e" {
-		t.Errorf("got wrong value identity. expected=%s, got=%s", "9946687e5fa0dab5993ededddb398d2e", hex.EncodeToString(e.Identity))
+	if string(e.Identity) != "identity1" {
+		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
 	e, err = s.Get(context.Background(), "t2", []byte("a/b/c/"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if hex.EncodeToString(e.Identity) != "f066ce9385512ee02afc6e14d627e9f2" {
-		t.Errorf("got wrong value identity. expected=%s, got=%s", "f066ce9385512ee02afc6e14d627e9f2", hex.EncodeToString(e.Identity))
+	if string(e.Identity) != "identity2" {
+		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
+		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
 	}
 }
 
@@ -80,13 +79,13 @@ func TestDrop(t *testing.T) {
 	s := newTestStagingManager(t)
 	numOfValues := 1400
 	for i := 0; i < numOfValues; i++ {
-		err := s.Set(context.Background(), "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("value%d", i)))
+		err := s.Set(context.Background(), "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
 	}
 	for i := 0; i < numOfValues; i++ {
-		err := s.Set(context.Background(), "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("value%d", i)))
+		err := s.Set(context.Background(), "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -123,7 +122,7 @@ func TestList(t *testing.T) {
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
 		token := StagingToken(fmt.Sprintf("t_%d", numOfValues))
 		for i := 0; i < numOfValues; i++ {
-			err := s.Set(context.Background(), token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("value%d", i)))
+			err := s.Set(context.Background(), token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
 			if err != nil {
 				t.Fatalf("got unexpected error: %v", err)
 			}
@@ -155,7 +154,7 @@ func TestSeek(t *testing.T) {
 	s := newTestStagingManager(t)
 	numOfValues := 100
 	for i := 0; i < numOfValues; i++ {
-		err := s.Set(context.Background(), "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("value1"))
+		err := s.Set(context.Background(), "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"))
 		if err != nil {
 			t.Fatalf("got unexpected error: %v", err)
 		}
@@ -187,13 +186,74 @@ func TestSeek(t *testing.T) {
 	}
 }
 
+func TestNilValues(t *testing.T) {
+	s := newTestStagingManager(t)
+	err := s.Set(context.Background(), "t1", []byte("key1"), newTestValue("identity1", "value1"))
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	for _, val := range []*Value{nil, {Identity: nil}} {
+		err = s.Set(context.Background(), "t1", []byte("key1"), val)
+		if !errors.Is(err, ErrInvalidValue) {
+			t.Fatalf("got unexpected error. expected=%v, got=%v", ErrInvalidValue, err)
+		}
+		e, err := s.Get(context.Background(), "t1", []byte("key1"))
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		if string(e.Identity) != "identity1" {
+			t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
+		}
+	}
+}
+
 func TestDeleteAndTombstone(t *testing.T) {
 	s := newTestStagingManager(t)
 	_, err := s.Get(context.Background(), "t1", []byte("key1"))
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	err = s.Set(context.Background(), "t1", []byte("key1"), nil)
+	tombstoneValues := []*Value{
+		{
+			Identity: []byte("identity1"),
+			Data:     make([]byte, 0),
+		},
+		{
+			Identity: []byte("identity1"),
+			Data:     nil,
+		},
+	}
+	for _, val := range tombstoneValues {
+		err = s.Set(context.Background(), "t1", []byte("key1"), val)
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		e, err := s.Get(context.Background(), "t1", []byte("key1"))
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		if len(e.Data) != 0 {
+			t.Fatalf("expected empty data, got: %v", e.Data)
+		}
+		if string(e.Identity) != "identity1" {
+			t.Fatalf("got unexpected value identity. expected=%s, got=%s", "identity1", string(e.Identity))
+		}
+		it, err := s.List(context.Background(), "t1")
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		if !it.Next() {
+			t.Fatalf("expected to get key from list")
+		}
+		if it.Err() != nil {
+			t.Fatalf("unexpected error from iterator: %v", it.Err())
+		}
+		if len(it.Value().Value.Data) != 0 {
+			t.Fatalf("expected empty value data from iterator, got: %v", it.Value().Value.Data)
+		}
+		it.Close()
+	}
+	err = s.Set(context.Background(), "t1", []byte("key1"), newTestValue("identity3", "value3"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
@@ -201,33 +261,8 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	if e != nil {
-		t.Fatalf("expected nil but got key: %v", e)
-	}
-	it, err := s.List(context.Background(), "t1")
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
-	if !it.Next() {
-		t.Fatalf("expected to get key from list")
-	}
-	if it.Err() != nil {
-		t.Fatalf("unexpected error from iterator: %v", it.Err())
-	}
-	if it.Value().Value != nil {
-		t.Fatalf("expected nil value from iterator, got: %v", it.Value().Value)
-	}
-	it.Close()
-	err = s.Set(context.Background(), "t1", []byte("key1"), newTestValue("value3"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
-	e, err = s.Get(context.Background(), "t1", []byte("key1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
-	if hex.EncodeToString(e.Identity) != "039da699d091de4f1240ae50570abed9" {
-		t.Fatalf("got unexpected value identity. expected=%s, got=%s", "039da699d091de4f1240ae50570abed9", hex.EncodeToString(e.Identity))
+	if string(e.Identity) != "identity3" {
+		t.Fatalf("got unexpected value identity. expected=%s, got=%s", "identity3", string(e.Identity))
 	}
 	err = s.Delete(context.Background(), "t1", []byte("key1"))
 	if err != nil {
@@ -239,10 +274,9 @@ func TestDeleteAndTombstone(t *testing.T) {
 	}
 }
 
-func newTestValue(data string) *Value {
-	hash := md5.Sum([]byte(data))
+func newTestValue(identity, data string) *Value {
 	return &Value{
-		Identity: hash[:],
+		Identity: []byte(identity),
 		Data:     []byte(data),
 	}
 }
