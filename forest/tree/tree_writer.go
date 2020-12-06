@@ -1,6 +1,7 @@
 package tree
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -9,8 +10,8 @@ import (
 	"io/ioutil"
 	"sort"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/forest/sstable"
+	gr "github.com/treeverse/lakefs/graveler"
 )
 
 const (
@@ -19,20 +20,13 @@ const (
 	SplitMinFactor = 50      // a part will not be closed in number of rows less than splitFactor / SplitMinFactor
 )
 
-// used as the highest path of the last part in a tree
-//var maximalPath = rocks.Path([]byte{255, 255, 255, 255})
-
-//type closeReply struct {
-//	err error
-//	TreePartType
-//}
-type IsSplitPathFunc func(path rocks.Path, rowNum int) bool
+type IsSplitKeyFunc func(path gr.Key, rowNum int) bool
 
 type TreeWriter struct {
 	activeWriter            sstable.Writer
 	currentPartNumOfEntries int
 	closeAsync              sstable.BatchWriterCloser
-	isSplitPathFunc         IsSplitPathFunc
+	isSplitKeyFunc          IsSplitKeyFunc
 	splitFactor             uint32
 }
 
@@ -40,7 +34,7 @@ func (tw *TreeWriter) hasOpenWriter() bool {
 	return !(tw.activeWriter == nil)
 }
 
-func (tw *TreeWriter) writeEntry(record rocks.EntryRecord) error {
+func (tw *TreeWriter) writeEntry(record gr.ValueRecord) error {
 	if tw.activeWriter == nil {
 		w, err := treesRepository.PartManger.GetWriter()
 		if err != nil {
@@ -53,7 +47,7 @@ func (tw *TreeWriter) writeEntry(record rocks.EntryRecord) error {
 		return err
 	}
 	tw.currentPartNumOfEntries++
-	if tw.isSplitPath(record.Path, tw.currentPartNumOfEntries) {
+	if tw.isSplitKey(record.Key, tw.currentPartNumOfEntries) {
 		tw.forceCloseCurrentPart()
 	}
 	return nil
@@ -65,9 +59,9 @@ func (tw *TreeWriter) forceCloseCurrentPart() {
 	tw.activeWriter = nil
 }
 
-func (tw *TreeWriter) isSplitPath(path rocks.Path, rowNum int) bool {
-	if tw.isSplitPathFunc != nil {
-		return tw.isSplitPathFunc(path, rowNum)
+func (tw *TreeWriter) isSplitKey(key gr.Key, rowNum int) bool {
+	if tw.isSplitKeyFunc != nil {
+		return tw.isSplitKeyFunc(key, rowNum)
 	}
 	if tw.splitFactor == 0 {
 		tw.splitFactor = SplitFactor
@@ -76,12 +70,12 @@ func (tw *TreeWriter) isSplitPath(path rocks.Path, rowNum int) bool {
 		return true
 	}
 	fnvHash := fnv.New32a()
-	fnvHash.Write([]byte(path))
+	fnvHash.Write(key)
 	i := fnvHash.Sum32()
 	return (i%tw.splitFactor) == 0 && rowNum > (SplitFactor/SplitMinFactor)
 }
 
-func (tw *TreeWriter) flushIterToNewTree(iter rocks.EntryIterator) error {
+func (tw *TreeWriter) flushIterToNewTree(iter gr.ValueIterator) error {
 	for iter.Next() {
 		err := tw.writeEntry(*iter.Value())
 		if err != nil {
@@ -91,7 +85,7 @@ func (tw *TreeWriter) flushIterToNewTree(iter rocks.EntryIterator) error {
 	return iter.Err()
 }
 
-func (tw *TreeWriter) finalizeTree(reuseParts *TreeType) (rocks.TreeID, error) {
+func (tw *TreeWriter) finalizeTree(reuseParts *TreeType) (gr.TreeID, error) {
 	var newParts TreeType
 	closeResults, err := tw.closeAsync.Wait()
 	if err != nil {
@@ -99,33 +93,36 @@ func (tw *TreeWriter) finalizeTree(reuseParts *TreeType) (rocks.TreeID, error) {
 	}
 	for _, r := range closeResults {
 		t := TreePartType{
-			MaxPath:  r.Last,
+			MaxKey:   r.Last,
 			PartName: r.SSTableID,
 		}
 		newParts = append(newParts, t)
 	}
 	if reuseParts != nil {
 		newParts = append(newParts, *reuseParts...)
-		sort.Slice(newParts, func(i, j int) bool { return newParts[i].MaxPath < newParts[j].MaxPath })
+		sort.Slice(newParts, func(i, j int) bool { return bytes.Compare(newParts[i].MaxKey, newParts[j].MaxKey) < 0 })
 	}
 	return serializeTreeToDisk(newParts)
 }
 
-func serializeTreeToDisk(tree TreeType) (rocks.TreeID, error) {
+func serializeTreeToDisk(tree TreeType) (gr.TreeID, error) {
 	if len(tree) == 0 {
 		return "", ErrEmptyTree
 	}
 	sha := sha256.New()
 	for _, p := range tree {
 		sha.Write([]byte(p.PartName))
-		sha.Write([]byte(p.MaxPath))
+		sha.Write([]byte(p.MaxKey))
 	}
 	hash := sha256.Sum256(nil)
 	treeBytes, err := json.Marshal(tree)
 	if err != nil {
 		return "", err
 	}
-	treeID := hex.EncodeToString(hash[:])
-	err = ioutil.WriteFile("tree_"+treeID+".json", treeBytes, 0666)
-	return rocks.TreeID(treeID), err
+	treeID := gr.TreeID(hex.EncodeToString(hash[:]))
+	err = ioutil.WriteFile("tree_"+string(treeID)+".json", treeBytes, 0666)
+	if err != nil {
+		return gr.TreeID(""), err
+	}
+	return treeID, nil
 }

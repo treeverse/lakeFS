@@ -30,7 +30,7 @@ type treeIterator struct {
 }
 
 func (trees *TreesRepoType) NewScanner(treeID rocks.TreeID, start rocks.Path) (*treeIterator, error) {
-	treeSlice, err := trees.loadTreeIfNeeded(treeID)
+	treeSlice, err := trees.GetTree(treeID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (t *treeIterator) SeekGE(start rocks.Path) bool {
 func findPartNumForPath(tree TreeType, path rocks.Path) int {
 	n := len(tree)
 	pos := sort.Search(n, func(i int) bool {
-		return tree[i].MaxPath >= path
+		return tree[i].MaxKey >= path
 	})
 	return pos
 }
@@ -121,7 +121,7 @@ func (t *treeIterator) Close() {
 	t.currentIter.Close()
 }
 
-func (trees TreesRepoType) loadTreeIfNeeded(treeID rocks.TreeID) (TreeType, error) {
+func (trees TreesRepoType) GetTree(treeID rocks.TreeID) (TreeType, error) {
 	t, exists := trees.TreesMap[treeID]
 	if exists {
 		return t.TreeParts, nil

@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/treeverse/lakefs/catalog/rocks"
+
 	"github.com/cockroachdb/pebble"
 	table "github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/forest/sstable"
+	gr "github.com/treeverse/lakefs/graveler"
 )
 
 type Bwc struct {
@@ -29,7 +31,7 @@ func (b *Bwc) Wait() ([]sstable.WriteResult, error) {
 	for i := 0; i < b.counter; i++ {
 		t := fmt.Sprintf("%03d", i)
 		r := sstable.WriteResult{
-			Last:      rocks.Path(t),
+			Last:      gr.Key(t),
 			SSTableID: sstable.SSTableID(t),
 		}
 		res = append(res, r)
@@ -42,12 +44,12 @@ type SstMgr struct {
 	Sstid     int
 }
 
-func (s *SstMgr) GetEntry(path rocks.Path, tid sstable.SSTableID) (*rocks.Entry, error) {
+func (s *SstMgr) GetEntry(key gr.Key, tid sstable.SSTableID) (*gr.Value, error) {
 	panic("GetEntry not implemented")
 	//return &rocks.Entry{},nil
 }
 
-func (s *SstMgr) NewSSTableIterator(tid sstable.SSTableID, from rocks.Path) (rocks.EntryIterator, error) {
+func (s *SstMgr) NewSSTableIterator(tid sstable.SSTableID, from gr.Key) (gr.ValueIterator, error) {
 	if firstSSTactivation {
 		var cacheSize int64 = 1 << 31 // 2 GB cache size
 		Cache = pebble.NewCache(cacheSize)

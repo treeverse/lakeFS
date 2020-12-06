@@ -1,8 +1,10 @@
 package tree
 
 import (
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"bytes"
+
 	"github.com/treeverse/lakefs/forest/sstable"
+	gr "github.com/treeverse/lakefs/graveler"
 )
 
 type baseTreeManagerType struct {
@@ -12,13 +14,13 @@ type baseTreeManagerType struct {
 	partManager   sstable.Manager
 }
 
-func (trees *TreesRepoType) newBaseTreeManager(treeID rocks.TreeID) (*baseTreeManagerType, error) {
+func (trees *TreesRepoType) newBaseTreeManager(treeID gr.TreeID) (*baseTreeManagerType, error) {
 	var baseParts TreeType
 	var err error
 	if treeID == "" {
 		baseParts = make(TreeType, 0)
 	} else {
-		baseParts, err = trees.loadTreeIfNeeded(treeID)
+		baseParts, err = trees.GetTree(treeID)
 		if err != nil {
 			return nil, err
 		}
@@ -34,19 +36,19 @@ func (bm *baseTreeManagerType) isEndOfBase() bool {
 	return bm.baseIndex >= len(bm.baseTree)
 }
 
-func (bm *baseTreeManagerType) getBasePartForPath(path rocks.Path) (*pushBackEntryIterator, rocks.Path, error) {
+func (bm *baseTreeManagerType) getBasePartForPath(key gr.Key) (*pushBackValueIterator, gr.Key, error) {
 	lenBaseTree := len(bm.baseTree)
 	for ; bm.baseIndex < lenBaseTree &&
-		bm.baseTree[bm.baseIndex].MaxPath < path; bm.baseIndex++ {
+		LessThan(bm.baseTree[bm.baseIndex].MaxKey, key); bm.baseIndex++ {
 		bm.partsForReuse = append(bm.partsForReuse, bm.baseTree[bm.baseIndex])
 	}
 	if len(bm.baseTree) <= bm.baseIndex {
-		return nil, minimalPath, InfoBaseTreeExhausted
+		return nil, minimalKey, InfoBaseTreeExhausted
 	}
 	p := bm.baseTree[bm.baseIndex]
-	basePartIter, err := bm.partManager.NewSSTableIterator(p.PartName, minimalPath)
+	basePartIter, err := bm.partManager.NewSSTableIterator(p.PartName, minimalKey)
 	bm.baseIndex++
-	return newPushbackEntryIterator(basePartIter), p.MaxPath, err
+	return newPushbackEntryIterator(basePartIter), p.MaxKey, err
 }
 func (bm *baseTreeManagerType) getPartsForReuse() *TreeType {
 	if bm.baseIndex < len(bm.baseTree)-1 { // the apply loop did not reach the last parts of base, they will be added to reused
@@ -55,23 +57,23 @@ func (bm *baseTreeManagerType) getPartsForReuse() *TreeType {
 	return &bm.partsForReuse
 }
 
-func (bm *baseTreeManagerType) isPathInNextPart(path rocks.Path) bool {
+func (bm *baseTreeManagerType) isPathInNextPart(path gr.Key) bool {
 	if bm.isEndOfBase() {
 		return true // last part of base is the active now. the new path wil be written to it
 	} else {
-		return path < bm.baseTree[bm.baseIndex].MaxPath
+		return bytes.Compare(path, bm.baseTree[bm.baseIndex].MaxKey) <= 0
 	}
 }
 
-func (bm *baseTreeManagerType) getBaseMaxPath() rocks.Path {
-	return bm.baseTree[len(bm.baseTree)-1].MaxPath
+func (bm *baseTreeManagerType) getBaseMaxKey() gr.Key {
+	return bm.baseTree[len(bm.baseTree)-1].MaxKey
 }
 
 func (bm *baseTreeManagerType) wasLastPartProcessed() bool {
-	return len(bm.baseTree) == bm.baseIndex
+	return len(bm.baseTree) <= bm.baseIndex
 }
 
-func (bm *baseTreeManagerType) getLastPartIter() (*pushBackEntryIterator, error) {
-	baseIter, _, err := bm.getBasePartForPath(bm.baseTree[len(bm.baseTree)-1].MaxPath)
+func (bm *baseTreeManagerType) getLastPartIter() (*pushBackValueIterator, error) {
+	baseIter, _, err := bm.getBasePartForPath(bm.baseTree[len(bm.baseTree)-1].MaxKey)
 	return baseIter, err
 }

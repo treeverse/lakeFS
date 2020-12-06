@@ -1,26 +1,37 @@
 package tree
 
 import (
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"bytes"
+
 	"github.com/treeverse/lakefs/forest/sstable"
+	gr "github.com/treeverse/lakefs/graveler"
 )
 
-const (
-	minimalPath = rocks.Path("")
-)
+var minimalKey = gr.Key("")
 
 type TreePartType struct {
 	PartName sstable.SSTableID `json:"part_name"`
-	MaxPath  rocks.Path        `json:"max_path"`
+	MaxKey   gr.Key            `json:"max_path"`
 }
 type TreeType []TreePartType
 
 type TreeContainer struct {
-	TreeID    rocks.TreeID
+	TreeID    gr.TreeID
 	TreeParts TreeType
 }
 
 type TreesRepoType struct {
-	TreesMap   map[rocks.TreeID]TreeContainer
+	TreesMap   map[gr.TreeID]TreeContainer
 	PartManger sstable.Manager
+}
+
+func LessThan(a, b []byte) bool {
+	return bytes.Compare(a, b) < 0
+}
+func LessThanOrEqual(a, b []byte) bool {
+	return bytes.Compare(a, b) <= 0
+}
+
+func Equal(a, b []byte) bool {
+	return bytes.Compare(a, b) == 0
 }

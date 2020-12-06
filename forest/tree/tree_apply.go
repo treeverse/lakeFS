@@ -7,7 +7,7 @@ import (
 )
 
 func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryIterator) (rocks.TreeID, error) {
-	var basePartIter *pushBackEntryIterator
+	var basePartIter *pushBackValueIterator
 	var maxCurrentBaseKey rocks.Path
 	var err error
 	// INITIALIZATION
@@ -17,7 +17,7 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 		return "", err
 	}
 	treeWriter := &TreeWriter{}
-	baseTreeMaxPath := baseTreeManager.getBaseMaxPath()
+	baseTreeMaxPath := baseTreeManager.getBaseMaxKey()
 	// PROCESS INPUT
 	// Create a new tree by  merging an input entries stream with an existing  tree.
 	// entries from the input are merged into parts of the base tree.

@@ -1,27 +1,27 @@
 package tree
 
 import (
-	"github.com/treeverse/lakefs/catalog/rocks"
+	gr "github.com/treeverse/lakefs/graveler"
 )
 
-type pushBackEntryIterator struct {
-	rocks.EntryIterator
+type pushBackValueIterator struct {
+	gr.ValueIterator
 	ignoreNextOnce bool
 }
 
-func newPushbackEntryIterator(iterator rocks.EntryIterator) *pushBackEntryIterator {
-	return &pushBackEntryIterator{EntryIterator: iterator}
+func newPushbackEntryIterator(iterator gr.ValueIterator) *pushBackValueIterator {
+	return &pushBackValueIterator{ValueIterator: iterator}
 }
 
-func (i *pushBackEntryIterator) Next() bool {
+func (i *pushBackValueIterator) Next() bool {
 	if i.ignoreNextOnce {
 		i.ignoreNextOnce = false
 		return true
 	}
-	return i.EntryIterator.Next()
+	return i.ValueIterator.Next()
 }
 
-func (i *pushBackEntryIterator) pushBack() error {
+func (i *pushBackValueIterator) pushBack() error {
 	if i.ignoreNextOnce {
 		return ErrPushBackTwice
 	} else {
