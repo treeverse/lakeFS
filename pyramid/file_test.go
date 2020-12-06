@@ -12,17 +12,17 @@ import (
 )
 
 func TestPyramidWriteFile(t *testing.T) {
-	filename := uuid.Must(uuid.NewRandom()).String()
-	filepath := path.Join("/tmp", filename)
-	defer os.Remove(filepath)
+	filename := uuid.New().String()
 
-	fh, err := os.Create(filepath)
+	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
 		panic(err)
 	}
 
-	storeCalled := false
+	filepath := fh.Name()
+	defer os.Remove(filepath)
 
+	storeCalled := false
 	sut := File{
 		fh: fh,
 		store: func(string) error {
@@ -47,14 +47,14 @@ func TestPyramidWriteFile(t *testing.T) {
 }
 
 func TestWriteValidate(t *testing.T) {
-	filename := uuid.Must(uuid.NewRandom()).String()
-	filepath := path.Join("/tmp", filename)
-	defer os.Remove(filepath)
-
-	fh, err := os.Create(filepath)
+	filename := uuid.New().String()
+	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
 		panic(err)
 	}
+
+	filepath := fh.Name()
+	defer os.Remove(filepath)
 
 	storeCalled := false
 
@@ -81,7 +81,7 @@ func TestWriteValidate(t *testing.T) {
 }
 
 func TestPyramidReadFile(t *testing.T) {
-	filename := uuid.Must(uuid.NewRandom()).String()
+	filename := uuid.New().String()
 	filepath := path.Join("/tmp", filename)
 	content := "some content to write to file"
 	if err := ioutil.WriteFile(filepath, []byte(content), os.ModePerm); err != nil {
@@ -112,7 +112,7 @@ func TestPyramidReadFile(t *testing.T) {
 	require.Equal(t, content, string(bytes))
 	require.NoError(t, sut.Close())
 
-	require.Equal(t, 1, mockEv.touchedTimes[relativePath(filename)])
+	require.Equal(t, 2, mockEv.touchedTimes[relativePath(filename)])
 }
 
 type mockEviction struct {

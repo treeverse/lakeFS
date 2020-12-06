@@ -24,6 +24,7 @@ func (f *ROFile) ReadAt(p []byte, off int64) (n int, err error) {
 }
 
 func (f *ROFile) Stat() (os.FileInfo, error) {
+	f.eviction.touch(f.rPath)
 	return f.fh.Stat()
 }
 

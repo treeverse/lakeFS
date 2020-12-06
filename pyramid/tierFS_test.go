@@ -24,11 +24,11 @@ const blockStoragePrefix = "prefix"
 const allocatedDiskBytes = 4 * 1024 * 1024
 
 func TestMain(m *testing.M) {
-	fsName := uuid.Must(uuid.NewRandom()).String()
+	fsName := uuid.New().String()
 
 	// cleanup
 	defer func() {
-		if err := os.RemoveAll(path.Join("/tmp", fsName)); err != nil {
+		if err := os.RemoveAll(path.Join(os.TempDir(), fsName)); err != nil {
 			panic(err)
 		}
 	}()
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 		fsName:               fsName,
 		adaptor:              adapter,
 		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         "/tmp",
+		localBaseDir:         os.TempDir(),
 		allocatedDiskBytes:   allocatedDiskBytes,
 	})
 	if err != nil {
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestSimpleWriteRead(t *testing.T) {
-	namespace := uuid.Must(uuid.NewRandom()).String()
+	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
 
 	content := "hello world!"
@@ -61,7 +61,7 @@ func TestSimpleWriteRead(t *testing.T) {
 }
 
 func TestReadFailDuringWrite(t *testing.T) {
-	namespace := uuid.Must(uuid.NewRandom()).String()
+	namespace := uuid.New().String()
 	filename := "file1"
 	f, err := fs.Create(namespace)
 	require.NoError(t, err)
@@ -81,27 +81,27 @@ func TestReadFailDuringWrite(t *testing.T) {
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
-	testEviction(t, uuid.Must(uuid.NewRandom()).String())
+	testEviction(t, uuid.New().String())
 }
 
 func TestEvictionMultipleNamespaces(t *testing.T) {
-	testEviction(t, uuid.Must(uuid.NewRandom()).String(),
-		uuid.Must(uuid.NewRandom()).String(),
-		uuid.Must(uuid.NewRandom()).String())
+	testEviction(t, uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String())
 }
 
 func TestStartup(t *testing.T) {
-	fsName := uuid.Must(uuid.NewRandom()).String()
-	namespace := uuid.Must(uuid.NewRandom()).String()
+	fsName := uuid.New().String()
+	namespace := uuid.New().String()
 
 	// cleanup
 	defer func() {
-		if err := os.RemoveAll(path.Join("/tmp", fsName)); err != nil {
+		if err := os.RemoveAll(path.Join(os.TempDir(), fsName)); err != nil {
 			panic(err)
 		}
 	}()
 
-	namespacePath := path.Join("/tmp", fsName, namespace)
+	namespacePath := path.Join(os.TempDir(), fsName, namespace)
 	workspacePath := path.Join(namespacePath, workspaceDir)
 	if err := os.MkdirAll(workspacePath, os.ModePerm); err != nil {
 		panic(err)
@@ -120,7 +120,7 @@ func TestStartup(t *testing.T) {
 		fsName:               fsName,
 		adaptor:              mem.New(),
 		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         "/tmp",
+		localBaseDir:         os.TempDir(),
 		allocatedDiskBytes:   allocatedDiskBytes,
 	})
 	if err != nil {

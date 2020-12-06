@@ -122,8 +122,37 @@ func (tfs *TierFS) removeFromLocal(rPath relativePath) {
 func removeFromLocal(logger logging.Logger, fsLocalBaseDir string, rPath relativePath) {
 	p := path.Join(fsLocalBaseDir, string(rPath))
 	if err := os.Remove(p); err != nil {
-		logger.WithError(err).Errorf("Removing file %s", p)
+		logger.WithError(err).WithField("path", p).Error("Removing file failed")
+		return
 	}
+
+	dir := path.Dir(p)
+	empty, err := isDirEmpty(dir)
+	if err != nil {
+		logger.WithError(err).WithField("dir", dir).Error("Checking if dir empty failed")
+		return
+	}
+	if !empty {
+		return
+	}
+
+	if err := os.Remove(dir); err != nil {
+		logger.WithError(err).WithField("dir", dir).Error("Removing dir failed")
+	}
+}
+
+func isDirEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
 }
 
 func (tfs *TierFS) store(namespace, originalPath, filename string) error {
@@ -264,11 +293,15 @@ func validateArgs(namespace, filename string) error {
 var (
 	errSeparatorInFS   = errors.New("path contains separator")
 	errPathInWorkspace = errors.New("file cannot be located in the workspace")
+	errEmptyDirInPath  = errors.New("file path cannot contain an empty directory")
 )
 
 func validateFilename(filename string) error {
 	if strings.HasPrefix(filename, workspaceDir+string(os.PathSeparator)) {
 		return errPathInWorkspace
+	}
+	if strings.Contains(filename, strings.Repeat(string(os.PathSeparator), 2)) {
+		return errEmptyDirInPath
 	}
 	return nil
 }
@@ -305,7 +338,7 @@ func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
 
 func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
 	if runtime.GOOS == "windows" {
-		filename = strings.ReplaceAll(filename, `\\'`, "/")
+		filename = strings.ReplaceAll(filename, `\\`, "/")
 	}
 
 	return block.ObjectPointer{
