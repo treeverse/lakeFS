@@ -128,7 +128,9 @@ func (c *cataloger) doMerge(ctx context.Context, tx db.Tx, params doDiffParams, 
 				}
 			}
 		case err := <-errChan:
-			return rowsCounter, err
+			if err != nil {
+				return rowsCounter, err
+			}
 		}
 	}
 }
