@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pyramid"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -27,6 +29,10 @@ const (
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+
+	DefaultDiskAllocatedBytes     = 1 * 1024 * 1024 * 1024
+	DefaultDiskBaseDir            = "~/lakefs/local_tier"
+	DefaultDiskBlockStoragePrefix = "_lakefs"
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -88,6 +94,10 @@ func setDefaults() {
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
 	viper.SetDefault("blockstore.s3.max_retries", DefaultS3MaxRetries)
 
+	viper.SetDefault("disk.allocated_bytes", DefaultDiskAllocatedBytes)
+	viper.SetDefault("disk.base_dir", DefaultDiskBaseDir)
+	viper.SetDefault("disk.block_storage_prefix", DefaultDiskBlockStoragePrefix)
+
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
@@ -104,6 +114,14 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
 		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
+	}
+}
+
+func (c *Config) GetLocalDiskParams() pyramid.Params {
+	return pyramid.Params{
+		AllocatedBytes:     viper.GetInt64("disk.allocated_bytes"),
+		BaseDir:            viper.GetString("disk.base_dir"),
+		BlockStoragePrefix: viper.GetString("disk.block_storage_prefix"),
 	}
 }
 

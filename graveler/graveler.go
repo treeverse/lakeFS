@@ -95,13 +95,13 @@ type RepositoryRecord struct {
 
 // Value represents metadata or a given object (modified date, physical address, etc)
 type Value struct {
-	Identity []byte
-	Data     []byte
+	Identity []byte `db:"identity"`
+	Data     []byte `db:"data"`
 }
 
 // ValueRecord holds Key with the associated Value information
 type ValueRecord struct {
-	Key Key
+	Key Key `db:"key"`
 	*Value
 }
 
@@ -183,7 +183,7 @@ type KeyValueStore interface {
 	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// List lists entries on repository / ref will filter by prefix, from key 'from'.
+	// List lists values on repository / ref will filter by prefix, from key 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
 	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error)
 }
@@ -384,27 +384,23 @@ type CommittedManager interface {
 	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, iterator ValueIterator) (TreeID, error)
 }
 
-// StagingManager handles changes to a branch that aren't yet committed
-// provides basic CRUD abilities, with deletes being written as tombstones (null value)
+// StagingManager manages entries in a staging area, denoted by a staging token
 type StagingManager interface {
-	// Get returns the provided key (or nil value to represent a tombstone)
-	//   Returns ErrNotFound if no value found on key
-	Get(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, key Key) (*Value, error)
+	// Get returns the value for the provided staging token and key
+	// Returns ErrNotFound if no value found on key.
+	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
-	// Set writes an value (or nil value to represent a tombstone)
-	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value *Value) error
+	// Set writes a value under the given staging token and key.
+	Set(ctx context.Context, st StagingToken, key Key, value Value) error
 
-	// Delete deletes an value by key
-	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+	// Delete deletes a value by staging token and key
+	Delete(ctx context.Context, st StagingToken, key Key) error
 
-	// List takes a given repository / branch and returns an ValueIterator
-	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (ValueIterator, error)
+	// List returns a ValueIterator for the given staging token
+	List(ctx context.Context, st StagingToken) (ValueIterator, error)
 
-	// Snapshot take a snapshot of the current staging and returns a new staging token
-	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
-
-	// ListSnapshot returns an iterator to scan the snapshot entries
-	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, from Key) (ValueIterator, error)
+	// Drop clears the given staging area
+	Drop(ctx context.Context, st StagingToken) error
 }
 
 var (

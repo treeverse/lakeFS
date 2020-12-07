@@ -22,45 +22,40 @@ func TestCataloger_CreateRepo(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantErr bool
-		asErr   error
+		wantErr error
 	}{
 		{
 			name:    "basic",
 			args:    args{name: "repo1", storage: "s3://bucket1", branch: "master"},
-			wantErr: false,
-			asErr:   nil,
+			wantErr: nil,
 		},
 		{
 			name:    "unknown branch",
 			args:    args{name: "repo3", storage: "s3://bucket3", branch: ""},
-			wantErr: true,
-			asErr:   catalog.ErrInvalidValue,
+			wantErr: catalog.ErrInvalidValue,
 		},
 		{
 			name:    "missing repo",
 			args:    args{name: "", storage: "s3://bucket1", branch: "master"},
-			wantErr: true,
-			asErr:   catalog.ErrInvalidValue,
+			wantErr: catalog.ErrInvalidValue,
 		},
 		{
 			name:    "missing storage",
 			args:    args{name: "repo1", storage: "", branch: "master"},
-			wantErr: true,
-			asErr:   catalog.ErrInvalidValue,
+			wantErr: catalog.ErrInvalidValue,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo, err := c.CreateRepository(ctx, tt.args.name, tt.args.storage, tt.args.branch)
-			if (err != nil) != tt.wantErr {
+			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("CreateRepository() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err != nil && tt.asErr != nil && !errors.As(err, &tt.asErr) {
-				t.Fatalf("CreateRepository() error = %v, expected as %v", err, tt.asErr)
-			}
-			if err != nil {
+			if tt.wantErr != nil {
+				if repo != nil {
+					t.Fatalf("CreateRepository() repo = %v, expected nil on error", repo)
+				}
 				return
 			}
 			if repo.Name != tt.args.name {
