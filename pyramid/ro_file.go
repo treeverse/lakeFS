@@ -13,6 +13,14 @@ type ROFile struct {
 	rPath relativePath
 }
 
+func (f *ROFile) Write(p []byte) (n int, err error) {
+	panic("implement me")
+}
+
+func (f *ROFile) Sync() error {
+	panic("implement me")
+}
+
 func (f *ROFile) Read(p []byte) (n int, err error) {
 	f.eviction.touch(f.rPath)
 	return f.fh.Read(p)
