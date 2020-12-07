@@ -1,4 +1,4 @@
-package cacheMap
+package cachemap
 
 import (
 	"container/heap"
