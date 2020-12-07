@@ -374,16 +374,16 @@ func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
 	acceptable, ok := r.Header["Accept"]
 	if ok {
 		defaultContentType := selectContentType(acceptable)
-		// No requested content type matched.  This is OK at least for a GET or
-		// HEAD, so set up to auto-detect.
 		if defaultContentType != nil {
 			w.Header().Set("Content-Type", *defaultContentType)
 		}
+		// If no requested content type matched, still OK at least for proxied content
+		// (GET or HEAD), so set up to auto-detect.
 	} else {
-		// For all proxied content the type will be reset according to whatever headers
-		// arrive.  This includes setting an empty content-type if none is specified by
-		// the adapter.
 		w.Header().Set("Content-Type", contentTypeApplicationXML)
+		// For proxied content (GET or HEAD) the type will be reset according to
+		// whatever headers arrive, including setting up to auto-detect content-type if
+		// none is specified by the adapter.
 	}
 }
 
