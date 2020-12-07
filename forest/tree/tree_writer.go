@@ -42,7 +42,7 @@ func (tw *TreeWriter) writeEntry(record gr.ValueRecord) error {
 		}
 		tw.activeWriter = w
 	}
-	err := tw.activeWriter.WriteEntry(record)
+	err := tw.activeWriter.WriteRecord(record)
 	if err != nil {
 		return err
 	}

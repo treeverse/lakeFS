@@ -7,18 +7,9 @@ import (
 	"sort"
 
 	gr "github.com/treeverse/lakefs/graveler"
-
-	"github.com/treeverse/lakefs/forest/sstable"
 )
 
 var treesRepository TreesRepoType
-
-func InitTreesRepository(manager sstable.Manager) {
-	treesRepository = TreesRepoType{
-		TreesMap:   make(map[gr.TreeID]TreeContainer, 1000),
-		PartManger: manager,
-	}
-}
 
 type treeIterator struct {
 	treeID          gr.TreeID
@@ -39,7 +30,7 @@ func (trees *TreesRepoType) NewScanner(treeID gr.TreeID, start gr.Key) (*treeIte
 	if partNum >= len(treeSlice) {
 		return nil, ErrPathBiggerThanMaxPath
 	}
-	partIterator, err := (treesRepository.PartManger).NewSSTableIterator((treeSlice)[partNum].PartName, start)
+	partIterator, err := treesRepository.PartManger.NewSSTableIterator(treeSlice[partNum].PartName, start)
 	if err != nil {
 		return nil, err
 	}
@@ -116,17 +107,24 @@ func (t *treeIterator) Err() error {
 }
 
 func (t *treeIterator) Value() *gr.ValueRecord {
+	if t.currentIter == nil || t.closed {
+		return nil
+	}
 	return t.currentIter.Value()
 }
 
 func (t *treeIterator) Close() {
+	if t.currentIter == nil {
+		return
+	}
 	t.currentIter.Close()
 }
 
 func (trees TreesRepoType) GetTree(treeID gr.TreeID) (TreeType, error) {
-	t, exists := trees.TreesMap[treeID]
+	t, exists := trees.TreesMap.Get(string(treeID))
 	if exists {
-		return t.TreeParts, nil
+		tree := t.(TreeType)
+		return tree, nil
 	}
 	fName := string(treeID) + ".json"
 	jsonBytes, err := ioutil.ReadFile(fName)
@@ -138,10 +136,6 @@ func (trees TreesRepoType) GetTree(treeID gr.TreeID) (TreeType, error) {
 	if err != nil {
 		return nil, err
 	}
-	t = TreeContainer{
-		treeID,
-		treeSlice,
-	}
-	trees.TreesMap[treeID] = t
-	return t.TreeParts, nil
+	trees.TreesMap.Set(string(treeID), treeSlice)
+	return treeSlice, nil
 }
