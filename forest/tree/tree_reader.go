@@ -1,35 +1,36 @@
 package tree
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"sort"
 
-	"github.com/treeverse/lakefs/forest/sstable"
+	gr "github.com/treeverse/lakefs/graveler"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/forest/sstable"
 )
 
 var treesRepository TreesRepoType
 
 func InitTreesRepository(manager sstable.Manager) {
 	treesRepository = TreesRepoType{
-		TreesMap:   make(map[rocks.TreeID]TreeContainer, 1000),
+		TreesMap:   make(map[gr.TreeID]TreeContainer, 1000),
 		PartManger: manager,
 	}
 }
 
 type treeIterator struct {
-	treeID          rocks.TreeID
+	treeID          gr.TreeID
 	TreeParts       TreeType
-	currentIter     rocks.EntryIterator
+	currentIter     gr.ValueIterator
 	currentPart     int
 	err             error
 	closed          bool
 	treesRepository *TreesRepoType
 }
 
-func (trees *TreesRepoType) NewScanner(treeID rocks.TreeID, start rocks.Path) (*treeIterator, error) {
+func (trees *TreesRepoType) NewScanner(treeID gr.TreeID, start gr.Key) (*treeIterator, error) {
 	treeSlice, err := trees.GetTree(treeID)
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func (trees *TreesRepoType) NewScanner(treeID rocks.TreeID, start rocks.Path) (*
 	return scanner, nil
 }
 
-func (t *treeIterator) SeekGE(start rocks.Path) bool {
+func (t *treeIterator) SeekGE(start gr.Key) bool {
 	var err error
 	partNum := findPartNumForPath(t.TreeParts, start)
 	if partNum != t.currentPart {
@@ -68,10 +69,10 @@ func (t *treeIterator) SeekGE(start rocks.Path) bool {
 	return t.currentIter.SeekGE(start)
 }
 
-func findPartNumForPath(tree TreeType, path rocks.Path) int {
+func findPartNumForPath(tree TreeType, path gr.Key) int {
 	n := len(tree)
 	pos := sort.Search(n, func(i int) bool {
-		return tree[i].MaxKey >= path
+		return bytes.Compare(tree[i].MaxKey, path) >= 0
 	})
 	return pos
 }
@@ -97,10 +98,11 @@ func (t *treeIterator) Next() bool {
 		return false
 	}
 	t.currentPart++
-	t.currentIter, err = treesRepository.PartManger.NewSSTableIterator(t.TreeParts[t.currentPart].PartName, "")
+	t.currentIter, err = treesRepository.PartManger.NewSSTableIterator(t.TreeParts[t.currentPart].PartName, nil)
 	if err != nil {
 		t.currentIter.Close()
 		t.closed = true
+		t.err = err
 		return false
 	}
 	return t.currentIter.Next()
@@ -113,7 +115,7 @@ func (t *treeIterator) Err() error {
 	return t.currentIter.Err()
 }
 
-func (t *treeIterator) Value() *rocks.EntryRecord {
+func (t *treeIterator) Value() *gr.ValueRecord {
 	return t.currentIter.Value()
 }
 
@@ -121,7 +123,7 @@ func (t *treeIterator) Close() {
 	t.currentIter.Close()
 }
 
-func (trees TreesRepoType) GetTree(treeID rocks.TreeID) (TreeType, error) {
+func (trees TreesRepoType) GetTree(treeID gr.TreeID) (TreeType, error) {
 	t, exists := trees.TreesMap[treeID]
 	if exists {
 		return t.TreeParts, nil

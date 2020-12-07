@@ -39,7 +39,7 @@ func (bm *baseTreeManagerType) isEndOfBase() bool {
 func (bm *baseTreeManagerType) getBasePartForPath(key gr.Key) (*pushBackValueIterator, gr.Key, error) {
 	lenBaseTree := len(bm.baseTree)
 	for ; bm.baseIndex < lenBaseTree &&
-		LessThan(bm.baseTree[bm.baseIndex].MaxKey, key); bm.baseIndex++ {
+		bytes.Compare(bm.baseTree[bm.baseIndex].MaxKey, key) < 0; bm.baseIndex++ {
 		bm.partsForReuse = append(bm.partsForReuse, bm.baseTree[bm.baseIndex])
 	}
 	if len(bm.baseTree) <= bm.baseIndex {
