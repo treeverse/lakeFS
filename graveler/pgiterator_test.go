@@ -38,7 +38,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e"}); diffs != nil {
-			t.Fatalf("got wrong list of repo IDs")
+			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})
 
@@ -55,7 +55,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
-			t.Fatalf("got wrong list of repo IDs")
+			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})
 
@@ -72,7 +72,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
-			t.Fatalf("got wrong list of repo IDs")
+			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 
 		// now let's seek
@@ -91,7 +91,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"aa", "b", "c", "d", "e"}); diffs != nil {
-			t.Fatalf("got wrong list of repo IDs")
+			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})
 }
@@ -123,7 +123,7 @@ func TestPGBranchIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(ids, []graveler.BranchID{"a", "aa", "b", "c", "d", "e", "master"}); diffs != nil {
-			t.Fatalf("got wrong list of IDs")
+			t.Fatalf("got wrong list of IDs: %v", diffs)
 		}
 	})
 
@@ -140,7 +140,7 @@ func TestPGBranchIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs")
+			t.Fatalf("got wrong list of branch IDs: %v", diffs)
 		}
 	})
 
@@ -157,7 +157,7 @@ func TestPGBranchIterator(t *testing.T) {
 		iter.Close()
 
 		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
-			t.Fatalf("got wrong list of branch IDs")
+			t.Fatalf("got wrong list of branch IDs: %v", diffs)
 		}
 
 		// now let's seek
