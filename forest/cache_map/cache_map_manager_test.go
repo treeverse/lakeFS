@@ -56,6 +56,7 @@ func deepCopyMap(inp map[string]*cacheEntry) map[string]*cacheEntry {
 	}
 	return out
 }
+
 func maxRemoved(a, b map[string]*cacheEntry) int64 {
 	var maxRemoved int64
 	for k, v := range b {
