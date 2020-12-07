@@ -74,11 +74,11 @@ func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, reposito
 	iterLeft := NewCommitWalker(ctx, getter, repositoryID, left)
 	iterRight := NewCommitWalker(ctx, getter, repositoryID, right)
 	for {
-		commit, err := findLowerCommonAncestorNextIter(discoveredSet, iterLeft)
+		commit, err := findLowestCommonAncestorNextIter(discoveredSet, iterLeft)
 		if commit != nil || err != nil {
 			return commit, err
 		}
-		commit, err = findLowerCommonAncestorNextIter(discoveredSet, iterRight)
+		commit, err = findLowestCommonAncestorNextIter(discoveredSet, iterRight)
 		if commit != nil || err != nil {
 			return commit, err
 		}
@@ -89,7 +89,7 @@ func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, reposito
 	return nil, nil
 }
 
-func findLowerCommonAncestorNextIter(discoveredSet map[string]struct{}, iter *CommitWalker) (*Commit, error) {
+func findLowestCommonAncestorNextIter(discoveredSet map[string]struct{}, iter *CommitWalker) (*Commit, error) {
 	if iter.Next() {
 		commit := iter.Value()
 		if _, wasDiscovered := discoveredSet[ident.ContentAddress(commit)]; wasDiscovered {

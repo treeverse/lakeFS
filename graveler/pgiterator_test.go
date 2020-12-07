@@ -2,9 +2,10 @@ package graveler_test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/graveler"
 
@@ -36,7 +37,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e"}) {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs")
 		}
 	})
@@ -53,7 +54,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}) {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs")
 		}
 	})
@@ -70,7 +71,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}) {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs")
 		}
 
@@ -89,7 +90,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(repoIds, []graveler.RepositoryID{"aa", "b", "c", "d", "e"}) {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"aa", "b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs")
 		}
 	})
@@ -121,7 +122,7 @@ func TestPGBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(ids, []graveler.BranchID{"a", "aa", "b", "c", "d", "e", "master"}) {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"a", "aa", "b", "c", "d", "e", "master"}); diffs != nil {
 			t.Fatalf("got wrong list of IDs")
 		}
 	})
@@ -138,7 +139,7 @@ func TestPGBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}) {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs")
 		}
 	})
@@ -155,7 +156,7 @@ func TestPGBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}) {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs")
 		}
 
@@ -174,7 +175,7 @@ func TestPGBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if !reflect.DeepEqual(ids, []graveler.BranchID{"aa", "b", "c", "d", "e", "master"}) {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"aa", "b", "c", "d", "e", "master"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs")
 		}
 	})

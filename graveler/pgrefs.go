@@ -52,7 +52,7 @@ func (m *PGRefManager) GetRepository(ctx context.Context, repositoryID Repositor
 	repository, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		repository := &Repository{}
 		err := tx.Get(repository,
-			`SELECT storage_namespace, creation_date, default_branch FROM kv_repositories WHERE id = $1`,
+			`SELECT storage_namespace, creation_date, default_branch FROM graveler_repositories WHERE id = $1`,
 			repositoryID)
 		if err != nil {
 			return nil, err
@@ -71,7 +71,7 @@ func (m *PGRefManager) GetRepository(ctx context.Context, repositoryID Repositor
 func (m *PGRefManager) CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(
-			`INSERT INTO kv_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
+			`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
 			repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
 		if errors.Is(err, db.ErrAlreadyExists) {
 			return nil, ErrNotUnique
@@ -80,7 +80,7 @@ func (m *PGRefManager) CreateRepository(ctx context.Context, repositoryID Reposi
 			return nil, err
 		}
 		_, err = tx.Exec(`
-				INSERT INTO kv_branches (repository_id, id, staging_token, commit_id)
+				INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 				VALUES ($1, $2, $3, $4)`,
 			repositoryID, repository.DefaultBranchID, branch.stagingToken, branch.CommitID)
 		return nil, err
@@ -95,15 +95,15 @@ func (m *PGRefManager) ListRepositories(ctx context.Context, from RepositoryID) 
 func (m *PGRefManager) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var err error
-		_, err = tx.Exec(`DELETE FROM kv_branches WHERE repository_id = $1`, repositoryID)
+		_, err = tx.Exec(`DELETE FROM graveler_branches WHERE repository_id = $1`, repositoryID)
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`DELETE FROM kv_commits WHERE repository_id = $1`, repositoryID)
+		_, err = tx.Exec(`DELETE FROM graveler_commits WHERE repository_id = $1`, repositoryID)
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`DELETE FROM kv_repositories WHERE id = $1`, repositoryID)
+		_, err = tx.Exec(`DELETE FROM graveler_repositories WHERE id = $1`, repositoryID)
 		return nil, err
 	}, db.WithContext(ctx))
 	return err
@@ -117,7 +117,7 @@ func (m *PGRefManager) GetBranch(ctx context.Context, repositoryID RepositoryID,
 	branch, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		pbranch := &PgBranch{}
 		err := tx.Get(pbranch,
-			`SELECT staging_token, commit_id FROM kv_branches WHERE repository_id = $1 AND id = $2`,
+			`SELECT staging_token, commit_id FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
 			repositoryID, branchID)
 		if err != nil {
 			return nil, err
@@ -139,7 +139,7 @@ func (m *PGRefManager) GetBranch(ctx context.Context, repositoryID RepositoryID,
 func (m *PGRefManager) SetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch Branch) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`
-			INSERT INTO kv_branches (repository_id, id, staging_token, commit_id)
+			INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 			VALUES ($1, $2, $3, $4)
 				ON CONFLICT (repository_id, id)
 				DO UPDATE SET staging_token = $3, commit_id = $4`,
@@ -152,7 +152,7 @@ func (m *PGRefManager) SetBranch(ctx context.Context, repositoryID RepositoryID,
 func (m *PGRefManager) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		r, err := tx.Exec(
-			`DELETE FROM kv_branches WHERE repository_id = $1 AND id = $2`,
+			`DELETE FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
 			repositoryID, branchID)
 		if err != nil {
 			return nil, err
@@ -176,7 +176,7 @@ func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID Repos
 		// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
 		err := tx.Select(&records, `
 					SELECT id, committer, message, creation_date, parents, tree_id, metadata
-					FROM kv_commits
+					FROM graveler_commits
 					WHERE repository_id = $1 AND id >= $2
 					LIMIT 2`,
 			repositoryID, prefix)
@@ -192,8 +192,11 @@ func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID Repos
 				startWith = append(startWith, c.Commit)
 			}
 		}
-		if len(startWith) != 1 {
-			return "", ErrNotFound // empty or ambiguous
+		if len(startWith) == 0 {
+			return "", ErrNotFound
+		}
+		if len(startWith) > 1 {
+			return "", ErrCommitIDAmbiguous // more than 1 commit starts with the ID prefix
 		}
 		return startWith[0], nil
 	}, db.ReadOnly(), db.WithContext(ctx))
@@ -211,7 +214,7 @@ func (m *PGRefManager) GetCommit(ctx context.Context, repositoryID RepositoryID,
 		commit := &Commit{}
 		err := tx.Get(commit, `
 					SELECT committer, message, creation_date, parents, tree_id, metadata
-					FROM kv_commits WHERE repository_id = $1 AND id = $2`,
+					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
 			repositoryID, commitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return nil, ErrNotFound
@@ -235,7 +238,7 @@ func (m *PGRefManager) AddCommit(ctx context.Context, repositoryID RepositoryID,
 		// commits are written based on their content hash, if we insert the same ID again,
 		// it will necessarily have the same attributes as the existing one, so no need to overwrite it
 		_, err := tx.Exec(`
-				INSERT INTO kv_commits 
+				INSERT INTO graveler_commits 
 				(repository_id, id, committer, message, creation_date, parents, tree_id, metadata)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT DO NOTHING`,

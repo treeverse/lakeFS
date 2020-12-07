@@ -78,7 +78,7 @@ func (ri *PGRepositoryIterator) fetch(initial bool) {
 	}
 	err := ri.db.WithContext(ri.ctx).Select(&ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
-			FROM kv_repositories
+			FROM graveler_repositories
 			WHERE id `+offsetCondition+` $1
 			ORDER BY id ASC
 			LIMIT $2`, ri.offset, ri.fetchSize)
@@ -189,7 +189,7 @@ func (ri *PGBranchIterator) fetch(initial bool) {
 	buf := make([]*pgBranchRecord, 0)
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
 			SELECT id, staging_token, commit_id
-			FROM kv_branches
+			FROM graveler_branches
 			WHERE repository_id = $1
 			AND id `+offsetCondition+` $2
 			ORDER BY id ASC
@@ -284,7 +284,7 @@ func (ci *PGCommitIterator) fetch() bool {
 	record := &CommitRecord{}
 	err := ci.db.WithContext(ci.ctx).Get(record, `
 		SELECT id, committer, message, creation_date, parents, tree_id, metadata
-		FROM kv_commits
+		FROM graveler_commits
 		WHERE repository_id = $1 AND id = $2	
 	`, ci.repositoryID, ci.next)
 	if err != nil {

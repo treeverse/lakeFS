@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS kv_repositories
+CREATE TABLE IF NOT EXISTS graveler_repositories
 (
     id                text        NOT NULL,
 
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS kv_repositories
 );
 
 
-CREATE TABLE IF NOT EXISTS kv_branches
+CREATE TABLE IF NOT EXISTS graveler_branches
 (
     repository_id text NOT NULL,
     id            text NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS kv_branches
 );
 
 
-CREATE TABLE IF NOT EXISTS kv_commits
+CREATE TABLE IF NOT EXISTS graveler_commits
 (
     repository_id text        NOT NULL,
     id            text        NOT NULL,

@@ -1,1 +1,0 @@
--- 000016 doesn't support down migrations.
