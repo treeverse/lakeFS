@@ -1,4 +1,4 @@
-package cache_map
+package cacheMap
 
 import (
 	"container/heap"
@@ -27,7 +27,7 @@ func newCacheMap(cacheMaxSize, cacheTrimSize int, initialWeight, additionalWeigh
 		initialWeight:    initialWeight,
 		additionalWeight: additionalWeight,
 		trimFactor:       trimFactor,
-		cache:            make(map[string]*cacheEntry, 0),
+		cache:            make(map[string]*cacheEntry),
 	}
 }
 

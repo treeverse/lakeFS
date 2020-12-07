@@ -1,4 +1,4 @@
-package cache_map
+package cacheMap
 
 import (
 	"fmt"
