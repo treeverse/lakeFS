@@ -8,6 +8,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/treeverse/lakefs/ident"
+
+	"github.com/treeverse/lakefs/catalog"
+
 	"time"
 )
 
@@ -55,11 +60,14 @@ type Ref string
 // TagID represents a named tag pointing at a commit
 type TagID string
 
-// CommitID is a content addressable hash representing a Commit object
-type CommitID string
+// CommitParents
+type CommitParents []CommitID
 
 // BranchID is an identifier for a branch
 type BranchID string
+
+// CommitID is a content addressable hash representing a Commit object
+type CommitID string
 
 // TreeID represents a snapshot of the tree, referenced by a commit
 type TreeID string
@@ -75,13 +83,13 @@ type Metadata map[string]string
 
 // Repository represents repository metadata
 type Repository struct {
-	StorageNamespace StorageNamespace
-	CreationDate     time.Time
-	DefaultBranchID  BranchID
+	StorageNamespace StorageNamespace `db:"storage_namespace"`
+	CreationDate     time.Time        `db:"creation_date"`
+	DefaultBranchID  BranchID         `db:"default_branch"`
 }
 
 type RepositoryRecord struct {
-	RepositoryID RepositoryID
+	RepositoryID RepositoryID `db:"id"`
 	*Repository
 }
 
@@ -97,19 +105,41 @@ type ValueRecord struct {
 	*Value
 }
 
+func (ps CommitParents) Identity() []byte {
+	strings := make([]string, len(ps))
+	for i, v := range ps {
+		strings[i] = string(v)
+	}
+	buf := ident.NewAddressWriter()
+	buf.MarshalStringSlice(strings)
+	return buf.Identity()
+}
+
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
-	Committer    string
-	Message      string
-	TreeID       TreeID
-	CreationDate time.Time
-	Parents      []CommitID
-	Metadata     map[string]string
+	Committer    string           `db:"committer"`
+	Message      string           `db:"message"`
+	TreeID       TreeID           `db:"tree_id"`
+	CreationDate time.Time        `db:"creation_date"`
+	Parents      CommitParents    `db:"parents"`
+	Metadata     catalog.Metadata `db:"metadata"`
+}
+
+func (c Commit) Identity() []byte {
+	b := ident.NewAddressWriter()
+	b.MarshalString("commit:v1")
+	b.MarshalString(c.Committer)
+	b.MarshalString(c.Message)
+	b.MarshalString(string(c.TreeID))
+	b.MarshalInt64(c.CreationDate.Unix())
+	b.MarshalStringMap(c.Metadata)
+	b.MarshalIdentifiable(c.Parents)
+	return b.Identity()
 }
 
 // CommitRecords holds CommitID with the associated Commit data
 type CommitRecord struct {
-	CommitID CommitID
+	CommitID CommitID `db:"id"`
 	*Commit
 }
 
@@ -184,7 +214,7 @@ type VersionController interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -209,7 +239,7 @@ type VersionController interface {
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error)
@@ -295,7 +325,7 @@ type RefManager interface {
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
 
 	// ListRepositories lists repositories
-	ListRepositories(ctx context.Context) (RepositoryIterator, error)
+	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
@@ -313,9 +343,9 @@ type RefManager interface {
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
-	// GetCommit returns the Commit metadata object for the given CommitID
+	// GetCommit returns the Commit metadata object for the given CommitID.
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
@@ -337,11 +367,11 @@ type CommittedManager interface {
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
 	// List takes a given tree and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (ValueIterator, error)
 
 	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID) (DiffIterator, error)
+	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Key) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
@@ -381,13 +411,16 @@ var (
 // Graveler errors
 var (
 	ErrNotFound                = errors.New("not found")
+	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
-	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace %w", ErrInvalidValue)
-	ErrInvalidRepositoryID     = fmt.Errorf("repository id %w", ErrInvalidValue)
-	ErrInvalidBranchID         = fmt.Errorf("branch id %w", ErrInvalidValue)
-	ErrInvalidRef              = fmt.Errorf("ref %w", ErrInvalidValue)
-	ErrInvalidCommitID         = fmt.Errorf("commit id %w", ErrInvalidValue)
-	ErrCommitNotFound          = fmt.Errorf("commit %w", ErrNotFound)
+	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
+	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace: %w", ErrInvalidValue)
+	ErrInvalidRepositoryID     = fmt.Errorf("repository id: %w", ErrInvalidValue)
+	ErrInvalidBranchID         = fmt.Errorf("branch id: %w", ErrInvalidValue)
+	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
+	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
+	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
+	ErrCommitIDAmbiguous       = fmt.Errorf("commit ID is ambiguous: %w", ErrNotFound)
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {
