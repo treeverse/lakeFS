@@ -20,7 +20,6 @@ const (
 	DiffTypeAdded DiffType = iota
 	DiffTypeRemoved
 	DiffTypeChanged
-	DiffTypeConflict
 )
 
 // ReferenceType represents the type of the reference
