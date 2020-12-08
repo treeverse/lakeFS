@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/client/refs"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -612,7 +614,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
-	t.Run("create branch success", func(t *testing.T) {
+	t.Run("create branch and diff refs success", func(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
@@ -630,6 +632,36 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		reference := resp.GetPayload()
 		if len(reference) == 0 {
 			t.Fatalf("branch %s creation got no reference", newBranchName)
+		}
+		path := "some/path"
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world!")
+		_, err = clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     newBranchName,
+			Content:    runtime.NamedReader("content", buf),
+			Path:       path,
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatalf("unexpected error uploading object: %s", err)
+		}
+		if _, err := deps.cataloger.Commit(ctx, "repo1", "master2", "commit 1", "some_user", nil); err != nil {
+			t.Fatalf("failed to commit 'repo1': %s", err)
+		}
+		resp2, err := clt.Refs.DiffRefs(&refs.DiffRefsParams{
+			LeftRef:    newBranchName,
+			RightRef:   "master",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatalf("unexpected error diffing refs: %s", err)
+		}
+		results := resp2.GetPayload().Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != path {
+			t.Fatalf("wrong result: %s", results[0].Path)
 		}
 	})
 
