@@ -7,22 +7,24 @@ import (
 
 // nolint: gomnd
 const (
-	kb          = float64(1024)
-	mb          = 1024 * kb
-	fsNameLabel = "fsName"
+	kb                = float64(1024)
+	mb                = 1024 * kb
+	fsNameLabel       = "fsName"
+	errorTypeLabel    = "type"
+	accessStatusLabel = "status"
 )
 
-var cacheHit = promauto.NewCounterVec(
+var cacheAccess = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "tier_fs_cache_hits_total",
 		Help: "TierFS cache hits total count",
-	}, []string{fsNameLabel})
+	}, []string{fsNameLabel, accessStatusLabel})
 
-var cacheMiss = promauto.NewCounterVec(
+var errorsTotal = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "tier_fs_cache_miss_total",
-		Help: "TierFS cache miss total count",
-	}, []string{fsNameLabel})
+		Name: "tier_fs_errors_total",
+		Help: "TierFS errors by type",
+	}, []string{fsNameLabel, errorTypeLabel})
 
 var evictionHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{

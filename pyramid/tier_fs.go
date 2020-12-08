@@ -72,7 +72,7 @@ func NewFS(c *Config) (FS, error) {
 		fsName:         c.fsName,
 		logger:         c.logger,
 		fsLocalBaseDir: fsLocalBaseDir,
-		syncDir:        &directory{},
+		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanLocker(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
@@ -130,11 +130,13 @@ func (tfs *TierFS) removeFromLocalInternal(rPath relativePath) {
 	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
 	if err := os.Remove(p); err != nil {
 		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
+		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval")
 		return
 	}
 
 	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(p)); err != nil {
 		tfs.logger.WithError(err).Error("Failed deleting empty dir")
+		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
 	}
 }
 
@@ -203,14 +205,14 @@ func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
-		cacheHit.WithLabelValues(tfs.fsName).Inc()
+		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
 		return tfs.openFile(fileRef, fh)
 	}
 	if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("open file: %w", err)
 	}
 
-	cacheMiss.WithLabelValues(tfs.fsName).Inc()
+	cacheAccess.WithLabelValues(tfs.fsName, "Miss").Inc()
 	fh, err = tfs.readFromBlockStorage(fileRef)
 	if err != nil {
 		return nil, err

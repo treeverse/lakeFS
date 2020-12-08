@@ -1,6 +1,7 @@
 package pyramid
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,9 +10,10 @@ import (
 	"sync"
 )
 
-// directory allows synchronization between file operation that might
-// change (create/delete) directories
+// directory synchronizes between file operations that might change (create/delete) directories
 type directory struct {
+	// ceilingDir is the root directory of the FS - shouldn't never be deleted
+	ceilingDir string
 	sync.Mutex
 }
 
@@ -19,9 +21,12 @@ func (d *directory) deleteDirRecIfEmpty(dir string) error {
 	d.Lock()
 	defer d.Unlock()
 
-	for {
+	for dir != d.ceilingDir {
 		empty, err := isDirEmpty(dir)
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
 			return err
 		}
 		if !empty {
@@ -34,6 +39,8 @@ func (d *directory) deleteDirRecIfEmpty(dir string) error {
 		}
 		dir = parentDir
 	}
+
+	return nil
 }
 
 func isDirEmpty(name string) (bool, error) {
@@ -44,7 +51,7 @@ func isDirEmpty(name string) (bool, error) {
 	defer f.Close()
 
 	_, err = f.Readdirnames(1)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return true, nil
 	}
 	return false, err

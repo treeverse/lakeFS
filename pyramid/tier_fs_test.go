@@ -22,8 +22,7 @@ import (
 )
 
 var (
-	fs      FS
-	adapter *memAdapter
+	fs FS
 )
 
 const blockStoragePrefix = "prefix"
@@ -40,7 +39,7 @@ func TestMain(m *testing.M) {
 	}()
 
 	// starting adapter with closed channel so all Gets pass
-	adapter = &memAdapter{Adapter: mem.New(), wait: make(chan struct{})}
+	adapter := &memAdapter{Adapter: mem.New(), wait: make(chan struct{})}
 	close(adapter.wait)
 
 	var err error
@@ -190,6 +189,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 
 	// fill the cache so the file is evicted
 	testEviction(t, namespace)
+	adapter := fs.(*TierFS).adaptor.(*memAdapter)
 	readsSoFar := adapter.gets.Get()
 
 	// try to read that file - only a single access to block storage is expected
