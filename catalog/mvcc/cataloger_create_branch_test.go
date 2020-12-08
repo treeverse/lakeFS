@@ -30,7 +30,7 @@ func TestCataloger_CreateBranch(t *testing.T) {
 		{
 			name:              "new",
 			args:              args{repository: repo, branch: "b1", sourceBranch: "master"},
-			wantCommitMessage: "Branch 'b1' created, source branch 'master'",
+			wantCommitMessage: "Branch 'b1' created, source 'master'",
 			wantBranchName:    "b1",
 			wantErr:           false,
 		},
@@ -126,4 +126,34 @@ func TestCataloger_CreateBranch_Parallel(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func TestCataloger_CreateBranch_FromRef(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	// create entry and commit - first
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "first", nil, "")
+	commit1, err := c.Commit(ctx, repo, "master", "first", "tester", nil)
+	testutil.MustDo(t, "first commit", err)
+
+	// create entry and commit - second
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "second", nil, "")
+	_, err = c.Commit(ctx, repo, "master", "second", "tester", nil)
+	testutil.MustDo(t, "second commit", err)
+
+	// branch from first commit
+	commit1Log, err := c.CreateBranch(ctx, repo, "branch1", commit1.Reference)
+	testutil.MustDo(t, "branch from first commit", err)
+	if commit1Log == nil {
+		t.Fatal("CreateBranch() no error, missing commit log")
+	}
+
+	// check that only first is on our branch
+	branchEntries, _, err := c.ListEntries(ctx, repo, "branch1", "", "", "", 100)
+	testutil.MustDo(t, "list entries on branch1", err)
+	if len(branchEntries) != 1 {
+		t.Fatal("Branch1 should have 1 entry, got", len(branchEntries))
+	}
 }
