@@ -11,6 +11,7 @@ var (
 	ErrEmptyInputToApply     = errors.New(" apply got no input")
 	ErrTreeCorrupted         = errors.New(" highest path in tree not in ssTable")
 	InfoBaseTreeExhausted    = errors.New(" no tree parts remain")
+	ErrDuplicateKey          = errors.New(" Can not write same key twice to SST")
 	ErrPushBackTwice         = errors.New(" can't push back twice with no intervening Next")
 	ErrEmptyTree             = errors.New(" Empty tree")
 )
