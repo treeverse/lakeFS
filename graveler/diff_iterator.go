@@ -2,16 +2,17 @@ package graveler
 
 import "bytes"
 
-type SimpleDiffIterator struct {
+type ValueDiffIterator struct {
 	left        ValueIterator
 	right       ValueIterator
 	leftNext    bool
 	rightNext   bool
 	currentVal  *ValueRecord
 	currentType DiffType
+	err         error
 }
 
-func (d *SimpleDiffIterator) Next() bool {
+func (d *ValueDiffIterator) Next() bool {
 	if d.rightNext {
 		d.rightNext = d.right.Next()
 	}
@@ -19,17 +20,20 @@ func (d *SimpleDiffIterator) Next() bool {
 		d.leftNext = d.left.Next()
 	}
 	for {
+		if d.left.Err() != nil || d.right.Err() != nil {
+			return false
+		}
 		if d.rightNext && d.leftNext {
 			leftKey := d.left.Value().Key
 			rightKey := d.right.Value().Key
 			if bytes.Equal(leftKey, rightKey) {
-				d.rightNext = d.right.Next()
-				d.leftNext = d.left.Next()
 				if !bytes.Equal(d.left.Value().Value.Identity, d.right.Value().Value.Identity) {
 					d.currentVal = d.left.Value()
 					d.currentType = DiffTypeChanged
 					return true
 				}
+				d.rightNext = d.right.Next()
+				d.leftNext = d.left.Next()
 				continue // identical values
 			} else if bytes.Compare(leftKey, rightKey) < 0 {
 				d.currentVal = d.left.Value()
@@ -44,7 +48,7 @@ func (d *SimpleDiffIterator) Next() bool {
 			d.currentVal = d.left.Value()
 			d.currentType = DiffTypeRemoved
 			return true
-		} else if d.leftNext {
+		} else if d.rightNext {
 			d.currentVal = d.right.Value()
 			d.currentType = DiffTypeAdded
 			return true
@@ -53,14 +57,14 @@ func (d *SimpleDiffIterator) Next() bool {
 	}
 }
 
-func (d *SimpleDiffIterator) SeekGE(id Key) {
+func (d *ValueDiffIterator) SeekGE(id Key) {
 	d.left.SeekGE(id)
 	d.right.SeekGE(id)
 	d.currentVal = nil
 	d.currentType = 0
 }
 
-func (d *SimpleDiffIterator) Value() *Diff {
+func (d *ValueDiffIterator) Value() *Diff {
 	return &Diff{
 		Type:  d.currentType,
 		Key:   d.currentVal.Key,
@@ -68,11 +72,14 @@ func (d *SimpleDiffIterator) Value() *Diff {
 	}
 }
 
-func (d *SimpleDiffIterator) Err() error {
-	panic("implement me")
+func (d *ValueDiffIterator) Err() error {
+	if d.left.Err() != nil {
+		return d.left.Err()
+	}
+	return d.right.Err()
 }
 
-func (d *SimpleDiffIterator) Close() {
+func (d *ValueDiffIterator) Close() {
 	d.left.Close()
 	d.right.Close()
 }
