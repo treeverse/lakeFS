@@ -1,4 +1,4 @@
-package graveler
+package graveler_test
 
 import (
 	"bytes"
@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func newTestStagingManager(t *testing.T) StagingManager {
+func newTestStagingManager(t *testing.T) graveler.StagingManager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return NewStagingManager(conn)
+	return graveler.NewStagingManager(conn)
 }
 
 func TestSetGet(t *testing.T) {
@@ -120,14 +121,14 @@ func TestDrop(t *testing.T) {
 func TestList(t *testing.T) {
 	s := newTestStagingManager(t)
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
-		token := StagingToken(fmt.Sprintf("t_%d", numOfValues))
+		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
 		for i := 0; i < numOfValues; i++ {
 			err := s.Set(context.Background(), token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
 			if err != nil {
 				t.Fatalf("got unexpected error: %v", err)
 			}
 		}
-		res := make([]*ValueRecord, 0, numOfValues)
+		res := make([]*graveler.ValueRecord, 0, numOfValues)
 		it, _ := s.List(context.Background(), token)
 		for it.Next() {
 			res = append(res, it.Value())
@@ -160,7 +161,7 @@ func TestSeek(t *testing.T) {
 		}
 	}
 	it, _ := s.List(context.Background(), "t1")
-	if !it.SeekGE([]byte("key0050")) {
+	if it.SeekGE([]byte("key0050")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
 	if !bytes.Equal(it.Value().Key, []byte("key0050")) {
@@ -172,10 +173,10 @@ func TestSeek(t *testing.T) {
 	if !bytes.Equal(it.Value().Key, []byte("key0051")) {
 		t.Fatalf("got unexpected key after iterator seek. expected=key0051, got=%s", string(it.Value().Key))
 	}
-	if it.SeekGE([]byte("key1000")) {
+	if it.SeekGE([]byte("key1000")); it.Next() {
 		t.Fatal("iterator seek expected to return false, got true")
 	}
-	if !it.SeekGE([]byte("key0060a")) {
+	if it.SeekGE([]byte("key0060a")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
 	if !bytes.Equal(it.Value().Key, []byte("key0061")) {
@@ -192,12 +193,12 @@ func TestNilIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}
-	err = s.Set(context.Background(), "t1", []byte("key1"), Value{
+	err = s.Set(context.Background(), "t1", []byte("key1"), graveler.Value{
 		Identity: nil,
 		Data:     []byte("value1"),
 	})
-	if !errors.Is(err, ErrInvalidValue) {
-		t.Fatalf("got unexpected error. expected=%v, got=%v", ErrInvalidValue, err)
+	if !errors.Is(err, graveler.ErrInvalidValue) {
+		t.Fatalf("got unexpected error. expected=%v, got=%v", graveler.ErrInvalidValue, err)
 	}
 	e, err := s.Get(context.Background(), "t1", []byte("key1"))
 	if err != nil {
@@ -215,7 +216,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	tombstoneValues := []Value{
+	tombstoneValues := []graveler.Value{
 		{
 			Identity: []byte("identity1"),
 			Data:     make([]byte, 0),
@@ -276,8 +277,8 @@ func TestDeleteAndTombstone(t *testing.T) {
 	}
 }
 
-func newTestValue(identity, data string) Value {
-	return Value{
+func newTestValue(identity, data string) graveler.Value {
+	return graveler.Value{
 		Identity: []byte(identity),
 		Data:     []byte(data),
 	}

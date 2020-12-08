@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: '1'
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
@@ -23,7 +25,7 @@ jobs:
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
-        uses: zricethezav/gitleaks-action@v1.1.2
+        uses: zricethezav/gitleaks-action@v1.1.4
 
   test:
     name: Run Test Suite
