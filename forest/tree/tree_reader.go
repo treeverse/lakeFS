@@ -89,7 +89,8 @@ func (t *treeIterator) Next() bool {
 		return false
 	}
 	t.currentPart++
-	t.currentIter, err = treesRepository.PartManger.NewSSTableIterator(t.TreeParts[t.currentPart].PartName, nil)
+	requiredPartName := t.TreeParts[t.currentPart].PartName
+	t.currentIter, err = treesRepository.PartManger.NewSSTableIterator(requiredPartName, nil)
 	if err != nil {
 		t.currentIter.Close()
 		t.closed = true
