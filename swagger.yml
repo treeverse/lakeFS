@@ -1396,6 +1396,7 @@ paths:
         - in: query
           name: amount
           type: integer
+          default: 100
       responses:
         200:
           description: commit log
@@ -1584,6 +1585,7 @@ paths:
       - in: query
         name: amount
         type: integer
+        default: 100
     get:
       tags:
         - branches
@@ -1637,6 +1639,7 @@ paths:
       - in: query
         name: amount
         type: integer
+        default: 100
     get:
       tags:
         - refs
@@ -1911,6 +1914,7 @@ paths:
       - in: query
         name: amount
         type: integer
+        default: 100
     get:
       tags:
         - objects
