@@ -27,6 +27,10 @@ type PGRepositoryIterator struct {
 	fetchSize   int
 	shouldFetch bool
 
+	// blockValue is true when the iterator is created, or SeekGE() is called.
+	// A single Next() call turns it to false. When it's true, Value() returns nil.
+	blockValue bool
+
 	err error
 }
 
@@ -37,10 +41,13 @@ func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int, o
 		fetchSize:   fetchSize,
 		shouldFetch: true,
 		offset:      offset,
+		blockValue:  true,
 	}
 }
 
 func (ri *PGRepositoryIterator) Next() bool {
+	ri.blockValue = false
+
 	// no buffer is initialized
 	if ri.buf == nil {
 		ri.fetch(true) // initial fetch
@@ -91,28 +98,17 @@ func (ri *PGRepositoryIterator) fetch(initial bool) {
 	}
 }
 
-func (ri *PGRepositoryIterator) SeekGE(id RepositoryID) bool {
+func (ri *PGRepositoryIterator) SeekGE(id RepositoryID) {
 	ri.offset = string(id)
 	ri.shouldFetch = true
-	ri.buf = make([]*RepositoryRecord, 0)
-	ri.fetch(true) // do a new initial fetch
-
-	if len(ri.buf) == 0 {
-		return false
-	}
-
-	// stage a value and increment offset
-	ri.value = ri.buf[0]
-	ri.offset = string(ri.value.RepositoryID)
-	if len(ri.buf) > 1 {
-		ri.buf = ri.buf[0 : len(ri.buf)-1]
-	} else {
-		ri.buf = make([]*RepositoryRecord, 0)
-	}
-	return true
+	ri.buf = nil
+	ri.blockValue = true
 }
 
 func (ri *PGRepositoryIterator) Value() *RepositoryRecord {
+	if ri.blockValue || ri.err != nil {
+		return nil
+	}
 	return ri.value
 }
 
@@ -132,6 +128,10 @@ type PGBranchIterator struct {
 	value        *BranchRecord
 	buf          []*BranchRecord
 
+	// blockValue is true when the iterator is created, or SeekGE() is called.
+	// A single Next() call turns it to false. When it's true, Value() returns nil.
+	blockValue bool
+
 	offset      string
 	fetchSize   int
 	shouldFetch bool
@@ -146,11 +146,14 @@ func NewBranchIterator(ctx context.Context, db db.Database, repositoryID Reposit
 		repositoryID: repositoryID,
 		fetchSize:    prefetchSize,
 		shouldFetch:  true,
+		blockValue:   true,
 		offset:       offset,
 	}
 }
 
 func (ri *PGBranchIterator) Next() bool {
+	ri.blockValue = false
+
 	// no buffer is initialized
 	if ri.buf == nil {
 		ri.fetch(true) // initial fetch
@@ -213,28 +216,17 @@ func (ri *PGBranchIterator) fetch(initial bool) {
 	}
 }
 
-func (ri *PGBranchIterator) SeekGE(id BranchID) bool {
+func (ri *PGBranchIterator) SeekGE(id BranchID) {
 	ri.offset = string(id)
 	ri.shouldFetch = true
-	ri.buf = make([]*BranchRecord, 0)
-	ri.fetch(true) // do a new initial fetch
-
-	if len(ri.buf) == 0 {
-		return false
-	}
-
-	// stage a value and increment offset
-	ri.value = ri.buf[0]
-	ri.offset = string(ri.value.BranchID)
-	if len(ri.buf) > 1 {
-		ri.buf = ri.buf[0 : len(ri.buf)-1]
-	} else {
-		ri.buf = make([]*BranchRecord, 0)
-	}
-	return true
+	ri.buf = nil
+	ri.blockValue = true
 }
 
 func (ri *PGBranchIterator) Value() *BranchRecord {
+	if ri.blockValue || ri.err != nil {
+		return nil
+	}
 	return ri.value
 }
 
@@ -251,6 +243,11 @@ type PGCommitIterator struct {
 	ctx          context.Context
 	repositoryID RepositoryID
 
+	// initPhase turns true when the iterator was created or `SeekGE()` was called.
+	// initPhase turns false when Next() is called.
+	// When initPhase is true, Value() should return nil.
+	initPhase bool
+
 	value *CommitRecord
 	next  CommitID
 
@@ -262,11 +259,13 @@ func NewCommitIterator(ctx context.Context, db db.Database, repositoryID Reposit
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
+		initPhase:    true,
 		next:         start,
 	}
 }
 
 func (ci *PGCommitIterator) Next() bool {
+	ci.initPhase = false
 	if ci.value == nil {
 		return ci.fetch()
 	}
@@ -295,12 +294,15 @@ func (ci *PGCommitIterator) fetch() bool {
 	return true
 }
 
-func (ci *PGCommitIterator) SeekGE(id CommitID) bool {
+func (ci *PGCommitIterator) SeekGE(id CommitID) {
+	ci.initPhase = true
 	ci.next = id
-	return ci.fetch()
 }
 
 func (ci *PGCommitIterator) Value() *CommitRecord {
+	if ci.initPhase || ci.err != nil {
+		return nil
+	}
 	return ci.value
 }
 

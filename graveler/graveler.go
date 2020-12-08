@@ -262,12 +262,13 @@ type Graveler interface {
 //   return fmt.Errorf("stopped because of an error %w", it.Err())
 // }
 // ```
-// Calling SeekGE() returns true, like calling Next() - we can process 'Value()' when true and check Err() in case of false
-// When Next() or SeekGE() returns false (doesn't matter if it because of an error) calling Value() should return nil
-
+// 'Value()' should only be called after `Next()` returns true.
+// In case `Next()` returns false, `Value()` returns nil and `Err()` should be checked.
+// nil error means we reached the end of the input.
+// `SeekGE()` behaviour is like as starting a new iterator - `Value()` returns nothing until the first `Next()`.
 type RepositoryIterator interface {
 	Next() bool
-	SeekGE(id RepositoryID) bool
+	SeekGE(id RepositoryID)
 	Value() *RepositoryRecord
 	Err() error
 	Close()
@@ -275,7 +276,7 @@ type RepositoryIterator interface {
 
 type ValueIterator interface {
 	Next() bool
-	SeekGE(id Key) bool
+	SeekGE(id Key)
 	Value() *ValueRecord
 	Err() error
 	Close()
@@ -283,7 +284,7 @@ type ValueIterator interface {
 
 type DiffIterator interface {
 	Next() bool
-	SeekGE(id Key) bool
+	SeekGE(id Key)
 	Value() *Diff
 	Err() error
 	Close()
@@ -291,7 +292,7 @@ type DiffIterator interface {
 
 type BranchIterator interface {
 	Next() bool
-	SeekGE(id BranchID) bool
+	SeekGE(id BranchID)
 	Value() *BranchRecord
 	Err() error
 	Close()
@@ -299,7 +300,7 @@ type BranchIterator interface {
 
 type CommitIterator interface {
 	Next() bool
-	SeekGE(id CommitID) bool
+	SeekGE(id CommitID)
 	Value() *CommitRecord
 	Err() error
 	Close()
@@ -307,7 +308,7 @@ type CommitIterator interface {
 
 type ListingIterator interface {
 	Next() bool
-	SeekGE(id Key) bool
+	SeekGE(id Key)
 	Value() *Listing
 	Err() error
 	Close()
