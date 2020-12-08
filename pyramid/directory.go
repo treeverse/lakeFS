@@ -17,6 +17,8 @@ type directory struct {
 	sync.Mutex
 }
 
+// deleteDirRecIfEmpty deletes the given directory if it is empty.
+// It will continue to delete all parents directory if they are empty, until the ceilingDir.
 func (d *directory) deleteDirRecIfEmpty(dir string) error {
 	d.Lock()
 	defer d.Unlock()
@@ -57,6 +59,7 @@ func isDirEmpty(name string) (bool, error) {
 	return false, err
 }
 
+// createFile creates the file under the path and creates all parent dirs if missing.
 func (d *directory) createFile(path string) (*os.File, error) {
 	d.Lock()
 	defer d.Unlock()
@@ -68,6 +71,7 @@ func (d *directory) createFile(path string) (*os.File, error) {
 	return os.Create(path)
 }
 
+// renameFile will move the src file to dst location and creates all parent dirs if missing.
 func (d *directory) renameFile(src, dst string) error {
 	d.Lock()
 	defer d.Unlock()
