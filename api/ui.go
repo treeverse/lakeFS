@@ -10,6 +10,7 @@ import (
 
 	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/statik"
 	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
@@ -42,7 +43,7 @@ func NoCache(h http.Handler) http.Handler {
 
 func UIHandler(authService auth.Service) http.Handler {
 	mux := http.NewServeMux()
-	staticFiles, _ := fs.NewWithNamespace("webui")
+	staticFiles, _ := fs.NewWithNamespace(statik.Webui)
 	mux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
