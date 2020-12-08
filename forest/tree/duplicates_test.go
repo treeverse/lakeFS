@@ -1,16 +1,18 @@
-package tree
+package tree_test
 
 import (
 	"testing"
+
+	"github.com/treeverse/lakefs/forest/tree"
 
 	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/forest/sstable"
 )
 
-func Test(t *testing.T) {
+func TestRemoveDuplicates(t *testing.T) {
 	tests := []struct {
-		left                 *Tree
-		right                *Tree
+		left                 *tree.Tree
+		right                *tree.Tree
 		expectedLeftPartIds  []string
 		expectedRightPartIds []string
 	}{
@@ -70,35 +72,35 @@ func Test(t *testing.T) {
 		},
 	}
 	for _, tst := range tests {
-		gotLeft, gotRight := removeDuplicates(tst.left, tst.right)
-		if len(gotLeft.parts) != len(tst.expectedLeftPartIds) {
-			t.Fatalf("got unexpected number of parts on left tree. expected=%d, got=%d", len(tst.expectedLeftPartIds), len(gotLeft.parts))
+		gotLeft, gotRight := tree.RemoveDuplicates(tst.left, tst.right)
+		if len(gotLeft.Parts) != len(tst.expectedLeftPartIds) {
+			t.Fatalf("got unexpected number of parts on left tree. expected=%d, got=%d", len(tst.expectedLeftPartIds), len(gotLeft.Parts))
 		}
-		for i := range gotLeft.parts {
-			if string(gotLeft.parts[i].Name) != tst.expectedLeftPartIds[i] {
-				t.Fatalf("unexpected part id in new left tree index %d: expected=%s, got=%s", i, tst.expectedLeftPartIds[i], string(gotLeft.parts[i].Name))
+		for i := range gotLeft.Parts {
+			if string(gotLeft.Parts[i].Name) != tst.expectedLeftPartIds[i] {
+				t.Fatalf("unexpected part id in new left tree index %d: expected=%s, got=%s", i, tst.expectedLeftPartIds[i], string(gotLeft.Parts[i].Name))
 			}
 		}
-		if len(gotRight.parts) != len(tst.expectedRightPartIds) {
-			t.Fatalf("got unexpected number of parts on right tree. expected=%d, got=%d", len(tst.expectedRightPartIds), len(gotRight.parts))
+		if len(gotRight.Parts) != len(tst.expectedRightPartIds) {
+			t.Fatalf("got unexpected number of parts on right tree. expected=%d, got=%d", len(tst.expectedRightPartIds), len(gotRight.Parts))
 		}
-		for i := range gotRight.parts {
-			if string(gotRight.parts[i].Name) != tst.expectedRightPartIds[i] {
-				t.Fatalf("unexpected part id in new right tree index %d: expected=%s, got=%s", i, tst.expectedRightPartIds[i], string(gotRight.parts[i].Name))
+		for i := range gotRight.Parts {
+			if string(gotRight.Parts[i].Name) != tst.expectedRightPartIds[i] {
+				t.Fatalf("unexpected part id in new right tree index %d: expected=%s, got=%s", i, tst.expectedRightPartIds[i], string(gotRight.Parts[i].Name))
 			}
 		}
 	}
 }
 
-func newTestTree(partIds []string, maxPaths []string) *Tree {
-	parts := make([]*Part, 0, len(partIds))
+func newTestTree(partIds []string, maxPaths []string) *tree.Tree {
+	parts := make([]*tree.Part, 0, len(partIds))
 	for i := range partIds {
-		parts = append(parts, &Part{
+		parts = append(parts, &tree.Part{
 			Name:    sstable.ID(partIds[i]),
 			MaxPath: rocks.Path(maxPaths[i]),
 		})
 	}
-	return &Tree{
-		parts: parts,
+	return &tree.Tree{
+		Parts: parts,
 	}
 }

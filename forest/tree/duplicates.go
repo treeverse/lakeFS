@@ -3,7 +3,6 @@ package tree
 import (
 	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/forest/sstable"
-	"github.com/treeverse/lakefs/graveler"
 )
 
 type Part struct {
@@ -12,7 +11,7 @@ type Part struct {
 }
 
 type Tree struct {
-	parts []*Part
+	Parts []*Part
 }
 
 func compareParts(leftParts []*Part, leftIdx int, rightParts []*Part, rightIdx int) int {
@@ -31,29 +30,24 @@ func compareParts(leftParts []*Part, leftIdx int, rightParts []*Part, rightIdx i
 	return 1
 }
 
-func removeDuplicates(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
+func RemoveDuplicates(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
 	i := 0
 	j := 0
 	newLeft = new(Tree)
 	newRight = new(Tree)
-	for i < len(left.parts) || j < len(right.parts) {
-		comp := compareParts(left.parts, i, right.parts, j)
+	for i < len(left.Parts) || j < len(right.Parts) {
+		comp := compareParts(left.Parts, i, right.Parts, j)
 		switch comp {
 		case 0:
 			i++
 			j++
 		case -1:
-			newLeft.parts = append(newLeft.parts, left.parts[i])
+			newLeft.Parts = append(newLeft.Parts, left.Parts[i])
 			i++
 		case 1:
-			newRight.parts = append(newRight.parts, right.parts[j])
+			newRight.Parts = append(newRight.Parts, right.Parts[j])
 			j++
 		}
 	}
 	return
-}
-
-func Diff(left *Tree, right *Tree, base *Tree) graveler.DiffIterator {
-	left, right = removeDuplicates(left, right)
-
 }
