@@ -251,7 +251,7 @@ func processSinglePrefix(response []entryPathPrefixInfo, delimiter string, branc
 }
 
 func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPathPrefixInfo, readParams readParamsType) error {
-	// if the buffer initialy read is exhausted (e.g. - all entries that were read were deleted) - more rows are read for that branch
+	// if the buffer initially read is exhausted (e.g. - all entries that were read were deleted) - more rows are read for that branch
 	// results are directly stored in the branchRanges map. (agreed - there are simpler and clearer ways to do it)
 	readBuf := make([]entryPathPrefixInfo, 0, readParams.branchBatchSize)
 	singleSelect := readParams.branchQueryMap[branch]
@@ -314,7 +314,7 @@ func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchBatc
 
 func buildSingleBranchQuery(branchID int64, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
 	// builds a query on a single branch of the lineage. called mainly from "buildBaseLevelQuery" above.
-	//the other function that calls it is "getMoreRows" that needs entries for a single branch.
+	// the other function that calls it is "getMoreRows" that needs entries for a single branch.
 	// topCommitId contains the requested commit for that branch. its implications:
 	// 1. entries where the minCommitId is more than the requested commit id will be filtered out
 	// 2. entries that were deleted after this commit (maxCommitId > topCommitId) will be considered
