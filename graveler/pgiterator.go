@@ -243,11 +243,6 @@ type PGCommitIterator struct {
 	ctx          context.Context
 	repositoryID RepositoryID
 
-	// initPhase turns true when the iterator was created or `SeekGE()` was called.
-	// initPhase turns false when Next() is called.
-	// When initPhase is true, Value() should return nil.
-	initPhase bool
-
 	value *CommitRecord
 	next  CommitID
 
@@ -259,13 +254,11 @@ func NewCommitIterator(ctx context.Context, db db.Database, repositoryID Reposit
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
-		initPhase:    true,
 		next:         start,
 	}
 }
 
 func (ci *PGCommitIterator) Next() bool {
-	ci.initPhase = false
 	if ci.value == nil {
 		return ci.fetch()
 	}
@@ -295,12 +288,14 @@ func (ci *PGCommitIterator) fetch() bool {
 }
 
 func (ci *PGCommitIterator) SeekGE(id CommitID) {
-	ci.initPhase = true
+	// Setting value to nil so that next Value() call
+	// returns nil as the interface commands
+	ci.value = nil
 	ci.next = id
 }
 
 func (ci *PGCommitIterator) Value() *CommitRecord {
-	if ci.initPhase || ci.err != nil {
+	if ci.err != nil {
 		return nil
 	}
 	return ci.value
