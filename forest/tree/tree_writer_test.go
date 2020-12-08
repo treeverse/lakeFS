@@ -14,7 +14,7 @@ import (
 )
 
 func TestSimpleTree(t *testing.T) {
-	InitTreesRepository(&mocks.SstMgr{NumToRead: 10})
+	InitTreesRepository(&mocks.SstMgr{})
 	b := mocks.NewBatchCloser()
 	//tw := TreeWriter{closeAsync: b,
 	//	isSplitKeyFunc: testSplitter}
