@@ -422,6 +422,9 @@ var (
 	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
 	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
 	ErrCommitIDAmbiguous       = fmt.Errorf("commit ID is ambiguous: %w", ErrNotFound)
+	ErrConflictFound           = errors.New("conflict found")
+	ErrBranchExists            = errors.New("branch already exists")
+	ErrUnexpected              = errors.New("unexpected error")
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {
