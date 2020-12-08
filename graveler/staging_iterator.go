@@ -15,6 +15,10 @@ type StagingIterator struct {
 	log logging.Logger
 	st  StagingToken
 
+	// initPhase turns true when the iterator was created or `SeekGE()` was called.
+	// initPhase turns false when Next() is called.
+	// When initPhase is true, Value() should return nil.
+	initPhase   bool
 	idxInBuffer int
 	err         error
 	dbHasNext   bool
@@ -23,13 +27,14 @@ type StagingIterator struct {
 }
 
 func NewStagingIterator(ctx context.Context, db db.Database, log logging.Logger, st StagingToken) *StagingIterator {
-	return &StagingIterator{ctx: ctx, st: st, dbHasNext: true, db: db, log: log, nextFrom: make([]byte, 0)}
+	return &StagingIterator{ctx: ctx, st: st, dbHasNext: true, initPhase: true, db: db, log: log, nextFrom: make([]byte, 0)}
 }
 
 func (s *StagingIterator) Next() bool {
 	if s.err != nil {
 		return false
 	}
+	s.initPhase = false
 	s.idxInBuffer++
 	if s.idxInBuffer < len(s.buffer) {
 		return true
@@ -40,17 +45,20 @@ func (s *StagingIterator) Next() bool {
 	return s.loadBuffer()
 }
 
-func (s *StagingIterator) SeekGE(key Key) bool {
+func (s *StagingIterator) SeekGE(key Key) {
 	s.buffer = nil
 	s.err = nil
 	s.idxInBuffer = 0
 	s.nextFrom = key
 	s.dbHasNext = true
-	return s.Next()
+	s.initPhase = true
 }
 
 func (s *StagingIterator) Value() *ValueRecord {
 	if s.err != nil || s.idxInBuffer >= len(s.buffer) {
+		return nil
+	}
+	if s.initPhase {
 		return nil
 	}
 	return s.buffer[s.idxInBuffer]
