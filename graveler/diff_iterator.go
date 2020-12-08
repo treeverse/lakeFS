@@ -18,10 +18,6 @@ func (d *SimpleDiffIterator) Next() bool {
 	if d.leftNext {
 		d.leftNext = d.left.Next()
 	}
-	return d.computeDiffValues()
-}
-
-func (d *SimpleDiffIterator) computeDiffValues() bool {
 	for {
 		if d.rightNext && d.leftNext {
 			leftKey := d.left.Value().Key
@@ -57,12 +53,11 @@ func (d *SimpleDiffIterator) computeDiffValues() bool {
 	}
 }
 
-func (d *SimpleDiffIterator) SeekGE(id Key) bool {
-	d.leftNext = d.left.SeekGE(id)
-	d.rightNext = d.right.SeekGE(id)
+func (d *SimpleDiffIterator) SeekGE(id Key) {
+	d.left.SeekGE(id)
+	d.right.SeekGE(id)
 	d.currentVal = nil
 	d.currentType = 0
-	return d.computeDiffValues()
 }
 
 func (d *SimpleDiffIterator) Value() *Diff {
