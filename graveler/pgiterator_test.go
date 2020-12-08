@@ -76,9 +76,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 		}
 
 		// now let's seek
-		if !iter.SeekGE("aa") {
-			t.Fatalf("we should have values here")
-		}
+		iter.SeekGE("aa")
 
 		repoIds = make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -161,10 +159,7 @@ func TestPGBranchIterator(t *testing.T) {
 		}
 
 		// now let's seek
-		if !iter.SeekGE("aa") {
-			t.Fatalf("we should have values here")
-		}
-
+		iter.SeekGE("aa")
 		ids = make([]graveler.BranchID, 0)
 		for iter.Next() {
 			b := iter.Value()

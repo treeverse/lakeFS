@@ -161,7 +161,7 @@ func TestSeek(t *testing.T) {
 		}
 	}
 	it, _ := s.List(context.Background(), "t1")
-	if !it.SeekGE([]byte("key0050")) {
+	if it.SeekGE([]byte("key0050")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
 	if !bytes.Equal(it.Value().Key, []byte("key0050")) {
@@ -173,10 +173,10 @@ func TestSeek(t *testing.T) {
 	if !bytes.Equal(it.Value().Key, []byte("key0051")) {
 		t.Fatalf("got unexpected key after iterator seek. expected=key0051, got=%s", string(it.Value().Key))
 	}
-	if it.SeekGE([]byte("key1000")) {
+	if it.SeekGE([]byte("key1000")); it.Next() {
 		t.Fatal("iterator seek expected to return false, got true")
 	}
-	if !it.SeekGE([]byte("key0060a")) {
+	if it.SeekGE([]byte("key0060a")); !it.Next() {
 		t.Fatal("iterator seek expected to return true, got false")
 	}
 	if !bytes.Equal(it.Value().Key, []byte("key0061")) {
