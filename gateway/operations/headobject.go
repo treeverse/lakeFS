@@ -37,12 +37,18 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
+	if entry.Expired {
+		o.Log().WithError(err).Info("querying expired object")
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		return
+	}
+
 	o.SetHeader("Accept-Ranges", "bytes")
 	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader("ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.Size))
-	if entry.Expired {
-		o.Log().WithError(err).Info("querying expired object")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
-	}
+
+	// Delete the default content-type header so http.Server will detect it from contents
+	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
+	o.DeleteHeader("Content-Type")
 }
