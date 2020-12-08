@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -347,8 +348,46 @@ func notFound(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
+var commaSeparator = regexp.MustCompile(`,\s*`)
+
+var (
+	contentTypeApplicationXML = "application/xml"
+	contentTypeTextXML        = "text/xml"
+)
+
+func selectContentType(acceptable []string) *string {
+	for _, acceptableTypes := range acceptable {
+		acceptable := commaSeparator.Split(acceptableTypes, -1)
+		for _, a := range acceptable {
+			switch a {
+			case contentTypeTextXML:
+				return &contentTypeTextXML
+			case contentTypeApplicationXML:
+				return &contentTypeApplicationXML
+			}
+		}
+	}
+	return nil
+}
+
+func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
+	acceptable, ok := r.Header["Accept"]
+	if ok {
+		defaultContentType := selectContentType(acceptable)
+		if defaultContentType != nil {
+			w.Header().Set("Content-Type", *defaultContentType)
+		}
+		// If no requested content type matched, still OK at least for proxied content
+		// (GET or HEAD), so set up to auto-detect.
+	} else {
+		w.Header().Set("Content-Type", contentTypeApplicationXML)
+		// For proxied content (GET or HEAD) the type will be reset according to
+		// whatever headers arrive, including setting up to auto-detect content-type if
+		// none is specified by the adapter.
+	}
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// pprof endpoints
 	handler := h.servePathBased(r)
 	if handler == nil {
 		handler = h.serveVirtualHost(r)
@@ -358,6 +397,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
+	setDefaultContentType(mrw, r)
 	handler.ServeHTTP(mrw, r)
 	requestHistograms.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }

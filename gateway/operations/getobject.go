@@ -99,6 +99,9 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	if rng.StartOffset != -1 {
 		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	}
+	// Delete the default content-type header so http.Server will detect it from contents
+	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
+	o.DeleteHeader("Content-Type")
 	_, err = io.Copy(o.ResponseWriter, data)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write response body for object")
