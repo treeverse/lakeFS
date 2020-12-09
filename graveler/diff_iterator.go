@@ -9,16 +9,16 @@ type ValueDiffIterator struct {
 	rightNext   bool
 	currentVal  *ValueRecord
 	currentType DiffType
-	err         error
+}
+
+func NewValueDiffIterator(left ValueIterator, right ValueIterator) *ValueDiffIterator {
+	it := &ValueDiffIterator{left: left, right: right}
+	it.leftNext = it.left.Next()
+	it.rightNext = it.right.Next()
+	return it
 }
 
 func (d *ValueDiffIterator) Next() bool {
-	if d.rightNext {
-		d.rightNext = d.right.Next()
-	}
-	if d.leftNext {
-		d.leftNext = d.left.Next()
-	}
 	for {
 		if d.left.Err() != nil || d.right.Err() != nil {
 			return false
@@ -27,29 +27,35 @@ func (d *ValueDiffIterator) Next() bool {
 			leftKey := d.left.Value().Key
 			rightKey := d.right.Value().Key
 			if bytes.Equal(leftKey, rightKey) {
-				if !bytes.Equal(d.left.Value().Value.Identity, d.right.Value().Value.Identity) {
-					d.currentVal = d.left.Value()
+				leftVal := d.left.Value()
+				rightVal := d.right.Value()
+				d.rightNext = d.right.Next()
+				d.leftNext = d.left.Next()
+				if !bytes.Equal(leftVal.Value.Identity, rightVal.Value.Identity) {
+					d.currentVal = rightVal
 					d.currentType = DiffTypeChanged
 					return true
 				}
-				d.rightNext = d.right.Next()
-				d.leftNext = d.left.Next()
 				continue // identical values
 			} else if bytes.Compare(leftKey, rightKey) < 0 {
 				d.currentVal = d.left.Value()
+				d.leftNext = d.left.Next()
 				d.currentType = DiffTypeRemoved
 				return true
 			} else { // leftKey > rightKey
 				d.currentVal = d.right.Value()
+				d.rightNext = d.right.Next()
 				d.currentType = DiffTypeAdded
 				return true
 			}
 		} else if d.leftNext {
 			d.currentVal = d.left.Value()
+			d.leftNext = d.left.Next()
 			d.currentType = DiffTypeRemoved
 			return true
 		} else if d.rightNext {
 			d.currentVal = d.right.Value()
+			d.rightNext = d.right.Next()
 			d.currentType = DiffTypeAdded
 			return true
 		}
