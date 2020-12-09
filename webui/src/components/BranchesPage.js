@@ -157,14 +157,16 @@ const BranchesPage = connect(
                                 <div className="float-right">
                                     <ButtonGroup className="branch-actions">
                                         {(repo.default_branch !== branch) ? 
-                                        (<Button variant={buttonVariant} 
-                                            onClick={() =>{
-                                                setSelectedBranch(branch);
-                                                handleShow();
-                                                }
+                                        (<OverlayTrigger placement="bottom" overlay={<Tooltip>delete the branch</Tooltip>}>
+                                            <Button variant={buttonVariant} 
+                                                onClick={() =>{
+                                                    setSelectedBranch(branch);
+                                                    handleShow();
+                                                    }
                                             }>
                                             <TrashcanIcon/>
-                                        </Button> ) : 
+                                            </Button> 
+                                        </OverlayTrigger>) : 
                                         (<span/>)}
                                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
