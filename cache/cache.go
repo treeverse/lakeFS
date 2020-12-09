@@ -10,16 +10,33 @@ import (
 
 type JitterFn func() time.Duration
 type SetFn func() (v interface{}, err error)
+type EvictionCallback func(key interface{}, value interface{})
+
+// Params controls a Cache.
+type Params struct {
+	// User-visible name to give this cache.
+	Name string
+	// Size is the maximal number of SSTables to hold open.  Each
+	// SSTable consumes an open file descriptor and possibly some
+	// memory.
+	Size int
+	// Expiry is an extra time to keep elements in cache before eviction.
+	Expiry time.Duration
+	// Jitter is the interval to jitter around expiry.
+	JitterFn JitterFn
+	// OnEvict is called after an element has been evicted from the cache.
+	OnEvict EvictionCallback
+}
 
 type Cache interface {
+	Name() string
 	GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error)
 }
 
 type GetSetCache struct {
-	lru        *lru.Cache
-	locker     *ChanLocker
-	jitterFn   JitterFn
-	baseExpiry time.Duration
+	p      *Params
+	lru    *lru.Cache
+	locker *ChanLocker
 }
 
 var (
@@ -27,12 +44,19 @@ var (
 )
 
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
-	c, _ := lru.New(size)
+	return NewCacheByParams(&Params{Size: size, Expiry: expiry, JitterFn: jitterFn})
+}
+
+func NewCacheByParams(p *Params) *GetSetCache {
+	// TODO(ozkatz): Handle error return.
+	c, err := lru.NewWithEvict(p.Size, p.OnEvict)
+	if err != nil {
+		panic(err)
+	}
 	return &GetSetCache{
-		lru:        c,
-		locker:     NewChanLocker(),
-		jitterFn:   jitterFn,
-		baseExpiry: expiry,
+		lru:    c,
+		locker: NewChanLocker(),
+		p:      p,
 	}
 }
 
@@ -45,7 +69,7 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 		if err != nil {
 			return
 		}
-		c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
+		c.lru.AddEx(k, v, c.p.Expiry+c.p.JitterFn())
 	})
 	if acquired {
 		return v, err
@@ -60,6 +84,8 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 	// (most likely this value doesn't exist or the upstream fetch failed)
 	return nil, ErrCacheItemNotFound
 }
+
+func (c *GetSetCache) Name() string { return c.p.Name }
 
 func NewJitterFn(jitter time.Duration) JitterFn {
 	return func() time.Duration {
