@@ -80,9 +80,9 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,transaction_timestamp(),$4,'from_parent',
-				(select (select max(commit_id) from catalog_commits where branch_id=$4) ||
-					(select distinct on (branch_id) lineage_commits from catalog_commits
-						where branch_id=$4 and merge_type='from_parent' order by branch_id,commit_id desc)),$5)
+				($5::bigint || (select distinct on (branch_id) lineage_commits from catalog_commits
+					where branch_id=$4 and merge_type='from_parent' and commit_id <= $5 order by branch_id,commit_id desc)),
+					$5)
 			RETURNING commit_id,merge_source_commit,transaction_timestamp()`,
 			branchID, catalog.DefaultCommitter, commitMsg, sourceBranchID, sourceCommitID)
 		if err != nil {

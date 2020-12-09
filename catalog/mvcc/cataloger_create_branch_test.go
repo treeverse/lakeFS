@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -140,7 +141,7 @@ func TestCataloger_CreateBranch_FromRef(t *testing.T) {
 
 	// create entry and commit - second
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "second", nil, "")
-	_, err = c.Commit(ctx, repo, "master", "second", "tester", nil)
+	commit2, err := c.Commit(ctx, repo, "master", "second", "tester", nil)
 	testutil.MustDo(t, "second commit", err)
 
 	// branch from first commit
@@ -150,10 +151,26 @@ func TestCataloger_CreateBranch_FromRef(t *testing.T) {
 		t.Fatal("CreateBranch() no error, missing commit log")
 	}
 
-	// check that only first is on our branch
+	// check that only 'first' is on our branch
 	branchEntries, _, err := c.ListEntries(ctx, repo, "branch1", "", "", "", 100)
 	testutil.MustDo(t, "list entries on branch1", err)
-	if len(branchEntries) != 1 {
-		t.Fatal("Branch1 should have 1 entry, got", len(branchEntries))
+	paths := testExtractEntriesPath(branchEntries)
+	if diff := deep.Equal(paths, []string{"first"}); diff != nil {
+		t.Fatal("Found diff in expected content of branch1:", diff)
+	}
+
+	// branch from second commit
+	commit2Log, err := c.CreateBranch(ctx, repo, "branch2", commit2.Reference)
+	testutil.MustDo(t, "branch from second commit", err)
+	if commit2Log == nil {
+		t.Fatal("CreateBranch() no error, missing commit log")
+	}
+
+	// check that 'first' and 'second' on our branch
+	branchEntries, _, err = c.ListEntries(ctx, repo, "branch2", "", "", "", 100)
+	testutil.MustDo(t, "list entries on branch2", err)
+	paths = testExtractEntriesPath(branchEntries)
+	if diff := deep.Equal(paths, []string{"first", "second"}); diff != nil {
+		t.Fatal("Found diff in expected content of branch2:", diff)
 	}
 }

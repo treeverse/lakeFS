@@ -111,3 +111,11 @@ func testVerifyEntries(t testing.TB, ctx context.Context, c catalog.Cataloger, r
 		}
 	}
 }
+
+func testExtractEntriesPath(entries []*catalog.Entry) []string {
+	paths := make([]string, len(entries))
+	for i := range entries {
+		paths[i] = entries[i].Path
+	}
+	return paths
+}
