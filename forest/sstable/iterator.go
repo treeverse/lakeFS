@@ -7,7 +7,8 @@ import (
 
 // Iterator returns ordered iteration of the SSTable entries
 type Iterator struct {
-	it sstable.Iterator
+	it    sstable.Iterator
+	deref Derefer
 
 	currKey   graveler.Key
 	currValue *graveler.Value
@@ -55,6 +56,11 @@ func (iter *Iterator) Err() error {
 
 func (iter *Iterator) Close() {
 	err := iter.it.Close()
+	if iter.err == nil {
+		// avoid overriding earlier errors
+		iter.err = err
+	}
+	err = iter.deref()
 	if iter.err == nil {
 		// avoid overriding earlier errors
 		iter.err = err

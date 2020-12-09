@@ -6,9 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	lru "github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/graveler"
-
-	"github.com/cockroachdb/pebble"
 
 	"github.com/treeverse/lakefs/pyramid"
 
@@ -16,31 +15,37 @@ import (
 )
 
 type PebbleSSTableManager struct {
+	cache *cache
 	fs    pyramid.FS
-	cache *pebble.Cache
 }
 
 const sstableTierFSNamespace = "sstables"
 
-func NewPebbleSSTableManager() *PebbleSSTableManager {
-	return &PebbleSSTableManager{}
+func NewPebbleSSTableManager(p lru.Params, fs pyramid.FS, readerOptions sstable.ReaderOptions) *PebbleSSTableManager {
+	cache := NewCache(p, fs, readerOptions)
+	return &PebbleSSTableManager{cache: cache, fs: fs}
 }
 
 var (
-	// ErrPathNotFound is the error returned when the path is not found
+	// ErrPathNotFound is the error returned when a path is not found
 	ErrPathNotFound = errors.New("path not found")
 )
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
 func (m *PebbleSSTableManager) GetEntry(lookup graveler.Key, tid ID) (*graveler.Value, error) {
-	reader, err := m.getReader(tid)
+	reader, deref, err := m.getReader(tid)
+	if deref != nil {
+		defer deref()
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	it, err := reader.NewIter(lookup, nil)
-	defer it.Close()
+	if it != nil {
+		defer it.Close()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
@@ -65,18 +70,13 @@ func (m *PebbleSSTableManager) GetEntry(lookup graveler.Key, tid ID) (*graveler.
 	return deserializeValue(val)
 }
 
-func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, error) {
-	f, err := m.fs.Open(sstableTierFSNamespace, string(tid))
-	if err != nil {
-		return nil, fmt.Errorf("open sstable %s: %w", tid, err)
-	}
-
-	return sstable.NewReader(f, sstable.ReaderOptions{Cache: m.cache})
+func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, Derefer, error) {
+	return m.cache.GetOrOpen(sstableTierFSNamespace, tid)
 }
 
-// SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
+// SSTableIterator takes a given SSTable and returns a ValueIterator seeked to >= "from" path
 func (m *PebbleSSTableManager) SSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error) {
-	reader, err := m.getReader(tid)
+	reader, deref, err := m.getReader(tid)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (m *PebbleSSTableManager) SSTableIterator(tid ID, from graveler.Key) (grave
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return &Iterator{it: iter}, nil
+	return &Iterator{it: iter, deref: deref}, nil
 }
 
 // GetWriter returns a new SSTable writer instance
