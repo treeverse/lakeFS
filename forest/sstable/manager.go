@@ -8,6 +8,7 @@ import (
 
 	lru "github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/pyramid"
 
@@ -36,7 +37,16 @@ var (
 func (m *PebbleSSTableManager) GetEntry(lookup graveler.Key, tid ID) (*graveler.Value, error) {
 	reader, deref, err := m.getReader(tid)
 	if deref != nil {
-		defer deref()
+		defer func() {
+			err := deref()
+			if err != nil {
+				logging.Default().WithFields(logging.Fields{
+					"name": m.cache.c.Name(),
+					"key":  lookup,
+					"tid":  tid,
+				}).WithError(err).Error("dereference SSTable reader")
+			}
+		}()
 	}
 	if err != nil {
 		return nil, err
