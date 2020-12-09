@@ -76,7 +76,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 			MergeSourceCommit    CommitID  `db:"merge_source_commit"`
 			TransactionTimestamp time.Time `db:"transaction_timestamp"`
 		}{}
-		commitMsg := fmt.Sprintf(createBranchCommitMessageFormat, branch, sourceRef)
+		commitMsg := FormatBranchCommitMessage(branch, sourceRef)
 		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,transaction_timestamp(),$4,'from_parent',
@@ -105,4 +105,8 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 	}
 	commitLog := res.(*catalog.CommitLog)
 	return commitLog, nil
+}
+
+func FormatBranchCommitMessage(name, source string) string {
+	return fmt.Sprintf(createBranchCommitMessageFormat, name, source)
 }
