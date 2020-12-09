@@ -2,16 +2,14 @@ package graveler
 
 import "bytes"
 
-// ListingIter implements a listing iterator using a ValueIterator
+// listingIterator implements a ListingIterator using a ValueIterator
 // assumes all values in valueIterator start with prefix
-type ListingIter struct {
+type listingIterator struct {
 	valueIterator ValueIterator
 	delimiter     Key
-	nextDelimiter Key
 	prefix        Key
 	current       *Listing
-	nextFunc      func(l *ListingIter) bool
-	err           error
+	nextFunc      func() bool
 }
 
 // getFollowingValue returns the following value (i.e will increase the last byte by 1)
@@ -25,26 +23,21 @@ func getFollowingValue(value []byte) []byte {
 	return append(copiedDelimiter[:len(copiedDelimiter)-1], copiedDelimiter[len(copiedDelimiter)-1]+1)
 }
 
-func NewListingIter(iterator ValueIterator, delimiter, prefix Key) *ListingIter {
-	var nextDelimiter Key
-	var nextFunc func(l *ListingIter) bool
-	if len(delimiter) == 0 {
-		nextFunc = nextNoDelimiter
-	} else {
-		nextFunc = nextWithDelimiter
-		nextDelimiter = getFollowingValue(delimiter)
-	}
-
-	return &ListingIter{
+func NewListingIterator(iterator ValueIterator, delimiter, prefix Key) ListingIterator {
+	l := &listingIterator{
 		valueIterator: iterator,
 		delimiter:     delimiter,
-		nextDelimiter: nextDelimiter,
 		prefix:        prefix,
-		nextFunc:      nextFunc,
 	}
+	if len(delimiter) == 0 {
+		l.nextFunc = l.nextNoDelimiter
+	} else {
+		l.nextFunc = l.nextWithDelimiter
+	}
+	return l
 }
 
-func nextNoDelimiter(l *ListingIter) bool {
+func (l *listingIterator) nextNoDelimiter() bool {
 	hasNext := l.valueIterator.Next()
 	if !hasNext {
 		l.current = nil
@@ -59,23 +52,15 @@ func nextNoDelimiter(l *ListingIter) bool {
 	return true
 }
 
-func nextWithDelimiter(l *ListingIter) bool {
+func (l *listingIterator) nextWithDelimiter() bool {
 	var hasNext bool
-	if l.current == nil || !l.current.CommonPrefix {
-		hasNext = l.valueIterator.Next()
-	} else {
-		nextKey := append(l.current.Key, l.nextDelimiter...)
+	if l.current != nil && l.current.CommonPrefix {
+		nextKey := getFollowingValue(l.current.Key)
 		l.valueIterator.SeekGE(nextKey)
-		hasNext = l.valueIterator.Next()
 	}
-
+	hasNext = l.valueIterator.Next()
 	if hasNext {
 		nextValue := l.valueIterator.Value()
-		if !bytes.HasPrefix(nextValue.Key, l.prefix) {
-			l.current = nil
-			l.err = ErrUnexpected
-			return false
-		}
 		l.current = l.getListingFromValue(nextValue.Value, nextValue.Key)
 	} else {
 		l.current = nil
@@ -83,42 +68,42 @@ func nextWithDelimiter(l *ListingIter) bool {
 	return hasNext
 }
 
-func (l *ListingIter) Next() bool {
-	return l.nextFunc(l)
+func (l *listingIterator) Next() bool {
+	return l.nextFunc()
 }
 
-func (l *ListingIter) getListingFromValue(value *Value, key Key) *Listing {
-	relevantPath := key[len(l.prefix):]
-	delimiterIndex := bytes.Index(relevantPath, l.delimiter)
-	commonPrefix := delimiterIndex >= 0
-	if commonPrefix {
-		relevantPath = relevantPath[:delimiterIndex]
-		value = nil
+func (l *listingIterator) getListingFromValue(value *Value, key Key) *Listing {
+	relevantKey := key[len(l.prefix):]
+	delimiterIndex := bytes.Index(relevantKey, l.delimiter)
+	if delimiterIndex == -1 {
+		// return listing for non common prefix with value
+		return &Listing{
+			CommonPrefix: false,
+			Key:          key,
+			Value:        value,
+		}
 	}
-	newKey := append(l.prefix, relevantPath...)
+	// return listing for common prefix key
+	commonPrefixKey := key[:len(l.prefix)+delimiterIndex+len(l.delimiter)]
 	return &Listing{
-		Key:          newKey,
-		CommonPrefix: commonPrefix,
-		Value:        value,
+		CommonPrefix: true,
+		Key:          commonPrefixKey,
 	}
 }
 
-func (l *ListingIter) SeekGE(id Key) {
+func (l *listingIterator) SeekGE(id Key) {
 	l.current = nil
 	l.valueIterator.SeekGE(id)
 }
 
-func (l *ListingIter) Value() *Listing {
+func (l *listingIterator) Value() *Listing {
 	return l.current
 }
 
-func (l *ListingIter) Err() error {
-	if l.err != nil {
-		return l.err
-	}
+func (l *listingIterator) Err() error {
 	return l.valueIterator.Err()
 }
 
-func (l *ListingIter) Close() {
+func (l *listingIterator) Close() {
 	l.valueIterator.Close()
 }

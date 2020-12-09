@@ -2,52 +2,57 @@ package graveler
 
 import "bytes"
 
-// PrefixIterator holds a ValueIterator and iterates only over values the their Key starts with the prefix
-type PrefixIterator struct {
-	prefix        Key
-	valueIterator ValueIterator
-	current       *ValueRecord
+// prefixIterator holds a ValueIterator and iterates only over values the their Key starts with the prefix
+type prefixIterator struct {
+	prefix   Key
+	iterator ValueIterator
+	ended    bool
 }
 
-func NewPrefixIterator(iterator ValueIterator, prefix Key) *PrefixIterator {
+func NewPrefixIterator(iterator ValueIterator, prefix Key) ValueIterator {
 	iterator.SeekGE(prefix)
-	return &PrefixIterator{
-		prefix:        prefix,
-		valueIterator: iterator,
-		current:       nil,
+	return &prefixIterator{
+		prefix:   prefix,
+		iterator: iterator,
 	}
 }
 
-func (p *PrefixIterator) Next() bool {
-	if !p.valueIterator.Next() {
-		p.current = nil
+func (p *prefixIterator) Next() bool {
+	if p.ended {
 		return false
 	}
-	val := p.valueIterator.Value()
+	if !p.iterator.Next() {
+		p.ended = true
+		return false
+	}
+	val := p.iterator.Value()
 	if !bytes.HasPrefix(val.Key, p.prefix) {
-		p.current = nil
+		p.ended = true
 		return false
 	}
-	p.current = val
 	return true
 }
 
-func (p *PrefixIterator) SeekGE(id Key) {
+func (p *prefixIterator) SeekGE(id Key) {
+	from := id
 	if bytes.Compare(id, p.prefix) <= 0 {
-		p.valueIterator.SeekGE(p.prefix)
-		return
+		from = p.prefix
 	}
-	p.valueIterator.SeekGE(id)
+	p.iterator.SeekGE(from)
+	p.ended = false
 }
 
-func (p *PrefixIterator) Value() *ValueRecord {
-	return p.current
+func (p *prefixIterator) Value() *ValueRecord {
+	if p.ended {
+		return nil
+	}
+	return p.iterator.Value()
 }
 
-func (p *PrefixIterator) Err() error {
-	return p.valueIterator.Err()
+func (p *prefixIterator) Err() error {
+	return p.iterator.Err()
 }
 
-func (p *PrefixIterator) Close() {
-	p.valueIterator.Close()
+func (p *prefixIterator) Close() {
+	p.iterator.Close()
 }

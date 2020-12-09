@@ -2,17 +2,17 @@ package graveler
 
 import "bytes"
 
-// CombinedIterator iterates over two listing iterators,
+// combinedIterator iterates over two listing iterators,
 // in case of duplication (in values or in errors) returns value in iterA
-type CombinedIterator struct {
+type combinedIterator struct {
 	iterA ListingIterator
 	iterB ListingIterator
 	p     ListingIterator
 	err   error
 }
 
-func NewCombinedIterator(iterA, iterB ListingIterator) *CombinedIterator {
-	return &CombinedIterator{
+func NewCombinedIterator(iterA, iterB ListingIterator) ListingIterator {
+	return &combinedIterator{
 		iterA: iterA,
 		iterB: iterB,
 		p:     nil,
@@ -20,7 +20,7 @@ func NewCombinedIterator(iterA, iterB ListingIterator) *CombinedIterator {
 	}
 }
 
-func (c *CombinedIterator) Next() bool {
+func (c *combinedIterator) Next() bool {
 	// call next with the relevant iterators
 	valA := c.iterA.Value()
 	valB := c.iterB.Value()
@@ -50,54 +50,53 @@ func (c *CombinedIterator) Next() bool {
 	}
 
 	if c.iterA.Err() != nil || c.iterB.Err() != nil {
+		if c.iterA.Err() != nil {
+			c.p = c.iterA
+		} else {
+			c.p = c.iterB
+		}
 		return false
 	}
-	// get current pointer
+	// get the current pointer
 	valA = c.iterA.Value()
 	valB = c.iterB.Value()
 	switch {
 	case valA == nil && valB == nil:
 		c.p = c.iterA // in order not to be stuck in start state
 		return false
-
 	case valA == nil:
 		c.p = c.iterB
-		return true
-
 	case valB == nil:
 		c.p = c.iterA
-		return true
-
 	case bytes.Compare(valA.Key, valB.Key) <= 0:
 		c.p = c.iterA
-		return true
 	default:
 		c.p = c.iterB
 	}
 	return true
 }
 
-func (c *CombinedIterator) SeekGE(id Key) {
+func (c *combinedIterator) SeekGE(id Key) {
 	c.p = nil
 	c.iterA.SeekGE(id)
 	c.iterB.SeekGE(id)
 }
 
-func (c *CombinedIterator) Value() *Listing {
+func (c *combinedIterator) Value() *Listing {
 	if c.p == nil {
 		return nil
 	}
 	return c.p.Value()
 }
 
-func (c *CombinedIterator) Err() error {
-	if c.iterA.Err() != nil {
-		return c.iterA.Err()
+func (c *combinedIterator) Err() error {
+	if c.p == nil {
+		return nil
 	}
-	return c.iterB.Err()
+	return c.p.Err()
 }
 
-func (c *CombinedIterator) Close() {
+func (c *combinedIterator) Close() {
 	c.iterA.Close()
 	c.iterB.Close()
 }

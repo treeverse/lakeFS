@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type UncommittedDiffIterator struct {
+type uncommittedDiffIterator struct {
 	committedManager CommittedManager
 	list             ValueIterator
 	sn               StorageNamespace
@@ -16,8 +16,8 @@ type UncommittedDiffIterator struct {
 	err              error
 }
 
-func newUncommittedDiffIterator(manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID TreeID) *UncommittedDiffIterator {
-	return &UncommittedDiffIterator{
+func NewUncommittedDiffIterator(manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID TreeID) DiffIterator {
+	return &uncommittedDiffIterator{
 		committedManager: manager,
 		list:             list,
 		sn:               sn,
@@ -58,7 +58,7 @@ func getDiffType(ctx context.Context, committedManager CommittedManager, sn Stor
 	return diffType, nil
 }
 
-func (d *UncommittedDiffIterator) Next() bool {
+func (d *uncommittedDiffIterator) Next() bool {
 	if !d.list.Next() {
 		d.value = nil
 		return false
@@ -78,19 +78,19 @@ func (d *UncommittedDiffIterator) Next() bool {
 	return true
 }
 
-func (d *UncommittedDiffIterator) SeekGE(id Key) {
+func (d *uncommittedDiffIterator) SeekGE(id Key) {
 	d.value = nil
 	d.list.SeekGE(id)
 }
 
-func (d *UncommittedDiffIterator) Value() *Diff {
+func (d *uncommittedDiffIterator) Value() *Diff {
 	return d.value
 }
 
-func (d *UncommittedDiffIterator) Err() error {
+func (d *uncommittedDiffIterator) Err() error {
 	return d.err
 }
 
-func (d *UncommittedDiffIterator) Close() {
+func (d *uncommittedDiffIterator) Close() {
 	d.list.Close()
 }

@@ -425,7 +425,6 @@ var (
 	ErrCommitIDAmbiguous       = fmt.Errorf("commit ID is ambiguous: %w", ErrNotFound)
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
-	ErrUnexpected              = errors.New("unexpected error")
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {
@@ -700,13 +699,13 @@ func (r *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref,
 	if err != nil {
 		return nil, err
 	}
-	committedListing := NewListingIter(NewPrefixIterator(committedValues, prefix), delimiter, prefix)
+	committedListing := NewListingIterator(NewPrefixIterator(committedValues, prefix), delimiter, prefix)
 	if reference.Type() == ReferenceTypeBranch {
 		stagingList, err := r.StagingManager.List(ctx, reference.Branch().stagingToken)
 		if err != nil {
 			return nil, err
 		}
-		listing = NewCombinedIterator(NewListingIter(NewPrefixIterator(stagingList, prefix), delimiter, prefix), committedListing)
+		listing = NewCombinedIterator(NewListingIterator(NewPrefixIterator(stagingList, prefix), delimiter, prefix), committedListing)
 	} else {
 		listing = committedListing
 	}
@@ -776,7 +775,7 @@ func (r *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	if err != nil {
 		return nil, err
 	}
-	return newUncommittedDiffIterator(r.CommittedManager, valueIterator, repo.StorageNamespace, commit.TreeID), nil
+	return NewUncommittedDiffIterator(r.CommittedManager, valueIterator, repo.StorageNamespace, commit.TreeID), nil
 }
 
 func (r *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
