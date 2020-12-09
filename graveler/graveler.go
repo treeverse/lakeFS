@@ -499,11 +499,11 @@ type graveler struct {
 	RefManager       RefManager
 }
 
-func NewGraveler(CommittedManager CommittedManager, StagingManager StagingManager, RefManager RefManager) Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) Graveler {
 	return &graveler{
-		CommittedManager: CommittedManager,
-		StagingManager:   StagingManager,
-		RefManager:       RefManager,
+		CommittedManager: committedManager,
+		StagingManager:   stagingManager,
+		RefManager:       refManager,
 	}
 }
 
