@@ -48,9 +48,11 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		// get source branch commit id or latest commit id, in case we reference a branch
 		var sourceCommitID CommitID
 		if ref.CommitID > UncommittedID {
+			// verify that the requested commit id exists in our branch commit
 			err = tx.GetPrimitive(&sourceCommitID, `SELECT commit_id FROM catalog_commits WHERE branch_id=$1 AND commit_id=$2`,
 				sourceBranchID, ref.CommitID)
 		} else {
+			// ref is just a branch - get last commit id
 			err = tx.GetPrimitive(&sourceCommitID, `SELECT MAX(commit_id) FROM catalog_commits WHERE branch_id=$1`,
 				sourceBranchID)
 		}
