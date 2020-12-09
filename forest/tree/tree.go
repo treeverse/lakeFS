@@ -27,9 +27,10 @@ const (
 	TrimFactor       = 1
 )
 
-func InitTreesRepository(manager sstable.Manager) {
-	treesRepository = TreesRepoType{
+func InitTreesRepository(manager sstable.Manager) *TreesRepoType {
+	treesRepository := &TreesRepoType{
 		TreesMap:   cache.NewCacheMap(CacheMapSize, CacheTrimSize, InitialWeight, AdditionalWeight, TrimFactor),
 		PartManger: manager,
 	}
+	return treesRepository
 }

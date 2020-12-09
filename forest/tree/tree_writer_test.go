@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	gr "github.com/treeverse/lakefs/graveler"
 
 	"github.com/treeverse/lakefs/forest/tree/mocks"
 )
@@ -35,8 +35,8 @@ func TestSimpleTree(t *testing.T) {
 		}
 		lastKey = inp[0]
 
-		r := rocks.EntryRecord{
-			Path: rocks.Path(inp[0]),
+		r := gr.ValueRecord{
+			Key: gr.Key(inp[0]),
 		}
 		if err := tw.writeEntry(r); err != nil {
 			log.Fatal(err)
@@ -60,7 +60,7 @@ func TestSimpleTree(t *testing.T) {
 
 func readGzip(output chan []string) {
 	defer close(output)
-	f, err := os.Open(`simmilar.gz`)
+	f, err := os.Open("simmilar.gz")
 	if err != nil {
 		log.Fatal(err)
 	}

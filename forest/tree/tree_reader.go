@@ -12,13 +12,13 @@ import (
 var treesRepository TreesRepoType
 
 type treeIterator struct {
-	treeID          gr.TreeID
-	TreeParts       TreeType
-	currentIter     gr.ValueIterator
-	currentPart     int
-	err             error
-	closed          bool
-	treesRepository *TreesRepoType
+	treeID      gr.TreeID
+	TreeParts   TreeType
+	currentIter gr.ValueIterator
+	currentPart int
+	err         error
+	closed      bool
+	trees       *TreesRepoType
 }
 
 func (trees *TreesRepoType) NewScanner(treeID gr.TreeID, start gr.Key) (*treeIterator, error) {
@@ -30,16 +30,17 @@ func (trees *TreesRepoType) NewScanner(treeID gr.TreeID, start gr.Key) (*treeIte
 	if partNum >= len(treeSlice) {
 		return nil, ErrPathBiggerThanMaxPath
 	}
-	partIterator, err := treesRepository.PartManger.NewSSTableIterator(treeSlice[partNum].PartName, start)
+	partName := treeSlice[partNum].PartName
+	partIterator, err := trees.PartManger.NewSSTableIterator(partName, start)
 	if err != nil {
 		return nil, err
 	}
 	scanner := &treeIterator{
-		treeID:          treeID,
-		TreeParts:       treeSlice,
-		currentIter:     partIterator,
-		currentPart:     partNum,
-		treesRepository: trees,
+		treeID:      treeID,
+		TreeParts:   treeSlice,
+		currentIter: partIterator,
+		currentPart: partNum,
+		trees:       trees,
 	}
 	return scanner, nil
 }
@@ -50,7 +51,7 @@ func (t *treeIterator) SeekGE(start gr.Key) bool {
 	if partNum != t.currentPart {
 		t.currentPart = partNum
 		t.currentIter.Close()
-		t.currentIter, err = t.treesRepository.PartManger.NewSSTableIterator(t.TreeParts[partNum].PartName, start)
+		t.currentIter, err = t.trees.PartManger.NewSSTableIterator(t.TreeParts[partNum].PartName, start)
 		if err != nil {
 			t.err = err
 			return false
@@ -90,7 +91,7 @@ func (t *treeIterator) Next() bool {
 	}
 	t.currentPart++
 	requiredPartName := t.TreeParts[t.currentPart].PartName
-	t.currentIter, err = treesRepository.PartManger.NewSSTableIterator(requiredPartName, nil)
+	t.currentIter, err = t.trees.PartManger.NewSSTableIterator(requiredPartName, nil)
 	if err != nil {
 		t.currentIter.Close()
 		t.closed = true
