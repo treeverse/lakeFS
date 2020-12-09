@@ -12,7 +12,7 @@ import (
 var treesRepository TreesRepoType
 
 type treeIterator struct {
-	treeID      gr.TreeID
+	//treeID      gr.TreeID
 	TreeParts   TreeType
 	currentIter gr.ValueIterator
 	currentPart int
@@ -21,11 +21,19 @@ type treeIterator struct {
 	trees       *TreesRepoType
 }
 
-func (trees *TreesRepoType) NewScanner(treeID gr.TreeID, start gr.Key) (*treeIterator, error) {
+func (trees *TreesRepoType) NewScannerFromID(treeID gr.TreeID, start gr.Key) (*treeIterator, error) {
 	treeSlice, err := trees.GetTree(treeID)
 	if err != nil {
 		return nil, err
 	}
+	return trees.newScanner(treeSlice, start)
+}
+
+func (trees *TreesRepoType) NewScannerFromTreeParts(treeSlice TreeType, start gr.Key) (*treeIterator, error) {
+	return trees.newScanner(treeSlice, start)
+}
+
+func (trees *TreesRepoType) newScanner(treeSlice TreeType, start gr.Key) (*treeIterator, error) {
 	partNum := findPartNumForPath(treeSlice, start)
 	if partNum >= len(treeSlice) {
 		return nil, ErrPathBiggerThanMaxPath
@@ -36,7 +44,7 @@ func (trees *TreesRepoType) NewScanner(treeID gr.TreeID, start gr.Key) (*treeIte
 		return nil, err
 	}
 	scanner := &treeIterator{
-		treeID:      treeID,
+		//treeID:      treeID,
 		TreeParts:   treeSlice,
 		currentIter: partIterator,
 		currentPart: partNum,
