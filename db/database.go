@@ -116,6 +116,7 @@ func (d *PgxDatabase) GetPrimitive(dest interface{}, query string, args ...inter
 	}
 	return nil
 }
+
 func (d *PgxDatabase) Query(query string, args ...interface{}) (rows pgx.Rows, err error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "start query",
@@ -129,7 +130,20 @@ func (d *PgxDatabase) Query(query string, args ...interface{}) (rows pgx.Rows, e
 }
 
 func (d *PgxDatabase) Select(results interface{}, query string, args ...interface{}) error {
-	return Select(d, results, query, args...)
+	start := time.Now()
+	err := selectUsingTx(d, results, query, args...)
+	log := d.getLogger().WithFields(logging.Fields{
+		"type":  "select",
+		"args":  args,
+		"query": queryToString(query),
+		"took":  time.Since(start),
+	})
+	if err != nil {
+		log.WithError(err).Error("SQL query failed with error")
+		return err
+	}
+	log.Trace("SQL query executed successfully")
+	return nil
 }
 
 func (d *PgxDatabase) Exec(query string, args ...interface{}) (pgconn.CommandTag, error) {

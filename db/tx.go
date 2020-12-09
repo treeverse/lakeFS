@@ -36,23 +36,10 @@ func queryToString(q string) string {
 }
 
 func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
-	start := time.Now()
-	rows, err := d.tx.Query(context.Background(), query, args...)
-	log := d.logger.WithFields(logging.Fields{
-		"type":  "query",
-		"args":  args,
-		"query": queryToString(query),
-		"took":  time.Since(start),
-	})
-	if err != nil {
-		log.WithError(err).Error("SQL query failed with error")
-		return nil, err
-	}
-	log.Trace("SQL query started successfully")
-	return rows, nil
+	return d.tx.Query(context.Background(), query, args...)
 }
 
-func Select(d Tx, results interface{}, query string, args ...interface{}) error {
+func selectUsingTx(d Tx, results interface{}, query string, args ...interface{}) error {
 	rows, err := d.Query(query, args...)
 	if err != nil {
 		return err
@@ -62,7 +49,20 @@ func Select(d Tx, results interface{}, query string, args ...interface{}) error 
 }
 
 func (d *dbTx) Select(results interface{}, query string, args ...interface{}) error {
-	return Select(d, results, query, args...)
+	start := time.Now()
+	err := selectUsingTx(d, results, query, args...)
+	log := d.logger.WithFields(logging.Fields{
+		"type":  "select",
+		"args":  args,
+		"query": queryToString(query),
+		"took":  time.Since(start),
+	})
+	if err != nil {
+		log.WithError(err).Error("SQL query failed with error")
+		return err
+	}
+	log.Trace("SQL query executed successfully")
+	return nil
 }
 
 func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
