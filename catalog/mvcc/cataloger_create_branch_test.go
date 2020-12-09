@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -16,9 +17,9 @@ func TestCataloger_CreateBranch(t *testing.T) {
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 
 	type args struct {
-		repository   string
-		branch       string
-		sourceBranch string
+		repository string
+		branch     string
+		sourceRef  string
 	}
 	tests := []struct {
 		name              string
@@ -29,33 +30,33 @@ func TestCataloger_CreateBranch(t *testing.T) {
 	}{
 		{
 			name:              "new",
-			args:              args{repository: repo, branch: "b1", sourceBranch: "master"},
-			wantCommitMessage: "Branch 'b1' created, source 'master'",
+			args:              args{repository: repo, branch: "b1", sourceRef: "master"},
+			wantCommitMessage: FormatBranchCommitMessage("b1", "master"),
 			wantBranchName:    "b1",
 			wantErr:           false,
 		},
 		{
 			name:           "self",
-			args:           args{repository: repo, branch: "master", sourceBranch: "master"},
+			args:           args{repository: repo, branch: "master", sourceRef: "master"},
 			wantBranchName: "",
 			wantErr:        true,
 		},
 		{
 			name:           "unknown source",
-			args:           args{repository: repo, branch: "b2", sourceBranch: "unknown"},
+			args:           args{repository: repo, branch: "b2", sourceRef: "unknown"},
 			wantBranchName: "",
 			wantErr:        true,
 		},
 		{
 			name:           "unknown repository",
-			args:           args{repository: "repo1", branch: "b3", sourceBranch: "unknown"},
+			args:           args{repository: "repo1", branch: "b3", sourceRef: "unknown"},
 			wantBranchName: "",
 			wantErr:        true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			commitLog, err := c.CreateBranch(ctx, tt.args.repository, tt.args.branch, tt.args.sourceBranch)
+			commitLog, err := c.CreateBranch(ctx, tt.args.repository, tt.args.branch, tt.args.sourceRef)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("CreateBranch() error = %s, wantErr %t", err, tt.wantErr)
 			}
@@ -140,7 +141,7 @@ func TestCataloger_CreateBranch_FromRef(t *testing.T) {
 
 	// create entry and commit - second
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "second", nil, "")
-	_, err = c.Commit(ctx, repo, "master", "second", "tester", nil)
+	commit2, err := c.Commit(ctx, repo, "master", "second", "tester", nil)
 	testutil.MustDo(t, "second commit", err)
 
 	// branch from first commit
@@ -150,10 +151,26 @@ func TestCataloger_CreateBranch_FromRef(t *testing.T) {
 		t.Fatal("CreateBranch() no error, missing commit log")
 	}
 
-	// check that only first is on our branch
-	branchEntries, _, err := c.ListEntries(ctx, repo, "branch1", "", "", "", 100)
+	// check that only 'first' is on our branch
+	branchEntries1, _, err := c.ListEntries(ctx, repo, "branch1", "", "", "", 100)
 	testutil.MustDo(t, "list entries on branch1", err)
-	if len(branchEntries) != 1 {
-		t.Fatal("Branch1 should have 1 entry, got", len(branchEntries))
+	paths1 := testExtractEntriesPath(branchEntries1)
+	if diff := deep.Equal(paths1, []string{"first"}); diff != nil {
+		t.Fatal("Found diff in expected content of branch1:", diff)
+	}
+
+	// branch from second commit
+	commit2Log, err := c.CreateBranch(ctx, repo, "branch2", commit2.Reference)
+	testutil.MustDo(t, "branch from second commit", err)
+	if commit2Log == nil {
+		t.Fatal("CreateBranch() no error, missing commit log")
+	}
+
+	// check that 'first' and 'second' on our branch
+	branchEntries2, _, err := c.ListEntries(ctx, repo, "branch2", "", "", "", 100)
+	testutil.MustDo(t, "list entries on branch2", err)
+	paths2 := testExtractEntriesPath(branchEntries2)
+	if diff := deep.Equal(paths2, []string{"first", "second"}); diff != nil {
+		t.Fatal("Found diff in expected content of branch2:", diff)
 	}
 }
