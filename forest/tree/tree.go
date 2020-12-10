@@ -8,15 +8,17 @@ import (
 
 var minimalKey = gr.Key(nil)
 
-type TreePartType struct {
+type treePartType struct {
 	PartName sstable.ID `json:"part_name"`
 	MaxKey   gr.Key     `json:"max_path"`
 }
-type TreeType []TreePartType
+type TreeType struct {
+	treeSlice []treePartType
+}
 
-type TreesRepoType struct {
-	TreesMap   cache.CacheMap
-	PartManger sstable.Manager
+type treesRepo struct {
+	treesMap   cache.CacheMap
+	partManger sstable.Manager
 }
 
 const (
@@ -27,10 +29,30 @@ const (
 	TrimFactor       = 1
 )
 
-func InitTreesRepository(manager sstable.Manager) *TreesRepoType {
-	treesRepository := &TreesRepoType{
-		TreesMap:   cache.NewCacheMap(CacheMapSize, CacheTrimSize, InitialWeight, AdditionalWeight, TrimFactor),
-		PartManger: manager,
+func InitTreesRepository(manager sstable.Manager) TreeRepo {
+	treesRepository := &treesRepo{
+		treesMap:   cache.NewCacheMap(CacheMapSize, CacheTrimSize, InitialWeight, AdditionalWeight, TrimFactor),
+		partManger: manager,
 	}
 	return treesRepository
+}
+
+func (t *treesRepo) GetPartManger() sstable.Manager {
+	return t.partManger
+}
+
+type TreeRepo interface {
+	NewTreeWriter(splitFactor int, closeAsync sstable.BatchWriterCloser) TreeWriter
+	NewScannerFromID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error)
+	NewScannerFromTreeParts(treeSlice TreeType, start gr.Key) (gr.ValueIterator, error)
+	GetPartManger() sstable.Manager
+}
+
+type TreeWriter interface {
+	HasOpenWriter() bool
+	WriteEntry(record gr.ValueRecord) error
+	ForceCloseCurrentPart()
+	IsSplitKey(key gr.Key, rowNum int) bool
+	FlushIterToTree(iter gr.ValueIterator) error
+	SaveTree(reuseTree TreeType) (gr.TreeID, error)
 }

@@ -16,27 +16,36 @@ import (
 
 const (
 	SplitFactor    = 200_000 // avarage number of entries in a part file. used to compute modulo on hash of path
-	SplitMaxfactor = 3       // a part will be closed if number of entries written to it exceed splitFactor * splitMaxFactor
+	SplitMaxfactor = 6       // a part will be closed if number of entries written to it exceed splitFactor * splitMaxFactor
 	SplitMinFactor = 50      // a part will not be closed in number of rows less than splitFactor / SplitMinFactor
 )
 
-type IsSplitKeyFunc func(path gr.Key, rowNum int) bool
+type isSplitKeyFunc func(path gr.Key, rowNum int) bool
 
-type TreeWriter struct {
-	activeWriter            sstable.Writer
-	currentPartNumOfEntries int
-	closeAsync              sstable.BatchWriterCloser
-	isSplitKeyFunc          IsSplitKeyFunc
-	splitFactor             uint32
+type treeWriter struct {
+	activeWriter             sstable.Writer
+	entriesWrittenToThisPart int
+	closeAsync               sstable.BatchWriterCloser
+	isSplitKeyFunc           isSplitKeyFunc
+	splitFactor              int
+	trees                    TreeRepo
 }
 
-func (tw *TreeWriter) hasOpenWriter() bool {
+func (trees *treesRepo) NewTreeWriter(splitFactor int, closeAsync sstable.BatchWriterCloser) TreeWriter {
+	return &treeWriter{
+		//trees : trees
+		closeAsync:  closeAsync,
+		splitFactor: splitFactor,
+	}
+}
+
+func (tw *treeWriter) HasOpenWriter() bool {
 	return !(tw.activeWriter == nil)
 }
 
-func (tw *TreeWriter) writeEntry(record gr.ValueRecord) error {
+func (tw *treeWriter) WriteEntry(record gr.ValueRecord) error {
 	if tw.activeWriter == nil {
-		w, err := treesRepository.PartManger.GetWriter()
+		w, err := tw.trees.GetPartManger().GetWriter()
 		if err != nil {
 			return err
 		}
@@ -46,38 +55,44 @@ func (tw *TreeWriter) writeEntry(record gr.ValueRecord) error {
 	if err != nil {
 		return err
 	}
-	tw.currentPartNumOfEntries++
-	if tw.isSplitKey(record.Key, tw.currentPartNumOfEntries) {
-		tw.forceCloseCurrentPart()
+	tw.entriesWrittenToThisPart++
+	if tw.IsSplitKey(record.Key, tw.entriesWrittenToThisPart) {
+		tw.ForceCloseCurrentPart()
 	}
 	return nil
 }
 
-func (tw *TreeWriter) forceCloseCurrentPart() {
+func (tw *treeWriter) ForceCloseCurrentPart() {
 	tw.closeAsync.CloseWriterAsync(tw.activeWriter)
-	tw.currentPartNumOfEntries = 0
+	tw.entriesWrittenToThisPart = 0
 	tw.activeWriter = nil
 }
 
-func (tw *TreeWriter) isSplitKey(key gr.Key, rowNum int) bool {
+func (tw *treeWriter) IsSplitKey(key gr.Key, rowNum int) bool {
 	if tw.isSplitKeyFunc != nil {
 		return tw.isSplitKeyFunc(key, rowNum)
 	}
 	if tw.splitFactor == 0 {
 		tw.splitFactor = SplitFactor
 	}
-	if uint32(rowNum) >= tw.splitFactor*SplitMaxfactor {
+	if rowNum >= tw.splitFactor*SplitMaxfactor {
+		fmt.Printf(" forced split  \n")
 		return true
 	}
 	fnvHash := fnv.New32a()
 	fnvHash.Write(key)
-	i := fnvHash.Sum32()
-	return (i%tw.splitFactor) == 0 && rowNum > (SplitFactor/SplitMinFactor)
+	i := fnvHash.Sum32() % uint32(tw.splitFactor)
+	minRowNum := int(tw.splitFactor / SplitMinFactor)
+	result := i == 0 && rowNum > minRowNum
+	if i == 0 && !result {
+		fmt.Printf(" found split, number %d,minRownum %d \n", rowNum, minRowNum)
+	}
+	return result
 }
 
-func (tw *TreeWriter) flushIterToNewTree(iter gr.ValueIterator) error {
+func (tw *treeWriter) FlushIterToTree(iter gr.ValueIterator) error {
 	for iter.Next() {
-		err := tw.writeEntry(*iter.Value())
+		err := tw.WriteEntry(*iter.Value())
 		if err != nil {
 			return err
 		}
@@ -85,27 +100,28 @@ func (tw *TreeWriter) flushIterToNewTree(iter gr.ValueIterator) error {
 	return iter.Err()
 }
 
-func (tw *TreeWriter) finalizeTree(reuseParts *TreeType) (gr.TreeID, error) {
-	var newParts TreeType
+func (tw *treeWriter) SaveTree(reuseTree TreeType) (gr.TreeID, error) {
+	reuseParts := reuseTree.treeSlice
+	var newParts []treePartType
 	closeResults, err := tw.closeAsync.Wait()
 	if err != nil {
 		return "", fmt.Errorf(" closing of apply parts failed : %w", err)
 	}
 	for _, r := range closeResults {
-		t := TreePartType{
+		t := treePartType{
 			MaxKey:   r.Last,
 			PartName: r.SSTableID,
 		}
 		newParts = append(newParts, t)
 	}
 	if reuseParts != nil {
-		newParts = append(newParts, *reuseParts...)
+		newParts = append(newParts, reuseParts...)
 		sort.Slice(newParts, func(i, j int) bool { return bytes.Compare(newParts[i].MaxKey, newParts[j].MaxKey) < 0 })
 	}
 	return serializeTreeToDisk(newParts)
 }
 
-func serializeTreeToDisk(tree TreeType) (gr.TreeID, error) {
+func serializeTreeToDisk(tree []treePartType) (gr.TreeID, error) {
 	if len(tree) == 0 {
 		return "", ErrEmptyTree
 	}

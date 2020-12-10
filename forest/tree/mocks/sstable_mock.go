@@ -24,7 +24,7 @@ func (b *Bwc) CloseWriterAsync(_ sstable.Writer) error {
 
 var Cache *pebble.Cache
 var ErrDuplicateKey = errors.New(" Can not write same key twice to SST")
-var firstSSTactivation = true
+var firstSSTActivation = true
 
 func (b *Bwc) Wait() ([]sstable.WriteResult, error) {
 	res := make([]sstable.WriteResult, 0)
@@ -54,10 +54,10 @@ func (s *SstMgr) GetValue(key gr.Key, tid sstable.ID) (*gr.Value, error) {
 	panic("GetValue not implemented")
 }
 func (s *SstMgr) NewSSTableIterator(tid sstable.ID, from gr.Key) (gr.ValueIterator, error) {
-	if firstSSTactivation {
+	if firstSSTActivation {
 		var cacheSize int64 = 1 << 31 // 2 GB cache size
 		Cache = pebble.NewCache(cacheSize)
-		firstSSTactivation = false
+		firstSSTActivation = false
 	}
 	f, err := os.Open(string(tid) + ".sst")
 	if err != nil {
@@ -68,24 +68,22 @@ func (s *SstMgr) NewSSTableIterator(tid sstable.ID, from gr.Key) (gr.ValueIterat
 		return nil, err
 	}
 	i, err := r.NewIter(nil, nil)
-	return &DummyIter{f: f,
-		r:         r,
-		iterator:  i,
-		firstTime: true}, nil
-}
-
-func (s *SstMgr) GetWriter() (sstable.Writer, error) {
-	s.Sstid++
-	name := fmt.Sprintf("c-%05d", s.Sstid)
-	f, err := os.Create(name + ".sst")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	w := table.NewWriter(f, table.WriterOptions{})
-	return &DummyWriter{writer: w,
-		filename: name,
-		f:        f,
-	}, nil
+	d := DummyIter{f: f,
+		r:        r,
+		iterator: i}
+	var key *pebble.InternalKey
+	var val []byte
+	if len(from) == 0 {
+		key, val = i.First()
+	} else {
+		key, val = i.SeekGE(from)
+	}
+	d.ValueFromPrevOperation = true
+	d.handleResults(key, val)
+	return &d, nil
 }
 
 type DummyIter struct {
@@ -106,37 +104,52 @@ func (d *DummyIter) Next() bool {
 		d.ValueFromPrevOperation = false
 	} else {
 		key, val = d.iterator.Next()
+		d.handleResults(key, val)
 	}
-	if d.fir {
-		key, val = d.iterator.First()
-		d. = false
+	if d.value != nil {
+		return true
 	} else {
-
-	}
-	err := d.iterator.Error()
-	if err != nil || key == nil {
-		d.value = nil
-		d.err = err
 		return false
 	}
-	d.value = &gr.ValueRecord{
-		Key: []byte(key.UserKey),
-		Value: &gr.Value{
-			Identity: val[:16],
-			Data:     val[16:]},
+}
+func (d *DummyIter) handleResults(key *pebble.InternalKey, val []byte) {
+	if key != nil && d.iterator.Error() == nil {
+		d.value = &gr.ValueRecord{
+			Key: gr.Key(key.UserKey),
+			Value: &gr.Value{
+				Identity: val[:16],
+				Data:     val[16:]},
+		}
+		d.err = nil
+	} else {
+		d.err = d.iterator.Error()
+		d.value = nil
 	}
-	return true
 }
 
-func (d *DummyIter) makeValue(id gr.Key) bool {
-
+func makeValue(key *pebble.InternalKey, value []byte) *gr.ValueRecord {
+	v := &gr.ValueRecord{
+		Key: gr.Key(key.UserKey),
+		Value: &gr.Value{
+			Identity: value[:16],
+			Data:     value[16:]},
+	}
+	return v
 }
-func (d *DummyIter) SeekGE(id gr.Key) bool {
-	panic("not implemented")
+func (d *DummyIter) SeekGE(id gr.Key) {
+	d.ValueFromPrevOperation = true
+	key, val := d.iterator.SeekGE(id)
+	if key != nil && d.iterator.Error() == nil {
+		d.value = makeValue(key, val)
+		d.err = nil
+	} else {
+		d.err = d.iterator.Error()
+		d.value = nil
+	}
 }
 
 func (d *DummyIter) Value() *gr.ValueRecord {
-	return &gr.ValueRecord{}
+	return d.value
 }
 
 func (d *DummyIter) Err() error {
@@ -153,6 +166,20 @@ type DummyWriter struct {
 	filename string
 	f        *os.File
 	RowNum   int
+}
+
+func (s *SstMgr) GetWriter() (sstable.Writer, error) {
+	s.Sstid++
+	name := fmt.Sprintf("c-%05d", s.Sstid)
+	f, err := os.Create(name + ".sst")
+	if err != nil {
+		panic(err)
+	}
+	w := table.NewWriter(f, table.WriterOptions{})
+	return &DummyWriter{writer: w,
+		filename: name,
+		f:        f,
+	}, nil
 }
 
 func (d *DummyWriter) WriteRecord(valueRecord gr.ValueRecord) error {

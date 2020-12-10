@@ -4,11 +4,11 @@ import (
 	gr "github.com/treeverse/lakefs/graveler"
 )
 
-func (trees TreesRepoType) CreateTree(inputIter gr.ValueIterator) (gr.TreeID, error) {
-	treeWriter := &TreeWriter{}
+func (trees treesRepo) CreateTree(inputIter gr.ValueIterator) (gr.TreeID, error) {
+	treeWriter := &treeWriter{}
 	for inputIter.Next() {
 		input := inputIter.Value()
-		err := treeWriter.writeEntry(*input)
+		err := treeWriter.WriteEntry(*input)
 		if err != nil {
 			return "", err
 		}
@@ -16,5 +16,5 @@ func (trees TreesRepoType) CreateTree(inputIter gr.ValueIterator) (gr.TreeID, er
 	if inputIter.Err() != nil {
 		return "", inputIter.Err()
 	}
-	return treeWriter.finalizeTree(nil)
+	return treeWriter.SaveTree(TreeType{})
 }
