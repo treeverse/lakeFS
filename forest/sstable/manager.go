@@ -8,22 +8,17 @@ import (
 
 	"github.com/treeverse/lakefs/graveler"
 
-	"github.com/cockroachdb/pebble"
-
-	"github.com/treeverse/lakefs/pyramid"
-
 	"github.com/cockroachdb/pebble/sstable"
 )
 
 type PebbleSSTableManager struct {
-	fs    pyramid.FS
-	cache *pebble.Cache
+	cache cache
 }
 
 const sstableTierFSNamespace = "sstables"
 
-func NewPebbleSSTableManager() Manager {
-	return &PebbleSSTableManager{}
+func NewPebbleSSTableManager(cache cache) Manager {
+	return &PebbleSSTableManager{cache: cache}
 }
 
 var (
@@ -66,7 +61,7 @@ func (m *PebbleSSTableManager) GetValue(lookup graveler.Key, tid ID) (*graveler.
 }
 
 func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, error) {
-	f, err := m.fs.Open(sstableTierFSNamespace, string(tid))
+	f, err := m.cache.GetOrOpen(sstableTierFSNamespace, string(tid))
 	if err != nil {
 		return nil, fmt.Errorf("open sstable %s: %w", tid, err)
 	}

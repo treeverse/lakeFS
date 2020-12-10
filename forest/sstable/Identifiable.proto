@@ -1,3 +1,0 @@
-message Identifiable{
-  required bytes id = 99999;
-}

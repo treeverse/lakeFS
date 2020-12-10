@@ -7,6 +7,9 @@ import (
 // ID is an identifier for an SSTable
 type ID string
 
+// Namespace is
+type Namespace string
+
 type Manager interface {
 	// GetValue returns the value matching the key in the SSTable referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
