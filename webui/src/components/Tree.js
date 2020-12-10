@@ -290,7 +290,7 @@ const merge = (path, entriesAtPath, diffResults) => {
     const entryTypes = {};
     const entries = [...entriesAtPath];
 
-    const paths = entries.filter(t => t.path_type === 'common_prefix').map(t => t.path)
+    const paths = entries.filter(t => t.path_type === 'common_prefix').map(t => t.path);
     const relevantChanges = diffResults.filter(diff => isChildOf(path, diff.path));
     for (let diff of relevantChanges) {
         // get common prefix if needed
