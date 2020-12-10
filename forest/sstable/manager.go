@@ -22,7 +22,7 @@ type PebbleSSTableManager struct {
 
 const sstableTierFSNamespace = "sstables"
 
-func NewPebbleSSTableManager() *PebbleSSTableManager {
+func NewPebbleSSTableManager() Manager {
 	return &PebbleSSTableManager{}
 }
 
@@ -33,7 +33,7 @@ var (
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *PebbleSSTableManager) GetEntry(lookup graveler.Key, tid ID) (*graveler.Value, error) {
+func (m *PebbleSSTableManager) GetValue(lookup graveler.Key, tid ID) (*graveler.Value, error) {
 	reader, err := m.getReader(tid)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (m *PebbleSSTableManager) getReader(tid ID) (*sstable.Reader, error) {
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *PebbleSSTableManager) SSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error) {
+func (m *PebbleSSTableManager) NewSSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error) {
 	reader, err := m.getReader(tid)
 	if err != nil {
 		return nil, err

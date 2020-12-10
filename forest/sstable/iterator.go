@@ -9,43 +9,42 @@ import (
 type Iterator struct {
 	it sstable.Iterator
 
-	currKey   graveler.Key
-	currValue *graveler.Value
-	err       error
+	currKey   *sstable.InternalKey
+	currValue []byte
+
+	valParsed *graveler.Value
+
+	postSeek bool
+	err      error
 }
 
-func (iter *Iterator) SeekGE(key graveler.Key) bool {
-	return iter.handleKeyVal(iter.it.SeekGE([]byte(key)))
+func (iter *Iterator) SeekGE(lookup graveler.Key) {
+	iter.currKey, iter.currValue = iter.it.SeekGE(lookup)
+	iter.postSeek = true
 }
 
 func (iter *Iterator) Next() bool {
-	return iter.handleKeyVal(iter.it.Next())
-}
+	if !iter.postSeek {
+		iter.currKey, iter.currValue = iter.it.Next()
+	}
+	iter.postSeek = false
 
-func (iter *Iterator) handleKeyVal(key *sstable.InternalKey, val []byte) bool {
-	if key == nil && val == nil {
-		iter.currKey = nil
-		iter.currValue = nil
+	if iter.currKey == nil && iter.currValue == nil {
 		return false
 	}
 
-	iter.currKey = key.UserKey
-	iter.currValue, iter.err = deserializeValue(val)
-
-	if iter.err == nil {
-		return true
-	}
-	return false
+	iter.valParsed, iter.err = deserializeValue(iter.currValue)
+	return iter.err == nil
 }
 
 func (iter *Iterator) Value() *graveler.ValueRecord {
-	if iter.currKey == nil {
+	if iter.currKey == nil || iter.err != nil {
 		return nil
 	}
 
 	return &graveler.ValueRecord{
-		Key:   iter.currKey,
-		Value: iter.currValue,
+		Key:   iter.currKey.UserKey,
+		Value: iter.valParsed,
 	}
 }
 
