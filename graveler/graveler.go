@@ -537,6 +537,7 @@ func (r *graveler) DeleteRepository(ctx context.Context, repositoryID Repository
 func (r *graveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
 	return r.RefManager.GetCommit(ctx, repositoryID, commitID)
 }
+
 func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
 	// TODO(Guys): initial implementation, change this
 	uid := uuid.New().String()
