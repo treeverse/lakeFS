@@ -546,11 +546,11 @@ func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingT
 func (r *graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
 	// check if branch exists
 	_, err := r.RefManager.GetBranch(ctx, repositoryID, branchID)
-	if err != nil && !errors.Is(err, ErrNotFound) {
-		return nil, err
-	}
-	if !errors.Is(err, ErrNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		return nil, ErrBranchExists
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	reference, err := r.RefManager.RevParse(ctx, repositoryID, ref)
