@@ -86,7 +86,8 @@ func (l *Adapter) getPath(identifier block.ObjectPointer) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return path.Join(l.path, obj.StorageNamespace, obj.Key), nil
+	p := path.Join(l.path, obj.StorageNamespace, obj.Key)
+	return filepath.Clean(p), nil
 }
 
 // maybeMkdir runs f(path), but if f fails due to file-not-found MkdirAll's its dir and then
@@ -96,7 +97,8 @@ func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, erro
 	if !errors.Is(err, os.ErrNotExist) {
 		return ret, err
 	}
-	if err = os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+	d := filepath.Dir(filepath.Clean(path))
+	if err = os.MkdirAll(d, 0777); err != nil {
 		return nil, err
 	}
 	return f(path)
