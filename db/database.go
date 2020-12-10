@@ -85,7 +85,7 @@ func (d *PgxDatabase) performAndReport(fields logging.Fields, fn func() (interfa
 	ret, err := fn()
 	duration := time.Since(start)
 	if duration > 100*time.Millisecond {
-		logger := d.getLogger().WithFields(fields).WithField("duration", duration)
+		logger := d.getLogger().WithFields(fields).WithField("took", duration)
 		if err != nil {
 			logger = logger.WithError(err)
 		}
@@ -117,15 +117,17 @@ func (d *PgxDatabase) GetPrimitive(dest interface{}, query string, args ...inter
 	return nil
 }
 func (d *PgxDatabase) Query(query string, args ...interface{}) (rows pgx.Rows, err error) {
-	ret, err := d.performAndReport(logging.Fields{
+	l := d.getLogger().WithFields(logging.Fields{
 		"type":  "start query",
 		"query": query,
 		"args":  args,
-	}, func() (interface{}, error) { return d.db.Query(d.getContext(), query, args...) })
+	})
+	start := time.Now()
+	ret, err := d.db.Query(d.getContext(), query, args...)
 	if ret == nil {
 		return nil, err
 	}
-	return ret.(pgx.Rows), err
+	return Logged(ret, start, l), err
 }
 
 func (d *PgxDatabase) Select(results interface{}, query string, args ...interface{}) error {
