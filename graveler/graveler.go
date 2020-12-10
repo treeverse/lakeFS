@@ -402,6 +402,9 @@ type StagingManager interface {
 
 	// Drop clears the given staging area
 	Drop(ctx context.Context, st StagingToken) error
+
+	// DropByPrefix drops all keys starting with the given prefix, from the given staging area
+	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
 var (

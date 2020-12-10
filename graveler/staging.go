@@ -64,6 +64,13 @@ func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
 	return err
 }
 
+func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error {
+	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND substring(key,1,octet_length($2::bytea)) = $2::bytea", st, prefix)
+	}, p.txOpts(ctx)...)
+	return err
+}
+
 func (p *stagingManager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 	o := []db.TxOpt{
 		db.WithContext(ctx),
