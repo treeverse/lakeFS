@@ -327,7 +327,7 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
     const refreshData = useCallback(() => {
         if (refId.type === 'branch') {
             if (refId.id === repo.default_branch) {
-                listBranches(repo.id, "", 2) // trigger list branches to
+                listBranches(repo.id, "") // trigger list branches to
             }
         }
     }, [repo.id, listBranches, refId, repo.default_branch]);

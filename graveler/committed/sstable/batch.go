@@ -16,6 +16,10 @@ type BatchCloser struct {
 	resultsLock sync.Mutex
 }
 
+var (
+	errMultipleWaitCalls = errors.New("wait has already been called")
+)
+
 // CloseWriterAsync adds Writer instance for the BatchWriterCloser to handle.
 // Any writes executed to the writer after this call are not guaranteed to succeed.
 // If Wait() has already been called, returns an error.
@@ -25,7 +29,7 @@ func (bc *BatchCloser) CloseWriterAsync(w Writer) error {
 		return bc.err
 	}
 	if bc.waitCalled.Load() {
-		return errors.New("wait has already been called")
+		return errMultipleWaitCalls
 	}
 
 	bc.wg.Add(1)

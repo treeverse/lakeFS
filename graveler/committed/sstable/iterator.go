@@ -16,6 +16,7 @@ type Iterator struct {
 
 	postSeek bool
 	err      error
+	derefer  Derefer
 }
 
 func (iter *Iterator) SeekGE(lookup graveler.Key) {
@@ -54,6 +55,13 @@ func (iter *Iterator) Err() error {
 
 func (iter *Iterator) Close() {
 	err := iter.it.Close()
+	iter.updateOnNilErr(err)
+
+	err = iter.derefer()
+	iter.updateOnNilErr(err)
+}
+
+func (iter *Iterator) updateOnNilErr(err error) {
 	if iter.err == nil {
 		// avoid overriding earlier errors
 		iter.err = err

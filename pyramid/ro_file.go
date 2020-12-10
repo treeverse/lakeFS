@@ -14,11 +14,11 @@ type ROFile struct {
 }
 
 func (f *ROFile) Write(p []byte) (n int, err error) {
-	panic("implement me")
+	panic("should never write to a read-only file")
 }
 
 func (f *ROFile) Sync() error {
-	panic("implement me")
+	panic("should never write to a read-only file")
 }
 
 func (f *ROFile) Read(p []byte) (n int, err error) {

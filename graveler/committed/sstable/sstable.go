@@ -13,10 +13,10 @@ type Namespace string
 type Manager interface {
 	// GetValue returns the value matching the key in the SSTable referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetValue(key graveler.Key, tid ID) (*graveler.Value, error)
+	GetValue(ns Namespace, key graveler.Key, tid ID) (*graveler.Value, error)
 
 	// NewSSTableIterator takes a given SSTable and returns an ValueIterator seeked to >= "from" value
-	NewSSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error)
+	NewSSTableIterator(ns Namespace, tid ID, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)
