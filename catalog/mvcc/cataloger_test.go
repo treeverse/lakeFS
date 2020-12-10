@@ -99,7 +99,7 @@ func testVerifyEntries(t testing.TB, ctx context.Context, c catalog.Cataloger, r
 	for _, entry := range entries {
 		ent, err := c.GetEntry(ctx, repository, reference, entry.Path, catalog.GetEntryParams{})
 		if entry.Deleted {
-			if !errors.As(err, &db.ErrNotFound) {
+			if !errors.Is(err, db.ErrNotFound) {
 				t.Fatalf("Get entry '%s', err = %s, expected not found", entry.Path, err)
 			}
 		} else {
@@ -110,4 +110,12 @@ func testVerifyEntries(t testing.TB, ctx context.Context, c catalog.Cataloger, r
 			}
 		}
 	}
+}
+
+func testExtractEntriesPath(entries []*catalog.Entry) []string {
+	paths := make([]string, len(entries))
+	for i := range entries {
+		paths[i] = entries[i].Path
+	}
+	return paths
 }

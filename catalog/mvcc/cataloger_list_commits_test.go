@@ -463,7 +463,7 @@ func TestCataloger_ListCommits_Order(t *testing.T) {
 				commits[i] = commitsLog[i].Message
 			}
 			expectedCommits := []string{
-				"Branch 'branch1' created, source branch 'master'",
+				FormatBranchCommitMessage("branch1", "master"),
 				commit1Msg,
 				createRepositoryCommitMessage,
 				createRepositoryImportCommitMessage,

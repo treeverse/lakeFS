@@ -4,16 +4,16 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
-// SSTableID is an identifier for an SSTable
-type SSTableID string
+// ID is an identifier for an SSTable
+type ID string
 
 type Manager interface {
-	// GetEntry returns the entry matching the path in the SSTable referenced by the id.
+	// GetValue returns the value matching the key in the SSTable referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetEntry(path graveler.Key, tid SSTableID) (*graveler.Value, error)
+	GetValue(key graveler.Key, tid ID) (*graveler.Value, error)
 
-	// NewSSTableIterator takes a given SSTable and returns an ValueIterator seeked to >= "from" path
-	NewSSTableIterator(tid SSTableID, from graveler.Key) (graveler.ValueIterator, error)
+	// NewSSTableIterator takes a given SSTable and returns an ValueIterator seeked to >= "from" value
+	NewSSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetWriter returns a new SSTable writer instance
 	GetWriter() (Writer, error)
@@ -21,27 +21,27 @@ type Manager interface {
 
 // WriteResult is the result of a completed write of an SSTable
 type WriteResult struct {
-	// SSTableID is the identifier for the written SSTable.
-	// Calculated by an hash function to all paths and entries.
-	SSTableID SSTableID
+	// ID is the identifier for the written SSTable.
+	// Calculated by an hash function to all keys and values' identity.
+	SSTableID ID
 
-	// First is the Key of the first entry in the SSTable.
+	// First is the first key in the SSTable.
 	First graveler.Key
 
-	// Last is the Key of the last entry in the SSTable.
+	// Last is the last key in the SSTable.
 	Last graveler.Key
 
-	// Count is the number of entries in the SSTable.
+	// Count is the number of records in the SSTable.
 	Count int
 }
 
 // Writer is an abstraction for writing SSTables.
-// Written entries must be sorted by path.
+// Written records must be sorted by key.
 type Writer interface {
-	// WriteEntry appends the given entry to the SSTable
-	WriteEntry(entry graveler.ValueRecord) error
+	// WriteRecord appends the given record to the SSTable
+	WriteRecord(record graveler.ValueRecord) error
 
-	// Close flushes all entries to the disk and returns the WriteResult.
+	// Close flushes all records to the disk and returns the WriteResult.
 	Close() (*WriteResult, error)
 }
 
@@ -50,12 +50,12 @@ type Writer interface {
 // Example usage:
 // func batch(manager Manager, bwc BatchWriterCloser) {
 //	w1, _ := manager.GetWriter()
-//	_ = w1.WriteEntry(rocks.ValueRecord{Key: "foo1", Value: &rocks.Value{Address: "bar1"}})
-//	_ = w1.WriteEntry(rocks.ValueRecord{Key: "foo2", Value: &rocks.Value{Address: "bar2"}})
+//	_ = w1.WriteRecord(graveler.ValueRecord{Key: "foo1", Value: &graveler.Value{Address: "bar1"}})
+//	_ = w1.WriteRecord(graveler.ValueRecord{Key: "foo2", Value: &graveler.Value{Address: "bar2"}})
 //	_ = bwc.CloseWriterAsync(w1)
 
 //	w2, _ := manager.GetWriter()
-//	_ = w2.WriteEntry(rocks.ValueRecord{Key: "goo1", Value: &rocks.Value{Address: "baz1"}})
+//	_ = w2.WriteRecord(graveler.ValueRecord{Key: "goo1", Value: &graveler.Value{Address: "baz1"}})
 //	_ = bwc.CloseWriterAsync(w2)
 
 //	// blocks until all writers finished or any writer failed

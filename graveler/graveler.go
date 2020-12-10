@@ -8,6 +8,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/treeverse/lakefs/ident"
+
+	"github.com/treeverse/lakefs/catalog"
+
 	"time"
 )
 
@@ -55,11 +60,14 @@ type Ref string
 // TagID represents a named tag pointing at a commit
 type TagID string
 
-// CommitID is a content addressable hash representing a Commit object
-type CommitID string
+// CommitParents
+type CommitParents []CommitID
 
 // BranchID is an identifier for a branch
 type BranchID string
+
+// CommitID is a content addressable hash representing a Commit object
+type CommitID string
 
 // TreeID represents a snapshot of the tree, referenced by a commit
 type TreeID string
@@ -75,41 +83,63 @@ type Metadata map[string]string
 
 // Repository represents repository metadata
 type Repository struct {
-	StorageNamespace StorageNamespace
-	CreationDate     time.Time
-	DefaultBranchID  BranchID
+	StorageNamespace StorageNamespace `db:"storage_namespace"`
+	CreationDate     time.Time        `db:"creation_date"`
+	DefaultBranchID  BranchID         `db:"default_branch"`
 }
 
 type RepositoryRecord struct {
-	RepositoryID RepositoryID
+	RepositoryID RepositoryID `db:"id"`
 	*Repository
 }
 
 // Value represents metadata or a given object (modified date, physical address, etc)
 type Value struct {
-	Identity []byte
-	Data     []byte
+	Identity []byte `db:"identity"`
+	Data     []byte `db:"data"`
 }
 
 // ValueRecord holds Key with the associated Value information
 type ValueRecord struct {
-	Key Key
+	Key Key `db:"key"`
 	*Value
+}
+
+func (ps CommitParents) Identity() []byte {
+	strings := make([]string, len(ps))
+	for i, v := range ps {
+		strings[i] = string(v)
+	}
+	buf := ident.NewAddressWriter()
+	buf.MarshalStringSlice(strings)
+	return buf.Identity()
 }
 
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
-	Committer    string
-	Message      string
-	TreeID       TreeID
-	CreationDate time.Time
-	Parents      []CommitID
-	Metadata     map[string]string
+	Committer    string           `db:"committer"`
+	Message      string           `db:"message"`
+	TreeID       TreeID           `db:"tree_id"`
+	CreationDate time.Time        `db:"creation_date"`
+	Parents      CommitParents    `db:"parents"`
+	Metadata     catalog.Metadata `db:"metadata"`
+}
+
+func (c Commit) Identity() []byte {
+	b := ident.NewAddressWriter()
+	b.MarshalString("commit:v1")
+	b.MarshalString(c.Committer)
+	b.MarshalString(c.Message)
+	b.MarshalString(string(c.TreeID))
+	b.MarshalInt64(c.CreationDate.Unix())
+	b.MarshalStringMap(c.Metadata)
+	b.MarshalIdentifiable(c.Parents)
+	return b.Identity()
 }
 
 // CommitRecords holds CommitID with the associated Commit data
 type CommitRecord struct {
-	CommitID CommitID
+	CommitID CommitID `db:"id"`
 	*Commit
 }
 
@@ -153,7 +183,7 @@ type KeyValueStore interface {
 	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// List lists entries on repository / ref will filter by prefix, from key 'from'.
+	// List lists values on repository / ref will filter by prefix, from key 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
 	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error)
 }
@@ -184,7 +214,7 @@ type VersionController interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -209,7 +239,7 @@ type VersionController interface {
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error)
@@ -232,12 +262,13 @@ type Graveler interface {
 //   return fmt.Errorf("stopped because of an error %w", it.Err())
 // }
 // ```
-// Calling SeekGE() returns true, like calling Next() - we can process 'Value()' when true and check Err() in case of false
-// When Next() or SeekGE() returns false (doesn't matter if it because of an error) calling Value() should return nil
-
+// 'Value()' should only be called after `Next()` returns true.
+// In case `Next()` returns false, `Value()` returns nil and `Err()` should be checked.
+// nil error means we reached the end of the input.
+// `SeekGE()` behaviour is like as starting a new iterator - `Value()` returns nothing until the first `Next()`.
 type RepositoryIterator interface {
 	Next() bool
-	SeekGE(id RepositoryID) bool
+	SeekGE(id RepositoryID)
 	Value() *RepositoryRecord
 	Err() error
 	Close()
@@ -245,7 +276,7 @@ type RepositoryIterator interface {
 
 type ValueIterator interface {
 	Next() bool
-	SeekGE(id Key) bool
+	SeekGE(id Key)
 	Value() *ValueRecord
 	Err() error
 	Close()
@@ -253,7 +284,7 @@ type ValueIterator interface {
 
 type DiffIterator interface {
 	Next() bool
-	SeekGE(id Key) bool
+	SeekGE(id Key)
 	Value() *Diff
 	Err() error
 	Close()
@@ -261,7 +292,7 @@ type DiffIterator interface {
 
 type BranchIterator interface {
 	Next() bool
-	SeekGE(id BranchID) bool
+	SeekGE(id BranchID)
 	Value() *BranchRecord
 	Err() error
 	Close()
@@ -269,7 +300,7 @@ type BranchIterator interface {
 
 type CommitIterator interface {
 	Next() bool
-	SeekGE(id CommitID) bool
+	SeekGE(id CommitID)
 	Value() *CommitRecord
 	Err() error
 	Close()
@@ -277,7 +308,7 @@ type CommitIterator interface {
 
 type ListingIterator interface {
 	Next() bool
-	SeekGE(id Key) bool
+	SeekGE(id Key)
 	Value() *Listing
 	Err() error
 	Close()
@@ -295,7 +326,7 @@ type RefManager interface {
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
 
 	// ListRepositories lists repositories
-	ListRepositories(ctx context.Context) (RepositoryIterator, error)
+	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
@@ -313,9 +344,9 @@ type RefManager interface {
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
 
-	// GetCommit returns the Commit metadata object for the given CommitID
+	// GetCommit returns the Commit metadata object for the given CommitID.
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
 	// AddCommit stores the Commit object, returning its ID
@@ -337,11 +368,11 @@ type CommittedManager interface {
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
 	// List takes a given tree and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (ValueIterator, error)
 
 	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID) (DiffIterator, error)
+	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Key) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
@@ -354,27 +385,23 @@ type CommittedManager interface {
 	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, iterator ValueIterator) (TreeID, error)
 }
 
-// StagingManager handles changes to a branch that aren't yet committed
-// provides basic CRUD abilities, with deletes being written as tombstones (null value)
+// StagingManager manages entries in a staging area, denoted by a staging token
 type StagingManager interface {
-	// Get returns the provided key (or nil value to represent a tombstone)
-	//   Returns ErrNotFound if no value found on key
-	Get(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken, key Key) (*Value, error)
+	// Get returns the value for the provided staging token and key
+	// Returns ErrNotFound if no value found on key.
+	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
-	// Set writes an value (or nil value to represent a tombstone)
-	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value *Value) error
+	// Set writes a value under the given staging token and key.
+	Set(ctx context.Context, st StagingToken, key Key, value Value) error
 
-	// Delete deletes an value by key
-	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+	// Delete deletes a value by staging token and key
+	Delete(ctx context.Context, st StagingToken, key Key) error
 
-	// List takes a given repository / branch and returns an ValueIterator
-	List(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (ValueIterator, error)
+	// List returns a ValueIterator for the given staging token
+	List(ctx context.Context, st StagingToken) (ValueIterator, error)
 
-	// Snapshot take a snapshot of the current staging and returns a new staging token
-	Snapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (StagingToken, error)
-
-	// ListSnapshot returns an iterator to scan the snapshot entries
-	ListSnapshot(ctx context.Context, repositoryID RepositoryID, branchID BranchID, st StagingToken) (ValueIterator, error)
+	// Drop clears the given staging area
+	Drop(ctx context.Context, st StagingToken) error
 }
 
 var (
@@ -385,13 +412,16 @@ var (
 // Graveler errors
 var (
 	ErrNotFound                = errors.New("not found")
+	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
-	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace %w", ErrInvalidValue)
-	ErrInvalidRepositoryID     = fmt.Errorf("repository id %w", ErrInvalidValue)
-	ErrInvalidBranchID         = fmt.Errorf("branch id %w", ErrInvalidValue)
-	ErrInvalidRef              = fmt.Errorf("ref %w", ErrInvalidValue)
-	ErrInvalidCommitID         = fmt.Errorf("commit id %w", ErrInvalidValue)
-	ErrCommitNotFound          = fmt.Errorf("commit %w", ErrNotFound)
+	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
+	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace: %w", ErrInvalidValue)
+	ErrInvalidRepositoryID     = fmt.Errorf("repository id: %w", ErrInvalidValue)
+	ErrInvalidBranchID         = fmt.Errorf("branch id: %w", ErrInvalidValue)
+	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
+	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
+	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
+	ErrCommitIDAmbiguous       = fmt.Errorf("commit ID is ambiguous: %w", ErrNotFound)
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {

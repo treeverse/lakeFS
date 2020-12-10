@@ -29,6 +29,7 @@ require (
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.12.2
 	github.com/golang/protobuf v1.4.2
+	github.com/golang/snappy v0.0.2-0.20190904063534-ff6b7dc882cf // indirect
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
@@ -72,6 +73,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
+	github.com/treeverse/golang-lru v0.6.1
 	github.com/tsenart/vegeta/v12 v12.8.3
 	github.com/vbauerster/mpb/v5 v5.3.0
 	github.com/xitongsys/parquet-go v1.5.2
