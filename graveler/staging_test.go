@@ -116,7 +116,54 @@ func TestDrop(t *testing.T) {
 	}
 }
 
-func TestDropPrefixArbitraryBytes(t *testing.T) {
+func TestDropByPrefix(t *testing.T) {
+	s := newTestStagingManager(t)
+	numOfValues := 2400
+	for i := 0; i < numOfValues; i++ {
+		err := s.Set(context.Background(), "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		err = s.Set(context.Background(), "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+	}
+	err := s.DropByPrefix(context.Background(), "t1", []byte("key1"))
+	if err != nil {
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	v, err := s.Get(context.Background(), "t1", []byte("key1000"))
+	if !errors.Is(err, db.ErrNotFound) {
+		// key1000 starts with the deleted prefix - should have been deleted
+		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
+	}
+	v, err = s.Get(context.Background(), "t1", []byte("key0000"))
+	if err != nil {
+		// key0000 does not start with the deleted prefix - should be returned
+		t.Fatalf("got unexpected error: %v", err)
+	}
+	it, _ := s.List(context.Background(), "t1")
+	count := 0
+	for it.Next() {
+		count++
+	}
+	it.Close()
+	if count != numOfValues-1000 {
+		t.Errorf("got unexpected number of results after drop. expected=%d, got=%d", numOfValues-1000, count)
+	}
+	it, _ = s.List(context.Background(), "t2")
+	count = 0
+	for it.Next() {
+		count++
+	}
+	it.Close()
+	if count != numOfValues {
+		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfValues, count)
+	}
+}
+
+func TestDropPrefixBytes(t *testing.T) {
 	s := newTestStagingManager(t)
 	tests := []struct {
 		keys                    []graveler.Key
@@ -218,67 +265,6 @@ func TestDropPrefixArbitraryBytes(t *testing.T) {
 		if it.Err() != nil {
 			t.Fatalf("got unexpected error: %v", it.Err())
 		}
-	}
-	//err := s.Set(context.Background(), st, key, graveler.Value{
-	//	Identity: identity,
-	//	Data:     data,
-	//})
-	//if err != nil {
-	//	t.Fatalf("got unexpected error: %v", err)
-	//}
-	//v, err := s.Get(context.Background(), st, key)
-	//if err != nil {
-	//	t.Fatalf("got unexpected error: %v", err)
-	//}
-	//if !bytes.Equal(v.Identity, identity) {
-	//	t.Fatalf("got unexpected identity")
-	//}
-}
-
-func TestDropByPrefix(t *testing.T) {
-	s := newTestStagingManager(t)
-	numOfValues := 2400
-	for i := 0; i < numOfValues; i++ {
-		err := s.Set(context.Background(), "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
-		err = s.Set(context.Background(), "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
-	}
-	err := s.DropByPrefix(context.Background(), "t1", []byte("key1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
-	v, err := s.Get(context.Background(), "t1", []byte("key1000"))
-	if !errors.Is(err, db.ErrNotFound) {
-		// key1000 starts with the deleted prefix - should have been deleted
-		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
-	}
-	v, err = s.Get(context.Background(), "t1", []byte("key0000"))
-	if err != nil {
-		// key0000 does not start with the deleted prefix - should be returned
-		t.Fatalf("got unexpected error: %v", err)
-	}
-	it, _ := s.List(context.Background(), "t1")
-	count := 0
-	for it.Next() {
-		count++
-	}
-	it.Close()
-	if count != numOfValues-1000 {
-		t.Errorf("got unexpected number of results after drop. expected=%d, got=%d", numOfValues-1000, count)
-	}
-	it, _ = s.List(context.Background(), "t2")
-	count = 0
-	for it.Next() {
-		count++
-	}
-	it.Close()
-	if count != numOfValues {
-		t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfValues, count)
 	}
 }
 

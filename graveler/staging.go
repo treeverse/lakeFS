@@ -2,6 +2,7 @@ package graveler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -77,12 +78,14 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 			break
 		}
 	}
+
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
+		baseQuery := "DELETE FROM kv_staging WHERE staging_token=$1 AND key >= $2::bytea"
 		if useUpperBound {
-			return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key >= $2::bytea AND key < $3::bytea", st, prefix, upperBound)
+			return tx.Exec(fmt.Sprintf("%s AND key < $3::bytea", baseQuery), st, prefix, upperBound)
 		} else {
 			// prefix is only 0xff bytes, no upper bound
-			return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key >= $2::bytea", st, prefix)
+			return tx.Exec(baseQuery, st, prefix)
 		}
 	}, p.txOpts(ctx)...)
 	return err
