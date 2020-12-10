@@ -45,7 +45,7 @@ type TreeRepo interface {
 	NewTreeWriter(splitFactor int, closeAsync sstable.BatchWriterCloser) TreeWriter
 	NewScannerFromID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error)
 	NewScannerFromTreeParts(treeSlice TreeType, start gr.Key) (gr.ValueIterator, error)
-	GetPartManger() sstable.Manager
+	GetPartManager() sstable.Manager
 }
 
 type TreeWriter interface {
