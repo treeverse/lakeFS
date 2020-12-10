@@ -40,8 +40,7 @@ func getDiffType(ctx context.Context, committedManager CommittedManager, sn Stor
 	if err != nil {
 		return 0, err
 	}
-	var diffType DiffType
-	diffType = DiffTypeAdded
+	diffType := DiffTypeAdded
 	if tombstone && existsInCommitted {
 		diffType = DiffTypeRemoved
 	}
