@@ -54,7 +54,7 @@ export const EntityCreateButton = ({ createFn, resetFn, status, variant, buttonT
             formData[current.name] = current.value;
         }
         return formData;
-    }
+    };
 
     return (
         <>

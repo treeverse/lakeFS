@@ -155,7 +155,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
 
     const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
-    const compareWith = !compareRef || (compareRef && refId.type === compareRef.type && refId.id === compareRef.id);
+    const compareWith = !compareRef || (refId.type === compareRef.type && refId.id === compareRef.id);
     const alertText = diffResults.error || '';
     return (
         <div className="mt-3">
