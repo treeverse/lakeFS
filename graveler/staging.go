@@ -8,6 +8,8 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const maxByte = 0xff
+
 type stagingManager struct {
 	db  db.Database
 	log logging.Logger
@@ -70,7 +72,7 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 	useUpperBound := false
 	copy(upperBound, prefix)
 	for i := len(prefix) - 1; i >= 0; i-- {
-		if upperBound[i] == 255 {
+		if upperBound[i] == maxByte {
 			upperBound = upperBound[:i]
 		} else {
 			useUpperBound = true
