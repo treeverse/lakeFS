@@ -116,6 +116,125 @@ func TestDrop(t *testing.T) {
 	}
 }
 
+func TestDropPrefixArbitraryBytes(t *testing.T) {
+	s := newTestStagingManager(t)
+	tests := []struct {
+		keys                    []graveler.Key
+		prefix                  graveler.Key
+		expectedLengthAfterDrop int
+	}{
+		{
+			keys:                    []graveler.Key{{255, 255, 254, 254}, {255, 255, 254, 255}, {255, 255, 255, 253}, {255, 255, 255, 254}, {255, 255, 255, 255}},
+			prefix:                  graveler.Key{255, 255, 255},
+			expectedLengthAfterDrop: 2,
+		},
+		{
+			keys:                    []graveler.Key{{0, 0, 0, 0}, {0, 0, 0, 255}, {0, 0, 1, 0}, {0, 0, 1, 1}},
+			prefix:                  graveler.Key{0, 0, 0},
+			expectedLengthAfterDrop: 2,
+		},
+		{
+			keys:                    []graveler.Key{{0, 0, 0, 0}, {0, 0, 0, 255}, {0, 0, 1, 0}, {0, 0, 1, 1}},
+			prefix:                  graveler.Key{0, 0},
+			expectedLengthAfterDrop: 0,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0, 0, 0}, {1, 0, 0, 255}, {1, 0, 255, 255}, {1, 255, 255, 255}},
+			prefix:                  graveler.Key{1},
+			expectedLengthAfterDrop: 0,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0, 0, 0}, {1, 0, 0, 255}, {1, 0, 255, 255}, {1, 255, 255, 255}},
+			prefix:                  graveler.Key{1, 0},
+			expectedLengthAfterDrop: 1,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0, 0, 0}, {1, 0, 0, 255}, {1, 0, 255, 255}, {1, 255, 255, 255}},
+			prefix:                  graveler.Key{1, 0, 0},
+			expectedLengthAfterDrop: 2,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0, 0, 0}, {1, 0, 0, 255}, {1, 0, 255, 255}, {1, 255, 255, 255}},
+			prefix:                  graveler.Key{1, 0, 0, 0},
+			expectedLengthAfterDrop: 3,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0}, {1, 1}, {1, 0, 1}, {1, 1, 1}, {1, 1, 1, 255}, {1, 1, 255, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 255, 1, 1, 1, 1, 1, 1, 1, 1}},
+			prefix:                  graveler.Key{1, 1, 1},
+			expectedLengthAfterDrop: 4,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0}, {1, 1}, {1, 0, 1}, {1, 1, 1}, {1, 1, 1, 255}, {1, 1, 255, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 255, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 255, 255, 255, 255}},
+			prefix:                  graveler.Key{1, 1, 1, 1},
+			expectedLengthAfterDrop: 7,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0}, {1, 1}, {1, 0, 1}, {1, 1, 1}, {1, 1, 1, 255}, {1, 1, 255, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 255, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 255, 255, 255, 255}},
+			prefix:                  graveler.Key{},
+			expectedLengthAfterDrop: 0,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0}, {1, 1}, {1, 0, 1}, {1, 1, 1}, {1, 1, 1, 255}, {1, 1, 255, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 255, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 255, 255, 255, 255}},
+			prefix:                  graveler.Key{0, 255, 255, 255},
+			expectedLengthAfterDrop: 9,
+		},
+		{
+			keys:                    []graveler.Key{{1, 0}, {1, 1}, {1, 0, 1}, {1, 1, 1}, {1, 1, 1, 255}, {1, 1, 255, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 255, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 255, 255, 255, 255}},
+			prefix:                  graveler.Key{1, 255},
+			expectedLengthAfterDrop: 9,
+		},
+		{
+			keys:                    []graveler.Key{{1, 254, 255, 255}, {1, 255}, {1, 255, 255}, {1, 255, 255, 255}},
+			prefix:                  graveler.Key{1, 255, 255},
+			expectedLengthAfterDrop: 2,
+		},
+	}
+	for i, tst := range tests {
+		st := graveler.StagingToken(fmt.Sprintf("t%d", i))
+		for _, k := range tst.keys {
+			err := s.Set(context.Background(), st, k, graveler.Value{
+				Identity: []byte{0, 0, 0, 0, 0, 0},
+				Data:     []byte{0, 0, 0, 0, 0, 0},
+			})
+			if err != nil {
+				t.Fatalf("got unexpected error: %v", err)
+			}
+		}
+		err := s.DropByPrefix(context.Background(), st, tst.prefix)
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		it, err := s.List(context.Background(), st)
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+		count := 0
+		for it.Next() {
+			count++
+		}
+		if count != tst.expectedLengthAfterDrop {
+			t.Fatalf("unexpected number of values after drop in test %d. expected=%d, got=%d", i, tst.expectedLengthAfterDrop, count)
+		}
+		if it.Err() != nil {
+			t.Fatalf("got unexpected error: %v", it.Err())
+		}
+	}
+	//err := s.Set(context.Background(), st, key, graveler.Value{
+	//	Identity: identity,
+	//	Data:     data,
+	//})
+	//if err != nil {
+	//	t.Fatalf("got unexpected error: %v", err)
+	//}
+	//v, err := s.Get(context.Background(), st, key)
+	//if err != nil {
+	//	t.Fatalf("got unexpected error: %v", err)
+	//}
+	//if !bytes.Equal(v.Identity, identity) {
+	//	t.Fatalf("got unexpected identity")
+	//}
+}
+
 func TestDropByPrefix(t *testing.T) {
 	s := newTestStagingManager(t)
 	numOfValues := 2400

@@ -65,8 +65,25 @@ func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
 }
 
 func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error {
+	upperBound := make(Key, len(prefix))
+	useUpperBound := false
+	copy(upperBound, prefix)
+	for i := len(prefix) - 1; i >= 0; i-- {
+		if upperBound[i] == 255 {
+			upperBound = upperBound[:i]
+		} else {
+			useUpperBound = true
+			upperBound[i] += 1
+			break
+		}
+	}
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND substring(key,1,octet_length($2::bytea)) = $2::bytea", st, prefix)
+		if useUpperBound {
+			return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key >= $2::bytea AND key < $3::bytea", st, prefix, upperBound)
+		} else {
+			// prefix is only 0xff bytes, no upper bound
+			return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key >= $2::bytea", st, prefix)
+		}
 	}, p.txOpts(ctx)...)
 	return err
 }
