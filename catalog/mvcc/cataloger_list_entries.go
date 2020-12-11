@@ -119,8 +119,8 @@ type readParamsType struct {
 // Searching for the next prefix is done by appending the largest possible utf-8 rune to the end  of the previous prefix. and querying
 // all the branches of it's lineage. then looking for the lowest-value non-deleted entry path found across all  branches.
 // for that a union query is issues. to skip possible deleted entries - we need to retrieve "branchBatchSize" of rows from each branch
-func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
-
+func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64,
+	requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
 	topCommitID := requestedCommit
 	if requestedCommit == UncommittedID {
 		topCommitID = MaxCommitID
@@ -203,8 +203,8 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 // extract either a single prefix, or a list of leaf entries from  results of union-reading from lineage branches
 // branch priority map reflect the lineage order, with lower numbers indicating higher priority. it is used to decide which
 // branch returned the prefix when the same path was returned by more than one branch.
-func processSinglePrefix(unionReadResults []entryPathPrefixInfo, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readParamsType) []string {
-
+func processSinglePrefix(unionReadResults []entryPathPrefixInfo, delimiter string, branchPriorityMap map[int64]int,
+	limit int, readParams readParamsType) []string {
 	// split results by branch
 	branchRanges := make(map[int64][]entryPathPrefixInfo, len(branchPriorityMap))
 	for _, result := range unionReadResults {
