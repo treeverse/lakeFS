@@ -101,7 +101,8 @@ func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, r
 	}, c.txOpts(ctx, db.ReadOnly())...)
 }
 
-// reading is mainly done in the main loop at "loopByLevel". It may happen (hopefully rarely) in getMoreRows.
+// readParamsType is a struct holding the parameters needed to perform SQL read queries.
+//  reading is mainly done in the main loop at "loopByLevel". It may happen (hopefully rarely) in getMoreRows.
 // variables needed for accessing the database are packed and passed down to getMoreRows
 type readParamsType struct {
 	tx              db.Tx
@@ -112,7 +113,7 @@ type readParamsType struct {
 	branchQueryMap  map[int64]sq.SelectBuilder
 }
 
-// Extracts the prefixes(directories)  that exist under a certain prefix. (drill down in the object store "directory tree"
+// LoopByLevel Extracts the prefixes(directories)  that exist under a certain prefix. (drill down in the object store "directory tree"
 // on each iteration, the function does the SQL retrieval from all lineage branches, and the calls "processSinglePrefix" to decide
 // which prefix to return from all lineage branches.
 // paths are parsed by the delimiter (usually '/')
@@ -200,7 +201,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	}
 }
 
-// extract either a single prefix, or a list of leaf entries from  results of union-reading from lineage branches
+// "processSinglePrefix"  extracts either a single prefix, or a list of leaf entries from  results of union-reading from lineage branches
 // branch priority map reflect the lineage order, with lower numbers indicating higher priority. it is used to decide which
 // branch returned the prefix when the same path was returned by more than one branch.
 func processSinglePrefix(unionReadResults []entryPathPrefixInfo, delimiter string, branchPriorityMap map[int64]int,
@@ -250,8 +251,8 @@ func processSinglePrefix(unionReadResults []entryPathPrefixInfo, delimiter strin
 	}
 }
 
-//  "processSinglePrefix" calls this function when it exhausts a branch before finding the next path.
-// getMoreRows reads more rows for that branch and stores the results directly into branchRanges.
+//  getMoreRows reads entries from a single branch after "processSinglePrefix"  exhausts a branch before finding the next path.
+// "processSinglePrefix"  reads more rows for that branch and stores the results directly into branchRanges.
 func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPathPrefixInfo, readParams readParamsType) error {
 	readBuf := make([]entryPathPrefixInfo, 0, readParams.branchBatchSize)
 	singleSelect := readParams.branchQueryMap[branch]
@@ -272,7 +273,7 @@ func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPathPr
 	return nil
 }
 
-// accepts query results for all branches in lineage , and examines the first entry of each branch result, looking
+// findLowestResultInBranches accepts query results for all branches in lineage , and examines the first entry of each branch result, looking
 // for the lowest path. If more than one branch contains that path, it will select the entry from the higher-priority
 // branch. (lowest number in branchPriority map)
 func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, branchPriorityMap map[int64]int) int64 {
@@ -298,7 +299,7 @@ func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, br
 	return chosenBranch
 }
 
-// builds a map of select queries for each of the branches in  the requested branch lineage
+// buildBaseLevelQuery builds a map of select queries for each of the branches in  the requested branch lineage
 // number of entries that will be retrieved for each branch is limitted to branchBatchSize (The reason it is not enough
 // to read a single row is that we may retrieve deleted entries or tombstones, that should be skipped.
 // the requested commitID is passed to the base branch as is. each of the lineage branches gets the commit id from its lineage.
@@ -313,7 +314,7 @@ func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchBatc
 }
 
 //
-// builds a query on a single branch of the lineage returning entries as they were at topCommitID.
+// buildSingleBranchQuery builds a query on a single branch of the lineage returning entries as they were at topCommitID.
 // called mainly from "buildBaseLevelQuery" above.
 // the other function that calls it is "getMoreRows" that needs entries for a single branch.
 // topCommitId contains the requested commit for that branch. its implications:
@@ -334,7 +335,8 @@ func buildSingleBranchQuery(branchID int64, branchBatchSize int, topCommitID Com
 	return query
 }
 
-// accept path listing results produced by "loopByLevel", and add entry details where the result is an entry
+// loadEntriesIntoMarkerList accepts path listing results produced by "loopByLevel", and add entry details
+// where the result is an entry
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*catalog.Entry, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int
