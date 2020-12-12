@@ -6,14 +6,12 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 )
 
-var minimalKey = gr.Key(nil)
-
-type treePartType struct {
+type TreePart struct {
 	PartName sstable.ID `json:"part_name"`
 	MaxKey   gr.Key     `json:"max_path"`
 }
-type TreeType struct {
-	treeSlice []treePartType
+type TreeSlice struct {
+	treeSlice []TreePart
 }
 
 type treesRepo struct {
@@ -21,38 +19,29 @@ type treesRepo struct {
 	partManger sstable.Manager
 }
 
-const (
-	CacheMapSize     = 1000
-	CacheTrimSize    = 100
-	InitialWeight    = 64
-	AdditionalWeight = 16
-	TrimFactor       = 1
-)
-
-func InitTreesRepository(manager sstable.Manager) TreeRepo {
-	treesRepository := &treesRepo{
-		treesMap:   cache.NewCacheMap(CacheMapSize, CacheTrimSize, InitialWeight, AdditionalWeight, TrimFactor),
-		partManger: manager,
-	}
-	return treesRepository
-}
-
-func (t *treesRepo) GetPartManger() sstable.Manager {
-	return t.partManger
-}
+// InitTreeRepository creates the trees cache, and stores part Manager for operations of parts (currently implemented as sstables).
+// should be called at process start.
+// decisions on who calls it and how to get a treesRepository will be taken later
+type InitTreesRepository func(manager sstable.Manager) TreeRepo
 
 type TreeRepo interface {
-	NewTreeWriter(splitFactor int, closeAsync sstable.BatchWriterCloser) TreeWriter
-	NewScannerFromID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error)
-	NewScannerFromTreeParts(treeSlice TreeType, start gr.Key) (gr.ValueIterator, error)
+	// NewTreeWriter returns a writer that uses the part managet to create a new tree
+	NewTreeWriter(splitFactor int, // average number of keys that we want to stored in a part
+		// for more detail, look at "IsSplitKey"
+		closeAsync sstable.BatchWriterCloser, // component used to close part asynchronously, and wait for all part
+		// completions when tree writing completes
+	) TreeWriter
+	// NewScannerFromTreeID accepts a tree ID, and returnes an iterator over the tree
+	NewIteratorFromTreeID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error)
+	// NewIteratorFromTreeParts accept a tree in memory, returnes iferator over the tree
+	NewIteratorFromTreeSlice(treeSlice TreeSlice, start gr.Key) (gr.ValueIterator, error)
+	// GetPartManager give components of tree package to the configured part manager.
+	// will probably change later
 	GetPartManger() sstable.Manager
 }
 
 type TreeWriter interface {
-	HasOpenWriter() bool
 	WriteEntry(record gr.ValueRecord) error
-	ForceCloseCurrentPart()
-	IsSplitKey(key gr.Key, rowNum int) bool
 	FlushIterToTree(iter gr.ValueIterator) error
-	SaveTree(reuseTree TreeType) (gr.TreeID, error)
+	SaveTree(reuseTree TreeSlice) (gr.TreeID, error)
 }
