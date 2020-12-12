@@ -19,8 +19,8 @@ type treesRepo struct {
 	partManger sstable.Manager
 }
 
-// InitTreeRepository creates the trees cache, and stores part Manager for operations of parts (currently implemented as sstables).
-// should be called at process start.
+// InitTreeRepository creates the tree cache, and stores part Manager for operations of parts (currently implemented as sstables).
+// should be called at process init.
 // decisions on who calls it and how to get a treesRepository will be taken later
 type InitTreesRepository func(manager sstable.Manager) TreeRepo
 
