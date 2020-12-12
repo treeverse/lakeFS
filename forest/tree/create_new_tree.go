@@ -16,5 +16,5 @@ func (trees treesRepo) CreateTree(inputIter gr.ValueIterator) (gr.TreeID, error)
 	if inputIter.Err() != nil {
 		return "", inputIter.Err()
 	}
-	return treeWriter.SaveTree(TreeType{})
+	return treeWriter.SaveTree(TreeSlice{})
 }

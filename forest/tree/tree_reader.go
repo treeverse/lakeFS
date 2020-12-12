@@ -12,7 +12,7 @@ import (
 var treesRepository treesRepo
 
 type treeIterator struct {
-	treeParts   []treePartType
+	treeParts   []TreePart
 	currentIter gr.ValueIterator
 	currentPart int
 	err         error
@@ -20,19 +20,27 @@ type treeIterator struct {
 	trees       *treesRepo
 }
 
-func (trees *treesRepo) NewScannerFromID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error) {
+const (
+	CacheMapSize     = 1000 // number of cached trees
+	CacheTrimSize    = 100  // number of trees to evict once cache reaches maximum
+	InitialWeight    = 64   // weight a cached tree gets when it is added
+	AdditionalWeight = 16   // additional weight gained each time the tree is accessed
+	TrimFactor       = 1    //
+)
+
+func (trees *treesRepo) NewIteratorFromTreeID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error) {
 	treeSlice, err := trees.GetTree(treeID)
 	if err != nil {
 		return nil, err
 	}
-	return trees.newScanner(treeSlice, start)
+	return trees.newIterator(treeSlice, start)
 }
 
-func (trees *treesRepo) NewScannerFromTreeParts(treeSlice TreeType, start gr.Key) (gr.ValueIterator, error) {
-	return trees.newScanner(treeSlice, start)
+func (trees *treesRepo) NewIteratorFromTreeSlice(treeSlice TreeSlice, start gr.Key) (gr.ValueIterator, error) {
+	return trees.newIterator(treeSlice, start)
 }
 
-func (trees *treesRepo) newScanner(tree TreeType, start gr.Key) (gr.ValueIterator, error) {
+func (trees *treesRepo) newIterator(tree TreeSlice, start gr.Key) (gr.ValueIterator, error) {
 	treeSlice := tree.treeSlice
 	partNum := findPartNumForPath(treeSlice, start)
 	if partNum >= len(treeSlice) {
@@ -53,24 +61,24 @@ func (trees *treesRepo) newScanner(tree TreeType, start gr.Key) (gr.ValueIterato
 	return scanner, nil
 }
 
-func (trees treesRepo) GetTree(treeID gr.TreeID) (TreeType, error) {
+func (trees *treesRepo) GetTree(treeID gr.TreeID) (TreeSlice, error) {
 	t, exists := trees.treesMap.Get(string(treeID))
 	if exists {
-		tree := t.(TreeType)
+		tree := t.(TreeSlice)
 		return tree, nil
 	}
 	fName := string(treeID) + ".json"
 	jsonBytes, err := ioutil.ReadFile(fName)
 	if err != nil {
-		return TreeType{}, err
+		return TreeSlice{}, err
 	}
-	treeSlice := make([]treePartType, 0)
+	treeSlice := make([]TreePart, 0)
 	err = json.Unmarshal(jsonBytes, &treeSlice)
 	if err != nil {
-		return TreeType{}, err
+		return TreeSlice{}, err
 	}
 	trees.treesMap.Set(string(treeID), treeSlice)
-	return TreeType{treeSlice: treeSlice}, nil
+	return TreeSlice{treeSlice: treeSlice}, nil
 }
 
 func (t *treeIterator) SeekGE(start gr.Key) {
@@ -88,7 +96,7 @@ func (t *treeIterator) SeekGE(start gr.Key) {
 	t.currentIter.SeekGE(start)
 }
 
-func findPartNumForPath(tree []treePartType, path gr.Key) int {
+func findPartNumForPath(tree []TreePart, path gr.Key) int {
 	n := len(tree)
 	pos := sort.Search(n, func(i int) bool {
 		return bytes.Compare(tree[i].MaxKey, path) >= 0

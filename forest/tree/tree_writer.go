@@ -100,15 +100,15 @@ func (tw *treeWriter) FlushIterToTree(iter gr.ValueIterator) error {
 	return iter.Err()
 }
 
-func (tw *treeWriter) SaveTree(reuseTree TreeType) (gr.TreeID, error) {
+func (tw *treeWriter) SaveTree(reuseTree TreeSlice) (gr.TreeID, error) {
 	reuseParts := reuseTree.treeSlice
-	var newParts []treePartType
+	var newParts []TreePart
 	closeResults, err := tw.closeAsync.Wait()
 	if err != nil {
 		return "", fmt.Errorf(" closing of apply parts failed : %w", err)
 	}
 	for _, r := range closeResults {
-		t := treePartType{
+		t := TreePart{
 			MaxKey:   r.Last,
 			PartName: r.SSTableID,
 		}
@@ -121,7 +121,7 @@ func (tw *treeWriter) SaveTree(reuseTree TreeType) (gr.TreeID, error) {
 	return serializeTreeToDisk(newParts)
 }
 
-func serializeTreeToDisk(tree []treePartType) (gr.TreeID, error) {
+func serializeTreeToDisk(tree []TreePart) (gr.TreeID, error) {
 	if len(tree) == 0 {
 		return "", ErrEmptyTree
 	}

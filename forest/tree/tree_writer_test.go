@@ -48,7 +48,7 @@ func TestSimpleTree(t *testing.T) {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	treeID, err = tw.SaveTree(TreeType{})
+	treeID, err = tw.SaveTree(TreeSlice{})
 	if err != nil {
 		panic(err)
 	}
