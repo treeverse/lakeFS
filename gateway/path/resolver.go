@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("/?%s/%s", reReference, rePath))
-	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("/?%s", reReference))
+	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("^/?%s/%s", reReference, rePath))
+	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("^/?%s", reReference))
 
 	ErrPathMalformed = errors.New("encoded path is malformed")
 )
