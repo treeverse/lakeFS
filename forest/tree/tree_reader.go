@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"sort"
 
+	cache "github.com/treeverse/lakefs/forest/cache_map"
+	"github.com/treeverse/lakefs/forest/sstable"
+
 	gr "github.com/treeverse/lakefs/graveler"
 )
 
@@ -27,6 +30,18 @@ const (
 	AdditionalWeight = 16   // additional weight gained each time the tree is accessed
 	TrimFactor       = 1    //
 )
+
+func InitTreesRepository(manager sstable.Manager) TreeRepo {
+	treesRepository := &treesRepo{
+		treesMap:   cache.NewCacheMap(CacheMapSize, CacheTrimSize, InitialWeight, AdditionalWeight, TrimFactor),
+		partManger: manager,
+	}
+	return treesRepository
+}
+
+func (t *treesRepo) GetPartManger() sstable.Manager {
+	return t.partManger
+}
 
 func (trees *treesRepo) NewIteratorFromTreeID(treeID gr.TreeID, start gr.Key) (gr.ValueIterator, error) {
 	treeSlice, err := trees.GetTree(treeID)
