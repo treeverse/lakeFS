@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,9 +23,8 @@ const (
 )
 
 var (
-	cfgFile      string
-	cfgFileErr   error
-	emptyCfgFile bool
+	cfgFile    string
+	cfgFileErr error
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -41,8 +41,9 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		if cmd == configCmd {
 			return
 		}
-		if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
-			if emptyCfgFile {
+
+		if errors.As(cfgFileErr, &viper.ConfigFileNotFoundError{}) {
+			if cfgFile == "" {
 				// if the config file wasn't provided, try to run using the default values + env vars
 				return
 			}
@@ -122,7 +123,6 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
-		emptyCfgFile = true
 		home, err := homedir.Dir()
 		if err != nil {
 			DieErr(err)
