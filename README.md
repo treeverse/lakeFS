@@ -3,8 +3,6 @@
 </p>
 
 <p align="center">
-	<a href="docs/contributing.md" alt="Hacktoberfest">
-		<img src="https://badgen.net/badge/hacktoberfest/friendly/pink" /></a>
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" alt="License">
 		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++" alt="Go">
