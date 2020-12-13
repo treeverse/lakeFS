@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"errors"
 	"math/rand"
 	"time"
 
