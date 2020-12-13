@@ -22,10 +22,6 @@ type GetSetCache struct {
 	baseExpiry   time.Duration
 }
 
-var (
-	ErrCacheItemNotFound = errors.New("cache item not found")
-)
-
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	c, _ := lru.New(size)
 	return &GetSetCache{
