@@ -41,22 +41,19 @@ func getDiffType(ctx context.Context, committedManager CommittedManager, sn Stor
 	if err != nil {
 		return 0, err
 	}
-	var diffType DiffType
-	diffType = DiffTypeAdded
-	if tombstone && existsInCommitted {
-		diffType = DiffTypeRemoved
+	diffType := DiffTypeAdded
+	if tombstone {
+		if !existsInCommitted {
+			logging.Default().
+				WithFields(logging.Fields{"tree_id": treeID, "storage_namespace": sn, "key": key}).
+				Warn("tombstone for a file that does not exist")
+		}
+		return DiffTypeRemoved
 	}
-	if tombstone && !existsInCommitted {
-		logging.Default().WithFields(logging.Fields{"treeID": treeID, "stagingToken": sn, "key": key}).Warn("tombstone for file that does not exist")
-		diffType = DiffTypeRemoved
+	if existsInCommitted {
+		return DiffTypeChanged
 	}
-	if !tombstone && existsInCommitted {
-		diffType = DiffTypeChanged
-	}
-	if !tombstone && !existsInCommitted {
-		diffType = DiffTypeAdded
-	}
-	return diffType, nil
+	return DiffTypeAdded
 }
 
 func (d *uncommittedDiffIterator) Next() bool {

@@ -16,7 +16,7 @@ type listingIterator struct {
 }
 
 // getFollowingValue returns the following value (i.e will increase the last byte by 1)
-// in the following cases will return received value : value is nil, value length is 0, last byte is maximum byte
+// in the following cases will return received value: empty value, the last byte is math.MaxUint8
 func getFollowingValue(value []byte) []byte {
 	if len(value) == 0 || value[len(value)-1] == math.MaxUint8 {
 		return value

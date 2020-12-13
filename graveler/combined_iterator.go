@@ -47,12 +47,12 @@ func (c *combinedIterator) Next() bool {
 		c.iterB.Next()
 	}
 
-	if c.iterA.Err() != nil || c.iterB.Err() != nil {
-		if c.iterA.Err() != nil {
-			c.p = c.iterA
-		} else {
-			c.p = c.iterB
-		}
+	if c.iterA.Err() != nil {
+		c.p = c.iterA
+		return false
+	}
+	if c.iterB.Err() != nil {
+		c.p = c.iterB
 		return false
 	}
 	// get the current pointer
