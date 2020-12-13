@@ -1,7 +1,7 @@
 package tree
 
 import (
-	//cache "github.com/treeverse/lakefs/forest/cache_map"
+	// cache "github.com/treeverse/lakefs/forest/cache_map"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 )
@@ -11,13 +11,13 @@ type TreePart struct {
 	MaxKey   graveler.Key `json:"max_path"`
 }
 type TreeSlice struct {
-	treeSlice []TreePart
+	TreeSlice []TreePart
 }
-type dummyMap map[string]string // place holder for cache_map package that will be merged soon
+type DummyMap map[string]string // place holder for cache_map package that will be merged soon
 
-type treesRepo struct {
-	treesMap   dummyMap
-	partManger sstable.Manager
+type TreesRepo struct {
+	treesMap   DummyMap
+	PartManger sstable.Manager
 }
 
 // InitTreeRepository creates the tree cache, and stores part Manager for operations of parts (currently implemented as sstables).
