@@ -16,7 +16,7 @@ type TreeSlice struct {
 type DummyMap map[string]string // place holder for cache_map package that will be merged soon
 
 type TreesRepo struct {
-	treesMap   DummyMap
+	TreesMap   DummyMap
 	PartManger sstable.Manager
 }
 
