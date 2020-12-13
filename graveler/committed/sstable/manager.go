@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"hash"
 
+	"github.com/treeverse/lakefs/graveler/committed"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/pyramid"
@@ -13,17 +15,15 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
-type PebbleSSTableManager struct {
+type Manager struct {
 	cache  cache
 	fs     pyramid.FS
 	logger logging.Logger
 	hash   hash.Hash
 }
 
-const sstableTierFSNamespace = "sstables"
-
-func NewPebbleSSTableManager(cache cache, fs pyramid.FS) Manager {
-	return &PebbleSSTableManager{cache: cache, fs: fs}
+func NewPebbleSSTableManager(cache cache, fs pyramid.FS) committed.PartManager {
+	return &Manager{cache: cache, fs: fs}
 }
 
 var (
@@ -33,7 +33,7 @@ var (
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *PebbleSSTableManager) GetValue(ns Namespace, lookup graveler.Key, tid ID) (*graveler.Value, error) {
+func (m *Manager) GetValue(ns committed.Namespace, lookup graveler.Key, tid committed.ID) (*graveler.Value, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (m *PebbleSSTableManager) GetValue(ns Namespace, lookup graveler.Key, tid I
 	if key == nil {
 		// checking if an error occurred or key simply not found
 		if it.Error() != nil {
-			return nil, fmt.Errorf("reading key: %w", it.Error())
+			return nil, fmt.Errorf("reading key from sstable id %s: %w", tid, it.Error())
 		}
 
 		// lookup path is bigger than the last path in the SSTable
@@ -67,7 +67,7 @@ func (m *PebbleSSTableManager) GetValue(ns Namespace, lookup graveler.Key, tid I
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *PebbleSSTableManager) NewSSTableIterator(ns Namespace, tid ID, from graveler.Key) (graveler.ValueIterator, error) {
+func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from graveler.Key) (graveler.ValueIterator, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -85,11 +85,11 @@ func (m *PebbleSSTableManager) NewSSTableIterator(ns Namespace, tid ID, from gra
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *PebbleSSTableManager) GetWriter() (Writer, error) {
-	return newDiskWriter(m.fs, m.hash)
+func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
+	return newDiskWriter(m.fs, ns, m.hash)
 }
 
-func (m *PebbleSSTableManager) execAndLog(f func() error, msg string) {
+func (m *Manager) execAndLog(f func() error, msg string) {
 	if err := f(); err != nil {
 		m.logger.WithError(err).Error(msg)
 	}

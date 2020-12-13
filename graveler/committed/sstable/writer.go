@@ -3,6 +3,9 @@ package sstable
 import (
 	"fmt"
 	"hash"
+	"strconv"
+
+	"github.com/treeverse/lakefs/graveler/committed"
 
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/graveler"
@@ -18,11 +21,11 @@ type DiskWriter struct {
 	count int
 	hash  hash.Hash
 
-	fh *pyramid.File
+	fh pyramid.StoredFile
 }
 
-func newDiskWriter(tierFS pyramid.FS, hash hash.Hash) (*DiskWriter, error) {
-	fh, err := tierFS.Create(sstableTierFSNamespace)
+func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
+	fh, err := tierFS.Create(string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
@@ -56,17 +59,24 @@ func (dw *DiskWriter) WriteRecord(record graveler.ValueRecord) error {
 	dw.last = record.Identity
 	dw.count++
 
-	if _, err := dw.hash.Write(keyBytes); err != nil {
+	if err := dw.writeHashWithLen(keyBytes); err != nil {
 		return err
 	}
-	if _, err := dw.hash.Write(valBytes); err != nil {
+	return dw.writeHashWithLen(valBytes)
+}
+
+func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
+	if _, err := dw.hash.Write([]byte(strconv.Itoa(len(buf)))); err != nil {
+		return err
+	}
+	if _, err := dw.hash.Write(buf); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (dw *DiskWriter) Close() (*WriteResult, error) {
+func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	if err := dw.w.Close(); err != nil {
 		return nil, fmt.Errorf("sstable file write: %w", err)
 	}
@@ -76,10 +86,10 @@ func (dw *DiskWriter) Close() (*WriteResult, error) {
 		return nil, fmt.Errorf("error storing sstable: %w", err)
 	}
 
-	return &WriteResult{
-		SSTableID: ID(sstableID),
-		First:     dw.first,
-		Last:      dw.last,
-		Count:     dw.count,
+	return &committed.WriteResult{
+		PartID: committed.ID(sstableID),
+		First:  dw.first,
+		Last:   dw.last,
+		Count:  dw.count,
 	}, nil
 }
