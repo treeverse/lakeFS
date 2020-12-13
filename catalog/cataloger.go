@@ -77,7 +77,7 @@ type Cataloger interface {
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
 
-	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error)
+	CreateBranch(ctx context.Context, repository, branch string, sourceRef string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
 	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
