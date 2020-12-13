@@ -64,18 +64,19 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 	// try reference with path or just reference regexp
 	for _, re := range []*regexp.Regexp{EncodedPathRe, EncodedPathReferenceRe} {
 		match := re.FindStringSubmatch(encodedPath)
-		if len(match) > 0 {
-			for i, name := range re.SubexpNames() {
-				switch name {
-				case "ref":
-					r.Ref = match[i]
-				case "path":
-					r.Path = match[i]
-					r.WithPath = true
-				}
-			}
-			return r, nil
+		if len(match) == 0 {
+			continue
 		}
+		for i, name := range re.SubexpNames() {
+			switch name {
+			case "ref":
+				r.Ref = match[i]
+			case "path":
+				r.Path = match[i]
+				r.WithPath = true
+			}
+		}
+		return r, nil
 	}
 	return r, ErrPathMalformed
 }
