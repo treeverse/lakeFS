@@ -31,6 +31,26 @@ func TestResolvePath(t *testing.T) {
 			want: ResolvedPath{Ref: "Branch-1", Path: "dir1/file1", WithPath: true},
 		},
 		{
+			name: "branch ends with delimiter",
+			args: args{encodedPath: "Branch-1/"},
+			want: ResolvedPath{Ref: "Branch-1", Path: "", WithPath: true},
+		},
+		{
+			name: "branch with path ends with delimiter",
+			args: args{encodedPath: "Branch-1/path2/"},
+			want: ResolvedPath{Ref: "Branch-1", Path: "path2/", WithPath: true},
+		},
+		{
+			name: "branch with path both start and end with delimiter",
+			args: args{encodedPath: "/Branch-1/path2/"},
+			want: ResolvedPath{Ref: "Branch-1", Path: "path2/", WithPath: true},
+		},
+		{
+			name: "branch with path that start and end with delimiter",
+			args: args{encodedPath: "Branch-1//path3/"},
+			want: ResolvedPath{Ref: "Branch-1", Path: "/path3/", WithPath: true},
+		},
+		{
 			name: "empty",
 			args: args{},
 			want: ResolvedPath{},
