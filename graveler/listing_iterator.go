@@ -1,6 +1,9 @@
 package graveler
 
-import "bytes"
+import (
+	"bytes"
+	"math"
+)
 
 // listingIterator implements a ListingIterator using a ValueIterator
 // assumes all values in valueIterator start with prefix
@@ -15,12 +18,13 @@ type listingIterator struct {
 // getFollowingValue returns the following value (i.e will increase the last byte by 1)
 // in the following cases will return received value : value is nil, value length is 0, last byte is maximum byte
 func getFollowingValue(value []byte) []byte {
-	if len(value) == 0 || value[len(value)-1] == 255 {
+	if len(value) == 0 || value[len(value)-1] == math.MaxUint8 {
 		return value
 	}
 	copiedDelimiter := make([]byte, len(value))
 	copy(copiedDelimiter, value)
-	return append(copiedDelimiter[:len(copiedDelimiter)-1], copiedDelimiter[len(copiedDelimiter)-1]+1)
+	copiedDelimiter[len(copiedDelimiter)-1]++
+	return copiedDelimiter
 }
 
 func NewListingIterator(iterator ValueIterator, delimiter, prefix Key) ListingIterator {
@@ -53,12 +57,11 @@ func (l *listingIterator) nextNoDelimiter() bool {
 }
 
 func (l *listingIterator) nextWithDelimiter() bool {
-	var hasNext bool
 	if l.current != nil && l.current.CommonPrefix {
 		nextKey := getFollowingValue(l.current.Key)
 		l.valueIterator.SeekGE(nextKey)
 	}
-	hasNext = l.valueIterator.Next()
+	hasNext := l.valueIterator.Next()
 	if hasNext {
 		nextValue := l.valueIterator.Value()
 		l.current = l.getListingFromValue(nextValue.Value, nextValue.Key)

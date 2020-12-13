@@ -21,12 +21,8 @@ func (p *prefixIterator) Next() bool {
 	if p.ended {
 		return false
 	}
-	if !p.iterator.Next() {
-		p.ended = true
-		return false
-	}
-	val := p.iterator.Value()
-	if !bytes.HasPrefix(val.Key, p.prefix) {
+	// prefix iterator ends when there is no more data, or the next value doesn't match the prefix
+	if !p.iterator.Next() || !bytes.HasPrefix(p.iterator.Value().Key, p.prefix) {
 		p.ended = true
 		return false
 	}

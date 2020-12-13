@@ -10,7 +10,7 @@ import (
 type uncommittedDiffIterator struct {
 	committedManager CommittedManager
 	list             ValueIterator
-	sn               StorageNamespace
+	storageNamespace StorageNamespace
 	treeID           TreeID
 	value            *Diff
 	err              error
@@ -20,7 +20,7 @@ func NewUncommittedDiffIterator(manager CommittedManager, list ValueIterator, sn
 	return &uncommittedDiffIterator{
 		committedManager: manager,
 		list:             list,
-		sn:               sn,
+		storageNamespace: sn,
 		treeID:           treeItreeID,
 	}
 }
@@ -29,7 +29,8 @@ func valueExistsInCommitted(ctx context.Context, committedManager CommittedManag
 	_, err := committedManager.Get(ctx, sn, treeID, key)
 	if errors.Is(err, ErrNotFound) {
 		return false, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return false, err
 	}
 	return true, nil
@@ -64,7 +65,7 @@ func (d *uncommittedDiffIterator) Next() bool {
 		return false
 	}
 	val := d.list.Value()
-	diffType, err := getDiffType(context.Background(), d.committedManager, d.sn, d.treeID, val.Key, val.Value == nil)
+	diffType, err := getDiffType(context.Background(), d.committedManager, d.storageNamespace, d.treeID, val.Key, val.Value == nil)
 	if err != nil {
 		d.value = nil
 		d.err = err
@@ -80,6 +81,7 @@ func (d *uncommittedDiffIterator) Next() bool {
 
 func (d *uncommittedDiffIterator) SeekGE(id Key) {
 	d.value = nil
+	d.err = nil
 	d.list.SeekGE(id)
 }
 

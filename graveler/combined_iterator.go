@@ -8,7 +8,6 @@ type combinedIterator struct {
 	iterA ListingIterator
 	iterB ListingIterator
 	p     ListingIterator
-	err   error
 }
 
 func NewCombinedIterator(iterA, iterB ListingIterator) ListingIterator {
@@ -16,7 +15,6 @@ func NewCombinedIterator(iterA, iterB ListingIterator) ListingIterator {
 		iterA: iterA,
 		iterB: iterB,
 		p:     nil,
-		err:   nil,
 	}
 }
 

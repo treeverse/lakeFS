@@ -9,6 +9,8 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
+const defaultBranchName = graveler.BranchID("master")
+
 type committedMock struct {
 	Value         *graveler.Value
 	ValueIterator graveler.ValueIterator
@@ -111,8 +113,6 @@ type mockRefs struct {
 	commitIter          graveler.CommitIterator
 	refType             graveler.ReferenceType
 }
-
-const defaultBranchName = graveler.BranchID("master")
 
 func (m *mockRefs) RevParse(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (graveler.Reference, error) {
 	var branch graveler.BranchID
