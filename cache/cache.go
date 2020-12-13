@@ -16,10 +16,10 @@ type Cache interface {
 }
 
 type GetSetCache struct {
-	lru        *lru.Cache
-	locker     *ChanLocker
-	jitterFn   JitterFn
-	baseExpiry time.Duration
+	lru          *lru.Cache
+	computations *ChanOnlyOne
+	jitterFn     JitterFn
+	baseExpiry   time.Duration
 }
 
 var (
@@ -29,10 +29,10 @@ var (
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	c, _ := lru.New(size)
 	return &GetSetCache{
-		lru:        c,
-		locker:     NewChanLocker(),
-		jitterFn:   jitterFn,
-		baseExpiry: expiry,
+		lru:          c,
+		computations: NewChanOnlyOne(),
+		jitterFn:     jitterFn,
+		baseExpiry:   expiry,
 	}
 }
 
@@ -40,25 +40,14 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 	if v, ok := c.lru.Get(k); ok {
 		return v, nil
 	}
-	acquired := c.locker.Lock(k, func() {
+	return c.computations.Compute(k, func() (interface{}, error) {
 		v, err = setFn()
-		if err != nil {
-			return
+		if err != nil { // Don't cache errors
+			return nil, err
 		}
 		c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
-	})
-	if acquired {
-		return v, err
-	}
-
-	// someone else got the lock first and should have inserted something
-	if v, ok := c.lru.Get(k); ok {
 		return v, nil
-	}
-
-	// someone else acquired the lock, but no key was found
-	// (most likely this value doesn't exist or the upstream fetch failed)
-	return nil, ErrCacheItemNotFound
+	})
 }
 
 func NewJitterFn(jitter time.Duration) JitterFn {
