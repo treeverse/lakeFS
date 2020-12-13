@@ -14,14 +14,16 @@ import (
 type directory struct {
 	// ceilingDir is the root directory of the FS - shouldn't never be deleted
 	ceilingDir string
-	sync.Mutex
+	mu         sync.Mutex
 }
 
 // deleteDirRecIfEmpty deletes the given directory if it is empty.
 // It will continue to delete all parents directory if they are empty, until the ceilingDir.
+// Passed dir path isn't checked for malicious referencing (e.g. "../../../usr") and should never be
+// controlled by any user input.
 func (d *directory) deleteDirRecIfEmpty(dir string) error {
-	d.Lock()
-	defer d.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	for dir != d.ceilingDir {
 		empty, err := isDirEmpty(dir)
@@ -61,8 +63,8 @@ func isDirEmpty(name string) (bool, error) {
 
 // createFile creates the file under the path and creates all parent dirs if missing.
 func (d *directory) createFile(path string) (*os.File, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating dir: %w", err)
@@ -73,8 +75,8 @@ func (d *directory) createFile(path string) (*os.File, error) {
 
 // renameFile will move the src file to dst location and creates all parent dirs if missing.
 func (d *directory) renameFile(src, dst string) error {
-	d.Lock()
-	defer d.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
 		return fmt.Errorf("creating dir: %w", err)
