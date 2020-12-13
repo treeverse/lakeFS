@@ -59,6 +59,7 @@ func TestGraveler_PrefixIterator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			prefixIter := graveler.NewPrefixIterator(tt.valueIter, tt.prefix)
+			defer prefixIter.Close()
 			prefixIter.SeekGE(tt.seekTo)
 			// compare iterators
 			for prefixIter.Next() {
@@ -146,6 +147,7 @@ func TestGraveler_ListingIterator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			listingIter := graveler.NewListingIterator(tt.valueIter, tt.delimiter, tt.prefix)
+			defer listingIter.Close()
 			compareListingIterators(t, listingIter, tt.expectedListingIter)
 		})
 	}
@@ -230,6 +232,7 @@ func TestGraveler_List(t *testing.T) {
 			if err != nil {
 				return // err == tt.expectedErr
 			}
+			defer listing.Close()
 			// compare iterators
 			compareListingIterators(t, listing, tt.expectedListing)
 		})
@@ -331,7 +334,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "no changes",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}}), err: graveler.ErrNotFound},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{})},
-				&mockRefs{},
+				&mockRefs{branch: &graveler.Branch{}},
 			),
 			amount:       10,
 			expectedDiff: newDiffIter([]graveler.Diff{}),
@@ -340,7 +343,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "added one",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{}), err: graveler.ErrNotFound},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&mockRefs{},
+				&mockRefs{branch: &graveler.Branch{}},
 			),
 			amount: 10,
 			expectedDiff: newDiffIter([]graveler.Diff{{
@@ -353,7 +356,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "changed one",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&mockRefs{},
+				&mockRefs{branch: &graveler.Branch{}},
 			),
 			amount: 10,
 			expectedDiff: newDiffIter([]graveler.Diff{{
@@ -366,7 +369,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "removed one",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
-				&mockRefs{},
+				&mockRefs{branch: &graveler.Branch{}},
 			),
 			amount: 10,
 			expectedDiff: newDiffIter([]graveler.Diff{{
@@ -402,10 +405,34 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 	}
 }
 
+func TestGraveler_CreateBranch(t *testing.T) {
+	gravel := graveler.NewGraveler(nil,
+		nil,
+		&mockRefs{
+			branchErr: graveler.ErrNotFound,
+		},
+	)
+	_, err := gravel.CreateBranch(context.Background(), "", "", "")
+	if err != nil {
+		t.Fatal("unexpected error on create branch", err)
+	}
+	// test create branch when branch exists
+	gravel = graveler.NewGraveler(nil,
+		nil,
+		&mockRefs{
+			branch: &graveler.Branch{},
+		},
+	)
+	_, err = gravel.CreateBranch(context.Background(), "", "", "")
+	if !errors.Is(err, graveler.ErrBranchExists) {
+		t.Fatal("did not get expected error, expected ErrBranchExists")
+	}
+}
+
 func TestGraveler_UpdateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(nil,
 		&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-		&mockRefs{},
+		&mockRefs{branch: &graveler.Branch{}},
 	)
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	if !errors.Is(err, graveler.ErrConflictFound) {
@@ -413,7 +440,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	}
 	gravel = graveler.NewGraveler(nil,
 		&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{})},
-		&mockRefs{},
+		&mockRefs{branch: &graveler.Branch{}},
 	)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	if err != nil {

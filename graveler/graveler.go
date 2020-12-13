@@ -547,10 +547,10 @@ func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingT
 func (g *graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
 	// check if branch exists
 	_, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-	if errors.Is(err, ErrNotFound) {
-		return nil, ErrBranchExists
-	}
-	if err != nil {
+	if !errors.Is(err, ErrNotFound) {
+		if err == nil {
+			err = ErrBranchExists
+		}
 		return nil, err
 	}
 

@@ -63,8 +63,7 @@ func (l *listingIterator) nextWithDelimiter() bool {
 	}
 	hasNext := l.valueIterator.Next()
 	if hasNext {
-		nextValue := l.valueIterator.Value()
-		l.current = l.getListingFromValue(nextValue.Value, nextValue.Key)
+		l.current = l.getListingFromValue(*l.valueIterator.Value())
 	} else {
 		l.current = nil
 	}
@@ -75,19 +74,19 @@ func (l *listingIterator) Next() bool {
 	return l.nextFunc()
 }
 
-func (l *listingIterator) getListingFromValue(value *Value, key Key) *Listing {
-	relevantKey := key[len(l.prefix):]
+func (l *listingIterator) getListingFromValue(value ValueRecord) *Listing {
+	relevantKey := value.Key[len(l.prefix):]
 	delimiterIndex := bytes.Index(relevantKey, l.delimiter)
 	if delimiterIndex == -1 {
 		// return listing for non common prefix with value
 		return &Listing{
 			CommonPrefix: false,
-			Key:          key,
-			Value:        value,
+			Key:          value.Key,
+			Value:        value.Value,
 		}
 	}
 	// return listing for common prefix key
-	commonPrefixKey := key[:len(l.prefix)+delimiterIndex+len(l.delimiter)]
+	commonPrefixKey := value.Key[:len(l.prefix)+delimiterIndex+len(l.delimiter)]
 	return &Listing{
 		CommonPrefix: true,
 		Key:          commonPrefixKey,
