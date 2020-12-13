@@ -57,36 +57,27 @@ func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 }
 
 func ResolvePath(encodedPath string) (ResolvedPath, error) {
-	result := make(map[string]string)
 	r := ResolvedPath{}
 	if len(encodedPath) == 0 {
 		return r, nil // empty path.
 	}
-	match := EncodedPathRe.FindStringSubmatch(encodedPath)
-	if len(match) == 0 {
-		// attempt to see if this is a ref only
-		match = EncodedPathReferenceRe.FindStringSubmatch(encodedPath)
+	// try reference with path or just reference regexp
+	for _, re := range []*regexp.Regexp{EncodedPathRe, EncodedPathReferenceRe} {
+		match := re.FindStringSubmatch(encodedPath)
 		if len(match) > 0 {
-			for i, name := range EncodedPathReferenceRe.SubexpNames() {
-				if i != 0 && name != "" {
-					result[name] = match[i]
+			for i, name := range re.SubexpNames() {
+				switch name {
+				case "ref":
+					r.Ref = match[i]
+				case "path":
+					r.Path = match[i]
+					r.WithPath = true
 				}
 			}
-			r.Ref = result["ref"]
 			return r, nil
 		}
-		r.WithPath = false
-		return r, ErrPathMalformed
 	}
-	for i, name := range EncodedPathRe.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
-		}
-	}
-	r.Path = result["path"]
-	r.Ref = result["ref"]
-	r.WithPath = true
-	return r, nil
+	return r, ErrPathMalformed
 }
 
 func WithRef(path, ref string) string {
