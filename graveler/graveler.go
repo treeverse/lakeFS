@@ -394,11 +394,11 @@ type StagingManager interface {
 	// Set writes a value under the given staging token and key.
 	Set(ctx context.Context, st StagingToken, key Key, value Value) error
 
-	// Delete deletes a value by staging token and key
-	Delete(ctx context.Context, st StagingToken, key Key) error
-
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
+
+	// DropKey clears a value by staging token and key
+	DropKey(ctx context.Context, st StagingToken, key Key) error
 
 	// Drop clears the given staging area
 	Drop(ctx context.Context, st StagingToken) error

@@ -417,7 +417,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if string(e.Identity) != "identity3" {
 		t.Fatalf("got unexpected value identity. expected=%s, got=%s", "identity3", string(e.Identity))
 	}
-	err = s.Delete(context.Background(), "t1", []byte("key1"))
+	err = s.DropKey(context.Background(), "t1", []byte("key1"))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v", err)
 	}

@@ -2,13 +2,12 @@ package graveler
 
 import (
 	"context"
-	"fmt"
+	"math"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
-
-const maxByte = 0xff
 
 type stagingManager struct {
 	db  db.Database
@@ -49,7 +48,7 @@ func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, valu
 	return err
 }
 
-func (p *stagingManager) Delete(ctx context.Context, st StagingToken, key Key) error {
+func (p *stagingManager) DropKey(ctx context.Context, st StagingToken, key Key) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key=$2", st, key)
 	}, p.txOpts(ctx)...)
@@ -72,7 +71,7 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 	useUpperBound := false
 	copy(upperBound, prefix)
 	for i := len(prefix) - 1; i >= 0; i-- {
-		if upperBound[i] == maxByte {
+		if upperBound[i] == math.MaxUint8 {
 			upperBound = upperBound[:i]
 		} else {
 			useUpperBound = true
@@ -80,15 +79,16 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 			break
 		}
 	}
-
+	builder := sq.Delete("kv_staging").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		baseQuery := "DELETE FROM kv_staging WHERE staging_token=$1 AND key >= $2::bytea"
 		if useUpperBound {
-			return tx.Exec(fmt.Sprintf("%s AND key < $3::bytea", baseQuery), st, prefix, upperBound)
-		} else {
-			// prefix is only 0xff bytes, no upper bound
-			return tx.Exec(baseQuery, st, prefix)
+			builder = builder.Where("key < ?::bytea", upperBound)
 		}
+		query, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
+		if err != nil {
+			return nil, err
+		}
+		return tx.Exec(query, args...)
 	}, p.txOpts(ctx)...)
 	return err
 }
