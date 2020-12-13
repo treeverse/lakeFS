@@ -16,7 +16,7 @@ const (
 	defaultMaxTasks    = 500
 	defaultWaitTime    = time.Millisecond * 300
 	defaultErrWaitTime = time.Second * 3
-	defaultMaxDuration = time.Minute * 30 // Todo(guys): change this
+	defaultMaxDuration = time.Minute * 30 // TODO(guys): change this
 )
 
 // ManagerProperties defines the configuration properties of an ActionManager
