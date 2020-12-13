@@ -18,7 +18,7 @@ type LoggedRows struct {
 	l      logging.Logger
 }
 
-var compileCheck pgx.Rows = &LoggedRows{}
+var _ pgx.Rows = &LoggedRows{}
 
 // Logged returns a pgx.Rows that will forward calls to r and logs their durations.
 func Logged(r pgx.Rows, start time.Time, l logging.Logger) *LoggedRows {
