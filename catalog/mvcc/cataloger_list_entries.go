@@ -101,8 +101,9 @@ func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, r
 	}, c.txOpts(ctx, db.ReadOnly())...)
 }
 
-// reading is mainly done in loopByLevel. It may happen (hopefully rarely) in getMoreRows.
-// variables needed for accessing the BD are packed and passed down to getMoreRows
+// readParamsType is a struct holding the parameters needed to perform SQL read queries.
+//  reading is mainly done in the main loop at "loopByLevel". It may happen (hopefully rarely) in getMoreRows.
+// variables needed for accessing the database are packed and passed down to getMoreRows
 type readParamsType struct {
 	tx              db.Tx
 	prefix          string
@@ -112,8 +113,15 @@ type readParamsType struct {
 	branchQueryMap  map[int64]sq.SelectBuilder
 }
 
-func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
-	// jump from prefix to prefix
+// LoopByLevel Extracts the prefixes(directories)  that exist under a certain prefix. (drill down in the object store "directory tree"
+// on each iteration, the function does the SQL retrieval from all lineage branches, and the calls "processSinglePrefix" to decide
+// which prefix to return from all lineage branches.
+// paths are parsed by the delimiter (usually '/')
+// Searching for the next prefix is done by appending the largest possible utf-8 rune to the end  of the previous prefix. and querying
+// all the branches of it's lineage. then looking for the lowest-value non-deleted entry path found across all  branches.
+// for that a union query is issues. to skip possible deleted entries - we need to retrieve "branchBatchSize" of rows from each branch
+func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64,
+	requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
 	topCommitID := requestedCommit
 	if requestedCommit == UncommittedID {
 		topCommitID = MaxCommitID
@@ -193,11 +201,14 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	}
 }
 
-func processSinglePrefix(response []entryPathPrefixInfo, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readParamsType) []string {
-	// gets results of union-reading, search for a prefix, or list of objects if those are leaves
+// "processSinglePrefix"  extracts either a single prefix, or a list of leaf entries from  results of union-reading from lineage branches
+// branch priority map reflect the lineage order, with lower numbers indicating higher priority. it is used to decide which
+// branch returned the prefix when the same path was returned by more than one branch.
+func processSinglePrefix(unionReadResults []entryPathPrefixInfo, delimiter string, branchPriorityMap map[int64]int,
+	limit int, readParams readParamsType) []string {
 	// split results by branch
 	branchRanges := make(map[int64][]entryPathPrefixInfo, len(branchPriorityMap))
-	for _, result := range response {
+	for _, result := range unionReadResults {
 		b := result.BranchID
 		_, exists := branchRanges[b]
 		if !exists {
@@ -240,6 +251,8 @@ func processSinglePrefix(response []entryPathPrefixInfo, delimiter string, branc
 	}
 }
 
+//  getMoreRows reads entries from a single branch after "processSinglePrefix"  exhausts a branch before finding the next path.
+// "processSinglePrefix"  reads more rows for that branch and stores the results directly into branchRanges.
 func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPathPrefixInfo, readParams readParamsType) error {
 	readBuf := make([]entryPathPrefixInfo, 0, readParams.branchBatchSize)
 	singleSelect := readParams.branchQueryMap[branch]
@@ -260,6 +273,9 @@ func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPathPr
 	return nil
 }
 
+// findLowestResultInBranches accepts query results for all branches in lineage , and examines the first entry of each branch result, looking
+// for the lowest path. If more than one branch contains that path, it will select the entry from the higher-priority
+// branch. (lowest number in branchPriority map)
 func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, branchPriorityMap map[int64]int) int64 {
 	firstTime := true
 	var chosenBranch int64
@@ -283,16 +299,28 @@ func findLowestResultInBranches(branchRanges map[int64][]entryPathPrefixInfo, br
 	return chosenBranch
 }
 
-func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int,
-	topCommitID CommitID, prefixLen int, endOfPrefixRange string) map[int64]sq.SelectBuilder {
+// buildBaseLevelQuery builds a map of select queries for each of the branches in  the requested branch lineage
+// number of entries that will be retrieved for each branch is limitted to branchBatchSize (The reason it is not enough
+// to read a single row is that we may retrieve deleted entries or tombstones, that should be skipped.
+// the requested commitID is passed to the base branch as is. each of the lineage branches gets the commit id from its lineage.
+func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchBatchSize int,
+	requestedCommitID CommitID, prefixLen int, endOfPrefixRange string) map[int64]sq.SelectBuilder {
 	unionMap := make(map[int64]sq.SelectBuilder)
-	unionMap[baseBranchID] = buildSingleBranchQuery(baseBranchID, branchEntryLimit, topCommitID, prefixLen, endOfPrefixRange)
+	unionMap[baseBranchID] = buildSingleBranchQuery(baseBranchID, branchBatchSize, requestedCommitID, prefixLen, endOfPrefixRange)
 	for _, l := range lineage {
-		unionMap[l.BranchID] = buildSingleBranchQuery(l.BranchID, branchEntryLimit, l.CommitID, prefixLen, endOfPrefixRange)
+		unionMap[l.BranchID] = buildSingleBranchQuery(l.BranchID, branchBatchSize, l.CommitID, prefixLen, endOfPrefixRange)
 	}
 	return unionMap
 }
 
+//
+// buildSingleBranchQuery builds a query on a single branch of the lineage returning entries as they were at topCommitID.
+// called mainly from "buildBaseLevelQuery" above.
+// the other function that calls it is "getMoreRows" that needs entries for a single branch.
+// topCommitId contains the requested commit for that branch. its implications:
+// 1. entries where the minCommitId is more than the requested commit id will be filtered out
+// 2. entries that were deleted after this commit (maxCommitId > topCommitId) will be considered
+//    undeleted
 func buildSingleBranchQuery(branchID int64, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
 	query := sq.Select("branch_id", "min_commit").
 		Distinct().Options(" ON (branch_id,path)").
@@ -307,6 +335,8 @@ func buildSingleBranchQuery(branchID int64, branchBatchSize int, topCommitID Com
 	return query
 }
 
+// loadEntriesIntoMarkerList accepts path listing results produced by "loopByLevel", and add entry details
+// where the result is an entry
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*catalog.Entry, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int

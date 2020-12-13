@@ -682,8 +682,8 @@ func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 		}
 		deps.LogAction("create_branch")
 		cataloger := deps.Cataloger
-		sourceBranch := swag.StringValue(params.Branch.Source)
-		commitLog, err := cataloger.CreateBranch(c.Context(), repository, branch, sourceBranch)
+		sourceRef := swag.StringValue(params.Branch.Source)
+		commitLog, err := cataloger.CreateBranch(c.Context(), repository, branch, sourceRef)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

@@ -42,7 +42,7 @@ export const UsersPage = connect(
     const deleteSelectedUsers = () => {
         deleteUsers(checkedUsers);
         handleClose();
-    }
+    };
 
     useEffect(() => {
         if (deletionStatus.done) {
