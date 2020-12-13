@@ -14,10 +14,12 @@ type uncommittedDiffIterator struct {
 	treeID           TreeID
 	value            *Diff
 	err              error
+	ctx              context.Context
 }
 
-func NewUncommittedDiffIterator(manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID TreeID) DiffIterator {
+func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID TreeID) DiffIterator {
 	return &uncommittedDiffIterator{
+		ctx:              ctx,
 		committedManager: manager,
 		list:             list,
 		storageNamespace: sn,
@@ -25,8 +27,8 @@ func NewUncommittedDiffIterator(manager CommittedManager, list ValueIterator, sn
 	}
 }
 
-func valueExistsInCommitted(ctx context.Context, committedManager CommittedManager, sn StorageNamespace, treeID TreeID, key Key) (bool, error) {
-	_, err := committedManager.Get(ctx, sn, treeID, key)
+func (d *uncommittedDiffIterator) valueExistsInCommitted(val ValueRecord) (bool, error) {
+	_, err := d.committedManager.Get(d.ctx, d.storageNamespace, d.treeID, val.Key)
 	if errors.Is(err, ErrNotFound) {
 		return false, nil
 	}
@@ -36,15 +38,17 @@ func valueExistsInCommitted(ctx context.Context, committedManager CommittedManag
 	return true, nil
 }
 
-func getDiffType(ctx context.Context, committedManager CommittedManager, sn StorageNamespace, treeID TreeID, key Key, tombstone bool) (DiffType, error) {
-	existsInCommitted, err := valueExistsInCommitted(ctx, committedManager, sn, treeID, key)
+func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (DiffType, error) {
+	existsInCommitted, err := d.valueExistsInCommitted(val)
 	if err != nil {
 		return 0, err
 	}
-	if tombstone {
+
+	if val.Value == nil {
+		// tombstone
 		if !existsInCommitted {
 			logging.Default().
-				WithFields(logging.Fields{"tree_id": treeID, "storage_namespace": sn, "key": key}).
+				WithFields(logging.Fields{"tree_id": d.treeID, "storage_namespace": d.storageNamespace, "key": val.Key}).
 				Warn("tombstone for a file that does not exist")
 		}
 		return DiffTypeRemoved, nil
@@ -61,7 +65,7 @@ func (d *uncommittedDiffIterator) Next() bool {
 		return false
 	}
 	val := d.list.Value()
-	diffType, err := getDiffType(context.Background(), d.committedManager, d.storageNamespace, d.treeID, val.Key, val.Value == nil)
+	diffType, err := d.getDiffType(*val)
 	if err != nil {
 		d.value = nil
 		d.err = err

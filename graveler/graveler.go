@@ -422,7 +422,7 @@ var (
 	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
 	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
-	ErrCommitIDAmbiguous       = fmt.Errorf("commit ID is ambiguous: %w", ErrNotFound)
+	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
 )
@@ -628,7 +628,7 @@ func (g *graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, 
 		return err
 	}
 	err = g.StagingManager.Drop(ctx, branch.stagingToken)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
 	return g.RefManager.DeleteBranch(ctx, repositoryID, branchID)
@@ -735,7 +735,7 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 	if err != nil {
 		return "", err
 	}
-	toCommit, err := g.getCommitRecordFromBranchID(ctx, repositoryID, to)
+	toCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, Ref(to))
 	if err != nil {
 		return "", err
 	}
@@ -776,7 +776,7 @@ func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	if err != nil {
 		return nil, err
 	}
-	return NewUncommittedDiffIterator(g.CommittedManager, valueIterator, repo.StorageNamespace, commit.TreeID), nil
+	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.TreeID), nil
 }
 
 func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
@@ -792,10 +792,6 @@ func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID Repo
 		CommitID: reference.CommitID(),
 		Commit:   commit,
 	}, nil
-}
-
-func (g *graveler) getCommitRecordFromBranchID(ctx context.Context, repositoryID RepositoryID, branch BranchID) (*CommitRecord, error) {
-	return g.getCommitRecordFromRef(ctx, repositoryID, Ref(branch))
 }
 
 func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error) {
