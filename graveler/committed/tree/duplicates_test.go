@@ -3,10 +3,9 @@ package tree_test
 import (
 	"testing"
 
-	"github.com/treeverse/lakefs/forest/tree"
-
 	"github.com/treeverse/lakefs/catalog/rocks"
-	"github.com/treeverse/lakefs/forest/sstable"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
+	"github.com/treeverse/lakefs/graveler/committed/tree"
 )
 
 func TestRemoveDuplicates(t *testing.T) {

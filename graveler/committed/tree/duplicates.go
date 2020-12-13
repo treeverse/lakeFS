@@ -2,7 +2,7 @@ package tree
 
 import (
 	"github.com/treeverse/lakefs/catalog/rocks"
-	"github.com/treeverse/lakefs/forest/sstable"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
 )
 
 type Part struct {
