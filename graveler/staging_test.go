@@ -265,6 +265,7 @@ func TestDropPrefixBytes(t *testing.T) {
 		if it.Err() != nil {
 			t.Fatalf("got unexpected error: %v", it.Err())
 		}
+		it.Close()
 	}
 }
 
@@ -335,6 +336,7 @@ func TestSeek(t *testing.T) {
 	if !it.Next() {
 		t.Fatal("iterator next expected to return true, got false")
 	}
+	it.Close()
 }
 
 func TestNilIdentity(t *testing.T) {
