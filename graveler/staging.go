@@ -67,21 +67,10 @@ func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
 }
 
 func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error {
-	upperBound := make(Key, len(prefix))
-	useUpperBound := false
-	copy(upperBound, prefix)
-	for i := len(prefix) - 1; i >= 0; i-- {
-		if upperBound[i] == math.MaxUint8 {
-			upperBound = upperBound[:i]
-		} else {
-			useUpperBound = true
-			upperBound[i] += 1
-			break
-		}
-	}
+	upperBound := getUpperBoundForPrefix(prefix)
 	builder := sq.Delete("kv_staging").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if useUpperBound {
+		if upperBound != nil {
 			builder = builder.Where("key < ?::bytea", upperBound)
 		}
 		query, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
@@ -91,6 +80,23 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 		return tx.Exec(query, args...)
 	}, p.txOpts(ctx)...)
 	return err
+}
+
+func getUpperBoundForPrefix(prefix Key) Key {
+	incrementIdx := -1
+	for i := len(prefix) - 1; i >= 0; i-- {
+		if prefix[i] != math.MaxUint8 {
+			incrementIdx = i
+			break
+		}
+	}
+	if incrementIdx == -1 {
+		return nil
+	}
+	upperBound := make(Key, incrementIdx+1)
+	copy(upperBound, prefix[:incrementIdx+1])
+	upperBound[incrementIdx] += 1
+	return upperBound
 }
 
 func (p *stagingManager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
