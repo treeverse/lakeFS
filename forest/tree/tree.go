@@ -38,7 +38,7 @@ type TreeRepo interface {
 	NewIteratorFromTreeSlice(treeSlice TreeSlice, start graveler.Key) (graveler.ValueIterator, error)
 	// GetPartManager give components of tree package to the configured part manager.
 	// will probably change later
-	GetPartManger() sstable.Manager
+	// GetPartManger() sstable.Manager
 }
 
 type TreeWriter interface {
@@ -47,7 +47,8 @@ type TreeWriter interface {
 	FlushIterToTree(iter graveler.ValueIterator) error
 	// SaveTree stores the tree to tierFS. During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts
-	SaveTree(reuseTree TreeSlice, // A tree may be saved with additional parts that are "reused" from a base tree.
+	SaveTree() (graveler.TreeID, error)
+	SaveTreeWithReusedParts(reuseTree TreeSlice, // A tree may be saved with additional parts that are "reused" from a base tree.
 	// these are parts that exist in a source tree, and are merged into the destination tree.
 	// an example of using it is in the apply process, which creates a new tree from a base tree and an input iterator.
 	// those parts of the base tree that were not modified by it input iterator will be merged into the resulting tree
