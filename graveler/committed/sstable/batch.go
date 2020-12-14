@@ -5,18 +5,16 @@ import (
 	"sync"
 
 	"github.com/treeverse/lakefs/graveler/committed"
-
-	"go.uber.org/atomic"
 )
 
 type BatchCloser struct {
 	results []committed.WriteResult
-	err     atomic.Error
+	err     error
 
 	wg sync.WaitGroup
 
-	// resultsLock locks any access to the accumulated results
-	resultsLock sync.Mutex
+	// lock locks any access to the results and error
+	lock sync.Mutex
 }
 
 var (
@@ -27,10 +25,12 @@ var (
 // Any writes executed to the writer after this call are not guaranteed to succeed.
 // If Wait() has already been called, returns an error.
 func (bc *BatchCloser) CloseWriterAsync(w committed.Writer) error {
-	err := bc.err.Load()
-	if err != nil {
+	bc.lock.Lock()
+	defer bc.lock.Unlock()
+
+	if bc.err != nil {
 		// don't accept new writers if previous error occurred
-		return err
+		return bc.err
 	}
 
 	bc.wg.Add(1)
@@ -42,27 +42,33 @@ func (bc *BatchCloser) CloseWriterAsync(w committed.Writer) error {
 func (bc *BatchCloser) closeWriter(w committed.Writer) {
 	defer bc.wg.Done()
 	res, err := w.Close()
+
+	// long operation is over, we can lock to have synchronized access to err and results
+	bc.lock.Lock()
+	defer bc.lock.Unlock()
+
 	if err != nil {
-		if bc.err.Load() == nil {
+		if bc.err == nil {
 			// keeping first error is enough
-			bc.err.Store(err)
+			bc.err = err
 		}
 		return
 	}
 
-	bc.resultsLock.Lock()
-	defer bc.resultsLock.Unlock()
 	bc.results = append(bc.results, *res)
 }
 
 // Wait returns when all Writers finished.
 // Any failure to close a single Writer will return with a nil results slice and an error.
 func (bc *BatchCloser) Wait() ([]committed.WriteResult, error) {
-	err := bc.err.Load()
-	if err != nil {
-		return nil, err
+	bc.lock.Lock()
+	if bc.err != nil {
+		defer bc.lock.Unlock()
+		return nil, bc.err
 	}
-	bc.err.Store(errMultipleWaitCalls)
+	bc.err = errMultipleWaitCalls
+	bc.lock.Unlock()
 
-	return bc.results, nil
+	bc.wg.Wait()
+	return bc.results, bc.err
 }
