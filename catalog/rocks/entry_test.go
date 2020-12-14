@@ -22,6 +22,10 @@ func TestEntryToValueAndBack(t *testing.T) {
 	val, err := EntryToValue(entry)
 	testutil.MustDo(t, "convert entry value", err)
 
+	if len(val.Identity) == 0 {
+		t.Error("EntryToValue() missing identify")
+	}
+
 	ent, err := ValueToEntry(val)
 	testutil.MustDo(t, "convert value to entry", err)
 
