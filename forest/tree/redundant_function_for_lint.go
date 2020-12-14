@@ -5,7 +5,7 @@ import (
 )
 
 // written just to pass lint objections. will be deleted ASAP
-func RedundentFunctionForLint() *Tree {
+func RedundantFunctionForLint() *Tree {
 	t := new(Tree)
 	t.treeSlice = make([]treePart, 1)
 	t.treeSlice[0] = treePart{MaxKey: graveler.Key(""), PartName: ""}
