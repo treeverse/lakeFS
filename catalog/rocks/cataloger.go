@@ -2,6 +2,7 @@ package rocks
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/graveler"
@@ -17,8 +18,10 @@ type cataloger struct {
 
 func NewCataloger() catalog.Cataloger {
 	return &cataloger{
+		EntryCatalog: NewEntryCatalog(),
 		log:          logging.Default(),
 		dummyDedupCh: make(chan *catalog.DedupReport),
+		hooks:        catalog.CatalogerHooks{},
 	}
 }
 
@@ -187,10 +190,10 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	catalogEntry := &catalog.Entry{
 		Path:            p.String(),
 		PhysicalAddress: ent.Address,
-		CreationDate:    ent.LastModified,
+		CreationDate:    ent.LastModified.AsTime(),
 		Size:            ent.Size,
-		Checksum:        ent.ETag,
-		Metadata:        map[string]string(ent.Metadata),
+		Checksum:        hex.EncodeToString(ent.ETag),
+		Metadata:        ent.Metadata,
 	}
 	return catalogEntry, nil
 }
@@ -208,10 +211,14 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
+	etag, err := hex.DecodeString(entry.Checksum)
+	if err != nil {
+		return err
+	}
 	ent := &Entry{
 		Address:  entry.PhysicalAddress,
 		Metadata: map[string]string(entry.Metadata),
-		ETag:     entry.Checksum,
+		ETag:     etag,
 		Size:     entry.Size,
 	}
 	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent)
@@ -231,10 +238,14 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 		if err != nil {
 			return err
 		}
+		etag, err := hex.DecodeString(entry.Checksum)
+		if err != nil {
+			return err
+		}
 		ent := &Entry{
 			Address:  entry.PhysicalAddress,
 			Metadata: map[string]string(entry.Metadata),
-			ETag:     entry.Checksum,
+			ETag:     etag,
 			Size:     entry.Size,
 		}
 		if err := c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent); err != nil {

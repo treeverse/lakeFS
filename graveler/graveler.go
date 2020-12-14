@@ -8,13 +8,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/ident"
-
 	"github.com/treeverse/lakefs/catalog"
-
-	"time"
+	"github.com/treeverse/lakefs/ident"
 )
 
 // Basic Types
