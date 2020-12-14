@@ -138,9 +138,6 @@ gen-ui: ui-bundle
 gen-ddl: $(GOBINPATH)/statik  ## Embed data migration files into the resulting binary
 	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
 
-gen-proto:
-	protoc --proto_path=catalog/rocks --go_out=catalog/rocks --go_opt=paths=source_relative catalog/rocks/catalog.proto
-
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
