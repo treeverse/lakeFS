@@ -9,30 +9,38 @@ import (
 )
 
 func Test_entryCatalog_GetEntry(t *testing.T) {
-	type fields struct {
-		db graveler.Graveler
-	}
 	type args struct {
-		ctx          context.Context
 		repositoryID graveler.RepositoryID
 		ref          graveler.Ref
 		path         Path
 	}
+	ctx := context.Background()
 	tests := []struct {
 		name    string
-		fields  fields
+		db      graveler.Graveler
 		args    args
 		want    *Entry
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "not found",
+			db: GravelerMock{
+				KeyValue: nil,
+				Err:      graveler.ErrNotFound,
+			},
+			args: args{
+				repositoryID: "repo1",
+				ref:          "master",
+				path:         "path1",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := entryCatalog{
-				db: tt.fields.db,
-			}
-			got, err := e.GetEntry(tt.args.ctx, tt.args.repositoryID, tt.args.ref, tt.args.path)
+			e := entryCatalog{db: tt.db}
+			got, err := e.GetEntry(ctx, tt.args.repositoryID, tt.args.ref, tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return

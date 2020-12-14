@@ -217,11 +217,7 @@ func (e entryCatalog) GetEntry(ctx context.Context, repositoryID graveler.Reposi
 	if err != nil {
 		return nil, err
 	}
-	ent, err := ValueToEntry(val)
-	if err != nil {
-		return nil, err
-	}
-	return ent, nil
+	return ValueToEntry(val)
 }
 
 func (e entryCatalog) SetEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path, entry *Entry) error {
