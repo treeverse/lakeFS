@@ -243,6 +243,7 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 // It returns a file handle to the local file.
 func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
+		var err error
 		reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
@@ -259,7 +260,7 @@ func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) 
 			return nil, fmt.Errorf("copying date to file: %w", err)
 		}
 
-		if err := writer.Close(); err != nil {
+		if err = writer.Close(); err != nil {
 			err = fmt.Errorf("writer close: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
