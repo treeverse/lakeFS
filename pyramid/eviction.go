@@ -17,9 +17,9 @@ type lruSizeEviction struct {
 	cache simplelru.LRUCache
 }
 
-func newLRUSizeEviction(capacity int64, evict func(rPath relativePath)) (eviction, error) {
-	cache, err := lru.NewWithEvict(capacity, func(key interface{}, _ interface{}, _ int64) {
-		evict(key.(relativePath))
+func newLRUSizeEviction(capacity int64, evict func(rPath relativePath, cost int64)) (eviction, error) {
+	cache, err := lru.NewWithEvict(capacity, func(key interface{}, _ interface{}, cost int64) {
+		evict(key.(relativePath), cost)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating cache: %w", err)

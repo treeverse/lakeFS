@@ -196,7 +196,7 @@ func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID Repos
 			return "", ErrNotFound
 		}
 		if len(startWith) > 1 {
-			return "", ErrCommitIDAmbiguous // more than 1 commit starts with the ID prefix
+			return "", ErrRefAmbiguous // more than 1 commit starts with the ID prefix
 		}
 		return startWith[0], nil
 	}, db.ReadOnly(), db.WithContext(ctx))
