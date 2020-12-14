@@ -46,9 +46,9 @@ func (e entryListingIterator) Next() bool {
 
 func (e entryListingIterator) SeekGE(id Path) {
 	e.value = nil
-	key, err := graveler.NewKey(id.String())
-	if err != nil {
-		e.err = err
+	var key graveler.Key
+	key, e.err = graveler.NewKey(id.String())
+	if e.err != nil {
 		return
 	}
 	e.it.SeekGE(key)
