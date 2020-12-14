@@ -26,7 +26,7 @@ type TierFS struct {
 	adaptor block.Adapter
 
 	eviction eviction
-	keyLock  *cache.ChanLocker
+	keyLock  cache.OnlyOne
 	syncDir  *directory
 
 	fsName string
@@ -73,7 +73,7 @@ func NewFS(c *Config) (FS, error) {
 		logger:         c.logger,
 		fsLocalBaseDir: fsLocalBaseDir,
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
-		keyLock:        cache.NewChanLocker(),
+		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
 	eviction, err := newLRUSizeEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
@@ -242,35 +242,32 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
 func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
-	var e error
-	tfs.keyLock.Lock(fileRef.filename, func() {
+	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
-			e = fmt.Errorf("read from block storage: %w", err)
-			return
+			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
 		defer reader.Close()
 
 		writer, err := tfs.syncDir.createFile(fileRef.fullPath)
 		if err != nil {
-			e = fmt.Errorf("creating file: %w", err)
-			return
+			return nil, fmt.Errorf("creating file: %w", err)
 		}
 
 		written, err := io.Copy(writer, reader)
 		if err != nil {
-			e = fmt.Errorf("copying date to file: %w", err)
-			return
+			return nil, fmt.Errorf("copying date to file: %w", err)
 		}
 
 		if err := writer.Close(); err != nil {
-			e = fmt.Errorf("writer close: %w", err)
+			err = fmt.Errorf("writer close: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
+		return nil, err
 	})
 
-	if e != nil {
-		return nil, e
+	if err != nil {
+		return nil, err
 	}
 
 	fh, err := os.Open(fileRef.fullPath)
