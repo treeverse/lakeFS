@@ -83,19 +83,16 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 }
 
 func getUpperBoundForPrefix(prefix Key) Key {
-	incrementIdx := -1
-	for i := len(prefix) - 1; i >= 0; i-- {
-		if prefix[i] != math.MaxUint8 {
-			incrementIdx = i
-			break
-		}
+	idx := len(prefix) - 1
+	for idx >= 0 && prefix[idx] == math.MaxUint8 {
+		idx--
 	}
-	if incrementIdx == -1 {
+	if idx == -1 {
 		return nil
 	}
-	upperBound := make(Key, incrementIdx+1)
-	copy(upperBound, prefix[:incrementIdx+1])
-	upperBound[incrementIdx] += 1
+	upperBound := make(Key, idx+1)
+	copy(upperBound, prefix[:idx+1])
+	upperBound[idx]++
 	return upperBound
 }
 
