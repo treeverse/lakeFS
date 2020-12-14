@@ -66,6 +66,7 @@ type TreeWriter interface {
 	//) (graveler.TreeID, error)
 }
 
+// interface that "inherits" from simple TreeWriter. copies the parts that were not changed from base
 type TreeWriterOnBaseTree interface {
 	TreeWriter
 	// WriteValue overrides the TreeWriter method
