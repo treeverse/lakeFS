@@ -682,7 +682,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Delete(ctx, branch.stagingToken, key)
+	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
