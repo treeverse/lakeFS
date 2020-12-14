@@ -33,7 +33,14 @@ func TestMultipartUpload(t *testing.T) {
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
-	completedParts := uploadMultipartParts(t, logger, resp)
+	parts := make([][]byte, multipartNumberOfParts)
+	var partsConcat []byte
+	for i := 0; i < multipartNumberOfParts; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize)
+		partsConcat = append(partsConcat, parts[i]...)
+	}
+
+	completedParts := uploadMultipartParts(t, logger, resp, parts)
 
 	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
@@ -47,9 +54,10 @@ func TestMultipartUpload(t *testing.T) {
 			WithRef(masterBranch).
 			WithPath(file), nil, &b)
 	require.NoError(t, err, "failed to get object")
+	require.True(t, bytes.Equal(b.Bytes(), partsConcat), "uploaded object did not match")
 }
 
-func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput) []*s3.CompletedPart {
+func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte) []*s3.CompletedPart {
 	completedParts := make([]*s3.CompletedPart, multipartNumberOfParts)
 	errs := make([]error, multipartNumberOfParts)
 	var wg sync.WaitGroup
@@ -58,7 +66,7 @@ func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 		go func(i int) {
 			defer wg.Done()
 			partNumber := i + 1
-			completedParts[i], errs[i] = uploadMultipartPart(logger, svc, resp, randstr.Bytes(multipartPartSize), partNumber)
+			completedParts[i], errs[i] = uploadMultipartPart(logger, svc, resp, parts[i], partNumber)
 		}(i)
 	}
 	wg.Wait()
