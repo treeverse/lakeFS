@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/google/uuid"
@@ -21,9 +22,12 @@ import (
 // All files are stored in the block storage. Local paths are treated as a
 // cache layer that will be evicted according to the eviction control.
 type TierFS struct {
-	adaptor  block.Adapter
+	logger  logging.Logger
+	adaptor block.Adapter
+
 	eviction eviction
-	logger   logging.Logger
+	keyLock  *cache.ChanLocker
+	syncDir  *directory
 
 	fsName string
 
@@ -68,6 +72,8 @@ func NewFS(c *Config) (FS, error) {
 		fsName:         c.fsName,
 		logger:         c.logger,
 		fsLocalBaseDir: fsLocalBaseDir,
+		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
+		keyLock:        cache.NewChanLocker(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
 	eviction, err := newLRUSizeEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
@@ -113,46 +119,25 @@ func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
 	return nil
 }
 
-func (tfs *TierFS) removeFromLocal(rPath relativePath) {
+func (tfs *TierFS) removeFromLocal(rPath relativePath, filesize int64) {
 	// This will be called by the cache eviction mechanism during entry insert.
 	// We don't want to wait while the file is being removed from the local disk.
-	go removeFromLocal(tfs.logger, tfs.fsLocalBaseDir, rPath)
+	evictionHistograms.WithLabelValues(tfs.fsName).Observe(float64(filesize))
+	go tfs.removeFromLocalInternal(rPath)
 }
 
-func removeFromLocal(logger logging.Logger, fsLocalBaseDir string, rPath relativePath) {
-	p := path.Join(fsLocalBaseDir, string(rPath))
+func (tfs *TierFS) removeFromLocalInternal(rPath relativePath) {
+	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
 	if err := os.Remove(p); err != nil {
-		logger.WithError(err).WithField("path", p).Error("Removing file failed")
+		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
+		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval")
 		return
 	}
 
-	dir := path.Dir(p)
-	empty, err := isDirEmpty(dir)
-	if err != nil {
-		logger.WithError(err).WithField("dir", dir).Error("Checking if dir empty failed")
-		return
+	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(p)); err != nil {
+		tfs.logger.WithError(err).Error("Failed deleting empty dir")
+		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
 	}
-	if !empty {
-		return
-	}
-
-	if err := os.Remove(dir); err != nil {
-		logger.WithError(err).WithField("dir", dir).Error("Removing dir failed")
-	}
-}
-
-func isDirEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1)
-	if err == io.EOF {
-		return true, nil
-	}
-	return false, err
 }
 
 func (tfs *TierFS) store(namespace, originalPath, filename string) error {
@@ -177,10 +162,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 
 	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
-	if err := os.MkdirAll(path.Dir(fileRef.fullPath), os.ModePerm); err != nil {
-		return fmt.Errorf("creating file dir %s: %w", originalPath, err)
-	}
-	if err := os.Rename(originalPath, fileRef.fullPath); err != nil {
+	if err := tfs.syncDir.renameFile(originalPath, fileRef.fullPath); err != nil {
 		return fmt.Errorf("rename file %s: %w", originalPath, err)
 	}
 
@@ -206,14 +188,14 @@ func (tfs *TierFS) Create(namespace string) (*File, error) {
 	}
 
 	return &File{
-		fh: fh,
+		File: fh,
 		store: func(filename string) error {
 			return tfs.store(namespace, tempPath, filename)
 		},
 	}, nil
 }
 
-// Load returns the a file descriptor to the local file.
+// Open returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
 func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
 	if err := validateArgs(namespace, filename); err != nil {
@@ -223,12 +205,14 @@ func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
+		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
 		return tfs.openFile(fileRef, fh)
 	}
 	if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("open file: %w", err)
 	}
 
+	cacheAccess.WithLabelValues(tfs.fsName, "Miss").Inc()
 	fh, err = tfs.readFromBlockStorage(fileRef)
 	if err != nil {
 		return nil, err
@@ -248,7 +232,7 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 	// we already have the file.
 	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
 	return &ROFile{
-		fh:       fh,
+		File:     fh,
 		rPath:    fileRef.fsRelativePath,
 		eviction: tfs.eviction,
 	}, nil
@@ -258,28 +242,42 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
 func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
-	reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
-	if err != nil {
-		return nil, fmt.Errorf("read from block storage: %w", err)
-	}
-	defer reader.Close()
+	var e error
+	tfs.keyLock.Lock(fileRef.filename, func() {
+		reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
+		if err != nil {
+			e = fmt.Errorf("read from block storage: %w", err)
+			return
+		}
+		defer reader.Close()
 
-	writer, err := os.Create(fileRef.fullPath)
-	if err != nil {
-		return nil, fmt.Errorf("creating file: %w", err)
-	}
+		writer, err := tfs.syncDir.createFile(fileRef.fullPath)
+		if err != nil {
+			e = fmt.Errorf("creating file: %w", err)
+			return
+		}
 
-	if _, err := io.Copy(writer, reader); err != nil {
-		return nil, fmt.Errorf("copying date to file: %w", err)
-	}
-	if err := writer.Close(); err != nil {
-		return nil, fmt.Errorf("writer close: %w", err)
+		written, err := io.Copy(writer, reader)
+		if err != nil {
+			e = fmt.Errorf("copying date to file: %w", err)
+			return
+		}
+
+		if err := writer.Close(); err != nil {
+			e = fmt.Errorf("writer close: %w", err)
+		}
+		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
+	})
+
+	if e != nil {
+		return nil, e
 	}
 
 	fh, err := os.Open(fileRef.fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("open file: %w", err)
 	}
+
 	return fh, nil
 }
 

@@ -1,11 +1,17 @@
 package pyramid
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
+	"sync"
 	"testing"
+
+	"github.com/streadway/handy/atomic"
+
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/thanhpk/randstr"
 
@@ -16,8 +22,7 @@ import (
 )
 
 var (
-	fs      FS
-	adapter block.Adapter
+	fs FS
 )
 
 const blockStoragePrefix = "prefix"
@@ -33,11 +38,15 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	adapter = mem.New()
+	// starting adapter with closed channel so all Gets pass
+	adapter := &memAdapter{Adapter: mem.New(), wait: make(chan struct{})}
+	close(adapter.wait)
+
 	var err error
 	fs, err = NewFS(&Config{
 		fsName:               fsName,
 		adaptor:              adapter,
+		logger:               logging.Dummy(),
 		fsBlockStoragePrefix: blockStoragePrefix,
 		localBaseDir:         os.TempDir(),
 		allocatedDiskBytes:   allocatedDiskBytes,
@@ -138,7 +147,6 @@ func TestStartup(t *testing.T) {
 	bytes, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
 	require.Equal(t, content, string(bytes))
-
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
@@ -172,6 +180,36 @@ func TestInvalidArgs(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestMultipleConcurrentReads(t *testing.T) {
+	// write a single file to lookup later
+	namespace := uuid.New().String()
+	filename := "1/2/file1.txt"
+	content := "hello world!"
+	writeToFile(t, namespace, filename, content)
+
+	// fill the cache so the file is evicted
+	testEviction(t, namespace)
+	adapter := fs.(*TierFS).adaptor.(*memAdapter)
+	readsSoFar := adapter.gets.Get()
+
+	// try to read that file - only a single access to block storage is expected
+	concurrencyLevel := 50
+	adapter.wait = make(chan struct{})
+	var wg sync.WaitGroup
+	for i := 0; i < concurrencyLevel; i++ {
+		wg.Add(1)
+		go func() {
+			checkContent(t, namespace, filename, content)
+			wg.Done()
+		}()
+	}
+
+	close(adapter.wait)
+	wg.Wait()
+
+	require.Equal(t, readsSoFar+1, adapter.gets.Get())
+}
+
 func writeToFile(t *testing.T, namespace, filename, content string) {
 	f, err := fs.Create(namespace)
 	require.NoError(t, err)
@@ -191,5 +229,20 @@ func checkContent(t *testing.T, namespace string, filename string, content strin
 
 	bytes, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
-	require.Equal(t, content, string(bytes))
+	if content != string(bytes) {
+		require.Equal(t, content, string(bytes))
+	}
+}
+
+// simple mem adapter that count gets and let you wait
+type memAdapter struct {
+	gets atomic.Int
+	wait chan struct{}
+	*mem.Adapter
+}
+
+func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, error) {
+	a.gets.Add(1)
+	<-a.wait
+	return a.Adapter.Get(obj, size)
 }
