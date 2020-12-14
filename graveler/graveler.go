@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/ident"
 
 	"github.com/treeverse/lakefs/catalog"
@@ -202,13 +203,13 @@ type VersionController interface {
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
 	// CreateBranch creates branch on repository pointing to ref
-	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
+	CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error)
 
 	// UpdateBranch updates branch on repository pointing to ref
-	UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (Branch, error)
+	UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error)
 
 	// GetBranch gets branch information by branch / repository id
-	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (Branch, error)
+	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
 
 	// Log returns an iterator starting at commit ID up to repository root
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
@@ -394,14 +395,17 @@ type StagingManager interface {
 	// Set writes a value under the given staging token and key.
 	Set(ctx context.Context, st StagingToken, key Key, value Value) error
 
-	// Delete deletes a value by staging token and key
-	Delete(ctx context.Context, st StagingToken, key Key) error
-
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
 
+	// DropKey clears a value by staging token and key
+	DropKey(ctx context.Context, st StagingToken, key Key) error
+
 	// Drop clears the given staging area
 	Drop(ctx context.Context, st StagingToken) error
+
+	// DropByPrefix drops all keys starting with the given prefix, from the given staging area
+	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
 var (
@@ -421,7 +425,9 @@ var (
 	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
 	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
-	ErrCommitIDAmbiguous       = fmt.Errorf("commit ID is ambiguous: %w", ErrNotFound)
+	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
+	ErrConflictFound           = errors.New("conflict found")
+	ErrBranchExists            = errors.New("branch already exists")
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {
@@ -487,4 +493,327 @@ func NewCommitID(id string) (CommitID, error) {
 
 func (id CommitID) String() string {
 	return string(id)
+}
+
+type graveler struct {
+	CommittedManager CommittedManager
+	StagingManager   StagingManager
+	RefManager       RefManager
+}
+
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) Graveler {
+	return &graveler{
+		CommittedManager: committedManager,
+		StagingManager:   stagingManager,
+		RefManager:       refManager,
+	}
+}
+
+func (g *graveler) GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error) {
+	return g.RefManager.GetRepository(ctx, repositoryID)
+}
+
+func (g *graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
+	repo := Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now(),
+		DefaultBranchID:  branchID,
+	}
+	branch := Branch{
+		stagingToken: generateStagingToken(repositoryID, branchID),
+	}
+	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, branch)
+	if err != nil {
+		return nil, err
+	}
+	return &repo, nil
+}
+
+func (g *graveler) ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error) {
+	return g.RefManager.ListRepositories(ctx, from)
+}
+
+func (g *graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
+	return g.RefManager.DeleteRepository(ctx, repositoryID)
+}
+
+func (g *graveler) GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error) {
+	return g.RefManager.GetCommit(ctx, repositoryID, commitID)
+}
+
+func generateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
+	// TODO(Guys): initial implementation, change this
+	uid := uuid.New().String()
+	return StagingToken(fmt.Sprintf("%s-%s:%s", repositoryID, branchID, uid))
+}
+
+func (g *graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
+	// check if branch exists
+	_, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if !errors.Is(err, ErrNotFound) {
+		if err == nil {
+			err = ErrBranchExists
+		}
+		return nil, err
+	}
+
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+
+	newBranch := Branch{
+		CommitID:     reference.CommitID(),
+		stagingToken: generateStagingToken(repositoryID, branchID),
+	}
+	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
+	if err != nil {
+		return nil, err
+	}
+	return &newBranch, nil
+}
+
+func (g *graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+
+	curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	// validate no conflict
+	// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
+	iter, err := g.StagingManager.List(ctx, curBranch.stagingToken)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	if iter.Next() {
+		return nil, ErrConflictFound
+	}
+
+	newBranch := Branch{
+		CommitID:     reference.CommitID(),
+		stagingToken: curBranch.stagingToken,
+	}
+	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
+	if err != nil {
+		return nil, err
+	}
+	return &newBranch, nil
+}
+
+func (g *graveler) GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error) {
+	return g.RefManager.GetBranch(ctx, repositoryID, branchID)
+}
+
+func (g *graveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error) {
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return "", err
+	}
+	return reference.CommitID(), nil
+}
+
+func (g *graveler) Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error) {
+	return g.RefManager.Log(ctx, repositoryID, commitID)
+}
+
+func (g *graveler) ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error) {
+	return g.RefManager.ListBranches(ctx, repositoryID, from)
+}
+
+func (g *graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	err = g.StagingManager.Drop(ctx, branch.stagingToken)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	return g.RefManager.DeleteBranch(ctx, repositoryID, branchID)
+}
+
+func (g *graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	if reference.Type() == ReferenceTypeBranch {
+		// try to get from staging, if not found proceed to committed
+		branch := reference.Branch()
+		value, err := g.StagingManager.Get(ctx, branch.stagingToken, key)
+		if !errors.Is(err, ErrNotFound) {
+			if err != nil {
+				return nil, err
+			}
+			if value == nil {
+				// tombstone
+				return nil, ErrNotFound
+			}
+			return value, nil
+		}
+	}
+	commitID := reference.CommitID()
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
+}
+
+func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error {
+	branch, err := g.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.Set(ctx, branch.stagingToken, key, value)
+}
+
+func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	branch, err := g.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+}
+
+func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID())
+	if err != nil {
+		return nil, err
+	}
+
+	var listing ListingIterator
+	committedValues, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.TreeID, from)
+	if err != nil {
+		return nil, err
+	}
+	if reference.Type() == ReferenceTypeBranch {
+		stagingList, err := g.StagingManager.List(ctx, reference.Branch().stagingToken)
+		if err != nil {
+			return nil, err
+		}
+		listing = NewCombinedIterator(NewListingIterator(NewPrefixIterator(stagingList, prefix), delimiter, prefix), NewListingIterator(NewPrefixIterator(committedValues, prefix), delimiter, prefix))
+	} else {
+		listing = NewListingIterator(NewPrefixIterator(committedValues, prefix), delimiter, prefix)
+	}
+	return listing, nil
+}
+
+func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
+	panic("implement me")
+}
+
+func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
+	panic("implement me") // waiting for staging reset
+}
+
+func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error) {
+	panic("implement me")
+}
+
+func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+
+	fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
+	if err != nil {
+		return "", err
+	}
+	toCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, Ref(to))
+	if err != nil {
+		return "", err
+	}
+	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, fromCommit.CommitID, toCommit.CommitID)
+	if err != nil {
+		return "", err
+	}
+
+	treeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.TreeID, toCommit.TreeID, baseCommit.TreeID)
+	if err != nil {
+		return "", err
+	}
+	commit := Commit{
+		Committer:    "unknown",       // TODO(Guys): pass committer or enter default value
+		Message:      "merge message", // TODO(Guys): get merge message
+		TreeID:       treeID,
+		CreationDate: time.Time{},
+		Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
+		Metadata:     nil, // TODO(Guys): pass metadata
+	}
+	return g.RefManager.AddCommit(ctx, repositoryID, commit)
+}
+
+func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+	if err != nil {
+		return nil, err
+	}
+	valueIterator, err := g.StagingManager.List(ctx, branch.stagingToken)
+	if err != nil {
+		return nil, err
+	}
+	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.TreeID), nil
+}
+
+func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID())
+	if err != nil {
+		return nil, err
+	}
+	return &CommitRecord{
+		CommitID: reference.CommitID(),
+		Commit:   commit,
+	}, nil
+}
+
+func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	leftCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, left)
+	if err != nil {
+		return nil, err
+	}
+	rightCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, right)
+	if err != nil {
+		return nil, err
+	}
+	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, leftCommit.CommitID, rightCommit.CommitID)
+	if err != nil {
+		return nil, err
+	}
+
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.TreeID, rightCommit.TreeID, baseCommit.TreeID, from)
 }
