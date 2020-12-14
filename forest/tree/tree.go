@@ -7,8 +7,10 @@ import (
 )
 
 type treePart struct {
-	PartName sstable.ID   `json:"part_name"`
-	MaxKey   graveler.Key `json:"max_key"`
+	PartName        sstable.ID   `json:"part_name"`
+	MaxKey          graveler.Key `json:"max_key"`
+	MinKey          graveler.Key `json:"min_key"`
+	NumberOfRecords int          `json:"number_of_records"`
 }
 
 type Tree struct {
