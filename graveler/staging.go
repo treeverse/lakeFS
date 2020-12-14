@@ -2,7 +2,9 @@ package graveler
 
 import (
 	"context"
+	"math"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -46,7 +48,7 @@ func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, valu
 	return err
 }
 
-func (p *stagingManager) Delete(ctx context.Context, st StagingToken, key Key) error {
+func (p *stagingManager) DropKey(ctx context.Context, st StagingToken, key Key) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1 AND key=$2", st, key)
 	}, p.txOpts(ctx)...)
@@ -62,6 +64,36 @@ func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
 		return tx.Exec("DELETE FROM kv_staging WHERE staging_token=$1", st)
 	}, p.txOpts(ctx)...)
 	return err
+}
+
+func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error {
+	upperBound := getUpperBoundForPrefix(prefix)
+	builder := sq.Delete("kv_staging").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
+	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if upperBound != nil {
+			builder = builder.Where("key < ?::bytea", upperBound)
+		}
+		query, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
+		if err != nil {
+			return nil, err
+		}
+		return tx.Exec(query, args...)
+	}, p.txOpts(ctx)...)
+	return err
+}
+
+func getUpperBoundForPrefix(prefix Key) Key {
+	idx := len(prefix) - 1
+	for idx >= 0 && prefix[idx] == math.MaxUint8 {
+		idx--
+	}
+	if idx == -1 {
+		return nil
+	}
+	upperBound := make(Key, idx+1)
+	copy(upperBound, prefix[:idx+1])
+	upperBound[idx]++
+	return upperBound
 }
 
 func (p *stagingManager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
