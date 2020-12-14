@@ -30,7 +30,7 @@ func (e entryListingIterator) Next() bool {
 	// get entry from value (optional)
 	var ent *Entry
 	if v.Value != nil {
-		ent, e.err = ValueToEntry(*v.Value)
+		ent, e.err = ValueToEntry(v.Value)
 		if e.err != nil {
 			e.value = nil
 			return false

@@ -217,7 +217,7 @@ func (e entryCatalog) GetEntry(ctx context.Context, repositoryID graveler.Reposi
 	if err != nil {
 		return nil, err
 	}
-	ent, err := ValueToEntry(*val)
+	ent, err := ValueToEntry(val)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (e entryCatalog) SetEntry(ctx context.Context, repositoryID graveler.Reposi
 	if err != nil {
 		return err
 	}
-	return e.db.Set(ctx, repositoryID, branchID, key, value)
+	return e.db.Set(ctx, repositoryID, branchID, key, *value)
 }
 
 func (e entryCatalog) DeleteEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error {
