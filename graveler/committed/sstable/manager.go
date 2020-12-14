@@ -16,14 +16,15 @@ import (
 )
 
 type Manager struct {
-	cache  cache
-	fs     pyramid.FS
-	logger logging.Logger
-	hash   hash.Hash
+	cache      cache
+	fs         pyramid.FS
+	logger     logging.Logger
+	hash       hash.Hash
+	serializer serializer
 }
 
-func NewPebbleSSTableManager(cache cache, fs pyramid.FS) committed.PartManager {
-	return &Manager{cache: cache, fs: fs}
+func NewPebbleSSTableManager(cache cache, fs pyramid.FS, serializer serializer) committed.PartManager {
+	return &Manager{cache: cache, fs: fs, serializer: serializer}
 }
 
 var (
@@ -63,7 +64,7 @@ func (m *Manager) GetValue(ns committed.Namespace, lookup graveler.Key, tid comm
 		return nil, ErrPathNotFound
 	}
 
-	return deserializeValue(val)
+	return m.serializer.deserializeValue(val)
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path

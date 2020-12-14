@@ -1,15 +1,10 @@
 package sstable
 
-import (
-	"github.com/treeverse/lakefs/graveler"
-)
+import "github.com/treeverse/lakefs/graveler"
 
-func serializeValue(inVal graveler.Value) ([]byte, error) {
-	// Do nothing for now..
-	return nil, nil
-}
-
-func deserializeValue(bytes []byte) (*graveler.Value, error) {
-	// Do nothing for now..
-	return nil, nil
+// serializer is a placeholder interface for committed way of
+// serializing the graveler.Value
+type serializer interface {
+	serializeValue(inVal graveler.Value) ([]byte, error)
+	deserializeValue(bytes []byte) (*graveler.Value, error)
 }

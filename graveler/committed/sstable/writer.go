@@ -21,10 +21,11 @@ type DiskWriter struct {
 	count int
 	hash  hash.Hash
 
-	fh pyramid.StoredFile
+	fh         pyramid.StoredFile
+	serializer serializer
 }
 
-func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
+func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, serializer serializer) (*DiskWriter, error) {
 	fh, err := tierFS.Create(string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
@@ -35,16 +36,17 @@ func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*
 	})
 
 	return &DiskWriter{
-		w:      writer,
-		fh:     fh,
-		tierFS: tierFS,
-		hash:   hash,
+		w:          writer,
+		serializer: serializer,
+		fh:         fh,
+		tierFS:     tierFS,
+		hash:       hash,
 	}, nil
 }
 
 func (dw *DiskWriter) WriteRecord(record graveler.ValueRecord) error {
 	keyBytes := []byte(record.Key)
-	valBytes, err := serializeValue(*record.Value)
+	valBytes, err := dw.serializer.serializeValue(*record.Value)
 	if err != nil {
 		return fmt.Errorf("serializing entry: %w", err)
 	}
