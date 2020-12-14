@@ -1,49 +1,10 @@
 package graveler_test
 
 import (
-	"bytes"
-	"sort"
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
 )
-
-type mockValueIterator struct {
-	values []*graveler.ValueRecord
-	idx    int
-	closed bool
-	err    error
-}
-
-func newMockValueIterator(values []*graveler.ValueRecord) *mockValueIterator {
-	return &mockValueIterator{values: values, idx: -1}
-}
-
-func (m *mockValueIterator) Next() bool {
-	if m.closed {
-		return false
-	}
-	m.idx++
-	return m.idx < len(m.values)
-}
-
-func (m *mockValueIterator) SeekGE(id graveler.Key) {
-	m.idx = sort.Search(len(m.values), func(i int) bool {
-		return bytes.Compare(m.values[i].Key, id) > 0
-	})
-}
-
-func (m *mockValueIterator) Value() *graveler.ValueRecord {
-	return m.values[m.idx]
-}
-
-func (m *mockValueIterator) Err() error {
-	return m.err
-}
-
-func (m *mockValueIterator) Close() {
-	m.closed = true
-}
 
 func TestDiffIterator(t *testing.T) {
 	const (
@@ -144,7 +105,7 @@ func TestDiffIterator(t *testing.T) {
 		},
 	}
 	for _, tst := range tests {
-		it := graveler.NewValueDiffIterator(
+		it := graveler.NewDiffIterator(
 			newMockValueIterator(newValues(tst.leftKeys, tst.leftIdentities)),
 			newMockValueIterator(newValues(tst.rightKeys, tst.rightIdentities)))
 		var diffs []*graveler.Diff
@@ -171,10 +132,10 @@ func TestDiffIterator(t *testing.T) {
 	}
 }
 
-func newValues(keys, identities []string) []*graveler.ValueRecord {
-	var res []*graveler.ValueRecord
+func newValues(keys, identities []string) []graveler.ValueRecord {
+	var res []graveler.ValueRecord
 	for i, key := range keys {
-		res = append(res, &graveler.ValueRecord{
+		res = append(res, graveler.ValueRecord{
 			Key: []byte(key),
 			Value: &graveler.Value{
 				Identity: []byte(identities[i]),

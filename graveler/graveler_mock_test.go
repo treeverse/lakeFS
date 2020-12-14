@@ -33,7 +33,7 @@ func (c *committedMock) List(_ context.Context, _ graveler.StorageNamespace, _ g
 	return c.ValueIterator, nil
 }
 
-func (c *committedMock) Diff(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.TreeID, _ graveler.Key) (graveler.DiffIterator, error) {
+func (c *committedMock) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.TreeID, _ graveler.Key) (graveler.DiffIterator, error) {
 	if c.err != nil {
 		return nil, c.err
 	}

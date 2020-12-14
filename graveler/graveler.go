@@ -370,9 +370,9 @@ type CommittedManager interface {
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (ValueIterator, error)
 
-	// Diff receives two trees and a 3rd merge base tree used to resolve the change type
-	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base TreeID, from Key) (DiffIterator, error)
+	// Diff receives two trees and return their diff.
+	// It tracks changes from left to right, returning an iterator of Diff entries.
+	Diff(ctx context.Context, ns StorageNamespace, left, right TreeID, from Key) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
@@ -806,10 +806,6 @@ func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, leftCommit.CommitID, rightCommit.CommitID)
-	if err != nil {
-		return nil, err
-	}
 
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.TreeID, rightCommit.TreeID, baseCommit.TreeID, from)
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.TreeID, rightCommit.TreeID, from)
 }

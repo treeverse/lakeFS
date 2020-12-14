@@ -2,7 +2,7 @@ package graveler
 
 import "bytes"
 
-type ValueDiffIterator struct {
+type diffIterator struct {
 	left        ValueIterator
 	right       ValueIterator
 	leftNext    bool
@@ -11,14 +11,14 @@ type ValueDiffIterator struct {
 	currentType DiffType
 }
 
-func NewValueDiffIterator(left ValueIterator, right ValueIterator) *ValueDiffIterator {
-	it := &ValueDiffIterator{left: left, right: right}
+func NewDiffIterator(left ValueIterator, right ValueIterator) DiffIterator {
+	it := &diffIterator{left: left, right: right}
 	it.leftNext = it.left.Next()
 	it.rightNext = it.right.Next()
 	return it
 }
 
-func (d *ValueDiffIterator) Next() bool {
+func (d *diffIterator) Next() bool {
 	for {
 		if d.left.Err() != nil || d.right.Err() != nil {
 			return false
@@ -63,14 +63,14 @@ func (d *ValueDiffIterator) Next() bool {
 	}
 }
 
-func (d *ValueDiffIterator) SeekGE(id Key) {
+func (d *diffIterator) SeekGE(id Key) {
 	d.left.SeekGE(id)
 	d.right.SeekGE(id)
 	d.currentVal = nil
 	d.currentType = 0
 }
 
-func (d *ValueDiffIterator) Value() *Diff {
+func (d *diffIterator) Value() *Diff {
 	return &Diff{
 		Type:  d.currentType,
 		Key:   d.currentVal.Key,
@@ -78,14 +78,14 @@ func (d *ValueDiffIterator) Value() *Diff {
 	}
 }
 
-func (d *ValueDiffIterator) Err() error {
+func (d *diffIterator) Err() error {
 	if d.left.Err() != nil {
 		return d.left.Err()
 	}
 	return d.right.Err()
 }
 
-func (d *ValueDiffIterator) Close() {
+func (d *diffIterator) Close() {
 	d.left.Close()
 	d.right.Close()
 }

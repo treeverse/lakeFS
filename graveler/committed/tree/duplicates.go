@@ -1,20 +1,11 @@
 package tree
 
-import (
-	"github.com/treeverse/lakefs/catalog/rocks"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
-)
+import "bytes"
 
-type Part struct {
-	Name    sstable.ID `json:"name"`
-	MaxPath rocks.Path `json:"max_path"`
+type treeRepo struct {
 }
 
-type Tree struct {
-	Parts []*Part
-}
-
-func compareParts(leftParts []*Part, leftIdx int, rightParts []*Part, rightIdx int) int {
+func compareParts(leftParts []Part, leftIdx int, rightParts []Part, rightIdx int) int {
 	if leftIdx == len(leftParts) {
 		return 1
 	}
@@ -24,13 +15,10 @@ func compareParts(leftParts []*Part, leftIdx int, rightParts []*Part, rightIdx i
 	if leftParts[leftIdx].Name == rightParts[rightIdx].Name {
 		return 0
 	}
-	if leftParts[leftIdx].MaxPath < rightParts[rightIdx].MaxPath {
-		return -1
-	}
-	return 1
+	return bytes.Compare(leftParts[leftIdx].MaxKey, rightParts[rightIdx].MaxKey)
 }
 
-func RemoveDuplicates(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
+func (tr *treeRepo) RemoveCommonParts(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
 	i := 0
 	j := 0
 	newLeft = new(Tree)
