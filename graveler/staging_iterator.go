@@ -61,7 +61,11 @@ func (s *StagingIterator) Value() *ValueRecord {
 	if s.initPhase {
 		return nil
 	}
-	return s.buffer[s.idxInBuffer]
+	value := s.buffer[s.idxInBuffer]
+	if value.Value != nil && value.Identity == nil {
+		value.Value = nil
+	}
+	return value
 }
 
 func (s *StagingIterator) Err() error {
@@ -75,7 +79,7 @@ func (s *StagingIterator) loadBuffer() bool {
 	queryResult, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var res []*ValueRecord
 		err := tx.Select(&res, "SELECT key, identity, data "+
-			"FROM kv_staging WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, batchSize+1)
+			"FROM staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, batchSize+1)
 		return res, err
 	}, db.WithLogger(s.log), db.WithContext(s.ctx), db.ReadOnly())
 	if err != nil {

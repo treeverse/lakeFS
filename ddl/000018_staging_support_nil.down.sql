@@ -1,0 +1,4 @@
+BEGIN;
+ALTER TABLE staging_kv ALTER COLUMN identity SET NOT NULL;
+ALTER TABLE staging_kv RENAME TO kv_staging;
+COMMIT;
