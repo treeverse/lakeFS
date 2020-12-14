@@ -395,14 +395,17 @@ type StagingManager interface {
 	// Set writes a value under the given staging token and key.
 	Set(ctx context.Context, st StagingToken, key Key, value Value) error
 
-	// Delete deletes a value by staging token and key
-	Delete(ctx context.Context, st StagingToken, key Key) error
-
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
 
+	// DropKey clears a value by staging token and key
+	DropKey(ctx context.Context, st StagingToken, key Key) error
+
 	// Drop clears the given staging area
 	Drop(ctx context.Context, st StagingToken) error
+
+	// DropByPrefix drops all keys starting with the given prefix, from the given staging area
+	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
 var (
@@ -679,7 +682,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Delete(ctx, branch.stagingToken, key)
+	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
