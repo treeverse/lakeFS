@@ -17,8 +17,6 @@ type Tree struct {
 	treeSlice []treePart
 }
 
-type DummyMap map[string]string // place holder for cache_map package that will be merged soon
-
 type TreeRepo interface {
 	// GetTree returns a tree object. Not sure it is needed because most APIs now return iterators that
 	// use a tree internally
