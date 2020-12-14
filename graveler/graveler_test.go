@@ -447,3 +447,128 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 		t.Fatal("did not expect to get error")
 	}
 }
+
+func Test_graveler_Delete(t *testing.T) {
+	type fields struct {
+		CommittedManager graveler.CommittedManager
+		StagingManager   graveler.StagingManager
+		RefManager       graveler.RefManager
+	}
+	type args struct {
+		ctx          context.Context
+		repositoryID graveler.RepositoryID
+		branchID     graveler.BranchID
+		key          graveler.Key
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "exists only in committed",
+			fields: fields{
+				CommittedManager: &committedMock{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &stagingMock{
+					err: graveler.ErrNotFound,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:    args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
+			wantErr: false,
+		},
+		{
+			name: "exists in committed and in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &stagingMock{
+					Value: &graveler.Value{},
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:    args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
+			wantErr: false,
+		},
+		{
+			name: "exists in committed tombstone in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &stagingMock{
+					Value: nil,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name: "exists only in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					err: graveler.ErrNotFound,
+				},
+				StagingManager: &stagingMock{
+					Value: &graveler.Value{},
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:    args{}, // TODO:(Guys) add option to validate staging mock was called with delete entry
+			wantErr: false,
+		},
+		{
+			name: "not in committed not in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					err: graveler.ErrNotFound,
+				},
+				StagingManager: &stagingMock{
+					err: graveler.ErrNotFound,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name: "not in committed tombsone in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					err: graveler.ErrNotFound,
+				},
+				StagingManager: &stagingMock{
+					Value: nil,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:    args{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
+			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

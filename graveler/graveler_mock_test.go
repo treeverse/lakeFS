@@ -80,9 +80,6 @@ func (s *stagingMock) Get(_ context.Context, _ graveler.StagingToken, _ graveler
 }
 
 func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ graveler.Value) error {
-	if s.err != nil {
-		return s.err
-	}
 	return nil
 }
 

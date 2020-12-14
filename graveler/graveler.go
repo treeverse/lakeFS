@@ -428,6 +428,7 @@ var (
 	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
+	ErrUnexpected              = errors.New("unexpected error")
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {
@@ -678,11 +679,47 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
 	branch, err := g.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+	if err != nil {
+		return err
+	}
+	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	existsInCommitted := err == nil
+	entry, err := g.StagingManager.Get(ctx, branch.stagingToken, key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	existsInStaging := err == nil && entry != nil
+	tombstone := err == nil && entry == nil
+	if existsInCommitted {
+		if tombstone {
+			// was deleted already
+			return ErrNotFound
+		}
+		// case exists just add tombstone
+		return g.StagingManager.Set(ctx, branch.stagingToken, key, Value{}) // TODO(Guys): change to nil once stagingManager allows setting nil
+	}
+	if existsInStaging {
+		// exists only in staging remove from staging
+		return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+	}
+	if tombstone {
+		// does not exist in committed and tombstone exists in staging
+		return ErrUnexpected
+	}
+	// doesn't exist in committed nor staging
+	return ErrNotFound
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
