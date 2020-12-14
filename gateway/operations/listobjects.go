@@ -48,10 +48,11 @@ func (controller *ListObjects) RequiredPermissions(request *http.Request, repoID
 func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
 	params := o.Request.URL.Query()
 	maxKeys := ListObjectMaxKeys
-	if len(params.Get("max-keys")) > 0 {
-		parsedKeys, err := strconv.ParseInt(params.Get("max-keys"), 10, 64)
+	maxKeysParam := params.Get("max-keys")
+	if len(maxKeysParam) > 0 {
+		parsedKeys, err := strconv.Atoi(maxKeysParam)
 		if err == nil {
-			maxKeys = int(parsedKeys)
+			maxKeys = parsedKeys
 		}
 	}
 	return maxKeys

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -14,9 +15,7 @@ import (
 const (
 	bucketName      = "test"
 	ObjectBlockSize = 1024 * 3
-)
 
-var (
 	expensiveString = "EXPENSIVE"
 	cheapString     = "CHEAP"
 )
@@ -29,8 +28,8 @@ func TestReadBlob(t *testing.T) {
 	}{
 		{"no data", 0, nil},
 		{"100 bytes", 100, nil},
-		{"1 block", ObjectBlockSize, &expensiveString},
-		{"1 block and 100 bytes", ObjectBlockSize + 100, &cheapString},
+		{"1 block", ObjectBlockSize, swag.String(expensiveString)},
+		{"1 block and 100 bytes", ObjectBlockSize + 100, swag.String(cheapString)},
 		{"2 blocks and 1 bytes", ObjectBlockSize*2 + 1, nil},
 		{"1000 blocks", ObjectBlockSize * 1000, nil},
 	}
