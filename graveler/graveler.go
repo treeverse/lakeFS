@@ -233,6 +233,9 @@ type VersionController interface {
 	// Reset throw all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
+	// Reset throw all staged data under the specified key on the repository / branch
+	ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+
 	// Revert commits a change that will revert all the changes make from 'ref' specified
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error)
 
@@ -721,7 +724,19 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	panic("implement me") // waiting for staging reset
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.Drop(ctx, branch.stagingToken)
+}
+
+func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
 }
 
 func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error) {
