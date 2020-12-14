@@ -4,15 +4,22 @@ import (
 	"crypto/sha256"
 	"testing"
 
-	"github.com/treeverse/lakefs/pyramid/mock"
-
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pyramid/mock"
 )
 
-func TestWriterFirst(t *testing.T) {
-	dw, err := newDiskWriter(&mock.FS{}, "", sha256.New())
-	require.NoError(t, err)
+func TestMain(m *testing.M) {
+	m.Run()
+}
 
-	dw.WriteRecord()
-	dw.Close()
+func TestWriterFirst(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockFS := mock.NewMockFS(ctrl)
+
+	_, err := newDiskWriter(mockFS, "namespace", sha256.New())
+
+	require.NoError(t, err)
+	mockFS.EXPECT().Create("")
+
 }

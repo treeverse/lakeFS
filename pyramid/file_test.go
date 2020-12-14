@@ -24,7 +24,7 @@ func TestPyramidWriteFile(t *testing.T) {
 
 	storeCalled := false
 	sut := WRFile{
-		fh: fh,
+		File: fh,
 		store: func(string) error {
 			storeCalled = true
 			return nil
@@ -59,7 +59,7 @@ func TestWriteValidate(t *testing.T) {
 	storeCalled := false
 
 	sut := WRFile{
-		fh: fh,
+		File: fh,
 		store: func(string) error {
 			storeCalled = true
 			return nil
@@ -97,7 +97,7 @@ func TestPyramidReadFile(t *testing.T) {
 	}
 
 	sut := ROFile{
-		fh:       fh,
+		File:     fh,
 		eviction: mockEv,
 		rPath:    relativePath(filename),
 	}
