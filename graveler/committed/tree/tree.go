@@ -21,38 +21,38 @@ type Tree struct {
 
 // Repo is an abstraction for a repository of trees that exposes operations on them
 type Repo interface {
-	GetTree(treeID graveler.TreeID) (Tree, error)
+	GetTree(treeID graveler.TreeID) (*Tree, error)
 
 	// GetValue finds the matching graveler.ValueRecord in the tree with the treeID
-	GetValue(treeID graveler.TreeID, key graveler.Key) (graveler.ValueRecord, error)
+	GetValue(treeID graveler.TreeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewTreeWriter returns a writer that is used for creating new trees
 	NewTreeWriter() Writer
 
-	// NewIteratorFromTreeID accepts a tree ID, and returns an iterator
+	// NewIterator accepts a tree ID, and returns an iterator
 	// over the tree from the first value GE than the from
-	NewIteratorFromTreeID(treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error)
+	NewIterator(treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error)
 
-	// NewIteratorFromTreeParts accept a tree in memory, returns an iterator
+	// NewIteratorFromTree accept a tree in memory, returns an iterator
 	// over the tree from the first value GE than the from
-	NewIteratorFromTreeObject(tree Tree, from graveler.Key) (graveler.ValueIterator, error)
+	NewIteratorFromTree(tree Tree, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetIterForPart accepts a tree ID and a reading start point. it returns an iterator
 	// positioned at the start point. When Next() will be called, first value that is GE
 	// than the from key will be returned
-	GetIterForPart(partID sstable.ID, from graveler.Key) (graveler.ValueIterator, error)
+	NewPartIterator(partID sstable.ID, from graveler.Key) (graveler.ValueIterator, error)
 
-	// PrepareTreesForDiff accepts the left and right trees of the diff, and finds the common parts which
+	// RemoveCommonParts accepts the left and right trees of the diff, and finds the common parts which
 	// exist in both trees.
 	// it returns the left and right trees with common parts filtered.
-	PrepareTreesForDiff(LeftTree, RightTree Tree) (Tree, Tree)
+	RemoveCommonParts(Left, Right Tree) (*Tree, *Tree, error)
 }
 
 // Writer is an abstraction for creating new trees
 type Writer interface {
-	// WriteRecord adds a record to the tree. The value key must be greater than any other key that was written
-	// (in other words - values must be entered sorted by key order)
-	// if last insertion operation was AddParts - record key must be greater than any key in the added parts.
+	// WriteRecord adds a record to the tree. The key key must be greater than any other key that was written
+	// (in other words - values must be entered sorted by key order).
+	// If the most recent insertion was using AddParts, the key must be greater than any key in the added parts.
 	WriteRecord(record graveler.ValueRecord) error
 
 	// AddParts adds complete parts to the tree at the current insertion point.
@@ -65,5 +65,5 @@ type Writer interface {
 	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts.
-	SaveTree() (graveler.TreeID, error)
+	SaveTree() (*graveler.TreeID, error)
 }
