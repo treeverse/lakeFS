@@ -17,6 +17,14 @@ type BatchCloser struct {
 	lock sync.Mutex
 }
 
+// NewBatchCloser returns a new BatchCloser
+func NewBatchCloser() *BatchCloser {
+	return &BatchCloser{
+		wg:   sync.WaitGroup{},
+		lock: sync.Mutex{},
+	}
+}
+
 var (
 	errMultipleWaitCalls = errors.New("wait has already been called")
 )
@@ -48,7 +56,7 @@ func (bc *BatchCloser) closeWriter(w committed.Writer) {
 	defer bc.lock.Unlock()
 
 	if err != nil {
-		if bc.err == nil {
+		if bc.nilErrOrMultipleCalls() {
 			// keeping first error is enough
 			bc.err = err
 		}
@@ -70,5 +78,16 @@ func (bc *BatchCloser) Wait() ([]committed.WriteResult, error) {
 	bc.lock.Unlock()
 
 	bc.wg.Wait()
-	return bc.results, bc.err
+
+	// all writers finished
+	bc.lock.Lock()
+	defer bc.lock.Unlock()
+	if !bc.nilErrOrMultipleCalls() {
+		return nil, bc.err
+	}
+	return bc.results, nil
+}
+
+func (bc *BatchCloser) nilErrOrMultipleCalls() bool {
+	return bc.err == nil || errors.Is(bc.err, errMultipleWaitCalls)
 }

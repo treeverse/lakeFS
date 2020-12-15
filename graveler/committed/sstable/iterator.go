@@ -7,7 +7,8 @@ import (
 
 // Iterator returns ordered iteration of the SSTable entries
 type Iterator struct {
-	it sstable.Iterator
+	it  sstable.Iterator
+	ser serializer
 
 	currKey   *sstable.InternalKey
 	currValue []byte
@@ -16,7 +17,21 @@ type Iterator struct {
 
 	postSeek bool
 	err      error
-	derefer  Derefer
+	derefer  func() error
+}
+
+func NewIterator(it sstable.Iterator, ser serializer, derefer func() error, from graveler.Key) *Iterator {
+	iter := &Iterator{
+		it:      it,
+		ser:     ser,
+		derefer: derefer,
+	}
+
+	if from != nil{
+		iter.SeekGE(from)
+	}
+
+	return iter
 }
 
 func (iter *Iterator) SeekGE(lookup graveler.Key) {
@@ -34,12 +49,12 @@ func (iter *Iterator) Next() bool {
 		return false
 	}
 
-	iter.valParsed, iter.err = deserializeValue(iter.currValue)
+	iter.valParsed, iter.err = iter.ser.DeserializeValue(iter.currValue)
 	return iter.err == nil
 }
 
 func (iter *Iterator) Value() *graveler.ValueRecord {
-	if iter.currKey == nil || iter.err != nil {
+	if iter.currKey == nil || iter.err != nil || iter.postSeek {
 		return nil
 	}
 

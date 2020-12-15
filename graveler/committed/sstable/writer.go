@@ -46,7 +46,7 @@ func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, se
 
 func (dw *DiskWriter) WriteRecord(record graveler.ValueRecord) error {
 	keyBytes := []byte(record.Key)
-	valBytes, err := dw.serializer.serializeValue(*record.Value)
+	valBytes, err := dw.serializer.SerializeValue(*record.Value)
 	if err != nil {
 		return fmt.Errorf("serializing entry: %w", err)
 	}
@@ -58,7 +58,7 @@ func (dw *DiskWriter) WriteRecord(record graveler.ValueRecord) error {
 	if dw.count == 0 {
 		dw.first = record.Key
 	}
-	dw.last = record.Identity
+	dw.last = record.Key
 	dw.count++
 
 	if err := dw.writeHashWithLen(keyBytes); err != nil {

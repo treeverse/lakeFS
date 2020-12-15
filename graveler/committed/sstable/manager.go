@@ -23,8 +23,8 @@ type Manager struct {
 	serializer serializer
 }
 
-func NewPebbleSSTableManager(cache cache, fs pyramid.FS, serializer serializer) committed.PartManager {
-	return &Manager{cache: cache, fs: fs, serializer: serializer}
+func NewPebbleSSTableManager(cache cache, fs pyramid.FS, serializer serializer, hash hash.Hash) committed.PartManager {
+	return &Manager{cache: cache, fs: fs, serializer: serializer, hash: hash}
 }
 
 var (
@@ -41,14 +41,14 @@ func (m *Manager) GetValue(ns committed.Namespace, lookup graveler.Key, tid comm
 	}
 	defer m.execAndLog(derefer, "Failed to dereference reader")
 
-	it, err := reader.NewIter(lookup, nil)
+	it, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
 	defer m.execAndLog(it.Close, "Failed to close iterator")
 
 	// actual reading
-	key, val := it.Next()
+	key, val := it.SeekGE(lookup)
 	if key == nil {
 		// checking if an error occurred or key simply not found
 		if it.Error() != nil {
@@ -64,7 +64,7 @@ func (m *Manager) GetValue(ns committed.Namespace, lookup graveler.Key, tid comm
 		return nil, ErrPathNotFound
 	}
 
-	return m.serializer.deserializeValue(val)
+	return m.serializer.DeserializeValue(val)
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
@@ -74,7 +74,7 @@ func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from
 		return nil, err
 	}
 
-	iter, err := reader.NewIter(from, nil)
+	iter, err := reader.NewIter(nil, nil)
 	if err != nil {
 		if e := derefer(); e != nil {
 			m.logger.WithError(e).Errorf("Failed de-referencing sstable %s", tid)
@@ -82,12 +82,12 @@ func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return &Iterator{it: iter, derefer: derefer}, nil
+	return NewIterator(iter, m.serializer, derefer, from), nil
 }
 
 // GetWriter returns a new SSTable writer instance
 func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
-	return newDiskWriter(m.fs, ns, m.hash)
+	return newDiskWriter(m.fs, ns, m.hash, m.serializer)
 }
 
 func (m *Manager) execAndLog(f func() error, msg string) {
