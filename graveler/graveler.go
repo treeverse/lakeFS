@@ -230,8 +230,14 @@ type VersionController interface {
 	// Dereference returns the commit ID based on 'ref' reference
 	Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error)
 
-	// Reset throw all staged data on the repository / branch
+	// Reset throws all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
+
+	// Reset throws all staged data under the specified key on the repository / branch
+	ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
+
+	// Reset throws all staged data starting with the given prefix on the repository / branch
+	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// Revert commits a change that will revert all the changes make from 'ref' specified
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error)
@@ -392,17 +398,20 @@ type StagingManager interface {
 	// Returns ErrNotFound if no value found on key.
 	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
-	// Set writes a value under the given staging token and key.
-	Set(ctx context.Context, st StagingToken, key Key, value Value) error
-
-	// Delete deletes a value by staging token and key
-	Delete(ctx context.Context, st StagingToken, key Key) error
+	// Set writes a (possibly nil) value under the given staging token and key.
+	Set(ctx context.Context, st StagingToken, key Key, value *Value) error
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
 
+	// DropKey clears a value by staging token and key
+	DropKey(ctx context.Context, st StagingToken, key Key) error
+
 	// Drop clears the given staging area
 	Drop(ctx context.Context, st StagingToken) error
+
+	// DropByPrefix drops all keys starting with the given prefix, from the given staging area
+	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
 var (
@@ -671,7 +680,7 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Set(ctx, branch.stagingToken, key, value)
+	return g.StagingManager.Set(ctx, branch.stagingToken, key, &value)
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
@@ -679,7 +688,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Delete(ctx, branch.stagingToken, key)
+	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
@@ -718,7 +727,27 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	panic("implement me") // waiting for staging reset
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.Drop(ctx, branch.stagingToken)
+}
+
+func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+}
+
+func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	return g.StagingManager.DropByPrefix(ctx, branch.stagingToken, key)
 }
 
 func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error) {

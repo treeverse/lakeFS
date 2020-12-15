@@ -42,14 +42,13 @@ func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 		"type":  "query",
 		"args":  args,
 		"query": queryToString(query),
-		"took":  time.Since(start),
 	})
 	if err != nil {
 		log.WithError(err).Error("SQL query failed with error")
 		return nil, err
 	}
 	log.Trace("SQL query started successfully")
-	return rows, nil
+	return Logged(rows, start, log), nil
 }
 
 func Select(d Tx, results interface{}, query string, args ...interface{}) error {
