@@ -35,9 +35,8 @@ func NewAddressWriter() *AddressWriter {
 	return &AddressWriter{sha256.New()}
 }
 
-func (b *AddressWriter) marshalType(addressType AddressType) *AddressWriter {
+func (b *AddressWriter) marshalType(addressType AddressType) {
 	_, _ = b.Write([]byte{byte(addressType)})
-	return b
 }
 
 func (b *AddressWriter) MarshalBytes(v []byte) *AddressWriter {
@@ -45,7 +44,6 @@ func (b *AddressWriter) MarshalBytes(v []byte) *AddressWriter {
 	b.MarshalInt64(int64(len(v)))
 	_, _ = b.Write(v)
 	return b
-
 }
 
 func (b *AddressWriter) MarshalString(v string) *AddressWriter {
