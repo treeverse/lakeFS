@@ -39,8 +39,8 @@ func Test_entryCatalog_GetEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := entryCatalog{db: tt.db}
-			got, err := e.GetEntry(ctx, tt.args.repositoryID, tt.args.ref, tt.args.path)
+			ec := entryCatalog{store: tt.db}
+			got, err := ec.GetEntry(ctx, tt.args.repositoryID, tt.args.ref, tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return

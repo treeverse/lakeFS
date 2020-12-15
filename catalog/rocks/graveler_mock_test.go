@@ -2,6 +2,7 @@ package rocks
 
 import (
 	"context"
+	"strings"
 
 	"github.com/treeverse/lakefs/graveler"
 )
@@ -11,11 +12,11 @@ type GravelerMock struct {
 	Err      error
 }
 
-func (g GravelerMock) Get(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) (*graveler.Value, error) {
+func (g GravelerMock) Get(_ context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) (*graveler.Value, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	k := key.String()
+	k := g.buildKey(repositoryID, ref, key)
 	v := g.KeyValue[k]
 	if v == nil {
 		return nil, graveler.ErrNotFound
@@ -23,8 +24,17 @@ func (g GravelerMock) Get(ctx context.Context, repositoryID graveler.RepositoryI
 	return v, nil
 }
 
-func (g GravelerMock) Set(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key, value graveler.Value) error {
-	panic("implement me")
+func (g GravelerMock) buildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
+	return strings.Join([]string{repositoryID.String(), ref.String(), key.String()}, "/")
+}
+
+func (g GravelerMock) Set(_ context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key, value graveler.Value) error {
+	if g.Err != nil {
+		return g.Err
+	}
+	k := g.buildKey(repositoryID, graveler.Ref(branchID.String()), key)
+	g.KeyValue[k] = &value
+	return nil
 }
 
 func (g GravelerMock) Delete(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key) error {

@@ -123,81 +123,81 @@ func (id Path) String() string {
 }
 
 type entryCatalog struct {
-	db graveler.Graveler
+	store graveler.Graveler
 }
 
 func NewEntryCatalog() EntryCatalog {
 	return &entryCatalog{
-		db: graveler.NewGraveler(nil, nil, nil),
+		store: graveler.NewGraveler(nil, nil, nil),
 	}
 }
 
 func (e entryCatalog) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
-	return e.db.GetRepository(ctx, repositoryID)
+	return e.store.GetRepository(ctx, repositoryID)
 }
 
 func (e entryCatalog) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
-	return e.db.CreateRepository(ctx, repositoryID, storageNamespace, branchID)
+	return e.store.CreateRepository(ctx, repositoryID, storageNamespace, branchID)
 }
 
 func (e entryCatalog) ListRepositories(ctx context.Context, from graveler.RepositoryID) (graveler.RepositoryIterator, error) {
-	return e.db.ListRepositories(ctx, from)
+	return e.store.ListRepositories(ctx, from)
 }
 
 func (e entryCatalog) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
-	return e.db.DeleteRepository(ctx, repositoryID)
+	return e.store.DeleteRepository(ctx, repositoryID)
 }
 
 func (e entryCatalog) CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error) {
-	return e.db.CreateBranch(ctx, repositoryID, branchID, ref)
+	return e.store.CreateBranch(ctx, repositoryID, branchID, ref)
 }
 
 func (e entryCatalog) UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error) {
-	return e.db.UpdateBranch(ctx, repositoryID, branchID, ref)
+	return e.store.UpdateBranch(ctx, repositoryID, branchID, ref)
 }
 
 func (e entryCatalog) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
-	return e.db.GetBranch(ctx, repositoryID, branchID)
+	return e.store.GetBranch(ctx, repositoryID, branchID)
 }
 
 func (e entryCatalog) Log(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (graveler.CommitIterator, error) {
-	return e.db.Log(ctx, repositoryID, commitID)
+	return e.store.Log(ctx, repositoryID, commitID)
 }
 
 func (e entryCatalog) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.BranchID) (graveler.BranchIterator, error) {
-	return e.db.ListBranches(ctx, repositoryID, from)
+	return e.store.ListBranches(ctx, repositoryID, from)
 }
 
 func (e entryCatalog) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
-	return e.db.DeleteBranch(ctx, repositoryID, branchID)
+	return e.store.DeleteBranch(ctx, repositoryID, branchID)
 }
 
 func (e entryCatalog) Commit(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
-	return e.db.Commit(ctx, repositoryID, branchID, committer, message, metadata)
+	return e.store.Commit(ctx, repositoryID, branchID, committer, message, metadata)
 }
 
 func (e entryCatalog) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
-	return e.db.GetCommit(ctx, repositoryID, commitID)
+	return e.store.GetCommit(ctx, repositoryID, commitID)
 }
 
 func (e entryCatalog) Dereference(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.CommitID, error) {
-	return e.db.Dereference(ctx, repositoryID, ref)
+	return e.store.Dereference(ctx, repositoryID, ref)
 }
 
 func (e entryCatalog) Reset(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
-	return e.db.Reset(ctx, repositoryID, branchID)
+	return e.store.Reset(ctx, repositoryID, branchID)
 }
 
 func (e entryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error) {
-	return e.db.Revert(ctx, repositoryID, branchID, ref)
+	return e.store.Revert(ctx, repositoryID, branchID, ref)
 }
 
 func (e entryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID) (graveler.CommitID, error) {
-	return e.db.Merge(ctx, repositoryID, from, to)
+	return e.store.Merge(ctx, repositoryID, from, to)
 }
 
 func (e entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from graveler.Key) (EntryDiffIterator, error) {
-	iter, err := e.db.DiffUncommitted(ctx, repositoryID, branchID, from)
+	iter, err := e.store.DiffUncommitted(ctx, repositoryID, branchID, from)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (e entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler
 }
 
 func (e entryCatalog) Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from graveler.Key) (EntryDiffIterator, error) {
-	iter, err := e.db.Diff(ctx, repositoryID, left, right, from)
+	iter, err := e.store.Diff(ctx, repositoryID, left, right, from)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (e entryCatalog) Diff(ctx context.Context, repositoryID graveler.Repository
 }
 
 func (e entryCatalog) GetEntry(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, path Path) (*Entry, error) {
-	val, err := e.db.Get(ctx, repositoryID, ref, graveler.Key(path))
+	val, err := e.store.Get(ctx, repositoryID, ref, graveler.Key(path))
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (e entryCatalog) SetEntry(ctx context.Context, repositoryID graveler.Reposi
 	if err != nil {
 		return err
 	}
-	return e.db.Set(ctx, repositoryID, branchID, key, *value)
+	return e.store.Set(ctx, repositoryID, branchID, key, *value)
 }
 
 func (e entryCatalog) DeleteEntry(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error {
@@ -237,11 +237,11 @@ func (e entryCatalog) DeleteEntry(ctx context.Context, repositoryID graveler.Rep
 	if err != nil {
 		return err
 	}
-	return e.db.Delete(ctx, repositoryID, branchID, key)
+	return e.store.Delete(ctx, repositoryID, branchID, key)
 }
 
 func (e entryCatalog) ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path) (EntryListingIterator, error) {
-	iter, err := e.db.List(ctx, repositoryID, ref, graveler.Key(prefix), graveler.Key(from), graveler.Key(delimiter))
+	iter, err := e.store.List(ctx, repositoryID, ref, graveler.Key(prefix), graveler.Key(from), graveler.Key(delimiter))
 	if err != nil {
 		return nil, err
 	}
