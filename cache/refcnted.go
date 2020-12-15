@@ -26,6 +26,7 @@ type CacheWithDisposal interface {
 
 type ParamsWithDisposal struct {
 	Name   string
+	Logger logging.Logger
 	Size   int
 	Shards int
 	// OnDispose disposes of an entry.  It is called when the last reference to an entry
@@ -108,10 +109,7 @@ func NewSingleThreadedCacheWithDisposal(p ParamsWithDisposal) *SingleThreadedCac
 	onEvict := func(k interface{}, v interface{}) {
 		entry := v.(*cacheEntry)
 		err := entry.release(ret)
-		logging.Default().WithFields(logging.Fields{
-			"key":   k,
-			"value": v,
-		}).WithError(err).Error("[internal] failed to release during eviction")
+		p.Logger.WithField("key", k).WithError(err).Error("[internal] failed to release during eviction")
 	}
 	ret.p = &p
 	var err error

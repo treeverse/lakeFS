@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/cache"
+	"github.com/treeverse/lakefs/logging"
 )
 
 func TestCacheWithDisposal(t *testing.T) {
@@ -34,6 +35,7 @@ func TestCacheWithDisposal(t *testing.T) {
 	}()
 	p := cache.ParamsWithDisposal{
 		Name:   t.Name(),
+		Logger: logging.Default().WithField("testing", true),
 		Shards: 3,
 		Size:   size,
 		OnDispose: func(v interface{}) error {
