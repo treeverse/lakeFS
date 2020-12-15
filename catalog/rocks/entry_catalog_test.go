@@ -11,7 +11,7 @@ import (
 )
 
 func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
-	gravelerMock := GravelerMock{Err: graveler.ErrNotFound}
+	gravelerMock := &GravelerMock{Err: graveler.ErrNotFound}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo", "ref", "path1")
@@ -25,7 +25,7 @@ func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 
 func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 	entry := &Entry{Address: "addr1"}
-	gravelerMock := GravelerMock{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
+	gravelerMock := &GravelerMock{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo1", "master", "file1")
@@ -36,7 +36,7 @@ func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 }
 
 func TestEntryCatalog_SetEntry(t *testing.T) {
-	gravelerMock := GravelerMock{KeyValue: make(map[string]*graveler.Value)}
+	gravelerMock := &GravelerMock{KeyValue: make(map[string]*graveler.Value)}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	entry := &Entry{Address: "addr1"}
@@ -57,7 +57,7 @@ func TestEntryCatalog_ListEntries(t *testing.T) {
 		{Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
 		{Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
-	gravelerMock := GravelerMock{
+	gravelerMock := &GravelerMock{
 		ListIterator: NewMockListingIterator(listingData),
 	}
 	cat := entryCatalog{store: gravelerMock}
@@ -89,7 +89,7 @@ func TestEntryCatalog_Diff(t *testing.T) {
 		{Type: graveler.DiffTypeRemoved, Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
 		{Type: graveler.DiffTypeChanged, Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
-	gravelerMock := GravelerMock{
+	gravelerMock := &GravelerMock{
 		DiffIterator: NewMockDiffIterator(diffData),
 	}
 	cat := entryCatalog{store: gravelerMock}
