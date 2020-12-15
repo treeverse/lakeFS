@@ -74,6 +74,9 @@ func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
 	if _, err := dw.hash.Write(buf); err != nil {
 		return err
 	}
+	if _, err := dw.hash.Write([]byte("|")); err != nil {
+		return err
+	}
 
 	return nil
 }

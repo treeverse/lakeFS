@@ -27,7 +27,7 @@ func NewIterator(it sstable.Iterator, ser serializer, derefer func() error, from
 		derefer: derefer,
 	}
 
-	if from != nil{
+	if from != nil {
 		iter.SeekGE(from)
 	}
 
