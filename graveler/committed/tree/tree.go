@@ -35,10 +35,6 @@ type TreeRepo interface {
 	// NewIteratorFromTreeObject accept a tree in memory, returns iterator over the tree.
 	// If we manage to hide the tree object from tree users completely - this function will become redundant
 	NewIteratorFromTreeObject(tree Tree, from graveler.Key) (graveler.ValueIterator, error)
-	// GetIterForPart accepts a tree ID and a reading start point. it returns am iterator
-	// positioned at the start point. When Next() will be called, first value that is greater-equal
-	// than the start key will be returned
-	GetIterForPart(sstable.ID, graveler.Key) (graveler.ValueIterator, error)
 	// GetIteratorsForDiff accepts the left and right trees of the diff, and finds the common parts which
 	// exist in both trees.
 	// it returns the left and right value iterators with common parts filtered.
