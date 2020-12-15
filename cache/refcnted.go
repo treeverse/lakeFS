@@ -56,7 +56,10 @@ func NewCacheWithDisposal(p ParamsWithDisposal) *shardedCacheWithDisposal {
 func (s *shardedCacheWithDisposal) GetOrSet(k interface{}, setFn SetFn) (interface{}, Derefer, error) {
 	hash := maphash.Hash{}
 	hash.SetSeed(s.Seed)
-	hash.WriteString(fmt.Sprint(k))
+	// (Explicitly ignore return value from hash.WriteString: its godoc says "it always
+	// writes all of s and never fails; the count and error result are for implementing
+	// io.StringWriter."
+	_, _ = hash.WriteString(fmt.Sprint(k))
 	hashVal := hash.Sum64() % uint64(len(s.Shards))
 	return s.Shards[hashVal].GetOrSet(k, setFn)
 }
