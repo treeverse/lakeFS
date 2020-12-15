@@ -20,6 +20,7 @@ func TestDiffIterator(t *testing.T) {
 		expectedDiffKeys       []string
 		expectedDiffTypes      []graveler.DiffType
 		expectedDiffIdentities []string
+		expectedOldIdentities  []string
 	}{
 		{
 			leftKeys:         []string{"k1", "k2", "k3"},
@@ -36,6 +37,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k4"},
 			expectedDiffTypes:      []graveler.DiffType{added},
 			expectedDiffIdentities: []string{"i4"},
+			expectedOldIdentities:  []string{""},
 		},
 		{
 			leftKeys:               []string{"k1", "k2", "k3", "k4"},
@@ -45,6 +47,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k4"},
 			expectedDiffTypes:      []graveler.DiffType{removed},
 			expectedDiffIdentities: []string{"i4"},
+			expectedOldIdentities:  []string{"i4"},
 		},
 		{
 			leftKeys:               []string{"k1", "k2", "k3", "k5"},
@@ -54,6 +57,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k4", "k5"},
 			expectedDiffTypes:      []graveler.DiffType{added, removed},
 			expectedDiffIdentities: []string{"i4", "i5"},
+			expectedOldIdentities:  []string{"", "i5"},
 		},
 		{
 			leftKeys:               []string{"k1", "k2", "k3"},
@@ -63,6 +67,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k3"},
 			expectedDiffTypes:      []graveler.DiffType{changed},
 			expectedDiffIdentities: []string{"i3a"},
+			expectedOldIdentities:  []string{"i3"},
 		},
 		{
 			leftKeys:               []string{"k1", "k2", "k3"},
@@ -72,6 +77,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k1", "k2", "k3", "k4", "k5", "k6"},
 			expectedDiffTypes:      []graveler.DiffType{removed, removed, changed, added, added, added},
 			expectedDiffIdentities: []string{"i1", "i2", "i3a", "i4", "i5", "i6"},
+			expectedOldIdentities:  []string{"i1", "i2", "i3", "", "", ""},
 		},
 		{
 			// diff between two empty iterators - should return empty diff
@@ -84,6 +90,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k1", "k2", "k3"},
 			expectedDiffTypes:      []graveler.DiffType{added, added, added},
 			expectedDiffIdentities: []string{"i1", "i2", "i3"},
+			expectedOldIdentities:  []string{"", "", ""},
 		},
 		{
 			leftKeys:               []string{"k1", "k2", "k3", "k4", "k5", "k6"},
@@ -93,6 +100,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k1", "k2", "k7"},
 			expectedDiffTypes:      []graveler.DiffType{removed, removed, added},
 			expectedDiffIdentities: []string{"i1", "i2", "i7"},
+			expectedOldIdentities:  []string{"i1", "i2", ""},
 		},
 		{
 			leftKeys:               []string{"k3", "k4", "k5"},
@@ -102,6 +110,7 @@ func TestDiffIterator(t *testing.T) {
 			expectedDiffKeys:       []string{"k1", "k2"},
 			expectedDiffTypes:      []graveler.DiffType{added, added},
 			expectedDiffIdentities: []string{"i1", "i2"},
+			expectedOldIdentities:  []string{"", ""},
 		},
 	}
 	for _, tst := range tests {
@@ -127,6 +136,9 @@ func TestDiffIterator(t *testing.T) {
 			}
 			if string(d.Value.Identity) != tst.expectedDiffIdentities[i] {
 				t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value.Identity))
+			}
+			if string(d.OldIdentity) != tst.expectedOldIdentities[i] {
+				t.Fatalf("unexpected old identity in diff index %d. expected=%s, got=%s", i, tst.expectedOldIdentities[i], string(d.OldIdentity))
 			}
 		}
 	}

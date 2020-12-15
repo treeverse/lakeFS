@@ -12,25 +12,30 @@ import (
 const defaultBranchID = graveler.BranchID("master")
 
 type committedMock struct {
-	Value         *graveler.Value
-	ValueIterator graveler.ValueIterator
-	diffIterator  graveler.DiffIterator
-	err           error
-	treeID        graveler.TreeID
+	Values       map[string]*graveler.Value
+	diffIterator graveler.DiffIterator
+	err          error
+	treeID       graveler.TreeID
 }
 
-func (c *committedMock) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.Key) (*graveler.Value, error) {
+func (c *committedMock) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, key graveler.Key) (*graveler.Value, error) {
 	if c.err != nil {
 		return nil, c.err
 	}
-	return c.Value, nil
+	return c.Values[string(key)], nil
 }
 
 func (c *committedMock) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.Key) (graveler.ValueIterator, error) {
 	if c.err != nil {
 		return nil, c.err
 	}
-	return c.ValueIterator, nil
+	records := make([]graveler.ValueRecord, 0, len(c.Values))
+	for k, v := range c.Values {
+		records = append(records, graveler.ValueRecord{Key: []byte(k), Value: v})
+	}
+	return &mockValueIterator{
+		records: records,
+	}, nil
 }
 
 func (c *committedMock) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.TreeID, _ graveler.Key) (graveler.DiffIterator, error) {

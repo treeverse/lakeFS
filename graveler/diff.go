@@ -8,6 +8,7 @@ type diffIterator struct {
 	leftNext    bool
 	rightNext   bool
 	currentVal  *ValueRecord
+	oldIdentity []byte
 	currentType DiffType
 }
 
@@ -37,21 +38,23 @@ func (d *diffIterator) Next() bool {
 		switch comp {
 		case 0:
 			leftVal := d.left.Value()
-			rightVal := d.right.Value()
+			d.currentVal = d.right.Value()
 			d.rightNext = d.right.Next()
 			d.leftNext = d.left.Next()
-			if !bytes.Equal(leftVal.Value.Identity, rightVal.Value.Identity) {
-				d.currentVal = rightVal
+			if !bytes.Equal(leftVal.Value.Identity, d.currentVal.Value.Identity) {
+				d.oldIdentity = leftVal.Identity
 				d.currentType = DiffTypeChanged
 				return true
 			}
 		case -1:
 			d.currentVal = d.left.Value()
+			d.oldIdentity = d.currentVal.Identity
 			d.leftNext = d.left.Next()
 			d.currentType = DiffTypeRemoved
 			return true
 		default: // leftKey > rightKey
 			d.currentVal = d.right.Value()
+			d.oldIdentity = nil
 			d.rightNext = d.right.Next()
 			d.currentType = DiffTypeAdded
 			return true
@@ -69,9 +72,10 @@ func (d *diffIterator) SeekGE(id Key) {
 
 func (d *diffIterator) Value() *Diff {
 	return &Diff{
-		Type:  d.currentType,
-		Key:   d.currentVal.Key,
-		Value: d.currentVal.Value,
+		Type:        d.currentType,
+		Key:         d.currentVal.Key,
+		Value:       d.currentVal.Value,
+		OldIdentity: d.oldIdentity,
 	}
 }
 
