@@ -94,10 +94,10 @@ type EntryCatalog interface {
 	Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID) (graveler.CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from graveler.Key) (EntryDiffIterator, error)
+	DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from Path) (EntryDiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
-	Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from graveler.Key) (EntryDiffIterator, error)
+	Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from Path) (EntryDiffIterator, error)
 
 	// Get returns entry from repository / reference by path, nil entry is a valid entry for tombstone
 	// returns error if entry does not exist
@@ -196,16 +196,24 @@ func (e entryCatalog) Merge(ctx context.Context, repositoryID graveler.Repositor
 	return e.store.Merge(ctx, repositoryID, from, to)
 }
 
-func (e entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from graveler.Key) (EntryDiffIterator, error) {
-	iter, err := e.store.DiffUncommitted(ctx, repositoryID, branchID, from)
+func (e entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from Path) (EntryDiffIterator, error) {
+	fromKey, err := graveler.NewKey(from.String())
+	if err != nil {
+		return nil, err
+	}
+	iter, err := e.store.DiffUncommitted(ctx, repositoryID, branchID, fromKey)
 	if err != nil {
 		return nil, err
 	}
 	return NewEntryDiffIterator(iter), nil
 }
 
-func (e entryCatalog) Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from graveler.Key) (EntryDiffIterator, error) {
-	iter, err := e.store.Diff(ctx, repositoryID, left, right, from)
+func (e entryCatalog) Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from Path) (EntryDiffIterator, error) {
+	fromKey, err := graveler.NewKey(from.String())
+	if err != nil {
+		return nil, err
+	}
+	iter, err := e.store.Diff(ctx, repositoryID, left, right, fromKey)
 	if err != nil {
 		return nil, err
 	}

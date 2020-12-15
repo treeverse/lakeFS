@@ -14,7 +14,7 @@ func NewEntryDiffIterator(it graveler.DiffIterator) EntryDiffIterator {
 	}
 }
 
-func (e entryDiffIterator) Next() bool {
+func (e *entryDiffIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
@@ -43,7 +43,7 @@ func (e entryDiffIterator) Next() bool {
 	return true
 }
 
-func (e entryDiffIterator) SeekGE(id Path) {
+func (e *entryDiffIterator) SeekGE(id Path) {
 	e.value = nil
 	var key graveler.Key
 	key, e.err = graveler.NewKey(id.String())
@@ -53,14 +53,14 @@ func (e entryDiffIterator) SeekGE(id Path) {
 	e.it.SeekGE(key)
 }
 
-func (e entryDiffIterator) Value() *EntryDiff {
+func (e *entryDiffIterator) Value() *EntryDiff {
 	return e.value
 }
 
-func (e entryDiffIterator) Err() error {
+func (e *entryDiffIterator) Err() error {
 	return e.err
 }
 
-func (e entryDiffIterator) Close() {
+func (e *entryDiffIterator) Close() {
 	e.it.Close()
 }

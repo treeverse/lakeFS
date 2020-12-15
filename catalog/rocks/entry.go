@@ -35,6 +35,9 @@ func EntryToValue(entry *Entry) (*graveler.Value, error) {
 }
 
 func MustEntryToValue(entry *Entry) *graveler.Value {
+	if entry == nil {
+		return nil
+	}
 	v, err := EntryToValue(entry)
 	if err != nil {
 		panic(err)

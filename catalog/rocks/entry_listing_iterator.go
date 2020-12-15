@@ -16,7 +16,7 @@ func NewEntryListingIterator(it graveler.ListingIterator) EntryListingIterator {
 	}
 }
 
-func (e entryListingIterator) Next() bool {
+func (e *entryListingIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
@@ -44,7 +44,7 @@ func (e entryListingIterator) Next() bool {
 	return true
 }
 
-func (e entryListingIterator) SeekGE(id Path) {
+func (e *entryListingIterator) SeekGE(id Path) {
 	e.value = nil
 	var key graveler.Key
 	key, e.err = graveler.NewKey(id.String())
@@ -54,14 +54,14 @@ func (e entryListingIterator) SeekGE(id Path) {
 	e.it.SeekGE(key)
 }
 
-func (e entryListingIterator) Value() *EntryListing {
+func (e *entryListingIterator) Value() *EntryListing {
 	return e.value
 }
 
-func (e entryListingIterator) Err() error {
+func (e *entryListingIterator) Err() error {
 	return e.err
 }
 
-func (e entryListingIterator) Close() {
+func (e *entryListingIterator) Close() {
 	e.it.Close()
 }
