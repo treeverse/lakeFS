@@ -461,10 +461,10 @@ func Test_graveler_Delete(t *testing.T) {
 		key          graveler.Key
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name        string
+		fields      fields
+		args        args
+		expectedErr error
 	}{
 		{
 			name: "exists only in committed",
@@ -479,8 +479,8 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:    args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
-			wantErr: false,
+			args:        args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
+			expectedErr: nil,
 		},
 		{
 			name: "exists in committed and in staging",
@@ -495,8 +495,8 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:    args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
-			wantErr: false,
+			args:        args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
+			expectedErr: nil,
 		},
 		{
 			name: "exists in committed tombstone in staging",
@@ -511,8 +511,8 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:    args{},
-			wantErr: true,
+			args:        args{},
+			expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "exists only in staging",
@@ -527,8 +527,8 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:    args{}, // TODO:(Guys) add option to validate staging mock was called with delete entry
-			wantErr: false,
+			args:        args{}, // TODO:(Guys) add option to validate staging mock was called with delete entry
+			expectedErr: nil,
 		},
 		{
 			name: "not in committed not in staging",
@@ -543,11 +543,11 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:    args{},
-			wantErr: true,
+			args:        args{},
+			expectedErr: graveler.ErrNotFound,
 		},
 		{
-			name: "not in committed tombsone in staging",
+			name: "not in committed tombstone in staging",
 			fields: fields{
 				CommittedManager: &committedMock{
 					err: graveler.ErrNotFound,
@@ -559,15 +559,15 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:    args{},
-			wantErr: true,
+			args:        args{},
+			expectedErr: graveler.ErrUnexpected,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); (err != nil) != tt.wantErr {
-				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
+				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}
 		})
 	}
