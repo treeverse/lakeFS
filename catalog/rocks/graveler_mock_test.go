@@ -34,7 +34,7 @@ func (g *GravelerMock) Set(_ context.Context, repositoryID graveler.RepositoryID
 	if g.Err != nil {
 		return g.Err
 	}
-	k := g.gravelerMockBuildKey(repositoryID, graveler.Ref(branchID.String()), key)
+	k := gravelerMockBuildKey(repositoryID, graveler.Ref(branchID.String()), key)
 	g.KeyValue[k] = &value
 	return nil
 }
