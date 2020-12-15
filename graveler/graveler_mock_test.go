@@ -79,7 +79,7 @@ func (s *stagingMock) Get(_ context.Context, _ graveler.StagingToken, _ graveler
 	return s.Value, nil
 }
 
-func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ graveler.Value) error {
+func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ *graveler.Value) error {
 	if s.err != nil {
 		return s.err
 	}

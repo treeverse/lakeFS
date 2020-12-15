@@ -392,8 +392,8 @@ type StagingManager interface {
 	// Returns ErrNotFound if no value found on key.
 	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
-	// Set writes a value under the given staging token and key.
-	Set(ctx context.Context, st StagingToken, key Key, value Value) error
+	// Set writes a (possibly nil) value under the given staging token and key.
+	Set(ctx context.Context, st StagingToken, key Key, value *Value) error
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
@@ -674,7 +674,7 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Set(ctx, branch.stagingToken, key, value)
+	return g.StagingManager.Set(ctx, branch.stagingToken, key, &value)
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
