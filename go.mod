@@ -10,6 +10,7 @@ require (
 	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
+	github.com/cockroachdb/pebble v0.0.0-20201212194246-100e1a4acbe0
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
