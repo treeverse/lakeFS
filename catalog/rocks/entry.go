@@ -1,9 +1,8 @@
 package rocks
 
 import (
-	"crypto/sha256"
-
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/ident"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,10 +21,23 @@ func EntryToValue(entry *Entry) (*graveler.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	// calculate checksum based on serialized data
-	checksum := sha256.Sum256(data)
+	// calculate entry identity
+	checksum := ident.NewAddressWriter().
+		MarshalString(entry.Address).
+		MarshalInt64(entry.Size).
+		MarshalBytes(entry.ETag).
+		MarshalStringMap(entry.Metadata).
+		Identity()
 	return &graveler.Value{
-		Identity: checksum[:],
+		Identity: checksum,
 		Data:     data,
 	}, nil
+}
+
+func MustEntryToValue(entry *Entry) *graveler.Value {
+	v, err := EntryToValue(entry)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
