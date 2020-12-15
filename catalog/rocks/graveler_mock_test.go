@@ -106,6 +106,14 @@ func (g GravelerMock) Reset(ctx context.Context, repositoryID graveler.Repositor
 	panic("implement me")
 }
 
+func (g GravelerMock) ResetKey(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key) error {
+	panic("implement me")
+}
+
+func (g GravelerMock) ResetPrefix(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key) error {
+	panic("implement me")
+}
+
 func (g GravelerMock) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error) {
 	panic("implement me")
 }
