@@ -1,16 +1,17 @@
-package tree
+package committed
 
 import (
 	"context"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed/tree"
 )
 
 type committedManager struct {
-	tr Repo
+	tr tree.Repo
 }
 
-func NewCommittedManager(tr Repo) graveler.CommittedManager {
+func NewCommittedManager(tr tree.Repo) graveler.CommittedManager {
 	return &committedManager{tr: tr}
 }
 
