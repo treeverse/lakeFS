@@ -33,8 +33,9 @@ func TestCacheWithDisposal(t *testing.T) {
 		close(allErrs)
 	}()
 	p := cache.ParamsWithDisposal{
-		Name: t.Name(),
-		Size: size,
+		Name:   t.Name(),
+		Shards: 3,
+		Size:   size,
 		OnDispose: func(v interface{}) error {
 			element := v.(*record)
 			if n := atomic.AddInt32(&element.disposed, 1); n != 1 {

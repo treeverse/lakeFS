@@ -3,6 +3,7 @@ package cache
 import (
 	"errors"
 	"fmt"
+	"hash/maphash"
 	"sync"
 	"sync/atomic"
 
@@ -24,11 +25,39 @@ type CacheWithDisposal interface {
 }
 
 type ParamsWithDisposal struct {
-	Name string
-	Size int
+	Name   string
+	Size   int
+	Shards int
 	// OnDispose disposes of an entry.  It is called when the last reference to an entry
 	// is released.  If it fails not much can be done.
 	OnDispose func(value interface{}) error
+}
+
+// shardedCacheWithDisposal shards a CacheWithDisposal across its keys.  It requires that its
+// keyus have a String() method that is compatible with their equality, i.e. k1.GoString() ==
+// k2.GoString() implies k1 equals k2 in the sense of map comparison.
+type shardedCacheWithDisposal struct {
+	Seed   maphash.Seed
+	Shards []CacheWithDisposal
+}
+
+func NewCacheWithDisposal(p ParamsWithDisposal) *shardedCacheWithDisposal {
+	if p.Shards <= 0 {
+		panic("need at least 1 shard")
+	}
+	shards := make([]CacheWithDisposal, p.Shards)
+	for i := 0; i < p.Shards; i++ {
+		shards[i] = NewSingleThreadedCacheWithDisposal(p)
+	}
+	return &shardedCacheWithDisposal{Seed: maphash.MakeSeed(), Shards: shards}
+}
+
+func (s *shardedCacheWithDisposal) GetOrSet(k interface{}, setFn SetFn) (interface{}, Derefer, error) {
+	hash := maphash.Hash{}
+	hash.SetSeed(s.Seed)
+	hash.WriteString(fmt.Sprint(k))
+	hashVal := hash.Sum64() % uint64(len(s.Shards))
+	return s.Shards[hashVal].GetOrSet(k, setFn)
 }
 
 // SingleThreadedCacheWithDisposal is a CacheWithDisposal that uses a single critical section
@@ -72,7 +101,7 @@ func (c *SingleThreadedCacheWithDisposal) Name() string {
 	return c.name
 }
 
-func NewCacheWithDisposal(p ParamsWithDisposal) *SingleThreadedCacheWithDisposal {
+func NewSingleThreadedCacheWithDisposal(p ParamsWithDisposal) *SingleThreadedCacheWithDisposal {
 	ret := &SingleThreadedCacheWithDisposal{
 		name: p.Name,
 	}
