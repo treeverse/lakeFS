@@ -2,9 +2,6 @@ package tree
 
 import "bytes"
 
-type treeRepo struct {
-}
-
 func compareParts(leftParts []Part, leftIdx int, rightParts []Part, rightIdx int) int {
 	if leftIdx == len(leftParts) {
 		return 1
@@ -15,10 +12,13 @@ func compareParts(leftParts []Part, leftIdx int, rightParts []Part, rightIdx int
 	if leftParts[leftIdx].Name == rightParts[rightIdx].Name {
 		return 0
 	}
+	if bytes.Equal(leftParts[leftIdx].MaxKey, rightParts[rightIdx].MaxKey) {
+		return 1 // parts are not equal but end in the same key. arbitrarily return one of them
+	}
 	return bytes.Compare(leftParts[leftIdx].MaxKey, rightParts[rightIdx].MaxKey)
 }
 
-func (tr *treeRepo) RemoveCommonParts(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
+func RemoveCommonParts(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
 	i := 0
 	j := 0
 	newLeft = new(Tree)

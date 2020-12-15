@@ -3,12 +3,12 @@ package tree_test
 import (
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 	"github.com/treeverse/lakefs/graveler/committed/tree"
 )
 
-func TestRemoveDuplicates(t *testing.T) {
+func TestRemoveCommonParts(t *testing.T) {
 	tests := []struct {
 		left                 *tree.Tree
 		right                *tree.Tree
@@ -71,7 +71,7 @@ func TestRemoveDuplicates(t *testing.T) {
 		},
 	}
 	for _, tst := range tests {
-		gotLeft, gotRight := tree.RemoveDuplicates(tst.left, tst.right)
+		gotLeft, gotRight := tree.RemoveCommonParts(tst.left, tst.right)
 		if len(gotLeft.Parts) != len(tst.expectedLeftPartIds) {
 			t.Fatalf("got unexpected number of parts on left tree. expected=%d, got=%d", len(tst.expectedLeftPartIds), len(gotLeft.Parts))
 		}
@@ -92,11 +92,11 @@ func TestRemoveDuplicates(t *testing.T) {
 }
 
 func newTestTree(partIds []string, maxPaths []string) *tree.Tree {
-	parts := make([]*tree.Part, 0, len(partIds))
+	parts := make([]tree.Part, 0, len(partIds))
 	for i := range partIds {
-		parts = append(parts, &tree.Part{
-			Name:    sstable.ID(partIds[i]),
-			MaxPath: rocks.Path(maxPaths[i]),
+		parts = append(parts, tree.Part{
+			Name:   sstable.ID(partIds[i]),
+			MaxKey: graveler.Key(maxPaths[i]),
 		})
 	}
 	return &tree.Tree{
