@@ -1,31 +1,25 @@
 package tree
 
-import "bytes"
+import (
+	"bytes"
+	"strings"
+)
 
-func compareParts(leftParts []Part, leftIdx int, rightParts []Part, rightIdx int) int {
-	if leftIdx == len(leftParts) {
-		return 1
+func compareParts(leftPart Part, rightPart Part) int {
+	result := bytes.Compare(leftPart.MaxKey, rightPart.MaxKey)
+	if result != 0 {
+		return result
 	}
-	if rightIdx == len(rightParts) {
-		return -1
-	}
-	if leftParts[leftIdx].Name == rightParts[rightIdx].Name {
-		return 0
-	}
-	if bytes.Equal(leftParts[leftIdx].MaxKey, rightParts[rightIdx].MaxKey) {
-		return 1 // parts are not equal but end in the same key. arbitrarily return one of them
-	}
-	return bytes.Compare(leftParts[leftIdx].MaxKey, rightParts[rightIdx].MaxKey)
+	return strings.Compare(string(leftPart.Name), string(rightPart.Name))
 }
 
-func RemoveCommonParts(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) {
+func RemoveCommonParts(left *Tree, right *Tree) (*Tree, *Tree) {
 	i := 0
 	j := 0
-	newLeft = new(Tree)
-	newRight = new(Tree)
-	for i < len(left.Parts) || j < len(right.Parts) {
-		comp := compareParts(left.Parts, i, right.Parts, j)
-		switch comp {
+	newLeft := new(Tree)
+	newRight := new(Tree)
+	for i < len(left.Parts) && j < len(right.Parts) {
+		switch compareParts(left.Parts[i], right.Parts[j]) {
 		case 0:
 			i++
 			j++
@@ -37,5 +31,11 @@ func RemoveCommonParts(left *Tree, right *Tree) (newLeft *Tree, newRight *Tree) 
 			j++
 		}
 	}
-	return
+	for ; i < len(left.Parts); i++ {
+		newLeft.Parts = append(newLeft.Parts, left.Parts[i])
+	}
+	for ; j < len(right.Parts); j++ {
+		newRight.Parts = append(newRight.Parts, right.Parts[j])
+	}
+	return newLeft, newRight
 }
