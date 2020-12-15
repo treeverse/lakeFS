@@ -35,7 +35,7 @@ type Repo interface {
 
 	// NewIteratorFromTree accept a tree in memory, returns an iterator
 	// over the tree from the first value GE than the from
-	NewIteratorFromTree(tree Tree, from graveler.Key) (graveler.ValueIterator, error)
+	NewIteratorFromTree(tree *Tree, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetIterForPart accepts a tree ID and a reading start point. it returns an iterator
 	// positioned at the start point. When Next() will be called, first value that is GE
@@ -45,7 +45,7 @@ type Repo interface {
 	// RemoveCommonParts accepts the left and right trees of the diff, and finds the common parts which
 	// exist in both trees.
 	// it returns the left and right trees with common parts filtered.
-	RemoveCommonParts(Left, Right Tree) (*Tree, *Tree, error)
+	RemoveCommonParts(left graveler.TreeID, right graveler.TreeID) (*Tree, *Tree, error)
 }
 
 // Writer is an abstraction for creating new trees

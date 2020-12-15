@@ -24,11 +24,15 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.TreeID, from graveler.Key) (graveler.DiffIterator, error) {
-	leftIt, err := c.tr.NewIterator(left, from)
+	leftTree, rightTree, err := c.tr.RemoveCommonParts(left, right)
 	if err != nil {
 		return nil, err
 	}
-	rightIt, err := c.tr.NewIterator(right, from)
+	leftIt, err := c.tr.NewIteratorFromTree(leftTree, from)
+	if err != nil {
+		return nil, err
+	}
+	rightIt, err := c.tr.NewIteratorFromTree(rightTree, from)
 	if err != nil {
 		return nil, err
 	}
