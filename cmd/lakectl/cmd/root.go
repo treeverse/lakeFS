@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -40,8 +41,13 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		if cmd == configCmd {
 			return
 		}
-		if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
-			// specific message in case the file doesn't not found
+
+		if errors.As(cfgFileErr, &viper.ConfigFileNotFoundError{}) {
+			if cfgFile == "" {
+				// if the config file wasn't provided, try to run using the default values + env vars
+				return
+			}
+			// specific message in case the file isn't found
 			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
 		} else if cfgFileErr != nil {
 			// other errors while reading the config file

@@ -38,7 +38,7 @@ require (
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.6.4
 	github.com/jackc/pgerrcode v0.0.0-20190803225404-afa3381909a6
-	github.com/jackc/pgproto3/v2 v2.0.4 // indirect
+	github.com/jackc/pgproto3/v2 v2.0.4
 	github.com/jackc/pgtype v1.4.2
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
@@ -70,6 +70,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
+	github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a
 	github.com/stretchr/testify v1.6.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
