@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
@@ -17,9 +16,6 @@ func (c *cataloger) getRepositoryCache(tx db.Tx, repository string) (*catalog.Re
 		}
 		return repo, nil
 	})
-	if errors.Is(err, cache.ErrCacheItemNotFound) {
-		return repo, catalog.ErrRepositoryNotFound
-	}
 	return repo, err
 }
 
@@ -31,9 +27,6 @@ func (c *cataloger) getRepositoryIDCache(tx db.Tx, repository string) (int, erro
 		}
 		return repoID, nil
 	})
-	if errors.Is(err, cache.ErrCacheItemNotFound) {
-		return repoID, catalog.ErrRepositoryNotFound
-	}
 	return repoID, err
 }
 
@@ -46,7 +39,7 @@ func (c *cataloger) getBranchIDCache(tx db.Tx, repository string, branch string)
 		return branchID, nil
 	})
 
-	if !(errors.Is(err, cache.ErrCacheItemNotFound) || errors.Is(err, db.ErrNotFound)) {
+	if !errors.Is(err, db.ErrNotFound) {
 		return branchID, err
 	}
 
