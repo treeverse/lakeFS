@@ -61,6 +61,10 @@ type stagingMock struct {
 	stagingToken  graveler.StagingToken
 }
 
+func (s *stagingMock) DropByPrefix(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
+	return nil
+}
+
 func (s *stagingMock) Drop(_ context.Context, _ graveler.StagingToken) error {
 	if s.err != nil {
 		return s.err
@@ -75,14 +79,14 @@ func (s *stagingMock) Get(_ context.Context, _ graveler.StagingToken, _ graveler
 	return s.Value, nil
 }
 
-func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ graveler.Value) error {
+func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ *graveler.Value) error {
 	if s.err != nil {
 		return s.err
 	}
 	return nil
 }
 
-func (s *stagingMock) Delete(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
+func (s *stagingMock) DropKey(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
 	return nil
 }
 

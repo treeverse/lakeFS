@@ -22,20 +22,26 @@ type Tree struct {
 // Repo is an abstraction for a repository of trees that exposes operations on them
 type Repo interface {
 	GetTree(treeID graveler.TreeID) (*Tree, error)
+
 	// GetValue finds the matching graveler.ValueRecord in the tree with the treeID
 	GetValue(treeID graveler.TreeID, key graveler.Key) (*graveler.ValueRecord, error)
+
 	// NewTreeWriter returns a writer that is used for creating new trees
 	NewTreeWriter() Writer
+
 	// NewIterator accepts a tree ID, and returns an iterator
 	// over the tree from the first value GE than the from
 	NewIterator(treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error)
+
 	// NewIteratorFromTree accept a tree in memory, returns an iterator
 	// over the tree from the first value GE than the from
 	NewIteratorFromTree(tree Tree, from graveler.Key) (graveler.ValueIterator, error)
+
 	// GetIterForPart accepts a tree ID and a reading start point. it returns an iterator
 	// positioned at the start point. When Next() will be called, first value that is GE
 	// than the from key will be returned
 	NewPartIterator(partID sstable.ID, from graveler.Key) (graveler.ValueIterator, error)
+
 	// RemoveCommonParts accepts the left and right trees of the diff, and finds the common parts which
 	// exist in both trees.
 	// it returns the left and right trees with common parts filtered.
@@ -48,11 +54,14 @@ type Writer interface {
 	// (in other words - values must be entered sorted by key order).
 	// If the most recent insertion was using AddParts, the key must be greater than any key in the added parts.
 	WriteRecord(record graveler.ValueRecord) error
+
 	// AddParts adds complete parts to the tree at the current insertion point.
 	// Added parts must not contain keys smaller than last previously written value.
 	AddParts(parts []Part) error
+
 	// FlushIterToTree writes the content of an iterator to the tree.
 	FlushIterToTree(iter graveler.ValueIterator) error
+
 	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts.
