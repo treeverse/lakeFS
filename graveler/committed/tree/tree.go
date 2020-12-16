@@ -2,13 +2,13 @@ package tree
 
 import (
 	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
+	"github.com/treeverse/lakefs/graveler/committed"
 )
 
 // part is the basic building stone of a tree
 // nolint: structcheck, unused
 type Part struct {
-	Name   sstable.ID
+	Name   committed.ID
 	MaxKey graveler.Key
 }
 
@@ -40,7 +40,7 @@ type Repo interface {
 	// GetIterForPart accepts a tree ID and a reading start point. it returns an iterator
 	// positioned at the start point. When Next() will be called, first value that is GE
 	// than the from key will be returned
-	NewPartIterator(partID sstable.ID, from graveler.Key) (graveler.ValueIterator, error)
+	NewPartIterator(partID committed.ID, from graveler.Key) (graveler.ValueIterator, error)
 
 	// RemoveCommonParts accepts the left and right trees of the diff, and finds the common parts which
 	// exist in both trees.

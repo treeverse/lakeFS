@@ -13,6 +13,14 @@ type ROFile struct {
 	rPath relativePath
 }
 
+func (f *ROFile) Write(p []byte) (n int, err error) {
+	panic("should never write to a read-only file")
+}
+
+func (f *ROFile) Sync() error {
+	panic("should never write to a read-only file")
+}
+
 func (f *ROFile) Read(p []byte) (n int, err error) {
 	f.eviction.touch(f.rPath)
 	return f.File.Read(p)
