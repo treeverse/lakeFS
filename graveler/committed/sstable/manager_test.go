@@ -27,8 +27,7 @@ func TestGetEntrySuccess(t *testing.T) {
 	vals := randomStrings(len(keys))
 	sstableID := "some-id"
 
-	reader, releaser := createSStableReader(t, keys, vals)
-	defer releaser()
+	reader := createSStableReader(t, keys, vals)
 
 	derefCount := 0
 	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
@@ -78,8 +77,7 @@ func TestGetEntryNotFound(t *testing.T) {
 	vals := randomStrings(len(keys))
 	sstableID := "some-id"
 
-	reader, releaser := createSStableReader(t, keys, vals)
-	defer releaser()
+	reader := createSStableReader(t, keys, vals)
 
 	derefCount := 0
 	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
@@ -132,8 +130,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	vals := randomStrings(len(keys))
 	sstableID := "some-id"
 
-	reader, releaser := createSStableReader(t, keys, vals)
-	defer releaser()
+	reader := createSStableReader(t, keys, vals)
 	derefCount := 0
 	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
 		Return(reader,

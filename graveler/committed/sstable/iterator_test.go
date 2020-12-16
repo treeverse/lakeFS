@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cockroachdb/pebble"
+
 	"github.com/treeverse/lakefs/graveler/committed"
 
 	"github.com/stretchr/testify/require"
@@ -21,8 +23,7 @@ func TestIteratorSuccess(t *testing.T) {
 	count := 1000
 	keys := randomStrings(count)
 	vals := randomStrings(count)
-	iter, releaser := createSStableIterator(t, keys, vals)
-	defer releaser()
+	iter := createSStableIterator(t, keys, vals)
 
 	called := 0
 	sut := NewIterator(iter, func() error {
@@ -85,20 +86,23 @@ func TestIteratorSuccess(t *testing.T) {
 }
 
 // createSStableIterator creates the iterator from keys, vals passed to it
-func createSStableIterator(t *testing.T, keys, vals []string) (sstable.Iterator, func()) {
-	ssReader, releaser := createSStableReader(t, keys, vals)
+func createSStableIterator(t *testing.T, keys, vals []string) sstable.Iterator {
+	ssReader := createSStableReader(t, keys, vals)
 
 	iter, err := ssReader.NewIter(nil, nil)
 	require.NoError(t, err)
-	return iter, func() {
+
+	t.Cleanup(func() {
 		iter.Close()
-		releaser()
-	}
+	})
+
+	return iter
 }
 
 // createSStableReader creates the table from keys, vals passed to it
-func createSStableReader(t *testing.T, keys []string, vals []string) (*sstable.Reader, func()) {
+func createSStableReader(t *testing.T, keys []string, vals []string) *sstable.Reader {
 	f, err := ioutil.TempFile(os.TempDir(), "test file")
+	require.NoError(t, err)
 	w := sstable.NewWriter(f, sstable.WriterOptions{
 		Compression: sstable.SnappyCompression,
 	})
@@ -107,11 +111,18 @@ func createSStableReader(t *testing.T, keys []string, vals []string) (*sstable.R
 	}
 	require.NoError(t, w.Close())
 
+	cache := pebble.NewCache(0)
+	t.Cleanup(func() {
+		cache.Unref()
+	})
+
 	readF, err := os.Open(f.Name())
 	require.NoError(t, err)
-
-	ssReader, err := sstable.NewReader(readF, sstable.ReaderOptions{})
+	ssReader, err := sstable.NewReader(readF, sstable.ReaderOptions{Cache: cache})
 	require.NoError(t, err)
 
-	return ssReader, func() { ssReader.Close() }
+	t.Cleanup(func() {
+		ssReader.Close()
+	})
+	return ssReader
 }
