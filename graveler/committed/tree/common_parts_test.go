@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 	"github.com/treeverse/lakefs/graveler/committed/tree"
