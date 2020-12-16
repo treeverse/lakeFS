@@ -54,7 +54,7 @@ func TestMultipartUpload(t *testing.T) {
 			WithRef(masterBranch).
 			WithPath(file), nil, &b)
 	require.NoError(t, err, "failed to get object")
-	require.True(t, bytes.Equal(b.Bytes(), partsConcat), "uploaded object did not match")
+	require.Equal(t, b.Bytes(), partsConcat, "uploaded object did not match")
 }
 
 func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte) []*s3.CompletedPart {
