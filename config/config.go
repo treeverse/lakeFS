@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pyramid"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -21,6 +19,8 @@ import (
 	blockparams "github.com/treeverse/lakefs/block/params"
 	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pyramid"
 )
 
 const (
@@ -186,6 +186,10 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
+	}
+	level := strings.ToLower(logging.Level())
+	if level == "trace" {
+		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 	}
 	if viper.IsSet("blockstore.s3.profile") || viper.IsSet("blockstore.s3.credentials_file") {
 		cfg.Credentials = credentials.NewSharedCredentials(
