@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/graveler/committed"
 
 	"github.com/stretchr/testify/require"
@@ -27,8 +25,8 @@ func TestBatchWriterFailed(t *testing.T) {
 	writerSuccess := mock.NewMockWriter(ctrl)
 	writerSuccess.EXPECT().Close().Return(&committed.WriteResult{
 		PartID: committed.ID(strconv.Itoa(1)),
-		First:  graveler.Key("row_1"),
-		Last:   graveler.Key("row_2"),
+		First:  committed.Key("row_1"),
+		Last:   committed.Key("row_2"),
 		Count:  4321,
 	}, nil).Times(1)
 	writerFailure := mock.NewMockWriter(ctrl)
@@ -50,8 +48,8 @@ func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 	writer := mock.NewMockWriter(ctrl)
 	writer.EXPECT().Close().Return(&committed.WriteResult{
 		PartID: committed.ID("last"),
-		First:  graveler.Key("row_1"),
-		Last:   graveler.Key("row_2"),
+		First:  committed.Key("row_1"),
+		Last:   committed.Key("row_2"),
 		Count:  4321,
 	}, nil).Times(1)
 
@@ -71,8 +69,8 @@ func runSuccessScenario(t *testing.T) (*BatchCloser, *gomock.Controller) {
 		writers[i] = mock.NewMockWriter(ctrl)
 		writers[i].EXPECT().Close().Return(&committed.WriteResult{
 			PartID: committed.ID(strconv.Itoa(i)),
-			First:  graveler.Key(fmt.Sprintf("row_%d_1", i)),
-			Last:   graveler.Key(fmt.Sprintf("row_%d_2", i)),
+			First:  committed.Key(fmt.Sprintf("row_%d_1", i)),
+			Last:   committed.Key(fmt.Sprintf("row_%d_2", i)),
 			Count:  i,
 		}, nil).Times(1)
 	}

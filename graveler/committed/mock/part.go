@@ -6,10 +6,98 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	graveler "github.com/treeverse/lakefs/graveler"
 	committed "github.com/treeverse/lakefs/graveler/committed"
 	reflect "reflect"
 )
+
+// MockValueIterator is a mock of ValueIterator interface
+type MockValueIterator struct {
+	ctrl     *gomock.Controller
+	recorder *MockValueIteratorMockRecorder
+}
+
+// MockValueIteratorMockRecorder is the mock recorder for MockValueIterator
+type MockValueIteratorMockRecorder struct {
+	mock *MockValueIterator
+}
+
+// NewMockValueIterator creates a new mock instance
+func NewMockValueIterator(ctrl *gomock.Controller) *MockValueIterator {
+	mock := &MockValueIterator{ctrl: ctrl}
+	mock.recorder = &MockValueIteratorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockValueIterator) EXPECT() *MockValueIteratorMockRecorder {
+	return m.recorder
+}
+
+// Next mocks base method
+func (m *MockValueIterator) Next() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Next")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Next indicates an expected call of Next
+func (mr *MockValueIteratorMockRecorder) Next() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockValueIterator)(nil).Next))
+}
+
+// SeekGE mocks base method
+func (m *MockValueIterator) SeekGE(id committed.Key) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SeekGE", id)
+}
+
+// SeekGE indicates an expected call of SeekGE
+func (mr *MockValueIteratorMockRecorder) SeekGE(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockValueIterator)(nil).SeekGE), id)
+}
+
+// Value mocks base method
+func (m *MockValueIterator) Value() *committed.Record {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Value")
+	ret0, _ := ret[0].(*committed.Record)
+	return ret0
+}
+
+// Value indicates an expected call of Value
+func (mr *MockValueIteratorMockRecorder) Value() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockValueIterator)(nil).Value))
+}
+
+// Err mocks base method
+func (m *MockValueIterator) Err() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Err")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Err indicates an expected call of Err
+func (mr *MockValueIteratorMockRecorder) Err() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockValueIterator)(nil).Err))
+}
+
+// Close mocks base method
+func (m *MockValueIterator) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close
+func (mr *MockValueIteratorMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockValueIterator)(nil).Close))
+}
 
 // MockPartManager is a mock of PartManager interface
 type MockPartManager struct {
@@ -35,10 +123,10 @@ func (m *MockPartManager) EXPECT() *MockPartManagerMockRecorder {
 }
 
 // GetValue mocks base method
-func (m *MockPartManager) GetValue(ns committed.Namespace, key graveler.Key, pid committed.ID) (*graveler.Value, error) {
+func (m *MockPartManager) GetValue(ns committed.Namespace, key committed.Key, pid committed.ID) (*committed.Record, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValue", ns, key, pid)
-	ret0, _ := ret[0].(*graveler.Value)
+	ret0, _ := ret[0].(*committed.Record)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -50,10 +138,10 @@ func (mr *MockPartManagerMockRecorder) GetValue(ns, key, pid interface{}) *gomoc
 }
 
 // NewPartIterator mocks base method
-func (m *MockPartManager) NewPartIterator(ns committed.Namespace, pid committed.ID, from graveler.Key) (graveler.ValueIterator, error) {
+func (m *MockPartManager) NewPartIterator(ns committed.Namespace, pid committed.ID, from committed.Key) (committed.ValueIterator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewPartIterator", ns, pid, from)
-	ret0, _ := ret[0].(graveler.ValueIterator)
+	ret0, _ := ret[0].(committed.ValueIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -103,7 +191,7 @@ func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 }
 
 // WriteRecord mocks base method
-func (m *MockWriter) WriteRecord(record graveler.ValueRecord) error {
+func (m *MockWriter) WriteRecord(record committed.Record) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteRecord", record)
 	ret0, _ := ret[0].(error)
