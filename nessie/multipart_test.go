@@ -2,6 +2,7 @@ package nessie
 
 import (
 	"bytes"
+	"math/rand"
 	"sync"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestMultipartUpload(t *testing.T) {
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
 	for i := 0; i < multipartNumberOfParts; i++ {
-		parts[i] = randstr.Bytes(multipartPartSize)
+		parts[i] = randstr.Bytes(multipartPartSize + 1 + rand.Intn(19))
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
