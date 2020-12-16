@@ -37,7 +37,8 @@ func (bc *BatchCloser) CloseWriterAsync(w committed.Writer) error {
 	defer bc.lock.Unlock()
 
 	if bc.err != nil {
-		// don't accept new writers if previous error occurred
+		// Don't accept new writers if previous error occurred.
+		// In particular, if Wait has started then this is errMultipleWaitCalls.
 		return bc.err
 	}
 
