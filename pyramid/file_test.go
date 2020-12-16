@@ -23,7 +23,7 @@ func TestPyramidWriteFile(t *testing.T) {
 	defer os.Remove(filepath)
 
 	storeCalled := false
-	sut := File{
+	sut := WRFile{
 		File: fh,
 		store: func(string) error {
 			storeCalled = true
@@ -58,7 +58,7 @@ func TestWriteValidate(t *testing.T) {
 
 	storeCalled := false
 
-	sut := File{
+	sut := WRFile{
 		File: fh,
 		store: func(string) error {
 			storeCalled = true
