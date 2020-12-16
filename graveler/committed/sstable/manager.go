@@ -11,20 +11,17 @@ import (
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/pyramid"
-
-	"github.com/treeverse/lakefs/graveler"
 )
 
 type Manager struct {
-	cache      cache
-	fs         pyramid.FS
-	logger     logging.Logger
-	hash       hash.Hash
-	serializer serializer
+	cache  cache
+	fs     pyramid.FS
+	logger logging.Logger
+	hash   hash.Hash
 }
 
-func NewPebbleSSTableManager(cache cache, fs pyramid.FS, serializer serializer, hash hash.Hash) committed.PartManager {
-	return &Manager{cache: cache, fs: fs, serializer: serializer, hash: hash}
+func NewPebbleSSTableManager(cache cache, fs pyramid.FS, hash hash.Hash) committed.PartManager {
+	return &Manager{cache: cache, fs: fs, hash: hash}
 }
 
 var (
@@ -34,7 +31,7 @@ var (
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *Manager) GetValue(ns committed.Namespace, lookup graveler.Key, tid committed.ID) (*graveler.Value, error) {
+func (m *Manager) GetValue(ns committed.Namespace, lookup committed.Key, tid committed.ID) (*committed.Record, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -64,11 +61,14 @@ func (m *Manager) GetValue(ns committed.Namespace, lookup graveler.Key, tid comm
 		return nil, ErrPathNotFound
 	}
 
-	return m.serializer.DeserializeValue(val)
+	return &committed.Record{
+		Key:   key.UserKey,
+		Value: val,
+	}, nil
 }
 
 // SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from graveler.Key) (graveler.ValueIterator, error) {
+func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from committed.Key) (committed.ValueIterator, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -82,12 +82,12 @@ func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return NewIterator(iter, m.serializer, derefer, from), nil
+	return NewIterator(iter, derefer, from), nil
 }
 
 // GetWriter returns a new SSTable writer instance
 func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
-	return newDiskWriter(m.fs, ns, m.hash, m.serializer)
+	return newDiskWriter(m.fs, ns, m.hash)
 }
 
 func (m *Manager) execAndLog(f func() error, msg string) {
