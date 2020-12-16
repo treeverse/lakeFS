@@ -4,6 +4,8 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
+//go:generate mockgen -source=part.go -destination=mock/part.go -package=mock
+
 // ID is an identifier for a part
 type ID string
 

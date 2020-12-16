@@ -7,6 +7,7 @@ GOBUILD=$(GOCMD) build
 GORUN=$(GOCMD) run
 GOCLEAN=$(GOCMD) clean
 GOTOOL=$(GOCMD) tool
+GOGENERATE=$(GOCMD) generate
 GOTEST=$(GOCMD) test
 GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
@@ -71,6 +72,9 @@ gen-api: $(GOBINPATH)/swagger ## Run the go-swagger code generator
 	$(GOBINPATH)/swagger generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)
 	$(GOBINPATH)/swagger generate server -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR) --exclude-main
 
+gen-mocks: $(GOBINPATH)/mockgen ## Run the generator for inline commands
+	$(GOGENERATE) ./...
+
 validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
 
@@ -81,6 +85,9 @@ build: gen docs ## Download dependencies and build the default binary
 
 $(GOBINPATH)/golangci-lint:
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+$(GOBINPATH)/mockgen:
+	go get github.com/golang/mock/mockgen
 
 lint: $(GOBINPATH)/golangci-lint  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
@@ -142,4 +149,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl
+gen: gen-api gen-ui gen-ddl gen-mocks
