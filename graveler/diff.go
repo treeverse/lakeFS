@@ -6,12 +6,12 @@ import (
 )
 
 type diffIterator struct {
-	left        ValueIterator
-	right       ValueIterator
-	leftNext    bool
-	rightNext   bool
-	currentVal  *Diff
-	err         error
+	left       ValueIterator
+	right      ValueIterator
+	leftNext   bool
+	rightNext  bool
+	currentVal *Diff
+	err        error
 }
 
 func NewDiffIterator(left ValueIterator, right ValueIterator) DiffIterator {
@@ -50,18 +50,18 @@ func (d *diffIterator) Next() bool {
 			d.leftNext = d.left.Next()
 			if !bytes.Equal(leftVal.Value.Identity, rightVal.Value.Identity) {
 				d.currentVal = &Diff{
-					Type:  DiffTypeChanged,
-					Key:   rightVal.Key,
-					Value: rightVal.Value,
+					Type:        DiffTypeChanged,
+					Key:         rightVal.Key,
+					Value:       rightVal.Value,
 					OldIdentity: leftVal.Identity,
 				}
 				return true
 			}
 		case -1:
 			d.currentVal = &Diff{
-				Type:  DiffTypeRemoved,
-				Key:   d.left.Value().Key,
-				Value: d.left.Value().Value,
+				Type:        DiffTypeRemoved,
+				Key:         d.left.Value().Key,
+				Value:       d.left.Value().Value,
 				OldIdentity: d.left.Value().Identity,
 			}
 			d.leftNext = d.left.Next()
