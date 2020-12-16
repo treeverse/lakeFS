@@ -17,7 +17,7 @@ func TestEntryToValueAndBack(t *testing.T) {
 		LastModified: timestamppb.New(now),
 		Size:         99,
 		ETag:         []byte("\xba\xdc\x0f\xfe"),
-		Metadata:     nil,
+		Metadata:     map[string]string{"key9": "value9", "key1": "value1"},
 	}
 	val, err := EntryToValue(entry)
 	testutil.MustDo(t, "convert entry value", err)
