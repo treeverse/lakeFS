@@ -32,6 +32,9 @@ func (d *diffIterator) compareKeys() int {
 }
 
 func (d *diffIterator) Next() bool {
+	if d.err != nil {
+		return false
+	}
 	for d.leftNext || d.rightNext {
 		if d.left.Err() != nil {
 			d.err = fmt.Errorf("failed in left tree: %w", d.left.Err())
