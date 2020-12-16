@@ -169,6 +169,62 @@ func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID Repository
 	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
 }
 
+// GetTag returns the tag's commit ID
+func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
+	commitID, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var commitID CommitID
+		err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+			repositoryID, tagID)
+		if err != nil {
+			return nil, err
+		}
+		return &commitID, nil
+	}, db.ReadOnly(), db.WithContext(ctx))
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return commitID.(*CommitID), nil
+}
+
+// SetTag points the given TagID to point at a commit ID
+func (m *PGRefManager) SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
+	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`
+			INSERT INTO graveler_tags (repository_id, id, commit_id)
+			VALUES ($1, $2, $3)
+				ON CONFLICT (repository_id, id)
+				DO UPDATE SET commit_id = $3`,
+			repositoryID, tagID, commitID)
+		return nil, err
+	}, db.WithContext(ctx))
+	return err
+}
+
+// DeleteTag deletes the tag
+func (m *PGRefManager) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
+	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		r, err := tx.Exec(
+			`DELETE FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+			repositoryID, tagID)
+		if err != nil {
+			return nil, err
+		}
+		if r.RowsAffected() == 0 {
+			return nil, ErrNotFound
+		}
+		return nil, nil
+	}, db.WithContext(ctx))
+	return err
+}
+
+// ListTags lists tags
+func (m *PGRefManager) ListTags(ctx context.Context, repositoryID RepositoryID, from TagID) (TagIterator, error) {
+	return NewTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
+}
+
 func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error) {
 	commit, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		records := make([]*CommitRecord, 0)

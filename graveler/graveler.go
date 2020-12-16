@@ -105,12 +105,12 @@ type ValueRecord struct {
 }
 
 func (ps CommitParents) Identity() []byte {
-	strings := make([]string, len(ps))
+	commits := make([]string, len(ps))
 	for i, v := range ps {
-		strings[i] = string(v)
+		commits[i] = string(v)
 	}
 	buf := ident.NewAddressWriter()
-	buf.MarshalStringSlice(strings)
+	buf.MarshalStringSlice(commits)
 	return buf.Identity()
 }
 
@@ -153,6 +153,12 @@ type Branch struct {
 type BranchRecord struct {
 	BranchID BranchID
 	*Branch
+}
+
+// TagRecord holds TagID with the associated Tag data
+type TagRecord struct {
+	TagID    TagID
+	CommitID CommitID
 }
 
 // Listing of key/value when common prefix is true, value is nil
@@ -303,6 +309,14 @@ type BranchIterator interface {
 	Close()
 }
 
+type TagIterator interface {
+	Next() bool
+	SeekGE(id TagID)
+	Value() *TagRecord
+	Err() error
+	Close()
+}
+
 type CommitIterator interface {
 	Next() bool
 	SeekGE(id CommitID)
@@ -350,6 +364,18 @@ type RefManager interface {
 
 	// ListBranches lists branches
 	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
+
+	// GetTag returns the Tag metadata object for the given TagID
+	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
+
+	// SetTag points the given TagID at the given Tag metadata
+	SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
+
+	// DeleteTag deletes the tag
+	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
+
+	// ListTags lists tags
+	ListTags(ctx context.Context, repositoryID RepositoryID, from TagID) (TagIterator, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID.
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)

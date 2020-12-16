@@ -9,11 +9,19 @@ import (
 const (
 	// IteratorPrefetchSize is the amount of records to fetch from PG
 	IteratorPrefetchSize = 1000
+
+	iteratorOffsetGE = ">="
+	iteratorOffsetGT = ">"
 )
 
 type pgBranchRecord struct {
 	BranchID `db:"id"`
 	*PgBranch
+}
+
+type pgTagRecord struct {
+	TagID    `db:"id"`
+	CommitID `db:"commit_id"`
 }
 
 type PGRepositoryIterator struct {
@@ -71,26 +79,25 @@ func (ri *PGRepositoryIterator) Next() bool {
 	return true
 }
 
+func iteratorOffsetCondition(initial bool) string {
+	if initial {
+		return iteratorOffsetGT
+	}
+	return iteratorOffsetGE
+}
+
 func (ri *PGRepositoryIterator) fetch(initial bool) {
-	const (
-		offsetGE = ">="
-		offsetGT = ">"
-	)
 	if !ri.shouldFetch {
 		return
 	}
-	offsetCondition := offsetGT
-	if initial {
-		offsetCondition = offsetGE
-	}
-	err := ri.db.WithContext(ri.ctx).Select(&ri.buf, `
+	offsetCondition := iteratorOffsetCondition(initial)
+	ri.err = ri.db.WithContext(ri.ctx).Select(&ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
 			FROM graveler_repositories
 			WHERE id `+offsetCondition+` $1
 			ORDER BY id ASC
 			LIMIT $2`, ri.offset, ri.fetchSize)
-	if err != nil {
-		ri.err = err
+	if ri.err != nil {
 		return
 	}
 	if len(ri.buf) < ri.fetchSize {
@@ -116,9 +123,7 @@ func (ri *PGRepositoryIterator) Err() error {
 	return ri.err
 }
 
-func (ri *PGRepositoryIterator) Close() {
-
-}
+func (ri *PGRepositoryIterator) Close() {}
 
 type PGBranchIterator struct {
 	db  db.Database
@@ -178,17 +183,10 @@ func (ri *PGBranchIterator) Next() bool {
 }
 
 func (ri *PGBranchIterator) fetch(initial bool) {
-	const (
-		offsetGE = ">="
-		offsetGT = ">"
-	)
 	if !ri.shouldFetch {
 		return
 	}
-	offsetCondition := offsetGT
-	if initial {
-		offsetCondition = offsetGE
-	}
+	offsetCondition := iteratorOffsetCondition(initial)
 	buf := make([]*pgBranchRecord, 0)
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
 			SELECT id, staging_token, commit_id
@@ -305,6 +303,105 @@ func (ci *PGCommitIterator) Err() error {
 	return ci.err
 }
 
-func (ci *PGCommitIterator) Close() {
+func (ci *PGCommitIterator) Close() {}
 
+type PGTagIterator struct {
+	db           db.Database
+	ctx          context.Context
+	repositoryID RepositoryID
+	value        *TagRecord
+	buf          []*TagRecord
+	// blockValue is true when the iterator is created, or SeekGE() is called.
+	// A single Next() call turns it to false. When it's true, Value() returns nil.
+	blockValue  bool
+	offset      string
+	fetchSize   int
+	shouldFetch bool
+	err         error
 }
+
+func NewTagIterator(ctx context.Context, db db.Database, repositoryID RepositoryID, prefetchSize int, offset string) *PGTagIterator {
+	return &PGTagIterator{
+		db:           db,
+		ctx:          ctx,
+		repositoryID: repositoryID,
+		fetchSize:    prefetchSize,
+		shouldFetch:  true,
+		blockValue:   true,
+		offset:       offset,
+	}
+}
+
+func (ri *PGTagIterator) Next() bool {
+	ri.blockValue = false
+
+	// no buffer is initialized
+	if ri.buf == nil {
+		ri.fetch(true) // initial fetch
+	} else if len(ri.buf) == 0 {
+		ri.fetch(false) // paging size we're out of values
+	}
+
+	if len(ri.buf) == 0 {
+		return false
+	}
+
+	// stage a value and increment offset
+	ri.value = ri.buf[0]
+	ri.offset = string(ri.value.CommitID)
+	if len(ri.buf) > 1 {
+		ri.buf = ri.buf[1:]
+	} else {
+		ri.buf = ri.buf[:0]
+	}
+	return true
+}
+
+func (ri *PGTagIterator) fetch(initial bool) {
+	if !ri.shouldFetch {
+		return
+	}
+	offsetCondition := iteratorOffsetCondition(initial)
+	buf := make([]*pgTagRecord, 0)
+	err := ri.db.WithContext(ri.ctx).Select(&buf, `
+			SELECT id, commit_id
+			FROM graveler_tags
+			WHERE repository_id = $1
+			AND id `+offsetCondition+` $2
+			ORDER BY id ASC
+			LIMIT $3`, ri.repositoryID, ri.offset, ri.fetchSize)
+	if err != nil {
+		ri.err = err
+		return
+	}
+	if len(buf) < ri.fetchSize {
+		ri.shouldFetch = false
+	}
+	ri.buf = make([]*TagRecord, len(buf))
+	for i, b := range buf {
+		ri.buf[i] = &TagRecord{
+			TagID:    b.TagID,
+			CommitID: b.CommitID,
+		}
+	}
+}
+
+func (ri *PGTagIterator) SeekGE(id TagID) {
+	ri.offset = string(id)
+	ri.shouldFetch = true
+	ri.buf = nil
+	ri.blockValue = true
+}
+
+func (ri *PGTagIterator) Value() *TagRecord {
+	if ri.blockValue || ri.err != nil {
+		return nil
+	}
+	return ri.value
+}
+
+func (ri *PGTagIterator) Err() error {
+	return ri.err
+}
+
+func (ri *PGTagIterator) Close() {}

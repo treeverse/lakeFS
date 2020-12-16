@@ -2,9 +2,14 @@ package graveler_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
+
+	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/graveler"
 
@@ -247,6 +252,139 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 	}
 	if !reflect.DeepEqual(bs, []graveler.BranchID{"a", "aa", "b", "c", "f", "master", "z"}) {
 		t.Fatalf("unexpected branch list: %v", bs)
+	}
+}
+
+func TestPGRefManager_GetTag(t *testing.T) {
+	r := testRefManager(t)
+	t.Run("exists", func(t *testing.T) {
+		ctx := context.Background()
+		err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+			StorageNamespace: "s3://",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "master",
+		}, graveler.Branch{
+			CommitID: "c1",
+		})
+		testutil.MustDo(t, "create repo", err)
+		err = r.SetTag(ctx, "repo1", "v1.0", "c1")
+		testutil.MustDo(t, "set tag", err)
+		commitID, err := r.GetTag(context.Background(), "repo1", "v1.0")
+		testutil.MustDo(t, "get existing tag", err)
+		if commitID == nil {
+			t.Fatal("get tag, missing commit id")
+		}
+		if *commitID != "c1" {
+			t.Fatalf("get tag, commit id: %s, expected c1", *commitID)
+		}
+	})
+
+	t.Run("not_exists", func(t *testing.T) {
+		commitID, err := r.GetTag(context.Background(), "repo1", "v1.bad")
+		if !errors.Is(err, graveler.ErrNotFound) {
+			t.Fatalf("expected ErrNotFound, got error: %v", err)
+		}
+		if commitID != nil {
+			t.Fatalf("get not existing commitID: %s, expected nil", *commitID)
+		}
+	})
+}
+
+func TestPGRefManager_SetTag(t *testing.T) {
+	r := testRefManager(t)
+	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "c1",
+	}))
+
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+		CommitID: "c2",
+	}))
+
+	b, err := r.GetBranch(context.Background(), "repo1", "branch2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if b.CommitID != "c2" {
+		t.Fatalf("unexpected commit for branch2: %s - expected: c2", b.CommitID)
+	}
+
+	// overwrite
+	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+		CommitID: "c3",
+	}))
+
+	b, err = r.GetBranch(context.Background(), "repo1", "branch2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if b.CommitID != "c3" {
+		t.Fatalf("unexpected commit for branch2: %s - expected: c3", b.CommitID)
+	}
+}
+
+func TestPGRefManager_DeleteTag(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "c1",
+	}))
+
+	testutil.Must(t, r.SetTag(ctx, "repo1", "v1", "c2"))
+
+	testutil.Must(t, r.DeleteTag(ctx, "repo1", "v1"))
+
+	commitID, err := r.GetBranch(ctx, "repo1", "v1")
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatal("unexpected error:", err)
+	}
+	if commitID != nil {
+		t.Fatal("expected commit ID:", *commitID)
+	}
+}
+
+func TestPGRefManager_ListTags(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "c1",
+	}))
+
+	var commitsTagged []graveler.CommitID
+	tags := []string{"tag-a", "tag-b", "the-end", "v1", "v1.1"}
+	sort.Strings(tags)
+	for i, tag := range tags {
+		commitID := graveler.CommitID(fmt.Sprintf("c%d", i))
+		commitsTagged = append(commitsTagged, commitID)
+		err := r.SetTag(ctx, "repo1", graveler.TagID(tag), commitID)
+		testutil.MustDo(t, "set tag "+tag, err)
+	}
+
+	iter, err := r.ListTags(ctx, "repo1", "")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	var commits []graveler.CommitID
+	for iter.Next() {
+		commits = append(commits, iter.Value().CommitID)
+	}
+	testutil.MustDo(t, "list tags completed", iter.Err())
+
+	if diff := deep.Equal(commits, commitsTagged); diff != nil {
+		t.Fatal("ListTags found mismatch:", diff)
 	}
 }
 

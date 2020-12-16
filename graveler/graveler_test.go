@@ -409,7 +409,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(nil,
 		nil,
 		&mockRefs{
-			branchErr: graveler.ErrNotFound,
+			err: graveler.ErrNotFound,
 		},
 	)
 	_, err := gravel.CreateBranch(context.Background(), "", "", "")
