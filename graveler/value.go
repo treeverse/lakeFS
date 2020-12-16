@@ -51,17 +51,17 @@ func MarshalValue(v *Value) ([]byte, error) {
 // supposed to encode a Value.
 var ErrBadValueBytes = errors.New("bad bytes format for graveler.Value")
 
-func getBytes(tag string, b *[]byte) ([]byte, error) {
+func getBytes(b *[]byte) ([]byte, error) {
 	l, o := binary.Varint(*b)
 	if o <= 0 {
-		return nil, fmt.Errorf("read %s length: %w", tag, ErrBadValueBytes)
+		return nil, fmt.Errorf("read length: %w", ErrBadValueBytes)
 	}
 	*b = (*b)[o:]
 	if len(*b) < int(l) {
-		return nil, fmt.Errorf("not enough bytes to read %d bytes for %s: %w", l, tag, ErrBadValueBytes)
+		return nil, fmt.Errorf("not enough bytes to read %d bytes: %w", l, ErrBadValueBytes)
 	}
 	if l < 0 {
-		return nil, fmt.Errorf("impossible negative length %d for %s: %w", l, tag, ErrBadValueBytes)
+		return nil, fmt.Errorf("impossible negative length %d: %w", l, ErrBadValueBytes)
 	}
 	ret := make([]byte, l)
 	copy(ret, (*b)[:l])
@@ -72,11 +72,11 @@ func getBytes(tag string, b *[]byte) ([]byte, error) {
 func UnmarshalValue(b []byte) (*Value, error) {
 	ret := &Value{}
 	var err error
-	if ret.Identity, err = getBytes("identifier", &b); err != nil {
-		return nil, err
+	if ret.Identity, err = getBytes(&b); err != nil {
+		return nil, fmt.Errorf("identity field: %w", err)
 	}
-	if ret.Data, err = getBytes("data", &b); err != nil {
-		return nil, err
+	if ret.Data, err = getBytes(&b); err != nil {
+		return nil, fmt.Errorf("data field: %w", err)
 	}
 	return ret, nil
 }
@@ -84,5 +84,5 @@ func UnmarshalValue(b []byte) (*Value, error) {
 // UnmarshalIdentity returns *only* the Identity field encoded by b.  It does not even examine
 // any bytes beyond the prefix of b holding Identity.
 func UnmarshalIdentity(b []byte) ([]byte, error) {
-	return getBytes("identifier", &b)
+	return getBytes(&b)
 }
