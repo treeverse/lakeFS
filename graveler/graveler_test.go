@@ -381,7 +381,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := tt.r.DiffUncommitted(context.Background(), "repo", "branch", graveler.Key("from"))
+			diff, err := tt.r.DiffUncommitted(context.Background(), "repo", "branch")
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}

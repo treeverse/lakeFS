@@ -215,6 +215,18 @@ type VersionController interface {
 	// GetBranch gets branch information by branch / repository id
 	GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error)
 
+	// GetTag gets tag's commit id
+	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
+
+	// SetTag creates tag on a repository pointing to a commit id
+	SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
+
+	// DeleteTag remove tag from a repository
+	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
+
+	// ListTags lists tags on a repository
+	ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error)
+
 	// Log returns an iterator starting at commit ID up to repository root
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 
@@ -250,7 +262,7 @@ type VersionController interface {
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error)
+	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error)
@@ -375,7 +387,7 @@ type RefManager interface {
 	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
 
 	// ListTags lists tags
-	ListTags(ctx context.Context, repositoryID RepositoryID, from TagID) (TagIterator, error)
+	ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID.
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
@@ -639,6 +651,22 @@ func (g *graveler) GetBranch(ctx context.Context, repositoryID RepositoryID, bra
 	return g.RefManager.GetBranch(ctx, repositoryID, branchID)
 }
 
+func (g *graveler) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
+	return g.RefManager.GetTag(ctx, repositoryID, tagID)
+}
+
+func (g *graveler) SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
+	return g.RefManager.SetTag(ctx, repositoryID, tagID, commitID)
+}
+
+func (g *graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
+	return g.RefManager.DeleteTag(ctx, repositoryID, tagID)
+}
+
+func (g *graveler) ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error) {
+	return g.RefManager.ListTags(ctx, repositoryID)
+}
+
 func (g *graveler) Dereference(ctx context.Context, repositoryID RepositoryID, ref Ref) (CommitID, error) {
 	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
 	if err != nil {
@@ -812,7 +840,7 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 	return g.RefManager.AddCommit(ctx, repositoryID, commit)
 }
 
-func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID, from Key) (DiffIterator, error) {
+func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err

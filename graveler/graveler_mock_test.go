@@ -178,7 +178,7 @@ func (m *mockRefs) DeleteTag(_ context.Context, _ graveler.RepositoryID, _ grave
 	return nil
 }
 
-func (m *mockRefs) ListTags(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) (graveler.TagIterator, error) {
+func (m *mockRefs) ListTags(_ context.Context, _ graveler.RepositoryID) (graveler.TagIterator, error) {
 	return m.listTagsRes, nil
 }
 

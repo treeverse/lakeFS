@@ -6,12 +6,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ory/dockertest/v3"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
-
-	"github.com/ory/dockertest/v3"
-	"github.com/sirupsen/logrus"
 )
 
 var (

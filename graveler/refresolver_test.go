@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 

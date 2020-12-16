@@ -6,10 +6,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/treeverse/lakefs/ident"
-
 	"github.com/jackc/pgtype"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/ident"
 )
 
 type PgBranch struct {
@@ -169,7 +168,6 @@ func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID Repository
 	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
 }
 
-// GetTag returns the tag's commit ID
 func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
 	commitID, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var commitID CommitID
@@ -189,7 +187,6 @@ func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, ta
 	return commitID.(*CommitID), nil
 }
 
-// SetTag points the given TagID to point at a commit ID
 func (m *PGRefManager) SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`
@@ -203,7 +200,6 @@ func (m *PGRefManager) SetTag(ctx context.Context, repositoryID RepositoryID, ta
 	return err
 }
 
-// DeleteTag deletes the tag
 func (m *PGRefManager) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		r, err := tx.Exec(
@@ -220,9 +216,8 @@ func (m *PGRefManager) DeleteTag(ctx context.Context, repositoryID RepositoryID,
 	return err
 }
 
-// ListTags lists tags
-func (m *PGRefManager) ListTags(ctx context.Context, repositoryID RepositoryID, from TagID) (TagIterator, error) {
-	return NewTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
+func (m *PGRefManager) ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error) {
+	return NewTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, ""), nil
 }
 
 func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error) {

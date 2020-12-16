@@ -10,11 +10,8 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
-
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/catalog"
-
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -373,7 +370,7 @@ func TestPGRefManager_ListTags(t *testing.T) {
 		testutil.MustDo(t, "set tag "+tag, err)
 	}
 
-	iter, err := r.ListTags(ctx, "repo1", "")
+	iter, err := r.ListTags(ctx, "repo1")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
