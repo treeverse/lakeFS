@@ -85,7 +85,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.Error(t, err)
 
 	require.NoError(t, f.Close())
-	require.NoError(t, f.store(filename))
+	require.NoError(t, f.Store(filename))
 	checkContent(t, namespace, filename, content)
 }
 

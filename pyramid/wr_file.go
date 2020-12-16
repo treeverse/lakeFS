@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-// File is pyramid wrapper for os.file that triggers pyramid hooks for file actions.
-type File struct {
+// WRFile pyramid wrapper for os.file that triggers pyramid hooks for file actions.
+type WRFile struct {
 	*os.File
 
 	persisted bool
@@ -19,7 +19,7 @@ var (
 )
 
 // Store copies the closed file to all tiers of the pyramid.
-func (f *File) Store(filename string) error {
+func (f *WRFile) Store(filename string) error {
 	if err := validateFilename(filename); err != nil {
 		return err
 	}

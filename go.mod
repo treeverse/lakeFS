@@ -10,6 +10,7 @@ require (
 	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
+	github.com/cockroachdb/pebble v0.0.0-20201130172119-f19faf8529d6
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
@@ -28,8 +29,8 @@ require (
 	github.com/go-test/deep v1.0.7
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.12.2
+	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2
-	github.com/golang/snappy v0.0.2-0.20190904063534-ff6b7dc882cf // indirect
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
@@ -81,7 +82,6 @@ require (
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
