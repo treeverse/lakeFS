@@ -8,7 +8,11 @@ import (
 
 // eviction is an abstraction of the eviction control for easy testing
 type eviction interface {
+	// touch indicates the eviction that the file has been used now
 	touch(rPath relativePath)
+
+	// store orders the eviction to store the path.
+	// returns true iff the eviction accepted the path.
 	store(rPath relativePath, filesize int64) bool
 }
 
@@ -19,7 +23,7 @@ type ristrettoEviction struct {
 
 const (
 	// 10M for an efficient 1M stored items (less than 5MB overhead)
-	numCounters = 10000000
+	numCounters = 10_000_000
 
 	// 64 is the recommended buffer-items for all use-cases
 	bufferItems = 64
