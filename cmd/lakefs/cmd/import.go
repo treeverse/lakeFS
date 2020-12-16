@@ -44,7 +44,7 @@ var importCmd = &cobra.Command{
 		dryRun, _ := flags.GetBool(DryRunFlagName)
 		manifestURL, _ := flags.GetString(ManifestURLFlagName)
 		withMerge, _ := flags.GetBool(WithMergeFlagName)
-		noProgress, _ := flags.GetBool(HideProgress)
+		hideProgress, _ := flags.GetBool(HideProgress)
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
@@ -105,7 +105,7 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		var multiBar *cmdutils.MultiBar
-		if !noProgress {
+		if !hideProgress {
 			multiBar = cmdutils.NewMultiBar(importer)
 			multiBar.Start()
 		}
