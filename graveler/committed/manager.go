@@ -2,6 +2,7 @@ package committed
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed/tree"
@@ -24,13 +25,17 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.TreeID, from graveler.Key) (graveler.DiffIterator, error) {
-	leftIt, err := c.tr.NewIterator(left, from)
+	leftTree, rightTree, err := c.tr.RemoveCommonParts(left, right)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to remove common parts from trees: %w", err)
 	}
-	rightIt, err := c.tr.NewIterator(right, from)
+	leftIt, err := c.tr.NewIteratorFromTree(leftTree, from)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get iterator for left tree: %w", err)
+	}
+	rightIt, err := c.tr.NewIteratorFromTree(rightTree, from)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get iterator for right tree: %w", err)
 	}
 	return graveler.NewDiffIterator(leftIt, rightIt), nil
 }

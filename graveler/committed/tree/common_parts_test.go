@@ -3,6 +3,7 @@ package tree_test
 import (
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 	"github.com/treeverse/lakefs/graveler/committed/tree"
@@ -72,23 +73,21 @@ func TestRemoveCommonParts(t *testing.T) {
 	}
 	for _, tst := range tests {
 		gotLeft, gotRight := tree.RemoveCommonParts(tst.left, tst.right)
-		if len(gotLeft.Parts) != len(tst.expectedLeftPartIds) {
-			t.Fatalf("got unexpected number of parts on left tree. expected=%d, got=%d", len(tst.expectedLeftPartIds), len(gotLeft.Parts))
+		if diff := deep.Equal(tst.expectedLeftPartIds, partNames(gotLeft)); diff != nil {
+			t.Fatalf("got unexpected parts on left tree. diff expected-got: %s", diff)
 		}
-		for i := range gotLeft.Parts {
-			if string(gotLeft.Parts[i].Name) != tst.expectedLeftPartIds[i] {
-				t.Fatalf("unexpected part id in new left tree index %d: expected=%s, got=%s", i, tst.expectedLeftPartIds[i], string(gotLeft.Parts[i].Name))
-			}
-		}
-		if len(gotRight.Parts) != len(tst.expectedRightPartIds) {
-			t.Fatalf("got unexpected number of parts on right tree. expected=%d, got=%d", len(tst.expectedRightPartIds), len(gotRight.Parts))
-		}
-		for i := range gotRight.Parts {
-			if string(gotRight.Parts[i].Name) != tst.expectedRightPartIds[i] {
-				t.Fatalf("unexpected part id in new right tree index %d: expected=%s, got=%s", i, tst.expectedRightPartIds[i], string(gotRight.Parts[i].Name))
-			}
+		if diff := deep.Equal(tst.expectedRightPartIds, partNames(gotRight)); diff != nil {
+			t.Fatalf("got unexpected parts on right tree. diff expected-got: %s", diff)
 		}
 	}
+}
+
+func partNames(tree *tree.Tree) []string {
+	names := make([]string, 0, len(tree.Parts))
+	for _, p := range tree.Parts {
+		names = append(names, string(p.Name))
+	}
+	return names
 }
 
 func newTestTree(partIds []string, maxPaths []string) *tree.Tree {

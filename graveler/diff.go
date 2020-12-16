@@ -1,15 +1,17 @@
 package graveler
 
-import "bytes"
+import (
+	"bytes"
+	"fmt"
+)
 
 type diffIterator struct {
 	left        ValueIterator
 	right       ValueIterator
 	leftNext    bool
 	rightNext   bool
-	currentVal  *ValueRecord
-	oldIdentity []byte
-	currentType DiffType
+	currentVal  *Diff
+	err         error
 }
 
 func NewDiffIterator(left ValueIterator, right ValueIterator) DiffIterator {
@@ -31,35 +33,50 @@ func (d *diffIterator) compareKeys() int {
 
 func (d *diffIterator) Next() bool {
 	for d.leftNext || d.rightNext {
-		if d.left.Err() != nil || d.right.Err() != nil {
+		if d.left.Err() != nil {
+			d.err = fmt.Errorf("failed in left tree: %w", d.left.Err())
+			return false
+		}
+		if d.right.Err() != nil {
+			d.err = fmt.Errorf("failed in right tree: %w", d.right.Err())
 			return false
 		}
 		comp := d.compareKeys()
 		switch comp {
 		case 0:
 			leftVal := d.left.Value()
-			d.currentVal = d.right.Value()
+			rightVal := d.right.Value()
 			d.rightNext = d.right.Next()
 			d.leftNext = d.left.Next()
-			if !bytes.Equal(leftVal.Value.Identity, d.currentVal.Value.Identity) {
-				d.oldIdentity = leftVal.Identity
-				d.currentType = DiffTypeChanged
+			if !bytes.Equal(leftVal.Value.Identity, rightVal.Value.Identity) {
+				d.currentVal = &Diff{
+					Type:  DiffTypeChanged,
+					Key:   rightVal.Key,
+					Value: rightVal.Value,
+					OldIdentity: leftVal.Identity,
+				}
 				return true
 			}
 		case -1:
-			d.currentVal = d.left.Value()
-			d.oldIdentity = d.currentVal.Identity
+			d.currentVal = &Diff{
+				Type:  DiffTypeRemoved,
+				Key:   d.left.Value().Key,
+				Value: d.left.Value().Value,
+				OldIdentity: d.left.Value().Identity,
+			}
 			d.leftNext = d.left.Next()
-			d.currentType = DiffTypeRemoved
 			return true
 		default: // leftKey > rightKey
-			d.currentVal = d.right.Value()
-			d.oldIdentity = nil
+			d.currentVal = &Diff{
+				Type:  DiffTypeAdded,
+				Key:   d.right.Value().Key,
+				Value: d.right.Value().Value,
+			}
 			d.rightNext = d.right.Next()
-			d.currentType = DiffTypeAdded
 			return true
 		}
 	}
+	d.currentVal = nil
 	return false
 }
 
@@ -67,23 +84,17 @@ func (d *diffIterator) SeekGE(id Key) {
 	d.left.SeekGE(id)
 	d.right.SeekGE(id)
 	d.currentVal = nil
-	d.currentType = 0
+	d.leftNext = d.left.Next()
+	d.rightNext = d.right.Next()
+	d.err = nil
 }
 
 func (d *diffIterator) Value() *Diff {
-	return &Diff{
-		Type:        d.currentType,
-		Key:         d.currentVal.Key,
-		Value:       d.currentVal.Value,
-		OldIdentity: d.oldIdentity,
-	}
+	return d.currentVal
 }
 
 func (d *diffIterator) Err() error {
-	if d.left.Err() != nil {
-		return d.left.Err()
-	}
-	return d.right.Err()
+	return d.err
 }
 
 func (d *diffIterator) Close() {
