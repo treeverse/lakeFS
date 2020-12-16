@@ -172,7 +172,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 // Create creates a new file in TierFS.
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
-func (tfs *TierFS) Create(namespace string) (*File, error) {
+func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 	if err := validateNamespace(namespace); err != nil {
 		return nil, fmt.Errorf("invalid args: %w", err)
 	}
@@ -187,7 +187,7 @@ func (tfs *TierFS) Create(namespace string) (*File, error) {
 		return nil, fmt.Errorf("creating file: %w", err)
 	}
 
-	return &File{
+	return &WRFile{
 		File: fh,
 		store: func(filename string) error {
 			return tfs.store(namespace, tempPath, filename)
@@ -197,7 +197,7 @@ func (tfs *TierFS) Create(namespace string) (*File, error) {
 
 // Open returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
-func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
+func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	if err := validateArgs(namespace, filename); err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
 	return tfs.openFile(fileRef, fh)
 }
 
-// openFile converts an os.File to pyramid.File and updates the eviction control.
+// openFile converts an os.File to pyramid.ROFile and updates the eviction control.
 func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) {
 	stat, err := fh.Stat()
 	if err != nil {

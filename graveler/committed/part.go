@@ -1,54 +1,57 @@
-package sstable
+package committed
 
 import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
-// ID is an identifier for an SSTable
+// ID is an identifier for a part
 type ID string
 
-type Manager interface {
-	// GetValue returns the value matching the key in the SSTable referenced by the id.
+// Namespace is namespace for ID parts
+type Namespace string
+
+type PartManager interface {
+	// GetValue returns the value matching the key in the part referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetValue(key graveler.Key, tid ID) (*graveler.Value, error)
+	GetValue(ns Namespace, key graveler.Key, pid ID) (*graveler.Value, error)
 
-	// NewSSTableIterator takes a given SSTable and returns an ValueIterator seeked to >= "from" value
-	NewSSTableIterator(tid ID, from graveler.Key) (graveler.ValueIterator, error)
+	// NewPartIterator takes a part ID and returns an ValueIterator seeked to >= "from" value
+	NewPartIterator(ns Namespace, pid ID, from graveler.Key) (graveler.ValueIterator, error)
 
-	// GetWriter returns a new SSTable writer instance
-	GetWriter() (Writer, error)
+	// GetWriter returns a new part writer instance
+	GetWriter(ns Namespace) (Writer, error)
 }
 
-// WriteResult is the result of a completed write of an SSTable
+// WriteResult is the result of a completed write of an part
 type WriteResult struct {
-	// ID is the identifier for the written SSTable.
+	// ID is the identifier for the written part.
 	// Calculated by an hash function to all keys and values' identity.
-	SSTableID ID
+	PartID ID
 
-	// First is the first key in the SSTable.
+	// First is the first key in the part.
 	First graveler.Key
 
-	// Last is the last key in the SSTable.
+	// Last is the last key in the part.
 	Last graveler.Key
 
-	// Count is the number of records in the SSTable.
+	// Count is the number of records in the part.
 	Count int
 }
 
-// Writer is an abstraction for writing SSTables.
+// Writer is an abstraction for writing Parts.
 // Written records must be sorted by key.
 type Writer interface {
-	// WriteRecord appends the given record to the SSTable
+	// WriteRecord appends the given record to the part
 	WriteRecord(record graveler.ValueRecord) error
 
 	// Close flushes all records to the disk and returns the WriteResult.
 	Close() (*WriteResult, error)
 }
 
-// BatchWriterCloser collects sstable writers and handles the asynchronous
+// BatchWriterCloser collects part writers and handles the asynchronous
 // flushing and closing of the writers.
 // Example usage:
-// func batch(manager Manager, bwc BatchWriterCloser) {
+// func batch(manager PartManager, bwc BatchWriterCloser) {
 //	w1, _ := manager.GetWriter()
 //	_ = w1.WriteRecord(graveler.ValueRecord{Key: "foo1", Value: &graveler.Value{Address: "bar1"}})
 //	_ = w1.WriteRecord(graveler.ValueRecord{Key: "foo2", Value: &graveler.Value{Address: "bar2"}})
