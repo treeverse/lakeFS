@@ -6,13 +6,12 @@ import (
 )
 
 type diffIterator struct {
-	left        ValueIterator
-	right       ValueIterator
-	leftNext    bool
-	rightNext   bool
-	currentVal  *Diff
-	currentType DiffType
-	err         error
+	left       ValueIterator
+	right      ValueIterator
+	leftNext   bool
+	rightNext  bool
+	currentVal *Diff
+	err        error
 }
 
 func NewDiffIterator(left ValueIterator, right ValueIterator) DiffIterator {
@@ -33,6 +32,9 @@ func (d *diffIterator) compareKeys() int {
 }
 
 func (d *diffIterator) Next() bool {
+	if d.err != nil {
+		return false
+	}
 	for d.leftNext || d.rightNext {
 		if d.left.Err() != nil {
 			d.err = fmt.Errorf("failed in left tree: %w", d.left.Err())
