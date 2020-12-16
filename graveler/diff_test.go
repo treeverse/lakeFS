@@ -1,6 +1,7 @@
 package graveler_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
@@ -197,6 +198,49 @@ func TestDiffSeek(t *testing.T) {
 		if idx != len(tst.expectedDiffs) {
 			t.Fatalf("unexpected diff length. expected=%d, got=%d", len(tst.expectedDiffs), idx)
 		}
+	}
+}
+
+func TestDiffErr(t *testing.T) {
+	leftErr := errors.New("error from left")
+	leftIt := &mockValueIterator{
+		current: -1,
+		records: newValues([]string{"k1", "k2"}, []string{"i1", "i2"}),
+		err:     leftErr,
+	}
+	rightIt := &mockValueIterator{
+		current: -1,
+		records: newValues([]string{"k2"}, []string{"i2a"}),
+	}
+	it := graveler.NewDiffIterator(leftIt, rightIt)
+	if it.Next() {
+		t.Fatalf("expected false from iterator with error")
+	}
+	if !errors.Is(it.Err(), leftErr) {
+		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
+	}
+	it.SeekGE([]byte("k2"))
+	if it.Err() != nil {
+		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
+	}
+	if it.Next() {
+		t.Fatalf("expected false from iterator with error")
+	}
+	if !errors.Is(it.Err(), leftErr) {
+		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
+	}
+	rightErr := errors.New("error from right")
+	leftIt.err = nil
+	rightIt.err = rightErr
+	it.SeekGE([]byte("k2"))
+	if it.Err() != nil {
+		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
+	}
+	if it.Next() {
+		t.Fatalf("expected false from iterator with error")
+	}
+	if !errors.Is(it.Err(), rightErr) {
+		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", rightErr, it.Err())
 	}
 }
 
