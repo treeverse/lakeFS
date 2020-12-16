@@ -1,6 +1,9 @@
 package graveler
 
-import "bytes"
+import (
+	"bytes"
+	"fmt"
+)
 
 type diffIterator struct {
 	left        ValueIterator
@@ -82,9 +85,12 @@ func (d *diffIterator) Value() *Diff {
 
 func (d *diffIterator) Err() error {
 	if d.left.Err() != nil {
-		return d.left.Err()
+		return fmt.Errorf("failed in left tree: %w", d.left.Err())
 	}
-	return d.right.Err()
+	if d.right.Err() != nil {
+		return fmt.Errorf("failed in right tree: %w", d.right.Err())
+	}
+	return nil
 }
 
 func (d *diffIterator) Close() {
