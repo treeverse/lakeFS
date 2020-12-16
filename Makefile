@@ -66,13 +66,16 @@ gen-metastore: ## Run Metastore Code generation
 $(GOBINPATH)/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-gen-api: $(GOBINPATH)/swagger ## Run the go-swagger code generator
+gen-api: $(GOBINPATH)/swagger del-gen-api gen-go ## Run the go-swagger code generator
+
+del-gen-api:
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
-	$(GOBINPATH)/swagger generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)
-	$(GOBINPATH)/swagger generate server -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR) --exclude-main
 
-gen-mocks: $(GOBINPATH)/mockgen ## Run the generator for inline commands
+.PHONY: gen-mockgen
+gen-mockgen: $(GOBINPATH)/mockgen gen-go ## Run the generator for inline commands
+
+gen-go: $(GOBINPATH)/mockgen ## Run the generator for inline commands
 	$(GOGENERATE) ./...
 
 validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
@@ -149,4 +152,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl gen-mocks
+gen: gen-api gen-ui gen-ddl gen-mockgen
