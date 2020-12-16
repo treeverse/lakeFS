@@ -65,9 +65,14 @@ func (d *diffIterator) SeekGE(id Key) {
 	d.right.SeekGE(id)
 	d.currentVal = nil
 	d.currentType = 0
+	d.leftNext = d.left.Next()
+	d.rightNext = d.right.Next()
 }
 
 func (d *diffIterator) Value() *Diff {
+	if d.currentVal == nil {
+		return nil
+	}
 	return &Diff{
 		Type:  d.currentType,
 		Key:   d.currentVal.Key,
