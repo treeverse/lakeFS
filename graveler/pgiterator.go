@@ -81,9 +81,9 @@ func (ri *PGRepositoryIterator) Next() bool {
 
 func iteratorOffsetCondition(initial bool) string {
 	if initial {
-		return iteratorOffsetGT
+		return iteratorOffsetGE
 	}
-	return iteratorOffsetGE
+	return iteratorOffsetGT
 }
 
 func (ri *PGRepositoryIterator) fetch(initial bool) {
