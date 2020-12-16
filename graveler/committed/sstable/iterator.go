@@ -2,28 +2,24 @@ package sstable
 
 import (
 	"github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed"
 )
 
 // Iterator returns ordered iteration of the SSTable entries
 type Iterator struct {
-	it  sstable.Iterator
-	ser serializer
+	it sstable.Iterator
 
 	currKey   *sstable.InternalKey
 	currValue []byte
-
-	valParsed *graveler.Value
 
 	postSeek bool
 	err      error
 	derefer  func() error
 }
 
-func NewIterator(it sstable.Iterator, ser serializer, derefer func() error, from graveler.Key) *Iterator {
+func NewIterator(it sstable.Iterator, derefer func() error, from committed.Key) *Iterator {
 	iter := &Iterator{
 		it:      it,
-		ser:     ser,
 		derefer: derefer,
 	}
 
@@ -34,7 +30,7 @@ func NewIterator(it sstable.Iterator, ser serializer, derefer func() error, from
 	return iter
 }
 
-func (iter *Iterator) SeekGE(lookup graveler.Key) {
+func (iter *Iterator) SeekGE(lookup committed.Key) {
 	iter.currKey, iter.currValue = iter.it.SeekGE(lookup)
 	iter.postSeek = true
 }
@@ -49,18 +45,17 @@ func (iter *Iterator) Next() bool {
 		return false
 	}
 
-	iter.valParsed, iter.err = iter.ser.DeserializeValue(iter.currValue)
-	return iter.err == nil
+	return true
 }
 
-func (iter *Iterator) Value() *graveler.ValueRecord {
+func (iter *Iterator) Value() *committed.Record {
 	if iter.currKey == nil || iter.err != nil || iter.postSeek {
 		return nil
 	}
 
-	return &graveler.ValueRecord{
+	return &committed.Record{
 		Key:   iter.currKey.UserKey,
-		Value: iter.valParsed,
+		Value: iter.currValue,
 	}
 }
 
