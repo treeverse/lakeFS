@@ -7,7 +7,7 @@ on:
 jobs:
   deploy-executor-image:
     name: Build and push benchmark executor Docker image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
 
       - name: Checkout
@@ -57,7 +57,7 @@ jobs:
   benchmark-system:
     name: Measure system benchmark
     needs: deploy-executor-image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
