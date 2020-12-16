@@ -24,7 +24,7 @@ import (
 const (
 	DryRunFlagName      = "dry-run"
 	WithMergeFlagName   = "with-merge"
-	NoProgress          = "no-progress"
+	HideProgress        = "hide-progress"
 	ManifestURLFlagName = "manifest"
 	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs    = 1
@@ -44,7 +44,7 @@ var importCmd = &cobra.Command{
 		dryRun, _ := flags.GetBool(DryRunFlagName)
 		manifestURL, _ := flags.GetString(ManifestURLFlagName)
 		withMerge, _ := flags.GetBool(WithMergeFlagName)
-		noProgress, _ := flags.GetBool(NoProgress)
+		noProgress, _ := flags.GetBool(HideProgress)
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
@@ -183,5 +183,5 @@ func init() {
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
 	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
-	importCmd.Flags().Bool(NoProgress, false, "Suppress progress bar")
+	importCmd.Flags().Bool(HideProgress, false, "Suppress progress bar")
 }
