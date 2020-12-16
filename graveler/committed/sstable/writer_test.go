@@ -7,13 +7,10 @@ import (
 
 	"github.com/thanhpk/randstr"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/graveler/committed"
-	smock "github.com/treeverse/lakefs/graveler/committed/sstable/mock"
 	"github.com/treeverse/lakefs/pyramid/mock"
 )
 
@@ -29,14 +26,7 @@ func TestWriter(t *testing.T) {
 	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
 
 	writes := 500
-	// create the serializer for the writer
-	ser := smock.NewMockserializer(ctrl)
-	ser.EXPECT().SerializeValue(gomock.Any()).Times(writes).DoAndReturn(
-		func(interface{}) ([]byte, error) {
-			return randstr.Bytes(1024), nil
-		})
-
-	dw, err := newDiskWriter(mockFS, ns, sha256.New(), ser)
+	dw, err := newDiskWriter(mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -57,12 +47,9 @@ func TestWriter(t *testing.T) {
 
 	// Do the actual writing
 	for i := 0; i < writes; i++ {
-		err = dw.WriteRecord(graveler.ValueRecord{
-			Key: []byte(keys[i]),
-			Value: &graveler.Value{
-				Identity: []byte("some-identity"),
-				Data:     []byte("some-data"),
-			},
+		err = dw.WriteRecord(committed.Record{
+			Key:   []byte(keys[i]),
+			Value: []byte("some-data"),
 		})
 		require.NoError(t, err)
 	}

@@ -81,7 +81,6 @@ require (
 	github.com/xitongsys/parquet-go v1.5.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
-	go.uber.org/atomic v1.6.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
@@ -90,7 +89,7 @@ require (
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	pgregory.net/rapid v0.4.0 // indirect
 )

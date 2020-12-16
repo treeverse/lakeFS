@@ -1,11 +1,9 @@
 package graveler
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 )
 
 /*
@@ -17,34 +15,23 @@ import (
  * ignored.
  */
 
-func writeVarint(w io.Writer, i int) error {
+func varintBytes(i int) []byte {
 	e := make([]byte, binary.MaxVarintLen64)
 	l := binary.PutVarint(e, int64(i))
-	_, err := w.Write(e[:l])
-	return err
+	return e[:l]
 }
 
-func writeBytes(tag string, w io.Writer, b []byte) error {
-	if err := writeVarint(w, len(b)); err != nil {
-		return fmt.Errorf("write %s length: %w", tag, err)
-	}
-	if _, err := w.Write(b); err != nil {
-		return fmt.Errorf("write %s: %w", tag, err)
-	}
-	return nil
+func putBytes(buf *[]byte, b []byte) {
+	*buf = append(*buf, varintBytes(len(b))...)
+	*buf = append(*buf, b...)
 }
 
 // MarshalValue returns bytes that uniquely unmarshal into a Value equal to v.
 func MarshalValue(v *Value) ([]byte, error) {
-	var w = &bytes.Buffer{}
-
-	if err := writeBytes("identity", w, v.Identity); err != nil {
-		return nil, err
-	}
-	if err := writeBytes("data", w, v.Data); err != nil {
-		return nil, err
-	}
-	return w.Bytes(), nil
+	ret := make([]byte, 0, len(v.Identity)+len(v.Data)+2*binary.MaxVarintLen32)
+	putBytes(&ret, v.Identity)
+	putBytes(&ret, v.Data)
+	return ret, nil
 }
 
 // ErrBadValueBytes is an error that is probably returned when unmarshalling bytes that are
