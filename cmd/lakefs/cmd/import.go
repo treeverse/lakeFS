@@ -24,6 +24,7 @@ import (
 const (
 	DryRunFlagName      = "dry-run"
 	WithMergeFlagName   = "with-merge"
+	NoProgress          = "no-progress"
 	ManifestURLFlagName = "manifest"
 	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs    = 1
@@ -43,7 +44,7 @@ var importCmd = &cobra.Command{
 		dryRun, _ := flags.GetBool(DryRunFlagName)
 		manifestURL, _ := flags.GetString(ManifestURLFlagName)
 		withMerge, _ := flags.GetBool(WithMergeFlagName)
-
+		noProgress, _ := flags.GetBool(NoProgress)
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
@@ -103,15 +104,22 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Import failed: %s\n", err)
 			os.Exit(1)
 		}
-		multiBar := cmdutils.NewMultiBar(importer)
-		multiBar.Start()
+		var multiBar *cmdutils.MultiBar
+		if !noProgress {
+			multiBar = cmdutils.NewMultiBar(importer)
+			multiBar.Start()
+		}
 		stats, err := importer.Import(ctx, dryRun)
 		if err != nil {
-			multiBar.Stop()
+			if multiBar != nil {
+				multiBar.Stop()
+			}
 			fmt.Printf("Import failed: %s\n", err)
 			os.Exit(1)
 		}
-		multiBar.Stop()
+		if multiBar != nil {
+			multiBar.Stop()
+		}
 		fmt.Println()
 		fmt.Println(text.FgYellow.Sprint("Added or changed objects:"), stats.AddedOrChanged)
 		fmt.Println(text.FgYellow.Sprint("Deleted objects:"), stats.Deleted)
@@ -175,4 +183,5 @@ func init() {
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
 	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
+	importCmd.Flags().Bool(NoProgress, false, "Suppress progress bar")
 }
