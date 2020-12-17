@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/db"
-
 	"github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/testutil"
 )
