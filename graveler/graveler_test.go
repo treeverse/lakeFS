@@ -1,6 +1,7 @@
 package graveler_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -445,5 +446,140 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	if err != nil {
 		t.Fatal("did not expect to get error")
+	}
+}
+
+func TestGraveler_Delete(t *testing.T) {
+	type fields struct {
+		CommittedManager graveler.CommittedManager
+		StagingManager   *stagingMock
+		RefManager       graveler.RefManager
+	}
+	type args struct {
+		ctx          context.Context
+		repositoryID graveler.RepositoryID
+		branchID     graveler.BranchID
+		key          graveler.Key
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		args               args
+		expectedSetValue   *graveler.ValueRecord
+		expectedRemovedKey graveler.Key
+		expectedErr        error
+	}{
+		{
+			name: "exists only in committed",
+			fields: fields{
+				CommittedManager: &committedMock{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &stagingMock{
+					err: graveler.ErrNotFound,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "exists in committed and in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &stagingMock{
+					Value: &graveler.Value{},
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "exists in committed tombstone in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &stagingMock{
+					Value: nil,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:        args{},
+			expectedErr: graveler.ErrNotFound,
+		},
+		{
+			name: "exists only in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					err: graveler.ErrNotFound,
+				},
+				StagingManager: &stagingMock{
+					Value: &graveler.Value{},
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedRemovedKey: []byte("key"),
+			expectedErr:        nil,
+		},
+		{
+			name: "not in committed not in staging",
+			fields: fields{
+				CommittedManager: &committedMock{
+					err: graveler.ErrNotFound,
+				},
+				StagingManager: &stagingMock{
+					err: graveler.ErrNotFound,
+				},
+				RefManager: &mockRefs{
+					branch: &graveler.Branch{},
+				},
+			},
+			args:        args{},
+			expectedErr: graveler.ErrNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
+			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
+				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
+			}
+			// validate set on staging
+			if diff := deep.Equal(tt.fields.StagingManager.lastSetValueRecord, tt.expectedSetValue); diff != nil {
+				t.Errorf("unexpected set value %s", diff)
+			}
+			// validate removed from staging
+			if bytes.Compare(tt.fields.StagingManager.lastRemovedKey, tt.expectedRemovedKey) != 0 {
+				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.lastRemovedKey, tt.expectedRemovedKey)
+			}
+
+		})
 	}
 }

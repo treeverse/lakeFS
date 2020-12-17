@@ -682,11 +682,39 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
 	branch, err := g.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+	if err != nil {
+		return err
+	}
+
+	// check key in committed - do we need tombstone?
+	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
+	if errors.Is(err, ErrNotFound) {
+		// no need for tombstone - drop key from stage
+		return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+	}
+	if err != nil {
+		return err
+	}
+
+	// make sure we have tombstone in staging
+	entry, err := g.StagingManager.Get(ctx, branch.stagingToken, key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	// return not found if we already got tombstone
+	if err == nil && entry == nil {
+		return ErrNotFound
+	}
+	return g.StagingManager.Set(ctx, branch.stagingToken, key, nil)
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
