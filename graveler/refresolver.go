@@ -62,7 +62,7 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 	if err != nil {
 		return nil, err
 	}
-	// return the matched reference, when no modifires on ref or use the commmit id as base
+	// return the matched reference, when no modifiers on ref or use the commit id as base
 	if len(parsed.Modifiers) == 0 {
 		return rr, nil
 	}
