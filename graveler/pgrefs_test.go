@@ -287,7 +287,7 @@ func TestPGRefManager_GetTag(t *testing.T) {
 	})
 }
 
-func TestPGRefManager_SetTag(t *testing.T) {
+func TestPGRefManager_CreateTag(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
@@ -297,31 +297,32 @@ func TestPGRefManager_SetTag(t *testing.T) {
 		CommitID: "c1",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
-		CommitID: "c2",
-	}))
+	err := r.CreateTag(context.Background(), "repo1", "v2", "c2")
+	testutil.MustDo(t, "create tag v2", err)
 
-	b, err := r.GetBranch(context.Background(), "repo1", "branch2")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	commit, err := r.GetTag(context.Background(), "repo1", "v2")
+	testutil.MustDo(t, "get v2 tag", err)
+	if commit == nil {
+		t.Fatal("get tag got nil")
+	}
+	if *commit != "c2" {
+		t.Fatalf("unexpected commit for tag v2: %s - expected: c2", *commit)
 	}
 
-	if b.CommitID != "c2" {
-		t.Fatalf("unexpected commit for branch2: %s - expected: c2", b.CommitID)
+	// overwrite by delete and create
+	err = r.DeleteTag(context.Background(), "repo1", "v2")
+	testutil.MustDo(t, "delete tag v2", err)
+
+	err = r.CreateTag(context.Background(), "repo1", "v2", "c3")
+	testutil.MustDo(t, "re-create tag v2", err)
+
+	commit, err = r.GetTag(context.Background(), "repo1", "v2")
+	testutil.MustDo(t, "get tag v2", err)
+	if commit == nil {
+		t.Fatal("get tag got nil")
 	}
-
-	// overwrite
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
-		CommitID: "c3",
-	}))
-
-	b, err = r.GetBranch(context.Background(), "repo1", "branch2")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if b.CommitID != "c3" {
-		t.Fatalf("unexpected commit for branch2: %s - expected: c3", b.CommitID)
+	if *commit != "c3" {
+		t.Fatalf("unexpected commit for v2: %s - expected: c3", *commit)
 	}
 }
 
