@@ -19,6 +19,10 @@ type committedMock struct {
 	treeID        graveler.TreeID
 }
 
+func NewCommittedMock() graveler.CommittedManager {
+	return &committedMock{}
+}
+
 func (c *committedMock) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.Key) (*graveler.Value, error) {
 	if c.err != nil {
 		return nil, c.err
@@ -79,7 +83,10 @@ func (s *stagingMock) Get(_ context.Context, _ graveler.StagingToken, _ graveler
 	return s.Value, nil
 }
 
-func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ graveler.Value) error {
+func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ *graveler.Value) error {
+	if s.err != nil {
+		return s.err
+	}
 	return nil
 }
 

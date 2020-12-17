@@ -65,6 +65,7 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 }
 
 func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
+	c.logger.Trace("start apply import")
 	var stats Stats
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
@@ -102,6 +103,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		currentBatch = append(currentBatch, entry)
 		stats.AddedOrChanged += 1
 		if len(currentBatch) >= batchSize {
+			c.logger.Tracef("closing batch of %d entries", len(currentBatch))
 			previousBatch := currentBatch
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
@@ -110,6 +112,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			}
 			tsk := &task{
 				f: func() error {
+					c.logger.Tracef("writing %d entries to database", len(previousBatch))
 					err := c.cataloger.CreateEntries(ctx, c.repository, catalog.DefaultImportBranchName, previousBatch)
 					if err == nil {
 						c.addedProgress.Add(int64(len(previousBatch)))
@@ -122,7 +125,9 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			tasksChan <- tsk
 		}
 	}
+	c.logger.Trace("closing import task channel")
 	close(tasksChan)
+	c.logger.Trace("waiting for import wait group")
 	wg.Wait()
 	if it.Err() != nil {
 		return nil, it.Err()

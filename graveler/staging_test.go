@@ -26,13 +26,9 @@ func TestSetGet(t *testing.T) {
 	}
 	value := newTestValue("identity1", "value1")
 	err = s.Set(ctx, "t1", []byte("a/b/c/"), value)
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("a/b/c/"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong value. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
@@ -45,31 +41,21 @@ func TestMultiToken(t *testing.T) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
 	err = s.Set(ctx, "t1", []byte("a/b/c/"), newTestValue("identity1", "value1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("a/b/c/"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
 	err = s.Set(ctx, "t2", []byte("a/b/c/"), newTestValue("identity2", "value2"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	e, err = s.Get(ctx, "t1", []byte("a/b/c/"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
 	e, err = s.Get(ctx, "t2", []byte("a/b/c/"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	if string(e.Identity) != "identity2" {
 		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
 		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
@@ -81,18 +67,12 @@ func TestDrop(t *testing.T) {
 	numOfValues := 1400
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 	}
 	err := s.Drop(ctx, "t1")
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	v, err := s.Get(ctx, "t1", []byte("key0000"))
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
@@ -121,28 +101,20 @@ func TestDropByPrefix(t *testing.T) {
 	numOfValues := 2400
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 	}
 	err := s.DropByPrefix(ctx, "t1", []byte("key1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	v, err := s.Get(ctx, "t1", []byte("key1000"))
 	if !errors.Is(err, db.ErrNotFound) {
 		// key1000 starts with the deleted prefix - should have been deleted
 		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
 	}
 	v, err = s.Get(ctx, "t1", []byte("key0000"))
-	if err != nil {
-		// key0000 does not start with the deleted prefix - should be returned
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	// key0000 does not start with the deleted prefix - should be returned
+	testutil.Must(t, err)
 	it, _ := s.List(ctx, "t1")
 	count := 0
 	for it.Next() {
@@ -240,22 +212,16 @@ func TestDropPrefixBytes(t *testing.T) {
 		st := graveler.StagingToken(fmt.Sprintf("t_%s", name))
 		t.Run(name, func(t *testing.T) {
 			for _, k := range tst.keys {
-				err := s.Set(ctx, st, k, graveler.Value{
+				err := s.Set(ctx, st, k, &graveler.Value{
 					Identity: []byte{0, 0, 0, 0, 0, 0},
 					Data:     []byte{0, 0, 0, 0, 0, 0},
 				})
-				if err != nil {
-					t.Fatalf("got unexpected error: %v", err)
-				}
+				testutil.Must(t, err)
 			}
 			err := s.DropByPrefix(ctx, st, tst.prefix)
-			if err != nil {
-				t.Fatalf("got unexpected error: %v", err)
-			}
+			testutil.Must(t, err)
 			it, err := s.List(ctx, st)
-			if err != nil {
-				t.Fatalf("got unexpected error: %v", err)
-			}
+			testutil.Must(t, err)
 			count := 0
 			for it.Next() {
 				count++
@@ -277,9 +243,7 @@ func TestList(t *testing.T) {
 		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
 		for i := 0; i < numOfValues; i++ {
 			err := s.Set(ctx, token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)))
-			if err != nil {
-				t.Fatalf("got unexpected error: %v", err)
-			}
+			testutil.Must(t, err)
 		}
 		res := make([]*graveler.ValueRecord, 0, numOfValues)
 		it, _ := s.List(ctx, token)
@@ -309,9 +273,7 @@ func TestSeek(t *testing.T) {
 	numOfValues := 100
 	for i := 0; i < numOfValues; i++ {
 		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 	}
 	it, _ := s.List(ctx, "t1")
 	if it.SeekGE([]byte("key0050")); !it.Next() {
@@ -341,13 +303,43 @@ func TestSeek(t *testing.T) {
 	it.Close()
 }
 
+func TestNilValue(t *testing.T) {
+	ctx, s := newTestStagingManager(t)
+	err := s.Set(ctx, "t1", []byte("key1"), nil)
+	testutil.Must(t, err)
+	err = s.Set(ctx, "t1", []byte("key2"), newTestValue("identity2", "value2"))
+	testutil.Must(t, err)
+	e, err := s.Get(ctx, "t1", []byte("key1"))
+	testutil.Must(t, err)
+	if e != nil {
+		t.Errorf("got unexpected value. expected=nil, got=%s", e)
+	}
+	it, err := s.List(ctx, "t1")
+	testutil.Must(t, err)
+	if !it.Next() {
+		t.Fatalf("expected to get key from list")
+	}
+	if !bytes.Equal(it.Value().Key, []byte("key1")) {
+		t.Errorf("got unexpected key. expected=key1, got=%s", it.Value().Key)
+	}
+	if it.Value().Value != nil {
+		t.Errorf("got unexpected value. expected=nil, got=%s", it.Value().Value)
+	}
+
+	if !it.Next() {
+		t.Fatalf("expected to get key from list")
+	}
+	e = it.Value().Value
+	if string(e.Identity) != "identity2" {
+		t.Errorf("got wrong identity. expected=%s, got=%s", "identity2", string(e.Identity))
+	}
+}
+
 func TestNilIdentity(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
-	err = s.Set(ctx, "t1", []byte("key1"), graveler.Value{
+	testutil.Must(t, err)
+	err = s.Set(ctx, "t1", []byte("key1"), &graveler.Value{
 		Identity: nil,
 		Data:     []byte("value1"),
 	})
@@ -355,13 +347,10 @@ func TestNilIdentity(t *testing.T) {
 		t.Fatalf("got unexpected error. expected=%v, got=%v", graveler.ErrInvalidValue, err)
 	}
 	e, err := s.Get(ctx, "t1", []byte("key1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong identity. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
-
 }
 
 func TestDeleteAndTombstone(t *testing.T) {
@@ -370,7 +359,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
-	tombstoneValues := []graveler.Value{
+	tombstoneValues := []*graveler.Value{
 		{
 			Identity: []byte("identity1"),
 			Data:     make([]byte, 0),
@@ -382,13 +371,9 @@ func TestDeleteAndTombstone(t *testing.T) {
 	}
 	for _, val := range tombstoneValues {
 		err = s.Set(ctx, "t1", []byte("key1"), val)
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 		e, err := s.Get(ctx, "t1", []byte("key1"))
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 		if len(e.Data) != 0 {
 			t.Fatalf("expected empty data, got: %v", e.Data)
 		}
@@ -396,9 +381,7 @@ func TestDeleteAndTombstone(t *testing.T) {
 			t.Fatalf("got unexpected value identity. expected=%s, got=%s", "identity1", string(e.Identity))
 		}
 		it, err := s.List(ctx, "t1")
-		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
-		}
+		testutil.Must(t, err)
 		if !it.Next() {
 			t.Fatalf("expected to get key from list")
 		}
@@ -411,28 +394,22 @@ func TestDeleteAndTombstone(t *testing.T) {
 		it.Close()
 	}
 	err = s.Set(ctx, "t1", []byte("key1"), newTestValue("identity3", "value3"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	e, err := s.Get(ctx, "t1", []byte("key1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	if string(e.Identity) != "identity3" {
 		t.Fatalf("got unexpected value identity. expected=%s, got=%s", "identity3", string(e.Identity))
 	}
 	err = s.DropKey(ctx, "t1", []byte("key1"))
-	if err != nil {
-		t.Fatalf("got unexpected error: %v", err)
-	}
+	testutil.Must(t, err)
 	_, err = s.Get(ctx, "t1", []byte("key1"))
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
 	}
 }
 
-func newTestValue(identity, data string) graveler.Value {
-	return graveler.Value{
+func newTestValue(identity, data string) *graveler.Value {
+	return &graveler.Value{
 		Identity: []byte(identity),
 		Data:     []byte(data),
 	}

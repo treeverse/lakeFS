@@ -26,7 +26,7 @@ type TierFS struct {
 	adaptor block.Adapter
 
 	eviction eviction
-	keyLock  *cache.ChanLocker
+	keyLock  cache.OnlyOne
 	syncDir  *directory
 
 	fsName string
@@ -73,7 +73,7 @@ func NewFS(c *Config) (FS, error) {
 		logger:         c.logger,
 		fsLocalBaseDir: fsLocalBaseDir,
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
-		keyLock:        cache.NewChanLocker(),
+		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
 	eviction, err := newLRUSizeEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
@@ -172,7 +172,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 // Create creates a new file in TierFS.
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
-func (tfs *TierFS) Create(namespace string) (*File, error) {
+func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 	if err := validateNamespace(namespace); err != nil {
 		return nil, fmt.Errorf("invalid args: %w", err)
 	}
@@ -187,7 +187,7 @@ func (tfs *TierFS) Create(namespace string) (*File, error) {
 		return nil, fmt.Errorf("creating file: %w", err)
 	}
 
-	return &File{
+	return &WRFile{
 		File: fh,
 		store: func(filename string) error {
 			return tfs.store(namespace, tempPath, filename)
@@ -197,7 +197,7 @@ func (tfs *TierFS) Create(namespace string) (*File, error) {
 
 // Open returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
-func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
+func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	if err := validateArgs(namespace, filename); err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
 	return tfs.openFile(fileRef, fh)
 }
 
-// openFile converts an os.File to pyramid.File and updates the eviction control.
+// openFile converts an os.File to pyramid.ROFile and updates the eviction control.
 func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) {
 	stat, err := fh.Stat()
 	if err != nil {
@@ -242,35 +242,33 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
 func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
-	var e error
-	tfs.keyLock.Lock(fileRef.filename, func() {
+	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
+		var err error
 		reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
-			e = fmt.Errorf("read from block storage: %w", err)
-			return
+			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
 		defer reader.Close()
 
 		writer, err := tfs.syncDir.createFile(fileRef.fullPath)
 		if err != nil {
-			e = fmt.Errorf("creating file: %w", err)
-			return
+			return nil, fmt.Errorf("creating file: %w", err)
 		}
 
 		written, err := io.Copy(writer, reader)
 		if err != nil {
-			e = fmt.Errorf("copying date to file: %w", err)
-			return
+			return nil, fmt.Errorf("copying date to file: %w", err)
 		}
 
-		if err := writer.Close(); err != nil {
-			e = fmt.Errorf("writer close: %w", err)
+		if err = writer.Close(); err != nil {
+			err = fmt.Errorf("writer close: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
+		return nil, err
 	})
 
-	if e != nil {
-		return nil, e
+	if err != nil {
+		return nil, err
 	}
 
 	fh, err := os.Open(fileRef.fullPath)

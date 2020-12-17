@@ -1,0 +1,14 @@
+syntax = "proto3";
+option go_package = "github.com/treevese/lakefs/catalog/rocks";
+
+import "google/protobuf/timestamp.proto";
+
+package catalog;
+
+message Entry {
+	string address = 1;
+	google.protobuf.Timestamp last_modified = 2;
+	int64 size = 3;
+	bytes e_tag = 4;
+	map<string,string> metadata = 5;
+}
