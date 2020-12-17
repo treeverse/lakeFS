@@ -1,7 +1,9 @@
 package tree
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"testing"
 
 	gr "github.com/treeverse/lakefs/graveler"
@@ -27,4 +29,19 @@ func TestTreeReader(t *testing.T) {
 		panic(err)
 	}
 	fmt.Printf("number of records read: %d\n", counter)
+}
+
+func TestRandomRead(t *testing.T) {
+	var keys [][]byte
+	f, err := os.Open(`test_input.csv`)
+	if err != nil {
+		t.Fatal("open csv failed: ", err)
+	}
+	var lastKey string
+	var lineCount int
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		key := scanner.Text()
+		keys = append(keys, []byte(key))
+	}
 }
