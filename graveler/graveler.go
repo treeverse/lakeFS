@@ -730,7 +730,7 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref,
 func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
-		return "", fmt.Errorf("aquire metadata update: %w", err)
+		return "", fmt.Errorf("acquire metadata update: %w", err)
 	}
 	defer cancel()
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)

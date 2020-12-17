@@ -80,10 +80,10 @@ func (s *stagingMock) DropByPrefix(_ context.Context, _ graveler.StagingToken, _
 }
 
 func (s *stagingMock) Drop(_ context.Context, _ graveler.StagingToken) error {
+	s.dropCalled = true
 	if s.dropErr != nil {
 		return s.dropErr
 	}
-	s.dropCalled = true
 	return nil
 }
 

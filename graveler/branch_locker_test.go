@@ -1,56 +1,81 @@
 package graveler_test
 
 import (
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestBranchLocker(t *testing.T) {
+func TestBranchLock(t *testing.T) {
 	bl := graveler.NewBranchLocker()
+
 	closeWrite, err := bl.AquireWrite("a", defaultBranchID)
-	testutil.MustDo(t, "aquire write I", err)
+	testutil.MustDo(t, "acquire write I", err)
 	closeWrite()
 
 	closeWrite, err = bl.AquireWrite("a", defaultBranchID)
-	testutil.MustDo(t, "aquire write II", err)
+	testutil.MustDo(t, "acquire write II", err)
 
-	writeWhileCommitEnded := make(chan struct{})
-	commitCalled := make(chan struct{})
-	commitStarted := make(chan struct{})
-	commitEnded := make(chan struct{})
+	ch := make([]chan struct{}, 2)
+	errs := make([]error, 2)
+	doneCh := make(chan struct{})
+	closeMetadataUpdateDoneCh := make(chan struct{})
 
-	go func() {
-		close(commitCalled)
-		closeCommit, err := bl.AquireMetadataUpdate("a", defaultBranchID)
-		close(commitStarted)
-		if err != nil {
-			t.Error(err)
-		}
-		<-writeWhileCommitEnded
-		closeCommit()
-		close(commitEnded)
-	}()
-	<-commitCalled
-	// try to commit while commit is pending
-	_, err = bl.AquireWrite("a", defaultBranchID)
-	if err == nil {
-		t.Fatal("expected can't after write")
+	for i := 0; i < len(ch); i++ {
+		ch[i] = make(chan struct{})
+		errs[i] = io.EOF
+
+		go func(id int) {
+			closeMetadataUpdate, err := bl.AquireMetadataUpdate("a", defaultBranchID)
+			close(ch[id])
+			errs[id] = err
+			if err != nil {
+				return
+			}
+			<-doneCh
+			closeMetadataUpdate()
+			close(closeMetadataUpdateDoneCh)
+		}(i)
 	}
+
+	failedID := -1
+	pendingID := -1
+	select {
+	case <-ch[0]:
+		failedID, pendingID = 0, 1
+	case <-ch[1]:
+		failedID, pendingID = 1, 0
+	}
+	if !errors.Is(errs[failedID], graveler.ErrBranchLocked) {
+		t.Fatal("one metadata update should get branch locked")
+	}
+
+	// make sure we can't write while metadata update is pending
+	_, err = bl.AquireWrite("a", defaultBranchID)
+	if !errors.Is(err, graveler.ErrBranchLocked) {
+		t.Fatal("can't write when metadata update is pending")
+	}
+
+	// release the last writer and make sure all goroutines inside metadata update\ scope
 	closeWrite()
-	<-commitStarted
-	// try to commit while commit is running
+	<-ch[pendingID]
+	testutil.MustDo(t, "pending metadata update goroutine after acquire", errs[pendingID])
+
+	// try to write again - should fail
 	_, err = bl.AquireWrite("a", defaultBranchID)
-	if err == nil {
-		t.Fatal("expected can't after write")
+	if !errors.Is(err, graveler.ErrBranchLocked) {
+		t.Fatal("can't write when metadata update is running")
 	}
-	close(writeWhileCommitEnded)
-	<-commitEnded
-	// write after commit ended
+
+	// release all metadata updateters and wait metadata update done
+	close(doneCh)
+	<-closeMetadataUpdateDoneCh
+
+	// try to write again - should work, single writer
 	closeWrite, err = bl.AquireWrite("a", defaultBranchID)
-	if err != nil {
-		t.Fatal("expected can write")
-	}
+	testutil.MustDo(t, "acquire write after metadata update", err)
 	closeWrite()
 }
