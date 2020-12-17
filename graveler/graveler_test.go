@@ -449,7 +449,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	}
 }
 
-func Test_graveler_Delete(t *testing.T) {
+func TestGraveler_Delete(t *testing.T) {
 	type fields struct {
 		CommittedManager graveler.CommittedManager
 		StagingManager   *stagingMock
@@ -563,22 +563,6 @@ func Test_graveler_Delete(t *testing.T) {
 			},
 			args:        args{},
 			expectedErr: graveler.ErrNotFound,
-		},
-		{
-			name: "not in committed tombstone in staging",
-			fields: fields{
-				CommittedManager: &committedMock{
-					err: graveler.ErrNotFound,
-				},
-				StagingManager: &stagingMock{
-					Value: nil,
-				},
-				RefManager: &mockRefs{
-					branch: &graveler.Branch{},
-				},
-			},
-			args:        args{},
-			expectedErr: graveler.ErrUnexpected,
 		},
 	}
 	for _, tt := range tests {

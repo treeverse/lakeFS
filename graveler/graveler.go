@@ -432,7 +432,6 @@ var (
 	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
-	ErrUnexpected              = errors.New("unexpected error")
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {
@@ -695,35 +694,27 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return err
 	}
+
+	// check key in committed - do we need tombstone?
 	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
-	if err != nil && !errors.Is(err, ErrNotFound) {
+	if errors.Is(err, ErrNotFound) {
+		// no need for tombstone - drop key from stage
+		return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+	}
+	if err != nil {
 		return err
 	}
-	existsInCommitted := err == nil
+
+	// make sure we have tombstone in staging
 	entry, err := g.StagingManager.Get(ctx, branch.stagingToken, key)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
-	existsInStaging := err == nil && entry != nil
-	tombstone := err == nil && entry == nil
-	if existsInCommitted {
-		if tombstone {
-			// was deleted already
-			return ErrNotFound
-		}
-		// case exists just add tombstone
-		return g.StagingManager.Set(ctx, branch.stagingToken, key, nil)
+	// return not found if we already got tombstone
+	if err == nil && entry == nil {
+		return ErrNotFound
 	}
-	if existsInStaging {
-		// exists only in staging remove from staging
-		return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
-	}
-	if tombstone {
-		// does not exist in committed and tombstone exists in staging
-		return ErrUnexpected
-	}
-	// doesn't exist in committed nor staging
-	return ErrNotFound
+	return g.StagingManager.Set(ctx, branch.stagingToken, key, nil)
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {

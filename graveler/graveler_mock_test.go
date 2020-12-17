@@ -98,6 +98,9 @@ func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, key gravel
 }
 
 func (s *stagingMock) DropKey(_ context.Context, _ graveler.StagingToken, key graveler.Key) error {
+	if s.err != nil {
+		return s.err
+	}
 	s.lastRemovedKey = key
 	return nil
 }
