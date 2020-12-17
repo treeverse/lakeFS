@@ -712,7 +712,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 			return ErrNotFound
 		}
 		// case exists just add tombstone
-		return g.StagingManager.Set(ctx, branch.stagingToken, key, Value{}) // TODO(Guys): change to nil once stagingManager allows setting nil
+		return g.StagingManager.Set(ctx, branch.stagingToken, key, nil)
 	}
 	if existsInStaging {
 		// exists only in staging remove from staging

@@ -59,10 +59,13 @@ func (c *committedMock) Apply(_ context.Context, _ graveler.StorageNamespace, _ 
 }
 
 type stagingMock struct {
-	err           error
-	Value         *graveler.Value
-	ValueIterator graveler.ValueIterator
-	stagingToken  graveler.StagingToken
+	err                error
+	Value              *graveler.Value
+	ValueIterator      graveler.ValueIterator
+	stagingToken       graveler.StagingToken
+	lastSetValueRecord *graveler.ValueRecord
+	lastRemovedKey     graveler.Key
+	setErr             error
 }
 
 func (s *stagingMock) DropByPrefix(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
@@ -83,14 +86,19 @@ func (s *stagingMock) Get(_ context.Context, _ graveler.StagingToken, _ graveler
 	return s.Value, nil
 }
 
-func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ *graveler.Value) error {
-	if s.err != nil {
-		return s.err
+func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
+	if s.setErr != nil {
+		return s.setErr
+	}
+	s.lastSetValueRecord = &graveler.ValueRecord{
+		Key:   key,
+		Value: value,
 	}
 	return nil
 }
 
-func (s *stagingMock) DropKey(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
+func (s *stagingMock) DropKey(_ context.Context, _ graveler.StagingToken, key graveler.Key) error {
+	s.lastRemovedKey = key
 	return nil
 }
 

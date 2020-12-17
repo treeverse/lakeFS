@@ -1,6 +1,7 @@
 package graveler_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -451,7 +452,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 func Test_graveler_Delete(t *testing.T) {
 	type fields struct {
 		CommittedManager graveler.CommittedManager
-		StagingManager   graveler.StagingManager
+		StagingManager   *stagingMock
 		RefManager       graveler.RefManager
 	}
 	type args struct {
@@ -461,10 +462,12 @@ func Test_graveler_Delete(t *testing.T) {
 		key          graveler.Key
 	}
 	tests := []struct {
-		name        string
-		fields      fields
-		args        args
-		expectedErr error
+		name               string
+		fields             fields
+		args               args
+		expectedSetValue   *graveler.ValueRecord
+		expectedRemovedKey graveler.Key
+		expectedErr        error
 	}{
 		{
 			name: "exists only in committed",
@@ -479,7 +482,13 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:        args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
 			expectedErr: nil,
 		},
 		{
@@ -495,7 +504,13 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:        args{}, // TODO:(Guys) add option to validate staging mock was called with tombstone
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
 			expectedErr: nil,
 		},
 		{
@@ -527,8 +542,11 @@ func Test_graveler_Delete(t *testing.T) {
 					branch: &graveler.Branch{},
 				},
 			},
-			args:        args{}, // TODO:(Guys) add option to validate staging mock was called with delete entry
-			expectedErr: nil,
+			args: args{
+				key: []byte("key"),
+			},
+			expectedRemovedKey: []byte("key"),
+			expectedErr:        nil,
 		},
 		{
 			name: "not in committed not in staging",
@@ -569,6 +587,15 @@ func Test_graveler_Delete(t *testing.T) {
 			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}
+			// validate set on staging
+			if diff := deep.Equal(tt.fields.StagingManager.lastSetValueRecord, tt.expectedSetValue); diff != nil {
+				t.Errorf("unexpected set value %s", diff)
+			}
+			// validate removed from staging
+			if bytes.Compare(tt.fields.StagingManager.lastRemovedKey, tt.expectedRemovedKey) != 0 {
+				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.lastRemovedKey, tt.expectedRemovedKey)
+			}
+
 		})
 	}
 }
