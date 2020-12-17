@@ -20,6 +20,8 @@ type reference struct {
 	commitID *CommitID
 }
 
+type revResolverFunc func(context.Context, RefStore, RepositoryID, string) (Reference, error)
+
 func (r reference) Type() ReferenceType {
 	return r.typ
 }
@@ -32,12 +34,19 @@ func (r reference) CommitID() CommitID {
 	return *r.commitID
 }
 
-type resolveHelperFunc func(context.Context, RefStore, RepositoryID, string) (Reference, error)
-
-var resolveHelpers = []resolveHelperFunc{
-	resolveRevAHash,
-	resolveRevBranch,
-	resolveRevTag,
+// revResolve return the first resolve of 'rev' - by hash, branch or tag
+func revResolve(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
+	resolvers := []revResolverFunc{revResolveAHash, revResolveBranch, revResolveTag}
+	for _, resolveHelper := range resolvers {
+		r, err := resolveHelper(ctx, store, repositoryID, rev)
+		if err != nil {
+			return nil, err
+		}
+		if r != nil {
+			return r, nil
+		}
+	}
+	return nil, ErrNotFound
 }
 
 func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, ref Ref) (Reference, error) {
@@ -49,23 +58,15 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 		return nil, err
 	}
 
-	var baseCommit CommitID
-	for _, resolveHelper := range resolveHelpers {
-		r, err := resolveHelper(ctx, store, repositoryID, parsed.BaseRev)
-		if err != nil {
-			return nil, err
-		}
-		if r != nil && len(parsed.Modifiers) == 0 {
-			return r, nil
-		}
-		if r != nil {
-			baseCommit = r.CommitID()
-			break
-		}
+	rr, err := revResolve(ctx, store, repositoryID, parsed.BaseRev)
+	if err != nil {
+		return nil, err
 	}
-	if baseCommit == "" {
-		return nil, ErrNotFound
+	// return the matched reference, when no modifires on ref or use the commmit id as base
+	if len(parsed.Modifiers) == 0 {
+		return rr, nil
 	}
+	baseCommit := rr.CommitID()
 
 	for _, mod := range parsed.Modifiers {
 		// lastly, apply modifier
@@ -121,7 +122,7 @@ func ResolveRef(ctx context.Context, store RefStore, repositoryID RepositoryID, 
 	}, nil
 }
 
-func resolveRevAHash(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
+func revResolveAHash(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
 	if !isAHash(rev) {
 		return nil, nil
 	}
@@ -139,7 +140,7 @@ func resolveRevAHash(ctx context.Context, store RefStore, repositoryID Repositor
 	}, nil
 }
 
-func resolveRevBranch(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
+func revResolveBranch(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
 	branch, err := store.GetBranch(ctx, repositoryID, BranchID(rev))
 	if errors.Is(err, ErrNotFound) {
 		return nil, nil
@@ -154,7 +155,7 @@ func resolveRevBranch(ctx context.Context, store RefStore, repositoryID Reposito
 	}, nil
 }
 
-func resolveRevTag(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
+func revResolveTag(ctx context.Context, store RefStore, repositoryID RepositoryID, rev string) (Reference, error) {
 	commitID, err := store.GetTag(ctx, repositoryID, TagID(rev))
 	if errors.Is(err, ErrNotFound) {
 		return nil, nil
