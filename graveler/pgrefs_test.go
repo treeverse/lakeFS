@@ -340,7 +340,7 @@ func TestPGRefManager_DeleteTag(t *testing.T) {
 
 	testutil.Must(t, r.DeleteTag(ctx, "repo1", "v1"))
 
-	commitID, err := r.GetBranch(ctx, "repo1", "v1")
+	commitID, err := r.GetTag(ctx, "repo1", "v1")
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatal("unexpected error:", err)
 	}
