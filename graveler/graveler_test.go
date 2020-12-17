@@ -448,58 +448,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	}
 }
 
-func TestGraveler_branchLock(t *testing.T) {
-	bl := graveler.NewBranchLock()
-	closeWrite, err := bl.RequestWrite("a", defaultBranchID)
-	if err != nil {
-		t.Fatal("expected can write")
-	}
-
-	closeWrite()
-	closeWrite, err = bl.RequestWrite("a", defaultBranchID)
-	if err != nil {
-		t.Fatal("expected can write")
-	}
-	writeWhileCommitEnded := make(chan interface{})
-	commitCalled := make(chan interface{})
-	commitStarted := make(chan interface{})
-	commitEnded := make(chan interface{})
-
-	go func() {
-		close(commitCalled)
-		closeCommit, err := bl.RequestMetadataUpdate("a", defaultBranchID)
-		close(commitStarted)
-		if err != nil {
-			t.Error(err)
-		}
-		<-writeWhileCommitEnded
-		closeCommit()
-		close(commitEnded)
-	}()
-	<-commitCalled
-	// try to commit while commit is pending
-	_, err = bl.RequestWrite("a", defaultBranchID)
-	if err == nil {
-		t.Fatal("expected can't after write")
-	}
-	closeWrite()
-	<-commitStarted
-	// try to commit while commit is running
-	_, err = bl.RequestWrite("a", defaultBranchID)
-	if err == nil {
-		t.Fatal("expected can't after write")
-	}
-	close(writeWhileCommitEnded)
-	<-commitEnded
-	// write after commit ended
-	closeWrite, err = bl.RequestWrite("a", defaultBranchID)
-	if err != nil {
-		t.Fatal("expected can write")
-	}
-	closeWrite()
-}
-
-func Test_graveler_Commit(t *testing.T) {
+func TestGraveler_Commit(t *testing.T) {
 	expectedCommitID := graveler.CommitID("expectedCommitId")
 	expectedTreeID := graveler.TreeID("expectedTreeID")
 	values := newMockValueIterator([]graveler.ValueRecord{{Key: nil, Value: nil}})

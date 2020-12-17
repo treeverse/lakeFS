@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -418,24 +417,6 @@ var (
 	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
-// Graveler errors
-var (
-	ErrNotFound                = errors.New("not found")
-	ErrNotUnique               = errors.New("not unique")
-	ErrInvalidValue            = errors.New("invalid value")
-	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
-	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace: %w", ErrInvalidValue)
-	ErrInvalidRepositoryID     = fmt.Errorf("repository id: %w", ErrInvalidValue)
-	ErrInvalidBranchID         = fmt.Errorf("branch id: %w", ErrInvalidValue)
-	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
-	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
-	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
-	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
-	ErrConflictFound           = errors.New("conflict found")
-	ErrBranchExists            = errors.New("branch already exists")
-	ErrBranchUpdateInProgress  = errors.New("branch metadata update is currently running")
-)
-
 func NewRepositoryID(id string) (RepositoryID, error) {
 	if !reValidRepositoryID.MatchString(id) {
 		return "", ErrInvalidRepositoryID
@@ -501,99 +482,11 @@ func (id CommitID) String() string {
 	return string(id)
 }
 
-type branchLockData struct {
-	writers        int32
-	metadataUpdate bool
-}
-
-// branchLock enforces the branch locking logic
-// The logic is as follows:
-// allow concurrent writers to branch
-// metadata update commands will wait until all current running writers are done
-// while metadata update is running or waiting to run, writes and metadata update commands will be blocked
-type branchLock struct {
-	mutex    sync.Locker
-	c        *sync.Cond
-	branches map[string]*branchLockData
-}
-
-func NewBranchLock() branchLock {
-	m := sync.Mutex{}
-	return branchLock{
-		mutex:    &m,
-		c:        sync.NewCond(&m),
-		branches: make(map[string]*branchLockData),
-	}
-}
-
-// RequestWrite returns a close function if write is currently available
-// returns ErrBranchUpdateInProgress if metadata update is currently in progress
-func (l *branchLock) RequestWrite(repositoryID RepositoryID, branchID BranchID) (func(), error) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-	key := getBranchKey(repositoryID, branchID)
-	branchData := l.branches[key]
-	if branchData == nil {
-		branchData = &branchLockData{}
-		l.branches[key] = branchData
-	}
-	if branchData.metadataUpdate {
-		return nil, ErrBranchUpdateInProgress
-	}
-	branchData.writers++
-	return func() { l.releaseWriter(key) }, nil
-}
-
-func (l *branchLock) releaseWriter(key string) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-	branchData := l.branches[key]
-	branchData.writers--
-	if branchData.writers > 0 {
-		return
-	}
-	if branchData.metadataUpdate {
-		l.c.Broadcast()
-	} else {
-		delete(l.branches, key)
-	}
-}
-
-// RequestMetadataUpdate returns a close function if metadata update is currently available
-// Will wait until all current writers are done
-// returns ErrBranchUpdateInProgress if metadata update is currently in progress
-func (l *branchLock) RequestMetadataUpdate(repositoryID RepositoryID, branchID BranchID) (func(), error) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-	key := getBranchKey(repositoryID, branchID)
-	branchData := l.branches[key]
-	if branchData == nil {
-		branchData = &branchLockData{}
-		l.branches[key] = branchData
-	}
-	if branchData.metadataUpdate {
-		return nil, ErrBranchUpdateInProgress
-	}
-	branchData.metadataUpdate = true
-	for branchData.writers > 0 {
-		l.c.Wait()
-	}
-	return func() {
-		l.mutex.Lock()
-		defer l.mutex.Unlock()
-		delete(l.branches, key)
-	}, nil
-}
-
-func getBranchKey(repositoryID RepositoryID, branchID BranchID) string {
-	return repositoryID.String() + branchID.String()
-}
-
 type graveler struct {
 	CommittedManager CommittedManager
 	StagingManager   StagingManager
 	RefManager       RefManager
-	branchLock       branchLock
+	branchLocker     branchLocker
 	log              logging.Logger
 }
 
@@ -603,7 +496,7 @@ func NewGraveler(committedManager CommittedManager, stagingManager StagingManage
 		StagingManager:   stagingManager,
 		RefManager:       refManager,
 		log:              logging.Default().WithField("service_name", "graveler_graveler"),
-		branchLock:       NewBranchLock(),
+		branchLocker:     NewBranchLocker(),
 	}
 }
 
@@ -672,11 +565,11 @@ func (g *graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 }
 
 func (g *graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
-	close, err := g.branchLock.RequestMetadataUpdate(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
 		return nil, err
 	}
-	defer close()
+	defer cancel()
 	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
@@ -729,11 +622,11 @@ func (g *graveler) ListBranches(ctx context.Context, repositoryID RepositoryID, 
 }
 
 func (g *graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	close, err := g.branchLock.RequestMetadataUpdate(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
 		return err
 	}
-	defer close()
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -778,11 +671,11 @@ func (g *graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 }
 
 func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error {
-	close, err := g.branchLock.RequestWrite(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
 	if err != nil {
 		return err
 	}
-	defer close()
+	defer cancel()
 	branch, err := g.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -791,11 +684,11 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	close, err := g.branchLock.RequestWrite(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
 	if err != nil {
 		return err
 	}
-	defer close()
+	defer cancel()
 	branch, err := g.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -835,30 +728,30 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref,
 }
 
 func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
-	close, err := g.branchLock.RequestMetadataUpdate(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("aquire metadata update: %w", err)
 	}
-	defer close()
+	defer cancel()
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get repository: %w", err)
 	}
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get branch: %w", err)
 	}
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get commit: %w", err)
 	}
 	changes, err := g.StagingManager.List(ctx, branch.stagingToken)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("staging list: %w", err)
 	}
 	treeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.TreeID, changes)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("apply: %w", err)
 	}
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 		Committer:    committer,
@@ -869,21 +762,27 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		Metadata:     metadata,
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("add commit: %w", err)
 	}
 	err = g.StagingManager.Drop(ctx, branch.stagingToken)
 	if err != nil {
-		g.log.WithContext(ctx).WithField("staging token", branch.stagingToken).Error("Failed to drop data")
+		g.log.WithContext(ctx).WithFields(logging.Fields{
+			"repository_id": repositoryID,
+			"branch_id":     branchID,
+			"commit_id":     *commit,
+			"message":       message,
+			"staging_token": branch.stagingToken,
+		}).Error("Failed to drop staging data")
 	}
 	return newCommit, nil
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
-	close, err := g.branchLock.RequestWrite(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
 	if err != nil {
-		return ErrBranchUpdateInProgress
+		return err
 	}
-	defer close()
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -892,11 +791,11 @@ func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchI
 }
 
 func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	close, err := g.branchLock.RequestWrite(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
 	if err != nil {
-		return ErrBranchUpdateInProgress
+		return err
 	}
-	defer close()
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -905,11 +804,11 @@ func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, bran
 }
 
 func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
-	close, err := g.branchLock.RequestWrite(repositoryID, branchID)
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
 	if err != nil {
-		return ErrBranchUpdateInProgress
+		return err
 	}
-	defer close()
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -922,11 +821,11 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error) {
-	close, err := g.branchLock.RequestMetadataUpdate(repositoryID, to)
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, to)
 	if err != nil {
 		return "", err
 	}
-	defer close()
+	defer cancel()
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
