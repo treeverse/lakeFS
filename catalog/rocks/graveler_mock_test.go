@@ -82,7 +82,7 @@ func (g *GravelerMock) GetTag(ctx context.Context, repositoryID graveler.Reposit
 	panic("implement me")
 }
 
-func (g *GravelerMock) SetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
+func (g *GravelerMock) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
 	panic("implement me")
 }
 

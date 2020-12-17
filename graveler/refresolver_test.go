@@ -83,7 +83,7 @@ func TestPGRefManager_Dereference(t *testing.T) {
 		CommitID: "d420fbf793716d6d53798218d7a247f38a5bbed095d57df71ee79e05446e46ec",
 	}))
 
-	testutil.Must(t, r.SetTag(ctx, "repo1", "v1.0", "d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e"))
+	testutil.Must(t, r.CreateTag(ctx, "repo1", "v1.0", "d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e"))
 
 	table := []struct {
 		Name        string

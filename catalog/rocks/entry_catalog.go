@@ -69,8 +69,8 @@ type EntryCatalog interface {
 	// GetTag gets tag's commit id
 	GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error)
 
-	// SetTag creates tag on a repository pointing to a commit id
-	SetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error
+	// CreateTag creates tag on a repository pointing to a commit id
+	CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error
 
 	// DeleteTag remove tag from a repository
 	DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error
@@ -175,11 +175,10 @@ func (e *entryCatalog) GetBranch(ctx context.Context, repositoryID graveler.Repo
 
 func (e *entryCatalog) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
 	return e.store.GetTag(ctx, repositoryID, tagID)
-
 }
 
-func (e *entryCatalog) SetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
-	return e.store.SetTag(ctx, repositoryID, tagID, commitID)
+func (e *entryCatalog) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
+	return e.store.CreateTag(ctx, repositoryID, tagID, commitID)
 }
 
 func (e *entryCatalog) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {

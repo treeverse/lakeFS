@@ -187,13 +187,9 @@ func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, ta
 	return commitID.(*CommitID), nil
 }
 
-func (m *PGRefManager) SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
+func (m *PGRefManager) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`
-			INSERT INTO graveler_tags (repository_id, id, commit_id)
-			VALUES ($1, $2, $3)
-				ON CONFLICT (repository_id, id)
-				DO UPDATE SET commit_id = $3`,
+		_, err := tx.Exec(`INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3)`,
 			repositoryID, tagID, commitID)
 		return nil, err
 	}, db.WithContext(ctx))

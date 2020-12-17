@@ -264,7 +264,7 @@ func TestPGRefManager_GetTag(t *testing.T) {
 			CommitID: "c1",
 		})
 		testutil.MustDo(t, "create repo", err)
-		err = r.SetTag(ctx, "repo1", "v1.0", "c1")
+		err = r.CreateTag(ctx, "repo1", "v1.0", "c1")
 		testutil.MustDo(t, "set tag", err)
 		commitID, err := r.GetTag(context.Background(), "repo1", "v1.0")
 		testutil.MustDo(t, "get existing tag", err)
@@ -336,7 +336,7 @@ func TestPGRefManager_DeleteTag(t *testing.T) {
 		CommitID: "c1",
 	}))
 
-	testutil.Must(t, r.SetTag(ctx, "repo1", "v1", "c2"))
+	testutil.Must(t, r.CreateTag(ctx, "repo1", "v1", "c2"))
 
 	testutil.Must(t, r.DeleteTag(ctx, "repo1", "v1"))
 
@@ -366,7 +366,7 @@ func TestPGRefManager_ListTags(t *testing.T) {
 	for i, tag := range tags {
 		commitID := graveler.CommitID(fmt.Sprintf("c%d", i))
 		commitsTagged = append(commitsTagged, commitID)
-		err := r.SetTag(ctx, "repo1", graveler.TagID(tag), commitID)
+		err := r.CreateTag(ctx, "repo1", graveler.TagID(tag), commitID)
 		testutil.MustDo(t, "set tag "+tag, err)
 	}
 

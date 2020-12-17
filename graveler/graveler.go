@@ -218,8 +218,8 @@ type VersionController interface {
 	// GetTag gets tag's commit id
 	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
 
-	// SetTag creates tag on a repository pointing to a commit id
-	SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
+	// CreateTag creates tag on a repository pointing to a commit id
+	CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
 
 	// DeleteTag remove tag from a repository
 	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
@@ -380,8 +380,8 @@ type RefManager interface {
 	// GetTag returns the Tag metadata object for the given TagID
 	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
 
-	// SetTag points the given TagID at the given Tag metadata
-	SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
+	// CreateTag create a given tag pointing to a commit
+	CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error
 
 	// DeleteTag deletes the tag
 	DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error
@@ -655,8 +655,8 @@ func (g *graveler) GetTag(ctx context.Context, repositoryID RepositoryID, tagID 
 	return g.RefManager.GetTag(ctx, repositoryID, tagID)
 }
 
-func (g *graveler) SetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
-	return g.RefManager.SetTag(ctx, repositoryID, tagID, commitID)
+func (g *graveler) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
+	return g.RefManager.CreateTag(ctx, repositoryID, tagID, commitID)
 }
 
 func (g *graveler) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {

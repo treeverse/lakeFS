@@ -170,7 +170,7 @@ func (m *mockRefs) GetTag(_ context.Context, _ graveler.RepositoryID, _ graveler
 	return m.tagCommitID, m.err
 }
 
-func (m *mockRefs) SetTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID, _ graveler.CommitID) error {
+func (m *mockRefs) CreateTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID, _ graveler.CommitID) error {
 	return nil
 }
 
