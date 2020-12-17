@@ -2,16 +2,7 @@ package tree
 
 import (
 	"bytes"
-	"strings"
 )
-
-func compareParts(leftPart Part, rightPart Part) int {
-	result := bytes.Compare(leftPart.MaxKey, rightPart.MaxKey)
-	if result != 0 {
-		return result
-	}
-	return strings.Compare(string(leftPart.Name), string(rightPart.Name))
-}
 
 func RemoveCommonParts(left *Tree, right *Tree) (*Tree, *Tree) {
 	i := 0
@@ -19,10 +10,12 @@ func RemoveCommonParts(left *Tree, right *Tree) (*Tree, *Tree) {
 	newLeft := new(Tree)
 	newRight := new(Tree)
 	for i < len(left.Parts) && j < len(right.Parts) {
-		switch compareParts(left.Parts[i], right.Parts[j]) {
+		switch bytes.Compare(left.Parts[i].MaxKey, right.Parts[j].MaxKey) {
 		case 0:
-			i++
-			j++
+			if string(left.Parts[i].Name) != string(right.Parts[j].Name) {
+				i++
+				j++
+			}
 		case -1:
 			newLeft.Parts = append(newLeft.Parts, left.Parts[i])
 			i++
