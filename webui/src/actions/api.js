@@ -481,7 +481,7 @@ class Objects {
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
             method: 'POST',
             body: data,
-        });
+        }, {}, {});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
