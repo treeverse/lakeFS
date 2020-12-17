@@ -67,12 +67,15 @@ func (c *committedMock) Apply(_ context.Context, _ graveler.StorageNamespace, tr
 }
 
 type stagingMock struct {
-	err           error
+	err                error
 	dropErr       error //specific error for drop call
-	Value         *graveler.Value
-	ValueIterator graveler.ValueIterator
-	stagingToken  graveler.StagingToken
+	Value              *graveler.Value
+	ValueIterator      graveler.ValueIterator
+	stagingToken       graveler.StagingToken
+	lastSetValueRecord *graveler.ValueRecord
+	lastRemovedKey     graveler.Key
 	dropCalled    bool
+	setErr             error
 }
 
 func (s *stagingMock) DropByPrefix(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
@@ -94,14 +97,22 @@ func (s *stagingMock) Get(_ context.Context, _ graveler.StagingToken, _ graveler
 	return s.Value, nil
 }
 
-func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, _ graveler.Key, _ *graveler.Value) error {
-	if s.err != nil {
-		return s.err
+func (s *stagingMock) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
+	if s.setErr != nil {
+		return s.setErr
+	}
+	s.lastSetValueRecord = &graveler.ValueRecord{
+		Key:   key,
+		Value: value,
 	}
 	return nil
 }
 
-func (s *stagingMock) DropKey(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
+func (s *stagingMock) DropKey(_ context.Context, _ graveler.StagingToken, key graveler.Key) error {
+	if s.err != nil {
+		return s.err
+	}
+	s.lastRemovedKey = key
 	return nil
 }
 
