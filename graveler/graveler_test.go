@@ -634,7 +634,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					err: graveler.ErrNotFound,
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -656,7 +656,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					Value: &graveler.Value{},
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -678,7 +678,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					Value: nil,
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -694,7 +694,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					Value: &graveler.Value{},
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -713,7 +713,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					err: graveler.ErrNotFound,
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},

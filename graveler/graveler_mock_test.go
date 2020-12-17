@@ -68,13 +68,13 @@ func (c *committedMock) Apply(_ context.Context, _ graveler.StorageNamespace, tr
 
 type stagingMock struct {
 	err                error
-	dropErr       error //specific error for drop call
+	dropErr            error //specific error for drop call
 	Value              *graveler.Value
 	ValueIterator      graveler.ValueIterator
 	stagingToken       graveler.StagingToken
 	lastSetValueRecord *graveler.ValueRecord
 	lastRemovedKey     graveler.Key
-	dropCalled    bool
+	dropCalled         bool
 	setErr             error
 }
 
