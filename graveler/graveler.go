@@ -470,6 +470,7 @@ var (
 	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
+	ErrTagAlreadyExists        = errors.New("tag already exists")
 )
 
 func NewRepositoryID(id string) (RepositoryID, error) {

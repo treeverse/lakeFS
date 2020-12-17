@@ -289,7 +289,8 @@ func TestPGRefManager_GetTag(t *testing.T) {
 
 func TestPGRefManager_CreateTag(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
@@ -297,10 +298,10 @@ func TestPGRefManager_CreateTag(t *testing.T) {
 		CommitID: "c1",
 	}))
 
-	err := r.CreateTag(context.Background(), "repo1", "v2", "c2")
+	err := r.CreateTag(ctx, "repo1", "v2", "c2")
 	testutil.MustDo(t, "create tag v2", err)
 
-	commit, err := r.GetTag(context.Background(), "repo1", "v2")
+	commit, err := r.GetTag(ctx, "repo1", "v2")
 	testutil.MustDo(t, "get v2 tag", err)
 	if commit == nil {
 		t.Fatal("get tag got nil")
@@ -309,14 +310,19 @@ func TestPGRefManager_CreateTag(t *testing.T) {
 		t.Fatalf("unexpected commit for tag v2: %s - expected: c2", *commit)
 	}
 
+	// check we can't create existing
+	err = r.CreateTag(ctx, "repo1", "v2", "c5")
+	if !errors.Is(err, graveler.ErrTagAlreadyExists) {
+		t.Fatalf("CreateTag() err = %s, expected already exists", err)
+	}
 	// overwrite by delete and create
-	err = r.DeleteTag(context.Background(), "repo1", "v2")
+	err = r.DeleteTag(ctx, "repo1", "v2")
 	testutil.MustDo(t, "delete tag v2", err)
 
-	err = r.CreateTag(context.Background(), "repo1", "v2", "c3")
+	err = r.CreateTag(ctx, "repo1", "v2", "c3")
 	testutil.MustDo(t, "re-create tag v2", err)
 
-	commit, err = r.GetTag(context.Background(), "repo1", "v2")
+	commit, err = r.GetTag(ctx, "repo1", "v2")
 	testutil.MustDo(t, "get tag v2", err)
 	if commit == nil {
 		t.Fatal("get tag got nil")

@@ -189,9 +189,16 @@ func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, ta
 
 func (m *PGRefManager) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3)`,
+		res, err := tx.Exec(`INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3)
+			ON CONFLICT DO NOTHING`,
 			repositoryID, tagID, commitID)
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		if res.RowsAffected() == 0 {
+			return nil, ErrTagAlreadyExists
+		}
+		return nil, nil
 	}, db.WithContext(ctx))
 	return err
 }
