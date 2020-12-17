@@ -143,5 +143,8 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, iter)
 
-	require.Equal(t, 0, derefCount)
+	iter.Close()
+	require.NoError(t, iter.Err())
+
+	require.Equal(t, 1, derefCount)
 }
