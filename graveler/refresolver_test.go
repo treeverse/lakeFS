@@ -9,7 +9,6 @@ import (
 
 	"github.com/treeverse/lakefs/graveler"
 
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -30,7 +29,7 @@ func TestPGRefManager_Dereference(t *testing.T) {
 			TreeID:       "deadbeef123",
 			CreationDate: ts,
 			Parents:      graveler.CommitParents{previous},
-			Metadata:     catalog.Metadata{"foo": "bar"},
+			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
 		cid, err := r.AddCommit(context.Background(), "repo1", c)
 		if err != nil {

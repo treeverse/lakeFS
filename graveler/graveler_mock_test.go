@@ -11,12 +11,18 @@ import (
 
 const defaultBranchID = graveler.BranchID("master")
 
+type appliedData struct {
+	values graveler.ValueIterator
+	treeID graveler.TreeID
+}
+
 type committedMock struct {
 	Value         *graveler.Value
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	err           error
 	treeID        graveler.TreeID
+	appliedData   appliedData
 }
 
 func (c *committedMock) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.Key) (*graveler.Value, error) {
@@ -47,18 +53,22 @@ func (c *committedMock) Merge(_ context.Context, _ graveler.StorageNamespace, _,
 	return c.treeID, nil
 }
 
-func (c *committedMock) Apply(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.ValueIterator) (graveler.TreeID, error) {
+func (c *committedMock) Apply(_ context.Context, _ graveler.StorageNamespace, treeID graveler.TreeID, values graveler.ValueIterator) (graveler.TreeID, error) {
 	if c.err != nil {
 		return "", c.err
 	}
+	c.appliedData.values = values
+	c.appliedData.treeID = treeID
 	return c.treeID, nil
 }
 
 type stagingMock struct {
 	err           error
+	dropErr       error //specific error for drop call
 	Value         *graveler.Value
 	ValueIterator graveler.ValueIterator
 	stagingToken  graveler.StagingToken
+	dropCalled    bool
 }
 
 func (s *stagingMock) DropByPrefix(_ context.Context, _ graveler.StagingToken, _ graveler.Key) error {
@@ -66,9 +76,10 @@ func (s *stagingMock) DropByPrefix(_ context.Context, _ graveler.StagingToken, _
 }
 
 func (s *stagingMock) Drop(_ context.Context, _ graveler.StagingToken) error {
-	if s.err != nil {
-		return s.err
+	if s.dropErr != nil {
+		return s.dropErr
 	}
+	s.dropCalled = true
 	return nil
 }
 
@@ -111,16 +122,27 @@ func (s *stagingMock) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 	return s.ValueIterator, nil
 }
 
-type mockRefs struct {
+type addedCommitData struct {
+	Committer string
+	Message   string
+	TreeID    graveler.TreeID
+	Parents   graveler.CommitParents
+	Metadata  graveler.Metadata
+}
+
+type refsMock struct {
 	listRepositoriesRes graveler.RepositoryIterator
 	listBranchesRes     graveler.BranchIterator
 	commitIter          graveler.CommitIterator
 	refType             graveler.ReferenceType
 	branch              *graveler.Branch
 	branchErr           error
+	commitErr           error
+	addedCommit         addedCommitData
+	commitId            graveler.CommitID
 }
 
-func (m *mockRefs) RevParse(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (graveler.Reference, error) {
+func (m *refsMock) RevParse(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (graveler.Reference, error) {
 	var branch graveler.BranchID
 	if m.refType == graveler.ReferenceTypeBranch {
 		branch = defaultBranchID
@@ -128,51 +150,61 @@ func (m *mockRefs) RevParse(_ context.Context, _ graveler.RepositoryID, _ gravel
 	return newMockReference(m.refType, branch, ""), nil
 }
 
-func (m *mockRefs) GetRepository(_ context.Context, _ graveler.RepositoryID) (*graveler.Repository, error) {
+func (m *refsMock) GetRepository(_ context.Context, _ graveler.RepositoryID) (*graveler.Repository, error) {
 	return &graveler.Repository{}, nil
 }
 
-func (m *mockRefs) CreateRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.Repository, _ graveler.Branch) error {
+func (m *refsMock) CreateRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.Repository, _ graveler.Branch) error {
 	return nil
 }
 
-func (m *mockRefs) ListRepositories(_ context.Context, _ graveler.RepositoryID) (graveler.RepositoryIterator, error) {
+func (m *refsMock) ListRepositories(_ context.Context, _ graveler.RepositoryID) (graveler.RepositoryIterator, error) {
 	return m.listRepositoriesRes, nil
 }
 
-func (m *mockRefs) DeleteRepository(_ context.Context, _ graveler.RepositoryID) error {
+func (m *refsMock) DeleteRepository(_ context.Context, _ graveler.RepositoryID) error {
 	return nil
 }
 
-func (m *mockRefs) GetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.Branch, error) {
+func (m *refsMock) GetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.Branch, error) {
 	return m.branch, m.branchErr
 }
 
-func (m *mockRefs) SetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Branch) error {
+func (m *refsMock) SetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Branch) error {
 	return nil
 }
 
-func (m *mockRefs) DeleteBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) error {
+func (m *refsMock) DeleteBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) error {
 	return nil
 }
 
-func (m *mockRefs) ListBranches(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (graveler.BranchIterator, error) {
+func (m *refsMock) ListBranches(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (graveler.BranchIterator, error) {
 	return m.listBranchesRes, nil
 }
 
-func (m *mockRefs) GetCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (*graveler.Commit, error) {
+func (m *refsMock) GetCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (*graveler.Commit, error) {
 	return &graveler.Commit{}, nil
 }
 
-func (m *mockRefs) AddCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.Commit) (graveler.CommitID, error) {
-	return "", nil
+func (m *refsMock) AddCommit(_ context.Context, _ graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+	if m.commitErr != nil {
+		return "", m.commitErr
+	}
+	m.addedCommit = addedCommitData{
+		Committer: commit.Committer,
+		Message:   commit.Message,
+		TreeID:    commit.TreeID,
+		Parents:   commit.Parents,
+		Metadata:  commit.Metadata,
+	}
+	return m.commitId, nil
 }
 
-func (m *mockRefs) FindMergeBase(_ context.Context, _ graveler.RepositoryID, _ ...graveler.CommitID) (*graveler.Commit, error) {
+func (m *refsMock) FindMergeBase(_ context.Context, _ graveler.RepositoryID, _ ...graveler.CommitID) (*graveler.Commit, error) {
 	return &graveler.Commit{}, nil
 }
 
-func (m *mockRefs) Log(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (graveler.CommitIterator, error) {
+func (m *refsMock) Log(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (graveler.CommitIterator, error) {
 	return m.commitIter, nil
 }
 

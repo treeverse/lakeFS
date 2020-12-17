@@ -8,8 +8,6 @@ import (
 
 	"github.com/treeverse/lakefs/graveler"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -267,7 +265,7 @@ func TestPGRefManager_AddCommit(t *testing.T) {
 		TreeID:       "deadbeef123",
 		CreationDate: ts,
 		Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
-		Metadata:     catalog.Metadata{"foo": "bar"},
+		Metadata:     graveler.Metadata{"foo": "bar"},
 	}
 
 	cid, err := r.AddCommit(context.Background(), "repo1", c)
@@ -312,7 +310,7 @@ func TestPGRefManager_Log(t *testing.T) {
 			TreeID:       "deadbeef123",
 			CreationDate: ts,
 			Parents:      graveler.CommitParents{previous},
-			Metadata:     catalog.Metadata{"foo": "bar"},
+			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
 		cid, err := r.AddCommit(context.Background(), "repo1", c)
 		if err != nil {
