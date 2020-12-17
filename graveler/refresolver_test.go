@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestPGRefManager_Dereference(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
@@ -32,14 +32,14 @@ func TestPGRefManager_Dereference(t *testing.T) {
 			Parents:      graveler.CommitParents{previous},
 			Metadata:     catalog.Metadata{"foo": "bar"},
 		}
-		cid, err := r.AddCommit(context.Background(), "repo1", c)
+		cid, err := r.AddCommit(ctx, "repo1", c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		previous = cid
 	}
 
-	iter, err := r.Log(context.Background(), "repo1", previous)
+	iter, err := r.Log(ctx, "repo1", previous)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -75,13 +75,15 @@ func TestPGRefManager_Dereference(t *testing.T) {
 	//	"df87d5329f4438662d6ecb9b90ee17c0bdc9a78a884acc93c0c4fe9f0f79d059",
 	//	"29706d36de7219e0796c31b278f87201ef835e8cdafbcc3c907d292cd31f77d5",
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch1", graveler.Branch{
+	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch1", graveler.Branch{
 		CommitID: "13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
 		CommitID: "d420fbf793716d6d53798218d7a247f38a5bbed095d57df71ee79e05446e46ec",
 	}))
+
+	testutil.Must(t, r.CreateTag(ctx, "repo1", "v1.0", "d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e"))
 
 	table := []struct {
 		Name        string
@@ -97,6 +99,16 @@ func TestPGRefManager_Dereference(t *testing.T) {
 		{
 			Name:        "branch_doesnt_exist",
 			Ref:         graveler.Ref("branch3"),
+			ExpectedErr: graveler.ErrNotFound,
+		},
+		{
+			Name:     "tag_exist",
+			Ref:      graveler.Ref("v1.0"),
+			Expected: graveler.CommitID("d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e"),
+		},
+		{
+			Name:        "tag_doesnt_exist",
+			Ref:         graveler.Ref("v1.bad"),
 			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
@@ -143,7 +155,7 @@ func TestPGRefManager_Dereference(t *testing.T) {
 
 	for _, cas := range table {
 		t.Run(cas.Name, func(t *testing.T) {
-			ref, err := r.RevParse(context.Background(), "repo1", cas.Ref)
+			ref, err := r.RevParse(ctx, "repo1", cas.Ref)
 			if err != nil {
 				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
 					t.Fatalf("unexpected error: %v", err)

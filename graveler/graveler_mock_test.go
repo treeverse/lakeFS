@@ -129,10 +129,12 @@ func (s *stagingMock) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 type mockRefs struct {
 	listRepositoriesRes graveler.RepositoryIterator
 	listBranchesRes     graveler.BranchIterator
+	listTagsRes         graveler.TagIterator
 	commitIter          graveler.CommitIterator
 	refType             graveler.ReferenceType
 	branch              *graveler.Branch
-	branchErr           error
+	tagCommitID         *graveler.CommitID
+	err                 error
 }
 
 func (m *mockRefs) RevParse(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (graveler.Reference, error) {
@@ -160,7 +162,7 @@ func (m *mockRefs) DeleteRepository(_ context.Context, _ graveler.RepositoryID) 
 }
 
 func (m *mockRefs) GetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.Branch, error) {
-	return m.branch, m.branchErr
+	return m.branch, m.err
 }
 
 func (m *mockRefs) SetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Branch) error {
@@ -173,6 +175,22 @@ func (m *mockRefs) DeleteBranch(_ context.Context, _ graveler.RepositoryID, _ gr
 
 func (m *mockRefs) ListBranches(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (graveler.BranchIterator, error) {
 	return m.listBranchesRes, nil
+}
+
+func (m *mockRefs) GetTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) (*graveler.CommitID, error) {
+	return m.tagCommitID, m.err
+}
+
+func (m *mockRefs) CreateTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID, _ graveler.CommitID) error {
+	return nil
+}
+
+func (m *mockRefs) DeleteTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) error {
+	return nil
+}
+
+func (m *mockRefs) ListTags(_ context.Context, _ graveler.RepositoryID) (graveler.TagIterator, error) {
+	return m.listTagsRes, nil
 }
 
 func (m *mockRefs) GetCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (*graveler.Commit, error) {
