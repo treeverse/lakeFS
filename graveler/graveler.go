@@ -8,11 +8,12 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/logging"
 )
 
 // Basic Types
@@ -116,12 +117,12 @@ func (ps CommitParents) Identity() []byte {
 
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
-	Committer    string           `db:"committer"`
-	Message      string           `db:"message"`
-	TreeID       TreeID           `db:"tree_id"`
-	CreationDate time.Time        `db:"creation_date"`
-	Parents      CommitParents    `db:"parents"`
-	Metadata     catalog.Metadata `db:"metadata"`
+	Committer    string        `db:"committer"`
+	Message      string        `db:"message"`
+	TreeID       TreeID        `db:"tree_id"`
+	CreationDate time.Time     `db:"creation_date"`
+	Parents      CommitParents `db:"parents"`
+	Metadata     Metadata      `db:"metadata"`
 }
 
 func (c Commit) Identity() []byte {
