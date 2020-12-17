@@ -3,6 +3,8 @@ DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PA
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
+export PATH:= $(PATH):$(GOBINPATH)
+
 GOBUILD=$(GOCMD) build
 GORUN=$(GOCMD) run
 GOCLEAN=$(GOCMD) clean
@@ -66,17 +68,17 @@ gen-metastore: ## Run Metastore Code generation
 $(GOBINPATH)/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-gen-api: $(GOBINPATH)/swagger del-gen-api gen-go ## Run the go-swagger code generator
+gen-api: $(GOBINPATH)/swagger del-gen-api ## Run the go-swagger code generator
+	$(GOGENERATE) ./api/...
 
 del-gen-api:
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
 
 .PHONY: gen-mockgen
-gen-mockgen: $(GOBINPATH)/mockgen gen-go ## Run the generator for inline commands
+gen-mockgen: $(GOBINPATH)/mockgen ## Run the generator for inline commands
+	$(GOGENERATE) ./graveler/committed/...
 
-gen-go: $(GOBINPATH)/mockgen ## Run the generator for inline commands
-	$(GOGENERATE) ./...
 
 validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml

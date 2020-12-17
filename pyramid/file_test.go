@@ -129,6 +129,6 @@ func (me *mockEviction) touch(rPath relativePath) {
 	me.touchedTimes[rPath]++
 }
 
-func (me *mockEviction) store(_ relativePath, _ int64) int {
-	return 0
+func (me *mockEviction) store(_ relativePath, _ int64) bool {
+	return false
 }

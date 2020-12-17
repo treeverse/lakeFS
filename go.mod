@@ -15,6 +15,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dgraph-io/ristretto v0.0.4-0.20201207174236-c72a155bcf05
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
 	github.com/georgysavva/scany v0.2.6
@@ -75,22 +76,18 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
-	github.com/treeverse/golang-lru v0.6.1
 	github.com/tsenart/vegeta/v12 v12.8.3
 	github.com/vbauerster/mpb/v5 v5.3.0
 	github.com/xitongsys/parquet-go v1.5.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
-	go.uber.org/atomic v1.6.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
-	golang.org/x/tools v0.0.0-20200818005847-188abfa75333 // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	pgregory.net/rapid v0.4.0 // indirect
 )

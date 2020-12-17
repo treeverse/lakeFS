@@ -8,7 +8,6 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed"
 
 	"github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/pyramid"
 )
 
@@ -16,16 +15,15 @@ type DiskWriter struct {
 	w      *sstable.Writer
 	tierFS pyramid.FS
 
-	first graveler.Key
-	last  graveler.Key
+	first committed.Key
+	last  committed.Key
 	count int
 	hash  hash.Hash
 
-	fh         pyramid.StoredFile
-	serializer serializer
+	fh pyramid.StoredFile
 }
 
-func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, serializer serializer) (*DiskWriter, error) {
+func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
 	fh, err := tierFS.Create(string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
@@ -36,21 +34,15 @@ func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, se
 	})
 
 	return &DiskWriter{
-		w:          writer,
-		serializer: serializer,
-		fh:         fh,
-		tierFS:     tierFS,
-		hash:       hash,
+		w:      writer,
+		fh:     fh,
+		tierFS: tierFS,
+		hash:   hash,
 	}, nil
 }
 
-func (dw *DiskWriter) WriteRecord(record graveler.ValueRecord) error {
-	keyBytes := []byte(record.Key)
-	valBytes, err := dw.serializer.SerializeValue(*record.Value)
-	if err != nil {
-		return fmt.Errorf("serializing entry: %w", err)
-	}
-	if err := dw.w.Set(keyBytes, valBytes); err != nil {
+func (dw *DiskWriter) WriteRecord(record committed.Record) error {
+	if err := dw.w.Set(record.Key, record.Value); err != nil {
 		return fmt.Errorf("setting key and value: %w", err)
 	}
 
@@ -61,10 +53,10 @@ func (dw *DiskWriter) WriteRecord(record graveler.ValueRecord) error {
 	dw.last = record.Key
 	dw.count++
 
-	if err := dw.writeHashWithLen(keyBytes); err != nil {
+	if err := dw.writeHashWithLen(record.Key); err != nil {
 		return err
 	}
-	return dw.writeHashWithLen(valBytes)
+	return dw.writeHashWithLen(record.Value)
 }
 
 func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
