@@ -101,10 +101,9 @@ func (h heapItemsType) Len() int           { return len(h) }
 func (h heapItemsType) Less(i, j int) bool { return h[i].weight > h[j].weight }
 func (h heapItemsType) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 func (h *heapItemsType) Pop() interface{} {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
+	n := len(*h)
+	x := (*h)[n-1]
+	*h = *h[0 : n-1]
 	return x
 }
 func (h *heapItemsType) Push(x interface{}) {
