@@ -181,8 +181,7 @@ func TestInvalidArgs(t *testing.T) {
 }
 
 func TestMultipleConcurrentReads(t *testing.T) {
-	// bug #1080 - https://github.com/treeverse/lakeFS/issues/1080
-	t.Skip()
+	t.Skip("bug #1080 - https://github.com/treeverse/lakeFS/issues/1080")
 
 	// write a single file to lookup later
 	namespace := uuid.New().String()
