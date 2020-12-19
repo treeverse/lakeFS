@@ -128,24 +128,42 @@ func sortAndFilterManifest(m *Manifest, logger logging.Logger, reader s3inventor
 		}
 	}
 	filteredFiles := make([]inventoryFile, 0, len(m.Files))
-	if len(prefixes) > 0 {
-		// filter manifest files according to prefixes:
-		sort.Strings(prefixes)
-		currentPrefix := 0
-		for i := 0; i < len(m.Files); i++ {
-			for currentPrefix < len(prefixes) && prefixes[currentPrefix] < firstKeyByInventoryFile[m.Files[i].Key] && !strings.HasPrefix(firstKeyByInventoryFile[m.Files[i].Key], prefixes[currentPrefix]) {
-				currentPrefix++
-			}
-			if currentPrefix == len(prefixes) {
+	if len(prefixes) == 0 {
+		return nil
+	}
+	// filter manifest files according to prefixes:
+	sort.Strings(prefixes)
+	currentPrefixIdx := 0
+	defer func() {
+		m.Files = filteredFiles
+	}()
+	for i := 0; i < len(m.Files); i++ {
+		key := m.Files[i].Key
+		firstKey := firstKeyByInventoryFile[key]
+		lastKey := lastKeyByInventoryFile[key]
+		for {
+			// find a prefix that may have suitable keys in the current file
+			if prefixes[currentPrefixIdx] >= firstKey {
+				// prefix may be in scope of current file
 				break
 			}
-			if (strings.HasPrefix(firstKeyByInventoryFile[m.Files[i].Key], prefixes[currentPrefix]) || prefixes[currentPrefix] >= firstKeyByInventoryFile[m.Files[i].Key]) &&
-				prefixes[currentPrefix] < lastKeyByInventoryFile[m.Files[i].Key] {
-				filteredFiles = append(filteredFiles, m.Files[i])
+			if strings.HasPrefix(firstKey, prefixes[currentPrefixIdx]) {
+				// first object in file starts with prefix
+				break
+			}
+			// current prefix ends before this file - move to next prefix
+			currentPrefixIdx++
+			if currentPrefixIdx == len(prefixes) {
+				// no more prefixes - other files are irrelevant
+				return nil
 			}
 		}
-		logger.Debugf("manifest filtered from %d to %d files", len(m.Files), len(filteredFiles))
-		m.Files = filteredFiles
+		if strings.HasPrefix(firstKey, prefixes[currentPrefixIdx]) ||
+			(prefixes[currentPrefixIdx] >= firstKey && prefixes[currentPrefixIdx] < lastKey) {
+			// file may contain keys starting with this prefix
+			filteredFiles = append(filteredFiles, m.Files[i])
+		}
 	}
+	logger.Debugf("manifest filtered from %d to %d files", len(m.Files), len(filteredFiles))
 	return nil
 }

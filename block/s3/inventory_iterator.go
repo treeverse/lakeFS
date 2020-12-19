@@ -115,11 +115,18 @@ func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 			continue
 		}
 		if len(it.prefixes) > 0 {
-			for it.currentPrefix < len(it.prefixes) && it.prefixes[it.currentPrefix] < obj.Key && !strings.HasPrefix(obj.Key, it.prefixes[it.currentPrefix]) {
+			// check file against prefix filter
+			// loop while current prefix may fit current object
+			for it.prefixes[it.currentPrefix] < obj.Key {
+				if strings.HasPrefix(obj.Key, it.prefixes[it.currentPrefix]) {
+					// found current prefix
+					break
+				}
 				it.currentPrefix++
-			}
-			if it.currentPrefix == len(it.prefixes) {
-				return nil
+				if it.currentPrefix == len(it.prefixes) {
+					// no more prefixes
+					return nil
+				}
 			}
 			if !strings.HasPrefix(obj.Key, it.prefixes[it.currentPrefix]) {
 				continue
