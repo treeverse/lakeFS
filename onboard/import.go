@@ -67,7 +67,8 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
 	}
 	res.previousCommit = previousCommit
-	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, res.previousCommit != nil)
+	shouldSort := res.previousCommit != nil
+	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, shouldSort, config.KeyPrefixes)
 	res.prefixes = config.KeyPrefixes
 	if !res.validateSamePrefixes() {
 		return nil, ErrIncompatiblePrefixes
@@ -86,7 +87,7 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	if previousInventoryURL == s.inventory.InventoryURL() {
 		return nil, fmt.Errorf("%w. commit_ref=%s", ErrInventoryAlreadyImported, commit.Reference)
 	}
-	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true)
+	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true, s.prefixes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
 	}
@@ -109,9 +110,6 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		}
 	}
 	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
-	if len(s.prefixes) > 0 {
-		dataToImport = NewPrefixIterator(dataToImport, s.prefixes)
-	}
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
 		return nil, err

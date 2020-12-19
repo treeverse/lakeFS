@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -27,6 +28,7 @@ type mockInventory struct {
 	shouldSort   bool
 	lastModified []time.Time
 	checksum     func(string) string
+	prefixes     []string
 }
 
 type objectActions struct {
@@ -49,12 +51,12 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
-		return &mockInventory{keys: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
+		return &mockInventory{keys: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
 	}
 	if inventoryURL == m.previousInventoryURL {
-		return &mockInventory{keys: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
+		return &mockInventory{keys: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
 	}
 	return nil, errors.New("failed to create inventory")
 }
@@ -67,8 +69,20 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	if m.checksum == nil {
 		m.checksum = func(s string) string { return s }
 	}
+	sort.Strings(m.prefixes)
+	currentPrefix := 0
 	for i, key := range m.keys {
-
+		if len(m.prefixes) > 0 {
+			for currentPrefix < len(m.prefixes) && m.prefixes[currentPrefix] < key && !strings.HasPrefix(key, m.prefixes[currentPrefix]) {
+				currentPrefix++
+			}
+			if currentPrefix == len(m.prefixes) {
+				break
+			}
+			if !strings.HasPrefix(key, m.prefixes[currentPrefix]) {
+				continue
+			}
+		}
 		res = append(res, block.InventoryObject{Key: key, LastModified: swag.Time(m.lastModified[i%len(m.lastModified)]), Checksum: m.checksum(key)})
 	}
 	return res

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -32,11 +33,11 @@ type inventoryFile struct {
 	Key string `json:"key"` // an s3 key for an inventory list file
 }
 
-func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool) (block.Inventory, error) {
-	return GenerateInventory(logger, manifestURL, a.s3, s3inventory.NewReader(ctx, a.s3, logger), shouldSort)
+func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
+	return GenerateInventory(logger, manifestURL, a.s3, s3inventory.NewReader(ctx, a.s3, logger), shouldSort, prefixes)
 }
 
-func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader s3inventory.IReader, shouldSort bool) (block.Inventory, error) {
+func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader s3inventory.IReader, shouldSort bool, prefixes []string) (block.Inventory, error) {
 	if logger == nil {
 		logger = logging.Default()
 	}
@@ -44,13 +45,13 @@ func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3A
 	if err != nil {
 		return nil, err
 	}
-	if shouldSort {
-		err = sortManifest(m, logger, inventoryReader)
+	if shouldSort || len(prefixes) > 0 {
+		err = sortAndFilterManifest(m, logger, inventoryReader, prefixes)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: m, logger: logger, shouldSort: shouldSort, reader: inventoryReader}, nil
+	return &Inventory{Manifest: m, logger: logger, shouldSort: shouldSort, reader: inventoryReader, prefixes: prefixes}, nil
 }
 
 type Inventory struct {
@@ -58,6 +59,7 @@ type Inventory struct {
 	logger     logging.Logger
 	shouldSort bool
 	reader     s3inventory.IReader
+	prefixes   []string
 }
 
 func (inv *Inventory) Iterator() block.InventoryIterator {
@@ -98,7 +100,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	return &m, nil
 }
 
-func sortManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader) error {
+func sortAndFilterManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader, prefixes []string) error {
 	firstKeyByInventoryFile := make(map[string]string)
 	lastKeyByInventoryFile := make(map[string]string)
 	for _, f := range m.Files {
@@ -124,6 +126,25 @@ func sortManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader
 		if firstKeyByInventoryFile[m.Files[i+1].Key] < lastKeyByInventoryFile[m.Files[i].Key] {
 			return ErrInventoryFilesRangesOverlap
 		}
+	}
+	filteredFiles := make([]inventoryFile, 0, len(m.Files))
+	if len(prefixes) > 0 {
+		// filter manifest files according to prefixes:
+		sort.Strings(prefixes)
+		currentPrefix := 0
+		for i := 0; i < len(m.Files); i++ {
+			for currentPrefix < len(prefixes) && prefixes[currentPrefix] < firstKeyByInventoryFile[m.Files[i].Key] && !strings.HasPrefix(firstKeyByInventoryFile[m.Files[i].Key], prefixes[currentPrefix]) {
+				currentPrefix++
+			}
+			if currentPrefix == len(prefixes) {
+				break
+			}
+			if (strings.HasPrefix(firstKeyByInventoryFile[m.Files[i].Key], prefixes[currentPrefix]) || prefixes[currentPrefix] >= firstKeyByInventoryFile[m.Files[i].Key]) &&
+				prefixes[currentPrefix] < lastKeyByInventoryFile[m.Files[i].Key] {
+				filteredFiles = append(filteredFiles, m.Files[i])
+			}
+		}
+		m.Files = filteredFiles
 	}
 	return nil
 }
