@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"strings"
@@ -98,12 +98,26 @@ var importCmd = &cobra.Command{
 		}
 		var prefixes []string
 		if prefixFile != "" {
-			fileBytes, err := ioutil.ReadFile(prefixFile)
+			file, err := os.Open(prefixFile)
 			if err != nil {
 				fmt.Printf("Failed to read prefix filter: %s\n", err)
 				os.Exit(1)
 			}
-			prefixes = strings.Split(string(fileBytes), "\n")
+			defer func() {
+				_ = file.Close()
+			}()
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				prefix := scanner.Text()
+				if prefix != "" {
+					prefixes = append(prefixes, prefix)
+				}
+			}
+			if err := scanner.Err(); err != nil {
+				fmt.Printf("Failed to read prefix filter: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
 		}
 		importConfig := &onboard.Config{
 			CommitUsername:     CommitterName,

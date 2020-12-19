@@ -69,6 +69,8 @@ var fileContents = map[string][]string{
 	"f1_prefix":     {"a1", "a2", "b1", "b2"},
 	"f2_prefix":     {"b3", "b4", "c1", "c2"},
 	"f3_prefix":     {"d1", "d2", "e1", "e2"},
+	"f4_prefix":     {"a1", "a2", "b1", "b2", "c1", "c2", "d1", "d2"},
+	"f5_prefix":     {"e1", "e2", "f1", "f2", "g1", "g2", "h1", "h2"},
 }
 
 func TestIterator(t *testing.T) {
@@ -80,12 +82,13 @@ func TestIterator(t *testing.T) {
 		}
 	}
 	testdata := map[string]struct {
-		InventoryFiles        []string
-		ExpectedObjects       []string
-		Prefixes              []string
-		ErrExpected           error
-		ExpectedTotalRowsRead int
-		ShouldSort            bool
+		InventoryFiles             []string
+		ExpectedObjects            []string
+		Prefixes                   []string
+		ErrExpected                error
+		ExpectedCountReadRows      int
+		ExpectedCountGetFileReader int
+		ShouldSort                 bool
 	}{
 		"new inventory": {
 			InventoryFiles:  []string{"f1", "f2", "f3"},
@@ -163,35 +166,47 @@ func TestIterator(t *testing.T) {
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
 		"import with prefix": {
-			InventoryFiles:        []string{"f1_prefix", "f2_prefix"},
-			Prefixes:              []string{"b"},
-			ExpectedObjects:       []string{"b1", "b2", "b3", "b4"},
-			ExpectedTotalRowsRead: 8,
+			InventoryFiles:             []string{"f1_prefix", "f2_prefix"},
+			Prefixes:                   []string{"b"},
+			ExpectedObjects:            []string{"b1", "b2", "b3", "b4"},
+			ExpectedCountReadRows:      8,
+			ExpectedCountGetFileReader: 2,
 		},
 		"import with prefix - skip entire file": {
-			InventoryFiles:        []string{"f1_prefix", "f2_prefix", "f3_prefix"},
-			Prefixes:              []string{"b"},
-			ExpectedObjects:       []string{"b1", "b2", "b3", "b4"},
-			ExpectedTotalRowsRead: 8,
+			InventoryFiles:             []string{"f1_prefix", "f2_prefix", "f3_prefix"},
+			Prefixes:                   []string{"b"},
+			ExpectedObjects:            []string{"b1", "b2", "b3", "b4"},
+			ExpectedCountReadRows:      8,
+			ExpectedCountGetFileReader: 2,
 		},
 		"import with prefix - skip first file": {
-			InventoryFiles:        []string{"f1", "f2", "f3"},
-			Prefixes:              []string{"f2", "f3"},
-			ExpectedObjects:       []string{"f2row1", "f2row2", "f3row1", "f3row2"},
-			ExpectedTotalRowsRead: 4,
+			InventoryFiles:             []string{"f1", "f2", "f3"},
+			Prefixes:                   []string{"f2", "f3"},
+			ExpectedObjects:            []string{"f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedCountReadRows:      4,
+			ExpectedCountGetFileReader: 2,
 		},
 		"import with prefix - unsorted prefixes": {
-			InventoryFiles:        []string{"f1", "f2", "f3"},
-			Prefixes:              []string{"f3", "f2"},
-			ExpectedObjects:       []string{"f2row1", "f2row2", "f3row1", "f3row2"},
-			ExpectedTotalRowsRead: 4,
+			InventoryFiles:             []string{"f1", "f2", "f3"},
+			Prefixes:                   []string{"f3", "f2"},
+			ExpectedObjects:            []string{"f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedCountReadRows:      4,
+			ExpectedCountGetFileReader: 2,
 		},
 		"import with prefix - unsorted inventory": {
-			InventoryFiles:        []string{"f3", "f2", "f1"},
-			Prefixes:              []string{"f2", "f3"},
-			ExpectedObjects:       []string{"f2row1", "f2row2", "f3row1", "f3row2"},
-			ShouldSort:            true,
-			ExpectedTotalRowsRead: 4,
+			InventoryFiles:             []string{"f3", "f2", "f1"},
+			Prefixes:                   []string{"f2", "f3"},
+			ExpectedObjects:            []string{"f2row1", "f2row2", "f3row1", "f3row2"},
+			ShouldSort:                 true,
+			ExpectedCountReadRows:      4,
+			ExpectedCountGetFileReader: 2,
+		},
+		"import with prefix - prefix in middle": {
+			InventoryFiles:             []string{"f4_prefix", "f5_prefix"},
+			Prefixes:                   []string{"b", "f"},
+			ExpectedObjects:            []string{"b1", "b2", "f1", "f2"},
+			ExpectedCountReadRows:      16,
+			ExpectedCountGetFileReader: 2,
 		},
 	}
 	manifestURL := "s3://example-bucket/manifest1.json"
@@ -226,8 +241,11 @@ func TestIterator(t *testing.T) {
 			if len(objects) != len(test.ExpectedObjects) {
 				t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
 			}
-			if test.ExpectedTotalRowsRead > 0 && test.ExpectedTotalRowsRead != reader.totalRowsRead {
-				t.Fatalf("total number of read rows different than expected. expected=%d, got=%d", test.ExpectedTotalRowsRead, reader.totalRowsRead)
+			if test.ExpectedCountReadRows > 0 && test.ExpectedCountReadRows != reader.countReadRows {
+				t.Fatalf("total number of read rows different than expected. expected=%d, got=%d", test.ExpectedCountReadRows, reader.countReadRows)
+			}
+			if test.ExpectedCountGetFileReader > 0 && test.ExpectedCountGetFileReader != reader.countGetFileReader {
+				t.Fatalf("total number of get file reader different than expected. expected=%d, got=%d", test.ExpectedCountGetFileReader, reader.countGetFileReader)
 			}
 			for i, obj := range objects {
 				if obj.Key != test.ExpectedObjects[i] {
@@ -242,9 +260,10 @@ func TestIterator(t *testing.T) {
 }
 
 type mockInventoryReader struct {
-	openFiles     map[string]bool
-	lastModified  map[string]time.Time
-	totalRowsRead int
+	openFiles          map[string]bool
+	lastModified       map[string]time.Time
+	countReadRows      int
+	countGetFileReader int
 }
 
 type mockInventoryFileReader struct {
@@ -293,7 +312,7 @@ func (m *mockInventoryFileReader) Read(n int) ([]*s3inventory.InventoryObject, e
 		res = append(res, m.rows[i])
 	}
 	m.nextIdx = m.nextIdx + len(res)
-	m.inventoryReader.totalRowsRead += len(res)
+	m.inventoryReader.countReadRows += len(res)
 	return res, nil
 }
 
@@ -303,6 +322,7 @@ func (m *mockInventoryFileReader) GetNumRows() int64 {
 
 func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (s3inventory.FileReader, error) {
 	m.openFiles[key] = true
+	m.countGetFileReader++
 	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
 

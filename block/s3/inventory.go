@@ -144,6 +144,7 @@ func sortAndFilterManifest(m *Manifest, logger logging.Logger, reader s3inventor
 				filteredFiles = append(filteredFiles, m.Files[i])
 			}
 		}
+		logger.Debugf("manifest filtered from %d to %d files", len(m.Files), len(filteredFiles))
 		m.Files = filteredFiles
 	}
 	return nil
