@@ -62,17 +62,17 @@ const workspaceDir = "workspace"
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
 func NewFS(c *Config) (FS, error) {
-	fsLocalBaseDir := path.Join(c.localBaseDir, c.fsName)
-	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating base dir: %w", err)
+	baseDir := filepath.Clean(path.Join(c.localBaseDir, c.fsName))
+	if err := os.MkdirAll(baseDir, os.ModePerm); err != nil {
+		return nil, fmt.Errorf("creating base dir: %s - %w", baseDir, err)
 	}
 
 	tierFS := &TierFS{
 		adaptor:        c.adaptor,
 		fsName:         c.fsName,
 		logger:         c.logger,
-		fsLocalBaseDir: fsLocalBaseDir,
-		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
+		fsLocalBaseDir: baseDir,
+		syncDir:        &directory{ceilingDir: baseDir},
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
@@ -81,7 +81,7 @@ func NewFS(c *Config) (FS, error) {
 		return nil, fmt.Errorf("creating eviction control: %w", err)
 	}
 
-	if err := handleExistingFiles(eviction, fsLocalBaseDir); err != nil {
+	if err := handleExistingFiles(eviction, baseDir); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 

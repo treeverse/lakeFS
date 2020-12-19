@@ -1,7 +1,6 @@
 package pyramid
 
 import (
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -9,56 +8,15 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/streadway/handy/atomic"
-
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/thanhpk/randstr"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/mem"
-)
-
-var (
-	fs FS
 )
 
 const blockStoragePrefix = "prefix"
 const allocatedDiskBytes = 4 * 1024 * 1024
-
-func TestMain(m *testing.M) {
-	fsName := uuid.New().String()
-
-	// cleanup
-	defer func() {
-		if err := os.RemoveAll(path.Join(os.TempDir(), fsName)); err != nil {
-			panic(err)
-		}
-	}()
-
-	// starting adapter with closed channel so all Gets pass
-	adapter := &memAdapter{Adapter: mem.New(), wait: make(chan struct{})}
-	close(adapter.wait)
-
-	var err error
-	fs, err = NewFS(&Config{
-		fsName:               fsName,
-		adaptor:              adapter,
-		logger:               logging.Dummy(),
-		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         os.TempDir(),
-		allocatedDiskBytes:   allocatedDiskBytes,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	code := m.Run()
-
-	os.Exit(code)
-}
 
 func TestSimpleWriteRead(t *testing.T) {
 	namespace := uuid.New().String()
@@ -192,7 +150,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	// fill the cache so the file is evicted
 	testEviction(t, namespace)
 	adapter := fs.(*TierFS).adaptor.(*memAdapter)
-	readsSoFar := adapter.gets.Get()
+	readsSoFar := adapter.GetCount()
 
 	// try to read that file - only a single access to block storage is expected
 	concurrencyLevel := 50
@@ -209,7 +167,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	close(adapter.wait)
 	wg.Wait()
 
-	require.Equal(t, readsSoFar+1, adapter.gets.Get())
+	require.Equal(t, readsSoFar+1, adapter.GetCount())
 }
 
 func writeToFile(t *testing.T, namespace, filename, content string) {
@@ -234,17 +192,4 @@ func checkContent(t *testing.T, namespace string, filename string, content strin
 	if content != string(bytes) {
 		require.Equal(t, content, string(bytes))
 	}
-}
-
-// simple mem adapter that count gets and let you wait
-type memAdapter struct {
-	gets atomic.Int
-	wait chan struct{}
-	*mem.Adapter
-}
-
-func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, error) {
-	a.gets.Add(1)
-	<-a.wait
-	return a.Adapter.Get(obj, size)
 }
