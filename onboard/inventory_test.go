@@ -15,6 +15,7 @@ func generateLastModified(keys []string, times map[string]time.Time) []time.Time
 	}
 	return res
 }
+
 func TestDiff(t *testing.T) {
 	data := []struct {
 		LeftInv             []string

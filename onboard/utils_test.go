@@ -2,6 +2,7 @@ package onboard_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sort"
 	"time"
@@ -35,6 +36,7 @@ type objectActions struct {
 
 type mockCatalogActions struct {
 	previousCommitInventory string
+	previousCommitPrefixes  []string
 	objectActions           objectActions
 	lastCommitMetadata      catalog.Metadata
 }
@@ -95,10 +97,15 @@ func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator,
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
-	if m.previousCommitInventory != "" {
-		return &catalog.CommitLog{Metadata: catalog.Metadata{"inventory_url": m.previousCommitInventory}}, nil
+	if m.previousCommitInventory == "" {
+		return nil, nil
 	}
-	return nil, nil
+	metadata := catalog.Metadata{"inventory_url": m.previousCommitInventory}
+	if len(m.previousCommitPrefixes) > 0 {
+		prefixesSerialized, _ := json.Marshal(m.previousCommitPrefixes)
+		metadata["key_prefixes"] = string(prefixesSerialized)
+	}
+	return &catalog.CommitLog{Metadata: metadata}, nil
 }
 
 func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (*catalog.CommitLog, error) {

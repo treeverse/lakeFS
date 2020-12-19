@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"sort"
 	"time"
 
 	"github.com/treeverse/lakefs/block"
@@ -22,6 +24,7 @@ type Importer struct {
 	logger             logging.Logger
 	previousCommit     *catalog.CommitLog
 	progress           []*cmdutils.Progress
+	prefixes           []string
 }
 
 type Config struct {
@@ -31,6 +34,7 @@ type Config struct {
 	InventoryGenerator block.InventoryGenerator
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
+	KeyPrefixes        []string
 }
 
 type Stats struct {
@@ -45,6 +49,7 @@ type Stats struct {
 var (
 	ErrNoInventoryURL           = errors.New("no inventory_url in commit Metadata")
 	ErrInventoryAlreadyImported = errors.New("given inventory was already imported")
+	ErrIncompatiblePrefixes     = errors.New("must use same prefix filter as previous import")
 )
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
@@ -63,6 +68,10 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 	}
 	res.previousCommit = previousCommit
 	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, res.previousCommit != nil)
+	res.prefixes = config.KeyPrefixes
+	if !res.validateSamePrefixes() {
+		return nil, ErrIncompatiblePrefixes
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +109,9 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		}
 	}
 	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
+	if len(s.prefixes) > 0 {
+		dataToImport = NewPrefixIterator(dataToImport, s.prefixes)
+	}
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
 		return nil, err
@@ -110,7 +122,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		stats.PreviousInventoryURL = s.previousCommit.Metadata["inventory_url"]
 	}
 	if !dryRun {
-		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
+		commitMetadata := CreateCommitMetadata(s.inventory, *stats, s.prefixes)
 		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
 			return nil, err
@@ -118,6 +130,16 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		stats.CommitRef = commitLog.Reference
 	}
 	return stats, nil
+}
+
+func (s *Importer) validateSamePrefixes() bool {
+	if s.previousCommit == nil {
+		return true
+	}
+	previousPrefixes := ExtractPrefixes(s.previousCommit.Metadata)
+	sort.Strings(previousPrefixes)
+	sort.Strings(s.prefixes)
+	return reflect.DeepEqual(previousPrefixes, s.prefixes)
 }
 
 func (s *Importer) Progress() []*cmdutils.Progress {

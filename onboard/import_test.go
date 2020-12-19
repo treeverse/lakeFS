@@ -2,6 +2,7 @@ package onboard_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strconv"
 	"testing"
@@ -16,9 +17,11 @@ func TestImport(t *testing.T) {
 		PreviousInventory            []string
 		ExpectedAdded                []string
 		ExpectedDeleted              []string
-		ExpectedErr                  bool
+		ExpectedErr                  error
 		OverrideNewInventoryURL      string
 		OverridePreviousInventoryURL string
+		Prefixes                     []string
+		PreviousPrefixes             []string
 	}{
 		{
 			NewInventory:  []string{"f1", "f2"},
@@ -61,6 +64,36 @@ func TestImport(t *testing.T) {
 			NewInventory:  []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 			ExpectedAdded: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 		},
+		{
+			NewInventory:  []string{"a1", "a2", "b1", "b2"},
+			Prefixes:      []string{"a"},
+			ExpectedAdded: []string{"a1", "a2"},
+		},
+		{
+			NewInventory:  []string{"a1", "a2", "b1", "b2"},
+			Prefixes:      []string{"b"},
+			ExpectedAdded: []string{"b1", "b2"},
+		},
+		{
+			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
+			PreviousInventory: []string{"a1", "a2", "b1", "b2"},
+			Prefixes:          []string{"a", "c"},
+			PreviousPrefixes:  []string{"a"},
+			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
+		},
+		{
+			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
+			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2", "b3"},
+			Prefixes:          []string{"a"},
+			PreviousPrefixes:  []string{"a"},
+			ExpectedDeleted:   []string{"a3"},
+		},
+		{
+			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
+			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2", "b3"},
+			PreviousPrefixes:  []string{"a"},
+			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
+		},
 	}
 	for _, dryRun := range []bool{true, false} {
 		for _, test := range testdata {
@@ -76,6 +109,7 @@ func TestImport(t *testing.T) {
 			if len(test.PreviousInventory) > 0 {
 				catalogActionsMock = mockCatalogActions{
 					previousCommitInventory: previousInventoryURL,
+					previousCommitPrefixes:  test.PreviousPrefixes,
 				}
 			}
 			inventoryGenerator := &mockInventoryGenerator{
@@ -91,23 +125,23 @@ func TestImport(t *testing.T) {
 				Repository:         "example-repo",
 				InventoryGenerator: inventoryGenerator,
 				CatalogActions:     &catalogActionsMock,
+				KeyPrefixes:        test.Prefixes,
 			}
 			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), config)
 			if err != nil {
-				t.Fatalf("failed to create importer: %v", err)
-			}
-			stats, err := importer.Import(context.Background(), dryRun)
-			if err != nil {
-				if !test.ExpectedErr {
+				if !errors.Is(err, test.ExpectedErr) {
 					t.Fatalf("unexpected error: %v", err)
 				} else {
 					continue
 				}
 			}
-			if test.ExpectedErr {
+			if test.ExpectedErr != nil {
 				t.Fatalf("error was expected but none was returned")
 			}
-
+			stats, err := importer.Import(context.Background(), dryRun)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 			if !reflect.DeepEqual(stats.AddedOrChanged, len(test.ExpectedAdded)) {
 				t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), stats.AddedOrChanged)
 			}
