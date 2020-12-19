@@ -28,7 +28,7 @@ func TestImport(t *testing.T) {
 			ExpectedAdded: []string{"f1", "f2"},
 		},
 		"new inventory - unsorted": {
-			NewInventory:  []string{"f1", "f2"},
+			NewInventory:  []string{"f2", "f1"},
 			ExpectedAdded: []string{"f2", "f1"},
 		},
 		"with previous inventory": {
