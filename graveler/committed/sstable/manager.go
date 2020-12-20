@@ -87,7 +87,7 @@ func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from
 
 // GetWriter returns a new SSTable writer instance
 func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
-	return newDiskWriter(m.fs, ns, m.hash)
+	return NewDiskWriter(m.fs, ns, m.hash)
 }
 
 func (m *Manager) execAndLog(f func() error, msg string) {
