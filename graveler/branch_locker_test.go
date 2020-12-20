@@ -5,18 +5,19 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/testutil"
+	"github.com/treeverse/lakefs/graveler/testutil"
+	tu "github.com/treeverse/lakefs/testutil"
 )
 
 func TestBranchLock(t *testing.T) {
 	bl := graveler.NewBranchLocker()
 
-	closeWrite, err := bl.AquireWrite("a", defaultBranchID)
-	testutil.MustDo(t, "acquire write I", err)
+	closeWrite, err := bl.AquireWrite("a", testutil.DefaultBranchID)
+	tu.MustDo(t, "acquire write I", err)
 	closeWrite()
 
-	closeWrite, err = bl.AquireWrite("a", defaultBranchID)
-	testutil.MustDo(t, "acquire write II", err)
+	closeWrite, err = bl.AquireWrite("a", testutil.DefaultBranchID)
+	tu.MustDo(t, "acquire write II", err)
 
 	ch := make([]chan struct{}, 2)
 	errs := make([]chan error, 2)
@@ -27,7 +28,7 @@ func TestBranchLock(t *testing.T) {
 		ch[i] = make(chan struct{})
 		errs[i] = make(chan error, 1)
 		go func(id int) {
-			closeMetadataUpdate, err := bl.AquireMetadataUpdate("a", defaultBranchID)
+			closeMetadataUpdate, err := bl.AquireMetadataUpdate("a", testutil.DefaultBranchID)
 			close(ch[id])
 			errs[id] <- err
 			if err != nil {
@@ -53,7 +54,7 @@ func TestBranchLock(t *testing.T) {
 	}
 
 	// make sure we can't write while metadata update is pending
-	_, err = bl.AquireWrite("a", defaultBranchID)
+	_, err = bl.AquireWrite("a", testutil.DefaultBranchID)
 	if !errors.Is(err, graveler.ErrBranchLocked) {
 		t.Fatal("can't write when metadata update is pending")
 	}
@@ -62,10 +63,10 @@ func TestBranchLock(t *testing.T) {
 	closeWrite()
 	<-ch[pendingID]
 	err = <-errs[pendingID]
-	testutil.MustDo(t, "pending metadata update goroutine after acquire", err)
+	tu.MustDo(t, "pending metadata update goroutine after acquire", err)
 
 	// try to write again - should fail
-	_, err = bl.AquireWrite("a", defaultBranchID)
+	_, err = bl.AquireWrite("a", testutil.DefaultBranchID)
 	if !errors.Is(err, graveler.ErrBranchLocked) {
 		t.Fatal("can't write when metadata update is running")
 	}
@@ -75,7 +76,7 @@ func TestBranchLock(t *testing.T) {
 	<-closeMetadataUpdateDoneCh
 
 	// try to write again - should work, single writer
-	closeWrite, err = bl.AquireWrite("a", defaultBranchID)
-	testutil.MustDo(t, "acquire write after metadata update", err)
+	closeWrite, err = bl.AquireWrite("a", testutil.DefaultBranchID)
+	tu.MustDo(t, "acquire write after metadata update", err)
 	closeWrite()
 }
