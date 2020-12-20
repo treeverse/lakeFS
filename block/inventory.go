@@ -9,7 +9,7 @@ import (
 )
 
 type InventoryGenerator interface {
-	GenerateInventory(ctx context.Context, logger logging.Logger, inventoryURL string, shouldSort bool) (Inventory, error)
+	GenerateInventory(ctx context.Context, logger logging.Logger, inventoryURL string, shouldSort bool, prefixes []string) (Inventory, error)
 }
 
 // Inventory represents a snapshot of the storage space
