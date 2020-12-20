@@ -64,7 +64,7 @@ const workspaceDir = "workspace"
 func NewFS(c *Config) (FS, error) {
 	baseDir := filepath.Clean(path.Join(c.localBaseDir, c.fsName))
 	if err := os.MkdirAll(baseDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating base dir: %s - %w", baseDir, err)
+		return nil, fmt.Errorf("creating base dir %s: %w", baseDir, err)
 	}
 
 	tierFS := &TierFS{
