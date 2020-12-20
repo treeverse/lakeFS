@@ -48,7 +48,7 @@ type Stats struct {
 var (
 	ErrNoInventoryURL           = errors.New("no inventory_url in commit Metadata")
 	ErrInventoryAlreadyImported = errors.New("given inventory was already imported")
-	ErrIncompatiblePrefixes     = errors.New("must use same prefix filter as previous import")
+	ErrIncompatiblePrefixes     = errors.New("prefix filter should cover at least the same keys as the previous import")
 )
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
