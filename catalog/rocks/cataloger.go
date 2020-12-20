@@ -111,7 +111,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch 
 		Reference: newBranch.CommitID.String(),
 		Committer: commit.Committer,
 		Message:   commit.Message,
-		Metadata:  commit.Metadata,
+		Metadata:  catalog.Metadata(commit.Metadata),
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
@@ -370,7 +370,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 		Committer:    commit.Committer,
 		Message:      commit.Message,
 		CreationDate: commit.CreationDate,
-		Metadata:     commit.Metadata,
+		Metadata:     catalog.Metadata(commit.Metadata),
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
