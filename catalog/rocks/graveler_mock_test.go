@@ -78,6 +78,22 @@ func (g *GravelerMock) GetBranch(ctx context.Context, repositoryID graveler.Repo
 	panic("implement me")
 }
 
+func (g *GravelerMock) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
+	panic("implement me")
+}
+
+func (g *GravelerMock) CreateTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID, commitID graveler.CommitID) error {
+	panic("implement me")
+}
+
+func (g *GravelerMock) DeleteTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) error {
+	panic("implement me")
+}
+
+func (g *GravelerMock) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
+	panic("implement me")
+}
+
 func (g *GravelerMock) Log(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (graveler.CommitIterator, error) {
 	panic("implement me")
 }
@@ -122,7 +138,7 @@ func (g *GravelerMock) Merge(ctx context.Context, repositoryID graveler.Reposito
 	panic("implement me")
 }
 
-func (g *GravelerMock) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from graveler.Key) (graveler.DiffIterator, error) {
+func (g *GravelerMock) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}

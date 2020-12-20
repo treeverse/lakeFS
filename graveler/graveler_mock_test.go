@@ -148,10 +148,12 @@ type addedCommitData struct {
 type refsMock struct {
 	listRepositoriesRes graveler.RepositoryIterator
 	listBranchesRes     graveler.BranchIterator
+	listTagsRes         graveler.TagIterator
 	commitIter          graveler.CommitIterator
 	refType             graveler.ReferenceType
 	branch              *graveler.Branch
-	branchErr           error
+	tagCommitID         *graveler.CommitID
+	err                 error
 	commitErr           error
 	addedCommit         addedCommitData
 	commitId            graveler.CommitID
@@ -182,7 +184,7 @@ func (m *refsMock) DeleteRepository(_ context.Context, _ graveler.RepositoryID) 
 }
 
 func (m *refsMock) GetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.Branch, error) {
-	return m.branch, m.branchErr
+	return m.branch, m.err
 }
 
 func (m *refsMock) SetBranch(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Branch) error {
@@ -195,6 +197,22 @@ func (m *refsMock) DeleteBranch(_ context.Context, _ graveler.RepositoryID, _ gr
 
 func (m *refsMock) ListBranches(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (graveler.BranchIterator, error) {
 	return m.listBranchesRes, nil
+}
+
+func (m *mockRefs) GetTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) (*graveler.CommitID, error) {
+	return m.tagCommitID, m.err
+}
+
+func (m *mockRefs) CreateTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID, _ graveler.CommitID) error {
+	return nil
+}
+
+func (m *mockRefs) DeleteTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) error {
+	return nil
+}
+
+func (m *mockRefs) ListTags(_ context.Context, _ graveler.RepositoryID) (graveler.TagIterator, error) {
+	return m.listTagsRes, nil
 }
 
 func (m *refsMock) GetCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (*graveler.Commit, error) {
