@@ -131,20 +131,6 @@ func (mr *MockFileMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockFile)(nil).Close))
 }
 
-// Close mocks base method
-func (m *MockFile) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close
-func (mr *MockFileMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockFile)(nil).Close))
-}
-
 // ReadAt mocks base method
 func (m *MockFile) ReadAt(p []byte, off int64) (int, error) {
 	m.ctrl.T.Helper()
@@ -240,20 +226,6 @@ func (m *MockStoredFile) Write(p []byte) (int, error) {
 func (mr *MockStoredFileMockRecorder) Write(p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockStoredFile)(nil).Write), p)
-}
-
-// Close mocks base method
-func (m *MockStoredFile) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close
-func (mr *MockStoredFileMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStoredFile)(nil).Close))
 }
 
 // Close mocks base method

@@ -22,7 +22,8 @@ type FS interface {
 
 // File is pyramid abstraction for an os.File
 type File interface {
-	io.ReadWriteCloser
+	io.Reader
+	io.Writer
 	io.Closer
 	io.ReaderAt
 	Sync() error
