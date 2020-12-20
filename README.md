@@ -37,13 +37,11 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 **Development Environment for Data**
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
 * **Reproducibility** - go back to any point of time to a consistent version of your data lake.
-* [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#development-environment)
 
 **Continuous Data Integration**
 * **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
 * **Metadata validation** - prevent breaking changes from entering the production data environment.
 
-* [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-integration)
 
 **Continuous Data Deployment**
 * **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
@@ -51,7 +49,6 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 * **Prevent data quality issues by enabling**
   - Testing of production data before exposing it to users / consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
-* [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-deployment)
 
 ## Getting Started
 
