@@ -1,5 +1,7 @@
 package pyramid
 
+//go:generate mockgen -source=pyramid.go -destination=mock/pyramid.go -package=mock
+
 import (
 	"io"
 	"os"
