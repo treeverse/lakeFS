@@ -13,7 +13,7 @@ import (
 )
 
 func TestSimpleTree(t *testing.T) {
-	deleteSST("tesdata/")
+	deleteTreeFiles("testdata/")
 	cache := mocks.NewCacheMap(100)
 	trees := InitTreesRepository(cache, &mocks.SstMgr{})
 	b := mocks.NewBatchCloser()
@@ -54,7 +54,7 @@ func TestSimpleTree(t *testing.T) {
 }
 
 func TestLargeTree(t *testing.T) {
-	deleteSST("tesdata/")
+	deleteTreeFiles("testdata/")
 	cache := mocks.NewCacheMap(100)
 	trees := InitTreesRepository(cache, &mocks.SstMgr{})
 	b := mocks.NewBatchCloser()
@@ -84,7 +84,7 @@ func TestLargeTree(t *testing.T) {
 		if err := tw.WriteValue(r); err != nil {
 			log.Fatal(err)
 		}
-		if lineCount%50 == 0 {
+		if lineCount%25 == 0 {
 			tw.ClosePart()
 		}
 	}
@@ -97,7 +97,7 @@ func TestLargeTree(t *testing.T) {
 	}
 }
 
-func deleteSST(directory string) {
+func deleteTreeFiles(directory string) {
 
 	// Open the directory and read all its files.
 	dirRead, _ := os.Open(directory)

@@ -11,6 +11,8 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 )
 
+// treeRepo is a singleton containing the caches and common data. Will certainly be replaced once integrated into
+// lakeFS startup
 type treeRepo struct {
 	treesMap   Cache
 	partManger sstable.Manager
@@ -23,21 +25,13 @@ type Cache interface {
 }
 
 type treeIterator struct {
-	tree        []part
-	currentIter graveler.ValueIterator
-	currentPart int
-	err         error
-	closed      bool
-	trees       *treeRepo
+	tree             []part
+	currentIter      graveler.ValueIterator
+	currentPartIndex int // index of current part
+	err              error
+	closed           bool
+	trees            *treeRepo // referenc to tree repo needed in some actions on a tree
 }
-
-const (
-	CacheMapSize     = 1000 // number of cached trees
-	CacheTrimSize    = 100  // number of trees to evict once cache reaches maximum
-	InitialWeight    = 64   // weight a cached tree gets when it is added
-	AdditionalWeight = 16   // additional weight gained each time the tree is accessed
-	TrimFactor       = 1    //
-)
 
 // InitTreeRepository creates the tree cache, and stores part Manager for operations of parts (currently implemented as sstables).
 // should be called at process init.
@@ -73,10 +67,6 @@ func (trees *treeRepo) GetValue(treeID graveler.TreeID, key graveler.Key) (*grav
 	return nil, partIterator.Err()
 }
 
-//func (t *treeRepo) getPartManger() sstable.Manager {
-//	return t.partManger
-//}
-
 func (trees *treeRepo) NewIteratorFromTreeID(treeID graveler.TreeID, start graveler.Key) (graveler.ValueIterator, error) {
 	tree, err := trees.GetTree(treeID)
 	if err != nil {
@@ -88,33 +78,33 @@ func (trees *treeRepo) NewIteratorFromTreeID(treeID graveler.TreeID, start grave
 func (trees *treeRepo) NewIteratorFromTreeObject(treeSlice Tree, start graveler.Key) (graveler.ValueIterator, error) {
 	return trees.newIterator(treeSlice, start)
 }
-func (trees *treeRepo) getSSTIteratorForKey(tree Tree, key graveler.Key) (graveler.ValueIterator, int, error) {
-	treeSlice := tree.treeSlice
-	partNum := findPartNumForPath(treeSlice, key)
-	if partNum >= len(treeSlice) {
-		return nil, 0, ErrPathBiggerThanMaxPath
-	}
-	partName := treeSlice[partNum].PartName
-	partIterator, err := trees.partManger.NewSSTableIterator(partName, key)
-	if err != nil {
-		return nil, 0, err
-	}
-	return partIterator, partNum, nil
-}
 
 func (trees *treeRepo) newIterator(tree Tree, from graveler.Key) (graveler.ValueIterator, error) {
-	partIterator, partNum, err := trees.getSSTIteratorForKey(tree, from)
+	partIterator, partIndex, err := trees.getSSTIteratorForKey(tree, from)
 	if err != nil {
 		return nil, err
 	}
 	scanner := &treeIterator{
-		//treeID:      treeID,
-		tree:        tree.treeSlice,
-		currentIter: partIterator,
-		currentPart: partNum,
-		trees:       trees,
+		tree:             tree.treeSlice,
+		currentIter:      partIterator,
+		currentPartIndex: partIndex,
+		trees:            trees,
 	}
 	return scanner, nil
+}
+
+func (trees *treeRepo) getSSTIteratorForKey(tree Tree, key graveler.Key) (graveler.ValueIterator, int, error) {
+	treeSlice := tree.treeSlice
+	partIndex := findPartIndexForPath(treeSlice, key)
+	if partIndex >= len(treeSlice) {
+		return nil, 0, ErrPathBiggerThanMaxPath
+	}
+	partName := treeSlice[partIndex].PartName
+	partIterator, err := trees.partManger.NewSSTableIterator(partName, key)
+	if err != nil {
+		return nil, 0, err
+	}
+	return partIterator, partIndex, nil
 }
 
 func (trees *treeRepo) GetTree(treeID graveler.TreeID) (Tree, error) {
@@ -150,11 +140,11 @@ func (trees *treeRepo) GetTree(treeID graveler.TreeID) (Tree, error) {
 
 func (t *treeIterator) SeekGE(start graveler.Key) {
 	var err error
-	partNum := findPartNumForPath(t.tree, start)
-	if partNum != t.currentPart {
-		t.currentPart = partNum
+	partIndex := findPartIndexForPath(t.tree, start)
+	if partIndex != t.currentPartIndex {
+		t.currentPartIndex = partIndex
 		t.currentIter.Close()
-		t.currentIter, err = t.trees.partManger.NewSSTableIterator(t.tree[partNum].PartName, start)
+		t.currentIter, err = t.trees.partManger.NewSSTableIterator(t.tree[partIndex].PartName, start)
 		if err != nil {
 			t.err = err
 			return
@@ -163,7 +153,7 @@ func (t *treeIterator) SeekGE(start graveler.Key) {
 	t.currentIter.SeekGE(start)
 }
 
-func findPartNumForPath(tree []part, path graveler.Key) int {
+func findPartIndexForPath(tree []part, path graveler.Key) int {
 	n := len(tree)
 	pos := sort.Search(n, func(i int) bool {
 		return bytes.Compare(tree[i].MaxKey, path) >= 0
@@ -187,12 +177,12 @@ func (t *treeIterator) Next() bool {
 		return false
 	}
 	// assert:  if Next returned false and err == nil - reached end of part
-	if t.currentPart >= len(t.tree)-1 {
+	if t.currentPartIndex >= len(t.tree)-1 {
 		t.closed = true
 		return false
 	}
-	t.currentPart++
-	requiredPartName := t.tree[t.currentPart].PartName
+	t.currentPartIndex++
+	requiredPartName := t.tree[t.currentPartIndex].PartName
 	t.currentIter, err = t.trees.partManger.NewSSTableIterator(requiredPartName, nil)
 	if err != nil {
 		t.currentIter.Close()
