@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/logging"
 )
 
 // Basic Types
@@ -116,12 +116,12 @@ func (ps CommitParents) Identity() []byte {
 
 // Commit represents commit metadata (author, time, tree ID)
 type Commit struct {
-	Committer    string           `db:"committer"`
-	Message      string           `db:"message"`
-	TreeID       TreeID           `db:"tree_id"`
-	CreationDate time.Time        `db:"creation_date"`
-	Parents      CommitParents    `db:"parents"`
-	Metadata     catalog.Metadata `db:"metadata"`
+	Committer    string        `db:"committer"`
+	Message      string        `db:"message"`
+	TreeID       TreeID        `db:"tree_id"`
+	CreationDate time.Time     `db:"creation_date"`
+	Parents      CommitParents `db:"parents"`
+	Metadata     Metadata      `db:"metadata"`
 }
 
 func (c Commit) Identity() []byte {
@@ -455,24 +455,6 @@ var (
 	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
-// Graveler errors
-var (
-	ErrNotFound                = errors.New("not found")
-	ErrNotUnique               = errors.New("not unique")
-	ErrInvalidValue            = errors.New("invalid value")
-	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
-	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace: %w", ErrInvalidValue)
-	ErrInvalidRepositoryID     = fmt.Errorf("repository id: %w", ErrInvalidValue)
-	ErrInvalidBranchID         = fmt.Errorf("branch id: %w", ErrInvalidValue)
-	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
-	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
-	ErrCommitNotFound          = fmt.Errorf("commit: %w", ErrNotFound)
-	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
-	ErrConflictFound           = errors.New("conflict found")
-	ErrBranchExists            = errors.New("branch already exists")
-	ErrTagAlreadyExists        = errors.New("tag already exists")
-)
-
 func NewRepositoryID(id string) (RepositoryID, error) {
 	if !reValidRepositoryID.MatchString(id) {
 		return "", ErrInvalidRepositoryID
@@ -542,6 +524,8 @@ type graveler struct {
 	CommittedManager CommittedManager
 	StagingManager   StagingManager
 	RefManager       RefManager
+	branchLocker     branchLocker
+	log              logging.Logger
 }
 
 func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) Graveler {
@@ -549,6 +533,8 @@ func NewGraveler(committedManager CommittedManager, stagingManager StagingManage
 		CommittedManager: committedManager,
 		StagingManager:   stagingManager,
 		RefManager:       refManager,
+		log:              logging.Default().WithField("service_name", "graveler_graveler"),
+		branchLocker:     NewBranchLocker(),
 	}
 }
 
@@ -617,6 +603,11 @@ func (g *graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 }
 
 func (g *graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	defer cancel()
 	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
@@ -685,6 +676,11 @@ func (g *graveler) ListBranches(ctx context.Context, repositoryID RepositoryID, 
 }
 
 func (g *graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -729,6 +725,11 @@ func (g *graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 }
 
 func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error {
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	defer cancel()
 	branch, err := g.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -737,6 +738,11 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	defer cancel()
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -804,10 +810,61 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref,
 }
 
 func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
-	panic("implement me")
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("acquire metadata update: %w", err)
+	}
+	defer cancel()
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository: %w", err)
+	}
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("get branch: %w", err)
+	}
+	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+	if err != nil {
+		return "", fmt.Errorf("get commit: %w", err)
+	}
+	changes, err := g.StagingManager.List(ctx, branch.stagingToken)
+	if err != nil {
+		return "", fmt.Errorf("staging list: %w", err)
+	}
+	treeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.TreeID, changes)
+	if err != nil {
+		return "", fmt.Errorf("apply: %w", err)
+	}
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+		Committer:    committer,
+		Message:      message,
+		TreeID:       treeID,
+		CreationDate: time.Now(),
+		Parents:      CommitParents{branch.CommitID},
+		Metadata:     metadata,
+	})
+	if err != nil {
+		return "", fmt.Errorf("add commit: %w", err)
+	}
+	err = g.StagingManager.Drop(ctx, branch.stagingToken)
+	if err != nil {
+		g.log.WithContext(ctx).WithFields(logging.Fields{
+			"repository_id": repositoryID,
+			"branch_id":     branchID,
+			"commit_id":     *commit,
+			"message":       message,
+			"staging_token": branch.stagingToken,
+		}).Error("Failed to drop staging data")
+	}
+	return newCommit, nil
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -816,6 +873,11 @@ func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchI
 }
 
 func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -824,6 +886,11 @@ func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, bran
 }
 
 func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
+	cancel, err := g.branchLocker.AquireWrite(repositoryID, branchID)
+	if err != nil {
+		return err
+	}
+	defer cancel()
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return err
@@ -836,6 +903,11 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error) {
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, to)
+	if err != nil {
+		return "", err
+	}
+	defer cancel()
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err

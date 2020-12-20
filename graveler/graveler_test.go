@@ -170,7 +170,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "one committed one staged no paths",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			delimiter:       graveler.Key("/"),
 			prefix:          graveler.Key(""),
@@ -181,7 +181,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "same path different file",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("original")}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			delimiter:       graveler.Key("/"),
 			prefix:          graveler.Key(""),
@@ -192,7 +192,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "one committed one staged no paths - with prefix",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			delimiter:       graveler.Key("/"),
 			prefix:          graveler.Key("prefix/"),
@@ -203,7 +203,7 @@ func TestGraveler_List(t *testing.T) {
 			name: "objects and paths in both committed and staging",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/pathA/foo"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathA/foo2"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathB/foo"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/file"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathA/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathB/bar"), Value: &graveler.Value{}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			delimiter: graveler.Key("/"),
 			prefix:    graveler.Key("prefix/"),
@@ -251,26 +251,26 @@ func TestGraveler_Get(t *testing.T) {
 		{
 			name: "commit - exists",
 			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, nil,
-				&mockRefs{refType: graveler.ReferenceTypeCommit},
+				&refsMock{refType: graveler.ReferenceTypeCommit},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("committed")},
 		},
 		{
 			name: "commit - not found",
 			r: graveler.NewGraveler(&committedMock{err: graveler.ErrNotFound}, nil,
-				&mockRefs{refType: graveler.ReferenceTypeCommit},
+				&refsMock{refType: graveler.ReferenceTypeCommit},
 			), expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "commit - error",
 			r: graveler.NewGraveler(&committedMock{err: ErrTest}, nil,
-				&mockRefs{refType: graveler.ReferenceTypeCommit},
+				&refsMock{refType: graveler.ReferenceTypeCommit},
 			), expectedErr: ErrTest,
 		},
 		{
 			name: "branch - only staged",
 			r: graveler.NewGraveler(&committedMock{err: graveler.ErrNotFound}, &stagingMock{Value: &graveler.Value{Identity: []byte("staged")}},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
 		},
@@ -278,7 +278,7 @@ func TestGraveler_Get(t *testing.T) {
 			name: "branch - committed and staged",
 			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, &stagingMock{Value: &graveler.Value{Identity: []byte("staged")}},
 
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
 		},
@@ -286,7 +286,7 @@ func TestGraveler_Get(t *testing.T) {
 			name: "branch - only committed",
 			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, &stagingMock{err: graveler.ErrNotFound},
 
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("committed")},
 		},
@@ -294,14 +294,14 @@ func TestGraveler_Get(t *testing.T) {
 			name: "branch - tombstone",
 			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, &stagingMock{Value: nil},
 
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "branch - staged return error",
 			r: graveler.NewGraveler(&committedMock{}, &stagingMock{err: ErrTest},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&refsMock{refType: graveler.ReferenceTypeBranch},
 			),
 			expectedErr: ErrTest,
 		},
@@ -335,7 +335,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "no changes",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}}), err: graveler.ErrNotFound},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{})},
-				&mockRefs{branch: &graveler.Branch{}},
+				&refsMock{branch: &graveler.Branch{}},
 			),
 			amount:       10,
 			expectedDiff: newDiffIter([]graveler.Diff{}),
@@ -344,7 +344,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "added one",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{}), err: graveler.ErrNotFound},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&mockRefs{branch: &graveler.Branch{}},
+				&refsMock{branch: &graveler.Branch{}},
 			),
 			amount: 10,
 			expectedDiff: newDiffIter([]graveler.Diff{{
@@ -357,7 +357,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "changed one",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&mockRefs{branch: &graveler.Branch{}},
+				&refsMock{branch: &graveler.Branch{}},
 			),
 			amount: 10,
 			expectedDiff: newDiffIter([]graveler.Diff{{
@@ -370,7 +370,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "removed one",
 			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
-				&mockRefs{branch: &graveler.Branch{}},
+				&refsMock{branch: &graveler.Branch{}},
 			),
 			amount: 10,
 			expectedDiff: newDiffIter([]graveler.Diff{{
@@ -409,7 +409,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(nil,
 		nil,
-		&mockRefs{
+		&refsMock{
 			err: graveler.ErrNotFound,
 		},
 	)
@@ -420,7 +420,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 	// test create branch when branch exists
 	gravel = graveler.NewGraveler(nil,
 		nil,
-		&mockRefs{
+		&refsMock{
 			branch: &graveler.Branch{},
 		},
 	)
@@ -433,7 +433,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 func TestGraveler_UpdateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(nil,
 		&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-		&mockRefs{branch: &graveler.Branch{}},
+		&refsMock{branch: &graveler.Branch{}},
 	)
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	if !errors.Is(err, graveler.ErrConflictFound) {
@@ -441,11 +441,167 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	}
 	gravel = graveler.NewGraveler(nil,
 		&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{})},
-		&mockRefs{branch: &graveler.Branch{}},
+		&refsMock{branch: &graveler.Branch{}},
 	)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	if err != nil {
 		t.Fatal("did not expect to get error")
+	}
+}
+
+func TestGraveler_Commit(t *testing.T) {
+	expectedCommitID := graveler.CommitID("expectedCommitId")
+	expectedTreeID := graveler.TreeID("expectedTreeID")
+	values := newMockValueIterator([]graveler.ValueRecord{{Key: nil, Value: nil}})
+	type fields struct {
+		CommittedManager *committedMock
+		StagingManager   *stagingMock
+		RefManager       *refsMock
+	}
+	type args struct {
+		ctx          context.Context
+		repositoryID graveler.RepositoryID
+		branchID     graveler.BranchID
+		committer    string
+		message      string
+		metadata     graveler.Metadata
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		want        graveler.CommitID
+		expectedErr error
+	}{
+		{
+			name: "valid commit",
+			fields: fields{
+				CommittedManager: &committedMock{treeID: expectedTreeID},
+				StagingManager:   &stagingMock{ValueIterator: values},
+				RefManager:       &refsMock{commitId: expectedCommitID, branch: &graveler.Branch{CommitID: expectedCommitID}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     graveler.Metadata{},
+			},
+			want:        expectedCommitID,
+			expectedErr: nil,
+		},
+		{
+			name: "fail on staging",
+			fields: fields{
+				CommittedManager: &committedMock{treeID: expectedTreeID},
+				StagingManager:   &stagingMock{ValueIterator: values, err: graveler.ErrNotFound},
+				RefManager:       &refsMock{commitId: expectedCommitID, branch: &graveler.Branch{CommitID: expectedCommitID}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrNotFound,
+		},
+		{
+			name: "fail on apply",
+			fields: fields{
+				CommittedManager: &committedMock{treeID: expectedTreeID, err: graveler.ErrConflictFound},
+				StagingManager:   &stagingMock{ValueIterator: values},
+				RefManager:       &refsMock{commitId: expectedCommitID, branch: &graveler.Branch{CommitID: expectedCommitID}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrConflictFound,
+		},
+		{
+			name: "fail on add commit",
+			fields: fields{
+				CommittedManager: &committedMock{treeID: expectedTreeID},
+				StagingManager:   &stagingMock{ValueIterator: values},
+				RefManager:       &refsMock{commitId: expectedCommitID, branch: &graveler.Branch{CommitID: expectedCommitID}, commitErr: graveler.ErrConflictFound},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrConflictFound,
+		},
+		{
+			name: "fail on drop",
+			fields: fields{
+				CommittedManager: &committedMock{treeID: expectedTreeID},
+				StagingManager:   &stagingMock{ValueIterator: values, dropErr: graveler.ErrNotFound},
+				RefManager:       &refsMock{commitId: expectedCommitID, branch: &graveler.Branch{CommitID: expectedCommitID}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     graveler.Metadata{},
+			},
+			want:        expectedCommitID,
+			expectedErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedCommitID := graveler.CommitID("expectedCommitId")
+			expectedTreeID := graveler.TreeID("expectedTreeID")
+			values := newMockValueIterator([]graveler.ValueRecord{{Key: nil, Value: nil}})
+			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
+
+			got, err := g.Commit(context.Background(), "", "", tt.args.committer, tt.args.message, tt.args.metadata)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
+			}
+			if err != nil {
+				return
+			}
+			if diff := deep.Equal(tt.fields.CommittedManager.appliedData, appliedData{
+				values: values,
+				treeID: expectedTreeID,
+			}); diff != nil {
+				t.Errorf("unexpected apply data %s", diff)
+			}
+
+			if diff := deep.Equal(tt.fields.RefManager.addedCommit, addedCommitData{
+				Committer: tt.args.committer,
+				Message:   tt.args.message,
+				TreeID:    expectedTreeID,
+				Parents:   graveler.CommitParents{expectedCommitID},
+				Metadata:  graveler.Metadata{},
+			}); diff != nil {
+				t.Errorf("unexpected added commit %s", diff)
+			}
+			if !tt.fields.StagingManager.dropCalled && tt.fields.StagingManager.dropErr == nil {
+				t.Errorf("expected drop to be called")
+			}
+
+			if got != expectedCommitID {
+				t.Errorf("got wrong commitID, got = %v, want %v", got, expectedCommitID)
+			}
+		})
 	}
 }
 
@@ -478,7 +634,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					err: graveler.ErrNotFound,
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -500,7 +656,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					Value: &graveler.Value{},
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -522,7 +678,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					Value: nil,
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -538,7 +694,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					Value: &graveler.Value{},
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
@@ -557,7 +713,7 @@ func TestGraveler_Delete(t *testing.T) {
 				StagingManager: &stagingMock{
 					err: graveler.ErrNotFound,
 				},
-				RefManager: &mockRefs{
+				RefManager: &refsMock{
 					branch: &graveler.Branch{},
 				},
 			},
