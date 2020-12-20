@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -22,13 +23,14 @@ import (
 )
 
 const (
-	DryRunFlagName      = "dry-run"
-	WithMergeFlagName   = "with-merge"
-	HideProgress        = "hide-progress"
-	ManifestURLFlagName = "manifest"
-	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
-	ImportCmdNumArgs    = 1
-	CommitterName       = "lakefs"
+	DryRunFlagName       = "dry-run"
+	WithMergeFlagName    = "with-merge"
+	HideProgressFlagName = "hide-progress"
+	ManifestURLFlagName  = "manifest"
+	PrefixesFileFlagName = "prefix-file"
+	ManifestURLFormat    = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
+	ImportCmdNumArgs     = 1
+	CommitterName        = "lakefs"
 )
 
 var importCmd = &cobra.Command{
@@ -44,7 +46,9 @@ var importCmd = &cobra.Command{
 		dryRun, _ := flags.GetBool(DryRunFlagName)
 		manifestURL, _ := flags.GetString(ManifestURLFlagName)
 		withMerge, _ := flags.GetBool(WithMergeFlagName)
-		hideProgress, _ := flags.GetBool(HideProgress)
+		hideProgress, _ := flags.GetBool(HideProgressFlagName)
+		prefixFile, _ := flags.GetString(PrefixesFileFlagName)
+
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
@@ -92,12 +96,36 @@ var importCmd = &cobra.Command{
 		if dryRun {
 			fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
 		}
+		var prefixes []string
+		if prefixFile != "" {
+			file, err := os.Open(prefixFile)
+			if err != nil {
+				fmt.Printf("Failed to read prefix filter: %s\n", err)
+				os.Exit(1)
+			}
+			defer func() {
+				_ = file.Close()
+			}()
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				prefix := scanner.Text()
+				if prefix != "" {
+					prefixes = append(prefixes, prefix)
+				}
+			}
+			if err := scanner.Err(); err != nil {
+				fmt.Printf("Failed to read prefix filter: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
+		}
 		importConfig := &onboard.Config{
 			CommitUsername:     CommitterName,
 			InventoryURL:       manifestURL,
 			Repository:         repoName,
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
+			KeyPrefixes:        prefixes,
 		}
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
 		if err != nil {
@@ -183,5 +211,6 @@ func init() {
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
 	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
-	importCmd.Flags().Bool(HideProgress, false, "Suppress progress bar")
+	importCmd.Flags().Bool(HideProgressFlagName, false, "Suppress progress bar")
+	importCmd.Flags().StringP(PrefixesFileFlagName, "p", "", "File with a list of key prefixes. Imported object keys will be filtered according to these prefixes")
 }

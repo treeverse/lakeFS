@@ -1,6 +1,7 @@
 package onboard
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -116,13 +117,24 @@ func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool 
 	return row1.Key < row2.Key
 }
 
-func CreateCommitMetadata(inv block.Inventory, stats Stats) catalog.Metadata {
-	return catalog.Metadata{
+func CreateCommitMetadata(inv block.Inventory, stats Stats, prefixes []string) catalog.Metadata {
+	metadata := catalog.Metadata{
 		"inventory_url":            inv.InventoryURL(),
 		"source":                   inv.SourceName(),
 		"added_or_changed_objects": strconv.Itoa(stats.AddedOrChanged),
 		"deleted_objects":          strconv.Itoa(stats.Deleted),
 	}
+	if len(prefixes) > 0 {
+		prefixesSerialized, _ := json.Marshal(prefixes)
+		metadata["key_prefixes"] = string(prefixesSerialized)
+	}
+	return metadata
+}
+
+func ExtractPrefixes(metadata catalog.Metadata) []string {
+	var prefixes []string
+	_ = json.Unmarshal([]byte(metadata["key_prefixes"]), &prefixes)
+	return prefixes
 }
 
 func ExtractInventoryURL(metadata catalog.Metadata) string {
