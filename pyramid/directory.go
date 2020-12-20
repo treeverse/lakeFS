@@ -30,7 +30,12 @@ func (d *directory) deleteDirRecIfEmpty(dir string) error {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
-		if err != nil || !empty {
+		if err != nil {
+		   return err
+		 }
+		 if !empty {
+		   return nil
+		 }
 			return err
 		}
 
