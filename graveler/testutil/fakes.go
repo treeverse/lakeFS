@@ -68,7 +68,7 @@ func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, tr
 
 type StagingFake struct {
 	Err                error
-	DropErr            error //specific error for drop call
+	DropErr            error // specific error for drop call
 	Value              *graveler.Value
 	ValueIterator      graveler.ValueIterator
 	stagingToken       graveler.StagingToken
