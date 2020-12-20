@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"path/filepath"
 	"sort"
 
 	"github.com/treeverse/lakefs/graveler"
@@ -13,6 +14,7 @@ import (
 type treeRepo struct {
 	treesMap   Cache
 	partManger sstable.Manager
+	pathBase   string
 }
 
 type Cache interface {
@@ -21,7 +23,7 @@ type Cache interface {
 }
 
 type treeIterator struct {
-	tree        []treePart
+	tree        []part
 	currentIter graveler.ValueIterator
 	currentPart int
 	err         error
@@ -45,6 +47,7 @@ func InitTreesRepository(cache Cache, manager sstable.Manager) *treeRepo {
 		//treesMap:   cache.NewCacheMap(CacheMapSize, CacheTrimSize, InitialWeight, AdditionalWeight, TrimFactor),
 		treesMap:   cache,
 		partManger: manager,
+		pathBase:   "testdata/",
 	}
 }
 
@@ -120,15 +123,25 @@ func (trees *treeRepo) GetTree(treeID graveler.TreeID) (Tree, error) {
 		tree := t.(Tree)
 		return tree, nil
 	}
-	fName := string(treeID) + ".json"
+	fName := filepath.Join(trees.pathBase, string(treeID)+".json")
 	jsonBytes, err := ioutil.ReadFile(fName)
 	if err != nil {
 		return Tree{}, err
 	}
-	treeSlice := make([]treePart, 0)
-	err = json.Unmarshal(jsonBytes, &treeSlice)
+	treeSlice := make([]part, 0)
+	jsonTreeSlice := make([]jsonTreePart, 0)
+
+	err = json.Unmarshal(jsonBytes, &jsonTreeSlice)
 	if err != nil {
 		return Tree{}, err
+	}
+	for _, p := range jsonTreeSlice {
+		treeSlice = append(treeSlice, part{
+			PartName:        sstable.ID(p.PartName),
+			MaxKey:          graveler.Key(p.MaxKey),
+			MinKey:          graveler.Key(p.MinKey),
+			NumberOfRecords: p.NumberOfRecords,
+		})
 	}
 	tree := Tree{treeSlice: treeSlice}
 	trees.treesMap.Set(string(treeID), tree)
@@ -150,7 +163,7 @@ func (t *treeIterator) SeekGE(start graveler.Key) {
 	t.currentIter.SeekGE(start)
 }
 
-func findPartNumForPath(tree []treePart, path graveler.Key) int {
+func findPartNumForPath(tree []part, path graveler.Key) int {
 	n := len(tree)
 	pos := sort.Search(n, func(i int) bool {
 		return bytes.Compare(tree[i].MaxKey, path) >= 0

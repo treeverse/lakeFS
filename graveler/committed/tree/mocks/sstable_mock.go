@@ -53,26 +53,38 @@ func (s *SstMgr) GetValue(key gr.Key, tid sstable.ID) (*gr.Value, error) {
 	_ = tid
 	panic("GetValue not implemented")
 }
+
+var readerCache map[sstable.ID]*table.Reader
+
 func (s *SstMgr) NewSSTableIterator(tid sstable.ID, from gr.Key) (gr.ValueIterator, error) {
+	var err error
+	var file *os.File
 	if firstSSTActivation {
 		var cacheSize int64 = 1 << 31 // 2 GB cache size
 		Cache = pebble.NewCache(cacheSize)
+		readerCache = make(map[sstable.ID]*table.Reader, 100)
 		firstSSTActivation = false
 	}
-	f, err := os.Open(string(tid) + ".sst")
+	reader, found := readerCache[tid]
+	if !found {
+		file, err = os.Open("testdata/" + string(tid) + ".sst")
+		if err != nil {
+			return nil, err
+		}
+		reader, err = table.NewReader(file, table.ReaderOptions{Cache: Cache})
+		if err != nil {
+			return nil, err
+		}
+		readerCache[tid] = reader
+		fmt.Printf("reader cache size %d\n", len(readerCache))
+	}
+
+	i, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	r, err := table.NewReader(f, table.ReaderOptions{Cache: Cache})
-	if err != nil {
-		return nil, err
-	}
-	i, err := r.NewIter(nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	d := DummyIter{f: f,
-		r:        r,
+	d := DummyIter{f: file,
+		r:        reader,
 		iterator: i}
 	var key *pebble.InternalKey
 	var val []byte
@@ -161,21 +173,22 @@ func (d *DummyIter) Close() {
 type DummyWriter struct {
 	writer   *table.Writer
 	lastKey  gr.Key
-	filename string
+	partName string
 	f        *os.File
 	RowNum   int
 }
 
 func (s *SstMgr) GetWriter() (sstable.Writer, error) {
 	s.Sstid++
-	name := fmt.Sprintf("c-%05d", s.Sstid)
-	f, err := os.Create(name + ".sst")
+	partName := fmt.Sprintf("c-%05d", s.Sstid)
+	name := "testdata/" + partName + ".sst"
+	f, err := os.Create(name)
 	if err != nil {
 		panic(err)
 	}
 	w := table.NewWriter(f, table.WriterOptions{})
 	return &DummyWriter{writer: w,
-		filename: name,
+		partName: partName,
 		f:        f,
 	}, nil
 }
@@ -210,11 +223,11 @@ func NewBatchCloser() *DummyBatchCloser {
 func (d *DummyBatchCloser) CloseWriterAsync(w sstable.Writer) error {
 	z := w.(*DummyWriter)
 	// todo: remove extension
-	d.parts = append(d.parts, sstable.WriteResult{SSTableID: sstable.ID(z.filename),
+	d.parts = append(d.parts, sstable.WriteResult{SSTableID: sstable.ID(z.partName),
 		Last: z.lastKey,
 	})
-	fmt.Printf("file %s  number of lines: %d\n", z.filename, z.RowNum)
-	return z.writer.Close()
+	fmt.Printf("file %s  number of lines: %d\n", z.partName, z.RowNum)
+	return z.writer.Close() // do not close to enable caching
 }
 
 func (d *DummyBatchCloser) Wait() ([]sstable.WriteResult, error) {

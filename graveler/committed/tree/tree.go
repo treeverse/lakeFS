@@ -6,15 +6,15 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
 )
 
-type treePart struct {
-	PartName        sstable.ID   `json:"part_name"`
-	MaxKey          graveler.Key `json:"max_key"`
-	MinKey          graveler.Key `json:"min_key"`
-	NumberOfRecords int          `json:"number_of_records"`
+type part struct {
+	PartName        sstable.ID
+	MaxKey          graveler.Key
+	MinKey          graveler.Key
+	NumberOfRecords int
 }
 
 type Tree struct {
-	treeSlice []treePart
+	treeSlice []part
 }
 
 type TreeRepo interface {
@@ -22,7 +22,7 @@ type TreeRepo interface {
 	// use a tree internally
 	GetTree(treeID graveler.TreeID) (Tree, error)
 	GetValue(treeID graveler.TreeID, key graveler.Key) (*graveler.ValueRecord, error)
-	GetPartWriter() (sstable.Writer, error)
+	getPartWriter() (sstable.Writer, error)
 	// NewTreeWriter returns a writer that uses the part manager to create a new tree
 	// splitFactor: average number of keys that we want to stored in a part
 	// for more detail, look at "IsSplitKey"
@@ -59,12 +59,8 @@ type TreeWriter interface {
 	// SaveTree stores the tree to tierFS. During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts
 	SaveTree() (graveler.TreeID, error)
-	// SaveTreeWithReusedParts(reuseTree Tree, // A tree may be saved with additional parts that are "reused" from a base tree.
-	// these are parts that exist in a source tree, and are merged into the destination tree.
-	// an example of using it is in the apply process, which creates a new tree from a base tree and an input iterator.
-	// those parts of the base tree that were not modified by it input iterator will be merged into the resulting tree
-	// by passing them in the  reuseTree parameter.
-	// ) (graveler.TreeID, error)
+	// ClosePart closes the current part being written in the tree
+	ClosePart()
 }
 
 // interface that "inherits" from simple TreeWriter. copies the parts that were not changed from base
