@@ -15,8 +15,10 @@ import (
 	"github.com/treeverse/lakefs/block/mem"
 )
 
-const blockStoragePrefix = "prefix"
-const allocatedDiskBytes = 4 * 1024 * 1024
+const (
+	blockStoragePrefix = "prefix"
+	allocatedDiskBytes = 4 * 1024 * 1024
+)
 
 func TestSimpleWriteRead(t *testing.T) {
 	namespace := uuid.New().String()
@@ -171,6 +173,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 }
 
 func writeToFile(t *testing.T, namespace, filename, content string) {
+	t.Helper()
 	f, err := fs.Create(namespace)
 	require.NoError(t, err)
 
@@ -183,6 +186,7 @@ func writeToFile(t *testing.T, namespace, filename, content string) {
 }
 
 func checkContent(t *testing.T, namespace string, filename string, content string) {
+	t.Helper()
 	f, err := fs.Open(namespace, filename)
 	require.NoError(t, err)
 	defer f.Close()

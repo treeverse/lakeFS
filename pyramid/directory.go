@@ -31,12 +31,10 @@ func (d *directory) deleteDirRecIfEmpty(dir string) error {
 			return nil
 		}
 		if err != nil {
-		   return err
-		 }
-		 if !empty {
-		   return nil
-		 }
 			return err
+		}
+		if !empty {
+			return nil
 		}
 
 		if err := os.Remove(dir); err != nil {
