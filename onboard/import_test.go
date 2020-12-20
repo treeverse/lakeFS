@@ -97,8 +97,8 @@ func TestImport(t *testing.T) {
 		"prefix incompatible with previous": {
 			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
 			PreviousInventory: []string{"a1", "a2", "b1", "b2"},
-			Prefixes:          []string{"a", "c"},
-			PreviousPrefixes:  []string{"a"},
+			Prefixes:          []string{"a"},
+			PreviousPrefixes:  []string{"a", "c"},
 			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
 		},
 		"import with prefix - with previous import": {
@@ -112,6 +112,27 @@ func TestImport(t *testing.T) {
 			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
 			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2", "b3"},
 			PreviousPrefixes:  []string{"a"},
+			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
+		},
+		"new prefixes superset of previous": {
+			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
+			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2"},
+			Prefixes:          []string{"a"},
+			PreviousPrefixes:  []string{"a1", "a2"},
+		},
+		"new prefixes superset of previous - type 2": {
+			NewInventory:      []string{"aa1", "ab1", "ab2", "b1", "b2"},
+			PreviousInventory: []string{"aa1", "aa2", "ab1", "b1", "b2"},
+			Prefixes:          []string{"a"},
+			PreviousPrefixes:  []string{"aa", "ac"},
+			ExpectedAdded:     []string{"ab1", "ab2"},
+			ExpectedDeleted:   []string{"aa2"},
+		},
+		"prefix incompatible with previous - type 2": {
+			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
+			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2"},
+			Prefixes:          []string{"a"},
+			PreviousPrefixes:  []string{"a1", "a2", "b"},
 			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
 		},
 	}

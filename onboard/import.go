@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
-	"sort"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/block"
@@ -70,7 +69,7 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 	shouldSort := res.previousCommit != nil
 	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, shouldSort, config.KeyPrefixes)
 	res.prefixes = config.KeyPrefixes
-	if !res.validateSamePrefixes() {
+	if !res.validatePrefixes() {
 		return nil, ErrIncompatiblePrefixes
 	}
 	if err != nil {
@@ -87,7 +86,8 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	if previousInventoryURL == s.inventory.InventoryURL() {
 		return nil, fmt.Errorf("%w. commit_ref=%s", ErrInventoryAlreadyImported, commit.Reference)
 	}
-	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true, s.prefixes)
+	previousPrefixes := ExtractPrefixes(commit.Metadata)
+	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true, previousPrefixes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
 	}
@@ -130,14 +130,25 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	return stats, nil
 }
 
-func (s *Importer) validateSamePrefixes() bool {
+// validatePrefixes validates that the new set of prefixes covers all strings covered by the previous set.
+func (s *Importer) validatePrefixes() bool {
 	if s.previousCommit == nil {
 		return true
 	}
 	previousPrefixes := ExtractPrefixes(s.previousCommit.Metadata)
-	sort.Strings(previousPrefixes)
-	sort.Strings(s.prefixes)
-	return reflect.DeepEqual(previousPrefixes, s.prefixes)
+	for _, p1 := range previousPrefixes {
+		ok := false
+		for _, p2 := range s.prefixes {
+			if strings.HasPrefix(p1, p2) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Importer) Progress() []*cmdutils.Progress {

@@ -30,7 +30,9 @@ type Manifest struct {
 }
 
 type inventoryFile struct {
-	Key string `json:"key"` // an s3 key for an inventory list file
+	Key      string `json:"key"` // an s3 key for an inventory list file
+	firstKey string
+	lastKey  string
 }
 
 func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
@@ -46,10 +48,15 @@ func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3A
 		return nil, err
 	}
 	if shouldSort || len(prefixes) > 0 {
-		err = sortAndFilterManifest(m, logger, inventoryReader, prefixes)
+		err = sortManifest(m, logger, inventoryReader)
 	}
 	if err != nil {
 		return nil, err
+	}
+	if len(prefixes) > 0 {
+		manifestFileCount := len(m.Files)
+		m.Files = filterFiles(m.Files, prefixes)
+		logger.Debugf("manifest filtered from %d to %d files", manifestFileCount, len(m.Files))
 	}
 	return &Inventory{Manifest: m, logger: logger, shouldSort: shouldSort, reader: inventoryReader, prefixes: prefixes}, nil
 }
@@ -100,54 +107,18 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	return &m, nil
 }
 
-func sortAndFilterManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader, prefixes []string) error {
-	firstKeyByInventoryFile := make(map[string]string)
-	lastKeyByInventoryFile := make(map[string]string)
-	for _, f := range m.Files {
-		mr, err := reader.GetMetadataReader(m.Format, m.inventoryBucket, f.Key)
-		if err != nil {
-			return fmt.Errorf("failed to sort inventory files in manifest: %w", err)
-		}
-		firstKeyByInventoryFile[f.Key] = mr.FirstObjectKey()
-		lastKeyByInventoryFile[f.Key] = mr.LastObjectKey()
-		err = mr.Close()
-		if err != nil {
-			logger.Errorf("failed to close inventory file. file=%s, err=%w", f, err)
-		}
-	}
-	sort.Slice(m.Files, func(i, j int) bool {
-		return firstKeyByInventoryFile[m.Files[i].Key] < firstKeyByInventoryFile[m.Files[j].Key] ||
-			(firstKeyByInventoryFile[m.Files[i].Key] == firstKeyByInventoryFile[m.Files[j].Key] &&
-				lastKeyByInventoryFile[m.Files[i].Key] < lastKeyByInventoryFile[m.Files[j].Key])
-	})
-	// validate sorting: if a file begins before the next one ends - the files cover overlapping ranges,
-	// which we don't know how to handle.
-	for i := 0; i < len(m.Files)-1; i++ {
-		if firstKeyByInventoryFile[m.Files[i+1].Key] < lastKeyByInventoryFile[m.Files[i].Key] {
-			return ErrInventoryFilesRangesOverlap
-		}
-	}
-	filteredFiles := make([]inventoryFile, 0, len(m.Files))
-	if len(prefixes) == 0 {
-		return nil
-	}
-	// filter manifest files according to prefixes:
+func filterFiles(files []inventoryFile, prefixes []string) []inventoryFile {
 	sort.Strings(prefixes)
 	currentPrefixIdx := 0
-	defer func() {
-		m.Files = filteredFiles
-	}()
-	for i := 0; i < len(m.Files); i++ {
-		key := m.Files[i].Key
-		firstKey := firstKeyByInventoryFile[key]
-		lastKey := lastKeyByInventoryFile[key]
+	filteredFiles := make([]inventoryFile, 0)
+	for i := 0; i < len(files); i++ {
 		for {
 			// find a prefix that may have suitable keys in the current file
-			if prefixes[currentPrefixIdx] >= firstKey {
+			if prefixes[currentPrefixIdx] >= files[i].firstKey {
 				// prefix may be in scope of current file
 				break
 			}
-			if strings.HasPrefix(firstKey, prefixes[currentPrefixIdx]) {
+			if strings.HasPrefix(files[i].firstKey, prefixes[currentPrefixIdx]) {
 				// first object in file starts with prefix
 				break
 			}
@@ -155,15 +126,41 @@ func sortAndFilterManifest(m *Manifest, logger logging.Logger, reader s3inventor
 			currentPrefixIdx++
 			if currentPrefixIdx == len(prefixes) {
 				// no more prefixes - other files are irrelevant
-				return nil
+				return filteredFiles
 			}
 		}
-		if strings.HasPrefix(firstKey, prefixes[currentPrefixIdx]) ||
-			(prefixes[currentPrefixIdx] >= firstKey && prefixes[currentPrefixIdx] < lastKey) {
+		if strings.HasPrefix(files[i].firstKey, prefixes[currentPrefixIdx]) ||
+			(prefixes[currentPrefixIdx] >= files[i].firstKey && prefixes[currentPrefixIdx] < files[i].lastKey) {
 			// file may contain keys starting with this prefix
-			filteredFiles = append(filteredFiles, m.Files[i])
+			filteredFiles = append(filteredFiles, files[i])
 		}
 	}
-	logger.Debugf("manifest filtered from %d to %d files", len(m.Files), len(filteredFiles))
+	return filteredFiles
+}
+
+func sortManifest(m *Manifest, logger logging.Logger, reader s3inventory.IReader) error {
+	for i, f := range m.Files {
+		mr, err := reader.GetMetadataReader(m.Format, m.inventoryBucket, f.Key)
+		if err != nil {
+			return fmt.Errorf("failed to sort inventory files in manifest: %w", err)
+		}
+		m.Files[i].firstKey = mr.FirstObjectKey()
+		m.Files[i].lastKey = mr.LastObjectKey()
+		err = mr.Close()
+		if err != nil {
+			logger.Errorf("failed to close inventory file. file=%s, err=%w", f, err)
+		}
+	}
+	sort.Slice(m.Files, func(i, j int) bool {
+		return m.Files[i].firstKey < m.Files[j].firstKey ||
+			(m.Files[i].firstKey == m.Files[j].firstKey && m.Files[i].lastKey < m.Files[j].lastKey)
+	})
+	// validate sorting: if a file begins before the next one ends - the files cover overlapping ranges,
+	// which we don't know how to handle.
+	for i := 0; i < len(m.Files)-1; i++ {
+		if m.Files[i+1].firstKey < m.Files[i].lastKey {
+			return ErrInventoryFilesRangesOverlap
+		}
+	}
 	return nil
 }
