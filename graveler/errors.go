@@ -21,4 +21,5 @@ var (
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
 	ErrBranchLocked            = errors.New("branch locked for updates")
+	ErrTagAlreadyExists        = errors.New("tag already exists")
 )

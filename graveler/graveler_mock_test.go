@@ -199,19 +199,19 @@ func (m *refsMock) ListBranches(_ context.Context, _ graveler.RepositoryID, _ gr
 	return m.listBranchesRes, nil
 }
 
-func (m *mockRefs) GetTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) (*graveler.CommitID, error) {
+func (m *refsMock) GetTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) (*graveler.CommitID, error) {
 	return m.tagCommitID, m.err
 }
 
-func (m *mockRefs) CreateTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID, _ graveler.CommitID) error {
+func (m *refsMock) CreateTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID, _ graveler.CommitID) error {
 	return nil
 }
 
-func (m *mockRefs) DeleteTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) error {
+func (m *refsMock) DeleteTag(_ context.Context, _ graveler.RepositoryID, _ graveler.TagID) error {
 	return nil
 }
 
-func (m *mockRefs) ListTags(_ context.Context, _ graveler.RepositoryID) (graveler.TagIterator, error) {
+func (m *refsMock) ListTags(_ context.Context, _ graveler.RepositoryID) (graveler.TagIterator, error) {
 	return m.listTagsRes, nil
 }
 

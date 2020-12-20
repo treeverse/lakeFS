@@ -17,7 +17,7 @@ type branchLocker struct {
 }
 
 type branchLockerData struct {
-	writers        int32
+	writers        int
 	metadataUpdate bool
 }
 
