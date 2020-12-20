@@ -276,9 +276,7 @@ func (r *ListingIter) Err() error {
 	return r.err
 }
 
-func (r *ListingIter) Close() {
-	return
-}
+func (r *ListingIter) Close() {}
 
 type diffIter struct {
 	current int
@@ -314,9 +312,7 @@ func (r *diffIter) Err() error {
 	return r.err
 }
 
-func (r *diffIter) Close() {
-	return
-}
+func (r *diffIter) Close() {}
 
 type valueIteratorFake struct {
 	current int
@@ -354,28 +350,25 @@ func (r *valueIteratorFake) Err() error {
 	return r.err
 }
 
-func (r *valueIteratorFake) Close() {
-	return
-}
+func (r *valueIteratorFake) Close() {}
 
 type referenceFake struct {
 	refType  graveler.ReferenceType
 	branch   graveler.Branch
-	commitId graveler.CommitID
+	commitID graveler.CommitID
 }
 
 // NewFakeReference returns a referenceFake
 // if branch parameter is empty branch record will be nil
-func NewFakeReference(refType graveler.ReferenceType, branchID graveler.BranchID, commitId graveler.CommitID) *referenceFake {
+func NewFakeReference(refType graveler.ReferenceType, branchID graveler.BranchID, commitID graveler.CommitID) *referenceFake {
 	var branch graveler.Branch
 	if branchID != "" {
-		branch = graveler.Branch{CommitID: commitId}
-
+		branch = graveler.Branch{CommitID: commitID}
 	}
 	return &referenceFake{
 		refType:  refType,
 		branch:   branch,
-		commitId: commitId,
+		commitID: commitID,
 	}
 }
 
@@ -388,7 +381,7 @@ func (m *referenceFake) Branch() graveler.Branch {
 }
 
 func (m *referenceFake) CommitID() graveler.CommitID {
-	return m.commitId
+	return m.commitID
 }
 
 func CompareListingIterators(t *testing.T, got, expected graveler.ListingIterator) {
