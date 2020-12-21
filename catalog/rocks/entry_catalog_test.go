@@ -11,7 +11,7 @@ import (
 )
 
 func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
-	gravelerMock := &GravelerMock{Err: graveler.ErrNotFound}
+	gravelerMock := &FakeGraveler{Err: graveler.ErrNotFound}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo", "ref", "path1")
@@ -25,7 +25,7 @@ func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 
 func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 	entry := &Entry{Address: "addr1"}
-	gravelerMock := &GravelerMock{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
+	gravelerMock := &FakeGraveler{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo1", "master", "file1")
@@ -36,7 +36,7 @@ func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 }
 
 func TestEntryCatalog_SetEntry(t *testing.T) {
-	gravelerMock := &GravelerMock{KeyValue: make(map[string]*graveler.Value)}
+	gravelerMock := &FakeGraveler{KeyValue: make(map[string]*graveler.Value)}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	entry := &Entry{Address: "addr1"}
@@ -52,17 +52,17 @@ func TestEntryCatalog_SetEntry(t *testing.T) {
 
 func TestEntryCatalog_ListEntries(t *testing.T) {
 	entriesData := []*Entry{{Address: "addr1", Size: 1}, nil, nil}
-	listingData := []*graveler.Listing{
+	listingData := []*graveler.ValueRecord{
 		{Key: graveler.Key("file1"), Value: MustEntryToValue(entriesData[0])},
 		{Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
 		{Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
-	gravelerMock := &GravelerMock{
-		ListIterator: NewMockListingIterator(listingData),
+	gravelerMock := &FakeGraveler{
+		ListIterator: NewFakeValueIterator(listingData),
 	}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
-	entries, err := cat.ListEntries(ctx, "repo", "ref", "", "", "")
+	entries, err := cat.ListEntries(ctx, "repo", "ref", "", "")
 	testutil.MustDo(t, "list entries", err)
 	defer entries.Close()
 
@@ -80,6 +80,8 @@ func TestEntryCatalog_ListEntries(t *testing.T) {
 	if i != len(listingData) {
 		t.Fatalf("ListEntries() got %d entries, expected %d", i, len(listingData))
 	}
+
+	// TODO(barak): test listing with prefix and testing with '/' delimiter
 }
 
 func TestEntryCatalog_Diff(t *testing.T) {
@@ -89,8 +91,8 @@ func TestEntryCatalog_Diff(t *testing.T) {
 		{Type: graveler.DiffTypeRemoved, Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
 		{Type: graveler.DiffTypeChanged, Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
-	gravelerMock := &GravelerMock{
-		DiffIterator: NewMockDiffIterator(diffData),
+	gravelerMock := &FakeGraveler{
+		DiffIterator: NewFakeDiffIterator(diffData),
 	}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()

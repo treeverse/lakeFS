@@ -7,6 +7,9 @@ import (
 )
 
 func ValueToEntry(value *graveler.Value) (*Entry, error) {
+	if value == nil {
+		return nil, nil
+	}
 	var ent Entry
 	err := proto.Unmarshal(value.Data, &ent)
 	if err != nil {

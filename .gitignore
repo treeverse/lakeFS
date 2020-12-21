@@ -23,6 +23,7 @@
 /Godeps/
 
 ### IDEs and stuff ###
+*.iml
 .idea/
 .vscode/
 
