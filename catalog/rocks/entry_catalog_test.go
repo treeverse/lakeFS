@@ -50,7 +50,7 @@ func TestEntryCatalog_SetEntry(t *testing.T) {
 	}
 }
 
-func TestEntryCatalog_ListEntries(t *testing.T) {
+func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 	entriesData := []*Entry{{Address: "addr1", Size: 1}, nil, nil}
 	listingData := []*graveler.ValueRecord{
 		{Key: graveler.Key("file1"), Value: MustEntryToValue(entriesData[0])},
@@ -80,8 +80,63 @@ func TestEntryCatalog_ListEntries(t *testing.T) {
 	if i != len(listingData) {
 		t.Fatalf("ListEntries() got %d entries, expected %d", i, len(listingData))
 	}
+}
 
-	// TODO(barak): test listing with prefix and testing with '/' delimiter
+func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
+	// prepare data
+	var entriesData []*Entry
+	var gravelerData []*graveler.ValueRecord
+	for _, name := range []string{"file1", "folder/file1", "folder/file2", "zzz"} {
+		entry := &Entry{Address: name}
+		entriesData = append(entriesData, entry)
+		record := &graveler.ValueRecord{Value: MustEntryToValue(entry), Key: graveler.Key(name)}
+		gravelerData = append(gravelerData, record)
+	}
+	gravelerMock := &FakeGraveler{
+		ListIterator: NewFakeValueIterator(gravelerData),
+	}
+	cat := entryCatalog{store: gravelerMock}
+	ctx := context.Background()
+
+	t.Run("root", func(t *testing.T) {
+		entries, err := cat.ListEntries(ctx, "repo", "ref", "", "/")
+		testutil.MustDo(t, "list entries", err)
+		defer entries.Close()
+		// listing entries
+		expected := []*EntryListing{
+			{Path: "file1", Entry: &Entry{Address: "file1"}},
+			{CommonPrefix: true, Path: "folder/"},
+			{CommonPrefix: false, Path: "zzz", Entry: &Entry{Address: "zzz"}},
+		}
+
+		// collect and compare
+		var listing []*EntryListing
+		for entries.Next() {
+			listing = append(listing, entries.Value())
+		}
+		if diff := deep.Equal(listing, expected); diff != nil {
+			t.Fatal("List entries diff found:", diff)
+		}
+	})
+	t.Run("folder", func(t *testing.T) {
+		entries, err := cat.ListEntries(ctx, "repo", "ref", "folder/", "/")
+		testutil.MustDo(t, "list entries", err)
+		defer entries.Close()
+		// listing entries
+		expected := []*EntryListing{
+			{Path: "folder/file1", Entry: &Entry{Address: "folder/file1"}},
+			{Path: "folder/file2", Entry: &Entry{Address: "folder/file2"}},
+		}
+
+		// collect and compare
+		var listing []*EntryListing
+		for entries.Next() {
+			listing = append(listing, entries.Value())
+		}
+		if diff := deep.Equal(listing, expected); diff != nil {
+			t.Fatal("List entries diff found:", diff)
+		}
+	})
 }
 
 func TestEntryCatalog_Diff(t *testing.T) {

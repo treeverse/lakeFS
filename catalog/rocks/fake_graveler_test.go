@@ -1,6 +1,7 @@
 package rocks
 
 import (
+	"bytes"
 	"context"
 	"strings"
 
@@ -170,10 +171,11 @@ func (m *FakeValueIterator) Next() bool {
 }
 
 func (m *FakeValueIterator) SeekGE(id graveler.Key) {
-	if id.String() == "" {
-		m.Index = -1
-	} else {
-		panic("mock doesn't support SeekGE with value")
+	for i, d := range m.Data {
+		if bytes.Compare(d.Key, id) >= 0 {
+			m.Index = i - 1
+			return
+		}
 	}
 }
 
