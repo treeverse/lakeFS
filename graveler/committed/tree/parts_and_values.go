@@ -19,6 +19,7 @@ func (pvi *partsAndValuesIterator) NextPart() bool {
 		return false
 	}
 	pvi.parts = pvi.parts[1:]
+	pvi.it.Close()
 	pvi.it = nil
 	return true
 }
@@ -29,8 +30,7 @@ func (pvi *partsAndValuesIterator) Next() bool {
 		return len(pvi.parts) > 0
 	}
 	if pvi.it != nil {
-		ok := pvi.it.Next()
-		if ok {
+		if pvi.it.Next() {
 			return true
 		}
 		// At end of part
@@ -46,8 +46,7 @@ func (pvi *partsAndValuesIterator) Next() bool {
 		pvi.err = err
 		return false
 	}
-	ok := pvi.it.Next()
-	if ok {
+	if pvi.it.Next() {
 		return true
 	}
 	// Already at end of empty part

@@ -6,14 +6,12 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/logging"
 )
-
-func isTombstone(v *graveler.ValueRecord) bool {
-	return v.Value == nil
-}
 
 // Just a sketch of Apply; it will probably be much harder to write...
 func Apply(ctx context.Context, writer Writer, source PartsAndValuesIterator, diffs graveler.ValueIterator) error {
+	logger := logging.FromContext(ctx)
 	sourceDone, diffsDone := false, false
 	for !sourceDone && !diffsDone {
 		sourceValue, sourcePart := source.Value()
@@ -44,10 +42,14 @@ func Apply(ctx context.Context, writer Writer, source PartsAndValuesIterator, di
 				sourceDone = true
 			}
 		case c >= 0:
-			if !isTombstone(diffValue) {
+			if !diffValue.IsTombstone() {
 				if err := writer.WriteRecord(*diffValue); err != nil {
 					return fmt.Errorf("write added record: %w", err)
 				}
+			} else if c > 0 {
+				// internal error but no data lost: deletion requested of a
+				// file that was not there.
+				logger.WithField("id", diffValue.Identity).Warn("[I] unmatched delete")
 			}
 			if ok := diffs.Next(); !ok {
 				diffsDone = true
@@ -80,6 +82,12 @@ func Apply(ctx context.Context, writer Writer, source PartsAndValuesIterator, di
 	}
 	for !diffsDone {
 		diffValue := diffs.Value()
+		if diffValue.IsTombstone() {
+			// internal error but no data lost: deletion requested of a
+			// file that was not there.
+			logger.WithField("id", diffValue.Identity).Warn("[I] unmatched delete")
+			continue
+		}
 		if err := writer.WriteRecord(*diffValue); err != nil {
 			return fmt.Errorf("write added record: %w", err)
 		}

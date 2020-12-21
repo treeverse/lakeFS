@@ -22,8 +22,8 @@ type Tree struct {
 // PartsAndValuesIterator iterates over all part headers and values of a tree, allowing
 // seeking by entire parts.
 type PartsAndValuesIterator interface {
-	// Next moves to iterator to look at the next value in the current part, or a header
-	// for the next part if the current part is over.
+	// Next moves to look at the next value in the current part, or a header for the next
+	// part if the current part is over.
 	Next() bool
 	// NextPart() skips over the entire remainder of the current part and continues at the
 	// header for the next part.
