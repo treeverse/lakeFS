@@ -3,10 +3,11 @@ package tree
 import "github.com/treeverse/lakefs/graveler"
 
 type partsAndValuesIterator struct {
-	repo  Repo
-	parts []Part
-	it    graveler.ValueIterator
-	err   error
+	started bool
+	repo    Repo
+	parts   []Part
+	it      graveler.ValueIterator
+	err     error
 }
 
 func NewPartsAndValuesIterator(repo Repo, parts []Part) PartsAndValuesIterator {
@@ -14,7 +15,7 @@ func NewPartsAndValuesIterator(repo Repo, parts []Part) PartsAndValuesIterator {
 }
 
 func (pvi *partsAndValuesIterator) NextPart() bool {
-	if len(pvi.parts) == 0 {
+	if len(pvi.parts) <= 1 {
 		return false
 	}
 	pvi.parts = pvi.parts[1:]
@@ -23,6 +24,10 @@ func (pvi *partsAndValuesIterator) NextPart() bool {
 }
 
 func (pvi *partsAndValuesIterator) Next() bool {
+	if !pvi.started {
+		pvi.started = true
+		return len(pvi.parts) > 0
+	}
 	if pvi.it != nil {
 		ok := pvi.it.Next()
 		if ok {
