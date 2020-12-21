@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
 func TestDiff(t *testing.T) {
@@ -107,8 +108,8 @@ func TestDiff(t *testing.T) {
 	}
 	for _, tst := range tests {
 		it := graveler.NewDiffIterator(
-			newMockValueIterator(newValues(tst.leftKeys, tst.leftIdentities)),
-			newMockValueIterator(newValues(tst.rightKeys, tst.rightIdentities)))
+			testutil.NewValueIteratorFake(newValues(tst.leftKeys, tst.leftIdentities)),
+			testutil.NewValueIteratorFake(newValues(tst.rightKeys, tst.rightIdentities)))
 		var diffs []*graveler.Diff
 		for it.Next() {
 			diffs = append(diffs, it.Value())
@@ -147,8 +148,8 @@ func TestDiffSeek(t *testing.T) {
 	diffIdentityByKey := map[string]string{"k2": "i2", "k3": "i3", "k4": "i4a"}
 
 	it := graveler.NewDiffIterator(
-		newMockValueIterator(newValues(left, leftIdentities)),
-		newMockValueIterator(newValues(right, rightIdentities)))
+		testutil.NewValueIteratorFake(newValues(left, leftIdentities)),
+		testutil.NewValueIteratorFake(newValues(right, rightIdentities)))
 	var diffs []*graveler.Diff
 	tests := []struct {
 		seekTo        string
@@ -203,15 +204,9 @@ func TestDiffSeek(t *testing.T) {
 
 func TestDiffErr(t *testing.T) {
 	leftErr := errors.New("error from left")
-	leftIt := &mockValueIterator{
-		current: -1,
-		records: newValues([]string{"k1", "k2"}, []string{"i1", "i2"}),
-		err:     leftErr,
-	}
-	rightIt := &mockValueIterator{
-		current: -1,
-		records: newValues([]string{"k2"}, []string{"i2a"}),
-	}
+	leftIt := testutil.NewValueIteratorFake(newValues([]string{"k1", "k2"}, []string{"i1", "i2"}))
+	leftIt.SetErr(leftErr)
+	rightIt := testutil.NewValueIteratorFake(newValues([]string{"k2"}, []string{"i2a"}))
 	it := graveler.NewDiffIterator(leftIt, rightIt)
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")
@@ -230,8 +225,8 @@ func TestDiffErr(t *testing.T) {
 		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
 	}
 	rightErr := errors.New("error from right")
-	leftIt.err = nil
-	rightIt.err = rightErr
+	leftIt.SetErr(nil)
+	rightIt.SetErr(rightErr)
 	it.SeekGE([]byte("k2"))
 	if it.Err() != nil {
 		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
