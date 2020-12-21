@@ -13,10 +13,10 @@ import (
 
 func TestGraveler_List(t *testing.T) {
 	tests := []struct {
-		name            string
-		r               graveler.Graveler
-		expectedErr     error
-		expected        []*graveler.ValueRecord
+		name        string
+		r           graveler.Graveler
+		expectedErr error
+		expected    []*graveler.ValueRecord
 	}{
 		{
 			name: "one committed one staged no paths",
