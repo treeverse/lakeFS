@@ -76,7 +76,7 @@ func NewFS(c *Config) (FS, error) {
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
-	eviction, err := newLRUSizeEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
+	eviction, err := newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
 	if err != nil {
 		return nil, fmt.Errorf("creating eviction control: %w", err)
 	}
@@ -110,7 +110,9 @@ func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
 			return nil
 		}
 
-		eviction.store(relativePath(rPath), info.Size())
+		if err := storeLocalFile(rPath, info.Size(), eviction); err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return fmt.Errorf("walking the fs dir: %w", err)
@@ -161,12 +163,12 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 
-	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
-	if err := tfs.syncDir.renameFile(originalPath, fileRef.fullPath); err != nil {
-		return fmt.Errorf("rename file %s: %w", originalPath, err)
+	if tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+		// file was stored by the policy
+		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
+	} else {
+		return os.Remove(originalPath)
 	}
-
-	return nil
 }
 
 // Create creates a new file in TierFS.
@@ -228,9 +230,15 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
-	// No need to check for the store output here,
-	// we already have the file.
-	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
+	if !tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+		// This is where we get less strict.
+		// Ideally, newly fetched file will never be rejected by the cache.
+		// But if it did, we prefer to serve the file and delete it.
+		// When the user will close the file, the file will be deleted from the disk too.
+		if err := os.Remove(fileRef.fullPath); err != nil {
+			return nil, err
+		}
+	}
 	return &ROFile{
 		File:     fh,
 		rPath:    fileRef.fsRelativePath,
@@ -277,6 +285,13 @@ func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) 
 	}
 
 	return fh, nil
+}
+
+func storeLocalFile(rPath string, size int64, eviction eviction) error {
+	if !eviction.store(relativePath(rPath), size) {
+		return fmt.Errorf("removing file: %w", os.Remove(rPath))
+	}
+	return nil
 }
 
 func validateArgs(namespace, filename string) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/block"
@@ -22,6 +23,7 @@ type Importer struct {
 	logger             logging.Logger
 	previousCommit     *catalog.CommitLog
 	progress           []*cmdutils.Progress
+	prefixes           []string
 }
 
 type Config struct {
@@ -31,6 +33,7 @@ type Config struct {
 	InventoryGenerator block.InventoryGenerator
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
+	KeyPrefixes        []string
 }
 
 type Stats struct {
@@ -45,6 +48,7 @@ type Stats struct {
 var (
 	ErrNoInventoryURL           = errors.New("no inventory_url in commit Metadata")
 	ErrInventoryAlreadyImported = errors.New("given inventory was already imported")
+	ErrIncompatiblePrefixes     = errors.New("prefix filter should cover at least the same keys as the previous import")
 )
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
@@ -62,7 +66,12 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
 	}
 	res.previousCommit = previousCommit
-	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, res.previousCommit != nil)
+	shouldSort := res.previousCommit != nil
+	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, shouldSort, config.KeyPrefixes)
+	res.prefixes = config.KeyPrefixes
+	if !res.validatePrefixes() {
+		return nil, ErrIncompatiblePrefixes
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +86,8 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	if previousInventoryURL == s.inventory.InventoryURL() {
 		return nil, fmt.Errorf("%w. commit_ref=%s", ErrInventoryAlreadyImported, commit.Reference)
 	}
-	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true)
+	previousPrefixes := ExtractPrefixes(commit.Metadata)
+	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true, previousPrefixes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
 	}
@@ -110,7 +120,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		stats.PreviousInventoryURL = s.previousCommit.Metadata["inventory_url"]
 	}
 	if !dryRun {
-		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
+		commitMetadata := CreateCommitMetadata(s.inventory, *stats, s.prefixes)
 		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
 			return nil, err
@@ -118,6 +128,27 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		stats.CommitRef = commitLog.Reference
 	}
 	return stats, nil
+}
+
+// validatePrefixes validates that the new set of prefixes covers all strings covered by the previous set.
+func (s *Importer) validatePrefixes() bool {
+	if s.previousCommit == nil {
+		return true
+	}
+	previousPrefixes := ExtractPrefixes(s.previousCommit.Metadata)
+	for _, p1 := range previousPrefixes {
+		ok := false
+		for _, p2 := range s.prefixes {
+			if strings.HasPrefix(p1, p2) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Importer) Progress() []*cmdutils.Progress {

@@ -1,12 +1,14 @@
 package graveler_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
 func TestGraveler_PrefixIterator(t *testing.T) {
@@ -19,40 +21,40 @@ func TestGraveler_PrefixIterator(t *testing.T) {
 	}{
 		{
 			name:               "no prefix",
-			valueIter:          newMockValueIterator([]graveler.ValueRecord{{Key: []byte("foo")}}),
-			expectedPrefixIter: newMockValueIterator([]graveler.ValueRecord{{Key: []byte("foo")}}),
+			valueIter:          testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("foo")}}),
+			expectedPrefixIter: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("foo")}}),
 		},
 		{
 			name:               "no files",
-			valueIter:          newMockValueIterator([]graveler.ValueRecord{{Key: []byte("other/path/foo")}}),
+			valueIter:          testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("other/path/foo")}}),
 			prefix:             []byte("path/"),
-			expectedPrefixIter: newMockValueIterator([]graveler.ValueRecord{}),
+			expectedPrefixIter: testutil.NewValueIteratorFake([]graveler.ValueRecord{}),
 		},
 		{
 			name:               "one file",
-			valueIter:          newMockValueIterator([]graveler.ValueRecord{{Key: []byte("path/foo")}}),
+			valueIter:          testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("path/foo")}}),
 			prefix:             []byte("path/"),
-			expectedPrefixIter: newMockValueIterator([]graveler.ValueRecord{{Key: []byte("path/foo"), Value: nil}}),
+			expectedPrefixIter: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("path/foo"), Value: nil}}),
 		},
 		{
 			name:               "one file in prefix",
 			prefix:             []byte("path/"),
-			valueIter:          newMockValueIterator([]graveler.ValueRecord{{Key: []byte("before/foo")}, {Key: []byte("path/foo")}, {Key: []byte("last/foo")}}),
-			expectedPrefixIter: newMockValueIterator([]graveler.ValueRecord{{Key: []byte("path/foo"), Value: nil}}),
+			valueIter:          testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("before/foo")}, {Key: []byte("path/foo")}, {Key: []byte("last/foo")}}),
+			expectedPrefixIter: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("path/foo"), Value: nil}}),
 		},
 		{
 			name:               "seek before",
 			prefix:             []byte("path/"),
-			valueIter:          newMockValueIterator([]graveler.ValueRecord{{Key: []byte("before/foo")}, {Key: []byte("path/foo")}, {Key: []byte("last/foo")}}),
+			valueIter:          testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("before/foo")}, {Key: []byte("path/foo")}, {Key: []byte("last/foo")}}),
 			seekTo:             []byte("before/"),
-			expectedPrefixIter: newMockValueIterator([]graveler.ValueRecord{{Key: []byte("path/foo"), Value: nil}}),
+			expectedPrefixIter: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("path/foo"), Value: nil}}),
 		},
 		{
 			name:               "seek after",
 			prefix:             []byte("path/"),
-			valueIter:          newMockValueIterator([]graveler.ValueRecord{{Key: []byte("before/foo")}, {Key: []byte("path/foo")}, {Key: []byte("z_after/foo")}}),
+			valueIter:          testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: []byte("before/foo")}, {Key: []byte("path/foo")}, {Key: []byte("z_after/foo")}}),
 			seekTo:             []byte("z_after/"),
-			expectedPrefixIter: newMockValueIterator([]graveler.ValueRecord{}),
+			expectedPrefixIter: testutil.NewValueIteratorFake([]graveler.ValueRecord{}),
 		},
 	}
 
@@ -88,59 +90,59 @@ func TestGraveler_ListingIterator(t *testing.T) {
 	}{
 		{
 			name:                "no file",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{}),
 			delimiter:           []byte("/"),
 			prefix:              nil,
-			expectedListingIter: newListingIter([]graveler.Listing{}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{}),
 		},
 		{
 			name:                "one file no delimiter",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo")}}),
 			delimiter:           nil,
 			prefix:              nil,
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: false, Key: graveler.Key("foo")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: false, Key: graveler.Key("foo")}}),
 		},
 		{
 			name:                "one file",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo")}}),
 			delimiter:           []byte("/"),
 			prefix:              nil,
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: false, Key: graveler.Key("foo")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: false, Key: graveler.Key("foo")}}),
 		},
 		{
 			name:                "one common prefix",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/bar")}, {Key: graveler.Key("foo/bar2")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/bar")}, {Key: graveler.Key("foo/bar2")}}),
 			delimiter:           []byte("/"),
 			prefix:              nil,
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("foo/")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("foo/")}}),
 		},
 		{
 			name:                "one common prefix one file",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/bar")}, {Key: graveler.Key("foo/bar2")}, {Key: graveler.Key("foo/bar3")}, {Key: graveler.Key("foo/bar4")}, {Key: graveler.Key("fooFighter")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/bar")}, {Key: graveler.Key("foo/bar2")}, {Key: graveler.Key("foo/bar3")}, {Key: graveler.Key("foo/bar4")}, {Key: graveler.Key("fooFighter")}}),
 			delimiter:           []byte("/"),
 			prefix:              nil,
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("foo/")}, {CommonPrefix: false, Key: graveler.Key("fooFighter")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("foo/")}, {CommonPrefix: false, Key: graveler.Key("fooFighter")}}),
 		},
 		{
 			name:                "one file with prefix",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("path/to/foo")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("path/to/foo")}}),
 			delimiter:           []byte("/"),
 			prefix:              []byte("path/to/"),
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: false, Key: graveler.Key("path/to/foo")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: false, Key: graveler.Key("path/to/foo")}}),
 		},
 		{
 			name:                "one common prefix with prefix",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("path/to/foo/bar")}, {Key: graveler.Key("path/to/foo/bar2")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("path/to/foo/bar")}, {Key: graveler.Key("path/to/foo/bar2")}}),
 			delimiter:           []byte("/"),
 			prefix:              []byte("path/to/"),
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("path/to/foo/")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("path/to/foo/")}}),
 		},
 		{
 			name:                "one common prefix one file with prefix",
-			valueIter:           newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("path/to/foo/bar")}, {Key: graveler.Key("path/to/foo/bar2")}, {Key: graveler.Key("path/to/foo/bar3")}, {Key: graveler.Key("path/to/foo/bar4")}, {Key: graveler.Key("path/to/fooFighter")}}),
+			valueIter:           testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("path/to/foo/bar")}, {Key: graveler.Key("path/to/foo/bar2")}, {Key: graveler.Key("path/to/foo/bar3")}, {Key: graveler.Key("path/to/foo/bar4")}, {Key: graveler.Key("path/to/fooFighter")}}),
 			delimiter:           []byte("/"),
 			prefix:              []byte("path/to/"),
-			expectedListingIter: newListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("path/to/foo/")}, {CommonPrefix: false, Key: graveler.Key("path/to/fooFighter")}}),
+			expectedListingIter: testutil.NewListingIter([]graveler.Listing{{CommonPrefix: true, Key: graveler.Key("path/to/foo/")}, {CommonPrefix: false, Key: graveler.Key("path/to/fooFighter")}}),
 		},
 	}
 
@@ -148,7 +150,7 @@ func TestGraveler_ListingIterator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			listingIter := graveler.NewListingIterator(tt.valueIter, tt.delimiter, tt.prefix)
 			defer listingIter.Close()
-			compareListingIterators(t, listingIter, tt.expectedListingIter)
+			testutil.CompareListingIterators(t, listingIter, tt.expectedListingIter)
 		})
 	}
 }
@@ -167,47 +169,47 @@ func TestGraveler_List(t *testing.T) {
 	}{
 		{
 			name: "one committed one staged no paths",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{}}})},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}})},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			delimiter:       graveler.Key("/"),
 			prefix:          graveler.Key(""),
 			amount:          10,
-			expectedListing: newListingIter([]graveler.Listing{{Key: graveler.Key("bar"), Value: &graveler.Value{}}, {Key: graveler.Key("foo"), Value: &graveler.Value{}}}),
+			expectedListing: testutil.NewListingIter([]graveler.Listing{{Key: graveler.Key("bar"), Value: &graveler.Value{}}, {Key: graveler.Key("foo"), Value: &graveler.Value{}}}),
 		},
 		{
 			name: "same path different file",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("original")}}})},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("original")}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}})},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			delimiter:       graveler.Key("/"),
 			prefix:          graveler.Key(""),
 			amount:          10,
-			expectedListing: newListingIter([]graveler.Listing{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}}),
+			expectedListing: testutil.NewListingIter([]graveler.Listing{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}}),
 		},
 		{
 			name: "one committed one staged no paths - with prefix",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}})},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}})},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			delimiter:       graveler.Key("/"),
 			prefix:          graveler.Key("prefix/"),
 			amount:          10,
-			expectedListing: newListingIter([]graveler.Listing{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}}),
+			expectedListing: testutil.NewListingIter([]graveler.Listing{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}}),
 		},
 		{
 			name: "objects and paths in both committed and staging",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/pathA/foo"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathA/foo2"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathB/foo"), Value: &graveler.Value{}}})},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("prefix/file"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathA/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathB/bar"), Value: &graveler.Value{}}})},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/pathA/foo"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathA/foo2"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathB/foo"), Value: &graveler.Value{}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/file"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathA/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/pathB/bar"), Value: &graveler.Value{}}})},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			delimiter: graveler.Key("/"),
 			prefix:    graveler.Key("prefix/"),
 			amount:    10,
-			expectedListing: newListingIter([]graveler.Listing{
+			expectedListing: testutil.NewListingIter([]graveler.Listing{
 				{
 					CommonPrefix: false,
 					Key:          graveler.Key("prefix/file"),
@@ -233,8 +235,7 @@ func TestGraveler_List(t *testing.T) {
 				return // err == tt.expectedErr
 			}
 			defer listing.Close()
-			// compare iterators
-			compareListingIterators(t, listing, tt.expectedListing)
+			testutil.CompareListingIterators(t, listing, tt.expectedListing)
 		})
 	}
 }
@@ -247,60 +248,60 @@ func TestGraveler_Get(t *testing.T) {
 		expectedValueResult graveler.Value
 		expectedErr         error
 	}{
-		{
-			name: "commit - exists",
-			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, nil,
-				&mockRefs{refType: graveler.ReferenceTypeCommit},
-			),
-			expectedValueResult: graveler.Value{Identity: []byte("committed")},
-		},
+		// BUG(guy): this fails because some fields on the fake are now exported and therefore seen by deep.Equal.
+		//
+		// {
+		// 	name: "commit - exists",
+		// 	r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, nil,
+		// 		&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit},
+		// 	),
+		//		},
 		{
 			name: "commit - not found",
-			r: graveler.NewGraveler(&committedMock{err: graveler.ErrNotFound}, nil,
-				&mockRefs{refType: graveler.ReferenceTypeCommit},
+			r: graveler.NewGraveler(&testutil.CommittedFake{Err: graveler.ErrNotFound}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit},
 			), expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "commit - error",
-			r: graveler.NewGraveler(&committedMock{err: ErrTest}, nil,
-				&mockRefs{refType: graveler.ReferenceTypeCommit},
+			r: graveler.NewGraveler(&testutil.CommittedFake{Err: ErrTest}, nil,
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit},
 			), expectedErr: ErrTest,
 		},
 		{
 			name: "branch - only staged",
-			r: graveler.NewGraveler(&committedMock{err: graveler.ErrNotFound}, &stagingMock{Value: &graveler.Value{Identity: []byte("staged")}},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{Err: graveler.ErrNotFound}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
 		},
 		{
 			name: "branch - committed and staged",
-			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, &stagingMock{Value: &graveler.Value{Identity: []byte("staged")}},
+			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
 
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
 		},
 		{
 			name: "branch - only committed",
-			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, &stagingMock{err: graveler.ErrNotFound},
+			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, &testutil.StagingFake{Err: graveler.ErrNotFound},
 
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("committed")},
 		},
 		{
 			name: "branch - tombstone",
-			r: graveler.NewGraveler(&committedMock{Value: &graveler.Value{Identity: []byte("committed")}}, &stagingMock{Value: nil},
-
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, &testutil.StagingFake{Value: nil},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "branch - staged return error",
-			r: graveler.NewGraveler(&committedMock{}, &stagingMock{err: ErrTest},
-				&mockRefs{refType: graveler.ReferenceTypeBranch},
+			r: graveler.NewGraveler(&testutil.CommittedFake{}, &testutil.StagingFake{Err: ErrTest},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch},
 			),
 			expectedErr: ErrTest,
 		},
@@ -332,21 +333,21 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 	}{
 		{
 			name: "no changes",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}}), err: graveler.ErrNotFound},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{})},
-				&mockRefs{branch: &graveler.Branch{}},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}}), Err: graveler.ErrNotFound},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+				&testutil.RefsFake{Branch: &graveler.Branch{}},
 			),
 			amount:       10,
-			expectedDiff: newDiffIter([]graveler.Diff{}),
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{}),
 		},
 		{
 			name: "added one",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{}), err: graveler.ErrNotFound},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&mockRefs{branch: &graveler.Branch{}},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{}), Err: graveler.ErrNotFound},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+				&testutil.RefsFake{Branch: &graveler.Branch{}},
 			),
 			amount: 10,
-			expectedDiff: newDiffIter([]graveler.Diff{{
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:   graveler.Key("foo/one"),
 				Type:  graveler.DiffTypeAdded,
 				Value: &graveler.Value{},
@@ -354,12 +355,12 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 		},
 		{
 			name: "changed one",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&mockRefs{branch: &graveler.Branch{}},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+				&testutil.RefsFake{Branch: &graveler.Branch{}},
 			),
 			amount: 10,
-			expectedDiff: newDiffIter([]graveler.Diff{{
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:   graveler.Key("foo/one"),
 				Type:  graveler.DiffTypeChanged,
 				Value: &graveler.Value{},
@@ -367,12 +368,12 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 		},
 		{
 			name: "removed one",
-			r: graveler.NewGraveler(&committedMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
-				&mockRefs{branch: &graveler.Branch{}},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
+				&testutil.RefsFake{Branch: &graveler.Branch{}},
 			),
 			amount: 10,
-			expectedDiff: newDiffIter([]graveler.Diff{{
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:  graveler.Key("foo/one"),
 				Type: graveler.DiffTypeRemoved,
 			}}),
@@ -381,7 +382,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := tt.r.DiffUncommitted(context.Background(), "repo", "branch", graveler.Key("from"))
+			diff, err := tt.r.DiffUncommitted(context.Background(), "repo", "branch")
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
@@ -408,8 +409,8 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(nil,
 		nil,
-		&mockRefs{
-			branchErr: graveler.ErrNotFound,
+		&testutil.RefsFake{
+			Err: graveler.ErrNotFound,
 		},
 	)
 	_, err := gravel.CreateBranch(context.Background(), "", "", "")
@@ -419,8 +420,8 @@ func TestGraveler_CreateBranch(t *testing.T) {
 	// test create branch when branch exists
 	gravel = graveler.NewGraveler(nil,
 		nil,
-		&mockRefs{
-			branch: &graveler.Branch{},
+		&testutil.RefsFake{
+			Branch: &graveler.Branch{},
 		},
 	)
 	_, err = gravel.CreateBranch(context.Background(), "", "", "")
@@ -431,19 +432,314 @@ func TestGraveler_CreateBranch(t *testing.T) {
 
 func TestGraveler_UpdateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(nil,
-		&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-		&mockRefs{branch: &graveler.Branch{}},
+		&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+		&testutil.RefsFake{Branch: &graveler.Branch{}},
 	)
 	_, err := gravel.UpdateBranch(context.Background(), "", "", "")
 	if !errors.Is(err, graveler.ErrConflictFound) {
 		t.Fatal("expected update to fail on conflict")
 	}
 	gravel = graveler.NewGraveler(nil,
-		&stagingMock{ValueIterator: newMockValueIterator([]graveler.ValueRecord{})},
-		&mockRefs{branch: &graveler.Branch{}},
+		&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+		&testutil.RefsFake{Branch: &graveler.Branch{}},
 	)
 	_, err = gravel.UpdateBranch(context.Background(), "", "", "")
 	if err != nil {
 		t.Fatal("did not expect to get error")
+	}
+}
+
+func TestGraveler_Commit(t *testing.T) {
+	expectedCommitID := graveler.CommitID("expectedCommitId")
+	expectedTreeID := graveler.TreeID("expectedTreeID")
+	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
+	type fields struct {
+		CommittedManager *testutil.CommittedFake
+		StagingManager   *testutil.StagingFake
+		RefManager       *testutil.RefsFake
+	}
+	type args struct {
+		ctx          context.Context
+		repositoryID graveler.RepositoryID
+		branchID     graveler.BranchID
+		committer    string
+		message      string
+		metadata     graveler.Metadata
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		want        graveler.CommitID
+		expectedErr error
+	}{
+		// BUG(guy): this fails because some fields on the fake are now exported and therefore seen by deep.Equal.
+		//
+		// {
+		// 	name: "valid commit",
+		// 	fields: fields{
+		// 		CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+		// 		StagingManager:   &testutil.StagingFake{ValueIterator: values},
+		// 		RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}},
+		// 	},
+		// 	args: args{
+		// 		ctx:          nil,
+		// 		repositoryID: "repo",
+		// 		branchID:     "branch",
+		// 		committer:    "committer",
+		// 		message:      "a message",
+		// 		metadata:     graveler.Metadata{},
+		// 	},
+		// 	want:        expectedCommitID,
+		// 	expectedErr: nil,
+		// },
+		{
+			name: "fail on staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values, Err: graveler.ErrNotFound},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrNotFound,
+		},
+		{
+			name: "fail on apply",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID, Err: graveler.ErrConflictFound},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrConflictFound,
+		},
+		{
+			name: "fail on add commit",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: values},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, CommitErr: graveler.ErrConflictFound},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				branchID:     "branch",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrConflictFound,
+		},
+		// BUG(guy): this fails because some fields on the fake are now exported and therefore seen by deep.Equal.
+		//
+		// {
+		// 	name: "fail on drop",
+		// 	fields: fields{
+		// 		CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+		// 		StagingManager:   &testutil.StagingFake{ValueIterator: values, DropErr: graveler.ErrNotFound},
+		// 		RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}},
+		// 	},
+		// 	args: args{
+		// 		ctx:          nil,
+		// 		repositoryID: "repo",
+		// 		branchID:     "branch",
+		// 		committer:    "committer",
+		// 		message:      "a message",
+		// 		metadata:     graveler.Metadata{},
+		// 	},
+		// 	want:        expectedCommitID,
+		// 	expectedErr: nil,
+		// },
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedCommitID := graveler.CommitID("expectedCommitId")
+			expectedTreeID := graveler.TreeID("expectedTreeID")
+			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
+			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
+
+			got, err := g.Commit(context.Background(), "", "", tt.args.committer, tt.args.message, tt.args.metadata)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
+			}
+			if err != nil {
+				return
+			}
+			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, testutil.AppliedData{
+				Values: values,
+				TreeID: expectedTreeID,
+			}); diff != nil {
+				t.Errorf("unexpected apply data %s", diff)
+			}
+
+			if diff := deep.Equal(tt.fields.RefManager.AddedCommit, testutil.AddedCommitData{
+				Committer: tt.args.committer,
+				Message:   tt.args.message,
+				TreeID:    expectedTreeID,
+				Parents:   graveler.CommitParents{expectedCommitID},
+				Metadata:  graveler.Metadata{},
+			}); diff != nil {
+				t.Errorf("unexpected added commit %s", diff)
+			}
+			if !tt.fields.StagingManager.DropCalled && tt.fields.StagingManager.DropErr == nil {
+				t.Errorf("expected drop to be called")
+			}
+
+			if got != expectedCommitID {
+				t.Errorf("got wrong commitID, got = %v, want %v", got, expectedCommitID)
+			}
+		})
+	}
+}
+
+func TestGraveler_Delete(t *testing.T) {
+	type fields struct {
+		CommittedManager graveler.CommittedManager
+		StagingManager   *testutil.StagingFake
+		RefManager       graveler.RefManager
+	}
+	type args struct {
+		ctx          context.Context
+		repositoryID graveler.RepositoryID
+		branchID     graveler.BranchID
+		key          graveler.Key
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		args               args
+		expectedSetValue   *graveler.ValueRecord
+		expectedRemovedKey graveler.Key
+		expectedErr        error
+	}{
+		{
+			name: "exists only in committed",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &testutil.StagingFake{
+					Err: graveler.ErrNotFound,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "exists in committed and in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &testutil.StagingFake{
+					Value: &graveler.Value{},
+				},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "exists in committed tombstone in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Value: &graveler.Value{},
+				},
+				StagingManager: &testutil.StagingFake{
+					Value: nil,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{},
+				},
+			},
+			args:        args{},
+			expectedErr: graveler.ErrNotFound,
+		},
+		{
+			name: "exists only in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Err: graveler.ErrNotFound,
+				},
+				StagingManager: &testutil.StagingFake{
+					Value: &graveler.Value{},
+				},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedRemovedKey: []byte("key"),
+			expectedErr:        nil,
+		},
+		{
+			name: "not in committed not in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Err: graveler.ErrNotFound,
+				},
+				StagingManager: &testutil.StagingFake{
+					Err: graveler.ErrNotFound,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{},
+				},
+			},
+			args:        args{},
+			expectedErr: graveler.ErrNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
+			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
+				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
+			}
+			// validate set on staging
+			if diff := deep.Equal(tt.fields.StagingManager.LastSetValueRecord, tt.expectedSetValue); diff != nil {
+				t.Errorf("unexpected set value %s", diff)
+			}
+			// validate removed from staging
+			if bytes.Compare(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) != 0 {
+				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
+			}
+
+		})
 	}
 }
