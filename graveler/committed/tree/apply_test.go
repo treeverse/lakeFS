@@ -160,3 +160,57 @@ func TestApplyDelete(t *testing.T) {
 
 	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
 }
+
+func TestApplyCopiesLeftoverDiffs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	source := NewFakePartsAndValuesIterator()
+	source.
+		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
+		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
+		AddPart(part2).
+		AddValueRecords(makeV("d", "source:d"))
+	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeV("b", "dest:b"),
+		*makeV("e", "dest:e"),
+		*makeV("f", "dest:f"),
+	})
+
+	writer := mock.NewMockWriter(ctrl)
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
+	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
+
+	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+}
+
+func TestApplyCopiesLeftoverSources(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	part1 := &tree.Part{Name: "one", MaxKey: graveler.Key("cz")}
+	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	source := NewFakePartsAndValuesIterator()
+	source.
+		AddPart(part1).
+		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
+		AddPart(part2).
+		AddValueRecords(makeV("d", "source:d")).
+		AddPart(&tree.Part{Name: "three", MaxKey: graveler.Key("ez")}).
+		AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f"))
+	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+		*makeTombstoneV("e"),
+	})
+
+	writer := mock.NewMockWriter(ctrl)
+	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part1}))
+	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
+
+	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+}
