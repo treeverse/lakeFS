@@ -440,11 +440,35 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, referenc
 }
 
 func (c *cataloger) ResetEntry(ctx context.Context, repository string, branch string, path string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := graveler.NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	entryPath, err := NewPath(path)
+	if err != nil {
+		return err
+	}
+	return c.EntryCatalog.ResetKey(ctx, repositoryID, branchID, entryPath)
 }
 
 func (c *cataloger) ResetEntries(ctx context.Context, repository string, branch string, prefix string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := graveler.NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	prefixPath, err := NewPath(prefix)
+	if err != nil {
+		return err
+	}
+	return c.EntryCatalog.ResetPrefix(ctx, repositoryID, branchID, prefixPath)
 }
 
 // QueryEntriesToExpire returns ExpiryRows iterating over all objects to expire on
@@ -542,8 +566,51 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
-	panic("not implemented") // TODO: Implement
+func (c *cataloger) ListCommits(ctx context.Context, repository string, _ string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return nil, false, err
+	}
+	ref, err := graveler.NewRef(fromReference)
+	if err != nil {
+		return nil, false, err
+	}
+	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, false, err
+	}
+	it, err := c.EntryCatalog.Log(ctx, repositoryID, commitID)
+	if err != nil {
+		return nil, false, err
+	}
+	var commits []*catalog.CommitLog
+	for it.Next() {
+		v := it.Value()
+		commit := &catalog.CommitLog{
+			Reference:    v.CommitID.String(),
+			Committer:    v.Committer,
+			Message:      v.Message,
+			CreationDate: v.CreationDate,
+			Metadata:     map[string]string(v.Metadata),
+			Parents:      make([]string, 0, len(v.Parents)),
+		}
+		for _, parent := range v.Parents {
+			commit.Parents = append(commit.Parents, parent.String())
+		}
+		commits = append(commits, commit)
+		if len(commits) >= limit+1 {
+			break
+		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, false, err
+	}
+	hasMore := false
+	if len(commits) >= limit {
+		hasMore = true
+		commits = commits[:limit]
+	}
+	return commits, hasMore, nil
 }
 
 func (c *cataloger) RollbackCommit(ctx context.Context, repository string, branch string, reference string) error {

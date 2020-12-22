@@ -108,6 +108,12 @@ type EntryCatalog interface {
 	// Reset throw all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error
 
+	// Reset throws all staged data under the specified path on the repository / branch
+	ResetKey(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error
+
+	// Reset throws all staged data starting with the given prefix on the repository / branch
+	ResetPrefix(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, prefix Path) error
+
 	// Revert commits a change that will revert all the changes make from 'ref' specified
 	Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error)
 
@@ -230,6 +236,22 @@ func (e *entryCatalog) Dereference(ctx context.Context, repositoryID graveler.Re
 
 func (e *entryCatalog) Reset(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
 	return e.store.Reset(ctx, repositoryID, branchID)
+}
+
+func (e *entryCatalog) ResetKey(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error {
+	key, err := graveler.NewKey(path.String())
+	if err != nil {
+		return err
+	}
+	return e.store.ResetKey(ctx, repositoryID, branchID, key)
+}
+
+func (e *entryCatalog) ResetPrefix(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, prefix Path) error {
+	keyPrefix, err := graveler.NewKey(prefix.String())
+	if err != nil {
+		return err
+	}
+	return e.store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
 func (e *entryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error) {
