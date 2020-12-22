@@ -104,6 +104,10 @@ type ValueRecord struct {
 	*Value
 }
 
+func (v *ValueRecord) IsTombstone() bool {
+	return v.Value == nil
+}
+
 func (ps CommitParents) Identity() []byte {
 	commits := make([]string, len(ps))
 	for i, v := range ps {
