@@ -46,7 +46,7 @@ type partKeys struct {
 	Keys []graveler.Key
 }
 
-func keysByParts(t testing.TB, it tree.PartsAndValuesIterator) []partKeys {
+func keysByParts(t testing.TB, it tree.Iterator) []partKeys {
 	ret := make([]partKeys, 0)
 	for it.Err() == nil && it.Next() {
 		v, p := it.Value()
@@ -66,7 +66,7 @@ func keysByParts(t testing.TB, it tree.PartsAndValuesIterator) []partKeys {
 	return ret
 }
 
-func TestPartsAndValuesIterator(t *testing.T) {
+func TestIterator(t *testing.T) {
 	tests := []struct {
 		Name string
 		PK   []partKeys
@@ -118,7 +118,7 @@ func TestPartsAndValuesIterator(t *testing.T) {
 				parts = append(parts, tree.Part{Name: p.Name})
 				repo.EXPECT().NewPartIterator(p.Name, nil).Return(makePart(p.Keys), nil)
 			}
-			pvi := tree.NewPartsAndValuesIterator(repo, parts)
+			pvi := tree.NewIterator(repo, parts)
 			assert.Equal(t, tt.PK, keysByParts(t, pvi))
 			assert.False(t, pvi.NextPart())
 			assert.False(t, pvi.Next())

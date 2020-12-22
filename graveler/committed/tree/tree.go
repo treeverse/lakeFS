@@ -21,9 +21,9 @@ type Tree struct {
 	Parts []Part
 }
 
-// PartsAndValuesIterator iterates over all part headers and values of a tree, allowing
-// seeking by entire parts.
-type PartsAndValuesIterator interface {
+// Iterator iterates over all part headers and values of a tree, allowing seeking by entire
+// parts.
+type Iterator interface {
 	// Next moves to look at the next value in the current part, or a header for the next
 	// part if the current part is over.
 	Next() bool

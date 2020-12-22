@@ -2,7 +2,7 @@ package tree
 
 import "github.com/treeverse/lakefs/graveler"
 
-type partsAndValuesIterator struct {
+type iterator struct {
 	started bool
 	repo    Repo
 	parts   []Part
@@ -10,11 +10,11 @@ type partsAndValuesIterator struct {
 	err     error
 }
 
-func NewPartsAndValuesIterator(repo Repo, parts []Part) PartsAndValuesIterator {
-	return &partsAndValuesIterator{repo: repo, parts: parts}
+func NewIterator(repo Repo, parts []Part) Iterator {
+	return &iterator{repo: repo, parts: parts}
 }
 
-func (pvi *partsAndValuesIterator) NextPart() bool {
+func (pvi *iterator) NextPart() bool {
 	if len(pvi.parts) <= 1 {
 		return false
 	}
@@ -24,7 +24,7 @@ func (pvi *partsAndValuesIterator) NextPart() bool {
 	return true
 }
 
-func (pvi *partsAndValuesIterator) Next() bool {
+func (pvi *iterator) Next() bool {
 	if !pvi.started {
 		pvi.started = true
 		return len(pvi.parts) > 0
@@ -53,7 +53,7 @@ func (pvi *partsAndValuesIterator) Next() bool {
 	return pvi.NextPart()
 }
 
-func (pvi *partsAndValuesIterator) Value() (*graveler.ValueRecord, *Part) {
+func (pvi *iterator) Value() (*graveler.ValueRecord, *Part) {
 	if len(pvi.parts) == 0 {
 		return nil, nil
 	}
@@ -64,7 +64,7 @@ func (pvi *partsAndValuesIterator) Value() (*graveler.ValueRecord, *Part) {
 	return pvi.it.Value(), part
 }
 
-func (pvi *partsAndValuesIterator) Err() error {
+func (pvi *iterator) Err() error {
 	if pvi.err != nil {
 		return pvi.err
 	}
@@ -74,7 +74,7 @@ func (pvi *partsAndValuesIterator) Err() error {
 	return pvi.it.Err()
 }
 
-func (pvi *partsAndValuesIterator) Close() {
+func (pvi *iterator) Close() {
 	if pvi.it == nil {
 		return
 	}
