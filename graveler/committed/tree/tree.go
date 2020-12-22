@@ -1,5 +1,7 @@
 package tree
 
+//go:generate mockgen -source=tree.go -destination=mock/tree.go -package=mock
+
 import (
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
