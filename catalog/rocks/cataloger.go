@@ -183,7 +183,6 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	if err != nil {
 		return nil, false, err
 	}
-	// TODO(barak): add proper prefix support
 	prefixBranch, err := graveler.NewBranchID(prefix)
 	if err != nil {
 		return nil, false, err
@@ -209,6 +208,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	for it.Next() {
 		v := it.Value()
 		branchID := v.BranchID.String()
+		// break in case we got to a branch outside our prefix
 		if !strings.HasPrefix(branchID, prefix) {
 			break
 		}
