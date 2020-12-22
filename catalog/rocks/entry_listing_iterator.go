@@ -67,11 +67,7 @@ func (e *entryListingIterator) nextNoDelimiter() bool {
 		return false
 	}
 	v := e.it.Value()
-	e.value = &EntryListing{
-		CommonPrefix: false,
-		Path:         v.Path,
-		Entry:        v.Entry,
-	}
+	e.value = &EntryListing{Path: v.Path, Entry: v.Entry}
 	return true
 }
 
@@ -80,31 +76,21 @@ func (e *entryListingIterator) nextWithDelimiter() bool {
 		nextPath := getListingNextPath(e.value.Path)
 		e.it.SeekGE(nextPath)
 	}
-	hasNext := e.it.Next()
-	if hasNext {
-		e.value = e.newEntryListingFromRecord(e.it.Value())
-	} else {
+	if !e.it.Next() {
 		e.value = nil
+		return false
 	}
-	return hasNext
-}
-
-func (e *entryListingIterator) newEntryListingFromRecord(record *EntryRecord) *EntryListing {
-	relevantPath := record.Path[len(e.prefix):]
+	v := e.it.Value()
+	relevantPath := v.Path[len(e.prefix):]
 	delimiterIndex := strings.Index(relevantPath.String(), e.delimiter)
 	if delimiterIndex == -1 {
-		// return listing for non common prefix with value
-		return &EntryListing{
-			CommonPrefix: false,
-			Path:         record.Path,
-			Entry:        record.Entry,
-		}
+		// listing for non common prefix with value
+		e.value = &EntryListing{Path: v.Path, Entry: v.Entry}
+	} else {
+		// listing for common prefix key
+		commonPrefixLen := len(e.prefix) + delimiterIndex + len(e.delimiter)
+		commonPrefixKey := v.Path[:commonPrefixLen]
+		e.value = &EntryListing{CommonPrefix: true, Path: commonPrefixKey}
 	}
-	// return listing for common prefix key
-	commonPrefixLen := len(e.prefix) + delimiterIndex + len(e.delimiter)
-	commonPrefixKey := record.Path[:commonPrefixLen]
-	return &EntryListing{
-		CommonPrefix: true,
-		Path:         commonPrefixKey,
-	}
+	return true
 }
