@@ -59,7 +59,7 @@ func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID gravel
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListRepositories(ctx context.Context, from graveler.RepositoryID) (graveler.RepositoryIterator, error) {
+func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
 	panic("implement me")
 }
 
@@ -99,7 +99,7 @@ func (g *FakeGraveler) Log(ctx context.Context, repositoryID graveler.Repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.BranchID) (graveler.BranchIterator, error) {
+func (g *FakeGraveler) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
 	panic("implement me")
 }
 
@@ -146,7 +146,7 @@ func (g *FakeGraveler) DiffUncommitted(ctx context.Context, repositoryID gravele
 	return g.DiffIterator, nil
 }
 
-func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref, _ graveler.Key) (graveler.DiffIterator, error) {
+func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}

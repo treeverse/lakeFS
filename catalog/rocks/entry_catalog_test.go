@@ -151,7 +151,7 @@ func TestEntryCatalog_Diff(t *testing.T) {
 	}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
-	diffs, err := cat.Diff(ctx, "repo", "left", "right", "")
+	diffs, err := cat.Diff(ctx, "repo", "left", "right")
 	testutil.MustDo(t, "diff", err)
 	defer diffs.Close()
 

@@ -3,6 +3,8 @@ package rocks
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
+	"strings"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/graveler"
@@ -15,6 +17,12 @@ type cataloger struct {
 	dummyDedupCh chan *catalog.DedupReport
 	hooks        catalog.CatalogerHooks
 }
+
+const (
+	ListRepositoriesLimitMax = 1000
+	ListBranchesLimitMax     = 1000
+	ListEntriesLimitMax      = 10000
+)
 
 func NewCataloger() catalog.Cataloger {
 	return &cataloger{
@@ -83,7 +91,46 @@ func (c *cataloger) DeleteRepository(ctx context.Context, repository string) err
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
 func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*catalog.Repository, bool, error) {
-	panic("not implemented") // TODO: Implement
+	// normalize limit
+	if limit < 0 || limit > ListRepositoriesLimitMax {
+		limit = ListRepositoriesLimitMax
+	}
+	// get list repositories iterator
+	it, err := c.EntryCatalog.ListRepositories(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("get iterator: %w", err)
+	}
+	// seek for first item
+	repositoryID, err := graveler.NewRepositoryID(after)
+	if err != nil {
+		return nil, false, fmt.Errorf("after as repository id: %w", err)
+	}
+	it.SeekGE(repositoryID)
+
+	var repos []*catalog.Repository
+	for it.Next() {
+		record := it.Value()
+		repos = append(repos, &catalog.Repository{
+			Name:             record.RepositoryID.String(),
+			StorageNamespace: record.StorageNamespace.String(),
+			DefaultBranch:    record.DefaultBranchID.String(),
+			CreationDate:     record.CreationDate,
+		})
+		// collect limit +1 to return limit and has more
+		if len(repos) >= limit+1 {
+			break
+		}
+	}
+	if it.Err() != nil {
+		return nil, false, it.Err()
+	}
+	// trim result if needed and return has more
+	hasMore := false
+	if len(repos) >= limit {
+		hasMore = true
+		repos = repos[:limit]
+	}
+	return repos, hasMore, nil
 }
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*catalog.CommitLog, error) {
@@ -132,7 +179,58 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch 
 }
 
 func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*catalog.Branch, bool, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return nil, false, err
+	}
+	// TODO(barak): add proper prefix support
+	prefixBranch, err := graveler.NewBranchID(prefix)
+	if err != nil {
+		return nil, false, err
+	}
+	afterBranch, err := graveler.NewBranchID(after)
+	if err != nil {
+		return nil, false, err
+	}
+	// normalize limit
+	if limit < 0 || limit > ListBranchesLimitMax {
+		limit = ListBranchesLimitMax
+	}
+	it, err := c.EntryCatalog.ListBranches(ctx, repositoryID)
+	if err != nil {
+		return nil, false, err
+	}
+	if afterBranch == "" {
+		it.SeekGE(prefixBranch)
+	} else {
+		it.SeekGE(afterBranch)
+	}
+	var branches []*catalog.Branch
+	for it.Next() {
+		v := it.Value()
+		branchID := v.BranchID.String()
+		if !strings.HasPrefix(branchID, prefix) {
+			break
+		}
+		branch := &catalog.Branch{
+			Repository: repositoryID.String(),
+			Name:       v.BranchID.String(),
+		}
+		branches = append(branches, branch)
+		if len(branches) >= limit+1 {
+			break
+		}
+	}
+	if it.Err() != nil {
+		return nil, false, it.Err()
+	}
+	// return results (optional trimmed) and hasMore
+	hasMore := false
+	if len(branches) >= limit {
+		hasMore = true
+		branches = branches[:limit]
+	}
+	return branches, hasMore, nil
 }
 
 func (c *cataloger) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
@@ -165,7 +263,15 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository string, b
 }
 
 func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := graveler.NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	return c.EntryCatalog.Reset(ctx, repositoryID, branchID)
 }
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
@@ -272,7 +378,65 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch s
 }
 
 func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return nil, false, err
+	}
+	ref, err := graveler.NewRef(reference)
+	if err != nil {
+		return nil, false, err
+	}
+	prefixPath, err := NewPath(prefix)
+	if err != nil {
+		return nil, false, err
+	}
+	delimiterPath, err := NewPath(delimiter)
+	if err != nil {
+		return nil, false, err
+	}
+	afterPath, err := NewPath(after)
+	if err != nil {
+		return nil, false, err
+	}
+	it, err := c.EntryCatalog.ListEntries(ctx, repositoryID, ref, prefixPath, delimiterPath)
+	if err != nil {
+		return nil, false, err
+	}
+	it.SeekGE(afterPath)
+	// normalize limit
+	if limit < 0 || limit > ListEntriesLimitMax {
+		limit = ListEntriesLimitMax
+	}
+	var entries []*catalog.Entry
+	for it.Next() {
+		v := it.Value()
+		entry := &catalog.Entry{
+			CommonLevel: v.CommonPrefix,
+			Path:        v.Path.String(),
+		}
+		if v.Entry != nil {
+			entry.PhysicalAddress = v.Address
+			entry.CreationDate = v.LastModified.AsTime()
+			entry.Size = v.Size
+			entry.Checksum = hex.EncodeToString(v.ETag)
+			entry.Metadata = v.Metadata
+			entry.Expired = false
+		}
+		entries = append(entries, entry)
+		if len(entries) >= limit+1 {
+			break
+		}
+	}
+	if it.Err() != nil {
+		return nil, false, it.Err()
+	}
+	// trim result if needed and return has more
+	hasMore := false
+	if len(entries) >= limit {
+		hasMore = true
+		entries = entries[:limit]
+	}
+	return entries, hasMore, nil
 }
 
 func (c *cataloger) ResetEntry(ctx context.Context, repository string, branch string, path string) error {
