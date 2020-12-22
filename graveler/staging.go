@@ -73,7 +73,7 @@ func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
 }
 
 func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error {
-	upperBound := getUpperBoundForPrefix(prefix)
+	upperBound := UpperBoundForPrefix(prefix)
 	builder := sq.Delete("graveler_staging_kv").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if upperBound != nil {
@@ -88,7 +88,7 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 	return err
 }
 
-func getUpperBoundForPrefix(prefix Key) Key {
+func UpperBoundForPrefix(prefix []byte) []byte {
 	idx := len(prefix) - 1
 	for idx >= 0 && prefix[idx] == math.MaxUint8 {
 		idx--
@@ -96,7 +96,7 @@ func getUpperBoundForPrefix(prefix Key) Key {
 	if idx == -1 {
 		return nil
 	}
-	upperBound := make(Key, idx+1)
+	upperBound := make([]byte, idx+1)
 	copy(upperBound, prefix[:idx+1])
 	upperBound[idx]++
 	return upperBound

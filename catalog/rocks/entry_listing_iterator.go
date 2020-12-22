@@ -1,8 +1,9 @@
 package rocks
 
 import (
-	"math"
 	"strings"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type entryListingIterator struct {
@@ -11,18 +12,6 @@ type entryListingIterator struct {
 	delimiter string
 	nextFunc  func() bool
 	value     *EntryListing
-}
-
-// getListingNextPath returns the following value (i.e will increase the last byte by 1)
-// in the following cases will return received value: empty value, the last byte is math.MaxUint8
-func getListingNextPath(value Path) Path {
-	if len(value) == 0 || value[len(value)-1] == math.MaxUint8 {
-		return value
-	}
-	copiedDelimiter := make([]byte, len(value))
-	copy(copiedDelimiter, value)
-	copiedDelimiter[len(copiedDelimiter)-1]++
-	return Path(copiedDelimiter)
 }
 
 func NewEntryListingIterator(it EntryIterator, prefix Path, delimiter Path) EntryListingIterator {
@@ -73,8 +62,8 @@ func (e *entryListingIterator) nextNoDelimiter() bool {
 
 func (e *entryListingIterator) nextWithDelimiter() bool {
 	if e.value != nil && e.value.CommonPrefix {
-		nextPath := getListingNextPath(e.value.Path)
-		e.it.SeekGE(nextPath)
+		nextPath := graveler.UpperBoundForPrefix([]byte(e.value.Path))
+		e.it.SeekGE(Path(nextPath))
 	}
 	if !e.it.Next() {
 		e.value = nil
