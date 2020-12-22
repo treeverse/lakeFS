@@ -195,6 +195,7 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 
 	part1 := &tree.Part{Name: "one", MaxKey: graveler.Key("cz")}
 	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	part4 := &tree.Part{Name: "four", MaxKey: graveler.Key("hz")}
 	source := NewFakePartsAndValuesIterator()
 	source.
 		AddPart(part1).
@@ -202,7 +203,10 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 		AddPart(part2).
 		AddValueRecords(makeV("d", "source:d")).
 		AddPart(&tree.Part{Name: "three", MaxKey: graveler.Key("ez")}).
-		AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f"))
+		AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f")).
+		AddPart(part4).
+		AddValueRecords(makeV("g", "source:g"), makeV("h", "source:h"))
+
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeTombstoneV("e"),
 	})
@@ -211,6 +215,7 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part1}))
 	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
+	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part4}))
 
 	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
 }
