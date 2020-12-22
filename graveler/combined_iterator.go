@@ -5,12 +5,12 @@ import "bytes"
 // combinedIterator iterates over two listing iterators,
 // in case of duplication (in values or in errors) returns value in iterA
 type combinedIterator struct {
-	iterA ListingIterator
-	iterB ListingIterator
-	p     ListingIterator
+	iterA ValueIterator
+	iterB ValueIterator
+	p     ValueIterator
 }
 
-func NewCombinedIterator(iterA, iterB ListingIterator) ListingIterator {
+func NewCombinedIterator(iterA, iterB ValueIterator) ValueIterator {
 	return &combinedIterator{
 		iterA: iterA,
 		iterB: iterB,
@@ -80,7 +80,7 @@ func (c *combinedIterator) SeekGE(id Key) {
 	c.iterB.SeekGE(id)
 }
 
-func (c *combinedIterator) Value() *Listing {
+func (c *combinedIterator) Value() *ValueRecord {
 	if c.p == nil {
 		return nil
 	}
