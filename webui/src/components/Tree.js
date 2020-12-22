@@ -290,7 +290,7 @@ const merge = (path, entriesAtPath, diffResults) => {
     const entryTypes = {};
     const entries = [...entriesAtPath];
 
-    const paths = entries.filter(t => t.path_type === 'common_prefix').map(t => t.path)
+    const paths = entries.filter(t => t.path_type === 'common_prefix').map(t => t.path);
     const relevantChanges = diffResults.filter(diff => isChildOf(path, diff.path));
     for (let diff of relevantChanges) {
         // get common prefix if needed
@@ -327,7 +327,7 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
     const refreshData = useCallback(() => {
         if (refId.type === 'branch') {
             if (refId.id === repo.default_branch) {
-                listBranches(repo.id, "", 2) // trigger list branches to
+                listBranches(repo.id, "") // trigger list branches to
             }
         }
     }, [repo.id, listBranches, refId, repo.default_branch]);

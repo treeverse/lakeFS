@@ -15,7 +15,7 @@ const (
 	Separator = "/"
 
 	rePath      = "(?P<path>.*)"
-	reReference = "(?P<ref>[a-z0-9\\-]+)"
+	reReference = `(?P<ref>\w[-\w]*)`
 )
 
 var (

@@ -20,10 +20,7 @@ Whether it’s a bug report, new feature, correction, or additional documentatio
 
 ### Ask a question
 
-If you have any questions or need technical support, feel free to message us in the [slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw)#help channel. 
+If you have any questions or need technical support, feel free to message us in the [slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) #help channel. 
 
-### DockerHub
-
-lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/u/treeverse/).
 
 
