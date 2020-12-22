@@ -62,8 +62,11 @@ func (e *entryListingIterator) nextNoDelimiter() bool {
 
 func (e *entryListingIterator) nextWithDelimiter() bool {
 	if e.value != nil && e.value.CommonPrefix {
-		nextPath := graveler.UpperBoundForPrefix([]byte(e.value.Path))
-		e.it.SeekGE(Path(nextPath))
+		nextPath := e.value.Path
+		if upperBound := graveler.UpperBoundForPrefix([]byte(nextPath)); upperBound != nil {
+			nextPath = Path(upperBound)
+		}
+		e.it.SeekGE(nextPath)
 	}
 	if !e.it.Next() {
 		e.value = nil
