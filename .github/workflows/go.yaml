@@ -37,7 +37,18 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-      - name: install UI dependencies
+      - name: Cache node_modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: node_modules/
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('webui/package-lock.json') }}
+          restore-keys:
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install UI dependencies
         run: npm install
         working-directory: ./webui
       - name: Setup Go
