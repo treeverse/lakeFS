@@ -12,8 +12,8 @@ import (
 // Just a sketch of Apply; it will probably be much harder to write...
 func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.ValueIterator) error {
 	logger := logging.FromContext(ctx)
-	sourceDone, diffsDone := !source.Next(), !diffs.Next()
-	for !sourceDone && !diffsDone {
+	haveSource, haveDiffs := source.Next(), diffs.Next()
+	for haveSource && haveDiffs {
 		sourceValue, sourcePart := source.Value()
 		diffValue := diffs.Value()
 		if sourceValue == nil {
@@ -23,14 +23,10 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 				if err := writer.AddParts([]Part{*sourcePart}); err != nil {
 					return fmt.Errorf("copy source part %s: %w", sourcePart.Name, err)
 				}
-				if !source.NextPart() {
-					sourceDone = true
-				}
+				haveSource = source.NextPart()
 			} else {
-				// Source at start of part which we need to scan.
-				if !source.Next() {
-					sourceDone = true
-				}
+				// Source is at start of part which we need to scan, enter it.
+				haveSource = source.Next()
 			}
 			continue
 		}
@@ -41,7 +37,7 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 				return fmt.Errorf("write source record: %w", err)
 			}
 		} else {
-			// select record from diffs, possibly (c==0) overwiting source
+			// select record from diffs, possibly (c==0) overwriting source
 			if !diffValue.IsTombstone() {
 				if err := writer.WriteRecord(*diffValue); err != nil {
 					return fmt.Errorf("write added record: %w", err)
@@ -54,37 +50,30 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 		}
 		if c >= 0 {
 			// used up this record from diffs
-			if !diffs.Next() {
-				diffsDone = true
-			}
+			haveDiffs = diffs.Next()
 		}
 		if c <= 0 {
 			// used up this record from source
-			if !source.Next() {
-				sourceDone = true
-			}
+			haveSource = source.Next()
 		}
 	}
-	for !sourceDone {
+	for haveSource {
 		sourceValue, sourcePart := source.Value()
 		if sourceValue == nil {
 			if err := writer.AddParts([]Part{*sourcePart}); err != nil {
 				return fmt.Errorf("copy source part %s: %w", sourcePart.Name, err)
 			}
-			if !source.NextPart() {
-				sourceDone = true
-			}
+			haveSource = source.NextPart()
 		} else {
 			if err := writer.WriteRecord(*sourceValue); err != nil {
 				return fmt.Errorf("write source record: %w", err)
 			}
-			if !source.Next() {
-				sourceDone = true
-			}
+			haveSource = source.Next()
 		}
 	}
-	for !diffsDone {
+	for haveDiffs {
 		diffValue := diffs.Value()
+		haveDiffs = diffs.Next()
 		if diffValue.IsTombstone() {
 			// internal error but no data lost: deletion requested of a
 			// file that was not there.
@@ -93,9 +82,6 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 		}
 		if err := writer.WriteRecord(*diffValue); err != nil {
 			return fmt.Errorf("write added record: %w", err)
-		}
-		if !diffs.Next() {
-			diffsDone = true
 		}
 	}
 	return nil
