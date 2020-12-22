@@ -2,13 +2,12 @@ package pyramid
 
 import (
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
 	"strconv"
 	"sync"
 	"testing"
-
-	"github.com/thanhpk/randstr"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -24,7 +23,7 @@ func TestSimpleWriteRead(t *testing.T) {
 	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
 
-	content := "hello world!"
+	content := []byte("hello world!")
 	writeToFile(t, namespace, filename, content)
 	checkContent(t, namespace, filename, content)
 }
@@ -35,8 +34,8 @@ func TestReadFailDuringWrite(t *testing.T) {
 	f, err := fs.Create(namespace)
 	require.NoError(t, err)
 
-	content := "some content"
-	n, err := f.Write([]byte(content))
+	content := []byte("some content")
+	n, err := f.Write(content)
 	require.NoError(t, err)
 	require.Equal(t, len(content), n)
 
@@ -64,25 +63,27 @@ func TestStartup(t *testing.T) {
 	namespace := uuid.New().String()
 
 	// cleanup
+	baseDir := path.Join(os.TempDir(), fsName)
 	defer func() {
-		if err := os.RemoveAll(path.Join(os.TempDir(), fsName)); err != nil {
-			panic(err)
+		if err := os.RemoveAll(baseDir); err != nil {
+			t.Fatal("Remove all filed under", baseDir, err)
 		}
 	}()
 
-	namespacePath := path.Join(os.TempDir(), fsName, namespace)
+	namespacePath := path.Join(baseDir, namespace)
 	workspacePath := path.Join(namespacePath, workspaceDir)
 	if err := os.MkdirAll(workspacePath, os.ModePerm); err != nil {
-		panic(err)
+		t.Fatal("make dir under", workspacePath, err)
 	}
 
 	filename := "ThisShouldStay"
-	content := "This Should Stay - I'm telling You!!!!"
-	if err := ioutil.WriteFile(path.Join(namespacePath, filename), []byte(content), os.ModePerm); err != nil {
-		panic(err)
+	content := []byte("This Should Stay - I'm telling You!!!!")
+	if err := ioutil.WriteFile(path.Join(namespacePath, filename), content, os.ModePerm); err != nil {
+		t.Fatal("write file", filename, err)
 	}
+
 	if err := ioutil.WriteFile(path.Join(workspacePath, "ThisShouldNotStay"), []byte("ThisShouldNotStay"), os.ModePerm); err != nil {
-		panic(err)
+		t.Fatal("write file", err)
 	}
 
 	localFS, err := NewFS(&Config{
@@ -93,7 +94,7 @@ func TestStartup(t *testing.T) {
 		allocatedDiskBytes:   allocatedDiskBytes,
 	})
 	if err != nil {
-		panic(err)
+		t.Fatal("NewFS", err)
 	}
 
 	dir, err := os.Open(workspacePath)
@@ -106,7 +107,7 @@ func TestStartup(t *testing.T) {
 
 	bytes, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
-	require.Equal(t, content, string(bytes))
+	require.Equal(t, content, bytes)
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
@@ -114,10 +115,10 @@ func testEviction(t *testing.T, namespaces ...string) {
 	fileBytes := 512 * 1024
 	numFiles := 5 * allocatedDiskBytes / fileBytes
 	// write
+	content := make([]byte, fileBytes)
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
-
-		content := randstr.String(fileBytes, "abcdefghijklmnopqrstuvwxyz")
+		rand.Read(content)
 		writeToFile(t, namespaces[i%len(namespaces)], filename, content)
 	}
 
@@ -146,7 +147,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	// write a single file to lookup later
 	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
-	content := "hello world!"
+	content := []byte("hello world!")
 	writeToFile(t, namespace, filename, content)
 
 	// fill the cache so the file is evicted
@@ -172,12 +173,12 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	require.Equal(t, readsSoFar+1, adapter.GetCount())
 }
 
-func writeToFile(t *testing.T, namespace, filename, content string) {
+func writeToFile(t *testing.T, namespace, filename string, content []byte) {
 	t.Helper()
 	f, err := fs.Create(namespace)
 	require.NoError(t, err)
 
-	n, err := f.Write([]byte(content))
+	n, err := f.Write(content)
 	require.NoError(t, err)
 	require.Equal(t, len(content), n)
 
@@ -185,7 +186,7 @@ func writeToFile(t *testing.T, namespace, filename, content string) {
 	require.NoError(t, f.Store(filename))
 }
 
-func checkContent(t *testing.T, namespace string, filename string, content string) {
+func checkContent(t *testing.T, namespace string, filename string, content []byte) {
 	t.Helper()
 	f, err := fs.Open(namespace, filename)
 	require.NoError(t, err)
@@ -193,7 +194,5 @@ func checkContent(t *testing.T, namespace string, filename string, content strin
 
 	bytes, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
-	if content != string(bytes) {
-		require.Equal(t, content, string(bytes))
-	}
+	require.Equal(t, content, bytes)
 }
