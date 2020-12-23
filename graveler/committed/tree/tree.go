@@ -59,11 +59,6 @@ type Repo interface {
 	// positioned at the start point. When Next() will be called, first value that is GE
 	// than the from key will be returned
 	NewPartIterator(partID committed.ID, from graveler.Key) (graveler.ValueIterator, error)
-
-	// RemoveCommonParts accepts the left and right trees of the diff, and finds the common parts which
-	// exist in both trees.
-	// it returns the left and right trees with common parts filtered.
-	RemoveCommonParts(Left, Right Tree) (*Tree, *Tree, error)
 }
 
 // Writer is an abstraction for creating new trees
@@ -73,12 +68,9 @@ type Writer interface {
 	// If the most recent insertion was using AddParts, the key must be greater than any key in the added parts.
 	WriteRecord(record graveler.ValueRecord) error
 
-	// AddParts adds complete parts to the tree at the current insertion point.
-	// Added parts must not contain keys smaller than last previously written value.
-	AddParts(parts []Part) error
-
-	// FlushIterToTree writes the content of an iterator to the tree.
-	FlushIterToTree(iter graveler.ValueIterator) error
+	// AddPart adds a complete part to the tree at the current insertion point.
+	// Added part must not contain keys smaller than last previously written value.
+	AddPart(parts Part) error
 
 	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS
