@@ -651,6 +651,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 			diff.Type = catalog.DifferenceTypeConflict
 		}
 		diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
+		diffs = append(diffs, diff)
 		if len(diffs) >= limit+1 {
 			break
 		}
