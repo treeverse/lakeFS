@@ -608,49 +608,36 @@ func (c *cataloger) RollbackCommit(ctx context.Context, repository string, branc
 }
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
-	repositoryID, err := graveler.NewRepositoryID(repository)
+	it, err := c.EntryCatalog.Diff(ctx, graveler.RepositoryID(repository), graveler.Ref(leftReference), graveler.Ref(rightReference))
 	if err != nil {
 		return nil, false, err
 	}
-	leftRef, err := graveler.NewRef(leftReference)
+	return listDiffHelper(it, params.Limit, params.After)
+}
+
+func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (catalog.Differences, bool, error) {
+	it, err := c.EntryCatalog.DiffUncommitted(ctx, graveler.RepositoryID(repository), graveler.BranchID(branch))
 	if err != nil {
 		return nil, false, err
 	}
-	rightRef, err := graveler.NewRef(rightReference)
-	if err != nil {
-		return nil, false, err
-	}
-	afterPath, err := NewPath(params.After)
-	if err != nil {
-		return nil, false, err
-	}
-	limit := params.Limit
+	return listDiffHelper(it, limit, after)
+}
+
+func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Differences, bool, error) {
 	if limit < 0 || limit > DiffLimitMax {
 		limit = DiffLimitMax
 	}
-	it, err := c.EntryCatalog.Diff(ctx, repositoryID, leftRef, rightRef)
-	if err != nil {
-		return nil, false, err
+	afterPath := Path(after)
+	if afterPath != "" {
+		it.SeekGE(afterPath)
 	}
-	it.SeekGE(afterPath)
 	var diffs catalog.Differences
 	for it.Next() {
 		v := it.Value()
 		if v.Path == afterPath {
 			continue
 		}
-		var diff catalog.Difference
-		switch v.Type {
-		case graveler.DiffTypeAdded:
-			diff.Type = catalog.DifferenceTypeAdded
-		case graveler.DiffTypeRemoved:
-			diff.Type = catalog.DifferenceTypeRemoved
-		case graveler.DiffTypeChanged:
-			diff.Type = catalog.DifferenceTypeChanged
-		case graveler.DiffTypeConflict:
-			diff.Type = catalog.DifferenceTypeConflict
-		}
-		diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
+		diff := newDifferenceFromEntryDiff(v)
 		diffs = append(diffs, diff)
 		if len(diffs) >= limit+1 {
 			break
@@ -665,10 +652,6 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 		diffs = diffs[:limit]
 	}
 	return diffs, hasMore, nil
-}
-
-func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (catalog.Differences, bool, error) {
-	panic("not implemented") // TODO: Implement
 }
 
 func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch string, rightBranch string, committer string, message string, metadata catalog.Metadata) (*catalog.MergeResult, error) {
@@ -719,4 +702,20 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 		catEnt.Expired = false
 	}
 	return catEnt
+}
+
+func newDifferenceFromEntryDiff(v *EntryDiff) catalog.Difference {
+	var diff catalog.Difference
+	switch v.Type {
+	case graveler.DiffTypeAdded:
+		diff.Type = catalog.DifferenceTypeAdded
+	case graveler.DiffTypeRemoved:
+		diff.Type = catalog.DifferenceTypeRemoved
+	case graveler.DiffTypeChanged:
+		diff.Type = catalog.DifferenceTypeChanged
+	case graveler.DiffTypeConflict:
+		diff.Type = catalog.DifferenceTypeConflict
+	}
+	diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
+	return diff
 }

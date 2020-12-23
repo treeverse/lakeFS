@@ -121,7 +121,7 @@ type EntryCatalog interface {
 	Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID) (graveler.CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from Path) (EntryDiffIterator, error)
+	DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (EntryDiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref
 	Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref) (EntryDiffIterator, error)
@@ -262,16 +262,11 @@ func (e *entryCatalog) Merge(ctx context.Context, repositoryID graveler.Reposito
 	return e.store.Merge(ctx, repositoryID, from, to)
 }
 
-func (e *entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from Path) (EntryDiffIterator, error) {
-	fromKey, err := graveler.NewKey(from.String())
-	if err != nil {
-		return nil, err
-	}
+func (e *entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (EntryDiffIterator, error) {
 	iter, err := e.store.DiffUncommitted(ctx, repositoryID, branchID)
 	if err != nil {
 		return nil, err
 	}
-	iter.SeekGE(fromKey)
 	return NewEntryDiffIterator(iter), nil
 }
 
