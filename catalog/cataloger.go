@@ -77,7 +77,7 @@ type Cataloger interface {
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
 
-	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error)
+	CreateBranch(ctx context.Context, repository, branch string, sourceRef string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
 	BranchExists(ctx context.Context, repository string, branch string) (bool, error)
@@ -115,14 +115,10 @@ type Cataloger interface {
 
 	DedupReportChannel() chan *DedupReport
 
-	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
-	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
-	DeleteMultipartUpload(ctx context.Context, repository, uploadID string) error
-
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
-	RollbackCommit(ctx context.Context, repository, reference string) error
+	RollbackCommit(ctx context.Context, repository, branch string, reference string) error
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)

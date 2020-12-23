@@ -1396,6 +1396,7 @@ paths:
         - in: query
           name: amount
           type: integer
+          default: 100
       responses:
         200:
           description: commit log
@@ -1584,6 +1585,7 @@ paths:
       - in: query
         name: amount
         type: integer
+        default: 100
     get:
       tags:
         - branches
@@ -1637,6 +1639,7 @@ paths:
       - in: query
         name: amount
         type: integer
+        default: 100
     get:
       tags:
         - refs
@@ -1911,6 +1914,7 @@ paths:
       - in: query
         name: amount
         type: integer
+        default: 100
     get:
       tags:
         - objects
@@ -2048,7 +2052,7 @@ paths:
         - export
         - branches
       operationId: repair
-      summary: mark failed export as repaired
+      summary: set continuous export state as repaired
       responses:
         201:
           description: continuous export status successfully changed to repaired
@@ -2163,3 +2167,4 @@ paths:
             $ref: "#/definitions/config"
         401:
           $ref: "#/responses/Unauthorized"
+

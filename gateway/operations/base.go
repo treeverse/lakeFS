@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -25,15 +26,16 @@ const StorageClassHeader = "x-amz-storage-class"
 type ActionIncr func(string)
 
 type Operation struct {
-	Request        *http.Request
-	ResponseWriter http.ResponseWriter
-	Region         string
-	FQDN           string
-	Cataloger      catalog.Cataloger
-	BlockStore     block.Adapter
-	Auth           simulator.GatewayAuthService
-	Incr           ActionIncr
-	DedupCleaner   *dedup.Cleaner
+	Request           *http.Request
+	ResponseWriter    http.ResponseWriter
+	Region            string
+	FQDN              string
+	Cataloger         catalog.Cataloger
+	MultipartsTracker multiparts.Tracker
+	BlockStore        block.Adapter
+	Auth              simulator.GatewayAuthService
+	Incr              ActionIncr
+	DedupCleaner      *dedup.Cleaner
 }
 
 func (o *Operation) RequestID() string {
@@ -112,6 +114,11 @@ func DecodeXMLBody(reader io.Reader, entity interface{}) error {
 // SetHeader sets a header on the response while preserving its case
 func (o *Operation) SetHeader(key, value string) {
 	o.ResponseWriter.Header()[key] = []string{value}
+}
+
+// DeleteHeader deletes a header from the response
+func (o *Operation) DeleteHeader(key string) {
+	o.ResponseWriter.Header().Del(key)
 }
 
 // SetHeaders sets a map of headers on the response while preserving the header's case

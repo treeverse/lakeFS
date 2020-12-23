@@ -76,6 +76,8 @@ func (m *mockCollector) CollectMetadata(_ *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
+func (m *mockCollector) SetInstallationID(_ string) {}
+
 func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	var blockAdapter block.Adapter

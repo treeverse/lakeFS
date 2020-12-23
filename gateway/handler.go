@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/sig"
@@ -36,34 +38,37 @@ type handler struct {
 }
 
 type ServerContext struct {
-	ctx          context.Context
-	region       string
-	bareDomain   string
-	cataloger    catalog.Cataloger
-	blockStore   block.Adapter
-	authService  simulator.GatewayAuthService
-	stats        stats.Collector
-	dedupCleaner *dedup.Cleaner
+	ctx               context.Context
+	region            string
+	bareDomain        string
+	cataloger         catalog.Cataloger
+	multipartsTracker multiparts.Tracker
+	blockStore        block.Adapter
+	authService       simulator.GatewayAuthService
+	stats             stats.Collector
+	dedupCleaner      *dedup.Cleaner
 }
 
 const operationIDNotFound = "not_found_operation"
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
-		ctx:          ctx,
-		region:       c.region,
-		bareDomain:   c.bareDomain,
-		cataloger:    c.cataloger,
-		blockStore:   c.blockStore.WithContext(ctx),
-		authService:  c.authService,
-		stats:        c.stats,
-		dedupCleaner: c.dedupCleaner,
+		ctx:               ctx,
+		region:            c.region,
+		bareDomain:        c.bareDomain,
+		cataloger:         c.cataloger,
+		multipartsTracker: c.multipartsTracker,
+		blockStore:        c.blockStore.WithContext(ctx),
+		authService:       c.authService,
+		stats:             c.stats,
+		dedupCleaner:      c.dedupCleaner,
 	}
 }
 
 func NewHandler(
 	region string,
 	cataloger catalog.Cataloger,
+	multipartsTracker multiparts.Tracker,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
 	bareDomain string,
@@ -71,14 +76,15 @@ func NewHandler(
 	dedupCleaner *dedup.Cleaner,
 ) http.Handler {
 	sc := &ServerContext{
-		ctx:          context.Background(),
-		cataloger:    cataloger,
-		region:       region,
-		bareDomain:   bareDomain,
-		blockStore:   blockStore,
-		authService:  authService,
-		stats:        stats,
-		dedupCleaner: dedupCleaner,
+		ctx:               context.Background(),
+		cataloger:         cataloger,
+		multipartsTracker: multipartsTracker,
+		region:            region,
+		bareDomain:        bareDomain,
+		blockStore:        blockStore,
+		authService:       authService,
+		stats:             stats,
+		dedupCleaner:      dedupCleaner,
 	}
 
 	// setup routes
@@ -112,13 +118,14 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perms []permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
-		Request:        request,
-		ResponseWriter: writer,
-		Region:         s.region,
-		FQDN:           s.bareDomain,
-		Cataloger:      s.cataloger,
-		BlockStore:     s.blockStore,
-		Auth:           s.authService,
+		Request:           request,
+		ResponseWriter:    writer,
+		Region:            s.region,
+		FQDN:              s.bareDomain,
+		Cataloger:         s.cataloger,
+		MultipartsTracker: s.multipartsTracker,
+		BlockStore:        s.blockStore,
+		Auth:              s.authService,
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
@@ -207,13 +214,14 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
 	return &operations.Operation{
-		Request:        request,
-		ResponseWriter: writer,
-		Region:         sc.region,
-		FQDN:           sc.bareDomain,
-		Cataloger:      sc.cataloger,
-		BlockStore:     sc.blockStore,
-		Auth:           sc.authService,
+		Request:           request,
+		ResponseWriter:    writer,
+		Region:            sc.region,
+		FQDN:              sc.bareDomain,
+		Cataloger:         sc.cataloger,
+		MultipartsTracker: sc.multipartsTracker,
+		BlockStore:        sc.blockStore,
+		Auth:              sc.authService,
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
@@ -340,8 +348,46 @@ func notFound(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
+var commaSeparator = regexp.MustCompile(`,\s*`)
+
+var (
+	contentTypeApplicationXML = "application/xml"
+	contentTypeTextXML        = "text/xml"
+)
+
+func selectContentType(acceptable []string) *string {
+	for _, acceptableTypes := range acceptable {
+		acceptable := commaSeparator.Split(acceptableTypes, -1)
+		for _, a := range acceptable {
+			switch a {
+			case contentTypeTextXML:
+				return &contentTypeTextXML
+			case contentTypeApplicationXML:
+				return &contentTypeApplicationXML
+			}
+		}
+	}
+	return nil
+}
+
+func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
+	acceptable, ok := r.Header["Accept"]
+	if ok {
+		defaultContentType := selectContentType(acceptable)
+		if defaultContentType != nil {
+			w.Header().Set("Content-Type", *defaultContentType)
+		}
+		// If no requested content type matched, still OK at least for proxied content
+		// (GET or HEAD), so set up to auto-detect.
+	} else {
+		w.Header().Set("Content-Type", contentTypeApplicationXML)
+		// For proxied content (GET or HEAD) the type will be reset according to
+		// whatever headers arrive, including setting up to auto-detect content-type if
+		// none is specified by the adapter.
+	}
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// pprof endpoints
 	handler := h.servePathBased(r)
 	if handler == nil {
 		handler = h.serveVirtualHost(r)
@@ -351,6 +397,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
+	setDefaultContentType(mrw, r)
 	handler.ServeHTTP(mrw, r)
 	requestHistograms.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }

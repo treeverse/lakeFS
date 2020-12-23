@@ -263,8 +263,6 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
-		c.deps.Collector.CollectEvent("global", "init")
-
 		username := swag.StringValue(setupReq.User.Username)
 		var cred *model.Credential
 		if setupReq.User.Key == nil {
@@ -276,7 +274,13 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
-
+		metadata, err := c.deps.MetadataManager.Write()
+		if err != nil {
+			c.deps.logger.Error("failed to write metadata after setup")
+		} else {
+			c.deps.Collector.SetInstallationID(metadata[auth.InstallationIDKeyName])
+		}
+		c.deps.Collector.CollectEvent("global", "init")
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
@@ -678,8 +682,8 @@ func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 		}
 		deps.LogAction("create_branch")
 		cataloger := deps.Cataloger
-		sourceBranch := swag.StringValue(params.Branch.Source)
-		commitLog, err := cataloger.CreateBranch(c.Context(), repository, branch, sourceBranch)
+		sourceRef := swag.StringValue(params.Branch.Source)
+		commitLog, err := cataloger.CreateBranch(c.Context(), repository, branch, sourceRef)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1289,7 +1293,7 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 		ctx := c.Context()
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCommit:
-			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
+			err = cataloger.RollbackCommit(ctx, params.Repository, params.Branch, params.Revert.Commit)
 		case models.RevertCreationTypeCommonPrefix:
 			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeReset:

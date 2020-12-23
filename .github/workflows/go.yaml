@@ -7,10 +7,12 @@ on:
 jobs:
   validator:
     name: Run Linters and Checkers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: '1'
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
@@ -23,11 +25,11 @@ jobs:
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
-        uses: zricethezav/gitleaks-action@v1.1.2
+        uses: zricethezav/gitleaks-action@v1.1.4
 
   test:
     name: Run Test Suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2

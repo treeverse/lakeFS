@@ -404,6 +404,15 @@ class Branches {
         return response.json();
     }
 
+    async delete(repoId, name) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${name}`, {
+            method: 'DELETE',
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
     async revert(repoId, branch, options) {
         const response = await apiRequest(`/repositories/${repoId}/branches/${branch}`, {
             method: 'PUT',
@@ -472,7 +481,7 @@ class Objects {
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
             method: 'POST',
             body: data,
-        }, {}, null, {});
+        }, {}, {});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }

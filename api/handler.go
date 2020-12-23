@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/treeverse/lakefs/parade"
-
 	openapierr "github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
@@ -25,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/retention"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"

@@ -74,12 +74,6 @@ func IsValidReference(reference string) bool {
 	return true
 }
 
-func ValidateUploadID(uploadID string) ValidateFunc {
-	return func() bool {
-		return IsNonEmptyString(uploadID)
-	}
-}
-
 func ValidatePath(name string) ValidateFunc {
 	return func() bool {
 		return IsNonEmptyString(name)

@@ -15,12 +15,12 @@ const (
 	Separator = "/"
 
 	rePath      = "(?P<path>.*)"
-	reReference = "(?P<ref>[a-z0-9\\-]+)"
+	reReference = `(?P<ref>\w[-\w]*)`
 )
 
 var (
-	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("/?%s/%s", reReference, rePath))
-	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("/?%s", reReference))
+	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("^/?%s/%s", reReference, rePath))
+	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("^/?%s", reReference))
 
 	ErrPathMalformed = errors.New("encoded path is malformed")
 )
@@ -57,36 +57,28 @@ func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 }
 
 func ResolvePath(encodedPath string) (ResolvedPath, error) {
-	result := make(map[string]string)
 	r := ResolvedPath{}
 	if len(encodedPath) == 0 {
 		return r, nil // empty path.
 	}
-	match := EncodedPathRe.FindStringSubmatch(encodedPath)
-	if len(match) == 0 {
-		// attempt to see if this is a ref only
-		match = EncodedPathReferenceRe.FindStringSubmatch(encodedPath)
-		if len(match) > 0 {
-			for i, name := range EncodedPathReferenceRe.SubexpNames() {
-				if i != 0 && name != "" {
-					result[name] = match[i]
-				}
+	// try reference with path or just reference regexp
+	for _, re := range []*regexp.Regexp{EncodedPathRe, EncodedPathReferenceRe} {
+		match := re.FindStringSubmatch(encodedPath)
+		if len(match) == 0 {
+			continue
+		}
+		for i, name := range re.SubexpNames() {
+			switch name {
+			case "ref":
+				r.Ref = match[i]
+			case "path":
+				r.Path = match[i]
+				r.WithPath = true
 			}
-			r.Ref = result["ref"]
-			return r, nil
 		}
-		r.WithPath = false
-		return r, ErrPathMalformed
+		return r, nil
 	}
-	for i, name := range EncodedPathRe.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
-		}
-	}
-	r.Path = result["path"]
-	r.Ref = result["ref"]
-	r.WithPath = true
-	return r, nil
+	return r, ErrPathMalformed
 }
 
 func WithRef(path, ref string) string {
