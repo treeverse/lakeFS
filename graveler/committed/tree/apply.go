@@ -20,7 +20,7 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 			if bytes.Compare(sourcePart.MaxKey, diffValue.Key) < 0 {
 				// Source at start of part which we do not need to scan --
 				// write and skip that entire part.
-				if err := writer.AddParts([]Part{*sourcePart}); err != nil {
+				if err := writer.AddPart(*sourcePart); err != nil {
 					return fmt.Errorf("copy source part %s: %w", sourcePart.Name, err)
 				}
 				haveSource = source.NextPart()
@@ -60,7 +60,7 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 	for haveSource {
 		sourceValue, sourcePart := source.Value()
 		if sourceValue == nil {
-			if err := writer.AddParts([]Part{*sourcePart}); err != nil {
+			if err := writer.AddPart(*sourcePart); err != nil {
 				return fmt.Errorf("copy source part %s: %w", sourcePart.Name, err)
 			}
 			haveSource = source.NextPart()
