@@ -60,7 +60,7 @@ type EntryCatalog interface {
 	CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error)
 
 	// ListRepositories returns iterator to scan repositories
-	ListRepositories(ctx context.Context, from graveler.RepositoryID) (graveler.RepositoryIterator, error)
+	ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error
@@ -90,7 +90,7 @@ type EntryCatalog interface {
 	Log(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (graveler.CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.BranchID) (graveler.BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error
@@ -108,6 +108,12 @@ type EntryCatalog interface {
 	// Reset throw all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error
 
+	// Reset throws all staged data under the specified path on the repository / branch
+	ResetKey(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error
+
+	// Reset throws all staged data starting with the given prefix on the repository / branch
+	ResetPrefix(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, prefix Path) error
+
 	// Revert commits a change that will revert all the changes make from 'ref' specified
 	Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error)
 
@@ -115,10 +121,10 @@ type EntryCatalog interface {
 	Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID) (graveler.CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
-	DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from Path) (EntryDiffIterator, error)
+	DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (EntryDiffIterator, error)
 
-	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
-	Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from Path) (EntryDiffIterator, error)
+	// Diff returns the changes between 'left' and 'right' ref
+	Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref) (EntryDiffIterator, error)
 
 	// Get returns entry from repository / reference by path, nil entry is a valid entry for tombstone
 	// returns error if entry does not exist
@@ -161,8 +167,8 @@ func (e *entryCatalog) CreateRepository(ctx context.Context, repositoryID gravel
 	return e.store.CreateRepository(ctx, repositoryID, storageNamespace, branchID)
 }
 
-func (e *entryCatalog) ListRepositories(ctx context.Context, from graveler.RepositoryID) (graveler.RepositoryIterator, error) {
-	return e.store.ListRepositories(ctx, from)
+func (e *entryCatalog) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
+	return e.store.ListRepositories(ctx)
 }
 
 func (e *entryCatalog) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -208,8 +214,8 @@ func (e *entryCatalog) Log(ctx context.Context, repositoryID graveler.Repository
 	return e.store.Log(ctx, repositoryID, commitID)
 }
 
-func (e *entryCatalog) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.BranchID) (graveler.BranchIterator, error) {
-	return e.store.ListBranches(ctx, repositoryID, from)
+func (e *entryCatalog) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
+	return e.store.ListBranches(ctx, repositoryID)
 }
 
 func (e *entryCatalog) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
@@ -232,6 +238,22 @@ func (e *entryCatalog) Reset(ctx context.Context, repositoryID graveler.Reposito
 	return e.store.Reset(ctx, repositoryID, branchID)
 }
 
+func (e *entryCatalog) ResetKey(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, path Path) error {
+	key, err := graveler.NewKey(path.String())
+	if err != nil {
+		return err
+	}
+	return e.store.ResetKey(ctx, repositoryID, branchID, key)
+}
+
+func (e *entryCatalog) ResetPrefix(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, prefix Path) error {
+	keyPrefix, err := graveler.NewKey(prefix.String())
+	if err != nil {
+		return err
+	}
+	return e.store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
+}
+
 func (e *entryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error) {
 	return e.store.Revert(ctx, repositoryID, branchID, ref)
 }
@@ -240,25 +262,16 @@ func (e *entryCatalog) Merge(ctx context.Context, repositoryID graveler.Reposito
 	return e.store.Merge(ctx, repositoryID, from, to)
 }
 
-func (e *entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, from Path) (EntryDiffIterator, error) {
-	fromKey, err := graveler.NewKey(from.String())
-	if err != nil {
-		return nil, err
-	}
+func (e *entryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (EntryDiffIterator, error) {
 	iter, err := e.store.DiffUncommitted(ctx, repositoryID, branchID)
 	if err != nil {
 		return nil, err
 	}
-	iter.SeekGE(fromKey)
 	return NewEntryDiffIterator(iter), nil
 }
 
-func (e *entryCatalog) Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref, from Path) (EntryDiffIterator, error) {
-	fromKey, err := graveler.NewKey(from.String())
-	if err != nil {
-		return nil, err
-	}
-	iter, err := e.store.Diff(ctx, repositoryID, left, right, fromKey)
+func (e *entryCatalog) Diff(ctx context.Context, repositoryID graveler.RepositoryID, left, right graveler.Ref) (EntryDiffIterator, error) {
+	iter, err := e.store.Diff(ctx, repositoryID, left, right)
 	if err != nil {
 		return nil, err
 	}

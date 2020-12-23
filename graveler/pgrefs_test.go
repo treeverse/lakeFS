@@ -52,7 +52,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter, err := r.ListRepositories(context.Background(), "")
+		iter, err := r.ListRepositories(context.Background())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -73,10 +73,11 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter, err := r.ListRepositories(context.Background(), "aaa")
+		iter, err := r.ListRepositories(context.Background())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+		iter.SeekGE("aaa")
 
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -233,7 +234,7 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 		}))
 	}
 
-	iter, err := r.ListBranches(context.Background(), "repo1", "")
+	iter, err := r.ListBranches(context.Background(), "repo1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
