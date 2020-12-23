@@ -112,3 +112,96 @@ func Test_cataloger_ListRepositories(t *testing.T) {
 		})
 	}
 }
+
+func TestCataloger_ListBranches(t *testing.T) {
+	// prepare branch data
+	gravelerData := []*graveler.BranchRecord{
+		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
+		{BranchID: "branch2", Branch: &graveler.Branch{CommitID: "commit2"}},
+		{BranchID: "branch3", Branch: &graveler.Branch{CommitID: "commit3"}},
+	}
+	type args struct {
+		repository string
+		prefix     string
+		limit      int
+		after      string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        []*catalog.Branch
+		wantHasMore bool
+		wantErr     bool
+	}{
+		{
+			name: "all",
+			args: args{limit: -1},
+			want: []*catalog.Branch{
+				{Name: "branch1"},
+				{Name: "branch2"},
+				{Name: "branch3"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name: "first",
+			args: args{limit: 1},
+			want: []*catalog.Branch{
+				{Name: "branch1"},
+			},
+			wantHasMore: true,
+			wantErr:     false,
+		},
+		{
+			name: "second",
+			args: args{limit: 1, after: "branch1"},
+			want: []*catalog.Branch{
+				{Name: "branch2"},
+			},
+			wantHasMore: true,
+			wantErr:     false,
+		},
+		{
+			name: "last2",
+			args: args{limit: 10, after: "branch1"},
+			want: []*catalog.Branch{
+				{Name: "branch2"},
+				{Name: "branch3"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name:        "not found",
+			args:        args{limit: 10, after: "zzz"},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup cataloger
+			gravelerMock := &FakeGraveler{
+				BranchIterator: NewFakeBranchIterator(gravelerData),
+			}
+			c := &cataloger{
+				EntryCatalog: &entryCatalog{
+					store: gravelerMock,
+				},
+			}
+			// test method
+			ctx := context.Background()
+			got, hasMore, err := c.ListBranches(ctx, tt.args.repository, tt.args.prefix, tt.args.limit, tt.args.after)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Error("ListBranches() found diff", diff)
+			}
+			if hasMore != tt.wantHasMore {
+				t.Errorf("ListBranches() hasMore = %t, want %t", hasMore, tt.wantHasMore)
+			}
+		})
+	}
+}

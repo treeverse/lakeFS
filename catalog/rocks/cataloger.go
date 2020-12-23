@@ -182,26 +182,16 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch 
 }
 
 func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*catalog.Branch, bool, error) {
-	repositoryID, err := graveler.NewRepositoryID(repository)
-	if err != nil {
-		return nil, false, err
-	}
-	prefixBranch, err := graveler.NewBranchID(prefix)
-	if err != nil {
-		return nil, false, err
-	}
-	afterBranch, err := graveler.NewBranchID(after)
-	if err != nil {
-		return nil, false, err
-	}
 	// normalize limit
 	if limit < 0 || limit > ListBranchesLimitMax {
 		limit = ListBranchesLimitMax
 	}
-	it, err := c.EntryCatalog.ListBranches(ctx, repositoryID)
+	it, err := c.EntryCatalog.ListBranches(ctx, graveler.RepositoryID(repository))
 	if err != nil {
 		return nil, false, err
 	}
+	afterBranch := graveler.BranchID(after)
+	prefixBranch := graveler.BranchID(prefix)
 	if afterBranch == "" || afterBranch < prefixBranch {
 		it.SeekGE(prefixBranch)
 	} else {
@@ -219,7 +209,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 			break
 		}
 		branch := &catalog.Branch{
-			Repository: repositoryID.String(),
+			Repository: repository,
 			Name:       v.BranchID.String(),
 		}
 		branches = append(branches, branch)
