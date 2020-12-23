@@ -129,7 +129,7 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 	}
 	// trim result if needed and return has more
 	hasMore := false
-	if len(repos) >= limit {
+	if len(repos) > limit {
 		hasMore = true
 		repos = repos[:limit]
 	}
@@ -367,31 +367,14 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch s
 }
 
 func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
-	repositoryID, err := graveler.NewRepositoryID(repository)
-	if err != nil {
-		return nil, false, err
-	}
-	ref, err := graveler.NewRef(reference)
-	if err != nil {
-		return nil, false, err
-	}
-	prefixPath, err := NewPath(prefix)
-	if err != nil {
-		return nil, false, err
-	}
-	delimiterPath, err := NewPath(delimiter)
-	if err != nil {
-		return nil, false, err
-	}
-	afterPath, err := NewPath(after)
-	if err != nil {
-		return nil, false, err
-	}
 	// normalize limit
 	if limit < 0 || limit > ListEntriesLimitMax {
 		limit = ListEntriesLimitMax
 	}
-	it, err := c.EntryCatalog.ListEntries(ctx, repositoryID, ref, prefixPath, delimiterPath)
+	prefixPath := Path(prefix)
+	afterPath := Path(after)
+	delimiterPath := Path(delimiter)
+	it, err := c.EntryCatalog.ListEntries(ctx, graveler.RepositoryID(repository), graveler.Ref(reference), prefixPath, delimiterPath)
 	if err != nil {
 		return nil, false, err
 	}
@@ -413,7 +396,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, referenc
 	}
 	// trim result if needed and return has more
 	hasMore := false
-	if len(entries) >= limit {
+	if len(entries) > limit {
 		hasMore = true
 		entries = entries[:limit]
 	}
@@ -600,7 +583,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 		return nil, false, err
 	}
 	hasMore := false
-	if len(commits) >= limit {
+	if len(commits) > limit {
 		hasMore = true
 		commits = commits[:limit]
 	}
@@ -676,7 +659,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 		return nil, false, err
 	}
 	hasMore := false
-	if len(diffs) >= limit {
+	if len(diffs) > limit {
 		hasMore = true
 		diffs = diffs[:limit]
 	}
