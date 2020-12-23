@@ -192,7 +192,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}
 	afterBranch := graveler.BranchID(after)
 	prefixBranch := graveler.BranchID(prefix)
-	if afterBranch == "" || afterBranch < prefixBranch {
+	if afterBranch < prefixBranch {
 		it.SeekGE(prefixBranch)
 	} else {
 		it.SeekGE(afterBranch)
