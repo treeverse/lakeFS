@@ -194,7 +194,7 @@ func (m *RefsFake) DeleteBranch(_ context.Context, _ graveler.RepositoryID, _ gr
 	return nil
 }
 
-func (m *RefsFake) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.BranchIterator, error) {
+func (m *RefsFake) ListBranches(_ context.Context, _ graveler.RepositoryID) (graveler.BranchIterator, error) {
 	return m.ListBranchesRes, nil
 }
 

@@ -21,6 +21,7 @@ type cataloger struct {
 const (
 	ListRepositoriesLimitMax = 1000
 	ListBranchesLimitMax     = 1000
+	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
 )
 
@@ -101,15 +102,18 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 		return nil, false, fmt.Errorf("get iterator: %w", err)
 	}
 	// seek for first item
-	repositoryID, err := graveler.NewRepositoryID(after)
+	afterRepositoryID, err := graveler.NewRepositoryID(after)
 	if err != nil {
 		return nil, false, fmt.Errorf("after as repository id: %w", err)
 	}
-	it.SeekGE(repositoryID)
+	it.SeekGE(afterRepositoryID)
 
 	var repos []*catalog.Repository
 	for it.Next() {
 		record := it.Value()
+		if record.RepositoryID == afterRepositoryID {
+			continue
+		}
 		repos = append(repos, &catalog.Repository{
 			Name:             record.RepositoryID.String(),
 			StorageNamespace: record.StorageNamespace.String(),
@@ -121,8 +125,8 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 			break
 		}
 	}
-	if it.Err() != nil {
-		return nil, false, it.Err()
+	if err := it.Err(); err != nil {
+		return nil, false, err
 	}
 	// trim result if needed and return has more
 	hasMore := false
@@ -199,7 +203,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	if err != nil {
 		return nil, false, err
 	}
-	if afterBranch == "" {
+	if afterBranch == "" || afterBranch < prefixBranch {
 		it.SeekGE(prefixBranch)
 	} else {
 		it.SeekGE(afterBranch)
@@ -207,6 +211,9 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	var branches []*catalog.Branch
 	for it.Next() {
 		v := it.Value()
+		if v.BranchID == afterBranch {
+			continue
+		}
 		branchID := v.BranchID.String()
 		// break in case we got to a branch outside our prefix
 		if !strings.HasPrefix(branchID, prefix) {
@@ -221,8 +228,8 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 			break
 		}
 	}
-	if it.Err() != nil {
-		return nil, false, it.Err()
+	if err := it.Err(); err != nil {
+		return nil, false, err
 	}
 	// return results (optional trimmed) and hasMore
 	hasMore := false
@@ -293,15 +300,8 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	if err != nil {
 		return nil, err
 	}
-	catalogEntry := &catalog.Entry{
-		Path:            p.String(),
-		PhysicalAddress: ent.Address,
-		CreationDate:    ent.LastModified.AsTime(),
-		Size:            ent.Size,
-		Checksum:        hex.EncodeToString(ent.ETag),
-		Metadata:        ent.Metadata,
-	}
-	return catalogEntry, nil
+	catalogEntry := newCatalogEntryFromEntry(false, p.String(), ent)
+	return &catalogEntry, nil
 }
 
 func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, _ catalog.CreateEntryParams) error {
@@ -398,37 +398,29 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, referenc
 	if err != nil {
 		return nil, false, err
 	}
+	// normalize limit
+	if limit < 0 || limit > ListEntriesLimitMax {
+		limit = ListEntriesLimitMax
+	}
 	it, err := c.EntryCatalog.ListEntries(ctx, repositoryID, ref, prefixPath, delimiterPath)
 	if err != nil {
 		return nil, false, err
 	}
 	it.SeekGE(afterPath)
-	// normalize limit
-	if limit < 0 || limit > ListEntriesLimitMax {
-		limit = ListEntriesLimitMax
-	}
 	var entries []*catalog.Entry
 	for it.Next() {
 		v := it.Value()
-		entry := &catalog.Entry{
-			CommonLevel: v.CommonPrefix,
-			Path:        v.Path.String(),
+		if v.Path == afterPath {
+			continue
 		}
-		if v.Entry != nil {
-			entry.PhysicalAddress = v.Address
-			entry.CreationDate = v.LastModified.AsTime()
-			entry.Size = v.Size
-			entry.Checksum = hex.EncodeToString(v.ETag)
-			entry.Metadata = v.Metadata
-			entry.Expired = false
-		}
-		entries = append(entries, entry)
+		entry := newCatalogEntryFromEntry(v.CommonPrefix, v.Path.String(), v.Entry)
+		entries = append(entries, &entry)
 		if len(entries) >= limit+1 {
 			break
 		}
 	}
-	if it.Err() != nil {
-		return nil, false, it.Err()
+	if err := it.Err(); err != nil {
+		return nil, false, err
 	}
 	// trim result if needed and return has more
 	hasMore := false
@@ -566,23 +558,36 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) ListCommits(ctx context.Context, repository string, _ string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
+func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
 	repositoryID, err := graveler.NewRepositoryID(repository)
 	if err != nil {
 		return nil, false, err
 	}
-	ref, err := graveler.NewRef(fromReference)
+	branchCommitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(branch))
+	if err != nil {
+		return nil, false, fmt.Errorf("branch ref: %w", err)
+	}
+	it, err := c.EntryCatalog.Log(ctx, repositoryID, branchCommitID)
 	if err != nil {
 		return nil, false, err
 	}
-	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, ref)
-	if err != nil {
-		return nil, false, err
+	// skip until 'fromReference' if needed
+	if fromReference != "" {
+		fromCommitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(fromReference))
+		if err != nil {
+			return nil, false, fmt.Errorf("from ref: %w", err)
+		}
+		for it.Next() {
+			if it.Value().CommitID == fromCommitID {
+				break
+			}
+		}
+		if err := it.Err(); err != nil {
+			return nil, false, err
+		}
 	}
-	it, err := c.EntryCatalog.Log(ctx, repositoryID, commitID)
-	if err != nil {
-		return nil, false, err
-	}
+
+	// collect commits
 	var commits []*catalog.CommitLog
 	for it.Next() {
 		v := it.Value()
@@ -614,11 +619,79 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, _ string
 }
 
 func (c *cataloger) RollbackCommit(ctx context.Context, repository string, branch string, reference string) error {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return err
+	}
+	branchID, err := graveler.NewBranchID(branch)
+	if err != nil {
+		return err
+	}
+	ref, err := graveler.NewRef(reference)
+	if err != nil {
+		return err
+	}
+	_, err = c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref)
+	return err
 }
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID, err := graveler.NewRepositoryID(repository)
+	if err != nil {
+		return nil, false, err
+	}
+	leftRef, err := graveler.NewRef(leftReference)
+	if err != nil {
+		return nil, false, err
+	}
+	rightRef, err := graveler.NewRef(rightReference)
+	if err != nil {
+		return nil, false, err
+	}
+	afterPath, err := NewPath(params.After)
+	if err != nil {
+		return nil, false, err
+	}
+	limit := params.Limit
+	if limit < 0 || limit > DiffLimitMax {
+		limit = DiffLimitMax
+	}
+	it, err := c.EntryCatalog.Diff(ctx, repositoryID, leftRef, rightRef)
+	if err != nil {
+		return nil, false, err
+	}
+	it.SeekGE(afterPath)
+	var diffs catalog.Differences
+	for it.Next() {
+		v := it.Value()
+		if v.Path == afterPath {
+			continue
+		}
+		var diff catalog.Difference
+		switch v.Type {
+		case graveler.DiffTypeAdded:
+			diff.Type = catalog.DifferenceTypeAdded
+		case graveler.DiffTypeRemoved:
+			diff.Type = catalog.DifferenceTypeRemoved
+		case graveler.DiffTypeChanged:
+			diff.Type = catalog.DifferenceTypeChanged
+		case graveler.DiffTypeConflict:
+			diff.Type = catalog.DifferenceTypeConflict
+		}
+		diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
+		if len(diffs) >= limit+1 {
+			break
+		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, false, err
+	}
+	hasMore := false
+	if len(diffs) >= limit {
+		hasMore = true
+		diffs = diffs[:limit]
+	}
+	return diffs, hasMore, nil
 }
 
 func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (catalog.Differences, bool, error) {
@@ -657,4 +730,20 @@ func (c *cataloger) GetExportState(repo string, branch string) (catalog.ExportSt
 func (c *cataloger) Close() error {
 	close(c.dummyDedupCh)
 	return nil
+}
+
+func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalog.Entry {
+	catEnt := catalog.Entry{
+		CommonLevel: commonPrefix,
+		Path:        path,
+	}
+	if ent != nil {
+		catEnt.PhysicalAddress = ent.Address
+		catEnt.CreationDate = ent.LastModified.AsTime()
+		catEnt.Size = ent.Size
+		catEnt.Checksum = hex.EncodeToString(ent.ETag)
+		catEnt.Metadata = ent.Metadata
+		catEnt.Expired = false
+	}
+	return catEnt
 }
