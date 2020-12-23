@@ -102,11 +102,10 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 		return nil, false, fmt.Errorf("get iterator: %w", err)
 	}
 	// seek for first item
-	afterRepositoryID, err := graveler.NewRepositoryID(after)
-	if err != nil {
-		return nil, false, fmt.Errorf("after as repository id: %w", err)
+	afterRepositoryID := graveler.RepositoryID(after)
+	if afterRepositoryID != "" {
+		it.SeekGE(afterRepositoryID)
 	}
-	it.SeekGE(afterRepositoryID)
 
 	var repos []*catalog.Repository
 	for it.Next() {

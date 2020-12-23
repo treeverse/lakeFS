@@ -9,10 +9,11 @@ import (
 )
 
 type FakeGraveler struct {
-	KeyValue     map[string]*graveler.Value
-	Err          error
-	ListIterator graveler.ValueIterator
-	DiffIterator graveler.DiffIterator
+	KeyValue           map[string]*graveler.Value
+	Err                error
+	ListIterator       graveler.ValueIterator
+	DiffIterator       graveler.DiffIterator
+	RepositoryIterator graveler.RepositoryIterator
 }
 
 func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
@@ -60,7 +61,10 @@ func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID gravel
 }
 
 func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
-	panic("implement me")
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.RepositoryIterator, nil
 }
 
 func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -219,3 +223,41 @@ func (m *FakeDiffIterator) Err() error {
 }
 
 func (m *FakeDiffIterator) Close() {}
+
+////////
+
+type FakeRepositoryIterator struct {
+	Data  []*graveler.RepositoryRecord
+	Index int
+}
+
+func NewFakeRepositoryIterator(data []*graveler.RepositoryRecord) *FakeRepositoryIterator {
+	return &FakeRepositoryIterator{Data: data, Index: -1}
+}
+
+func (m *FakeRepositoryIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeRepositoryIterator) SeekGE(id graveler.RepositoryID) {
+	for i, repo := range m.Data {
+		if repo.RepositoryID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeRepositoryIterator) Value() *graveler.RepositoryRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeRepositoryIterator) Err() error {
+	return nil
+}
+
+func (m *FakeRepositoryIterator) Close() {}
