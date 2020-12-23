@@ -73,9 +73,6 @@ type TreeID string
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
 
-// CommonPrefix represents one or more keys with the same key prefix
-type CommonPrefix []byte
-
 // Metadata key/value strings to holds metadata information on value and commit
 type Metadata map[string]string
 
@@ -101,6 +98,10 @@ type Value struct {
 type ValueRecord struct {
 	Key Key `db:"key"`
 	*Value
+}
+
+func (v *ValueRecord) IsTombstone() bool {
+	return v.Value == nil
 }
 
 func (ps CommitParents) Identity() []byte {
@@ -160,13 +161,6 @@ type TagRecord struct {
 	CommitID CommitID
 }
 
-// Listing of key/value when common prefix is true, value is nil
-type Listing struct {
-	CommonPrefix bool
-	Key
-	*Value
-}
-
 // Diff represents a change in value based on key
 type Diff struct {
 	Type  DiffType
@@ -187,9 +181,8 @@ type KeyValueStore interface {
 	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// List lists values on repository / ref will filter by prefix, from key 'from'.
-	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
-	List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error)
+	// List lists values on repository / ref
+	List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error)
 }
 
 type VersionController interface {
@@ -332,14 +325,6 @@ type CommitIterator interface {
 	Next() bool
 	SeekGE(id CommitID)
 	Value() *CommitRecord
-	Err() error
-	Close()
-}
-
-type ListingIterator interface {
-	Next() bool
-	SeekGE(id Key)
-	Value() *Listing
 	Err() error
 	Close()
 }
@@ -777,7 +762,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	return g.StagingManager.Set(ctx, branch.stagingToken, key, nil)
 }
 
-func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref, prefix, from, delimiter Key) (ListingIterator, error) {
+func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -791,8 +776,8 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref,
 		return nil, err
 	}
 
-	var listing ListingIterator
-	committedValues, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.TreeID, from)
+	// TODO(barak): remove 'from' from CommittedManager
+	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.TreeID, Key{})
 	if err != nil {
 		return nil, err
 	}
@@ -801,9 +786,7 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref,
 		if err != nil {
 			return nil, err
 		}
-		listing = NewCombinedIterator(NewListingIterator(NewPrefixIterator(stagingList, prefix), delimiter, prefix), NewListingIterator(NewPrefixIterator(committedValues, prefix), delimiter, prefix))
-	} else {
-		listing = NewListingIterator(NewPrefixIterator(committedValues, prefix), delimiter, prefix)
+		listing = NewCombinedIterator(stagingList, listing)
 	}
 	return listing, nil
 }
@@ -897,7 +880,7 @@ func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, b
 	return g.StagingManager.DropByPrefix(ctx, branch.stagingToken, key)
 }
 
-func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error) {
+func (g *graveler) Revert(_ context.Context, _ RepositoryID, _ BranchID, _ Ref) (CommitID, error) {
 	panic("implement me")
 }
 

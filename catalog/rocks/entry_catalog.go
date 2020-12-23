@@ -27,6 +27,14 @@ type EntryDiff struct {
 	Entry *Entry
 }
 
+type EntryIterator interface {
+	Next() bool
+	SeekGE(id Path)
+	Value() *EntryRecord
+	Err() error
+	Close()
+}
+
 type EntryListingIterator interface {
 	Next() bool
 	SeekGE(id Path)
@@ -124,7 +132,7 @@ type EntryCatalog interface {
 
 	// List lists entries on repository / ref will filter by prefix, from path 'from'.
 	//   When 'delimiter' is set the listing will include common prefixes based on the delimiter
-	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path) (EntryListingIterator, error)
+	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter Path) (EntryListingIterator, error)
 }
 
 func NewPath(id string) (Path, error) {
@@ -285,10 +293,11 @@ func (e *entryCatalog) DeleteEntry(ctx context.Context, repositoryID graveler.Re
 	return e.store.Delete(ctx, repositoryID, branchID, key)
 }
 
-func (e *entryCatalog) ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, from, delimiter Path) (EntryListingIterator, error) {
-	iter, err := e.store.List(ctx, repositoryID, ref, graveler.Key(prefix), graveler.Key(from), graveler.Key(delimiter))
+func (e *entryCatalog) ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter Path) (EntryListingIterator, error) {
+	iter, err := e.store.List(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
-	return NewEntryListingIterator(iter), nil
+	it := NewValueToEntryIterator(iter)
+	return NewEntryListingIterator(it, prefix, delimiter), nil
 }

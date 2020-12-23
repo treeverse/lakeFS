@@ -71,7 +71,7 @@ func TestBranchLock(t *testing.T) {
 		t.Fatal("can't write when metadata update is running")
 	}
 
-	// release all metadata updateters and wait metadata update done
+	// release all metadata updates and wait metadata update done
 	close(doneCh)
 	<-closeMetadataUpdateDoneCh
 

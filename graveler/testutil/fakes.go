@@ -3,9 +3,7 @@ package testutil
 import (
 	"bytes"
 	"context"
-	"testing"
 
-	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 )
 
@@ -157,6 +155,7 @@ type RefsFake struct {
 	CommitErr           error
 	AddedCommit         AddedCommitData
 	CommitID            graveler.CommitID
+	Commit              *graveler.Commit
 }
 
 func (m *RefsFake) RevParse(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (graveler.Reference, error) {
@@ -216,7 +215,7 @@ func (m *RefsFake) ListTags(_ context.Context, _ graveler.RepositoryID) (gravele
 }
 
 func (m *RefsFake) GetCommit(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (*graveler.Commit, error) {
-	return &graveler.Commit{}, nil
+	return m.Commit, nil
 }
 
 func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
@@ -240,43 +239,6 @@ func (m *RefsFake) FindMergeBase(_ context.Context, _ graveler.RepositoryID, _ .
 func (m *RefsFake) Log(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID) (graveler.CommitIterator, error) {
 	return m.CommitIter, nil
 }
-
-type ListingIter struct {
-	current  int
-	listings []graveler.Listing
-	err      error
-}
-
-func NewListingIter(listings []graveler.Listing) *ListingIter {
-	return &ListingIter{listings: listings, current: -1}
-}
-
-func (r *ListingIter) Next() bool {
-	r.current++
-	return r.current < len(r.listings)
-}
-
-func (r *ListingIter) SeekGE(id graveler.Key) {
-	for i, listing := range r.listings {
-		if bytes.Compare(id, listing.Key) >= 0 {
-			r.current = i - 1
-		}
-	}
-	r.current = len(r.listings)
-}
-
-func (r *ListingIter) Value() *graveler.Listing {
-	if r.current < 0 || r.current >= len(r.listings) {
-		return nil
-	}
-	return &r.listings[r.current]
-}
-
-func (r *ListingIter) Err() error {
-	return r.err
-}
-
-func (r *ListingIter) Close() {}
 
 type diffIter struct {
 	current int
@@ -386,19 +348,4 @@ func (m *referenceFake) Branch() graveler.Branch {
 
 func (m *referenceFake) CommitID() graveler.CommitID {
 	return m.commitID
-}
-
-func CompareListingIterators(t *testing.T, got, expected graveler.ListingIterator) {
-	t.Helper()
-	for got.Next() {
-		if !expected.Next() {
-			t.Fatalf("got next returned true where expected next returned false")
-		}
-		if diff := deep.Equal(got.Value(), expected.Value()); diff != nil {
-			t.Errorf("unexpected diff %s", diff)
-		}
-	}
-	if expected.Next() {
-		t.Fatalf("expected next returned true where got next returned false")
-	}
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
-	gravelerMock := &GravelerMock{Err: graveler.ErrNotFound}
+	gravelerMock := &FakeGraveler{Err: graveler.ErrNotFound}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo", "ref", "path1")
@@ -25,7 +25,7 @@ func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 
 func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 	entry := &Entry{Address: "addr1"}
-	gravelerMock := &GravelerMock{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
+	gravelerMock := &FakeGraveler{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo1", "master", "file1")
@@ -36,7 +36,7 @@ func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 }
 
 func TestEntryCatalog_SetEntry(t *testing.T) {
-	gravelerMock := &GravelerMock{KeyValue: make(map[string]*graveler.Value)}
+	gravelerMock := &FakeGraveler{KeyValue: make(map[string]*graveler.Value)}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
 	entry := &Entry{Address: "addr1"}
@@ -50,19 +50,19 @@ func TestEntryCatalog_SetEntry(t *testing.T) {
 	}
 }
 
-func TestEntryCatalog_ListEntries(t *testing.T) {
+func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 	entriesData := []*Entry{{Address: "addr1", Size: 1}, nil, nil}
-	listingData := []*graveler.Listing{
+	listingData := []*graveler.ValueRecord{
 		{Key: graveler.Key("file1"), Value: MustEntryToValue(entriesData[0])},
 		{Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
 		{Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
-	gravelerMock := &GravelerMock{
-		ListIterator: NewMockListingIterator(listingData),
+	gravelerMock := &FakeGraveler{
+		ListIterator: NewFakeValueIterator(listingData),
 	}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()
-	entries, err := cat.ListEntries(ctx, "repo", "ref", "", "", "")
+	entries, err := cat.ListEntries(ctx, "repo", "ref", "", "")
 	testutil.MustDo(t, "list entries", err)
 	defer entries.Close()
 
@@ -82,6 +82,63 @@ func TestEntryCatalog_ListEntries(t *testing.T) {
 	}
 }
 
+func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
+	// prepare data
+	var entriesData []*Entry
+	var gravelerData []*graveler.ValueRecord
+	for _, name := range []string{"file1", "folder/file1", "folder/file2", "zzz"} {
+		entry := &Entry{Address: name}
+		entriesData = append(entriesData, entry)
+		record := &graveler.ValueRecord{Value: MustEntryToValue(entry), Key: graveler.Key(name)}
+		gravelerData = append(gravelerData, record)
+	}
+	gravelerMock := &FakeGraveler{
+		ListIterator: NewFakeValueIterator(gravelerData),
+	}
+	cat := entryCatalog{store: gravelerMock}
+	ctx := context.Background()
+
+	t.Run("root", func(t *testing.T) {
+		entries, err := cat.ListEntries(ctx, "repo", "ref", "", "/")
+		testutil.MustDo(t, "list entries", err)
+		defer entries.Close()
+		// listing entries
+		expected := []*EntryListing{
+			{Path: "file1", Entry: &Entry{Address: "file1"}},
+			{CommonPrefix: true, Path: "folder/"},
+			{CommonPrefix: false, Path: "zzz", Entry: &Entry{Address: "zzz"}},
+		}
+
+		// collect and compare
+		var listing []*EntryListing
+		for entries.Next() {
+			listing = append(listing, entries.Value())
+		}
+		if diff := deep.Equal(listing, expected); diff != nil {
+			t.Fatal("List entries diff found:", diff)
+		}
+	})
+	t.Run("folder", func(t *testing.T) {
+		entries, err := cat.ListEntries(ctx, "repo", "ref", "folder/", "/")
+		testutil.MustDo(t, "list entries", err)
+		defer entries.Close()
+		// listing entries
+		expected := []*EntryListing{
+			{Path: "folder/file1", Entry: &Entry{Address: "folder/file1"}},
+			{Path: "folder/file2", Entry: &Entry{Address: "folder/file2"}},
+		}
+
+		// collect and compare
+		var listing []*EntryListing
+		for entries.Next() {
+			listing = append(listing, entries.Value())
+		}
+		if diff := deep.Equal(listing, expected); diff != nil {
+			t.Fatal("List entries diff found:", diff)
+		}
+	})
+}
+
 func TestEntryCatalog_Diff(t *testing.T) {
 	entriesData := []*Entry{{Address: "addr2", Size: 2}, nil, nil}
 	diffData := []*graveler.Diff{
@@ -89,8 +146,8 @@ func TestEntryCatalog_Diff(t *testing.T) {
 		{Type: graveler.DiffTypeRemoved, Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
 		{Type: graveler.DiffTypeChanged, Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
-	gravelerMock := &GravelerMock{
-		DiffIterator: NewMockDiffIterator(diffData),
+	gravelerMock := &FakeGraveler{
+		DiffIterator: NewFakeDiffIterator(diffData),
 	}
 	cat := entryCatalog{store: gravelerMock}
 	ctx := context.Background()

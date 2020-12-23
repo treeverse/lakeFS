@@ -23,6 +23,7 @@
 /Godeps/
 
 ### IDEs and stuff ###
+*.iml
 .idea/
 .vscode/
 
@@ -71,5 +72,6 @@ crash.log
 terraform.rc
 
 # generated mock files
-/graveler/committed/mock/
-/graveler/committed/sstable/mock/
+/graveler/committed/**/mock/
+
+.eslintcache
