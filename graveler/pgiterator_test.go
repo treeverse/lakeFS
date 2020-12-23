@@ -24,7 +24,7 @@ func TestPGRepositoryIterator(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter := graveler.NewRepositoryIterator(context.Background(), db, 3, "")
+		iter := graveler.NewRepositoryIterator(context.Background(), db, 3)
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
@@ -41,7 +41,8 @@ func TestPGRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter := graveler.NewRepositoryIterator(context.Background(), db, 3, "b")
+		iter := graveler.NewRepositoryIterator(context.Background(), db, 3)
+		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
@@ -58,7 +59,8 @@ func TestPGRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos SeekGE", func(t *testing.T) {
-		iter := graveler.NewRepositoryIterator(context.Background(), db, 3, "b")
+		iter := graveler.NewRepositoryIterator(context.Background(), db, 3)
+		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
 			repo := iter.Value()
@@ -107,7 +109,7 @@ func TestPGBranchIterator(t *testing.T) {
 	}
 
 	t.Run("listing all branches", func(t *testing.T) {
-		iter := graveler.NewBranchIterator(context.Background(), db, "repo1", 3, "")
+		iter := graveler.NewBranchIterator(context.Background(), db, "repo1", 3)
 		ids := make([]graveler.BranchID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -124,7 +126,8 @@ func TestPGBranchIterator(t *testing.T) {
 	})
 
 	t.Run("listing branches from prefix", func(t *testing.T) {
-		iter := graveler.NewBranchIterator(context.Background(), db, "repo1", 3, "b")
+		iter := graveler.NewBranchIterator(context.Background(), db, "repo1", 3)
+		iter.SeekGE("b")
 		ids := make([]graveler.BranchID, 0)
 		for iter.Next() {
 			b := iter.Value()
@@ -141,7 +144,8 @@ func TestPGBranchIterator(t *testing.T) {
 	})
 
 	t.Run("listing branches SeekGE", func(t *testing.T) {
-		iter := graveler.NewBranchIterator(context.Background(), db, "repo1", 3, "b")
+		iter := graveler.NewBranchIterator(context.Background(), db, "repo1", 3)
+		iter.SeekGE("b")
 		ids := make([]graveler.BranchID, 0)
 		for iter.Next() {
 			b := iter.Value()

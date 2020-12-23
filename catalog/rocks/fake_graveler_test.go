@@ -9,10 +9,12 @@ import (
 )
 
 type FakeGraveler struct {
-	KeyValue     map[string]*graveler.Value
-	Err          error
-	ListIterator graveler.ValueIterator
-	DiffIterator graveler.DiffIterator
+	KeyValue           map[string]*graveler.Value
+	Err                error
+	ListIterator       graveler.ValueIterator
+	DiffIterator       graveler.DiffIterator
+	RepositoryIterator graveler.RepositoryIterator
+	BranchIterator     graveler.BranchIterator
 }
 
 func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
@@ -59,8 +61,11 @@ func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID gravel
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListRepositories(ctx context.Context, from graveler.RepositoryID) (graveler.RepositoryIterator, error) {
-	panic("implement me")
+func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.RepositoryIterator, nil
 }
 
 func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -99,8 +104,11 @@ func (g *FakeGraveler) Log(ctx context.Context, repositoryID graveler.Repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListBranches(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.BranchID) (graveler.BranchIterator, error) {
-	panic("implement me")
+func (g *FakeGraveler) ListBranches(_ context.Context, _ graveler.RepositoryID) (graveler.BranchIterator, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.BranchIterator, nil
 }
 
 func (g *FakeGraveler) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
@@ -146,7 +154,7 @@ func (g *FakeGraveler) DiffUncommitted(ctx context.Context, repositoryID gravele
 	return g.DiffIterator, nil
 }
 
-func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref, _ graveler.Key) (graveler.DiffIterator, error) {
+func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
@@ -156,6 +164,7 @@ func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ gra
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int
+	Error error
 }
 
 func NewFakeValueIterator(data []*graveler.ValueRecord) *FakeValueIterator {
@@ -171,6 +180,7 @@ func (m *FakeValueIterator) Next() bool {
 }
 
 func (m *FakeValueIterator) SeekGE(id graveler.Key) {
+	m.Index = len(m.Data)
 	for i, d := range m.Data {
 		if bytes.Compare(d.Key, id) >= 0 {
 			m.Index = i - 1
@@ -219,3 +229,77 @@ func (m *FakeDiffIterator) Err() error {
 }
 
 func (m *FakeDiffIterator) Close() {}
+
+type FakeRepositoryIterator struct {
+	Data  []*graveler.RepositoryRecord
+	Index int
+}
+
+func NewFakeRepositoryIterator(data []*graveler.RepositoryRecord) *FakeRepositoryIterator {
+	return &FakeRepositoryIterator{Data: data, Index: -1}
+}
+
+func (m *FakeRepositoryIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeRepositoryIterator) SeekGE(id graveler.RepositoryID) {
+	m.Index = len(m.Data)
+	for i, repo := range m.Data {
+		if repo.RepositoryID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeRepositoryIterator) Value() *graveler.RepositoryRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeRepositoryIterator) Err() error {
+	return nil
+}
+
+func (m *FakeRepositoryIterator) Close() {}
+
+type FakeBranchIterator struct {
+	Data  []*graveler.BranchRecord
+	Index int
+}
+
+func NewFakeBranchIterator(data []*graveler.BranchRecord) *FakeBranchIterator {
+	return &FakeBranchIterator{Data: data, Index: -1}
+}
+
+func (m *FakeBranchIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
+	m.Index = len(m.Data)
+	for i, repo := range m.Data {
+		if repo.BranchID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeBranchIterator) Value() *graveler.BranchRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeBranchIterator) Err() error {
+	return nil
+}
+
+func (m *FakeBranchIterator) Close() {}

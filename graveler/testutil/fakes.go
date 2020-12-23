@@ -34,14 +34,14 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 	return c.Value, nil
 }
 
-func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.Key) (graveler.ValueIterator, error) {
+func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (graveler.ValueIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValueIterator, nil
 }
 
-func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.TreeID, _ graveler.Key) (graveler.DiffIterator, error) {
+func (c *CommittedFake) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.TreeID) (graveler.DiffIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
@@ -174,7 +174,7 @@ func (m *RefsFake) CreateRepository(_ context.Context, _ graveler.RepositoryID, 
 	return nil
 }
 
-func (m *RefsFake) ListRepositories(_ context.Context, _ graveler.RepositoryID) (graveler.RepositoryIterator, error) {
+func (m *RefsFake) ListRepositories(_ context.Context) (graveler.RepositoryIterator, error) {
 	return m.ListRepositoriesRes, nil
 }
 
@@ -194,7 +194,7 @@ func (m *RefsFake) DeleteBranch(_ context.Context, _ graveler.RepositoryID, _ gr
 	return nil
 }
 
-func (m *RefsFake) ListBranches(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (graveler.BranchIterator, error) {
+func (m *RefsFake) ListBranches(_ context.Context, _ graveler.RepositoryID) (graveler.BranchIterator, error) {
 	return m.ListBranchesRes, nil
 }
 
