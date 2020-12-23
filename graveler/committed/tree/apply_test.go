@@ -100,7 +100,7 @@ func TestApplyAdd(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().AddPart(gomock.Eq(*part2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
@@ -129,7 +129,7 @@ func TestApplyReplace(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().AddPart(gomock.Eq(*part2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 
 	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
@@ -156,7 +156,7 @@ func TestApplyDelete(t *testing.T) {
 	writer := mock.NewMockWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().AddPart(gomock.Eq(*part2))
 
 	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
 }
@@ -182,7 +182,7 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().AddPart(gomock.Eq(*part2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
@@ -212,10 +212,10 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	})
 
 	writer := mock.NewMockWriter(ctrl)
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part1}))
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part2}))
+	writer.EXPECT().AddPart(gomock.Eq(*part1))
+	writer.EXPECT().AddPart(gomock.Eq(*part2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
-	writer.EXPECT().AddParts(gomock.Eq([]tree.Part{*part4}))
+	writer.EXPECT().AddPart(gomock.Eq(*part4))
 
 	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
 }
