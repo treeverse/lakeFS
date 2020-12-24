@@ -44,6 +44,8 @@ type Config struct {
 	adaptor block.Adapter
 	logger  logging.Logger
 
+	eviction eviction
+
 	// Prefix for all metadata file lakeFS stores in the block storage.
 	fsBlockStoragePrefix string
 
@@ -76,16 +78,19 @@ func NewFS(c *Config) (FS, error) {
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
-	eviction, err := newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
-	if err != nil {
-		return nil, fmt.Errorf("creating eviction control: %w", err)
+	if c.eviction == nil {
+		var err error
+		c.eviction, err = newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
+		if err != nil {
+			return nil, fmt.Errorf("creating eviction control: %w", err)
+		}
 	}
 
-	if err := handleExistingFiles(eviction, fsLocalBaseDir); err != nil {
+	tierFS.eviction = c.eviction
+	if err := handleExistingFiles(tierFS.eviction, fsLocalBaseDir); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 
-	tierFS.eviction = eviction
 	return tierFS, nil
 }
 
