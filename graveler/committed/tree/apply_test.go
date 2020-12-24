@@ -1,6 +1,7 @@
 package tree_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -28,12 +29,35 @@ type PV struct {
 }
 
 type FakePartsAndValuesIterator struct {
-	PV []PV
+	PV  []PV
+	idx int
+}
+
+func (i *FakePartsAndValuesIterator) nextKey() []byte {
+	if len(i.PV) <= i.idx+1 {
+		return nil
+	}
+	if i.PV[i.idx+1].V == nil {
+		return i.PV[i.idx+1].P.MinKey
+	}
+	return i.PV[i.idx+1].V.Key
+}
+func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
+	i.idx = 0
+	for {
+		nextKey := i.nextKey()
+		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
+			return
+		}
+		if !i.Next() {
+			return
+		}
+	}
 }
 
 func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
 	// Start with an empty record so the first `Next()` can skip it.
-	return &FakePartsAndValuesIterator{PV: make([]PV, 1)}
+	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0}
 }
 
 func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
@@ -53,27 +77,27 @@ func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord
 }
 
 func (i *FakePartsAndValuesIterator) Next() bool {
-	if len(i.PV) <= 1 {
+	if len(i.PV) <= i.idx+1 {
 		return false
 	}
-	i.PV = i.PV[1:]
+	i.idx++
 	return true
 }
 
 func (i *FakePartsAndValuesIterator) NextPart() bool {
 	for {
-		if len(i.PV) <= 1 {
+		if len(i.PV) <= i.idx+1 {
 			return false
 		}
-		i.PV = i.PV[1:]
-		if i.PV[0].V == nil {
+		i.idx++
+		if i.PV[i.idx].V == nil {
 			return true
 		}
 	}
 }
 
 func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part) {
-	return i.PV[0].V, i.PV[0].P
+	return i.PV[i.idx].V, i.PV[i.idx].P
 }
 
 func (i *FakePartsAndValuesIterator) Err() error { return nil }

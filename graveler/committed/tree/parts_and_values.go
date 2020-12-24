@@ -10,6 +10,10 @@ type iterator struct {
 	err     error
 }
 
+func (pvi *iterator) SeekGE(id graveler.Key) {
+	panic("implement me")
+}
+
 func NewIterator(repo Repo, parts []Part) Iterator {
 	return &iterator{repo: repo, parts: parts}
 }

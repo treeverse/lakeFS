@@ -13,16 +13,25 @@ type IteratorValue struct {
 }
 
 type diffIterator struct {
-	left       Iterator
-	right      Iterator
-	leftVal    *IteratorValue
-	rightVal   *IteratorValue
-	currentVal *graveler.Diff
-	err        error
+	left         Iterator
+	right        Iterator
+	leftVal      *IteratorValue
+	rightVal     *IteratorValue
+	advanceLeft  bool
+	advanceRight bool
+	currentVal   *graveler.Diff
+	err          error
 }
 
 func NewDiffIterator(left Iterator, right Iterator) graveler.DiffIterator {
-	return &diffIterator{left: left, right: right, leftVal: &IteratorValue{}, rightVal: &IteratorValue{}}
+	return &diffIterator{
+		left:         left,
+		right:        right,
+		leftVal:      &IteratorValue{},
+		rightVal:     &IteratorValue{},
+		advanceLeft:  true,
+		advanceRight: true,
+	}
 }
 
 func (d *diffIterator) next(it Iterator, val **IteratorValue) {
@@ -68,7 +77,6 @@ func (d *diffIterator) Next() bool {
 	if d.err != nil {
 		return false
 	}
-	advanceLeft, advanceRight := true, true
 	for {
 		if d.left.Err() != nil {
 			d.err = fmt.Errorf("failed in left tree: %w", d.left.Err())
@@ -78,27 +86,28 @@ func (d *diffIterator) Next() bool {
 			d.err = fmt.Errorf("failed in right tree: %w", d.right.Err())
 			return false
 		}
-		if advanceLeft {
-			advanceLeft = false
-			d.nextPart(d.left, &d.leftVal)
+		if d.advanceLeft {
+			d.advanceLeft = false
+			d.next(d.left, &d.leftVal)
 		}
-		if advanceRight {
-			advanceRight = false
-			d.nextPart(d.right, &d.rightVal)
+		if d.advanceRight {
+			d.advanceRight = false
+			d.next(d.right, &d.rightVal)
 		}
 		comp := d.compareKeys()
 		switch {
 		case d.leftVal == nil && d.rightVal == nil:
+			d.currentVal = nil
 			return false
 		case d.leftVal != nil && d.rightVal != nil && d.leftVal.part.Name == d.rightVal.part.Name:
 			// skip identical parts
-			advanceLeft = true
-			advanceRight = true
+			d.nextPart(d.left, &d.leftVal)
+			d.nextPart(d.right, &d.rightVal)
 			continue
 		case d.leftVal != nil && d.rightVal != nil && d.leftVal.record != nil && d.rightVal.record != nil && bytes.Equal(key(d.left), key(d.right)):
 			// same keys on different parts
-			advanceLeft = true
-			advanceRight = true
+			d.advanceLeft = true
+			d.advanceRight = true
 			if bytes.Equal(d.leftVal.record.Identity, d.rightVal.record.Identity) {
 				continue
 			}
@@ -110,7 +119,7 @@ func (d *diffIterator) Next() bool {
 			return true
 		case comp < 0:
 			// nothing on right, or left before right
-			advanceLeft = true
+			d.advanceLeft = true
 			if d.leftVal.record == nil {
 				continue
 			}
@@ -122,7 +131,7 @@ func (d *diffIterator) Next() bool {
 			return true
 		case comp > 0:
 			// nothing on left, or right before left
-			advanceRight = true
+			d.advanceRight = true
 			if d.rightVal.record == nil {
 				continue
 			}
@@ -133,19 +142,19 @@ func (d *diffIterator) Next() bool {
 			}
 			return true
 		case d.leftVal.record == nil:
-			advanceLeft = true
+			d.advanceLeft = true
 		case d.rightVal.record == nil:
-			advanceRight = true
+			d.advanceRight = true
 		}
 	}
-	d.currentVal = nil
-	return false
 }
 
 func (d *diffIterator) SeekGE(id graveler.Key) {
 	d.left.SeekGE(id)
 	d.right.SeekGE(id)
 	d.currentVal = nil
+	d.leftVal = &IteratorValue{}
+	d.rightVal = &IteratorValue{}
 	d.next(d.left, &d.leftVal)
 	d.next(d.right, &d.rightVal)
 	d.err = nil
