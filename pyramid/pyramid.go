@@ -1,5 +1,7 @@
 package pyramid
 
+//go:generate mockgen -source=pyramid.go -destination=mock/pyramid.go -package=mock
+
 import (
 	"io"
 	"os"
@@ -20,7 +22,8 @@ type FS interface {
 
 // File is pyramid abstraction for an os.File
 type File interface {
-	io.ReadWriteCloser
+	io.Reader
+	io.Writer
 	io.Closer
 	io.ReaderAt
 	Sync() error

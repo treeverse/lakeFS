@@ -14,9 +14,7 @@ type WRFile struct {
 	store     func(string) error
 }
 
-var (
-	errAlreadyPersisted = fmt.Errorf("file is already persisted")
-)
+var errAlreadyPersisted = errors.New("file is already persisted")
 
 // Store copies the closed file to all tiers of the pyramid.
 func (f *WRFile) Store(filename string) error {

@@ -62,9 +62,9 @@ const workspaceDir = "workspace"
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
 func NewFS(c *Config) (FS, error) {
-	fsLocalBaseDir := path.Join(c.localBaseDir, c.fsName)
+	fsLocalBaseDir := filepath.Clean(path.Join(c.localBaseDir, c.fsName))
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating base dir: %w", err)
+		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
 	}
 
 	tierFS := &TierFS{

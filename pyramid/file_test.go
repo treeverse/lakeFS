@@ -16,7 +16,7 @@ func TestPyramidWriteFile(t *testing.T) {
 
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
-		panic(err)
+		t.Fatal("Failed to create temp file", err)
 	}
 
 	filepath := fh.Name()
@@ -50,7 +50,7 @@ func TestWriteValidate(t *testing.T) {
 	filename := uuid.New().String()
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
-		panic(err)
+		t.Fatal("Failed to create temp file", err)
 	}
 
 	filepath := fh.Name()
@@ -85,7 +85,7 @@ func TestPyramidReadFile(t *testing.T) {
 	filepath := path.Join("/tmp", filename)
 	content := "some content to write to file"
 	if err := ioutil.WriteFile(filepath, []byte(content), os.ModePerm); err != nil {
-		panic(err)
+		t.Fatalf("Failed to write file %s: %s", filepath, err)
 	}
 	defer os.Remove(filepath)
 
@@ -93,7 +93,7 @@ func TestPyramidReadFile(t *testing.T) {
 
 	fh, err := os.Open(filepath)
 	if err != nil {
-		panic(err)
+		t.Fatalf("Failed to open file %s: %s", filepath, err)
 	}
 
 	sut := ROFile{

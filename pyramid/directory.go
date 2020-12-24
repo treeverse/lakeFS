@@ -27,23 +27,22 @@ func (d *directory) deleteDirRecIfEmpty(dir string) error {
 
 	for dir != d.ceilingDir {
 		empty, err := isDirEmpty(dir)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return nil
-			}
 			return err
 		}
 		if !empty {
 			return nil
 		}
 
-		parentDir := path.Dir(dir)
 		if err := os.Remove(dir); err != nil {
 			return err
 		}
-		dir = parentDir
+		// move up to the parent dir
+		dir = path.Dir(dir)
 	}
-
 	return nil
 }
 
@@ -52,7 +51,9 @@ func isDirEmpty(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	_, err = f.Readdirnames(1)
 	if errors.Is(err, io.EOF) {
@@ -66,8 +67,8 @@ func (d *directory) createFile(path string) (*os.File, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating dir: %w", err)
+	if err := d.ensureParentDir(path); err != nil {
+		return nil, err
 	}
 
 	return os.Create(path)
@@ -78,9 +79,20 @@ func (d *directory) renameFile(src, dst string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+	if err := d.ensureParentDir(dst); err != nil {
+		return err
+	}
+	return os.Rename(src, dst)
+}
+
+func (d *directory) ensureParentDir(path string) error {
+	parentDir := filepath.Dir(path)
+	if parentDir == d.ceilingDir {
+		return nil
+	}
+	err := os.MkdirAll(parentDir, os.ModePerm)
+	if err != nil {
 		return fmt.Errorf("creating dir: %w", err)
 	}
-
-	return os.Rename(src, dst)
+	return nil
 }

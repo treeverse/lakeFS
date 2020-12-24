@@ -59,5 +59,7 @@ func (re *ristrettoEviction) store(rPath relativePath, filesize int64) bool {
 }
 
 func (re *ristrettoEviction) onEvict(item *ristretto.Item) {
-	re.evictCallback(item.Value.(relativePath), item.Cost)
+	if item.Value != nil {
+		re.evictCallback(item.Value.(relativePath), item.Cost)
+	}
 }
