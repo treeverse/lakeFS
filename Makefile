@@ -78,7 +78,7 @@ del-gen-api:
 .PHONY: gen-mockgen
 gen-mockgen: $(GOBINPATH)/mockgen ## Run the generator for inline commands
 	$(GOGENERATE) ./graveler/committed/...
-
+	$(GOGENERATE) ./pyramid
 
 validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
