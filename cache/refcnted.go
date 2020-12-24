@@ -51,7 +51,7 @@ func NewCacheWithDisposal(p ParamsWithDisposal) *shardedCacheWithDisposal {
 	for i := 0; i < p.Shards; i++ {
 		shards[i] = NewSingleThreadedCacheWithDisposal(p)
 	}
-	return &shardedCacheWithDisposal{Seed: maphash.MakeSeed(), Shards: shards}
+	return &shardedCacheWithDisposal{name: p.Name, Seed: maphash.MakeSeed(), Shards: shards}
 }
 
 func (s *shardedCacheWithDisposal) Name() string {

@@ -59,22 +59,12 @@ func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.Rea
 }
 
 func NewCacheWithOpener(p lru.ParamsWithDisposal, open opener) cache {
-	wrappedOnDispose := p.OnDispose
+	if p.OnDispose != nil {
+		panic("external OnDispose not supported for sstable cache")
+	}
 	p.OnDispose = func(v interface{}) error {
-		var err error
-		if wrappedOnDispose != nil {
-			err = wrappedOnDispose(v)
-		}
 		item := v.(Item)
-		closeErr := item.Close()
-		if closeErr != nil {
-			if err != nil {
-				return fmt.Errorf("%w, and also pre-disposal failed: %s", closeErr, err)
-			} else {
-				return closeErr
-			}
-		}
-		return err
+		return item.Close()
 	}
 	return &lruCache{
 		c:    lru.NewCacheWithDisposal(p),
