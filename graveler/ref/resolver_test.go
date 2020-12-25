@@ -1,4 +1,4 @@
-package graveler_test
+package ref_test
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
