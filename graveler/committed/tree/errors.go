@@ -9,4 +9,5 @@ var (
 	ErrScannerIsNil          = errors.New(" part scanner is nil")
 	ErrEmptyTree             = errors.New(" Empty tree")
 	ErrNotFound              = errors.New("Key not found")
+	ErrPushBackTwice         = errors.New("PushBack was called twice without a Next()")
 )

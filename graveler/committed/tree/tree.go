@@ -61,6 +61,9 @@ type TreeWriter interface {
 	SaveTree() (graveler.TreeID, error)
 	// ClosePart closes the current part being written in the tree
 	ClosePart()
+	// HasOpenWriter returns true when the TreeWriter has an open part writer.
+	HasOpenWriter() bool
+	saveTreeWithReuseParts(*[]part) (graveler.TreeID, error)
 }
 
 // interface that "inherits" from simple TreeWriter. copies the parts that were not changed from base

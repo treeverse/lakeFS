@@ -1,14 +1,17 @@
 package tree
 
 import (
+	"bytes"
 	"fmt"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
+	//"github.com/treeverse/lakefs/catalog/rocks"
 )
 
-func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryIterator) (rocks.TreeID, error) {
+func (trees treeRepo) Apply(baseTreeID graveler.TreeID, inputIter graveler.ValueIterator) (graveler.TreeID, error) {
 	var basePartIter *pushBackValueIterator
-	var maxCurrentBaseKey rocks.Path
+	var maxCurrentBaseKey graveler.Key
 	var err error
 	// INITIALIZATION
 	pushbackInputIter := newPushbackEntryIterator(inputIter)
@@ -16,7 +19,8 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 	if err != nil {
 		return "", err
 	}
-	treeWriter := &TreeWriter{}
+	// todo: replace with real implementation of sstable.BatchWriterCloser
+	treeWriter := trees.NewTreeWriter(SplitFactor, sstable.BatchWriterCloser)
 	baseTreeMaxPath := baseTreeManager.getBaseMaxKey()
 	// PROCESS INPUT
 	// Create a new tree by  merging an input entries stream with an existing  tree.
@@ -30,42 +34,55 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 	for pushbackInputIter.Next() { // check exit handling
 		input := pushbackInputIter.Value()
 		// adjust the input to the correct base and output parts
-		if maxCurrentBaseKey < input.Path { // not is current base part
+		if bytes.Compare(maxCurrentBaseKey, input.Key) < 0 { // not is current base part
 			// flush all updates that remained in  current base part
 			if basePartIter != nil { // nil  basePartIter indicates this is first iteration
-				err = treeWriter.flushIterToNewTree(basePartIter)
+				err = treeWriter.FlushIterToTree(basePartIter)
 				if err != nil {
 					return "", err
 				}
 				basePartIter.Close()
+				basePartIter = nil
 			}
 			// indicates that writing to this part did not close naturally with a splitter,even though a base part was finished
-			if treeWriter.hasOpenWriter() {
+			if treeWriter.HasOpenWriter() {
 				// next update will go past the next part of base tree. This means that the next part has no
 				// updates and can be reused in the new tree. for that to happen - the current output part must be closed
 				// so we close the current part
 				// a special case is when the current base part is the last in the tree, and the new path is bigger than
 				// any path in the tree. This too is considered as it the path is in next part
-				if !baseTreeManager.isPathInNextPart(input.Path) {
-					treeWriter.forceCloseCurrentPart()
+				if !baseTreeManager.isPathInNextPart(input.Key) {
+					treeWriter.ClosePart()
 				}
 			}
-			// a special case when the input path is bigger than maximum part in the base tree
-			if baseTreeMaxPath < input.Path {
-				// we want to insert the new entries into the last part of the base tree, so we do not generate tiny
-				// parts each run that gets to this situation
+			if bytes.Compare(baseTreeMaxPath, input.Key) >= 0 {
+				// common case - input key falls within the range of keys in base tree ( less than maximum key in tree)
+				basePartIter, maxCurrentBaseKey, err = baseTreeManager.getBasePartForPath(input.Key)
+				if err != nil {
+					return "", err
+				}
+			} else {
+				// a special case when the input path is bigger than maximum part in the base tree
+				// Insert the new entries into the last part of the base tree, and dont create a tiny last part
+				// when some keys  are bigger than keys accepted before (e.g. when the keys are based on date)
+				// one thing we know about the last part: there is very tiny chance the last key is a split key. so adding keys
+				// to the last part make sense.
+				// There are two possibilities:
+				// 1. the input had entries that went into the last part. so last part should be open for writing now.
+				// 2. the last input key was smaller than the minimum key in the last part, so last base part should be opened
+				//    and copied into the output tree. After that- exit the loop and finish writing the input iterator
+				//    into the new tree
 				if !baseTreeManager.wasLastPartProcessed() {
 					basePartIter, err = baseTreeManager.getLastPartIter()
 					if err != nil {
 						return "", err
 					}
-				}
-				if basePartIter != nil {
-					err = treeWriter.flushIterToNewTree(basePartIter)
+					err = treeWriter.FlushIterToTree(basePartIter)
 					if err != nil {
 						return "", err
 					}
 					basePartIter.Close()
+					basePartIter = nil
 				}
 				err = pushbackInputIter.pushBack()
 				if err != nil {
@@ -73,32 +90,28 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 				}
 				break // exit the main loop after all base was read
 			}
-			basePartIter, maxCurrentBaseKey, err = baseTreeManager.getBasePartForPath(input.Path)
-			if err != nil {
-				return "", err
-			}
 		}
 		// handle single input update
-		//assert: input path is smaller than max path of current base part. It is not possible that base part
+		//assert: input path is smaller-equal than max key of current base part. It is not possible that base part
 		// will be exhausted (Next return false) before reaching an entry that >= input path.
 		for {
 			if !basePartIter.Next() {
-				return "", fmt.Errorf("base reading ends before reaching input key : %w", basePartIter.Err())
+				return "", fmt.Errorf("base part reading ends or error occured before reaching input key : %w", basePartIter.Err())
 			}
 			base := basePartIter.Value()
-			if base.Path < input.Path {
-				err = treeWriter.writeEntry(*base)
+			if bytes.Compare(base.Key, input.Key) < 0 {
+				err = treeWriter.WriteValue(*base)
 				if err != nil {
 					return "", err
 				}
 			} else { // reached insertion point of input record
-				if input.Entry != nil { // not a delete operation
-					err = treeWriter.writeEntry(*input)
+				if input.Value != nil { // not a delete operation
+					err = treeWriter.WriteValue(*input)
 					if err != nil {
 						return "", err
 					}
 				}
-				if base.Path != input.Path {
+				if !bytes.Equal(base.Key, input.Key) {
 					// base iterator already contains a path bigger than the current input path, it has to be processed in the next cycle
 					err := basePartIter.pushBack()
 					if err != nil {
@@ -112,10 +125,9 @@ func (trees TreesRepoType) Apply(baseTreeID rocks.TreeID, inputIter rocks.EntryI
 	if pushbackInputIter.Err() != nil {
 		return "", fmt.Errorf(" apply input erroe: %w", pushbackInputIter.Err())
 	}
-	err = treeWriter.flushIterToNewTree(pushbackInputIter)
+	err = treeWriter.FlushIterToTree(pushbackInputIter)
 	if err != nil {
 		return "", fmt.Errorf(" input flushing error : %w", err)
 	}
-	return treeWriter.finalizeTree(baseTreeManager.getPartsForReuse())
-
+	return treeWriter.saveTreeWithReuseParts(baseTreeManager.getPartsForReuse())
 }

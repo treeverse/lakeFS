@@ -152,13 +152,12 @@ func (tw *treeWriter) FlushIterToTree(iter graveler.ValueIterator) error {
 	return iter.Err()
 }
 func (tw *treeWriter) SaveTree() (graveler.TreeID, error) {
-	return tw.SaveTreeWithReusedParts(Tree{})
+	return tw.saveTreeWithReuseParts([]part{})
 }
-func (tw *treeWriter) SaveTreeWithReusedParts(reuseTree Tree) (graveler.TreeID, error) {
+func (tw *treeWriter) saveTreeWithReuseParts(reuseParts []part) (graveler.TreeID, error) {
 	if tw.activeWriter != nil {
 		tw.closeAsync.CloseWriterAsync(tw.activeWriter)
 	}
-	reuseParts := reuseTree.treeSlice
 	var newParts []part
 	closeResults, err := tw.closeAsync.Wait()
 	if err != nil {
