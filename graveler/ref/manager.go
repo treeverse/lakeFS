@@ -289,7 +289,7 @@ func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.Repos
 	if len(commitIDs) != allowedCommitsToCompare {
 		return nil, graveler.ErrInvalidMergeBase
 	}
-	return graveler.FindLowestCommonAncestor(ctx, m, repositoryID, commitIDs[0], commitIDs[1])
+	return FindLowestCommonAncestor(ctx, m, repositoryID, commitIDs[0], commitIDs[1])
 }
 
 func (m *Manager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {

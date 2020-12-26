@@ -1,10 +1,11 @@
-package graveler_test
+package ref_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/ident"
 )
 
@@ -32,7 +33,7 @@ func newReader(kv map[graveler.CommitID]*graveler.Commit) *MockCommitGetter {
 
 func caddr(commit *graveler.Commit) graveler.CommitID {
 	if commit == nil {
-		return graveler.CommitID("")
+		return ""
 	}
 	return graveler.CommitID(ident.ContentAddress(commit))
 }
@@ -138,7 +139,7 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
-			base, err := graveler.FindLowestCommonAncestor(
+			base, err := ref.FindLowestCommonAncestor(
 				context.Background(), getter, "", caddr(getter.kv[cas.Left]), caddr(getter.kv[cas.Right]))
 			if err != nil {
 				t.Fatal(err)
