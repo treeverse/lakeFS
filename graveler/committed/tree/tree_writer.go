@@ -152,9 +152,9 @@ func (tw *treeWriter) FlushIterToTree(iter graveler.ValueIterator) error {
 	return iter.Err()
 }
 func (tw *treeWriter) SaveTree() (graveler.TreeID, error) {
-	return tw.saveTreeWithReuseParts([]part{})
+	return tw.saveTreeWithReuseParts(&[]part{})
 }
-func (tw *treeWriter) saveTreeWithReuseParts(reuseParts []part) (graveler.TreeID, error) {
+func (tw *treeWriter) saveTreeWithReuseParts(reuseParts *[]part) (graveler.TreeID, error) {
 	if tw.activeWriter != nil {
 		tw.closeAsync.CloseWriterAsync(tw.activeWriter)
 	}
@@ -171,7 +171,7 @@ func (tw *treeWriter) saveTreeWithReuseParts(reuseParts []part) (graveler.TreeID
 		newParts = append(newParts, t)
 	}
 	if reuseParts != nil {
-		newParts = append(newParts, reuseParts...)
+		newParts = append(newParts, *reuseParts...)
 		sort.Slice(newParts, func(i, j int) bool { return bytes.Compare(newParts[i].MaxKey, newParts[j].MaxKey) < 0 })
 	}
 	return serializeTreeToDisk("testdata/", newParts)
