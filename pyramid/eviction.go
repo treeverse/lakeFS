@@ -16,6 +16,7 @@ type eviction interface {
 	store(rPath relativePath, filesize int64) bool
 }
 
+// nolint: unused
 type ristrettoEviction struct {
 	cache         *ristretto.Cache
 	evictCallback func(rPath relativePath, cost int64)
@@ -29,6 +30,7 @@ const (
 	bufferItems = 64
 )
 
+// nolint: unused,deadcode
 func newRistrettoEviction(capacity int64, evict func(rPath relativePath, cost int64)) (eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 
