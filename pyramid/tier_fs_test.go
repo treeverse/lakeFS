@@ -5,7 +5,9 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -142,7 +144,10 @@ func TestInvalidArgs(t *testing.T) {
 }
 
 func TestMultipleConcurrentReads(t *testing.T) {
-	t.Skip("bug #1080 - https://github.com/treeverse/lakeFS/issues/1080")
+	var baseDir string
+	fs, baseDir = createFSWithEviction(&mockEv{})
+
+	defer func() { _ = os.RemoveAll(baseDir) }()
 
 	// write a single file to lookup later
 	namespace := uuid.New().String()
@@ -150,11 +155,13 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	content := []byte("hello world!")
 	writeToFile(t, namespace, filename, content)
 
-	// fill the cache so the file is evicted
-	testEviction(t, namespace)
-	adapter := fs.(*TierFS).adaptor.(*memAdapter)
-	readsSoFar := adapter.GetCount()
-
+	// remove the file
+	require.NoError(t, filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, filename) {
+			return os.Remove(path)
+		}
+		return nil
+	}))
 	// try to read that file - only a single access to block storage is expected
 	concurrencyLevel := 50
 	adapter.wait = make(chan struct{})
@@ -162,15 +169,15 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	for i := 0; i < concurrencyLevel; i++ {
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			checkContent(t, namespace, filename, content)
-			wg.Done()
 		}()
 	}
 
 	close(adapter.wait)
 	wg.Wait()
 
-	require.Equal(t, readsSoFar+1, adapter.GetCount())
+	require.Equal(t, int64(1), adapter.GetCount())
 }
 
 func writeToFile(t *testing.T, namespace, filename string, content []byte) {
@@ -195,4 +202,12 @@ func checkContent(t *testing.T, namespace string, filename string, content []byt
 	bytes, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
 	require.Equal(t, content, bytes)
+}
+
+type mockEv struct{}
+
+func (_ *mockEv) touch(_ relativePath) {}
+
+func (_ *mockEv) store(_ relativePath, _ int64) bool {
+	return true
 }

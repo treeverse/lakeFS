@@ -38,7 +38,7 @@ func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, er
 	return a.Adapter.Get(obj, size)
 }
 
-func TestMain(m *testing.M) {
+func createFSWithEviction(ev eviction) (FS, string) {
 	fsName := uuid.New().String()
 	baseDir := path.Join(os.TempDir(), fsName)
 
@@ -51,6 +51,7 @@ func TestMain(m *testing.M) {
 		fsName:               fsName,
 		adaptor:              adapter,
 		logger:               logging.Dummy(),
+		eviction:             ev,
 		fsBlockStoragePrefix: blockStoragePrefix,
 		localBaseDir:         baseDir,
 		allocatedDiskBytes:   allocatedDiskBytes,
@@ -58,6 +59,13 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+
+	return fs, baseDir
+}
+
+func TestMain(m *testing.M) {
+	var baseDir string
+	fs, baseDir = createFSWithEviction(nil)
 
 	code := m.Run()
 
