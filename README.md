@@ -3,14 +3,16 @@
 </p>
 
 <p align="center">
-	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" alt="License">
-		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++" alt="Go">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" alt="Node">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" /></a>
-	<a href="https://artifacthub.io/packages/search?repo=lakefs" alt="Artifact HUB">
-		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" /></a>
+	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
+		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" alt="Go tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" >
+		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANessie">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Nessie/badge.svg" alt="nessie integration tests status" /></a>
+	<a href="https://artifacthub.io/packages/search?repo=lakefs">
+		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
 </p>
 
 
