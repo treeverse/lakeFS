@@ -6,15 +6,14 @@ import (
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed/sstable"
-	//"github.com/treeverse/lakefs/catalog/rocks"
 )
 
 func (trees treeRepo) Apply(baseTreeID graveler.TreeID, inputIter graveler.ValueIterator) (graveler.TreeID, error) {
 	var basePartIter *pushBackValueIterator
 	var maxCurrentBaseKey graveler.Key
 	var err error
+	var baseFinished bool
 	// INITIALIZATION
-	pushbackInputIter := newPushbackEntryIterator(inputIter)
 	baseTreeManager, err := trees.newBaseTreeManager(baseTreeID)
 	if err != nil {
 		return "", err
@@ -29,11 +28,12 @@ func (trees treeRepo) Apply(baseTreeID graveler.TreeID, inputIter graveler.Value
 	// the resulting tree.
 	// the high level flow is:
 	// 1. Read an entry from the input stream.
-	// 2. If it matches the currently open base part - merge the input with the existing part into the new tree
-	// 3. Else - match the input with another base part, and merge into it
-	for pushbackInputIter.Next() { // check exit handling
-		var baseFinished bool
-		inputRecord := pushbackInputIter.Value()
+	// 2. check if the input key falls within the currently open base part. if not:
+	//		a. handle the termination of the current part
+	//	    b. open tha matching part the matching part
+	// 3.  merge the input with the open part into the new tree
+	for inputIter.Next() { // check exit handling
+		inputRecord := inputIter.Value()
 		// adjust the input to the correct base and output parts
 		if bytes.Compare(maxCurrentBaseKey, inputRecord.Key) < 0 { // not is current base part
 			basePartIter, maxCurrentBaseKey, baseFinished, err = advanceBasePart(basePartIter, treeWriter, inputRecord, baseTreeMaxKey, baseTreeManager)
@@ -41,68 +41,36 @@ func (trees treeRepo) Apply(baseTreeID graveler.TreeID, inputIter graveler.Value
 				return "", err
 			}
 			if baseFinished {
-				err = pushbackInputIter.pushBack()
+				err = treeWriter.WriteValue(*inputRecord)
 				if err != nil {
 					return "", err
 				}
-				break // exit the main loop after all base was read
+				err = treeWriter.FlushIterToTree(inputIter)
+				if err != nil {
+					return "", fmt.Errorf(" input flushing error : %w", err)
+				}
+				break // exit the main loop after all base tree was processed
 			}
 		}
 		// handle single input update
-		//assert: input path is smaller-equal than max key of current base part. It is not possible that base part
-		// will be exhausted (Next return false) before reaching an entry that >= input path.
 		err = handleSingleInputRecord(basePartIter, inputRecord, treeWriter)
 		if err != nil {
 			return "", err
 		}
 	}
 	// base tree was exhausted.
-	// 1. write any remaining input records into the result tree
+	// 1. write any remaining base records into the result tree
 	// 2. save the tree and return its ID
-	if pushbackInputIter.Err() != nil {
-		return "", fmt.Errorf(" apply input erroe: %w", pushbackInputIter.Err())
+	if inputIter.Err() != nil {
+		return "", fmt.Errorf(" apply input erroe: %w", inputIter.Err())
 	}
-	// assumption: calling Next() on exhausted iterator just returns false - not an error.
-	// otherwise - need a method to check if an iterator is exhausted or closed
-	err = treeWriter.FlushIterToTree(pushbackInputIter)
-	if err != nil {
-		return "", fmt.Errorf(" input flushing error : %w", err)
+	if !baseFinished && basePartIter != nil {
+		err = treeWriter.FlushIterToTree(basePartIter)
+		if err != nil {
+			return "", fmt.Errorf(" base flushing error : %w", err)
+		}
 	}
 	return treeWriter.saveTreeWithReuseParts(baseTreeManager.getPartsForReuse())
-}
-
-func handleSingleInputRecord(basePartIter *pushBackValueIterator, inputRecord *graveler.ValueRecord, treeWriter TreeWriter) error {
-	var err error
-	var baseRecord *graveler.ValueRecord
-	for {
-		if !basePartIter.Next() {
-			return fmt.Errorf("base part reading ends or error occured before reaching input key : %w", basePartIter.Err())
-		}
-		baseRecord = basePartIter.Value()
-		if bytes.Compare(baseRecord.Key, inputRecord.Key) < 0 {
-			err = treeWriter.WriteValue(*baseRecord)
-			if err != nil {
-				return err
-			}
-		} else {
-			break // reached insertion point of input record
-		}
-	}
-	// insert the input record
-	if inputRecord.Value != nil { // not a delete operation
-		err = treeWriter.WriteValue(*inputRecord)
-		if err != nil {
-			return err
-		}
-	}
-	if !bytes.Equal(baseRecord.Key, inputRecord.Key) {
-		// base iterator already contains a key bigger than the current input key, it has to be processed in the next cycle
-		err = basePartIter.pushBack()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func advanceBasePart(basePartIter *pushBackValueIterator, treeWriter TreeWriter, inputRecord *graveler.ValueRecord, baseTreeMaxKey graveler.Key,
@@ -162,4 +130,41 @@ func advanceBasePart(basePartIter *pushBackValueIterator, treeWriter TreeWriter,
 		return nil, nil, true, nil // since all input was finished, the only relevant return value is the boolean
 		// indicating that base was finished
 	}
+}
+
+func handleSingleInputRecord(basePartIter *pushBackValueIterator, inputRecord *graveler.ValueRecord, treeWriter TreeWriter) error {
+	var err error
+	var baseRecord *graveler.ValueRecord
+	for {
+		//assert: input path is smaller-equal than max key of current base part. It is an error if base part
+		// is exhausted (Next return false) before reaching an entry that >= input path.
+		if !basePartIter.Next() {
+			return fmt.Errorf("base part reading ends or error occured before reaching input key : %w", basePartIter.Err())
+		}
+		baseRecord = basePartIter.Value()
+		if bytes.Compare(baseRecord.Key, inputRecord.Key) < 0 {
+			err = treeWriter.WriteValue(*baseRecord)
+			if err != nil {
+				return err
+			}
+		} else {
+			break // reached insertion point of input record
+		}
+	}
+	// insert the input record
+	if inputRecord.Value != nil { // not a delete operation
+		err = treeWriter.WriteValue(*inputRecord)
+		if err != nil {
+			return err
+		}
+	}
+	// check if input updated an existing record, or it is a new record
+	if !bytes.Equal(baseRecord.Key, inputRecord.Key) {
+		// base iterator already contains a key bigger than the current input key, it has to be processed in the next cycle
+		err = basePartIter.pushBack()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
