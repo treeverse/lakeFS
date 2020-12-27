@@ -135,8 +135,8 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainName(),
 			bufferedCollector,
 			dedupCleaner,
+			cfg.GetS3GatewayProxyURL(),
 		)
-
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go bufferedCollector.Run(ctx)
 

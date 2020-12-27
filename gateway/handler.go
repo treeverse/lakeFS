@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	gohttputil "net/http/httputil"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -47,6 +49,7 @@ type ServerContext struct {
 	authService       simulator.GatewayAuthService
 	stats             stats.Collector
 	dedupCleaner      *dedup.Cleaner
+	proxyURL          string
 }
 
 const operationIDNotFound = "not_found_operation"
@@ -62,6 +65,7 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 		authService:       c.authService,
 		stats:             c.stats,
 		dedupCleaner:      c.dedupCleaner,
+		proxyURL:          c.proxyURL,
 	}
 }
 
@@ -74,6 +78,7 @@ func NewHandler(
 	bareDomain string,
 	stats stats.Collector,
 	dedupCleaner *dedup.Cleaner,
+	proxyURL string,
 ) http.Handler {
 	sc := &ServerContext{
 		ctx:               context.Background(),
@@ -85,6 +90,7 @@ func NewHandler(
 		authService:       authService,
 		stats:             stats,
 		dedupCleaner:      dedupCleaner,
+		proxyURL:          proxyURL,
 	}
 
 	// setup routes
@@ -269,7 +275,16 @@ func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.R
 		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
-			authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			if sc.proxyURL != "" {
+				proxyURL, err := url.Parse(sc.proxyURL)
+				if err != nil {
+					authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+				} else {
+					gohttputil.NewSingleHostReverseProxy(proxyURL).ServeHTTP(writer, request)
+				}
+			} else {
+				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			}
 			return
 		}
 		if err != nil {
@@ -306,14 +321,22 @@ func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler
 		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
-			authOp.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			if sc.proxyURL != "" {
+				proxyURL, err := url.Parse(sc.proxyURL)
+				if err != nil {
+					authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+				} else {
+					gohttputil.NewSingleHostReverseProxy(proxyURL).ServeHTTP(writer, request)
+				}
+			} else {
+				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			}
 			return
 		}
 		if err != nil {
 			authOp.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
-
 		// run callback
 		operation := &operations.PathOperation{
 			RefOperation: &operations.RefOperation{
