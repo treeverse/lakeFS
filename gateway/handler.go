@@ -275,16 +275,16 @@ func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.R
 		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
-			if sc.proxyURL != "" {
-				proxyURL, err := url.Parse(sc.proxyURL)
-				if err != nil {
-					authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
-				} else {
-					gohttputil.NewSingleHostReverseProxy(proxyURL).ServeHTTP(writer, request)
-				}
-			} else {
+			if sc.proxyURL == "" {
 				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+				return
 			}
+			proxyURL, err := url.Parse(sc.proxyURL)
+			if err != nil {
+				authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+				return
+			}
+			gohttputil.NewSingleHostReverseProxy(proxyURL).ServeHTTP(writer, request)
 			return
 		}
 		if err != nil {
@@ -321,16 +321,16 @@ func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler
 		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
-			if sc.proxyURL != "" {
-				proxyURL, err := url.Parse(sc.proxyURL)
-				if err != nil {
-					authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
-				} else {
-					gohttputil.NewSingleHostReverseProxy(proxyURL).ServeHTTP(writer, request)
-				}
-			} else {
+			if sc.proxyURL == "" {
 				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+				return
 			}
+			proxyURL, err := url.Parse(sc.proxyURL)
+			if err != nil {
+				authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+				return
+			}
+			gohttputil.NewSingleHostReverseProxy(proxyURL).ServeHTTP(writer, request)
 			return
 		}
 		if err != nil {
