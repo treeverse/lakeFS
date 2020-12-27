@@ -199,6 +199,9 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 		store: func(filename string) error {
 			return tfs.store(namespace, tempPath, filename)
 		},
+		abort: func() error {
+			return os.Remove(tempPath)
+		},
 	}, nil
 }
 
