@@ -77,7 +77,7 @@ func TestWriterAbort(t *testing.T) {
 	mockFile.EXPECT().Close().Return(nil).Times(1)
 	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
 
-	dw, err := newDiskWriter(mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 

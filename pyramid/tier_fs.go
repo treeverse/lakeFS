@@ -176,11 +176,6 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 	}
 }
 
-// removeTempFile removes the closed non-stored file from the FS.
-func (tfs *TierFS) removeTempFile(originalPath string) error {
-	return os.Remove(originalPath)
-}
-
 // Create creates a new file in TierFS.
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
@@ -205,7 +200,7 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 			return tfs.store(namespace, tempPath, filename)
 		},
 		abort: func() error {
-			return tfs.removeTempFile(tempPath)
+			return os.Remove(tempPath)
 		},
 	}, nil
 }
