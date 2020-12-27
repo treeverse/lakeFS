@@ -12,7 +12,7 @@ import (
 )
 
 type cataloger struct {
-	EntryCatalog EntryCatalog
+	EntryCatalog *EntryCatalog
 	log          logging.Logger
 	dummyDedupCh chan *catalog.DedupReport
 	hooks        catalog.CatalogerHooks
@@ -655,7 +655,19 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Diff
 }
 
 func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch string, rightBranch string, committer string, message string, metadata catalog.Metadata) (*catalog.MergeResult, error) {
-	panic("not implemented") // TODO: Implement
+	repositoryID := graveler.RepositoryID(repository)
+	leftRef := graveler.Ref(leftBranch)
+	rightBranchID := graveler.BranchID(rightBranch)
+	meta := graveler.Metadata(metadata)
+	commitID, err := c.EntryCatalog.Merge(ctx, repositoryID, leftRef, rightBranchID, committer, message, meta)
+	if err != nil {
+		return nil, err
+	}
+	return &catalog.MergeResult{
+		// TODO(barak): require implementation by graveler's merge
+		Summary:   map[catalog.DifferenceType]int{},
+		Reference: commitID.String(),
+	}, nil
 }
 
 func (c *cataloger) Hooks() *catalog.CatalogerHooks {
