@@ -75,6 +75,8 @@ go-install: go-mod-download ## Install dependencies
 	$(GOCMD) install github.com/golang/mock/mockgen
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 	$(GOCMD) install github.com/rakyll/statik
+	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
+
 
 gen-api: go-install del-gen-api ## Run the go-swagger code generator
 	$(GOGENERATE) ./api/...
