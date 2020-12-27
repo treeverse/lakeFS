@@ -26,7 +26,7 @@ There are 3 big shifts in design:
 
 1. Using the underlying object store as a source of truth for all committed data. We do this by storing commits as RocksDB SSTable files, where each commit is a “snapshot” of a given repository, split across multiple SSTable files that could be reused across commits.
 1. Removal of PostgreSQL as a dependency: scaling it for very high throughput while keeping it predictable in performance for different loads and access patterns has a very high operational cost.
-1. Separating out the metadata operations into a separate service (with the S3 API Gateway remaining as a stateless client for this service). Would allow for the development of “native” clients for big data tools that don’t require passing the data itself through lakeFS, but rather talk directly to the underlying object store.
+1. Extract metadata operations into a separate service (with the S3 API Gateway remaining as a stateless client for this service). Would allow for the development of “native” clients for big data tools that don’t require passing the data itself through lakeFS, but rather talk directly to the underlying object store.
 
 The change will be made gradually over (at least) 3 releases:
 
@@ -111,4 +111,3 @@ Provide a webhook around a tool such as [Great Expectations](https://greatexpect
 
 ### Webhook Alerting
 Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main/master due to a quality issue, so will alert the owning team.
-
