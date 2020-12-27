@@ -299,3 +299,17 @@ func (mr *MockStoredFileMockRecorder) Store(filename interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockStoredFile)(nil).Store), filename)
 }
+
+// Abort mocks base method
+func (m *MockStoredFile) Abort() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Abort")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Abort indicates an expected call of Abort
+func (mr *MockStoredFileMockRecorder) Abort() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Abort", reflect.TypeOf((*MockStoredFile)(nil).Abort))
+}
