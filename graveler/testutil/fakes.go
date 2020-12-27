@@ -48,7 +48,7 @@ func (c *CommittedFake) Diff(ctx context.Context, ns graveler.StorageNamespace, 
 	return c.diffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.TreeID) (graveler.TreeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.TreeID, _, _ string, _ graveler.Metadata) (graveler.TreeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
