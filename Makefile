@@ -67,10 +67,16 @@ docs-serve: ### Serve local docs
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 
-$(GOBINPATH)/swagger:
-	go get github.com/go-swagger/go-swagger/cmd/swagger
+go-mod-download: ## Download module dependencies
+	$(GOCMD) mod download
 
-gen-api: $(GOBINPATH)/swagger del-gen-api ## Run the go-swagger code generator
+go-install: go-mod-download ## Install dependencies
+	$(GOCMD) install github.com/go-swagger/go-swagger/cmd/swagger
+	$(GOCMD) install github.com/golang/mock/mockgen
+	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+	$(GOCMD) install github.com/rakyll/statik
+
+gen-api: go-install del-gen-api ## Run the go-swagger code generator
 	$(GOGENERATE) ./api/...
 
 del-gen-api:
@@ -78,11 +84,11 @@ del-gen-api:
 	@mkdir -p $(API_BUILD_DIR)
 
 .PHONY: gen-mockgen
-gen-mockgen: $(GOBINPATH)/mockgen ## Run the generator for inline commands
+gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./graveler/committed/...
 	$(GOGENERATE) ./pyramid
 
-swagger-validator: $(GOBINPATH)/swagger  ## Validate swagger.yaml
+swagger-validator: go-install ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
@@ -90,13 +96,7 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
-$(GOBINPATH)/golangci-lint:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint
-
-$(GOBINPATH)/mockgen:
-	go get github.com/golang/mock/mockgen
-
-lint: $(GOBINPATH)/golangci-lint  ## Lint code
+lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
 nessie: ## run nessie (system testing)
@@ -145,15 +145,12 @@ $(UI_DIR)/node_modules:
 ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
-$(GOBINPATH)/statik: 
-	go get github.com/rakyll/statik
-
-ui-bundle: ui-build $(GOBINPATH)/statik  ## Bundle static built UI app
+ui-bundle: ui-build go-install ## Bundle static built UI app
 	$(GOBINPATH)/statik -ns webui -m -f -src=$(UI_BUILD_DIR)
 
 gen-ui: ui-bundle
 
-gen-ddl: $(GOBINPATH)/statik  ## Embed data migration files into the resulting binary
+gen-ddl: go-install ## Embed data migration files into the resulting binary
 	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
 
 proto: ## Build proto (Protocol Buffers) files
