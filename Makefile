@@ -82,7 +82,7 @@ gen-mockgen: $(GOBINPATH)/mockgen ## Run the generator for inline commands
 	$(GOGENERATE) ./graveler/committed/...
 	$(GOGENERATE) ./pyramid
 
-validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
+swagger-validator: $(GOBINPATH)/swagger  ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
@@ -136,7 +136,7 @@ fmt-validator:  ## Validate go format
 proto-validator: ## build proto and check if diff found
 	@git diff --quiet -- catalog/rocks/catalog.pb.go
 
-checks-validator: lint fmt-validator validate-swagger proto-validator ## Run all validation/linting steps
+checks-validator: lint fmt-validator swagger-validator proto-validator ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
