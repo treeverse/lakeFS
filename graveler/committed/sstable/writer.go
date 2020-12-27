@@ -81,9 +81,21 @@ func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
 	return nil
 }
 
+func (dw *DiskWriter) Abort() error {
+	if err := dw.w.Close(); err != nil {
+		return fmt.Errorf("sstable file close: %w", err)
+	}
+
+	if err := dw.fh.Abort(); err != nil {
+		return fmt.Errorf("sstable file abort: %w", err)
+	}
+
+	return nil
+}
+
 func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	if err := dw.w.Close(); err != nil {
-		return nil, fmt.Errorf("sstable file write: %w", err)
+		return nil, fmt.Errorf("sstable file close: %w", err)
 	}
 
 	sstableID := fmt.Sprintf("%x", dw.hash.Sum(nil))
