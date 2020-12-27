@@ -23,10 +23,15 @@ func TestPyramidWriteFile(t *testing.T) {
 	defer os.Remove(filepath)
 
 	storeCalled := false
+	abortCalled := false
 	sut := WRFile{
 		File: fh,
 		store: func(string) error {
 			storeCalled = true
+			return nil
+		},
+		abort: func() error {
+			abortCalled = true
 			return nil
 		},
 	}
@@ -44,6 +49,9 @@ func TestPyramidWriteFile(t *testing.T) {
 	require.NoError(t, sut.Store(filename))
 
 	require.True(t, storeCalled)
+
+	require.Error(t, sut.Abort())
+	require.False(t, abortCalled)
 }
 
 func TestWriteValidate(t *testing.T) {
@@ -76,8 +84,78 @@ func TestWriteValidate(t *testing.T) {
 	require.False(t, storeCalled)
 
 	require.Error(t, sut.Close())
+}
+
+func TestMultipleWriteCalls(t *testing.T) {
+	filename := uuid.New().String()
+	fh, err := ioutil.TempFile("", filename)
+	if err != nil {
+		t.Fatal("Failed to create temp file", err)
+	}
+
+	filepath := fh.Name()
+	defer os.Remove(filepath)
+
+	storeCalled := false
+
+	sut := WRFile{
+		File: fh,
+		store: func(string) error {
+			storeCalled = true
+			return nil
+		},
+	}
+
+	content := "some content to write to file"
+	n, err := sut.Write([]byte(content))
+	require.Equal(t, len(content), n)
+	require.NoError(t, err)
+
+	require.NoError(t, sut.Close())
 	require.NoError(t, sut.Store("validfilename"))
+	require.True(t, storeCalled)
+
 	require.Error(t, sut.Store("validfilename"))
+}
+
+func TestAbort(t *testing.T) {
+	filename := uuid.New().String()
+	fh, err := ioutil.TempFile("", filename)
+	if err != nil {
+		t.Fatal("Failed to create temp file", err)
+	}
+
+	filepath := fh.Name()
+	defer os.Remove(filepath)
+
+	storeCalled := false
+	abortCalled := false
+
+	sut := WRFile{
+		File: fh,
+		store: func(string) error {
+			storeCalled = true
+			return nil
+		},
+		abort: func() error {
+			abortCalled = true
+			return nil
+		},
+	}
+
+	content := "some content to write to file"
+	n, err := sut.Write([]byte(content))
+	require.Equal(t, len(content), n)
+	require.NoError(t, err)
+
+	require.NoError(t, sut.Close())
+	require.False(t, abortCalled)
+	require.NoError(t, sut.Abort())
+	require.False(t, storeCalled)
+	require.True(t, abortCalled)
+
+	require.Error(t, sut.Store("validfilename"))
+	require.False(t, storeCalled)
 }
 
 func TestPyramidReadFile(t *testing.T) {
