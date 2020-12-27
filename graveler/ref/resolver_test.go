@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestPGRefManager_Dereference(t *testing.T) {
+func TestRefManager_Dereference(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -168,7 +168,7 @@ func TestPGRefManager_Dereference(t *testing.T) {
 	}
 }
 
-func TestPGRefManager_DereferenceWithGraph(t *testing.T) {
+func TestRefManager_DereferenceWithGraph(t *testing.T) {
 	/*
 
 		This is taken from `git help rev-parse` - let's run these tests

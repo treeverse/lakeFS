@@ -8,22 +8,17 @@ import (
 )
 
 type BranchIterator struct {
-	db  db.Database
-	ctx context.Context
-
+	db           db.Database
+	ctx          context.Context
 	repositoryID graveler.RepositoryID
 	value        *graveler.BranchRecord
 	buf          []*graveler.BranchRecord
-
-	// blockValue is true when the iterator is created, or SeekGE() is called.
-	// A single Next() call turns it to false. When it's true, Value() returns nil.
-	blockValue bool
-
-	offset      string
-	fetchSize   int
-	shouldFetch bool
-
-	err error
+	offset       string
+	fetchSize    int
+	err          error
+	fetchCalled  bool
+	fetchEnded   bool
+	closed       bool
 }
 
 type branchRecord struct {
@@ -38,43 +33,44 @@ func NewBranchIterator(ctx context.Context, db db.Database, repositoryID gravele
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		fetchSize:    prefetchSize,
-		shouldFetch:  true,
-		blockValue:   true,
+		buf:          make([]*graveler.BranchRecord, 0, prefetchSize),
 	}
 }
 
 func (ri *BranchIterator) Next() bool {
-	ri.blockValue = false
-
-	// no buffer is initialized
-	if ri.buf == nil {
-		ri.fetch(true) // initial fetch
-	} else if len(ri.buf) == 0 {
-		ri.fetch(false) // paging size we're out of values
+	if ri.closed {
+		panic(ErrIteratorClosed)
 	}
+	if ri.err != nil {
+		return false
+	}
+	ri.fetch()
 
+	// stage a value and increment offset
 	if len(ri.buf) == 0 {
 		return false
 	}
-
-	// stage a value and increment offset
 	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.BranchID)
 	if len(ri.buf) > 1 {
 		ri.buf = ri.buf[1:]
 	} else {
-		ri.buf = make([]*graveler.BranchRecord, 0)
+		ri.buf = ri.buf[:0]
 	}
-
 	return true
 }
 
-func (ri *BranchIterator) fetch(initial bool) {
-	if !ri.shouldFetch {
+func (ri *BranchIterator) fetch() {
+	if ri.fetchEnded {
 		return
 	}
-	offsetCondition := iteratorOffsetCondition(initial)
-	buf := make([]*branchRecord, 0)
+	if len(ri.buf) > 0 {
+		return
+	}
+	offsetCondition := iteratorOffsetCondition(!ri.fetchCalled)
+	ri.fetchCalled = true
+
+	var buf []*branchRecord
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
 			SELECT id, staging_token, commit_id
 			FROM graveler_branches
@@ -87,36 +83,49 @@ func (ri *BranchIterator) fetch(initial bool) {
 		return
 	}
 	if len(buf) < ri.fetchSize {
-		ri.shouldFetch = false
+		ri.fetchEnded = true
 	}
-	ri.buf = make([]*graveler.BranchRecord, len(buf))
-	for i, b := range buf {
-		ri.buf[i] = &graveler.BranchRecord{
+	for _, b := range buf {
+		rec := &graveler.BranchRecord{
 			BranchID: b.BranchID,
 			Branch: &graveler.Branch{
 				CommitID:     b.CommitID,
 				StagingToken: b.StagingToken,
 			},
 		}
+		ri.buf = append(ri.buf, rec)
 	}
 }
 
 func (ri *BranchIterator) SeekGE(id graveler.BranchID) {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
 	ri.offset = string(id)
-	ri.shouldFetch = true
+	ri.fetchEnded = false
+	ri.fetchCalled = false
 	ri.buf = nil
-	ri.blockValue = true
+	ri.value = nil
+	ri.err = nil
 }
 
 func (ri *BranchIterator) Value() *graveler.BranchRecord {
-	if ri.blockValue || ri.err != nil {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
+	if ri.err != nil {
 		return nil
 	}
 	return ri.value
 }
 
 func (ri *BranchIterator) Err() error {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
 	return ri.err
 }
 
-func (ri *BranchIterator) Close() {}
+func (ri *BranchIterator) Close() {
+	ri.closed = true
+}

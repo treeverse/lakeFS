@@ -13,13 +13,12 @@ type TagIterator struct {
 	repositoryID graveler.RepositoryID
 	value        *graveler.TagRecord
 	buf          []*graveler.TagRecord
-	// blockValue is true when the iterator is created, or SeekGE() is called.
-	// A single Next() call turns it to false. When it's true, Value() returns nil.
-	blockValue  bool
-	offset      string
-	fetchSize   int
-	shouldFetch bool
-	err         error
+	offset       string
+	fetchSize    int
+	err          error
+	fetchCalled  bool
+	fetchEnded   bool
+	closed       bool
 }
 
 type tagRecord struct {
@@ -33,27 +32,24 @@ func NewTagIterator(ctx context.Context, db db.Database, repositoryID graveler.R
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		fetchSize:    prefetchSize,
-		shouldFetch:  true,
-		blockValue:   true,
 		offset:       offset,
 	}
 }
 
 func (ri *TagIterator) Next() bool {
-	ri.blockValue = false
-
-	// no buffer is initialized
-	if ri.buf == nil {
-		ri.fetch(true) // initial fetch
-	} else if len(ri.buf) == 0 {
-		ri.fetch(false) // paging size we're out of values
+	if ri.closed {
+		panic(ErrIteratorClosed)
 	}
-
-	if len(ri.buf) == 0 {
+	if ri.err != nil {
 		return false
 	}
 
+	ri.fetch()
+
 	// stage a value and increment offset
+	if len(ri.buf) == 0 {
+		return false
+	}
 	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.CommitID)
 	if len(ri.buf) > 1 {
@@ -64,11 +60,13 @@ func (ri *TagIterator) Next() bool {
 	return true
 }
 
-func (ri *TagIterator) fetch(initial bool) {
-	if !ri.shouldFetch {
+func (ri *TagIterator) fetch() {
+	if ri.fetchEnded {
 		return
 	}
-	offsetCondition := iteratorOffsetCondition(initial)
+	offsetCondition := iteratorOffsetCondition(!ri.fetchCalled)
+	ri.fetchCalled = true
+
 	buf := make([]*tagRecord, 0)
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
 			SELECT id, commit_id
@@ -82,7 +80,7 @@ func (ri *TagIterator) fetch(initial bool) {
 		return
 	}
 	if len(buf) < ri.fetchSize {
-		ri.shouldFetch = false
+		ri.fetchEnded = true
 	}
 	ri.buf = make([]*graveler.TagRecord, len(buf))
 	for i, b := range buf {
@@ -94,21 +92,34 @@ func (ri *TagIterator) fetch(initial bool) {
 }
 
 func (ri *TagIterator) SeekGE(id graveler.TagID) {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
 	ri.offset = string(id)
-	ri.shouldFetch = true
 	ri.buf = nil
-	ri.blockValue = true
+	ri.value = nil
+	ri.err = nil
+	ri.fetchCalled = false
+	ri.fetchEnded = false
 }
 
 func (ri *TagIterator) Value() *graveler.TagRecord {
-	if ri.blockValue || ri.err != nil {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
+	if ri.err != nil {
 		return nil
 	}
 	return ri.value
 }
 
 func (ri *TagIterator) Err() error {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
 	return ri.err
 }
 
-func (ri *TagIterator) Close() {}
+func (ri *TagIterator) Close() {
+	ri.closed = true
+}

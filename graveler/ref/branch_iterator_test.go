@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestPGBranchIterator(t *testing.T) {
+func TestBranchIterator(t *testing.T) {
 	r, db := testRefManagerWithDB(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := context.Background()
@@ -43,7 +43,7 @@ func TestPGBranchIterator(t *testing.T) {
 		}
 	})
 
-	t.Run("listing branches from prefix", func(t *testing.T) {
+	t.Run("listing branches using prefix", func(t *testing.T) {
 		iter := ref.NewBranchIterator(ctx, db, "repo1", 3)
 		iter.SeekGE("b")
 		ids := make([]graveler.BranchID, 0)
@@ -72,7 +72,6 @@ func TestPGBranchIterator(t *testing.T) {
 		if iter.Err() != nil {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
-		iter.Close()
 
 		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs: %v", diffs)

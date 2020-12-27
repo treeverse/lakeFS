@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestPGRepositoryIterator(t *testing.T) {
+func TestRepositoryIterator(t *testing.T) {
 	r, db := testRefManagerWithDB(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
 
@@ -70,7 +70,6 @@ func TestPGRepositoryIterator(t *testing.T) {
 		if iter.Err() != nil {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
-		iter.Close()
 
 		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs: %v", diffs)

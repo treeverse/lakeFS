@@ -8,64 +8,56 @@ import (
 )
 
 type RepositoryIterator struct {
-	db  db.Database
-	ctx context.Context
-
-	value *graveler.RepositoryRecord
-	buf   []*graveler.RepositoryRecord
-
+	db          db.Database
+	ctx         context.Context
+	value       *graveler.RepositoryRecord
+	buf         []*graveler.RepositoryRecord
 	offset      string
 	fetchSize   int
-	shouldFetch bool
-
-	// blockValue is true when the iterator is created, or SeekGE() is called.
-	// A single Next() call turns it to false. When it's true, Value() returns nil.
-	blockValue bool
-
-	err error
+	err         error
+	fetchCalled bool
+	fetchEnded  bool
+	closed      bool
 }
 
 func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int) *RepositoryIterator {
 	return &RepositoryIterator{
-		db:          db,
-		ctx:         ctx,
-		fetchSize:   fetchSize,
-		shouldFetch: true,
-		blockValue:  true,
+		db:        db,
+		ctx:       ctx,
+		fetchSize: fetchSize,
 	}
 }
 
 func (ri *RepositoryIterator) Next() bool {
-	ri.blockValue = false
-
-	// no buffer is initialized
-	if ri.buf == nil {
-		ri.fetch(true) // initial fetch
-	} else if len(ri.buf) == 0 {
-		ri.fetch(false) // paginating since we're out of values
+	if ri.closed {
+		panic(ErrIteratorClosed)
 	}
-
-	if len(ri.buf) == 0 {
+	if ri.err != nil {
 		return false
 	}
 
+	ri.fetch()
+
 	// stage a value and increment offset
+	if len(ri.buf) == 0 {
+		return false
+	}
 	ri.value = ri.buf[0]
 	ri.offset = string(ri.value.RepositoryID)
 	if len(ri.buf) > 1 {
 		ri.buf = ri.buf[1:]
 	} else {
-		ri.buf = make([]*graveler.RepositoryRecord, 0)
+		ri.buf = ri.buf[:0]
 	}
-
 	return true
 }
 
-func (ri *RepositoryIterator) fetch(initial bool) {
-	if !ri.shouldFetch {
+func (ri *RepositoryIterator) fetch() {
+	if ri.fetchEnded {
 		return
 	}
-	offsetCondition := iteratorOffsetCondition(initial)
+	offsetCondition := iteratorOffsetCondition(!ri.fetchCalled)
+	ri.fetchCalled = true
 	ri.err = ri.db.WithContext(ri.ctx).Select(&ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
 			FROM graveler_repositories
@@ -76,26 +68,39 @@ func (ri *RepositoryIterator) fetch(initial bool) {
 		return
 	}
 	if len(ri.buf) < ri.fetchSize {
-		ri.shouldFetch = false
+		ri.fetchEnded = true
 	}
 }
 
 func (ri *RepositoryIterator) SeekGE(id graveler.RepositoryID) {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
 	ri.offset = string(id)
-	ri.shouldFetch = true
 	ri.buf = nil
-	ri.blockValue = true
+	ri.value = nil
+	ri.err = nil
+	ri.fetchCalled = false
+	ri.fetchEnded = false
 }
 
 func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
-	if ri.blockValue || ri.err != nil {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
+	if ri.err != nil {
 		return nil
 	}
 	return ri.value
 }
 
 func (ri *RepositoryIterator) Err() error {
+	if ri.closed {
+		panic(ErrIteratorClosed)
+	}
 	return ri.err
 }
 
-func (ri *RepositoryIterator) Close() {}
+func (ri *RepositoryIterator) Close() {
+	ri.closed = true
+}
