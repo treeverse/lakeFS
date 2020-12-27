@@ -50,7 +50,7 @@ export const RepositoryCreateForm = connect(
     }, [getConfig]);
 
     const blockstoreType = config.payload ? config.payload['blockstore.type'] : DEFAULT_BLOCKSTORE_TYPE;
-    const storageNamespaceValidityRegex = new RegExp(`^(${blockstoreType}):\/.*$`);
+    const storageNamespaceValidityRegex = new RegExp(`^(${blockstoreType}):/.*$`);
     const storageNamespaceExample = `e.g. ${blockstoreType}://example-bucket/`;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {
