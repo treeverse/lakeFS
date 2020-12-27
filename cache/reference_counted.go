@@ -38,6 +38,7 @@ type ParamsWithDisposal struct {
 // keyus have a String() method that is compatible with their equality, i.e. k1.GoString() ==
 // k2.GoString() implies k1 equals k2 in the sense of map comparison.
 type shardedCacheWithDisposal struct {
+	name   string
 	Seed   maphash.Seed
 	Shards []CacheWithDisposal
 }
@@ -50,7 +51,11 @@ func NewCacheWithDisposal(p ParamsWithDisposal) *shardedCacheWithDisposal {
 	for i := 0; i < p.Shards; i++ {
 		shards[i] = NewSingleThreadedCacheWithDisposal(p)
 	}
-	return &shardedCacheWithDisposal{Seed: maphash.MakeSeed(), Shards: shards}
+	return &shardedCacheWithDisposal{name: p.Name, Seed: maphash.MakeSeed(), Shards: shards}
+}
+
+func (s *shardedCacheWithDisposal) Name() string {
+	return s.name
 }
 
 func (s *shardedCacheWithDisposal) GetOrSet(k interface{}, setFn SetFn) (interface{}, Derefer, error) {
