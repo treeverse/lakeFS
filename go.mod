@@ -30,6 +30,7 @@ require (
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/go-test/deep v1.0.7
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate/v4 v4.12.2
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2

@@ -1,9 +1,11 @@
-package graveler
+package tree
 
 import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 /*
@@ -27,7 +29,7 @@ func putBytes(buf *[]byte, b []byte) {
 }
 
 // MarshalValue returns bytes that uniquely unmarshal into a Value equal to v.
-func MarshalValue(v *Value) ([]byte, error) {
+func MarshalValue(v *graveler.Value) ([]byte, error) {
 	ret := make([]byte, 0, len(v.Identity)+len(v.Data)+2*binary.MaxVarintLen32)
 	putBytes(&ret, v.Identity)
 	putBytes(&ret, v.Data)
@@ -56,8 +58,8 @@ func getBytes(b *[]byte) ([]byte, error) {
 	return ret, nil
 }
 
-func UnmarshalValue(b []byte) (*Value, error) {
-	ret := &Value{}
+func UnmarshalValue(b []byte) (*graveler.Value, error) {
+	ret := &graveler.Value{}
 	var err error
 	if ret.Identity, err = getBytes(&b); err != nil {
 		return nil, fmt.Errorf("identity field: %w", err)

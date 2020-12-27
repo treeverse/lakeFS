@@ -1,8 +1,10 @@
-package graveler_test
+package tree_test
 
 import (
 	"errors"
 	"testing"
+
+	"github.com/treeverse/lakefs/graveler/committed/tree"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
@@ -22,7 +24,7 @@ func TestGravelerValueMarshal(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			b, err := graveler.MarshalValue(&c.v)
+			b, err := tree.MarshalValue(&c.v)
 			if err != nil {
 				t.Error(err)
 			}
@@ -44,12 +46,12 @@ func TestGravelerValueUnmarshal(t *testing.T) {
 		{name: "identity", v: &graveler.Value{Identity: []byte("foo")}, b: []byte{6, 102, 111, 111, 0}},
 		{name: "data", v: &graveler.Value{Data: []byte("the quick brown fox")}, b: []byte{0, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
 		{name: "identityAndData", v: &graveler.Value{Identity: []byte("foo"), Data: []byte("the quick brown fox")}, b: []byte{6, 102, 111, 111, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
-		{name: "failIdentityNegativeLength", b: []byte{3, 102, 111, 111, 0}, err: graveler.ErrBadValueBytes},
-		{name: "failIdentityTooShort", b: []byte{4, 102, 111, 111, 0}, err: graveler.ErrBadValueBytes},
-		{name: "failIdentityTooLong", b: []byte{16, 102, 111, 111, 0}, err: graveler.ErrBadValueBytes},
-		{name: "failIdentityDataNegativeLength", b: []byte{6, 102, 111, 111, 17, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}, err: graveler.ErrBadValueBytes},
+		{name: "failIdentityNegativeLength", b: []byte{3, 102, 111, 111, 0}, err: tree.ErrBadValueBytes},
+		{name: "failIdentityTooShort", b: []byte{4, 102, 111, 111, 0}, err: tree.ErrBadValueBytes},
+		{name: "failIdentityTooLong", b: []byte{16, 102, 111, 111, 0}, err: tree.ErrBadValueBytes},
+		{name: "failIdentityDataNegativeLength", b: []byte{6, 102, 111, 111, 17, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}, err: tree.ErrBadValueBytes},
 		{name: "identityAndDataAndLeftovers", v: &graveler.Value{Identity: []byte("foo"), Data: []byte("the quick brown fox")}, b: []byte{6, 102, 111, 111, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120, 1, 2, 3, 4, 5, 6, 7, 8, 9}},
-		{name: "failIdentityDataTooLong", b: []byte{6, 102, 111, 111, 250, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}, err: graveler.ErrBadValueBytes},
+		{name: "failIdentityDataTooLong", b: []byte{6, 102, 111, 111, 250, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}, err: tree.ErrBadValueBytes},
 	}
 
 	for _, c := range cases {
@@ -60,7 +62,7 @@ func TestGravelerValueUnmarshal(t *testing.T) {
 			c.v.Data = make([]byte, 0)
 		}
 		t.Run(c.name, func(t *testing.T) {
-			v, err := graveler.UnmarshalValue(c.b)
+			v, err := tree.UnmarshalValue(c.b)
 			if !errors.Is(err, c.err) {
 				t.Errorf("got error %s != %s", err, c.err)
 			}
@@ -82,9 +84,9 @@ func TestGravelerValueIdentityUnmarshal(t *testing.T) {
 		{name: "identity", id: []byte("foo"), b: []byte{6, 102, 111, 111, 0}},
 		{name: "data", b: []byte{0, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
 		{name: "identityAndData", id: []byte("foo"), b: []byte{6, 102, 111, 111, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
-		{name: "failIdentityNegativeLength", b: []byte{3, 102, 111, 111, 0}, err: graveler.ErrBadValueBytes},
+		{name: "failIdentityNegativeLength", b: []byte{3, 102, 111, 111, 0}, err: tree.ErrBadValueBytes},
 		{name: "okIdentityTooShort", id: []byte("fo"), b: []byte{4, 102, 111, 111, 0}},
-		{name: "failIdentityTooLong", b: []byte{16, 102, 111, 111, 0}, err: graveler.ErrBadValueBytes},
+		{name: "failIdentityTooLong", b: []byte{16, 102, 111, 111, 0}, err: tree.ErrBadValueBytes},
 		{name: "okIdentityDataNegativeLength", id: []byte("foo"), b: []byte{6, 102, 111, 111, 17, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
 		{name: "okIdentityDataTooLong", id: []byte("foo"), b: []byte{6, 102, 111, 111, 250, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
 	}
@@ -94,7 +96,7 @@ func TestGravelerValueIdentityUnmarshal(t *testing.T) {
 			c.id = make([]byte, 0)
 		}
 		t.Run(c.name, func(t *testing.T) {
-			id, err := graveler.UnmarshalIdentity(c.b)
+			id, err := tree.UnmarshalIdentity(c.b)
 			if !errors.Is(err, c.err) {
 				t.Errorf("got error %s != %s", err, c.err)
 			}
