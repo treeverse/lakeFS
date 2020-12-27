@@ -133,7 +133,7 @@ fmt-validator:  ## Validate go format
 	fi
 
 .PHONY: proto-validator
-proto-validator: ## build proto and check if diff found
+proto-validator: proto ## build proto and check if diff found
 	@git diff --quiet -- catalog/rocks/catalog.pb.go
 
 checks-validator: lint fmt-validator swagger-validator proto-validator ## Run all validation/linting steps
