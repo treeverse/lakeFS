@@ -11,24 +11,24 @@ import (
 )
 
 type writer struct {
-	m                 committed.PartManager
-	currentPartWriter committed.Writer
-	lastKey           committed.Key
-	namespace         committed.Namespace
-	treeWriter        committed.Writer // writer for the tree representation
-	breakRatio        int              // indicates when to break the parts
+	manager    committed.PartManager
+	partWriter committed.Writer // writer for the current part
+	partPath   committed.Namespace
+	lastKey    committed.Key
+	treeWriter committed.Writer // writer for the tree representation
+	treePath   committed.Namespace
+	breakRatio int // indicates when to break the parts
 }
 
 var ErrUnsorted = errors.New("record should be bigger then all records previously written to writer")
 var ErrNilValue = errors.New("record value should not be nil")
 
-func NewWriter(manager committed.PartManager, breakRatio int, namespace committed.Namespace) Writer {
+func NewWriter(manager committed.PartManager, breakRatio int, treePath, partPath committed.Namespace) Writer {
 	return &writer{
-		m:                 manager,
-		currentPartWriter: nil,
-		lastKey:           nil,
-		breakRatio:        breakRatio,
-		namespace:         namespace,
+		manager:    manager,
+		breakRatio: breakRatio,
+		partPath:   partPath,
+		treePath:   treePath,
 	}
 }
 
@@ -42,8 +42,8 @@ func (w *writer) WriteRecord(record graveler.ValueRecord) error {
 	}
 
 	var err error
-	if w.currentPartWriter == nil {
-		w.currentPartWriter, err = w.m.GetWriter(w.namespace)
+	if w.partWriter == nil {
+		w.partWriter, err = w.manager.GetWriter(w.partPath)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func (w *writer) WriteRecord(record graveler.ValueRecord) error {
 	if err != nil {
 		return err
 	}
-	err = w.currentPartWriter.WriteRecord(committed.Record{Key: committed.Key(record.Key), Value: v})
+	err = w.partWriter.WriteRecord(committed.Record{Key: committed.Key(record.Key), Value: v})
 	if err != nil {
 		return err
 	}
@@ -71,10 +71,10 @@ func (w *writer) WriteRecord(record graveler.ValueRecord) error {
 }
 
 func (w *writer) closeCurrentPart(reachedBrakePoint bool) error {
-	if w.currentPartWriter == nil {
+	if w.partWriter == nil {
 		return nil
 	}
-	wr, err := w.currentPartWriter.Close()
+	wr, err := w.partWriter.Close()
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (w *writer) closeCurrentPart(reachedBrakePoint bool) error {
 	if err != nil {
 		return err
 	}
-	w.currentPartWriter = nil
+	w.partWriter = nil
 	return nil
 }
 
@@ -161,7 +161,8 @@ func PartToTreeRecord(part Part) (*committed.Record, error) {
 func (w *writer) writePartToTree(part Part) error {
 	if w.treeWriter == nil {
 		var err error
-		if w.treeWriter, err = w.m.GetWriter(w.namespace); err != nil {
+		treePath := w.treePath
+		if w.treeWriter, err = w.manager.GetWriter(treePath); err != nil {
 			return fmt.Errorf("failed creating treeWriter: %w", err)
 		}
 	}

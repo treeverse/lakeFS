@@ -5,8 +5,8 @@ option go_package = "github.com/treevese/lakefs/graveler/committed/tree";
 package tree;
 
 message PartData {
-	bytes minKey = 1;
-	bytes maxKey = 2;
-	int64 estimatedSize = 3;
-	bool  breakOnHash = 4;
+	bytes min_key = 1;
+	bytes max_key = 2;
+	int64 estimated_size = 3;
+	bool  break_on_hash = 4;
 }

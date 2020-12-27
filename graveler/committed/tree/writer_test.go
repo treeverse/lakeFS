@@ -31,7 +31,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 	mockWriter := partMock.NewMockWriter(ctrl)
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil).MinTimes(1)
 	namespace := committed.Namespace("ns")
-	w := tree.NewWriter(partManager, 100, namespace)
+	w := tree.NewWriter(partManager, 100, namespace, namespace)
 
 	// Add first record
 	firstRecord := graveler.ValueRecord{
@@ -88,7 +88,7 @@ func TestWriter_AddPart(t *testing.T) {
 	testutil.MustDo(t, "convert part to tree record", err)
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockTreeWriter, nil)
 	mockTreeWriter.EXPECT().WriteRecord(*partRecord)
-	w := tree.NewWriter(partManager, 100, namespace)
+	w := tree.NewWriter(partManager, 100, namespace, namespace)
 	err = w.AddPart(part)
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
@@ -106,7 +106,7 @@ func TestWriter_OverlappingParts(t *testing.T) {
 	part2 := tree.Part{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockTreeWriter, nil)
 	mockTreeWriter.EXPECT().WriteRecord(gomock.Any())
-	w := tree.NewWriter(partManager, 100, namespace)
+	w := tree.NewWriter(partManager, 100, namespace, namespace)
 	err := w.AddPart(part)
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
@@ -132,7 +132,7 @@ func TestWriter_RecordPartAndSave(t *testing.T) {
 	mockWriter.EXPECT().WriteRecord(gomock.Any()).Times(3)
 	mockWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil).Times(2)
 
-	w := tree.NewWriter(partManager, 100, namespace)
+	w := tree.NewWriter(partManager, 100, namespace, namespace)
 	err := w.WriteRecord(record)
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
