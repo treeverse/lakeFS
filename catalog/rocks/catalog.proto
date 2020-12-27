@@ -11,5 +11,4 @@ message Entry {
 	int64 size = 3;
 	bytes e_tag = 4;
 	map<string,string> metadata = 5;
-	string stam = 6;
 }
