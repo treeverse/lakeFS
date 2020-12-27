@@ -1,0 +1,12 @@
+syntax = "proto3";
+option go_package = "github.com/treevese/lakefs/graveler/committed/tree";
+
+
+package tree;
+
+message PartData {
+	bytes minKey = 1;
+	bytes maxKey = 2;
+	int64 estimatedSize = 3;
+	bool  breakOnHash = 4;
+}
