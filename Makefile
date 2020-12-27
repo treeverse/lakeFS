@@ -1,6 +1,7 @@
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
+PROTOC=$(or $(shell which protoc), $(error "Missing protobuf compilter - no protoc on PATH"))
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 export PATH:= $(PATH):$(GOBINPATH)
@@ -14,6 +15,7 @@ GOTEST=$(GOCMD) test
 GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
+PROTOC=protoc
 
 GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
 
@@ -130,7 +132,11 @@ fmt-validator:  ## Validate go format
 		echo Your code formatting is according to gofmt standards; \
 	fi
 
-checks-validator: lint fmt-validator validate-swagger ## Run all validation/linting steps
+.PHONY: proto-validator
+proto-validator: ## build proto and check if diff found
+	@git diff --quiet -- catalog/rocks/catalog.pb.go
+
+checks-validator: lint fmt-validator validate-swagger proto-validator ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -149,6 +155,9 @@ gen-ui: ui-bundle
 
 gen-ddl: $(GOBINPATH)/statik  ## Embed data migration files into the resulting binary
 	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
+
+proto: ## Build proto (Protocol Buffers) files
+	$(PROTOC) --proto_path=catalog/rocks --go_out=catalog/rocks --go_opt=paths=source_relative catalog.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
