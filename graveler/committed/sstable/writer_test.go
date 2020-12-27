@@ -1,4 +1,4 @@
-package sstable
+package sstable_test
 
 import (
 	"crypto/sha256"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
 	"github.com/treeverse/lakefs/pyramid/mock"
 )
 
@@ -26,7 +27,7 @@ func TestWriter(t *testing.T) {
 	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
 
 	writes := 500
-	dw, err := newDiskWriter(mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 

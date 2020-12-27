@@ -23,7 +23,7 @@ type DiskWriter struct {
 	fh pyramid.StoredFile
 }
 
-func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
+func NewDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
 	fh, err := tierFS.Create(string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
@@ -39,6 +39,14 @@ func newDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*
 		tierFS: tierFS,
 		hash:   hash,
 	}, nil
+}
+
+func (dw *DiskWriter) GetFS() pyramid.FS {
+	return dw.tierFS
+}
+
+func (dw *DiskWriter) GetStoredFile() pyramid.StoredFile {
+	return dw.fh
 }
 
 func (dw *DiskWriter) WriteRecord(record committed.Record) error {

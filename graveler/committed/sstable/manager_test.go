@@ -1,4 +1,4 @@
-package sstable
+package sstable_test
 
 import (
 	"crypto/sha256"
@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
 
 	"github.com/golang/mock/gomock"
 	ssMock "github.com/treeverse/lakefs/graveler/committed/sstable/mock"
@@ -20,7 +21,7 @@ func TestGetEntrySuccess(t *testing.T) {
 	mockCache := ssMock.NewMockcache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	keys := randomStrings(10)
@@ -50,7 +51,7 @@ func TestGetEntryCacheFailure(t *testing.T) {
 	mockCache := ssMock.NewMockcache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	sstableID := "some-id"
@@ -70,7 +71,7 @@ func TestGetEntryNotFound(t *testing.T) {
 	mockCache := ssMock.NewMockcache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	keys := randomStrings(10)
@@ -100,7 +101,7 @@ func TestGetWriterSuccess(t *testing.T) {
 	mockCache := ssMock.NewMockcache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	mockFile := fsMock.NewMockStoredFile(ctrl)
@@ -110,11 +111,11 @@ func TestGetWriterSuccess(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, writer)
 
-	require.IsType(t, &DiskWriter{}, writer)
-	dw := writer.(*DiskWriter)
+	require.IsType(t, &sstable.DiskWriter{}, writer)
+	dw := writer.(*sstable.DiskWriter)
 
-	require.Equal(t, mockFS, dw.tierFS)
-	require.Equal(t, mockFile, dw.fh)
+	require.Equal(t, mockFS, dw.GetFS())
+	require.Equal(t, mockFile, dw.GetStoredFile())
 }
 
 func TestNewPartIteratorSuccess(t *testing.T) {
@@ -123,7 +124,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	mockCache := ssMock.NewMockcache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	keys := randomStrings(10)
