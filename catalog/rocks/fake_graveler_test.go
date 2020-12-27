@@ -143,7 +143,7 @@ func (g *FakeGraveler) Revert(ctx context.Context, repositoryID graveler.Reposit
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID) (graveler.CommitID, error) {
+func (g *FakeGraveler) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
