@@ -42,13 +42,12 @@ type PGRepositoryIterator struct {
 	err error
 }
 
-func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int, offset string) *PGRepositoryIterator {
+func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int) *PGRepositoryIterator {
 	return &PGRepositoryIterator{
 		db:          db,
 		ctx:         ctx,
 		fetchSize:   fetchSize,
 		shouldFetch: true,
-		offset:      offset,
 		blockValue:  true,
 	}
 }
@@ -144,7 +143,7 @@ type PGBranchIterator struct {
 	err error
 }
 
-func NewBranchIterator(ctx context.Context, db db.Database, repositoryID RepositoryID, prefetchSize int, offset string) *PGBranchIterator {
+func NewBranchIterator(ctx context.Context, db db.Database, repositoryID RepositoryID, prefetchSize int) *PGBranchIterator {
 	return &PGBranchIterator{
 		db:           db,
 		ctx:          ctx,
@@ -152,7 +151,6 @@ func NewBranchIterator(ctx context.Context, db db.Database, repositoryID Reposit
 		fetchSize:    prefetchSize,
 		shouldFetch:  true,
 		blockValue:   true,
-		offset:       offset,
 	}
 }
 

@@ -60,6 +60,9 @@ type Writer interface {
 
 	// Close flushes all records to the disk and returns the WriteResult.
 	Close() (*WriteResult, error)
+
+	// Abort terminates the non-closed file and removes all traces.
+	Abort() error
 }
 
 // BatchWriterCloser collects part writers and handles the asynchronous

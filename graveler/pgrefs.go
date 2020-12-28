@@ -87,8 +87,8 @@ func (m *PGRefManager) CreateRepository(ctx context.Context, repositoryID Reposi
 	return err
 }
 
-func (m *PGRefManager) ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error) {
-	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize, string(from)), nil
+func (m *PGRefManager) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
+	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
 }
 
 func (m *PGRefManager) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
@@ -164,8 +164,8 @@ func (m *PGRefManager) DeleteBranch(ctx context.Context, repositoryID Repository
 	return err
 }
 
-func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error) {
-	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
+func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
+	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
 }
 
 func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {

@@ -193,7 +193,7 @@ type VersionController interface {
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
 
 	// ListRepositories returns iterator to scan repositories
-	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
+	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
@@ -223,7 +223,7 @@ type VersionController interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
@@ -251,13 +251,13 @@ type VersionController interface {
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error)
 
 	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
-	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
+	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
 
 	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
-	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error)
+	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
 }
 
 type Graveler interface {
@@ -341,7 +341,7 @@ type RefManager interface {
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
 
 	// ListRepositories lists repositories
-	ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error)
+	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
@@ -359,7 +359,7 @@ type RefManager interface {
 	DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error)
+	ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error)
 
 	// GetTag returns the Tag metadata object for the given TagID
 	GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error)
@@ -395,16 +395,16 @@ type CommittedManager interface {
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
 	// List takes a given tree and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID, from Key) (ValueIterator, error)
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
 
 	// Diff receives two trees and returns their diff.
 	// It tracks changes from left to right, returning an iterator of Diff entries.
-	Diff(ctx context.Context, ns StorageNamespace, left, right TreeID, from Key) (DiffIterator, error)
+	Diff(ctx context.Context, ns StorageNamespace, left, right TreeID) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
 	// is expected to be immediately addressable
-	Merge(ctx context.Context, ns StorageNamespace, left, right, base TreeID) (TreeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, left, right, base TreeID, committer string, message string, metadata Metadata) (TreeID, error)
 
 	// Apply is the act of taking an existing tree (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -542,8 +542,8 @@ func (g *graveler) CreateRepository(ctx context.Context, repositoryID Repository
 	return &repo, nil
 }
 
-func (g *graveler) ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error) {
-	return g.RefManager.ListRepositories(ctx, from)
+func (g *graveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
+	return g.RefManager.ListRepositories(ctx)
 }
 
 func (g *graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
@@ -655,8 +655,8 @@ func (g *graveler) Log(ctx context.Context, repositoryID RepositoryID, commitID 
 	return g.RefManager.Log(ctx, repositoryID, commitID)
 }
 
-func (g *graveler) ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error) {
-	return g.RefManager.ListBranches(ctx, repositoryID, from)
+func (g *graveler) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
+	return g.RefManager.ListBranches(ctx, repositoryID)
 }
 
 func (g *graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
@@ -776,8 +776,7 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 
-	// TODO(barak): remove 'from' from CommittedManager
-	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.TreeID, Key{})
+	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.TreeID)
 	if err != nil {
 		return nil, err
 	}
@@ -884,7 +883,7 @@ func (g *graveler) Revert(_ context.Context, _ RepositoryID, _ BranchID, _ Ref) 
 	panic("implement me")
 }
 
-func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error) {
+func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, to)
 	if err != nil {
 		return "", err
@@ -908,17 +907,17 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		return "", err
 	}
 
-	treeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.TreeID, toCommit.TreeID, baseCommit.TreeID)
+	treeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.TreeID, toCommit.TreeID, baseCommit.TreeID, committer, message, metadata)
 	if err != nil {
 		return "", err
 	}
 	commit := Commit{
-		Committer:    "unknown",       // TODO(Guys): pass committer or enter default value
-		Message:      "merge message", // TODO(Guys): get merge message
+		Committer:    committer,
+		Message:      message,
 		TreeID:       treeID,
 		CreationDate: time.Time{},
 		Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
-		Metadata:     nil, // TODO(Guys): pass metadata
+		Metadata:     metadata,
 	}
 	return g.RefManager.AddCommit(ctx, repositoryID, commit)
 }
@@ -958,7 +957,7 @@ func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID Repo
 	}, nil
 }
 
-func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref, from Key) (DiffIterator, error) {
+func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -972,5 +971,5 @@ func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 		return nil, err
 	}
 
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.TreeID, rightCommit.TreeID, from)
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.TreeID, rightCommit.TreeID)
 }

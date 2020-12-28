@@ -44,6 +44,8 @@ type Config struct {
 	adaptor block.Adapter
 	logger  logging.Logger
 
+	eviction eviction
+
 	// Prefix for all metadata file lakeFS stores in the block storage.
 	fsBlockStoragePrefix string
 
@@ -62,9 +64,9 @@ const workspaceDir = "workspace"
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
 func NewFS(c *Config) (FS, error) {
-	fsLocalBaseDir := path.Join(c.localBaseDir, c.fsName)
+	fsLocalBaseDir := filepath.Clean(path.Join(c.localBaseDir, c.fsName))
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating base dir: %w", err)
+		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
 	}
 
 	tierFS := &TierFS{
@@ -76,16 +78,19 @@ func NewFS(c *Config) (FS, error) {
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
-	eviction, err := newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
-	if err != nil {
-		return nil, fmt.Errorf("creating eviction control: %w", err)
+	if c.eviction == nil {
+		var err error
+		c.eviction, err = newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
+		if err != nil {
+			return nil, fmt.Errorf("creating eviction control: %w", err)
+		}
 	}
 
-	if err := handleExistingFiles(eviction, fsLocalBaseDir); err != nil {
+	tierFS.eviction = c.eviction
+	if err := handleExistingFiles(tierFS.eviction, fsLocalBaseDir); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 
-	tierFS.eviction = eviction
 	return tierFS, nil
 }
 
@@ -193,6 +198,9 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 		File: fh,
 		store: func(filename string) error {
 			return tfs.store(namespace, tempPath, filename)
+		},
+		abort: func() error {
+			return os.Remove(tempPath)
 		},
 	}, nil
 }
