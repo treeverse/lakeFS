@@ -97,11 +97,12 @@ func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, erro
 	if !errors.Is(err, os.ErrNotExist) {
 		return ret, err
 	}
-	d := filepath.Dir(filepath.Clean(path))
+	cleanPath := filepath.Clean(path)
+	d := filepath.Dir(cleanPath)
 	if err = os.MkdirAll(d, 0777); err != nil {
 		return nil, err
 	}
-	return f(path)
+	return f(cleanPath)
 }
 
 func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
