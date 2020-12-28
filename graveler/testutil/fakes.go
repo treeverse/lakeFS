@@ -276,26 +276,22 @@ func (r *diffIter) Err() error {
 
 func (r *diffIter) Close() {}
 
-type ValueIteratorFake struct {
+type valueIteratorFake struct {
 	current int
 	records []graveler.ValueRecord
 	err     error
 }
 
-func NewValueIteratorFake(records []graveler.ValueRecord) *ValueIteratorFake {
-	return &ValueIteratorFake{records: records, current: -1}
+func NewValueIteratorFake(records []graveler.ValueRecord) graveler.ValueIterator {
+	return &valueIteratorFake{records: records, current: -1}
 }
 
-func (r *ValueIteratorFake) SetErr(err error) {
-	r.err = err
-}
-
-func (r *ValueIteratorFake) Next() bool {
+func (r *valueIteratorFake) Next() bool {
 	r.current++
 	return r.current < len(r.records)
 }
 
-func (r *ValueIteratorFake) SeekGE(id graveler.Key) {
+func (r *valueIteratorFake) SeekGE(id graveler.Key) {
 	for i, record := range r.records {
 		if bytes.Compare(record.Key, id) >= 0 {
 			r.current = i - 1
@@ -305,18 +301,18 @@ func (r *ValueIteratorFake) SeekGE(id graveler.Key) {
 	r.current = len(r.records)
 }
 
-func (r *ValueIteratorFake) Value() *graveler.ValueRecord {
+func (r *valueIteratorFake) Value() *graveler.ValueRecord {
 	if r.current < 0 || r.current >= len(r.records) {
 		return nil
 	}
 	return &r.records[r.current]
 }
 
-func (r *ValueIteratorFake) Err() error {
+func (r *valueIteratorFake) Err() error {
 	return r.err
 }
 
-func (r *ValueIteratorFake) Close() {}
+func (r *valueIteratorFake) Close() {}
 
 type referenceFake struct {
 	refType  graveler.ReferenceType
