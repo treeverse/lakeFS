@@ -1,12 +1,14 @@
-package committed
+package manager
 
 import (
 	"context"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed/tree"
 )
 
 type committedManager struct {
+	repoProvider tree.RepoProvider
 }
 
 func NewCommittedManager() graveler.CommittedManager {
@@ -22,7 +24,16 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.TreeID) (graveler.DiffIterator, error) {
-	return nil, nil
+	repo := c.repoProvider.GetRepo(ns)
+	leftIt, err := repo.NewIterator(left, nil)
+	if err != nil {
+		return nil, err
+	}
+	rightIt, err := repo.NewIterator(right, nil)
+	if err != nil {
+		return nil, err
+	}
+	return tree.NewDiffIterator(leftIt, rightIt), nil
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.TreeID, committer string, message string, metadata graveler.Metadata) (graveler.TreeID, error) {

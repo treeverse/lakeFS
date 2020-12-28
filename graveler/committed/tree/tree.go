@@ -39,6 +39,10 @@ type Iterator interface {
 	Close()
 }
 
+type RepoProvider interface {
+	GetRepo(ns graveler.StorageNamespace) Repo
+}
+
 // Repo is an abstraction for a repository of trees that exposes operations on them
 type Repo interface {
 	GetTree(treeID graveler.TreeID) (*Tree, error)
