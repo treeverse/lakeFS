@@ -17,15 +17,15 @@ func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace
 	panic("implement me")
 }
 
-func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error) {
+func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, treeID graveler.TreeID) (graveler.ValueIterator, error) {
 	panic("implement me")
 }
 
-func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.TreeID, from graveler.Key) (graveler.DiffIterator, error) {
+func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.TreeID) (graveler.DiffIterator, error) {
 	return nil, nil
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.TreeID) (graveler.TreeID, error) {
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.TreeID, committer string, message string, metadata graveler.Metadata) (graveler.TreeID, error) {
 	panic("implement me")
 }
 
