@@ -55,9 +55,11 @@ type Repo interface {
 
 	// NewIterator accepts a tree ID, and returns an iterator
 	// over the tree from the first value GE than the from
-	NewValueIterator(treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error)
+	NewIterator(treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error)
 
-	NewIterator(treeID graveler.TreeID, from graveler.Key) (Iterator, error)
+	// NewIteratorFromTree accept a tree in memory, returns an iterator
+	// over the tree from the first value GE than the from
+	NewIteratorFromTree(tree Tree, from graveler.Key) (graveler.ValueIterator, error)
 
 	// GetIterForPart accepts a tree ID and a reading start point. it returns an iterator
 	// positioned at the start point. When Next() will be called, first value that is GE
