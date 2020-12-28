@@ -90,7 +90,7 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./graveler/committed/...
 	$(GOGENERATE) ./pyramid
 
-swagger-validator: go-install ## Validate swagger.yaml
+validate-swagger: go-install ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
@@ -123,7 +123,7 @@ gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
 	$(GOFMT) -e -s -w .
 
-fmt-validator:  ## Validate go format
+validate-fmt:  ## Validate go format
 	@echo checking gofmt...
 	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o \( -path ./statik \) -prune -o \( -path ./api/gen \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
@@ -134,11 +134,11 @@ fmt-validator:  ## Validate go format
 		echo Your code formatting is according to gofmt standards; \
 	fi
 
-.PHONY: proto-validator
-proto-validator: proto ## build proto and check if diff found
-	@git diff --quiet -- catalog/rocks/catalog.pb.go
+.PHONY: validate-proto
+validate-proto: proto  ## build proto and check if diff found
+	git diff --quiet -- catalog/rocks/catalog.pb.go
 
-checks-validator: lint fmt-validator swagger-validator proto-validator ## Run all validation/linting steps
+checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
