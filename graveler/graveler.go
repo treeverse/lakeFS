@@ -512,7 +512,7 @@ type graveler struct {
 	log              logging.Logger
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *graveler {
 	return &graveler{
 		CommittedManager: committedManager,
 		StagingManager:   stagingManager,
@@ -837,6 +837,54 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			"staging_token": branch.StagingToken,
 		}).Error("Failed to drop staging data")
 	}
+	return newCommit, nil
+}
+
+var (
+	ErrDirtyBranch  = errors.New("can't apply tree on dirty branch")
+	ErrTreeNotFound = errors.New("tree not found")
+)
+
+func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID RepositoryID, branchID BranchID, treeID TreeID, committer string, message string, metadata Metadata) (CommitID, error) {
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("acquire metadata update: %w", err)
+	}
+	defer cancel()
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository: %w", err)
+	}
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("get branch: %w", err)
+	}
+	changes, err := g.StagingManager.List(ctx, branch.stagingToken)
+	if err != nil {
+		return "", fmt.Errorf("staging list: %w", err)
+	}
+	if changes.Next() {
+		return "", ErrDirtyBranch
+	}
+
+	treeIt, err := g.CommittedManager.List(ctx, repo.StorageNamespace, treeID)
+	if err != nil {
+		return "", fmt.Errorf("treeID %s: %w", treeID, ErrTreeNotFound)
+	}
+	defer treeIt.Close()
+
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+		Committer:    committer,
+		Message:      message,
+		TreeID:       treeID,
+		CreationDate: time.Now(),
+		Parents:      CommitParents{branch.CommitID},
+		Metadata:     metadata,
+	})
+	if err != nil {
+		return "", fmt.Errorf("add commit: %w", err)
+	}
+
 	return newCommit, nil
 }
 
