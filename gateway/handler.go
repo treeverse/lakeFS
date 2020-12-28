@@ -279,7 +279,7 @@ func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.R
 		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			if sc.fallbackProxy == nil {
-				authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
+				authOp.Log().WithField("repository", repoID).Debug("the specified repo does not exist")
 				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			} else {
 				sc.fallbackProxy.ServeHTTP(writer, request)
@@ -320,7 +320,7 @@ func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler
 		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			if sc.fallbackProxy == nil {
-				authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
+				authOp.Log().WithField("repository", repoID).Debug("the specified repo does not exist")
 				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			} else {
 				sc.fallbackProxy.ServeHTTP(writer, request)
