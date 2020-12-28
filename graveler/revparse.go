@@ -58,20 +58,21 @@ func parseMod(buf string) (RevModifier, error) {
 }
 
 func RevParse(r Ref) (ParsedRev, error) {
-	p := ParsedRev{
-		Modifiers: make([]RevModifier, 0),
-	}
 	parts := modifiersRegexp.FindAllString(string(r), -1)
-	p.BaseRev = parts[0]
-	if p.BaseRev == "" {
-		return p, ErrInvalidRef
+	if len(parts) == 0 || len(parts[0]) == 0 {
+		return ParsedRev{}, ErrInvalidRef
 	}
+	baseRev := parts[0]
+	mods := make([]RevModifier, 0, len(parts)-1)
 	for _, part := range parts[1:] {
 		mod, err := parseMod(part)
 		if err != nil {
-			return p, err
+			return ParsedRev{}, err
 		}
-		p.Modifiers = append(p.Modifiers, mod)
+		mods = append(mods, mod)
 	}
-	return p, nil
+	return ParsedRev{
+		BaseRev:   baseRev,
+		Modifiers: mods,
+	}, nil
 }

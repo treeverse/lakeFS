@@ -3,14 +3,18 @@
 </p>
 
 <p align="center">
-	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" alt="License">
-		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++" alt="Go">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" alt="Node">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" /></a>
-	<a href="https://artifacthub.io/packages/search?repo=lakefs" alt="Artifact HUB">
-		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" /></a>
+	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
+		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" alt="Go tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" >
+		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANessie">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Nessie/badge.svg" alt="nessie integration tests status" /></a>
+	<a href="https://artifacthub.io/packages/search?repo=lakefs">
+		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
+	<a href="CODE_OF_CONDUCT.md">
+		<img src="https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg" alt="code of conduct"></a>
 </p>
 
 
@@ -23,10 +27,6 @@ With lakeFS you can build repeatable, atomic and versioned data lake operations 
 lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service. It is API compatible with S3, and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
 
-<p align="center">
-  <img src="docs/assets/img/wrapper.png" width="650px"/>
-</p>
-
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
 <div style="background: #ffdddd border: 3px solid #dd4444; margine: 15px;">
@@ -37,13 +37,11 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 **Development Environment for Data**
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
 * **Reproducibility** - go back to any point of time to a consistent version of your data lake.
-* [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#development-environment)
 
 **Continuous Data Integration**
 * **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
 * **Metadata validation** - prevent breaking changes from entering the production data environment.
 
-* [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-integration)
 
 **Continuous Data Deployment**
 * **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
@@ -51,7 +49,6 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 * **Prevent data quality issues by enabling**
   - Testing of production data before exposing it to users / consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
-* [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-deployment)
 
 ## Getting Started
 

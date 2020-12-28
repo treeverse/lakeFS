@@ -6,10 +6,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/treeverse/lakefs/ident"
-
 	"github.com/jackc/pgtype"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/ident"
 )
 
 type PgBranch struct {
@@ -88,8 +87,8 @@ func (m *PGRefManager) CreateRepository(ctx context.Context, repositoryID Reposi
 	return err
 }
 
-func (m *PGRefManager) ListRepositories(ctx context.Context, from RepositoryID) (RepositoryIterator, error) {
-	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize, string(from)), nil
+func (m *PGRefManager) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
+	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
 }
 
 func (m *PGRefManager) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
@@ -165,8 +164,63 @@ func (m *PGRefManager) DeleteBranch(ctx context.Context, repositoryID Repository
 	return err
 }
 
-func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID RepositoryID, from BranchID) (BranchIterator, error) {
-	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, string(from)), nil
+func (m *PGRefManager) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
+	return NewBranchIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
+}
+
+func (m *PGRefManager) GetTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) (*CommitID, error) {
+	commitID, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var commitID CommitID
+		err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+			repositoryID, tagID)
+		if err != nil {
+			return nil, err
+		}
+		return &commitID, nil
+	}, db.ReadOnly(), db.WithContext(ctx))
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return commitID.(*CommitID), nil
+}
+
+func (m *PGRefManager) CreateTag(ctx context.Context, repositoryID RepositoryID, tagID TagID, commitID CommitID) error {
+	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		res, err := tx.Exec(`INSERT INTO graveler_tags (repository_id, id, commit_id) VALUES ($1, $2, $3)
+			ON CONFLICT DO NOTHING`,
+			repositoryID, tagID, commitID)
+		if err != nil {
+			return nil, err
+		}
+		if res.RowsAffected() == 0 {
+			return nil, ErrTagAlreadyExists
+		}
+		return nil, nil
+	}, db.WithContext(ctx))
+	return err
+}
+
+func (m *PGRefManager) DeleteTag(ctx context.Context, repositoryID RepositoryID, tagID TagID) error {
+	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		r, err := tx.Exec(
+			`DELETE FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+			repositoryID, tagID)
+		if err != nil {
+			return nil, err
+		}
+		if r.RowsAffected() == 0 {
+			return nil, ErrNotFound
+		}
+		return nil, nil
+	}, db.WithContext(ctx))
+	return err
+}
+
+func (m *PGRefManager) ListTags(ctx context.Context, repositoryID RepositoryID) (TagIterator, error) {
+	return NewTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, ""), nil
 }
 
 func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID RepositoryID, prefix CommitID) (*Commit, error) {
@@ -196,7 +250,7 @@ func (m *PGRefManager) GetCommitByPrefix(ctx context.Context, repositoryID Repos
 			return "", ErrNotFound
 		}
 		if len(startWith) > 1 {
-			return "", ErrCommitIDAmbiguous // more than 1 commit starts with the ID prefix
+			return "", ErrRefAmbiguous // more than 1 commit starts with the ID prefix
 		}
 		return startWith[0], nil
 	}, db.ReadOnly(), db.WithContext(ctx))

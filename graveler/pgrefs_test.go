@@ -2,14 +2,15 @@ package graveler_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
-
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -51,7 +52,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter, err := r.ListRepositories(context.Background(), "")
+		iter, err := r.ListRepositories(context.Background())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -72,10 +73,11 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter, err := r.ListRepositories(context.Background(), "aaa")
+		iter, err := r.ListRepositories(context.Background())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+		iter.SeekGE("aaa")
 
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -232,7 +234,7 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 		}))
 	}
 
-	iter, err := r.ListBranches(context.Background(), "repo1", "")
+	iter, err := r.ListBranches(context.Background(), "repo1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -247,6 +249,146 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 	}
 	if !reflect.DeepEqual(bs, []graveler.BranchID{"a", "aa", "b", "c", "f", "master", "z"}) {
 		t.Fatalf("unexpected branch list: %v", bs)
+	}
+}
+
+func TestPGRefManager_GetTag(t *testing.T) {
+	r := testRefManager(t)
+	t.Run("exists", func(t *testing.T) {
+		ctx := context.Background()
+		err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+			StorageNamespace: "s3://",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "master",
+		}, graveler.Branch{
+			CommitID: "c1",
+		})
+		testutil.MustDo(t, "create repo", err)
+		err = r.CreateTag(ctx, "repo1", "v1.0", "c1")
+		testutil.MustDo(t, "set tag", err)
+		commitID, err := r.GetTag(context.Background(), "repo1", "v1.0")
+		testutil.MustDo(t, "get existing tag", err)
+		if commitID == nil {
+			t.Fatal("get tag, missing commit id")
+		}
+		if *commitID != "c1" {
+			t.Fatalf("get tag, commit id: %s, expected c1", *commitID)
+		}
+	})
+
+	t.Run("not_exists", func(t *testing.T) {
+		commitID, err := r.GetTag(context.Background(), "repo1", "v1.bad")
+		if !errors.Is(err, graveler.ErrNotFound) {
+			t.Fatalf("expected ErrNotFound, got error: %v", err)
+		}
+		if commitID != nil {
+			t.Fatalf("get not existing commitID: %s, expected nil", *commitID)
+		}
+	})
+}
+
+func TestPGRefManager_CreateTag(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "c1",
+	}))
+
+	err := r.CreateTag(ctx, "repo1", "v2", "c2")
+	testutil.MustDo(t, "create tag v2", err)
+
+	commit, err := r.GetTag(ctx, "repo1", "v2")
+	testutil.MustDo(t, "get v2 tag", err)
+	if commit == nil {
+		t.Fatal("get tag got nil")
+	}
+	if *commit != "c2" {
+		t.Fatalf("unexpected commit for tag v2: %s - expected: c2", *commit)
+	}
+
+	// check we can't create existing
+	err = r.CreateTag(ctx, "repo1", "v2", "c5")
+	if !errors.Is(err, graveler.ErrTagAlreadyExists) {
+		t.Fatalf("CreateTag() err = %s, expected already exists", err)
+	}
+	// overwrite by delete and create
+	err = r.DeleteTag(ctx, "repo1", "v2")
+	testutil.MustDo(t, "delete tag v2", err)
+
+	err = r.CreateTag(ctx, "repo1", "v2", "c3")
+	testutil.MustDo(t, "re-create tag v2", err)
+
+	commit, err = r.GetTag(ctx, "repo1", "v2")
+	testutil.MustDo(t, "get tag v2", err)
+	if commit == nil {
+		t.Fatal("get tag got nil")
+	}
+	if *commit != "c3" {
+		t.Fatalf("unexpected commit for v2: %s - expected: c3", *commit)
+	}
+}
+
+func TestPGRefManager_DeleteTag(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "c1",
+	}))
+
+	testutil.Must(t, r.CreateTag(ctx, "repo1", "v1", "c2"))
+
+	testutil.Must(t, r.DeleteTag(ctx, "repo1", "v1"))
+
+	commitID, err := r.GetTag(ctx, "repo1", "v1")
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatal("unexpected error:", err)
+	}
+	if commitID != nil {
+		t.Fatal("expected commit ID:", *commitID)
+	}
+}
+
+func TestPGRefManager_ListTags(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "c1",
+	}))
+
+	var commitsTagged []graveler.CommitID
+	tags := []string{"tag-a", "tag-b", "the-end", "v1", "v1.1"}
+	sort.Strings(tags)
+	for i, tag := range tags {
+		commitID := graveler.CommitID(fmt.Sprintf("c%d", i))
+		commitsTagged = append(commitsTagged, commitID)
+		err := r.CreateTag(ctx, "repo1", graveler.TagID(tag), commitID)
+		testutil.MustDo(t, "set tag "+tag, err)
+	}
+
+	iter, err := r.ListTags(ctx, "repo1")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	var commits []graveler.CommitID
+	for iter.Next() {
+		commits = append(commits, iter.Value().CommitID)
+	}
+	testutil.MustDo(t, "list tags completed", iter.Err())
+
+	if diff := deep.Equal(commits, commitsTagged); diff != nil {
+		t.Fatal("ListTags found mismatch:", diff)
 	}
 }
 
@@ -267,7 +409,7 @@ func TestPGRefManager_AddCommit(t *testing.T) {
 		TreeID:       "deadbeef123",
 		CreationDate: ts,
 		Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
-		Metadata:     catalog.Metadata{"foo": "bar"},
+		Metadata:     graveler.Metadata{"foo": "bar"},
 	}
 
 	cid, err := r.AddCommit(context.Background(), "repo1", c)
@@ -312,7 +454,7 @@ func TestPGRefManager_Log(t *testing.T) {
 			TreeID:       "deadbeef123",
 			CreationDate: ts,
 			Parents:      graveler.CommitParents{previous},
-			Metadata:     catalog.Metadata{"foo": "bar"},
+			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
 		cid, err := r.AddCommit(context.Background(), "repo1", c)
 		if err != nil {

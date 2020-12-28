@@ -333,7 +333,7 @@ func (l *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool) (block.Inventory, error) {
+func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, ErrInventoryNotSupported
 }
 
