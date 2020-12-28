@@ -846,11 +846,6 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	return newCommit, nil
 }
 
-var (
-	ErrDirtyBranch  = errors.New("can't apply tree on dirty branch")
-	ErrTreeNotFound = errors.New("tree not found")
-)
-
 func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID RepositoryID, branchID BranchID, treeID TreeID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
@@ -865,9 +860,9 @@ func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID Reposito
 	if err != nil {
 		return "", fmt.Errorf("get branch %s: %w", branchID, err)
 	}
-	dirty, err := g.StagingManager.IsDirty(ctx, branch.stagingToken)
+	dirty, err := g.StagingManager.IsDirty(ctx, branch.StagingToken)
 	if err != nil {
-		return "", fmt.Errorf("staging list (token %s): %w", branch.stagingToken, err)
+		return "", fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
 	}
 	if dirty {
 		return "", ErrDirtyBranch
