@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/hex"
+	"errors"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -280,63 +281,41 @@ func TestDiffSeek(t *testing.T) {
 	}
 }
 
-//func TestDiffErr(t *testing.T) {
-//	leftErr := errors.New("error from left")
-//	leftIt := testutil.NewValueIteratorFake(newValues([]string{"k1", "k2"}, []string{"i1", "i2"}))
-//	leftIt.SetErr(leftErr)
-//	rightIt := testutil.NewValueIteratorFake(newValues([]string{"k2"}, []string{"i2a"}))
-//	it := committed.NewDiffIterator(leftIt, rightIt)
-//	if it.Next() {
-//		t.Fatalf("expected false from iterator with error")
-//	}
-//	if !errors.Is(it.Err(), leftErr) {
-//		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
-//	}
-//	it.SeekGE([]byte("k2"))
-//	if it.Err() != nil {
-//		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
-//	}
-//	if it.Next() {
-//		t.Fatalf("expected false from iterator with error")
-//	}
-//	if !errors.Is(it.Err(), leftErr) {
-//		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
-//	}
-//	rightErr := errors.New("error from right")
-//	leftIt.SetErr(nil)
-//	rightIt.SetErr(rightErr)
-//	it.SeekGE([]byte("k2"))
-//	if it.Err() != nil {
-//		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
-//	}
-//	if it.Next() {
-//		t.Fatalf("expected false from iterator with error")
-//	}
-//	if !errors.Is(it.Err(), rightErr) {
-//		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", rightErr, it.Err())
-//	}
-//}
-
-func newValues(keys, identities []string) []graveler.ValueRecord {
-	var res []graveler.ValueRecord
-	for i, key := range keys {
-		res = append(res, graveler.ValueRecord{
-			Key: []byte(key),
-			Value: &graveler.Value{
-				Identity: []byte(identities[i]),
-				Data:     []byte("some-data"),
-			},
-		})
+func TestDiffErr(t *testing.T) {
+	leftErr := errors.New("error from left")
+	leftIt := newFakeTreeIterator([][]string{{"k1"}, {"k2"}}, [][]string{{"i1"}, {"i2"}})
+	leftIt.SetErr(leftErr)
+	rightIt := newFakeTreeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
+	it := tree.NewDiffIterator(leftIt, rightIt)
+	if it.Next() {
+		t.Fatalf("expected false from iterator with error")
 	}
-	return res
-}
-
-type fakeTreeIterator struct {
-	parts       [][]*graveler.ValueRecord
-	readsByPart []int
-	currentPart int
-	currentIdx  int
-	afterSeek   bool
+	if !errors.Is(it.Err(), leftErr) {
+		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
+	}
+	it.SeekGE([]byte("k2"))
+	if it.Err() != nil {
+		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
+	}
+	if it.Next() {
+		t.Fatalf("expected false from iterator with error")
+	}
+	if !errors.Is(it.Err(), leftErr) {
+		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", leftErr, it.Err())
+	}
+	rightErr := errors.New("error from right")
+	leftIt.SetErr(nil)
+	rightIt.SetErr(rightErr)
+	it.SeekGE([]byte("k2"))
+	if it.Err() != nil {
+		t.Fatalf("error expected to be nil after SeekGE. got=%v", it.Err())
+	}
+	if it.Next() {
+		t.Fatalf("expected false from iterator with error")
+	}
+	if !errors.Is(it.Err(), rightErr) {
+		t.Fatalf("unexpected error from iterator. expected=%v, got=%v", rightErr, it.Err())
+	}
 }
 
 func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *FakePartsAndValuesIterator {
@@ -367,74 +346,4 @@ func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *FakePa
 		res.AddValueRecords(partValues...)
 	}
 	return res
-}
-
-func (f *fakeTreeIterator) Next() bool {
-	if f.afterSeek {
-		f.afterSeek = false
-		return true
-	}
-	if f.currentPart == len(f.parts) {
-		return false
-	}
-	f.currentIdx++
-	if f.currentPart > -1 && f.currentIdx < len(f.parts[f.currentPart]) {
-		f.readsByPart[f.currentPart]++
-		return true
-	}
-	return f.NextPart()
-}
-
-func (f *fakeTreeIterator) NextPart() bool {
-	f.currentIdx = -1
-	f.currentPart++
-	return f.currentPart < len(f.parts)
-}
-
-func (f *fakeTreeIterator) Value() (*graveler.ValueRecord, *tree.Part) {
-	var b bytes.Buffer
-	_ = gob.NewEncoder(&b).Encode(f.parts[f.currentPart])
-	partName := hex.EncodeToString(b.Bytes())
-	var minKey, maxKey graveler.Key
-	if len(f.parts[f.currentPart]) > 0 {
-		minKey = f.parts[f.currentPart][0].Key
-		maxKey = f.parts[f.currentPart][len(f.parts[f.currentPart])-1].Key
-	}
-	part := &tree.Part{
-		Name:   committed.ID(partName),
-		MinKey: minKey,
-		MaxKey: maxKey,
-	}
-	if f.currentIdx == -1 {
-		return nil, part
-	}
-	return f.parts[f.currentPart][f.currentIdx], part
-}
-
-func (f *fakeTreeIterator) SeekGE(id graveler.Key) {
-	f.currentIdx = -1
-	f.currentPart = 0
-	for f.Next() {
-		val, part := f.Value()
-		var key = part.MinKey
-		if val != nil {
-			key = val.Key
-		}
-		if key == nil {
-			continue
-		}
-		if bytes.Compare(key, id) >= 0 {
-			f.afterSeek = true
-			return
-		}
-	}
-}
-
-func (f *fakeTreeIterator) Err() error {
-	return nil
-}
-
-func (f *fakeTreeIterator) Close() {
-	f.currentPart = len(f.parts)
-	f.currentIdx = -1
 }

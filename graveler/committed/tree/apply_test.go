@@ -31,6 +31,7 @@ type PV struct {
 type FakePartsAndValuesIterator struct {
 	PV  []PV
 	idx int
+	err error
 }
 
 func (i *FakePartsAndValuesIterator) nextKey() []byte {
@@ -58,6 +59,10 @@ func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
 func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
 	// Start with an empty record so the first `Next()` can skip it.
 	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0}
+}
+
+func (i *FakePartsAndValuesIterator) SetErr(err error) {
+	i.err = err
 }
 
 func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
@@ -100,8 +105,11 @@ func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part)
 	return i.PV[i.idx].V, i.PV[i.idx].P
 }
 
-func (i *FakePartsAndValuesIterator) Err() error { return nil }
-func (i *FakePartsAndValuesIterator) Close()     {}
+func (i *FakePartsAndValuesIterator) Err() error {
+	return i.err
+}
+
+func (i *FakePartsAndValuesIterator) Close() {}
 
 func TestApplyAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
