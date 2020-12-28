@@ -300,6 +300,10 @@ func (c *Config) GetS3GatewayDomainName() string {
 	return viper.GetString("gateways.s3.domain_name")
 }
 
+func (c *Config) GetS3GatewayFallbackURL() string {
+	return viper.GetString("gateways.s3.fallback_url")
+}
+
 func (c *Config) GetListenAddress() string {
 	return viper.GetString("listen_address")
 }
