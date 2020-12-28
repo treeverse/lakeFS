@@ -41,7 +41,7 @@ func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ g
 	return c.ValueIterator, nil
 }
 
-func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.TreeID, _ graveler.Key) (graveler.DiffIterator, error) {
+func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.TreeID) (graveler.DiffIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
