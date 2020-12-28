@@ -335,8 +335,7 @@ const Tree = ({path, list, repo, refId, diffResults, onNavigate, onDelete, showA
         refreshData();
     }, [refreshData, repo.id, refId, path]);
 
-    const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0 && listBranchesState && listBranchesState.payload && listBranchesState.payload.results.length === 1 && !path;
-
+    const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0 && !path;
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
     } else if (list.error) {

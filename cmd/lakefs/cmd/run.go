@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -126,6 +127,14 @@ var runCmd = &cobra.Command{
 		)
 
 		// init gateway server
+		s3Fallback := cfg.GetS3GatewayFallbackURL()
+		var s3FallbackURL *url.URL
+		if s3Fallback != "" {
+			s3FallbackURL, err = url.Parse(s3Fallback)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
+			}
+		}
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
 			cataloger,
@@ -135,8 +144,8 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainName(),
 			bufferedCollector,
 			dedupCleaner,
+			s3FallbackURL,
 		)
-
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go bufferedCollector.Run(ctx)
 
