@@ -4,9 +4,9 @@ package tree
 //go:generate protoc --proto_path=. --go_out=. --go_opt=paths=source_relative tree.proto
 
 import (
-	"github.com/gogo/protobuf/proto"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
+	"google.golang.org/protobuf/proto"
 )
 
 // Part is the basic building stone of a tree
@@ -14,26 +14,31 @@ type Part struct {
 	ID                committed.ID
 	MinKey            committed.Key
 	MaxKey            committed.Key
-	EstimatedSize     int
-	ReachedBrakePoint bool
+	EstimatedSize     int64 // EstimatedSize estimated part size in bytes
+	ReachedBreakpoint bool  // ReachedBreakpoint indicates whether part was closed at breakpoint
 }
 
 func MarshalPart(part Part) ([]byte, error) {
 	return proto.Marshal(&PartData{
-		MinKey:        part.MinKey,
-		MaxKey:        part.MaxKey,
-		EstimatedSize: int64(part.EstimatedSize),
-		BreakOnHash:   part.ReachedBrakePoint,
+		MinKey:            part.MinKey,
+		MaxKey:            part.MaxKey,
+		EstimatedSize:     part.EstimatedSize,
+		ReachedBreakPoint: part.ReachedBreakpoint,
 	})
 }
 
-func UnMarshalPart(part Part) ([]byte, error) {
-	return proto.Marshal(&PartData{
-		MinKey:        part.MinKey,
-		MaxKey:        part.MaxKey,
-		EstimatedSize: int64(part.EstimatedSize),
-		BreakOnHash:   part.ReachedBrakePoint,
-	})
+func UnmarshalPart(b []byte) (Part, error) {
+	var p PartData
+	err := proto.Unmarshal(b, &p)
+	if err != nil {
+		return Part{}, err
+	}
+	return Part{
+		MinKey:            p.MinKey,
+		MaxKey:            p.MaxKey,
+		EstimatedSize:     p.EstimatedSize,
+		ReachedBreakpoint: p.ReachedBreakPoint,
+	}, nil
 }
 
 // Tree is a sorted slice of parts with no overlapping between the parts
@@ -96,7 +101,7 @@ type Writer interface {
 	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts.
-	SaveTree() (*graveler.TreeID, error)
+	Close() (*graveler.TreeID, error)
 
 	Abort() error
 }
