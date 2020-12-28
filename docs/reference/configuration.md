@@ -74,7 +74,7 @@ This reference uses `.` to denote the nesting of values.
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
   local development
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
-* `gateways.s3.proxy_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url.
+* `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this url.
 * `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
 {: .ref-list }
 
