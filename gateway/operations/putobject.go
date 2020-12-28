@@ -100,7 +100,7 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	})
 
 	// handle the upload itself
-	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
+	multiPart, err := o.MultipartsTracker.Get(o.Context(), uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read  multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

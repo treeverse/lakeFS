@@ -20,6 +20,7 @@ import (
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
@@ -99,6 +100,8 @@ func (m *mockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(class, action string) {}
 
+func (m *mockCollector) SetInstallationID(_ string) {}
+
 func getBasicHandlerPlayback(t *testing.T) (http.Handler, *dependencies) {
 	authService := newGatewayAuthFromFile(t, simulator.PlaybackParams.RecordingDir)
 	return getBasicHandler(t, authService)
@@ -112,6 +115,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 
 	conn, _ := testutil.GetDB(t, databaseURI)
 	cataloger := catalogfactory.BuildCataloger(conn, nil)
+	multipartsTracker := multiparts.NewTracker(conn)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
@@ -131,9 +135,11 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 
 	_, err := cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
+
 	handler := gateway.NewHandler(
 		authService.Region,
 		cataloger,
+		multipartsTracker,
 		blockAdapter,
 		authService,
 		authService.BareDomain,

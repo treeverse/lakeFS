@@ -20,11 +20,6 @@ export const EntityCreateButton = ({ createFn, resetFn, status, variant, buttonT
         resetFn();
     };
 
-    const onSubmit = () => {
-        if (disabled) return;
-        createFn(serializeForm(formRef));
-    };
-
     useEffect(() => {
         if (status.done) {
             if (onDone !== null)
@@ -38,7 +33,6 @@ export const EntityCreateButton = ({ createFn, resetFn, status, variant, buttonT
             resetFn();
         }
     }, [resetFn, createView, onDone, status.done]);
-
 
     const content = (createView !== null &&  showCreateView) ? createView(status.payload) : children;
     const showCreateButton = ((createView !== null && !showCreateView) || createView === null);
@@ -54,8 +48,11 @@ export const EntityCreateButton = ({ createFn, resetFn, status, variant, buttonT
             formData[current.name] = current.value;
         }
         return formData;
-    }
-
+    };
+    const onSubmit = () => {
+        if (disabled) return;
+        createFn(serializeForm());
+    };
     return (
         <>
             <Button variant={variant} onClick={() => {

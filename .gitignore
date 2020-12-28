@@ -23,6 +23,7 @@
 /Godeps/
 
 ### IDEs and stuff ###
+*.iml
 .idea/
 .vscode/
 
@@ -69,3 +70,9 @@ crash.log
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# generated mock files
+/graveler/committed/**/mock/
+/pyramid/mock/*
+
+.eslintcache

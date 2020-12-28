@@ -114,9 +114,15 @@ func (r *OrcInventoryFileReader) Close() error {
 }
 
 func (r *OrcInventoryFileReader) FirstObjectKey() string {
+	if len(r.reader.Metadata().StripeStats) == 0 {
+		return ""
+	}
 	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.orcSelect.IndexInFile[keyFieldName]+1].StringStatistics.Minimum
 }
 
 func (r *OrcInventoryFileReader) LastObjectKey() string {
+	if len(r.reader.Metadata().StripeStats) == 0 {
+		return ""
+	}
 	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.orcSelect.IndexInFile[keyFieldName]+1].StringStatistics.Maximum
 }

@@ -82,7 +82,7 @@ func (a *mockAdapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (a *mockAdapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool) (block.Inventory, error) {
+func (a *mockAdapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, nil
 }
 

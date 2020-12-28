@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/block"
@@ -22,6 +23,7 @@ type InventoryIterator struct {
 	valIndexInBuffer      int
 	inventoryFileProgress *cmdutils.Progress
 	currentFileProgress   *cmdutils.Progress
+	currentPrefix         int
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
@@ -111,6 +113,24 @@ func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 		obj := it.buffer[i]
 		if !obj.IsLatest || obj.IsDeleteMarker {
 			continue
+		}
+		if len(it.prefixes) > 0 {
+			// check file against prefix filter
+			// loop while current prefix may fit current object
+			for it.prefixes[it.currentPrefix] < obj.Key {
+				if strings.HasPrefix(obj.Key, it.prefixes[it.currentPrefix]) {
+					// found current prefix
+					break
+				}
+				it.currentPrefix++
+				if it.currentPrefix == len(it.prefixes) {
+					// no more prefixes
+					return nil
+				}
+			}
+			if !strings.HasPrefix(obj.Key, it.prefixes[it.currentPrefix]) {
+				continue
+			}
 		}
 		res := block.InventoryObject{
 			Bucket:          obj.Bucket,
