@@ -91,7 +91,7 @@ func Test_cataloger_ListRepositories(t *testing.T) {
 				RepositoryIterator: NewFakeRepositoryIterator(gravelerData),
 			}
 			c := &cataloger{
-				EntryCatalog: &entryCatalog{
+				EntryCatalog: &EntryCatalog{
 					store: gravelerMock,
 				},
 			}
@@ -186,7 +186,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 				BranchIterator: NewFakeBranchIterator(gravelerData),
 			}
 			c := &cataloger{
-				EntryCatalog: &entryCatalog{
+				EntryCatalog: &EntryCatalog{
 					store: gravelerMock,
 				},
 			}
@@ -309,7 +309,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 				ListIterator: NewFakeValueIterator(gravelerData),
 			}
 			c := &cataloger{
-				EntryCatalog: &entryCatalog{
+				EntryCatalog: &EntryCatalog{
 					store: gravelerMock,
 				},
 			}

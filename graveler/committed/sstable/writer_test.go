@@ -1,4 +1,4 @@
-package sstable
+package sstable_test
 
 import (
 	"crypto/sha256"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
 	"github.com/treeverse/lakefs/pyramid/mock"
 )
 
@@ -26,7 +27,7 @@ func TestWriter(t *testing.T) {
 	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
 
 	writes := 500
-	dw, err := newDiskWriter(mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -62,6 +63,39 @@ func TestWriter(t *testing.T) {
 	require.Equal(t, keys[0], string(wr.First))
 	require.Equal(t, keys[writes-1], string(wr.Last))
 	require.Equal(t, committed.ID(f), wr.PartID)
+}
+
+func TestWriterAbort(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockFS := mock.NewMockFS(ctrl)
+	defer ctrl.Finish()
+	ns := committed.Namespace("some-namespace")
+
+	// create the mock file with the matching file-system
+	mockFile := mock.NewMockStoredFile(ctrl)
+	mockFile.EXPECT().Abort().Return(nil).Times(1)
+	mockFile.EXPECT().Close().Return(nil).Times(1)
+	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
+
+	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
+	require.NoError(t, err)
+	require.NotNil(t, dw)
+
+	// expect the specific write file actions
+	mockFile.EXPECT().Write(gomock.Any()).DoAndReturn(
+		func(b []byte) (int, error) {
+			return len(b), nil
+		}).Times(1)
+	mockFile.EXPECT().Sync().Return(nil).AnyTimes()
+
+	// Do the actual writing
+	err = dw.WriteRecord(committed.Record{
+		Key:   []byte("key-1"),
+		Value: []byte("some-data"),
+	})
+
+	// Abort
+	require.NoError(t, dw.Abort())
 }
 
 func randomStrings(writes int) []string {

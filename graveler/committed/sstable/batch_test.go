@@ -1,4 +1,4 @@
-package sstable
+package sstable_test
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
 
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +34,7 @@ func TestBatchWriterFailed(t *testing.T) {
 	expectedErr := errors.New("failure")
 	writerFailure.EXPECT().Close().Return(nil, expectedErr).Times(1)
 
-	sut := NewBatchCloser()
+	sut := sstable.NewBatchCloser()
 	require.NoError(t, sut.CloseWriterAsync(writerSuccess))
 	require.NoError(t, sut.CloseWriterAsync(writerFailure))
 
@@ -53,13 +54,13 @@ func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 		Count:  4321,
 	}, nil).Times(1)
 
-	require.Error(t, sut.CloseWriterAsync(writer), errMultipleWaitCalls)
+	require.Error(t, sut.CloseWriterAsync(writer), sstable.ErrMultipleWaitCalls)
 	res, err := sut.Wait()
 	require.Nil(t, res)
-	require.Error(t, err, errMultipleWaitCalls)
+	require.Error(t, err, sstable.ErrMultipleWaitCalls)
 }
 
-func runSuccessScenario(t *testing.T) (*BatchCloser, *gomock.Controller) {
+func runSuccessScenario(t *testing.T) (*sstable.BatchCloser, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -75,7 +76,7 @@ func runSuccessScenario(t *testing.T) (*BatchCloser, *gomock.Controller) {
 		}, nil).Times(1)
 	}
 
-	sut := NewBatchCloser()
+	sut := sstable.NewBatchCloser()
 
 	for i := 0; i < writersCount; i++ {
 		require.NoError(t, sut.CloseWriterAsync(writers[i]))

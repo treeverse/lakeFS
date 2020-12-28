@@ -35,7 +35,11 @@ type File interface {
 type StoredFile interface {
 	File
 
-	// Store must operate on a closed file.
-	// Successful operation guarantees that the file is persistent.
+	// Successful Store operation guarantees that the file is persistent.
+	// If the file wasn't closed, Store closes it.
 	Store(filename string) error
+
+	// Abort removes all traces of the file from the filesystem.
+	// It's allowed to call Abort on the file at any stage, unless the file was already stored.
+	Abort() error
 }
