@@ -394,6 +394,9 @@ type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided TreeID
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
+	// IsTreeExist returns true iff the tree with treeID exists
+	IsTreeExist(ctx context.Context, ns StorageNamespace, treeID TreeID) (bool, error)
+
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
 
@@ -423,6 +426,9 @@ type StagingManager interface {
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
+
+	// IsDirty returns true iff staging area for the token isn't empty
+	IsDirty(ctx context.Context, st StagingToken) (bool, error)
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -853,25 +859,27 @@ func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID Reposito
 	defer cancel()
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
-		return "", fmt.Errorf("get repository: %w", err)
+		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
 	}
 	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
-		return "", fmt.Errorf("get branch: %w", err)
+		return "", fmt.Errorf("get branch %s: %w", branchID, err)
 	}
-	changes, err := g.StagingManager.List(ctx, branch.stagingToken)
+	dirty, err := g.StagingManager.IsDirty(ctx, branch.stagingToken)
 	if err != nil {
-		return "", fmt.Errorf("staging list: %w", err)
+		return "", fmt.Errorf("staging list (token %s): %w", branch.stagingToken, err)
 	}
-	if changes.Next() {
+	if dirty {
 		return "", ErrDirtyBranch
 	}
 
-	treeIt, err := g.CommittedManager.List(ctx, repo.StorageNamespace, treeID)
+	treeExists, err := g.CommittedManager.IsTreeExist(ctx, repo.StorageNamespace, treeID)
 	if err != nil {
-		return "", fmt.Errorf("treeID %s: %w", treeID, ErrTreeNotFound)
+		return "", fmt.Errorf("checking for tree %s: %w", treeID, err)
 	}
-	defer treeIt.Close()
+	if !treeExists {
+		return "", ErrTreeNotFound
+	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 		Committer:    committer,

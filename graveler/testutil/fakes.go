@@ -20,6 +20,7 @@ type CommittedFake struct {
 	diffIterator  graveler.DiffIterator
 	Err           error
 	TreeID        graveler.TreeID
+	TreeExists    bool
 	AppliedData   AppliedData
 }
 
@@ -32,6 +33,13 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 		return nil, c.Err
 	}
 	return c.Value, nil
+}
+
+func (c *CommittedFake) IsTreeExist(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (bool, error) {
+	if c.Err != nil {
+		return false, c.Err
+	}
+	return c.TreeExists, nil
 }
 
 func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (graveler.ValueIterator, error) {
@@ -73,6 +81,7 @@ type StagingFake struct {
 	LastSetValueRecord *graveler.ValueRecord
 	LastRemovedKey     graveler.Key
 	DropCalled         bool
+	Dirty              bool
 	SetErr             error
 }
 
@@ -119,6 +128,13 @@ func (s *StagingFake) List(_ context.Context, _ graveler.StagingToken) (graveler
 		return nil, s.Err
 	}
 	return s.ValueIterator, nil
+}
+
+func (s *StagingFake) IsDirty(_ context.Context, _ graveler.StagingToken) (bool, error) {
+	if s.Err != nil {
+		return false, s.Err
+	}
+	return s.Dirty, nil
 }
 
 func (s *StagingFake) Snapshot(_ context.Context, _ graveler.StagingToken) (graveler.StagingToken, error) {

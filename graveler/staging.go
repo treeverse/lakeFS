@@ -2,6 +2,7 @@ package graveler
 
 import (
 	"context"
+	"errors"
 	"math"
 
 	sq "github.com/Masterminds/squirrel"
@@ -59,6 +60,23 @@ func (p *stagingManager) DropKey(ctx context.Context, st StagingToken, key Key) 
 		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
 	}, p.txOpts(ctx)...)
 	return err
+}
+
+func (p *stagingManager) IsDirty(ctx context.Context, st StagingToken) (bool, error) {
+	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
+		value := &Value{}
+		err := tx.Get(value, "SELECT identity, data FROM graveler_staging_kv WHERE staging_token=$1 limit 1", st)
+		return value, err
+	}, p.txOpts(ctx, db.ReadOnly())...)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	// a row was found
+	return true, nil
 }
 
 func (p *stagingManager) List(ctx context.Context, st StagingToken) (ValueIterator, error) {

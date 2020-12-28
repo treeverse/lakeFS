@@ -430,8 +430,13 @@ func TestGraveler_Commit(t *testing.T) {
 }
 
 func TestGraveler_CommitExistingTree(t *testing.T) {
-	expectedCommitID := graveler.CommitID("expectedCommitId")
-	expectedTreeID := graveler.TreeID("expectedTreeID")
+	const (
+		expectedCommitID     = graveler.CommitID("expectedCommitId")
+		expectedTreeID       = graveler.TreeID("expectedTreeID")
+		expectedBranchID     = graveler.BranchID("expectedBranchID")
+		expectedRepositoryID = graveler.RepositoryID("expectedTreeID")
+	)
+
 	type fields struct {
 		CommittedManager *testutil.CommittedFake
 		StagingManager   *testutil.StagingFake
@@ -455,8 +460,8 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 		{
 			name: "valid existing commit",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID, ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
-				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID, TreeExists: true},
+				StagingManager:   &testutil.StagingFake{Dirty: false},
 				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
 			},
 			args: args{
@@ -471,10 +476,10 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "staging not empty",
+			name: "staging is dirty",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
-				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("key"), Value: &graveler.Value{}}})},
+				StagingManager:   &testutil.StagingFake{Dirty: true},
 				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
 			},
 			args: args{
@@ -491,8 +496,8 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 		{
 			name: "tree not found",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{Err: graveler.ErrNotFound},
-				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+				CommittedManager: &testutil.CommittedFake{TreeExists: false},
+				StagingManager:   &testutil.StagingFake{Dirty: false},
 				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
 			},
 			args: args{
@@ -509,8 +514,8 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 		{
 			name: "fail on add commit",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID, ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
-				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
+				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID, TreeExists: true},
+				StagingManager:   &testutil.StagingFake{Dirty: false},
 				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, CommitErr: graveler.ErrConflictFound, Commit: &graveler.Commit{TreeID: expectedTreeID}},
 			},
 			args: args{
@@ -525,12 +530,10 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 			expectedErr: graveler.ErrConflictFound,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expectedCommitID := graveler.CommitID("expectedCommitId")
-			expectedTreeID := graveler.TreeID("expectedTreeID")
-			expectedBranchID := graveler.BranchID("expectedBranchID")
-			expectedRepositoryID := graveler.RepositoryID("expectedTreeID")
+
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
 			got, err := g.CommitExistingTree(context.Background(), expectedRepositoryID, expectedBranchID, expectedTreeID, tt.args.committer, tt.args.message, tt.args.metadata)
 			if !errors.Is(err, tt.expectedErr) {
@@ -555,7 +558,7 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 				t.Errorf("unexpected added commit %s", diff)
 			}
 			if tt.fields.StagingManager.DropCalled {
-				t.Errorf("Staging manager drop shouldn't be called")
+				t.Error("Staging manager drop shouldn't be called")
 			}
 
 			if got != expectedCommitID {
