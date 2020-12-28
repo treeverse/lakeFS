@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -20,7 +19,7 @@ func TestDiff(t *testing.T) {
 		removed = graveler.DiffTypeRemoved
 		changed = graveler.DiffTypeChanged
 	)
-	tests := []struct {
+	tests := map[string]struct {
 		leftKeys                 [][]string
 		leftIdentities           [][]string
 		rightKeys                [][]string
@@ -31,7 +30,7 @@ func TestDiff(t *testing.T) {
 		expectedLeftReadsByPart  []int
 		expectedRightReadsByPart []int
 	}{
-		{
+		"empty diff": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
@@ -40,7 +39,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 0},
 			expectedRightReadsByPart: []int{0, 0},
 		},
-		{
+		"added in existing part": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}},
@@ -51,7 +50,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 1},
 			expectedRightReadsByPart: []int{0, 2},
 		},
-		{
+		"removed from existing part": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
@@ -62,7 +61,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 2},
 			expectedRightReadsByPart: []int{0, 1},
 		},
-		{
+		"added and removed": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k5"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i5"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}},
@@ -73,7 +72,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 2},
 			expectedRightReadsByPart: []int{0, 2},
 		},
-		{
+		"change in existing part": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
@@ -84,7 +83,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 1},
 			expectedRightReadsByPart: []int{0, 1},
 		},
-		{
+		"parts were split": {
 			leftKeys:                 [][]string{{"k1", "k2", "k3"}},
 			leftIdentities:           [][]string{{"i1", "i2", "i3"}},
 			rightKeys:                [][]string{{"k3", "k4"}, {"k5", "k6"}},
@@ -95,13 +94,12 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{3},
 			expectedRightReadsByPart: []int{2, 2},
 		},
-		{
-			// diff between two empty iterators - should return empty diff
+		"diff between empty iterators": {
 			expectedDiffKeys:         []string{},
 			expectedLeftReadsByPart:  []int{},
 			expectedRightReadsByPart: []int{},
 		},
-		{
+		"added on empty": {
 			leftKeys:                 [][]string{},
 			leftIdentities:           [][]string{},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
@@ -112,7 +110,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{},
 			expectedRightReadsByPart: []int{2, 1},
 		},
-		{
+		"whole part was replaced": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4", "k5", "k6"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4", "i5", "i6"}},
 			rightKeys:                [][]string{{"k3", "k4"}, {"k5", "k6", "k7"}},
@@ -123,7 +121,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{2, 4},
 			expectedRightReadsByPart: []int{2, 3},
 		},
-		{
+		"added in beginning of part": {
 			leftKeys:                 [][]string{{"k3", "k4", "k5"}},
 			leftIdentities:           [][]string{{"i3", "i4", "i5"}},
 			rightKeys:                [][]string{{"k1", "k2", "k3", "k4", "k5"}},
@@ -134,7 +132,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{3},
 			expectedRightReadsByPart: []int{5},
 		},
-		{
+		"small parts removed": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}, {"k4"}, {"k5"}, {"k6", "k7"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}, {"i4"}, {"i5"}, {"i6", "i7"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k6", "k7"}},
@@ -145,7 +143,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 1, 1, 1, 0},
 			expectedRightReadsByPart: []int{0, 0},
 		},
-		{
+		"small parts merged": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}, {"k4"}, {"k5"}, {"k6", "k7"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}, {"i4"}, {"i5"}, {"i6", "i7"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k4", "k5"}},
@@ -156,7 +154,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 1, 1, 1, 2},
 			expectedRightReadsByPart: []int{0, 2},
 		},
-		{
+		"empty parts": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {}, {}, {}, {}, {"k3", "k4"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {}, {}, {}, {}, {"i3", "i4"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {}, {}, {"k3", "k4"}},
@@ -167,7 +165,7 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 0, 0, 0, 0, 0},
 			expectedRightReadsByPart: []int{0, 0, 0, 0},
 		},
-		{
+		"part added in the middle": {
 			leftKeys:                 [][]string{{"k1", "k2"}, {"k5", "k6"}},
 			leftIdentities:           [][]string{{"i1", "i2"}, {"i5", "i6"}},
 			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
@@ -179,8 +177,8 @@ func TestDiff(t *testing.T) {
 			expectedRightReadsByPart: []int{0, 2, 0},
 		},
 	}
-	for i, tst := range tests {
-		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+	for name, tst := range tests {
+		t.Run(name, func(t *testing.T) {
 			fakeLeft := newFakeTreeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeTreeIterator(tst.rightKeys, tst.rightIdentities)
 			it := tree.NewDiffIterator(fakeLeft, fakeRight)
