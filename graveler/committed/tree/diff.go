@@ -58,11 +58,6 @@ func key(it Iterator) graveler.Key {
 	return val.Key
 }
 
-func part(it Iterator) *Part {
-	_, part := it.Value()
-	return part
-}
-
 func (d *diffIterator) compareKeys() int {
 	if d.leftVal == nil {
 		return 1
