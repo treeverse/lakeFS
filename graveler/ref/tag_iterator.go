@@ -16,9 +16,7 @@ type TagIterator struct {
 	offset       string
 	fetchSize    int
 	err          error
-	fetchCalled  bool
-	fetchEnded   bool
-	closed       bool
+	state        iteratorState
 }
 
 type tagRecord struct {
@@ -26,18 +24,18 @@ type tagRecord struct {
 	graveler.CommitID `db:"commit_id"`
 }
 
-func NewTagIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, prefetchSize int, offset string) *TagIterator {
+func NewTagIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, fetchSize int) *TagIterator {
 	return &TagIterator{
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
-		fetchSize:    prefetchSize,
-		offset:       offset,
+		fetchSize:    fetchSize,
+		buf:          make([]*graveler.TagRecord, 0, fetchSize),
 	}
 }
 
 func (ri *TagIterator) Next() bool {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	if ri.err != nil {
@@ -51,7 +49,7 @@ func (ri *TagIterator) Next() bool {
 		return false
 	}
 	ri.value = ri.buf[0]
-	ri.offset = string(ri.value.CommitID)
+	ri.offset = string(ri.value.TagID)
 	if len(ri.buf) > 1 {
 		ri.buf = ri.buf[1:]
 	} else {
@@ -61,13 +59,22 @@ func (ri *TagIterator) Next() bool {
 }
 
 func (ri *TagIterator) fetch() {
-	if ri.fetchEnded {
+	if ri.state == iteratorStateDone {
 		return
 	}
-	offsetCondition := iteratorOffsetCondition(!ri.fetchCalled)
-	ri.fetchCalled = true
+	if len(ri.buf) > 0 {
+		return
+	}
 
-	buf := make([]*tagRecord, 0)
+	var offsetCondition string
+	if ri.state == iteratorStateInit {
+		offsetCondition = iteratorOffsetCondition(true)
+		ri.state = iteratorStateQuerying
+	} else {
+		offsetCondition = iteratorOffsetCondition(false)
+	}
+
+	var buf []*tagRecord
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
 			SELECT id, commit_id
 			FROM graveler_tags
@@ -80,31 +87,29 @@ func (ri *TagIterator) fetch() {
 		return
 	}
 	if len(buf) < ri.fetchSize {
-		ri.fetchEnded = true
+		ri.state = iteratorStateDone
 	}
-	ri.buf = make([]*graveler.TagRecord, len(buf))
-	for i, b := range buf {
-		ri.buf[i] = &graveler.TagRecord{
+	for _, b := range buf {
+		ri.buf = append(ri.buf, &graveler.TagRecord{
 			TagID:    b.TagID,
 			CommitID: b.CommitID,
-		}
+		})
 	}
 }
 
 func (ri *TagIterator) SeekGE(id graveler.TagID) {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	ri.offset = string(id)
-	ri.buf = nil
+	ri.buf = ri.buf[:0]
 	ri.value = nil
 	ri.err = nil
-	ri.fetchCalled = false
-	ri.fetchEnded = false
+	ri.state = iteratorStateInit
 }
 
 func (ri *TagIterator) Value() *graveler.TagRecord {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	if ri.err != nil {
@@ -114,12 +119,12 @@ func (ri *TagIterator) Value() *graveler.TagRecord {
 }
 
 func (ri *TagIterator) Err() error {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	return ri.err
 }
 
 func (ri *TagIterator) Close() {
-	ri.closed = true
+	ri.state = iteratorStateClosed
 }

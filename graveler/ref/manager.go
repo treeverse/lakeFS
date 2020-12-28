@@ -193,7 +193,7 @@ func (m *Manager) DeleteTag(ctx context.Context, repositoryID graveler.Repositor
 }
 
 func (m *Manager) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
-	return NewTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize, ""), nil
+	return NewTagIterator(ctx, m.db, repositoryID, IteratorPrefetchSize), nil
 }
 
 func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {

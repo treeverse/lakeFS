@@ -8,16 +8,14 @@ import (
 )
 
 type RepositoryIterator struct {
-	db          db.Database
-	ctx         context.Context
-	value       *graveler.RepositoryRecord
-	buf         []*graveler.RepositoryRecord
-	offset      string
-	fetchSize   int
-	err         error
-	fetchCalled bool
-	fetchEnded  bool
-	closed      bool
+	db        db.Database
+	ctx       context.Context
+	value     *graveler.RepositoryRecord
+	buf       []*graveler.RepositoryRecord
+	offset    string
+	fetchSize int
+	err       error
+	state     iteratorState
 }
 
 func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int) *RepositoryIterator {
@@ -25,11 +23,12 @@ func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int) *
 		db:        db,
 		ctx:       ctx,
 		fetchSize: fetchSize,
+		buf:       make([]*graveler.RepositoryRecord, 0, fetchSize),
 	}
 }
 
 func (ri *RepositoryIterator) Next() bool {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	if ri.err != nil {
@@ -53,11 +52,20 @@ func (ri *RepositoryIterator) Next() bool {
 }
 
 func (ri *RepositoryIterator) fetch() {
-	if ri.fetchEnded {
+	if ri.state == iteratorStateDone {
 		return
 	}
-	offsetCondition := iteratorOffsetCondition(!ri.fetchCalled)
-	ri.fetchCalled = true
+	if len(ri.buf) > 0 {
+		return
+	}
+
+	var offsetCondition string
+	if ri.state == iteratorStateInit {
+		offsetCondition = iteratorOffsetCondition(true)
+		ri.state = iteratorStateQuerying
+	} else {
+		offsetCondition = iteratorOffsetCondition(false)
+	}
 	ri.err = ri.db.WithContext(ri.ctx).Select(&ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
 			FROM graveler_repositories
@@ -68,24 +76,23 @@ func (ri *RepositoryIterator) fetch() {
 		return
 	}
 	if len(ri.buf) < ri.fetchSize {
-		ri.fetchEnded = true
+		ri.state = iteratorStateDone
 	}
 }
 
 func (ri *RepositoryIterator) SeekGE(id graveler.RepositoryID) {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	ri.offset = string(id)
-	ri.buf = nil
+	ri.buf = ri.buf[:0]
 	ri.value = nil
 	ri.err = nil
-	ri.fetchCalled = false
-	ri.fetchEnded = false
+	ri.state = iteratorStateInit
 }
 
 func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	if ri.err != nil {
@@ -95,12 +102,12 @@ func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
 }
 
 func (ri *RepositoryIterator) Err() error {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	return ri.err
 }
 
 func (ri *RepositoryIterator) Close() {
-	ri.closed = true
+	ri.state = iteratorStateClosed
 }

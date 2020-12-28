@@ -16,9 +16,7 @@ type BranchIterator struct {
 	offset       string
 	fetchSize    int
 	err          error
-	fetchCalled  bool
-	fetchEnded   bool
-	closed       bool
+	state        iteratorState
 }
 
 type branchRecord struct {
@@ -38,7 +36,7 @@ func NewBranchIterator(ctx context.Context, db db.Database, repositoryID gravele
 }
 
 func (ri *BranchIterator) Next() bool {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	if ri.err != nil {
@@ -61,14 +59,20 @@ func (ri *BranchIterator) Next() bool {
 }
 
 func (ri *BranchIterator) fetch() {
-	if ri.fetchEnded {
+	if ri.state == iteratorStateDone {
 		return
 	}
 	if len(ri.buf) > 0 {
 		return
 	}
-	offsetCondition := iteratorOffsetCondition(!ri.fetchCalled)
-	ri.fetchCalled = true
+
+	var offsetCondition string
+	if ri.state == iteratorStateInit {
+		offsetCondition = iteratorOffsetCondition(true)
+		ri.state = iteratorStateQuerying
+	} else {
+		offsetCondition = iteratorOffsetCondition(false)
+	}
 
 	var buf []*branchRecord
 	err := ri.db.WithContext(ri.ctx).Select(&buf, `
@@ -83,7 +87,7 @@ func (ri *BranchIterator) fetch() {
 		return
 	}
 	if len(buf) < ri.fetchSize {
-		ri.fetchEnded = true
+		ri.state = iteratorStateDone
 	}
 	for _, b := range buf {
 		rec := &graveler.BranchRecord{
@@ -98,19 +102,18 @@ func (ri *BranchIterator) fetch() {
 }
 
 func (ri *BranchIterator) SeekGE(id graveler.BranchID) {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	ri.offset = string(id)
-	ri.fetchEnded = false
-	ri.fetchCalled = false
-	ri.buf = nil
+	ri.state = iteratorStateInit
+	ri.buf = ri.buf[:0]
 	ri.value = nil
 	ri.err = nil
 }
 
 func (ri *BranchIterator) Value() *graveler.BranchRecord {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	if ri.err != nil {
@@ -120,12 +123,12 @@ func (ri *BranchIterator) Value() *graveler.BranchRecord {
 }
 
 func (ri *BranchIterator) Err() error {
-	if ri.closed {
+	if ri.state == iteratorStateClosed {
 		panic(ErrIteratorClosed)
 	}
 	return ri.err
 }
 
 func (ri *BranchIterator) Close() {
-	ri.closed = true
+	ri.state = iteratorStateClosed
 }

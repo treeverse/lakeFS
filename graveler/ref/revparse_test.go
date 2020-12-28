@@ -4,9 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler/ref"
-
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/ref"
 )
 
 func TestRevParse(t *testing.T) {

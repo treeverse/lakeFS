@@ -13,7 +13,7 @@ import (
 
 func TestRepositoryIterator(t *testing.T) {
 	r, db := testRefManagerWithDB(t)
-	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
+	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d", "f"}
 
 	// prepare data
 	for _, repoId := range repos {
@@ -36,7 +36,7 @@ func TestRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e"}); diffs != nil {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"a", "aa", "b", "c", "d", "e", "f"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})
@@ -54,7 +54,7 @@ func TestRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e", "f"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})
@@ -71,7 +71,7 @@ func TestRepositoryIterator(t *testing.T) {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
 
-		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e"}); diffs != nil {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"b", "c", "d", "e", "f"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 
@@ -88,7 +88,7 @@ func TestRepositoryIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"aa", "b", "c", "d", "e"}); diffs != nil {
+		if diffs := deep.Equal(repoIds, []graveler.RepositoryID{"aa", "b", "c", "d", "e", "f"}); diffs != nil {
 			t.Fatalf("got wrong list of repo IDs: %v", diffs)
 		}
 	})

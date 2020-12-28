@@ -7,6 +7,15 @@ const (
 	iteratorOffsetGT = ">"
 )
 
+type iteratorState int
+
+const (
+	iteratorStateInit iteratorState = iota
+	iteratorStateQuerying
+	iteratorStateDone
+	iteratorStateClosed
+)
+
 var ErrIteratorClosed = errors.New("iterator already closed")
 
 func iteratorOffsetCondition(initial bool) string {
