@@ -26,7 +26,7 @@ func NewBatchCloser() *BatchCloser {
 }
 
 var (
-	errMultipleWaitCalls = errors.New("wait has already been called")
+	ErrMultipleWaitCalls = errors.New("wait has already been called")
 )
 
 // CloseWriterAsync adds Writer instance for the BatchWriterCloser to handle.
@@ -75,7 +75,7 @@ func (bc *BatchCloser) Wait() ([]committed.WriteResult, error) {
 		defer bc.lock.Unlock()
 		return nil, bc.err
 	}
-	bc.err = errMultipleWaitCalls
+	bc.err = ErrMultipleWaitCalls
 	bc.lock.Unlock()
 
 	bc.wg.Wait()
@@ -90,5 +90,5 @@ func (bc *BatchCloser) Wait() ([]committed.WriteResult, error) {
 }
 
 func (bc *BatchCloser) nilErrOrMultipleCalls() bool {
-	return bc.err == nil || errors.Is(bc.err, errMultipleWaitCalls)
+	return bc.err == nil || errors.Is(bc.err, ErrMultipleWaitCalls)
 }

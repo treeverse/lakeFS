@@ -1,4 +1,4 @@
-package sstable
+package sstable_test
 
 import (
 	"io/ioutil"
@@ -8,10 +8,11 @@ import (
 	"github.com/cockroachdb/pebble"
 
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/committed/sstable"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cockroachdb/pebble/sstable"
+	pebble_sst "github.com/cockroachdb/pebble/sstable"
 
 	"github.com/golang/mock/gomock"
 )
@@ -26,7 +27,7 @@ func TestIteratorSuccess(t *testing.T) {
 	iter := createSStableIterator(t, keys, vals)
 
 	called := 0
-	sut := NewIterator(iter, func() error {
+	sut := sstable.NewIterator(iter, func() error {
 		called++
 		return nil
 	}, nil)
@@ -86,7 +87,7 @@ func TestIteratorSuccess(t *testing.T) {
 }
 
 // createSStableIterator creates the iterator from keys, vals passed to it
-func createSStableIterator(t *testing.T, keys, vals []string) sstable.Iterator {
+func createSStableIterator(t *testing.T, keys, vals []string) pebble_sst.Iterator {
 	ssReader := createSStableReader(t, keys, vals)
 
 	iter, err := ssReader.NewIter(nil, nil)
@@ -100,11 +101,11 @@ func createSStableIterator(t *testing.T, keys, vals []string) sstable.Iterator {
 }
 
 // createSStableReader creates the table from keys, vals passed to it
-func createSStableReader(t *testing.T, keys []string, vals []string) *sstable.Reader {
+func createSStableReader(t *testing.T, keys []string, vals []string) *pebble_sst.Reader {
 	f, err := ioutil.TempFile(os.TempDir(), "test file")
 	require.NoError(t, err)
-	w := sstable.NewWriter(f, sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
+	w := pebble_sst.NewWriter(f, pebble_sst.WriterOptions{
+		Compression: pebble_sst.SnappyCompression,
 	})
 	for i, key := range keys {
 		require.NoError(t, w.Set([]byte(key), []byte(vals[i])))
@@ -118,7 +119,7 @@ func createSStableReader(t *testing.T, keys []string, vals []string) *sstable.Re
 
 	readF, err := os.Open(f.Name())
 	require.NoError(t, err)
-	ssReader, err := sstable.NewReader(readF, sstable.ReaderOptions{Cache: cache})
+	ssReader, err := pebble_sst.NewReader(readF, pebble_sst.ReaderOptions{Cache: cache})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-// ROFile is pyramid wrapper for os.file that implements io.ReadCloser
+// ROFile is pyramid wrapper for os.File that implements io.ReadCloser
 // with hooks for updating evictions.
 type ROFile struct {
 	*os.File

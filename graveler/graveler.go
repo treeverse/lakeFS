@@ -251,7 +251,7 @@ type VersionController interface {
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error)
 
 	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
-	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error)
+	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
@@ -404,7 +404,7 @@ type CommittedManager interface {
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
 	// it applies that changes from left to right, resulting in a new tree that
 	// is expected to be immediately addressable
-	Merge(ctx context.Context, ns StorageNamespace, left, right, base TreeID) (TreeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, left, right, base TreeID, committer string, message string, metadata Metadata) (TreeID, error)
 
 	// Apply is the act of taking an existing tree (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -883,7 +883,7 @@ func (g *graveler) Revert(_ context.Context, _ RepositoryID, _ BranchID, _ Ref) 
 	panic("implement me")
 }
 
-func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID) (CommitID, error) {
+func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, to)
 	if err != nil {
 		return "", err
@@ -907,17 +907,17 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		return "", err
 	}
 
-	treeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.TreeID, toCommit.TreeID, baseCommit.TreeID)
+	treeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.TreeID, toCommit.TreeID, baseCommit.TreeID, committer, message, metadata)
 	if err != nil {
 		return "", err
 	}
 	commit := Commit{
-		Committer:    "unknown",       // TODO(Guys): pass committer or enter default value
-		Message:      "merge message", // TODO(Guys): get merge message
+		Committer:    committer,
+		Message:      message,
 		TreeID:       treeID,
 		CreationDate: time.Time{},
 		Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
-		Metadata:     nil, // TODO(Guys): pass metadata
+		Metadata:     metadata,
 	}
 	return g.RefManager.AddCommit(ctx, repositoryID, commit)
 }

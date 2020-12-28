@@ -57,8 +57,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/mr-tron/base58 v1.2.0
-	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/ory/dockertest v3.3.5+incompatible // indirect
 	github.com/ory/dockertest/v3 v3.6.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.11.1 // indirect
@@ -74,7 +72,6 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a
 	github.com/stretchr/testify v1.6.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
@@ -84,15 +81,15 @@ require (
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
+	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
+	golang.org/x/tools v0.0.0-20201224043029-2b0845dc783e // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
-	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	pgregory.net/rapid v0.4.0 // indirect
 )
