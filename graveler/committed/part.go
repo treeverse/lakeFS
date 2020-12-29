@@ -53,8 +53,8 @@ type WriteResult struct {
 	// Count is the number of records in the part.
 	Count int
 
-	// EstimatedSize is the size of parts in bytes
-	EstimatedSize uint64
+	// EstimatedPartSizeBytes is Approximate size of each part
+	EstimatedPartSizeBytes uint64
 }
 
 // Writer is an abstraction for writing Parts.

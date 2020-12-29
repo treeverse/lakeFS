@@ -13,14 +13,14 @@ import (
 )
 
 type GeneralWriter struct {
-	namespace           committed.Namespace
-	treeManager         committed.PartManager
-	partManager         committed.PartManager
-	partWriter          committed.Writer // writer for the current part
-	lastKey             committed.Key
-	approximatePartSize uint64 // indicates when to break the parts
-	batchWriteCloser    committed.BatchWriterCloser
-	parts               []Part
+	namespace                committed.Namespace
+	treeManager              committed.PartManager
+	partManager              committed.PartManager
+	partWriter               committed.Writer // writer for the current part
+	lastKey                  committed.Key
+	approximatePartSizeBytes uint64 // indicates when to break the parts
+	batchWriteCloser         committed.BatchWriterCloser
+	parts                    []Part
 }
 
 var (
@@ -28,13 +28,13 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewWriter(partManager, treeManager committed.PartManager, approximatePartSize uint64, namespace committed.Namespace) *GeneralWriter {
+func NewWriter(partManager, treeManager committed.PartManager, approximatePartSizeBytes uint64, namespace committed.Namespace) *GeneralWriter {
 	return &GeneralWriter{
-		partManager:         partManager,
-		treeManager:         treeManager,
-		batchWriteCloser:    partManager.GetBatchManager(),
-		approximatePartSize: approximatePartSize,
-		namespace:           namespace,
+		partManager:              partManager,
+		treeManager:              treeManager,
+		batchWriteCloser:         partManager.GetBatchManager(),
+		approximatePartSizeBytes: approximatePartSizeBytes,
+		namespace:                namespace,
 	}
 }
 
@@ -96,7 +96,7 @@ func (w *GeneralWriter) getBatchedParts() ([]Part, error) {
 			ID:            r.PartID,
 			MinKey:        r.First,
 			MaxKey:        r.Last,
-			EstimatedSize: r.EstimatedSize,
+			EstimatedSize: r.EstimatedPartSizeBytes,
 		}
 	}
 	return parts, nil
@@ -137,7 +137,7 @@ func (w *GeneralWriter) shouldBreakAtKey(key graveler.Key) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	n := h.Sum64() % w.approximatePartSize
+	n := h.Sum64() % w.approximatePartSizeBytes
 	return n == 0, nil
 }
 
