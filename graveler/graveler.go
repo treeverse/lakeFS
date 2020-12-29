@@ -145,9 +145,8 @@ type CommitRecord struct {
 
 // Branch is a pointer to a commit
 type Branch struct {
-	CommitID CommitID
-	// nolint: structcheck, unused
-	stagingToken StagingToken
+	CommitID     CommitID
+	StagingToken StagingToken
 }
 
 // BranchRecord holds BranchID with the associated Branch data
@@ -534,7 +533,7 @@ func (g *graveler) CreateRepository(ctx context.Context, repositoryID Repository
 		DefaultBranchID:  branchID,
 	}
 	branch := Branch{
-		stagingToken: generateStagingToken(repositoryID, branchID),
+		StagingToken: generateStagingToken(repositoryID, branchID),
 	}
 	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, branch)
 	if err != nil {
@@ -578,7 +577,7 @@ func (g *graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 
 	newBranch := Branch{
 		CommitID:     reference.CommitID(),
-		stagingToken: generateStagingToken(repositoryID, branchID),
+		StagingToken: generateStagingToken(repositoryID, branchID),
 	}
 	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
 	if err != nil {
@@ -604,7 +603,7 @@ func (g *graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, 
 	}
 	// validate no conflict
 	// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-	iter, err := g.StagingManager.List(ctx, curBranch.stagingToken)
+	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken)
 	if err != nil {
 		return nil, err
 	}
@@ -615,7 +614,7 @@ func (g *graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, 
 
 	newBranch := Branch{
 		CommitID:     reference.CommitID(),
-		stagingToken: curBranch.stagingToken,
+		StagingToken: curBranch.StagingToken,
 	}
 	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
 	if err != nil {
@@ -670,7 +669,7 @@ func (g *graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, 
 	if err != nil {
 		return err
 	}
-	err = g.StagingManager.Drop(ctx, branch.stagingToken)
+	err = g.StagingManager.Drop(ctx, branch.StagingToken)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -689,7 +688,7 @@ func (g *graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	if reference.Type() == ReferenceTypeBranch {
 		// try to get from staging, if not found proceed to committed
 		branch := reference.Branch()
-		value, err := g.StagingManager.Get(ctx, branch.stagingToken, key)
+		value, err := g.StagingManager.Get(ctx, branch.StagingToken, key)
 		if !errors.Is(err, ErrNotFound) {
 			if err != nil {
 				return nil, err
@@ -719,7 +718,7 @@ func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID 
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Set(ctx, branch.stagingToken, key, &value)
+	return g.StagingManager.Set(ctx, branch.StagingToken, key, &value)
 }
 
 func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
@@ -745,14 +744,14 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
 	if errors.Is(err, ErrNotFound) {
 		// no need for tombstone - drop key from stage
-		return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+		return g.StagingManager.DropKey(ctx, branch.StagingToken, key)
 	}
 	if err != nil {
 		return err
 	}
 
 	// make sure we have tombstone in staging
-	entry, err := g.StagingManager.Get(ctx, branch.stagingToken, key)
+	entry, err := g.StagingManager.Get(ctx, branch.StagingToken, key)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -760,7 +759,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	if err == nil && entry == nil {
 		return ErrNotFound
 	}
-	return g.StagingManager.Set(ctx, branch.stagingToken, key, nil)
+	return g.StagingManager.Set(ctx, branch.StagingToken, key, nil)
 }
 
 func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref) (ValueIterator, error) {
@@ -782,7 +781,7 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 	if reference.Type() == ReferenceTypeBranch {
-		stagingList, err := g.StagingManager.List(ctx, reference.Branch().stagingToken)
+		stagingList, err := g.StagingManager.List(ctx, reference.Branch().StagingToken)
 		if err != nil {
 			return nil, err
 		}
@@ -809,7 +808,7 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", fmt.Errorf("get commit: %w", err)
 	}
-	changes, err := g.StagingManager.List(ctx, branch.stagingToken)
+	changes, err := g.StagingManager.List(ctx, branch.StagingToken)
 	if err != nil {
 		return "", fmt.Errorf("staging list: %w", err)
 	}
@@ -828,14 +827,14 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", fmt.Errorf("add commit: %w", err)
 	}
-	err = g.StagingManager.Drop(ctx, branch.stagingToken)
+	err = g.StagingManager.Drop(ctx, branch.StagingToken)
 	if err != nil {
 		g.log.WithContext(ctx).WithFields(logging.Fields{
 			"repository_id": repositoryID,
 			"branch_id":     branchID,
 			"commit_id":     *commit,
 			"message":       message,
-			"staging_token": branch.stagingToken,
+			"staging_token": branch.StagingToken,
 		}).Error("Failed to drop staging data")
 	}
 	return newCommit, nil
@@ -851,7 +850,7 @@ func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchI
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.Drop(ctx, branch.stagingToken)
+	return g.StagingManager.Drop(ctx, branch.StagingToken)
 }
 
 func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
@@ -864,7 +863,7 @@ func (g *graveler) ResetKey(ctx context.Context, repositoryID RepositoryID, bran
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.DropKey(ctx, branch.stagingToken, key)
+	return g.StagingManager.DropKey(ctx, branch.StagingToken, key)
 }
 
 func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error {
@@ -877,7 +876,7 @@ func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, b
 	if err != nil {
 		return err
 	}
-	return g.StagingManager.DropByPrefix(ctx, branch.stagingToken, key)
+	return g.StagingManager.DropByPrefix(ctx, branch.StagingToken, key)
 }
 
 func (g *graveler) Revert(_ context.Context, _ RepositoryID, _ BranchID, _ Ref) (CommitID, error) {
@@ -936,7 +935,7 @@ func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	if err != nil {
 		return nil, err
 	}
-	valueIterator, err := g.StagingManager.List(ctx, branch.stagingToken)
+	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken)
 	if err != nil {
 		return nil, err
 	}

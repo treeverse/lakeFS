@@ -1,4 +1,4 @@
-package graveler_test
+package ref_test
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestPGRefManager_GetRepository(t *testing.T) {
+func TestManager_GetRepository(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("repo_doesnt_exist", func(t *testing.T) {
 		_, err := r.GetRepository(context.Background(), "example-repo")
@@ -40,7 +40,7 @@ func TestPGRefManager_GetRepository(t *testing.T) {
 	})
 }
 
-func TestPGRefManager_ListRepositories(t *testing.T) {
+func TestManager_ListRepositories(t *testing.T) {
 	r := testRefManager(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
 	for _, repoId := range repos {
@@ -95,7 +95,7 @@ func TestPGRefManager_ListRepositories(t *testing.T) {
 	})
 }
 
-func TestPGRefManager_DeleteRepository(t *testing.T) {
+func TestManager_DeleteRepository(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("repo_exists", func(t *testing.T) {
 		testutil.Must(t, r.CreateRepository(context.Background(), "example-repo", graveler.Repository{
@@ -129,7 +129,7 @@ func TestPGRefManager_DeleteRepository(t *testing.T) {
 	})
 }
 
-func TestPGRefManager_GetBranch(t *testing.T) {
+func TestManager_GetBranch(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("get_branch_exists", func(t *testing.T) {
 		testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
@@ -156,7 +156,7 @@ func TestPGRefManager_GetBranch(t *testing.T) {
 	})
 }
 
-func TestPGRefManager_SetBranch(t *testing.T) {
+func TestManager_SetBranch(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
@@ -195,7 +195,7 @@ func TestPGRefManager_SetBranch(t *testing.T) {
 
 }
 
-func TestPGRefManager_DeleteBranch(t *testing.T) {
+func TestManager_DeleteBranch(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
@@ -218,7 +218,7 @@ func TestPGRefManager_DeleteBranch(t *testing.T) {
 
 }
 
-func TestPGRefManager_ListBranches(t *testing.T) {
+func TestManager_ListBranches(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
@@ -252,7 +252,7 @@ func TestPGRefManager_ListBranches(t *testing.T) {
 	}
 }
 
-func TestPGRefManager_GetTag(t *testing.T) {
+func TestManager_GetTag(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("exists", func(t *testing.T) {
 		ctx := context.Background()
@@ -287,7 +287,7 @@ func TestPGRefManager_GetTag(t *testing.T) {
 	})
 }
 
-func TestPGRefManager_CreateTag(t *testing.T) {
+func TestManager_CreateTag(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -332,7 +332,7 @@ func TestPGRefManager_CreateTag(t *testing.T) {
 	}
 }
 
-func TestPGRefManager_DeleteTag(t *testing.T) {
+func TestManager_DeleteTag(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -356,7 +356,7 @@ func TestPGRefManager_DeleteTag(t *testing.T) {
 	}
 }
 
-func TestPGRefManager_ListTags(t *testing.T) {
+func TestManager_ListTags(t *testing.T) {
 	r := testRefManager(t)
 	ctx := context.Background()
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -392,7 +392,7 @@ func TestPGRefManager_ListTags(t *testing.T) {
 	}
 }
 
-func TestPGRefManager_AddCommit(t *testing.T) {
+func TestManager_AddCommit(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
@@ -435,7 +435,7 @@ func TestPGRefManager_AddCommit(t *testing.T) {
 	}
 }
 
-func TestPGRefManager_Log(t *testing.T) {
+func TestManager_Log(t *testing.T) {
 	r := testRefManager(t)
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
