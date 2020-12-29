@@ -322,9 +322,9 @@ func (c *Config) GetCommittedTierFSParams() *pyramidparams.Params {
 		Adaptor:            nil, // Built by factory during construction
 		BlockStoragePrefix: viper.GetString("committed.block_storage_prefix"),
 		Local: pyramidparams.LocalDiskParams{
-			BaseDir: viper.GetString("committed.local_cache.dir"), // TODO(ariels): default!
+			BaseDir:        viper.GetString("committed.local_cache.dir"),
+			AllocatedBytes: viper.GetInt64("committed.local_cache.size_bytes"),
 		},
-		AllocatedDiskBytes: viper.GetInt64("committed.local_cache.size_bytes"),
 	}
 }
 

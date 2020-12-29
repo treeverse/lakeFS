@@ -93,9 +93,9 @@ func TestStartup(t *testing.T) {
 		Adaptor:            mem.New(),
 		BlockStoragePrefix: blockStoragePrefix,
 		Local: params.LocalDiskParams{
-			BaseDir: os.TempDir(),
+			BaseDir:        os.TempDir(),
+			AllocatedBytes: allocatedDiskBytes,
 		},
-		AllocatedDiskBytes: allocatedDiskBytes,
 	})
 	if err != nil {
 		t.Fatal("NewFS", err)

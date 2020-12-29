@@ -58,7 +58,7 @@ func NewFS(c *params.Params) (FS, error) {
 	}
 	if c.Eviction == nil {
 		var err error
-		c.Eviction, err = newRistrettoEviction(c.AllocatedDiskBytes, tierFS.removeFromLocal)
+		c.Eviction, err = newRistrettoEviction(c.Local.AllocatedBytes, tierFS.removeFromLocal)
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}

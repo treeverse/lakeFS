@@ -55,9 +55,9 @@ func createFSWithEviction(ev params.Eviction) (FS, string) {
 		Eviction:           ev,
 		BlockStoragePrefix: blockStoragePrefix,
 		Local: params.LocalDiskParams{
-			BaseDir: baseDir,
+			BaseDir:        baseDir,
+			AllocatedBytes: allocatedDiskBytes,
 		},
-		AllocatedDiskBytes: allocatedDiskBytes,
 	})
 	if err != nil {
 		panic(err)
