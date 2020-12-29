@@ -408,6 +408,9 @@ func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord
 }
 
 func (i *FakePartsAndValuesIterator) Next() bool {
+	if i.err != nil {
+		return false
+	}
 	if len(i.PV) <= i.idx+1 {
 		return false
 	}
