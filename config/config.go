@@ -16,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	authparams "github.com/treeverse/lakefs/auth/params"
+	"github.com/treeverse/lakefs/block/factory"
 	blockparams "github.com/treeverse/lakefs/block/params"
 	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
@@ -314,18 +315,22 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adaptor.
-func (c *Config) GetCommittedTierFSParams() *pyramidparams.Params {
+func (c *Config) GetCommittedTierFSParams() (*pyramidparams.Params, error) {
+	adaptor, err := factory.BuildBlockAdapter(c)
+	if err != nil {
+		return nil, fmt.Errorf("build block adaptor: %w", err)
+	}
 	logger := logging.Default().WithField("module", "pyramid")
 	return &pyramidparams.Params{
 		FSName:             "committed",
 		Logger:             logger,
-		Adaptor:            nil, // Built by factory during construction
+		Adaptor:            adaptor,
 		BlockStoragePrefix: viper.GetString("committed.block_storage_prefix"),
 		Local: pyramidparams.LocalDiskParams{
 			BaseDir:        viper.GetString("committed.local_cache.dir"),
 			AllocatedBytes: viper.GetInt64("committed.local_cache.size_bytes"),
 		},
-	}
+	}, err
 }
 
 func GetMetastoreAwsConfig() *aws.Config {
