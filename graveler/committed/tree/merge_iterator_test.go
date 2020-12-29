@@ -1,15 +1,19 @@
-package graveler_test
+package tree_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
+
+	"github.com/treeverse/lakefs/graveler/committed/tree"
+	"github.com/treeverse/lakefs/graveler/testutil"
 
 	"github.com/go-openapi/swag"
 
 	"github.com/treeverse/lakefs/graveler"
 )
 
-func Test3WayDiff(t *testing.T) {
+func TestMergeIterator(t *testing.T) {
 	const (
 		added   = graveler.DiffTypeAdded
 		removed = graveler.DiffTypeRemoved
@@ -136,51 +140,58 @@ func Test3WayDiff(t *testing.T) {
 			rightIdentities:     []string{"i1b"},
 			expectedDiffKeys:    []string{},
 			expectedDiffTypes:   []graveler.DiffType{},
-			conflictExpectedIdx: swag.Int(1),
+			conflictExpectedIdx: swag.Int(0),
 		},
 	}
-	for _, tst := range tests {
-		baseRecords := map[string]*graveler.Value{}
-		for i, k := range tst.baseKeys {
-			baseRecords[k] = &graveler.Value{Identity: []byte(tst.baseIdentities[i])}
-		}
-		diffIt := graveler.NewDiffIterator(
-			newMockValueIterator(newValues(tst.leftKeys, tst.leftIdentities)),
-			newMockValueIterator(newValues(tst.rightKeys, tst.rightIdentities)))
-		it := graveler.NewThreeWayDiffIterator(diffIt, "a", &committedMock{Values: baseRecords})
-		var diffs []*graveler.Diff
-		idx := 0
-		for it.Next() {
-			idx++
-			diffs = append(diffs, it.Value())
-		}
-		if tst.conflictExpectedIdx != nil {
-			if !errors.Is(it.Err(), graveler.ErrConflictFound) {
-				t.Fatalf("expected conflict but didn't get one. err=%v", it.Err())
+	for i, tst := range tests {
+		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+			baseRecords := map[string]*graveler.Value{}
+			for i, k := range tst.baseKeys {
+				baseRecords[k] = &graveler.Value{Identity: []byte(tst.baseIdentities[i])}
 			}
-			if *tst.conflictExpectedIdx != idx {
-				t.Fatalf("got conflict at unexpected index. expected at=%d, got at=%d", *tst.conflictExpectedIdx, idx)
+			diffIt := tree.NewDiffIterator(
+				newFakeTreeIterator([][]string{tst.leftKeys}, [][]string{tst.leftIdentities}),
+				newFakeTreeIterator([][]string{tst.rightKeys}, [][]string{tst.rightIdentities}))
+			committedFake := testutil.NewCommittedFake()
+			committedFake.ValuesByKey = baseRecords
+			it := tree.NewMergeIterator(diffIt, "a", committedFake)
+			var values []*graveler.ValueRecord
+			idx := 0
+			for it.Next() {
+				idx++
+				values = append(values, it.Value())
 			}
-		} else if it.Err() != nil {
-			t.Fatalf("got unexpected error: %v", it.Err())
-		}
-		if len(diffs) != len(tst.expectedDiffKeys) {
-			t.Fatalf("actual diff length different than expected. expected=%d, got=%d", len(tst.expectedDiffKeys), len(diffs))
-		}
-		for i, d := range diffs {
-			if string(d.Key) != tst.expectedDiffKeys[i] {
-				t.Fatalf("unexpected key in diff index %d. expected=%s, got=%s", i, tst.expectedDiffKeys[i], string(d.Key))
+			if tst.conflictExpectedIdx != nil {
+				if !errors.Is(it.Err(), graveler.ErrConflictFound) {
+					t.Fatalf("expected conflict but didn't get one. err=%v", it.Err())
+				}
+				if *tst.conflictExpectedIdx != idx {
+					t.Fatalf("got conflict at unexpected index. expected at=%d, got at=%d", *tst.conflictExpectedIdx, idx)
+				}
+			} else if it.Err() != nil {
+				t.Fatalf("got unexpected error: %v", it.Err())
 			}
-			if d.Type != tst.expectedDiffTypes[i] {
-				t.Fatalf("unexpected key in diff index %d. expected=%s, got=%s", i, tst.expectedDiffKeys[i], string(d.Key))
+			if len(values) != len(tst.expectedDiffKeys) {
+				t.Fatalf("actual diff length different than expected. expected=%d, got=%d", len(tst.expectedDiffKeys), len(values))
 			}
-			//if string(d.Value.Identity) != tst.expectedDiffIdentities[i] {
-			//	t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value.Identity))
-			//}
-			//if string(d.OldIdentity) != tst.expectedOldIdentities[i] {
-			//	t.Fatalf("unexpected old identity in diff index %d. expected=%s, got=%s", i, tst.expectedOldIdentities[i], string(d.OldIdentity))
-			//}
-		}
+			for i, d := range values {
+				if string(d.Key) != tst.expectedDiffKeys[i] {
+					t.Fatalf("unexpected key in diff index %d. expected=%s, got=%s", i, tst.expectedDiffKeys[i], string(d.Key))
+				}
+				if tst.expectedDiffTypes[i] == removed && d.Value != nil {
+					t.Fatalf("expected nil value in diff index %d. got=%s", i, d.Value)
+				}
+				if tst.expectedDiffTypes[i] != removed && d.Value == nil {
+					t.Fatalf("unexpected nil value in diff index %d", i)
+				}
+				//if string(d.Value.Identity) != tst.expectedDiffIdentities[i] {
+				//	t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value.Identity))
+				//}
+				//if string(d.OldIdentity) != tst.expectedOldIdentities[i] {
+				//	t.Fatalf("unexpected old identity in diff index %d. expected=%s, got=%s", i, tst.expectedOldIdentities[i], string(d.OldIdentity))
+				//}
+			}
+		})
 	}
 }
 

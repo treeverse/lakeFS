@@ -17,7 +17,7 @@ type AppliedData struct {
 }
 
 type CommittedFake struct {
-	Value         *graveler.Value
+	ValuesByKey   map[string]*graveler.Value
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	Err           error
@@ -25,15 +25,15 @@ type CommittedFake struct {
 	AppliedData   AppliedData
 }
 
-func NewCommittedFake() graveler.CommittedManager {
+func NewCommittedFake() *CommittedFake {
 	return &CommittedFake{}
 }
 
-func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, _ graveler.Key) (*graveler.Value, error) {
+func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, key graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return c.Value, nil
+	return c.ValuesByKey[string(key)], nil
 }
 
 func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (graveler.ValueIterator, error) {

@@ -107,9 +107,10 @@ func (d *diffIterator) Next() bool {
 				continue
 			}
 			d.currentVal = &graveler.Diff{
-				Type:  graveler.DiffTypeChanged,
-				Key:   d.rightVal.record.Key,
-				Value: d.rightVal.record.Value,
+				Type:        graveler.DiffTypeChanged,
+				Key:         d.rightVal.record.Key,
+				Value:       d.rightVal.record.Value,
+				OldIdentity: d.leftVal.record.Identity,
 			}
 			return true
 		case comp < 0:
@@ -119,9 +120,10 @@ func (d *diffIterator) Next() bool {
 				continue
 			}
 			d.currentVal = &graveler.Diff{
-				Type:  graveler.DiffTypeRemoved,
-				Key:   d.leftVal.record.Key,
-				Value: d.leftVal.record.Value,
+				Type:        graveler.DiffTypeRemoved,
+				Key:         d.leftVal.record.Key,
+				Value:       d.leftVal.record.Value,
+				OldIdentity: d.leftVal.record.Identity,
 			}
 			return true
 		case comp > 0:

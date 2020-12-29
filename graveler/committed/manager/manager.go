@@ -37,7 +37,11 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.TreeID, committer string, message string, metadata graveler.Metadata) (graveler.TreeID, error) {
-	panic("implement me")
+	mergeIt, err := tree.NewMergeIterator(ctx, ns, left, right, base, c)
+	if err != nil {
+		return "", err
+	}
+	return c.Apply(ctx, ns, left, mergeIt)
 }
 
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, treeID graveler.TreeID, iterator graveler.ValueIterator) (graveler.TreeID, error) {
