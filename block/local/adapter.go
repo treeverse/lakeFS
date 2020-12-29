@@ -34,6 +34,7 @@ var (
 	ErrPathNotValid          = errors.New("path provided is not a valid directory")
 	ErrPathNotWritable       = errors.New("path provided is not writable")
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
+	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 )
 
 func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
@@ -232,14 +233,20 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request
 }
 
 func (l *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+	if !isValidUploadID(uploadID) {
+		return "", ErrInvalidUploadIDFormat
+	}
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
-	fName := uploadID + fmt.Sprintf("-%05d", (partNumber))
+	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
 	err := l.Put(block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return etag, err
 }
 
 func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
+	if !isValidUploadID(uploadID) {
+		return ErrInvalidUploadIDFormat
+	}
 	files, err := l.getPartFiles(uploadID, obj)
 	if err != nil {
 		return err
@@ -249,6 +256,9 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 }
 
 func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	if !isValidUploadID(uploadID) {
+		return nil, -1, ErrInvalidUploadIDFormat
+	}
 	etag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
 	partFiles, err := l.getPartFiles(uploadID, obj)
 	if err != nil {
@@ -340,4 +350,9 @@ func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 
 func (l *Adapter) BlockstoreType() string {
 	return BlockstoreType
+}
+
+func isValidUploadID(uploadID string) bool {
+	_, err := strconv.ParseUint(uploadID, 16, 64)
+	return err != nil
 }
