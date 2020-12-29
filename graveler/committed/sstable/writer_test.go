@@ -98,6 +98,42 @@ func TestWriterAbort(t *testing.T) {
 	require.NoError(t, dw.Abort())
 }
 
+func TestWriterAbortAfterClose(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockFS := mock.NewMockFS(ctrl)
+	defer ctrl.Finish()
+	ns := committed.Namespace("some-namespace")
+
+	// create the mock file with the matching file-system
+	mockFile := mock.NewMockStoredFile(ctrl)
+	mockFile.EXPECT().Close().Return(nil).Times(1)
+	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
+	// expect any write file actions
+	mockFile.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) { return len(b), nil }).Times(1)
+	mockFile.EXPECT().Sync().Return(nil).Times(1)
+	mockFile.EXPECT().Store(gomock.Any()).DoAndReturn(func(filename string) error { return nil }).Times(1)
+
+	// Create writer
+	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
+	require.NoError(t, err)
+	require.NotNil(t, dw)
+
+	// Write something writing
+	err = dw.WriteRecord(committed.Record{
+		Key:   []byte("key-1"),
+		Value: []byte("some-data"),
+	})
+
+	// Close
+	result, err := dw.Close()
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Abort
+	err = dw.Abort()
+	require.NoError(t, err)
+}
+
 func randomStrings(writes int) []string {
 	var keys []string
 	for i := 0; i < writes; i++ {
