@@ -1,0 +1,12 @@
+syntax = "proto3";
+option go_package = "github.com/treevese/lakefs/graveler/committed/tree";
+
+
+package tree;
+
+message PartData {
+	// First key of part, must be >= key of part in SSTable.  If missing, == key of part in SSTable.
+	bytes min_key = 1;
+	bytes max_key = 2;
+	uint64 estimated_size = 3;
+}

@@ -5,18 +5,39 @@ package tree
 import (
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
+	"google.golang.org/protobuf/proto"
 )
 
-// part is the basic building stone of a tree
-// nolint: structcheck, unused
+// Part is the basic building stone of a tree
 type Part struct {
-	Name   committed.ID
-	MaxKey graveler.Key
-	MinKey graveler.Key
+	ID            committed.ID
+	MinKey        committed.Key
+	MaxKey        committed.Key
+	EstimatedSize uint64 // EstimatedSize estimated part size in bytes
+}
+
+func MarshalPart(part Part) ([]byte, error) {
+	return proto.Marshal(&PartData{
+		MinKey:        part.MinKey,
+		MaxKey:        part.MaxKey,
+		EstimatedSize: part.EstimatedSize,
+	})
+}
+
+func UnmarshalPart(b []byte) (Part, error) {
+	var p PartData
+	err := proto.Unmarshal(b, &p)
+	if err != nil {
+		return Part{}, err
+	}
+	return Part{
+		MinKey:        p.MinKey,
+		MaxKey:        p.MaxKey,
+		EstimatedSize: p.EstimatedSize,
+	}, nil
 }
 
 // Tree is a sorted slice of parts with no overlapping between the parts
-// nolint: structcheck, unused
 type Tree struct {
 	ID    graveler.TreeID
 	Parts []Part
@@ -65,17 +86,19 @@ type Repo interface {
 
 // Writer is an abstraction for creating new trees
 type Writer interface {
-	// WriteRecord adds a record to the tree. The key key must be greater than any other key that was written
+	// WriteRecord adds a record to the tree. The key must be greater than any other key that was written
 	// (in other words - values must be entered sorted by key order).
 	// If the most recent insertion was using AddParts, the key must be greater than any key in the added parts.
 	WriteRecord(record graveler.ValueRecord) error
 
 	// AddPart adds a complete part to the tree at the current insertion point.
 	// Added part must not contain keys smaller than last previously written value.
-	AddPart(parts Part) error
+	AddPart(part Part) error
 
-	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
+	// Close finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts.
-	SaveTree() (*graveler.TreeID, error)
+	Close() (*graveler.TreeID, error)
+
+	Abort() error
 }

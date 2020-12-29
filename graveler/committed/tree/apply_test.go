@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/committed/tree"
 	"github.com/treeverse/lakefs/graveler/committed/tree/mock"
 	"github.com/treeverse/lakefs/graveler/testutil"
-
-	"github.com/golang/mock/gomock"
 )
 
 func makeV(k, id string) *graveler.ValueRecord {
@@ -25,10 +25,10 @@ func TestApplyAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
 	source := testutil.NewFakePartsAndValuesIterator()
 	source.
-		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
+		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c")).
 		AddPart(part2).
 		AddValueRecords(makeV("d", "source:d"))
@@ -53,14 +53,14 @@ func TestApplyReplace(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
 	source := testutil.NewFakePartsAndValuesIterator()
 	source.
-		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
+		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddPart(part2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddPart(&tree.Part{Name: "three", MaxKey: graveler.Key("ez")}).
+		AddPart(&tree.Part{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"))
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeV("b", "dest:b"),
@@ -81,14 +81,14 @@ func TestApplyDelete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
 	source := testutil.NewFakePartsAndValuesIterator()
 	source.
-		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
+		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddPart(part2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddPart(&tree.Part{Name: "three", MaxKey: graveler.Key("ez")}).
+		AddPart(&tree.Part{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"))
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeTombstoneV("b"),
@@ -107,10 +107,10 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
+	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
 	source := testutil.NewFakePartsAndValuesIterator()
 	source.
-		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
+		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddPart(part2).
 		AddValueRecords(makeV("d", "source:d"))
@@ -135,16 +135,16 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part1 := &tree.Part{Name: "one", MaxKey: graveler.Key("cz")}
-	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
-	part4 := &tree.Part{Name: "four", MaxKey: graveler.Key("hz")}
+	part1 := &tree.Part{ID: "one", MaxKey: committed.Key("cz")}
+	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
+	part4 := &tree.Part{ID: "four", MaxKey: committed.Key("hz")}
 	source := testutil.NewFakePartsAndValuesIterator()
 	source.
 		AddPart(part1).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddPart(part2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddPart(&tree.Part{Name: "three", MaxKey: graveler.Key("ez")}).
+		AddPart(&tree.Part{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f")).
 		AddPart(part4).
 		AddValueRecords(makeV("g", "source:g"), makeV("h", "source:h"))
