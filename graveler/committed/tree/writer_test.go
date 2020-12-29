@@ -104,6 +104,7 @@ func TestWriter_RecordPartAndClose(t *testing.T) {
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil).Times(2)
 	// write two records on tree and one for part
 	mockWriter.EXPECT().WriteRecord(gomock.Any()).Times(2)
+	mockWriter.EXPECT().Abort()
 	mockWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
 
 	w := tree.NewWriter(partManager, partManager, 100, namespace)
@@ -150,6 +151,7 @@ func TestWriter_SortOnClose(t *testing.T) {
 	}).Times(3)
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil)
 	mockWriter.EXPECT().Close().Return(&committed.WriteResult{PartID: ""}, nil)
+	mockWriter.EXPECT().Abort()
 	namespace := committed.Namespace("ns")
 	w := tree.NewWriter(partManager, partManager, 100, namespace)
 	_, err := w.Close()
