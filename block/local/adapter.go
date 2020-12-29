@@ -292,7 +292,7 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, files []string)
 	}()
 	var readers = []io.Reader{}
 	for _, name := range files {
-		f, err := os.Open(name)
+		f, err := os.Open(filepath.Clean(name))
 		if err != nil {
 			return 0, fmt.Errorf("open file %s: %w", name, err)
 		}
