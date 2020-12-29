@@ -66,6 +66,11 @@ var fileContents = map[string][]string{
 	"f_overlap3":    {"fo_row2", "fo_row6"},
 	"f_overlap4":    {"fo_row1", "fo_row4"},
 	"f_overlap5":    {"fo_row2", "fo_row4"},
+	"f1_prefix":     {"a1", "a2", "b1", "b2"},
+	"f2_prefix":     {"b3", "b4", "c1", "c2"},
+	"f3_prefix":     {"d1", "d2", "e1", "e2"},
+	"f4_prefix":     {"a1", "a2", "b1", "b2", "c1", "c2", "d1", "d2"},
+	"f5_prefix":     {"e1", "e2", "f1", "f2", "g1", "g2", "h1", "h2"},
 }
 
 func TestIterator(t *testing.T) {
@@ -76,136 +81,189 @@ func TestIterator(t *testing.T) {
 			lastModified[r] = now.Add(time.Hour * time.Duration(-i))
 		}
 	}
-	testdata := []struct {
-		InventoryFiles  []string
-		ExpectedObjects []string
-		ErrExpected     error
-		ShouldSort      bool
+	testdata := map[string]struct {
+		InventoryFiles             []string
+		ExpectedObjects            []string
+		Prefixes                   []string
+		ErrExpected                error
+		ExpectedCountReadRows      int
+		ExpectedCountGetFileReader int
+		ShouldSort                 bool
 	}{
-		{
+		"new inventory": {
 			InventoryFiles:  []string{"f1", "f2", "f3"},
 			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
-		{
+		"new inventory - sort before": {
 			InventoryFiles:  []string{"f3", "f2", "f1"},
 			ShouldSort:      true,
 			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
-		{
+		"new inventory - unsorted": {
+			InventoryFiles:  []string{"f3", "f2", "f1"},
+			ExpectedObjects: []string{"f3row1", "f3row2", "f2row1", "f2row2", "f1row2", "f1row3"},
+		},
+		"empty inventory": {
 			InventoryFiles:  []string{},
 			ExpectedObjects: []string{},
 		},
-		{
+		"single file": {
 			InventoryFiles:  []string{"f4"},
 			ExpectedObjects: []string{"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
 		},
-		{
-			InventoryFiles:  []string{"f1", "f4"},
-			ExpectedObjects: []string{"f1row2", "f1row3", "f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
-		},
-		{
-			InventoryFiles:  []string{"f5", "f6"},
-			ExpectedObjects: []string{"f5row1", "f5row2", "f5row3", "f6row1", "f6row2", "f6row3", "f6row4"},
-		},
-		{
+		"unsorted inventory file": {
 			InventoryFiles: []string{"f1", "unsorted_file"},
 			ErrExpected:    s3.ErrInventoryNotSorted,
 			ShouldSort:     true,
 		},
-		{
+		"file with error": {
 			InventoryFiles: []string{"f5", "err_file1"},
 			ErrExpected:    ErrReadFile,
 		},
-		{
+		"file with error in the middle": {
 			InventoryFiles: []string{"f1", "f2", "f3", "f4", "f5", "f6", "err_file2"},
 			ErrExpected:    ErrReadFile,
 		},
-		{
+		"file with many deletions": {
 			InventoryFiles:  []string{"f7"},
 			ExpectedObjects: []string{"f7row1", "f7row11"},
 		},
-		{
+		"inventory with everything deleted": {
 			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "all_deleted3"},
 			ExpectedObjects: []string{},
 		},
-		{
+		"many files with everything deleted": {
 			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "f1", "all_deleted3", "all_deleted4", "all_deleted5", "all_deleted6", "all_deleted7", "f2", "all_deleted8", "all_deleted9"},
 			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2"},
 		},
-		{
+		"many files with everything deleted - sort before test": {
 			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "f2", "all_deleted3", "all_deleted4", "all_deleted5", "all_deleted6", "all_deleted7", "f1", "all_deleted8", "all_deleted9"},
 			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2"},
 			ShouldSort:      true,
 		},
-		{
+		"empty file": {
 			InventoryFiles:  []string{"empty_file"},
 			ExpectedObjects: []string{},
 		},
-		{
+		"overlapping inventory files": {
 			InventoryFiles: []string{"f_overlap1", "f_overlap2"},
 			ShouldSort:     true,
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
-		{
+		"overlapping inventory files - type 2": {
 			InventoryFiles: []string{"f_overlap1", "f_overlap3"},
 			ShouldSort:     true,
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
-		{
+		"overlapping inventory files - type 3": {
 			InventoryFiles: []string{"f_overlap1", "f_overlap4"},
 			ShouldSort:     true,
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
-		{
+		"overlapping inventory files - type 4": {
 			InventoryFiles: []string{"f_overlap4", "f_overlap5"},
 			ShouldSort:     true,
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
+		"import with prefix": {
+			InventoryFiles:             []string{"f1_prefix", "f2_prefix"},
+			Prefixes:                   []string{"b"},
+			ExpectedObjects:            []string{"b1", "b2", "b3", "b4"},
+			ExpectedCountReadRows:      8,
+			ExpectedCountGetFileReader: 2,
+		},
+		"import with prefix - skip entire file": {
+			InventoryFiles:             []string{"f1_prefix", "f2_prefix", "f3_prefix"},
+			Prefixes:                   []string{"b"},
+			ExpectedObjects:            []string{"b1", "b2", "b3", "b4"},
+			ExpectedCountReadRows:      8,
+			ExpectedCountGetFileReader: 2,
+		},
+		"import with prefix - skip first file": {
+			InventoryFiles:             []string{"f1", "f2", "f3"},
+			Prefixes:                   []string{"f2", "f3"},
+			ExpectedObjects:            []string{"f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedCountReadRows:      4,
+			ExpectedCountGetFileReader: 2,
+		},
+		"import with prefix - unsorted prefixes": {
+			InventoryFiles:             []string{"f1", "f2", "f3"},
+			Prefixes:                   []string{"f3", "f2"},
+			ExpectedObjects:            []string{"f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedCountReadRows:      4,
+			ExpectedCountGetFileReader: 2,
+		},
+		"import with prefix - unsorted inventory": {
+			InventoryFiles:             []string{"f3", "f2", "f1"},
+			Prefixes:                   []string{"f2", "f3"},
+			ExpectedObjects:            []string{"f2row1", "f2row2", "f3row1", "f3row2"},
+			ShouldSort:                 true,
+			ExpectedCountReadRows:      4,
+			ExpectedCountGetFileReader: 2,
+		},
+		"import with prefix - prefix in middle": {
+			InventoryFiles:             []string{"f4_prefix", "f5_prefix"},
+			Prefixes:                   []string{"b", "f"},
+			ExpectedObjects:            []string{"b1", "b2", "f1", "f2"},
+			ExpectedCountReadRows:      16,
+			ExpectedCountGetFileReader: 2,
+		},
 	}
 	manifestURL := "s3://example-bucket/manifest1.json"
-	for _, test := range testdata {
-		s3api := &mockS3Client{
-			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-		}
-		reader := &mockInventoryReader{openFiles: make(map[string]bool), lastModified: lastModified}
-		inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
-		if err != nil {
-			if errors.Is(err, test.ErrExpected) {
-				continue
+	for name, test := range testdata {
+		t.Run(name, func(t *testing.T) {
+
+			s3api := &mockS3Client{
+				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}
-			t.Fatalf("error: %v", err)
-		}
-		it := inv.Iterator()
-		objects := make([]*block.InventoryObject, 0, len(test.ExpectedObjects))
-		for it.Next() {
-			objects = append(objects, it.Get())
-		}
-		if len(reader.openFiles) != 0 {
-			t.Errorf("some files stayed open: %v", reader.openFiles)
-		}
-		if !errors.Is(it.Err(), test.ErrExpected) {
-			t.Fatalf("got unexpected error. expected=%v, got=%v.", test.ErrExpected, it.Err())
-		}
-		if test.ErrExpected != nil {
-			continue
-		}
-		if len(objects) != len(test.ExpectedObjects) {
-			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
-		}
-		for i, obj := range objects {
-			if obj.Key != test.ExpectedObjects[i] {
-				t.Fatalf("at index %d: expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
+			reader := &mockInventoryReader{openFiles: make(map[string]bool), lastModified: lastModified}
+			inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort, test.Prefixes)
+			if err != nil {
+				if errors.Is(err, test.ErrExpected) {
+					return
+				}
+				t.Fatalf("error: %v", err)
 			}
-			if *obj.LastModified != lastModified[obj.Key] {
-				t.Fatalf("last modified for object in index %d different than expected. expected=%v, got=%v", i, lastModified[obj.Key], obj.LastModified)
+			it := inv.Iterator()
+			objects := make([]*block.InventoryObject, 0, len(test.ExpectedObjects))
+			for it.Next() {
+				objects = append(objects, it.Get())
 			}
-		}
+			if len(reader.openFiles) != 0 {
+				t.Errorf("some files stayed open: %v", reader.openFiles)
+			}
+			if !errors.Is(it.Err(), test.ErrExpected) {
+				t.Fatalf("got unexpected error. expected=%v, got=%v.", test.ErrExpected, it.Err())
+			}
+			if test.ErrExpected != nil {
+				return
+			}
+			if len(objects) != len(test.ExpectedObjects) {
+				t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
+			}
+			if test.ExpectedCountReadRows > 0 && test.ExpectedCountReadRows != reader.countReadRows {
+				t.Fatalf("total number of read rows different than expected. expected=%d, got=%d", test.ExpectedCountReadRows, reader.countReadRows)
+			}
+			if test.ExpectedCountGetFileReader > 0 && test.ExpectedCountGetFileReader != reader.countGetFileReader {
+				t.Fatalf("total number of get file reader different than expected. expected=%d, got=%d", test.ExpectedCountGetFileReader, reader.countGetFileReader)
+			}
+			for i, obj := range objects {
+				if obj.Key != test.ExpectedObjects[i] {
+					t.Fatalf("at index %d: expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
+				}
+				if *obj.LastModified != lastModified[obj.Key] {
+					t.Fatalf("last modified for object in index %d different than expected. expected=%v, got=%v", i, lastModified[obj.Key], obj.LastModified)
+				}
+			}
+		})
 	}
 }
 
 type mockInventoryReader struct {
-	openFiles    map[string]bool
-	lastModified map[string]time.Time
+	openFiles          map[string]bool
+	lastModified       map[string]time.Time
+	countReadRows      int
+	countGetFileReader int
 }
 
 type mockInventoryFileReader struct {
@@ -254,6 +312,7 @@ func (m *mockInventoryFileReader) Read(n int) ([]*s3inventory.InventoryObject, e
 		res = append(res, m.rows[i])
 	}
 	m.nextIdx = m.nextIdx + len(res)
+	m.inventoryReader.countReadRows += len(res)
 	return res, nil
 }
 
@@ -263,6 +322,7 @@ func (m *mockInventoryFileReader) GetNumRows() int64 {
 
 func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (s3inventory.FileReader, error) {
 	m.openFiles[key] = true
+	m.countGetFileReader++
 	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
 

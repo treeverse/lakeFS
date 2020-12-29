@@ -39,35 +39,39 @@ func (b *AddressWriter) marshalType(addressType AddressType) {
 	_, _ = b.Write([]byte{byte(addressType)})
 }
 
-func (b *AddressWriter) MarshalBytes(v []byte) {
+func (b *AddressWriter) MarshalBytes(v []byte) *AddressWriter {
 	b.marshalType(AddressTypeBytes)
 	b.MarshalInt64(int64(len(v)))
 	_, _ = b.Write(v)
+	return b
 }
 
-func (b *AddressWriter) MarshalString(v string) {
+func (b *AddressWriter) MarshalString(v string) *AddressWriter {
 	b.marshalType(AddressTypeString)
 	b.MarshalInt64(int64(len(v)))
 	_, _ = b.Write([]byte(v))
+	return b
 }
 
-func (b *AddressWriter) MarshalInt64(v int64) {
+func (b *AddressWriter) MarshalInt64(v int64) *AddressWriter {
 	b.marshalType(AddressTypeInt64)
 	_, _ = b.Write([]byte{8})
 	bytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(bytes, uint64(v))
 	_, _ = b.Write(bytes)
+	return b
 }
 
-func (b *AddressWriter) MarshalStringSlice(v []string) {
+func (b *AddressWriter) MarshalStringSlice(v []string) *AddressWriter {
 	b.marshalType(AddressTypeStringSlice)
 	b.MarshalInt64(int64(len(v)))
 	for _, item := range v {
 		b.MarshalString(item)
 	}
+	return b
 }
 
-func (b *AddressWriter) MarshalStringMap(v map[string]string) {
+func (b *AddressWriter) MarshalStringMap(v map[string]string) *AddressWriter {
 	b.marshalType(AddressTypeStringMap)
 	b.MarshalInt64(int64(len(v)))
 	keys := make([]string, len(v))
@@ -80,11 +84,13 @@ func (b *AddressWriter) MarshalStringMap(v map[string]string) {
 		b.MarshalString(k)
 		b.MarshalString(v[k])
 	}
+	return b
 }
 
-func (b *AddressWriter) MarshalIdentifiable(v Identifiable) {
+func (b *AddressWriter) MarshalIdentifiable(v Identifiable) *AddressWriter {
 	b.marshalType(AddressTypeEmbeddedIdentifiable)
 	b.MarshalBytes(v.Identity())
+	return b
 }
 
 func (b *AddressWriter) Identity() []byte {

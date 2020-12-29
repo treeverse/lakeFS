@@ -4,13 +4,21 @@ import (
 	"os"
 )
 
-// ROFile is pyramid wrapper for os.file that implements io.ReadCloser
+// ROFile is pyramid wrapper for os.File that implements io.ReadCloser
 // with hooks for updating evictions.
 type ROFile struct {
 	*os.File
 	eviction eviction
 
 	rPath relativePath
+}
+
+func (f *ROFile) Write(p []byte) (n int, err error) {
+	panic("should never write to a read-only file")
+}
+
+func (f *ROFile) Sync() error {
+	panic("should never write to a read-only file")
 }
 
 func (f *ROFile) Read(p []byte) (n int, err error) {

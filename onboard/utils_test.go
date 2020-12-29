@@ -2,8 +2,10 @@ package onboard_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -26,6 +28,7 @@ type mockInventory struct {
 	shouldSort   bool
 	lastModified []time.Time
 	checksum     func(string) string
+	prefixes     []string
 }
 
 type objectActions struct {
@@ -35,6 +38,7 @@ type objectActions struct {
 
 type mockCatalogActions struct {
 	previousCommitInventory string
+	previousCommitPrefixes  []string
 	objectActions           objectActions
 	lastCommitMetadata      catalog.Metadata
 }
@@ -47,12 +51,12 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
-		return &mockInventory{keys: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
+		return &mockInventory{keys: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
 	}
 	if inventoryURL == m.previousInventoryURL {
-		return &mockInventory{keys: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
+		return &mockInventory{keys: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
 	}
 	return nil, errors.New("failed to create inventory")
 }
@@ -65,8 +69,20 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	if m.checksum == nil {
 		m.checksum = func(s string) string { return s }
 	}
+	sort.Strings(m.prefixes)
+	currentPrefix := 0
 	for i, key := range m.keys {
-
+		if len(m.prefixes) > 0 {
+			for currentPrefix < len(m.prefixes) && m.prefixes[currentPrefix] < key && !strings.HasPrefix(key, m.prefixes[currentPrefix]) {
+				currentPrefix++
+			}
+			if currentPrefix == len(m.prefixes) {
+				break
+			}
+			if !strings.HasPrefix(key, m.prefixes[currentPrefix]) {
+				continue
+			}
+		}
 		res = append(res, block.InventoryObject{Key: key, LastModified: swag.Time(m.lastModified[i%len(m.lastModified)]), Checksum: m.checksum(key)})
 	}
 	return res
@@ -95,10 +111,15 @@ func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator,
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
-	if m.previousCommitInventory != "" {
-		return &catalog.CommitLog{Metadata: catalog.Metadata{"inventory_url": m.previousCommitInventory}}, nil
+	if m.previousCommitInventory == "" {
+		return nil, nil
 	}
-	return nil, nil
+	metadata := catalog.Metadata{"inventory_url": m.previousCommitInventory}
+	if len(m.previousCommitPrefixes) > 0 {
+		prefixesSerialized, _ := json.Marshal(m.previousCommitPrefixes)
+		metadata["key_prefixes"] = string(prefixesSerialized)
+	}
+	return &catalog.CommitLog{Metadata: metadata}, nil
 }
 
 func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (*catalog.CommitLog, error) {

@@ -1,15 +1,18 @@
 package tree
 
+//go:generate mockgen -source=tree.go -destination=mock/tree.go -package=mock
+
 import (
 	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
+	"github.com/treeverse/lakefs/graveler/committed"
 )
 
 // part is the basic building stone of a tree
 // nolint: structcheck, unused
 type Part struct {
-	Name   sstable.ID
+	Name   committed.ID
 	MaxKey graveler.Key
+	MinKey graveler.Key
 }
 
 // Tree is a sorted slice of parts with no overlapping between the parts
@@ -17,6 +20,27 @@ type Part struct {
 type Tree struct {
 	ID    graveler.TreeID
 	Parts []Part
+}
+
+// Iterator iterates over all part headers and values of a tree, allowing seeking by entire
+// parts.
+type Iterator interface {
+	// Next moves to look at the next value in the current part, or a header for the next
+	// part if the current part is over.
+	Next() bool
+	// NextPart() skips over the entire remainder of the current part and continues at the
+	// header for the next part.
+	NextPart() bool
+	// Value returns a nil ValueRecord and a Part before starting a part, or a Value and
+	// that Part when inside a part.
+	Value() (*graveler.ValueRecord, *Part)
+	SeekGE(id graveler.Key)
+	Err() error
+	Close()
+}
+
+type RepoProvider interface {
+	GetRepo(ns graveler.StorageNamespace) Repo
 }
 
 // Repo is an abstraction for a repository of trees that exposes operations on them
@@ -31,21 +55,12 @@ type Repo interface {
 
 	// NewIterator accepts a tree ID, and returns an iterator
 	// over the tree from the first value GE than the from
-	NewIterator(treeID graveler.TreeID, from graveler.Key) (graveler.ValueIterator, error)
-
-	// NewIteratorFromTree accept a tree in memory, returns an iterator
-	// over the tree from the first value GE than the from
-	NewIteratorFromTree(tree *Tree, from graveler.Key) (graveler.ValueIterator, error)
+	NewIterator(treeID graveler.TreeID, from graveler.Key) (Iterator, error)
 
 	// GetIterForPart accepts a tree ID and a reading start point. it returns an iterator
 	// positioned at the start point. When Next() will be called, first value that is GE
 	// than the from key will be returned
-	NewPartIterator(partID sstable.ID, from graveler.Key) (graveler.ValueIterator, error)
-
-	// RemoveCommonParts accepts the left and right trees of the diff, and finds the common parts which
-	// exist in both trees.
-	// it returns the left and right trees with common parts filtered.
-	RemoveCommonParts(left graveler.TreeID, right graveler.TreeID) (*Tree, *Tree, error)
+	NewPartIterator(partID committed.ID, from graveler.Key) (graveler.ValueIterator, error)
 }
 
 // Writer is an abstraction for creating new trees
@@ -55,12 +70,9 @@ type Writer interface {
 	// If the most recent insertion was using AddParts, the key must be greater than any key in the added parts.
 	WriteRecord(record graveler.ValueRecord) error
 
-	// AddParts adds complete parts to the tree at the current insertion point.
-	// Added parts must not contain keys smaller than last previously written value.
-	AddParts(parts []Part) error
-
-	// FlushIterToTree writes the content of an iterator to the tree.
-	FlushIterToTree(iter graveler.ValueIterator) error
+	// AddPart adds a complete part to the tree at the current insertion point.
+	// Added part must not contain keys smaller than last previously written value.
+	AddPart(parts Part) error
 
 	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS

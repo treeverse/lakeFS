@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -21,6 +22,7 @@ import (
 const (
 	maxPostScriptSize  = 256 // from the ORC specification: https://orc.apache.org/specification/ORCv1/
 	orcInitialReadSize = 16000
+	downloadTimeout    = 3 * time.Minute
 )
 
 // getTailLength reads the ORC postscript from the given file, returning the full tail length.
@@ -70,12 +72,20 @@ func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger
 		rng = aws.String(fmt.Sprintf("bytes=%d-", fromByte))
 	}
 	logger.Debugf("start downloading %s[%s] to local file %s", key, swag.StringValue(rng), f.Name())
-	_, err = downloader.DownloadWithContext(ctx, f, &s3.GetObjectInput{
+	timeoutCtx, cancelFn := context.WithTimeout(ctx, downloadTimeout)
+	defer cancelFn()
+	_, err = downloader.DownloadWithContext(timeoutCtx, f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Range:  rng,
 	})
 	if err != nil {
+		logger.WithError(err).
+			WithFields(logging.Fields{
+				"download_from_bucket": bucket,
+				"download_from_key":    key,
+				"download_to":          f.Name(),
+			}).Trace("error when downloading orc file")
 		return nil, err
 	}
 	logger.Debugf("finished downloading %s to local file %s", key, f.Name())

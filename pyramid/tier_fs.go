@@ -44,6 +44,8 @@ type Config struct {
 	adaptor block.Adapter
 	logger  logging.Logger
 
+	eviction eviction
+
 	// Prefix for all metadata file lakeFS stores in the block storage.
 	fsBlockStoragePrefix string
 
@@ -62,9 +64,9 @@ const workspaceDir = "workspace"
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
 func NewFS(c *Config) (FS, error) {
-	fsLocalBaseDir := path.Join(c.localBaseDir, c.fsName)
+	fsLocalBaseDir := filepath.Clean(path.Join(c.localBaseDir, c.fsName))
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating base dir: %w", err)
+		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
 	}
 
 	tierFS := &TierFS{
@@ -76,16 +78,19 @@ func NewFS(c *Config) (FS, error) {
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
 	}
-	eviction, err := newLRUSizeEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
-	if err != nil {
-		return nil, fmt.Errorf("creating eviction control: %w", err)
+	if c.eviction == nil {
+		var err error
+		c.eviction, err = newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
+		if err != nil {
+			return nil, fmt.Errorf("creating eviction control: %w", err)
+		}
 	}
 
-	if err := handleExistingFiles(eviction, fsLocalBaseDir); err != nil {
+	tierFS.eviction = c.eviction
+	if err := handleExistingFiles(tierFS.eviction, fsLocalBaseDir); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 
-	tierFS.eviction = eviction
 	return tierFS, nil
 }
 
@@ -110,7 +115,9 @@ func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
 			return nil
 		}
 
-		eviction.store(relativePath(rPath), info.Size())
+		if err := storeLocalFile(rPath, info.Size(), eviction); err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return fmt.Errorf("walking the fs dir: %w", err)
@@ -161,18 +168,18 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 
-	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
-	if err := tfs.syncDir.renameFile(originalPath, fileRef.fullPath); err != nil {
-		return fmt.Errorf("rename file %s: %w", originalPath, err)
+	if tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+		// file was stored by the policy
+		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
+	} else {
+		return os.Remove(originalPath)
 	}
-
-	return nil
 }
 
 // Create creates a new file in TierFS.
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
-func (tfs *TierFS) Create(namespace string) (*File, error) {
+func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 	if err := validateNamespace(namespace); err != nil {
 		return nil, fmt.Errorf("invalid args: %w", err)
 	}
@@ -187,17 +194,20 @@ func (tfs *TierFS) Create(namespace string) (*File, error) {
 		return nil, fmt.Errorf("creating file: %w", err)
 	}
 
-	return &File{
+	return &WRFile{
 		File: fh,
 		store: func(filename string) error {
 			return tfs.store(namespace, tempPath, filename)
+		},
+		abort: func() error {
+			return os.Remove(tempPath)
 		},
 	}, nil
 }
 
 // Open returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
-func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
+func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	if err := validateArgs(namespace, filename); err != nil {
 		return nil, err
 	}
@@ -221,16 +231,22 @@ func (tfs *TierFS) Open(namespace, filename string) (*ROFile, error) {
 	return tfs.openFile(fileRef, fh)
 }
 
-// openFile converts an os.File to pyramid.File and updates the eviction control.
+// openFile converts an os.File to pyramid.ROFile and updates the eviction control.
 func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) {
 	stat, err := fh.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
-	// No need to check for the store output here,
-	// we already have the file.
-	tfs.eviction.store(fileRef.fsRelativePath, stat.Size())
+	if !tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+		// This is where we get less strict.
+		// Ideally, newly fetched file will never be rejected by the cache.
+		// But if it did, we prefer to serve the file and delete it.
+		// When the user will close the file, the file will be deleted from the disk too.
+		if err := os.Remove(fileRef.fullPath); err != nil {
+			return nil, err
+		}
+	}
 	return &ROFile{
 		File:     fh,
 		rPath:    fileRef.fsRelativePath,
@@ -277,6 +293,13 @@ func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) 
 	}
 
 	return fh, nil
+}
+
+func storeLocalFile(rPath string, size int64, eviction eviction) error {
+	if !eviction.store(relativePath(rPath), size) {
+		return fmt.Errorf("removing file: %w", os.Remove(rPath))
+	}
+	return nil
 }
 
 func validateArgs(namespace, filename string) error {

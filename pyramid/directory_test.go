@@ -14,6 +14,8 @@ import (
 func TestConcurrentCreateDeleteDir(t *testing.T) {
 	name, err := ioutil.TempDir("", "test-dir-")
 	require.NoError(t, err)
+	defer os.RemoveAll(name) // clean up
+
 	sut := directory{ceilingDir: name}
 
 	var wg sync.WaitGroup
@@ -47,6 +49,8 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 func TestConcurrentRenameDeleteDir(t *testing.T) {
 	name, err := ioutil.TempDir("", "test-dir-")
 	require.NoError(t, err)
+	defer os.RemoveAll(name) // clean up
+
 	sut := directory{ceilingDir: name}
 
 	var wg sync.WaitGroup
