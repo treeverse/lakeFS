@@ -100,7 +100,7 @@ func ValidateCommitter(name string) ValidateFunc {
 
 func ValidateStorageNamespace(storageNamespace string) ValidateFunc {
 	return func() bool {
-		return IsNonEmptyString(storageNamespace) {
+		return IsNonEmptyString(storageNamespace)
 	}
 }
 
