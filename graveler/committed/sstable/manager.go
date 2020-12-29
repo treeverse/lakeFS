@@ -90,6 +90,11 @@ func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
 	return NewDiskWriter(m.fs, ns, m.hash)
 }
 
+// GetBatchManager returns a new BatchCloser
+func (m *Manager) GetBatchWriter() committed.BatchWriterCloser {
+	return NewBatchCloser()
+}
+
 func (m *Manager) execAndLog(f func() error, msg string) {
 	if err := f(); err != nil {
 		m.logger.WithError(err).Error(msg)

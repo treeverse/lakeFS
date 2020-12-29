@@ -41,7 +41,7 @@ func (pvi *iterator) Next() bool {
 		return false // Iteration was already finished.
 	}
 	var err error
-	pvi.it, err = pvi.repo.NewPartIterator(pvi.parts[0].Name, nil)
+	pvi.it, err = pvi.repo.NewPartIterator(pvi.parts[0].ID, nil)
 	if err != nil {
 		pvi.err = err
 		return false
