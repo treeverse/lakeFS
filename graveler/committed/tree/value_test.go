@@ -4,10 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler/committed/tree"
-
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed/tree"
 )
 
 func TestGravelerValueMarshal(t *testing.T) {

@@ -94,7 +94,7 @@ type Writer interface {
 	// Added part must not contain keys smaller than last previously written value.
 	AddPart(part Part) error
 
-	// SaveTree finalizes the tree creation. It's invalid to add records after calling this method.
+	// Close finalizes the tree creation. It's invalid to add records after calling this method.
 	// During tree writing, parts are closed asynchronously and copied by tierFS
 	// while writing continues. SaveTree waits until closing and copying all parts.
 	Close() (*graveler.TreeID, error)

@@ -7,9 +7,10 @@ import (
 	"hash/fnv"
 	"sort"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/logging"
 )
 
 type GeneralWriter struct {
@@ -130,7 +131,7 @@ func (w *GeneralWriter) Close() (*graveler.TreeID, error) {
 	return w.writePartsToTree()
 }
 
-// shouldBreakAtKey returns true if should brake part after the given key
+// shouldBreakAtKey returns true if should break part after the given key
 func (w *GeneralWriter) shouldBreakAtKey(key graveler.Key) (bool, error) {
 	h := fnv.New64a()
 	_, err := h.Write(key)
@@ -160,15 +161,17 @@ func (w *GeneralWriter) writePartsToTree() (*graveler.TreeID, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed creating treeWriter: %w", err)
 	}
+	defer func() {
+		if abortErr := treeWriter.Abort(); abortErr != nil {
+			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting tree writer: %w", err)
+		}
+	}()
 	for _, p := range w.parts {
 		partValue, err := partToValue(p)
 		if err != nil {
 			return nil, err
 		}
 		if err := treeWriter.WriteRecord(committed.Record{Key: p.MinKey, Value: partValue}); err != nil {
-			if abortErr := treeWriter.Abort(); abortErr != nil {
-				logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting tree writer: %w", err)
-			}
 			return nil, fmt.Errorf("failed writing part to tree: %w", err)
 		}
 	}
@@ -181,5 +184,8 @@ func (w *GeneralWriter) writePartsToTree() (*graveler.TreeID, error) {
 }
 
 func (w *GeneralWriter) Abort() error {
+	if w.partWriter == nil {
+		return nil
+	}
 	return w.partWriter.Abort()
 }
