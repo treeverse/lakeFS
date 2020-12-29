@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/block/mem"
+	"github.com/treeverse/lakefs/pyramid/params"
 )
 
 const (
@@ -44,7 +45,6 @@ func TestReadFailDuringWrite(t *testing.T) {
 	readF, err := fs.Open(namespace, filename)
 	require.Nil(t, readF)
 	require.Error(t, err)
-
 	require.NoError(t, f.Close())
 	require.NoError(t, f.Store(filename))
 	checkContent(t, namespace, filename, content)
@@ -88,12 +88,14 @@ func TestStartup(t *testing.T) {
 		t.Fatal("write file", err)
 	}
 
-	localFS, err := NewFS(&Config{
-		fsName:               fsName,
-		adaptor:              mem.New(),
-		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         os.TempDir(),
-		allocatedDiskBytes:   allocatedDiskBytes,
+	localFS, err := NewFS(&params.Params{
+		FSName:             fsName,
+		Adaptor:            mem.New(),
+		BlockStoragePrefix: blockStoragePrefix,
+		Local: params.LocalDiskParams{
+			BaseDir: os.TempDir(),
+		},
+		AllocatedDiskBytes: allocatedDiskBytes,
 	})
 	if err != nil {
 		t.Fatal("NewFS", err)
@@ -206,8 +208,8 @@ func checkContent(t *testing.T, namespace string, filename string, content []byt
 
 type mockEv struct{}
 
-func (_ *mockEv) touch(_ relativePath) {}
+func (_ *mockEv) Touch(_ params.RelativePath) {}
 
-func (_ *mockEv) store(_ relativePath, _ int64) bool {
+func (_ *mockEv) Store(_ params.RelativePath, _ int64) bool {
 	return true
 }

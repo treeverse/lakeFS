@@ -11,6 +11,7 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/mem"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pyramid/params"
 )
 
 // memAdapter a memory based Adapter that count gets and let you wait
@@ -38,7 +39,7 @@ func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, er
 	return a.Adapter.Get(obj, size)
 }
 
-func createFSWithEviction(ev eviction) (FS, string) {
+func createFSWithEviction(ev params.Eviction) (FS, string) {
 	fsName := uuid.New().String()
 	baseDir := path.Join(os.TempDir(), fsName)
 
@@ -47,14 +48,16 @@ func createFSWithEviction(ev eviction) (FS, string) {
 	close(adapter.wait)
 
 	var err error
-	fs, err = NewFS(&Config{
-		fsName:               fsName,
-		adaptor:              adapter,
-		logger:               logging.Dummy(),
-		eviction:             ev,
-		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         baseDir,
-		allocatedDiskBytes:   allocatedDiskBytes,
+	fs, err = NewFS(&params.Params{
+		FSName:             fsName,
+		Adaptor:            adapter,
+		Logger:             logging.Dummy(),
+		Eviction:           ev,
+		BlockStoragePrefix: blockStoragePrefix,
+		Local: params.LocalDiskParams{
+			BaseDir: baseDir,
+		},
+		AllocatedDiskBytes: allocatedDiskBytes,
 	})
 	if err != nil {
 		panic(err)

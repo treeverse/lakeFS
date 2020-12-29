@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/block/params"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/block/transient"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -27,7 +26,7 @@ const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 
 var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
 
-func BuildBlockAdapter(c *config.Config) (block.Adapter, error) {
+func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.GetBlockstoreType()
 	logging.Default().
 		WithField("type", blockstore).
