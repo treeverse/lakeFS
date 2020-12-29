@@ -1,0 +1,11 @@
+syntax = "proto3";
+option go_package = "github.com/treevese/lakefs/graveler/committed";
+
+package committed;
+
+message RangeData {
+	// First key of range, must be >= key of range in SSTable.  If missing, == key of range in SSTable.
+	bytes min_key = 1;
+	bytes max_key = 2;
+	uint64 estimated_size = 3;
+}

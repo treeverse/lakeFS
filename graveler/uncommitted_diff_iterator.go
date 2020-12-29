@@ -11,13 +11,13 @@ type uncommittedDiffIterator struct {
 	committedManager CommittedManager
 	list             ValueIterator
 	storageNamespace StorageNamespace
-	treeID           TreeID
+	treeID           RangeID
 	value            *Diff
 	err              error
 	ctx              context.Context
 }
 
-func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID TreeID) DiffIterator {
+func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID RangeID) DiffIterator {
 	return &uncommittedDiffIterator{
 		ctx:              ctx,
 		committedManager: manager,

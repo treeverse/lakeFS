@@ -275,7 +275,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 
 func TestGraveler_Commit(t *testing.T) {
 	expectedCommitID := graveler.CommitID("expectedCommitId")
-	expectedTreeID := graveler.TreeID("expectedTreeID")
+	expectedTreeID := graveler.RangeID("expectedTreeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 	type fields struct {
 		CommittedManager *testutil.CommittedFake
@@ -391,10 +391,10 @@ func TestGraveler_Commit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedCommitID := graveler.CommitID("expectedCommitId")
-			expectedTreeID := graveler.TreeID("expectedTreeID")
+			expectedTreeID := graveler.RangeID("expectedTreeID")
 			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			//tt.fields.RefManager.Commit = &graveler.Commit{TreeID: expectedTreeID}
+			//tt.fields.RefManager.Commit = &graveler.Commit{RangeID: expectedTreeID}
 			got, err := g.Commit(context.Background(), "", "", tt.args.committer, tt.args.message, tt.args.metadata)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)

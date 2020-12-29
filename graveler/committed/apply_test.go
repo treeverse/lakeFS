@@ -1,4 +1,4 @@
-package tree_test
+package committed_test
 
 import (
 	"context"
@@ -9,8 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/tree"
-	"github.com/treeverse/lakefs/graveler/committed/tree/mock"
+	"github.com/treeverse/lakefs/graveler/committed/mock"
 	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
@@ -23,36 +22,36 @@ func makeTombstoneV(k string) *graveler.ValueRecord {
 }
 
 type PV struct {
-	P *tree.Part
+	P *committed.Range
 	V *graveler.ValueRecord
 }
 
-type FakePartsAndValuesIterator struct {
+type FakeIterator struct {
 	PV []PV
 }
 
-func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
+func NewFakeIterator() *FakeIterator {
 	// Start with an empty record so the first `Next()` can skip it.
-	return &FakePartsAndValuesIterator{PV: make([]PV, 1)}
+	return &FakeIterator{PV: make([]PV, 1)}
 }
 
-func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
+func (i *FakeIterator) AddRange(p *committed.Range) *FakeIterator {
 	i.PV = append(i.PV, PV{P: p})
 	return i
 }
 
-func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakePartsAndValuesIterator {
+func (i *FakeIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakeIterator {
 	if len(i.PV) == 0 {
-		panic(fmt.Sprintf("cannot add ValueRecords %+v with no part", vs))
+		panic(fmt.Sprintf("cannot add ValueRecords %+v with no range", vs))
 	}
-	part := i.PV[len(i.PV)-1].P
+	rng := i.PV[len(i.PV)-1].P
 	for _, v := range vs {
-		i.PV = append(i.PV, PV{P: part, V: v})
+		i.PV = append(i.PV, PV{P: rng, V: v})
 	}
 	return i
 }
 
-func (i *FakePartsAndValuesIterator) Next() bool {
+func (i *FakeIterator) Next() bool {
 	if len(i.PV) <= 1 {
 		return false
 	}
@@ -60,7 +59,7 @@ func (i *FakePartsAndValuesIterator) Next() bool {
 	return true
 }
 
-func (i *FakePartsAndValuesIterator) NextPart() bool {
+func (i *FakeIterator) NextRange() bool {
 	for {
 		if len(i.PV) <= 1 {
 			return false
@@ -72,23 +71,23 @@ func (i *FakePartsAndValuesIterator) NextPart() bool {
 	}
 }
 
-func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part) {
+func (i *FakeIterator) Value() (*graveler.ValueRecord, *committed.Range) {
 	return i.PV[0].V, i.PV[0].P
 }
 
-func (i *FakePartsAndValuesIterator) Err() error { return nil }
-func (i *FakePartsAndValuesIterator) Close()     {}
+func (i *FakeIterator) Err() error { return nil }
+func (i *FakeIterator) Close()     {}
 
 func TestApplyAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	source := NewFakeIterator()
 	source.
-		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c")).
-		AddPart(part2).
+		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d"))
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeV("b", "dest:b"),
@@ -96,81 +95,81 @@ func TestApplyAdd(t *testing.T) {
 		*makeV("f", "dest:f"),
 	})
 
-	writer := mock.NewMockWriter(ctrl)
+	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddPart(gomock.Eq(*part2))
+	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
 }
 
 func TestApplyReplace(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	source := NewFakeIterator()
 	source.
-		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
-		AddPart(part2).
+		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddPart(&tree.Part{ID: "three", MaxKey: committed.Key("ez")}).
+		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"))
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeV("b", "dest:b"),
 		*makeV("e", "dest:e"),
 	})
 
-	writer := mock.NewMockWriter(ctrl)
+	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddPart(gomock.Eq(*part2))
+	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 
-	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
 }
 
 func TestApplyDelete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	source := NewFakeIterator()
 	source.
-		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
-		AddPart(part2).
+		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddPart(&tree.Part{ID: "three", MaxKey: committed.Key("ez")}).
+		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"))
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeTombstoneV("b"),
 		*makeTombstoneV("e"),
 	})
 
-	writer := mock.NewMockWriter(ctrl)
+	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddPart(gomock.Eq(*part2))
+	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 
-	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
 }
 
 func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	source := NewFakeIterator()
 	source.
-		AddPart(&tree.Part{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
-		AddPart(part2).
+		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d"))
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeV("b", "dest:b"),
@@ -178,44 +177,44 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 		*makeV("f", "dest:f"),
 	})
 
-	writer := mock.NewMockWriter(ctrl)
+	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("b", "dest:b")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
-	writer.EXPECT().AddPart(gomock.Eq(*part2))
+	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
 }
 
 func TestApplyCopiesLeftoverSources(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	part1 := &tree.Part{ID: "one", MaxKey: committed.Key("cz")}
-	part2 := &tree.Part{ID: "two", MaxKey: committed.Key("dz")}
-	part4 := &tree.Part{ID: "four", MaxKey: committed.Key("hz")}
-	source := NewFakePartsAndValuesIterator()
+	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz")}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	range4 := &committed.Range{ID: "four", MaxKey: committed.Key("hz")}
+	source := NewFakeIterator()
 	source.
-		AddPart(part1).
+		AddRange(range1).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
-		AddPart(part2).
+		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddPart(&tree.Part{ID: "three", MaxKey: committed.Key("ez")}).
+		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f")).
-		AddPart(part4).
+		AddRange(range4).
 		AddValueRecords(makeV("g", "source:g"), makeV("h", "source:h"))
 
 	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
 		*makeTombstoneV("e"),
 	})
 
-	writer := mock.NewMockWriter(ctrl)
-	writer.EXPECT().AddPart(gomock.Eq(*part1))
-	writer.EXPECT().AddPart(gomock.Eq(*part2))
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRange(gomock.Eq(*range1))
+	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
-	writer.EXPECT().AddPart(gomock.Eq(*part4))
+	writer.EXPECT().WriteRange(gomock.Eq(*range4))
 
-	assert.NoError(t, tree.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
 }

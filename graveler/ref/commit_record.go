@@ -24,7 +24,7 @@ func (c *commitRecord) toGravelerCommit() *graveler.Commit {
 	return &graveler.Commit{
 		Committer:    c.Committer,
 		Message:      c.Message,
-		TreeID:       graveler.TreeID(c.TreeID),
+		TreeID:       graveler.RangeID(c.TreeID),
 		CreationDate: c.CreationDate,
 		Parents:      parents,
 		Metadata:     c.Metadata,
