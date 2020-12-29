@@ -41,8 +41,8 @@ type Params struct {
 	// Local holds all local configuration.
 	Local LocalDiskParams
 
-	// AdaptorConfig is how to create a block adapter.
-	Adaptor block.Adapter
+	// Adapter is used to write to underlying storage.
+	Adapter block.Adapter
 
 	// BlockStoragePrefix is the prefix prepended to lakeFS metadata files in
 	// the blockstore.

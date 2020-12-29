@@ -90,7 +90,7 @@ func TestStartup(t *testing.T) {
 
 	localFS, err := NewFS(&params.Params{
 		FSName:             fsName,
-		Adaptor:            mem.New(),
+		Adapter:            mem.New(),
 		BlockStoragePrefix: blockStoragePrefix,
 		Local: params.LocalDiskParams{
 			BaseDir:        os.TempDir(),

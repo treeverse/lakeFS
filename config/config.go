@@ -314,17 +314,17 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 }
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
-// build and populate Adaptor.
+// build and populate Adapter.
 func (c *Config) GetCommittedTierFSParams() (*pyramidparams.Params, error) {
-	adaptor, err := factory.BuildBlockAdapter(c)
+	adapter, err := factory.BuildBlockAdapter(c)
 	if err != nil {
-		return nil, fmt.Errorf("build block adaptor: %w", err)
+		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
 	logger := logging.Default().WithField("module", "pyramid")
 	return &pyramidparams.Params{
 		FSName:             "committed",
 		Logger:             logger,
-		Adaptor:            adaptor,
+		Adapter:            adapter,
 		BlockStoragePrefix: viper.GetString("committed.block_storage_prefix"),
 		Local: pyramidparams.LocalDiskParams{
 			BaseDir:        viper.GetString("committed.local_cache.dir"),

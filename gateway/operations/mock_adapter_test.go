@@ -62,20 +62,20 @@ func (a *mockAdapter) Copy(_, _ block.ObjectPointer) error {
 	return errors.New("copy method not implemented in mock adapter")
 }
 func (a *mockAdapter) CreateMultiPartUpload(_ block.ObjectPointer, r *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
-	panic("try to create multipart in mock adaptor")
+	panic("try to create multipart in mock adapter")
 }
 
 func (a *mockAdapter) UploadPart(_ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
-	panic("try to upload part in mock adaptor")
+	panic("try to upload part in mock adapter")
 }
 
 func (a *mockAdapter) AbortMultiPartUpload(_ block.ObjectPointer, uploadID string) error {
-	panic("try to abort multipart in mock adaptor")
+	panic("try to abort multipart in mock adapter")
 
 }
 
 func (a *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
-	panic("try to complete multipart in mock adaptor")
+	panic("try to complete multipart in mock adapter")
 }
 
 func (a *mockAdapter) ValidateConfiguration(_ string) error {

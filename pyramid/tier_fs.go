@@ -23,7 +23,7 @@ import (
 // cache layer that will be evicted according to the eviction control.
 type TierFS struct {
 	logger  logging.Logger
-	adaptor block.Adapter
+	adapter block.Adapter
 
 	eviction params.Eviction
 	keyLock  cache.OnlyOne
@@ -48,7 +48,7 @@ func NewFS(c *params.Params) (FS, error) {
 	}
 
 	tierFS := &TierFS{
-		adaptor:        c.Adaptor,
+		adapter:        c.Adapter,
 		fsName:         c.FSName,
 		logger:         c.Logger,
 		fsLocalBaseDir: fsLocalBaseDir,
@@ -136,7 +136,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if err := tfs.adaptor.Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	if err := tfs.adapter.Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
 		return fmt.Errorf("adapter put %s: %w", filename, err)
 	}
 
@@ -238,7 +238,7 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		var err error
-		reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
+		reader, err := tfs.adapter.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}

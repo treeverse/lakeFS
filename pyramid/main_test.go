@@ -50,7 +50,7 @@ func createFSWithEviction(ev params.Eviction) (FS, string) {
 	var err error
 	fs, err = NewFS(&params.Params{
 		FSName:             fsName,
-		Adaptor:            adapter,
+		Adapter:            adapter,
 		Logger:             logging.Dummy(),
 		Eviction:           ev,
 		BlockStoragePrefix: blockStoragePrefix,
