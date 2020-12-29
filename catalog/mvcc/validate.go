@@ -3,9 +3,7 @@ package mvcc
 import (
 	"fmt"
 	"regexp"
-	"strings"
 
-	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/catalog"
 )
 
@@ -102,11 +100,7 @@ func ValidateCommitter(name string) ValidateFunc {
 
 func ValidateStorageNamespace(storageNamespace string) ValidateFunc {
 	return func() bool {
-		if !IsNonEmptyString(storageNamespace) {
-			return false
-		}
-		configuredBlockStoreType := viper.GetString("blockstore.type")
-		return strings.HasPrefix(storageNamespace, configuredBlockStoreType+"://")
+		return IsNonEmptyString(storageNamespace) {
 	}
 }
 
