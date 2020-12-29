@@ -16,11 +16,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	authparams "github.com/treeverse/lakefs/auth/params"
+	"github.com/treeverse/lakefs/block/factory"
 	blockparams "github.com/treeverse/lakefs/block/params"
 	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/pyramid"
+	pyramidparams "github.com/treeverse/lakefs/pyramid/params"
 )
 
 const (
@@ -30,9 +31,9 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultDiskAllocatedBytes     = 1 * 1024 * 1024 * 1024
-	DefaultDiskBaseDir            = "~/lakefs/local_tier"
-	DefaultDiskBlockStoragePrefix = "_lakefs"
+	DefaultCommittedLocalCacheBytes    = 1 * 1024 * 1024 * 1024
+	DefaultCommittedLocalCacheDir      = "~/lakefs/local_tier"
+	DefaultCommittedBlockStoragePrefix = "_lakefs"
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -94,9 +95,9 @@ func setDefaults() {
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
 	viper.SetDefault("blockstore.s3.max_retries", DefaultS3MaxRetries)
 
-	viper.SetDefault("disk.allocated_bytes", DefaultDiskAllocatedBytes)
-	viper.SetDefault("disk.base_dir", DefaultDiskBaseDir)
-	viper.SetDefault("disk.block_storage_prefix", DefaultDiskBlockStoragePrefix)
+	viper.SetDefault("committed.local_cache.size_bytes", DefaultCommittedLocalCacheBytes)
+	viper.SetDefault("committed.local_cache.dir", DefaultCommittedLocalCacheDir)
+	viper.SetDefault("committed.block_storage_prefix", DefaultCommittedBlockStoragePrefix)
 
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
@@ -114,14 +115,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
 		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
-	}
-}
-
-func (c *Config) GetLocalDiskParams() pyramid.Params {
-	return pyramid.Params{
-		AllocatedBytes:     viper.GetInt64("disk.allocated_bytes"),
-		BaseDir:            viper.GetString("disk.base_dir"),
-		BlockStoragePrefix: viper.GetString("disk.block_storage_prefix"),
 	}
 }
 
@@ -318,6 +311,26 @@ func (c *Config) GetStatsAddress() string {
 
 func (c *Config) GetStatsFlushInterval() time.Duration {
 	return viper.GetDuration("stats.flush_interval")
+}
+
+// GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
+// build and populate Adapter.
+func (c *Config) GetCommittedTierFSParams() (*pyramidparams.Params, error) {
+	adapter, err := factory.BuildBlockAdapter(c)
+	if err != nil {
+		return nil, fmt.Errorf("build block adapter: %w", err)
+	}
+	logger := logging.Default().WithField("module", "pyramid")
+	return &pyramidparams.Params{
+		FSName:             "committed",
+		Logger:             logger,
+		Adapter:            adapter,
+		BlockStoragePrefix: viper.GetString("committed.block_storage_prefix"),
+		Local: pyramidparams.LocalDiskParams{
+			BaseDir:        viper.GetString("committed.local_cache.dir"),
+			AllocatedBytes: viper.GetInt64("committed.local_cache.size_bytes"),
+		},
+	}, nil
 }
 
 func GetMetastoreAwsConfig() *aws.Config {
