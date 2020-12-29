@@ -1,6 +1,8 @@
 package pyramid
 
 import (
+	"github.com/treeverse/lakefs/pyramid/params"
+
 	"io/ioutil"
 	"os"
 	"path"
@@ -177,7 +179,7 @@ func TestPyramidReadFile(t *testing.T) {
 	sut := ROFile{
 		File:     fh,
 		eviction: mockEv,
-		rPath:    relativePath(filename),
+		rPath:    params.RelativePath(filename),
 	}
 
 	_, err = sut.Stat()
@@ -190,23 +192,23 @@ func TestPyramidReadFile(t *testing.T) {
 	require.Equal(t, content, string(bytes))
 	require.NoError(t, sut.Close())
 
-	require.Equal(t, 2, mockEv.touchedTimes[relativePath(filename)])
+	require.Equal(t, 2, mockEv.touchedTimes[params.RelativePath(filename)])
 }
 
 type mockEviction struct {
-	touchedTimes map[relativePath]int
+	touchedTimes map[params.RelativePath]int
 }
 
 func newMockEviction() *mockEviction {
 	return &mockEviction{
-		touchedTimes: map[relativePath]int{},
+		touchedTimes: map[params.RelativePath]int{},
 	}
 }
 
-func (me *mockEviction) touch(rPath relativePath) {
+func (me *mockEviction) Touch(rPath params.RelativePath) {
 	me.touchedTimes[rPath]++
 }
 
-func (me *mockEviction) store(_ relativePath, _ int64) bool {
+func (me *mockEviction) Store(_ params.RelativePath, _ int64) bool {
 	return false
 }
