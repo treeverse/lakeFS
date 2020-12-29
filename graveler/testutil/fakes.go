@@ -3,8 +3,10 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed/tree"
 )
 
 const DefaultBranchID = graveler.BranchID("master")
@@ -345,3 +347,92 @@ func (m *referenceFake) Branch() graveler.Branch {
 func (m *referenceFake) CommitID() graveler.CommitID {
 	return m.commitID
 }
+
+type PV struct {
+	P *tree.Part
+	V *graveler.ValueRecord
+}
+
+type FakePartsAndValuesIterator struct {
+	PV  []PV
+	idx int
+	err error
+}
+
+func (i *FakePartsAndValuesIterator) nextKey() []byte {
+	if len(i.PV) <= i.idx+1 {
+		return nil
+	}
+	if i.PV[i.idx+1].V == nil {
+		return i.PV[i.idx+1].P.MinKey
+	}
+	return i.PV[i.idx+1].V.Key
+}
+
+func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
+	i.idx = 0
+	for {
+		nextKey := i.nextKey()
+		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
+			return
+		}
+		if !i.Next() {
+			return
+		}
+	}
+}
+
+func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
+	// Start with an empty record so the first `Next()` can skip it.
+	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0}
+}
+
+func (i *FakePartsAndValuesIterator) SetErr(err error) {
+	i.err = err
+}
+
+func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
+	i.PV = append(i.PV, PV{P: p})
+	return i
+}
+
+func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakePartsAndValuesIterator {
+	if len(i.PV) == 0 {
+		panic(fmt.Sprintf("cannot add ValueRecords %+v with no part", vs))
+	}
+	part := i.PV[len(i.PV)-1].P
+	for _, v := range vs {
+		i.PV = append(i.PV, PV{P: part, V: v})
+	}
+	return i
+}
+
+func (i *FakePartsAndValuesIterator) Next() bool {
+	if len(i.PV) <= i.idx+1 {
+		return false
+	}
+	i.idx++
+	return true
+}
+
+func (i *FakePartsAndValuesIterator) NextPart() bool {
+	for {
+		if len(i.PV) <= i.idx+1 {
+			return false
+		}
+		i.idx++
+		if i.PV[i.idx].V == nil {
+			return true
+		}
+	}
+}
+
+func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part) {
+	return i.PV[i.idx].V, i.PV[i.idx].P
+}
+
+func (i *FakePartsAndValuesIterator) Err() error {
+	return i.err
+}
+
+func (i *FakePartsAndValuesIterator) Close() {}

@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/committed/tree"
+	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
 func TestDiff(t *testing.T) {
@@ -318,8 +319,8 @@ func TestDiffErr(t *testing.T) {
 	}
 }
 
-func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *FakePartsAndValuesIterator {
-	res := NewFakePartsAndValuesIterator()
+func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *testutil.FakePartsAndValuesIterator {
+	res := testutil.NewFakePartsAndValuesIterator()
 	var b bytes.Buffer
 	for partIdx, keys := range partKeys {
 		identities := partIdentities[partIdx]

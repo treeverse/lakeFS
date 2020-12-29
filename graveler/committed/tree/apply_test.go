@@ -1,9 +1,7 @@
 package tree_test
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,101 +21,12 @@ func makeTombstoneV(k string) *graveler.ValueRecord {
 	return &graveler.ValueRecord{Key: graveler.Key(k)}
 }
 
-type PV struct {
-	P *tree.Part
-	V *graveler.ValueRecord
-}
-
-type FakePartsAndValuesIterator struct {
-	PV  []PV
-	idx int
-	err error
-}
-
-func (i *FakePartsAndValuesIterator) nextKey() []byte {
-	if len(i.PV) <= i.idx+1 {
-		return nil
-	}
-	if i.PV[i.idx+1].V == nil {
-		return i.PV[i.idx+1].P.MinKey
-	}
-	return i.PV[i.idx+1].V.Key
-}
-
-func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
-	i.idx = 0
-	for {
-		nextKey := i.nextKey()
-		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
-			return
-		}
-		if !i.Next() {
-			return
-		}
-	}
-}
-
-func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
-	// Start with an empty record so the first `Next()` can skip it.
-	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0}
-}
-
-func (i *FakePartsAndValuesIterator) SetErr(err error) {
-	i.err = err
-}
-
-func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
-	i.PV = append(i.PV, PV{P: p})
-	return i
-}
-
-func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakePartsAndValuesIterator {
-	if len(i.PV) == 0 {
-		panic(fmt.Sprintf("cannot add ValueRecords %+v with no part", vs))
-	}
-	part := i.PV[len(i.PV)-1].P
-	for _, v := range vs {
-		i.PV = append(i.PV, PV{P: part, V: v})
-	}
-	return i
-}
-
-func (i *FakePartsAndValuesIterator) Next() bool {
-	if len(i.PV) <= i.idx+1 {
-		return false
-	}
-	i.idx++
-	return true
-}
-
-func (i *FakePartsAndValuesIterator) NextPart() bool {
-	for {
-		if len(i.PV) <= i.idx+1 {
-			return false
-		}
-		i.idx++
-		if i.PV[i.idx].V == nil {
-			return true
-		}
-	}
-}
-
-func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part) {
-	return i.PV[i.idx].V, i.PV[i.idx].P
-}
-
-func (i *FakePartsAndValuesIterator) Err() error {
-	return i.err
-}
-
-func (i *FakePartsAndValuesIterator) Close() {}
-
 func TestApplyAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	source := testutil.NewFakePartsAndValuesIterator()
 	source.
 		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c")).
@@ -145,7 +54,7 @@ func TestApplyReplace(t *testing.T) {
 	defer ctrl.Finish()
 
 	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	source := testutil.NewFakePartsAndValuesIterator()
 	source.
 		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -173,7 +82,7 @@ func TestApplyDelete(t *testing.T) {
 	defer ctrl.Finish()
 
 	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	source := testutil.NewFakePartsAndValuesIterator()
 	source.
 		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -199,7 +108,7 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	defer ctrl.Finish()
 
 	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
-	source := NewFakePartsAndValuesIterator()
+	source := testutil.NewFakePartsAndValuesIterator()
 	source.
 		AddPart(&tree.Part{Name: "one", MaxKey: graveler.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -229,7 +138,7 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	part1 := &tree.Part{Name: "one", MaxKey: graveler.Key("cz")}
 	part2 := &tree.Part{Name: "two", MaxKey: graveler.Key("dz")}
 	part4 := &tree.Part{Name: "four", MaxKey: graveler.Key("hz")}
-	source := NewFakePartsAndValuesIterator()
+	source := testutil.NewFakePartsAndValuesIterator()
 	source.
 		AddPart(part1).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
