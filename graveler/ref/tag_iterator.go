@@ -20,8 +20,8 @@ type TagIterator struct {
 }
 
 type tagRecord struct {
-	graveler.TagID    `db:"id"`
-	graveler.CommitID `db:"commit_id"`
+	TagID    graveler.TagID    `db:"id"`
+	CommitID graveler.CommitID `db:"commit_id"`
 }
 
 func NewTagIterator(ctx context.Context, db db.Database, repositoryID graveler.RepositoryID, fetchSize int) *TagIterator {
