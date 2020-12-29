@@ -388,14 +388,21 @@ type RefManager interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
+// Tree abstracts the data structure of the committed data.
+type Tree interface {
+	// ID returns the tree ID
+	ID() TreeID
+}
+
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided TreeID
 	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
 
-	// IsTreeExist returns true iff the tree with treeID exists
-	IsTreeExist(ctx context.Context, ns StorageNamespace, treeID TreeID) (bool, error)
+	// GetTree returns the Tree under the namespace with matching ID.
+	// If tree not found, returns ErrNotFound.
+	GetTree(ns StorageNamespace, treeID TreeID) (Tree, error)
 
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
@@ -426,9 +433,6 @@ type StagingManager interface {
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
-
-	// IsDirty returns true iff staging area for the token isn't empty
-	IsDirty(ctx context.Context, st StagingToken) (bool, error)
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -860,20 +864,17 @@ func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID Reposito
 	if err != nil {
 		return "", fmt.Errorf("get branch %s: %w", branchID, err)
 	}
-	dirty, err := g.StagingManager.IsDirty(ctx, branch.StagingToken)
-	if err != nil {
-		return "", fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
-	}
-	if dirty {
+	if empty, err := g.stagingEmpty(ctx, branch); err != nil {
+		return "", err
+	} else if !empty {
 		return "", ErrDirtyBranch
 	}
 
-	treeExists, err := g.CommittedManager.IsTreeExist(ctx, repo.StorageNamespace, treeID)
-	if err != nil {
+	if _, err := g.CommittedManager.GetTree(repo.StorageNamespace, treeID); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return "", ErrTreeNotFound
+		}
 		return "", fmt.Errorf("checking for tree %s: %w", treeID, err)
-	}
-	if !treeExists {
-		return "", ErrTreeNotFound
 	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
@@ -889,6 +890,19 @@ func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID Reposito
 	}
 
 	return newCommit, nil
+}
+
+func (g *graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken)
+	if err != nil {
+		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
+	}
+	defer stIt.Close()
+
+	if stIt.Next() {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
