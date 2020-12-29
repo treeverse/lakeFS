@@ -26,7 +26,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 
 	partManager := partMock.NewMockPartManager(ctrl)
 	mockWriter := partMock.NewMockWriter(ctrl)
-	partManager.EXPECT().GetBatchManager()
+	partManager.EXPECT().GetBatchWriter()
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil).MinTimes(1)
 	namespace := committed.Namespace("ns")
 	w := tree.NewWriter(partManager, partManager, 100, namespace)
@@ -72,7 +72,7 @@ func TestWriter_OverlappingParts(t *testing.T) {
 	defer ctrl.Finish()
 
 	partManager := partMock.NewMockPartManager(ctrl)
-	partManager.EXPECT().GetBatchManager()
+	partManager.EXPECT().GetBatchWriter()
 	namespace := committed.Namespace("ns")
 	part := tree.Part{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	part2 := tree.Part{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
@@ -93,7 +93,7 @@ func TestWriter_RecordPartAndClose(t *testing.T) {
 
 	partManager := partMock.NewMockPartManager(ctrl)
 	mockBatchWriter := partMock.NewMockBatchWriterCloser(ctrl)
-	partManager.EXPECT().GetBatchManager().Return(mockBatchWriter)
+	partManager.EXPECT().GetBatchWriter().Return(mockBatchWriter)
 	mockBatchWriter.EXPECT().CloseWriterAsync(gomock.Any())
 	mockBatchWriter.EXPECT().Wait()
 	mockWriter := partMock.NewMockWriter(ctrl)
@@ -130,7 +130,7 @@ func TestWriter_SortOnClose(t *testing.T) {
 	partManager := partMock.NewMockPartManager(ctrl)
 	mockBatchWriter := partMock.NewMockBatchWriterCloser(ctrl)
 	mockWriter := partMock.NewMockWriter(ctrl)
-	partManager.EXPECT().GetBatchManager().Return(mockBatchWriter)
+	partManager.EXPECT().GetBatchWriter().Return(mockBatchWriter)
 	mockBatchWriter.EXPECT().Wait().Return([]committed.WriteResult{
 		{
 			First: committed.Key("c"),
