@@ -1,7 +1,6 @@
 package tree
 
 //go:generate mockgen -source=tree.go -destination=mock/tree.go -package=mock
-//go:generate protoc --proto_path=. --go_out=. --go_opt=paths=source_relative tree.proto
 
 import (
 	"github.com/treeverse/lakefs/graveler"
