@@ -11,19 +11,17 @@ import (
 
 // Part is the basic building stone of a tree
 type Part struct {
-	ID                committed.ID
-	MinKey            committed.Key
-	MaxKey            committed.Key
-	EstimatedSize     int64 // EstimatedSize estimated part size in bytes
-	ReachedBreakpoint bool  // ReachedBreakpoint indicates whether part was closed at breakpoint
+	ID            committed.ID
+	MinKey        committed.Key
+	MaxKey        committed.Key
+	EstimatedSize uint64 // EstimatedSize estimated part size in bytes
 }
 
 func MarshalPart(part Part) ([]byte, error) {
 	return proto.Marshal(&PartData{
-		MinKey:            part.MinKey,
-		MaxKey:            part.MaxKey,
-		EstimatedSize:     part.EstimatedSize,
-		ReachedBreakPoint: part.ReachedBreakpoint,
+		MinKey:        part.MinKey,
+		MaxKey:        part.MaxKey,
+		EstimatedSize: part.EstimatedSize,
 	})
 }
 
@@ -34,10 +32,9 @@ func UnmarshalPart(b []byte) (Part, error) {
 		return Part{}, err
 	}
 	return Part{
-		MinKey:            p.MinKey,
-		MaxKey:            p.MaxKey,
-		EstimatedSize:     p.EstimatedSize,
-		ReachedBreakpoint: p.ReachedBreakPoint,
+		MinKey:        p.MinKey,
+		MaxKey:        p.MaxKey,
+		EstimatedSize: p.EstimatedSize,
 	}, nil
 }
 

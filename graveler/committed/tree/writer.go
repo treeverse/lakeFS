@@ -5,20 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"sort"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type GeneralWriter struct {
 	namespace           committed.Namespace
 	treeManager         committed.PartManager
-	treeWriter          committed.Writer // writer for the tree representation
 	partManager         committed.PartManager
 	partWriter          committed.Writer // writer for the current part
-	partSize            int64
 	lastKey             committed.Key
 	approximatePartSize uint64 // indicates when to break the parts
+	batchWriteCloser    committed.BatchWriterCloser
+	parts               []Part
 }
 
 var (
@@ -30,6 +32,7 @@ func NewWriter(partManager, treeManager committed.PartManager, approximatePartSi
 	return &GeneralWriter{
 		partManager:         partManager,
 		treeManager:         treeManager,
+		batchWriteCloser:    partManager.GetBatchManager(),
 		approximatePartSize: approximatePartSize,
 		namespace:           namespace,
 	}
@@ -60,66 +63,70 @@ func (w *GeneralWriter) WriteRecord(record graveler.ValueRecord) error {
 	if err != nil {
 		return fmt.Errorf("write record to part: %w", err)
 	}
-	w.partSize += int64(len(record.Key) + len(v))
 	w.lastKey = committed.Key(record.Key)
 	breakpoint, err := w.shouldBreakAtKey(record.Key)
 	if err != nil {
 		return err
 	}
 	if breakpoint {
-		return w.closeCurrentPart(true)
+		return w.closeCurrentPart()
 	}
 	return nil
 }
 
-func (w *GeneralWriter) closeCurrentPart(reachedBreakpoint bool) error {
+func (w *GeneralWriter) closeCurrentPart() error {
 	if w.partWriter == nil {
 		return nil
 	}
-	wr, err := w.partWriter.Close()
-	if err != nil {
-		return fmt.Errorf("close part writer: %w", err)
-	}
-	part := Part{
-		ID:                wr.PartID,
-		MinKey:            wr.First,
-		MaxKey:            wr.Last,
-		EstimatedSize:     w.partSize,
-		ReachedBreakpoint: reachedBreakpoint,
-	}
-	err = w.writePartToTree(part)
-	if err != nil {
-		return fmt.Errorf("write part to tree: %w", err)
+	if err := w.batchWriteCloser.CloseWriterAsync(w.partWriter); err != nil {
+		return err
 	}
 	w.partWriter = nil
-	w.partSize = 0
 	return nil
+}
+
+func (w *GeneralWriter) getBatchedParts() ([]Part, error) {
+	wr, err := w.batchWriteCloser.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("batch write closer wait: %w", err)
+	}
+	parts := make([]Part, len(wr))
+	for i, r := range wr {
+		parts[i] = Part{
+			ID:            r.PartID,
+			MinKey:        r.First,
+			MaxKey:        r.Last,
+			EstimatedSize: r.EstimatedSize,
+		}
+	}
+	return parts, nil
 }
 
 func (w *GeneralWriter) AddPart(part Part) error {
 	if w.lastKey != nil && bytes.Compare(part.MinKey, w.lastKey) <= 0 {
 		return ErrUnsortedKeys
 	}
-	if err := w.closeCurrentPart(false); err != nil {
+	if err := w.closeCurrentPart(); err != nil {
 		return err
-	}
-	if err := w.writePartToTree(part); err != nil {
-		return fmt.Errorf("write part to tree: %w", err)
 	}
 	w.lastKey = part.MaxKey
 	return nil
 }
 
 func (w *GeneralWriter) Close() (*graveler.TreeID, error) {
-	if err := w.closeCurrentPart(false); err != nil {
+	if err := w.closeCurrentPart(); err != nil {
 		return nil, err
 	}
-	tree, err := w.treeWriter.Close()
+	parts, err := w.getBatchedParts()
 	if err != nil {
-		return nil, fmt.Errorf("close tree writer: %w", err)
+		return nil, err
 	}
-	treeID := graveler.TreeID(tree.PartID)
-	return &treeID, nil
+	parts = append(parts, w.parts...)
+	sort.Slice(parts, func(i, j int) bool {
+		return bytes.Compare(parts[i].MinKey, parts[j].MinKey) < 0
+	})
+	w.parts = parts
+	return w.writePartsToTree()
 }
 
 // shouldBreakAtKey returns true if should brake part after the given key
@@ -146,29 +153,32 @@ func PartToValue(part Part) (committed.Value, error) {
 	return MarshalValue(partValue)
 }
 
-// writePartToTree writes the part to the treeWriter
-func (w *GeneralWriter) writePartToTree(part Part) error {
-	if w.treeWriter == nil {
-		var err error
-		if w.treeWriter, err = w.treeManager.GetWriter(w.namespace); err != nil {
-			return fmt.Errorf("failed creating treeWriter: %w", err)
+// writePartsToTree writes all parts to a tree and returns the TreeID
+func (w *GeneralWriter) writePartsToTree() (*graveler.TreeID, error) {
+	treeWriter, err := w.treeManager.GetWriter(w.namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating treeWriter: %w", err)
+	}
+	for _, p := range w.parts {
+		partValue, err := PartToValue(p)
+		if err != nil {
+			return nil, err
+		}
+		if err := treeWriter.WriteRecord(committed.Record{Key: p.MinKey, Value: partValue}); err != nil {
+			if abortErr := treeWriter.Abort(); abortErr != nil {
+				logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting tree writer: %w", err)
+			}
+			return nil, fmt.Errorf("failed writing part to tree: %w", err)
 		}
 	}
-	partValue, err := PartToValue(part)
+	wr, err := treeWriter.Close()
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed closing treeWriter: %w", err)
 	}
-
-	return w.treeWriter.WriteRecord(committed.Record{Key: part.MinKey, Value: partValue})
+	treeID := graveler.TreeID(wr.PartID)
+	return &treeID, nil
 }
 
 func (w *GeneralWriter) Abort() error {
-	var res error
-	if err := w.partWriter.Abort(); err != nil {
-		res = err
-	}
-	if err := w.treeWriter.Abort(); err != nil {
-		res = err
-	}
-	return res
+	return w.partWriter.Abort()
 }

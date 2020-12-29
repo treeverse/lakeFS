@@ -34,6 +34,8 @@ type PartManager interface {
 
 	// GetWriter returns a new part writer instance
 	GetWriter(ns Namespace) (Writer, error)
+
+	GetBatchManager() BatchWriterCloser
 }
 
 // WriteResult is the result of a completed write of an part
@@ -50,6 +52,9 @@ type WriteResult struct {
 
 	// Count is the number of records in the part.
 	Count int
+
+	// EstimatedSize is the size of parts in bytes
+	EstimatedSize uint64
 }
 
 // Writer is an abstraction for writing Parts.
