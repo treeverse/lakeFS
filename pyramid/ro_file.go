@@ -1,8 +1,9 @@
 package pyramid
 
 import (
-	"github.com/treeverse/lakefs/pyramid/params"
 	"os"
+
+	"github.com/treeverse/lakefs/pyramid/params"
 )
 
 // ROFile is pyramid wrapper for os.File that implements io.ReadCloser
