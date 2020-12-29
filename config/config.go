@@ -330,7 +330,7 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.Params, error) {
 			BaseDir:        viper.GetString("committed.local_cache.dir"),
 			AllocatedBytes: viper.GetInt64("committed.local_cache.size_bytes"),
 		},
-	}, err
+	}, nil
 }
 
 func GetMetastoreAwsConfig() *aws.Config {
