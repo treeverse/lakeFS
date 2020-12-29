@@ -91,7 +91,7 @@ func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
 }
 
 // GetBatchManager returns a new BatchCloser
-func (m *Manager) GetBatchManager() committed.BatchWriterCloser {
+func (m *Manager) GetBatchWriter() committed.BatchWriterCloser {
 	return NewBatchCloser()
 }
 

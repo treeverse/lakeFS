@@ -35,7 +35,8 @@ type PartManager interface {
 	// GetWriter returns a new part writer instance
 	GetWriter(ns Namespace) (Writer, error)
 
-	GetBatchManager() BatchWriterCloser
+	// GetBatchWriter returns a BatchWriterCloser instance
+	GetBatchWriter() BatchWriterCloser
 }
 
 // WriteResult is the result of a completed write of an part

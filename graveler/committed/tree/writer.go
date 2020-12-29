@@ -32,7 +32,7 @@ func NewWriter(partManager, treeManager committed.PartManager, approximatePartSi
 	return &GeneralWriter{
 		partManager:              partManager,
 		treeManager:              treeManager,
-		batchWriteCloser:         partManager.GetBatchManager(),
+		batchWriteCloser:         partManager.GetBatchWriter(),
 		approximatePartSizeBytes: approximatePartSizeBytes,
 		namespace:                namespace,
 	}
@@ -51,7 +51,7 @@ func (w *GeneralWriter) WriteRecord(record graveler.ValueRecord) error {
 	if w.partWriter == nil {
 		w.partWriter, err = w.partManager.GetWriter(w.namespace)
 		if err != nil {
-			return err
+			return fmt.Errorf("get part writer: %w", err)
 		}
 	}
 
@@ -79,7 +79,7 @@ func (w *GeneralWriter) closeCurrentPart() error {
 		return nil
 	}
 	if err := w.batchWriteCloser.CloseWriterAsync(w.partWriter); err != nil {
-		return err
+		return fmt.Errorf("write part: %w", err)
 	}
 	w.partWriter = nil
 	return nil
@@ -141,8 +141,8 @@ func (w *GeneralWriter) shouldBreakAtKey(key graveler.Key) (bool, error) {
 	return n == 0, nil
 }
 
-// PartToValue returns a Value representing a Part in Tree
-func PartToValue(part Part) (committed.Value, error) {
+// partToValue returns a Value representing a Part in Tree
+func partToValue(part Part) (committed.Value, error) {
 	data, err := MarshalPart(part)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (w *GeneralWriter) writePartsToTree() (*graveler.TreeID, error) {
 		return nil, fmt.Errorf("failed creating treeWriter: %w", err)
 	}
 	for _, p := range w.parts {
-		partValue, err := PartToValue(p)
+		partValue, err := partToValue(p)
 		if err != nil {
 			return nil, err
 		}
