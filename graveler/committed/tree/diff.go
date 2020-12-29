@@ -50,7 +50,7 @@ func (d *diffIterator) nextPart(it Iterator, val **IteratorValue) {
 	(*val).record, (*val).part = it.Value()
 }
 
-func key(it Iterator) graveler.Key {
+func key(it Iterator) []byte {
 	val, part := it.Value()
 	if val == nil {
 		return part.MinKey
@@ -94,7 +94,7 @@ func (d *diffIterator) Next() bool {
 		case d.leftVal == nil && d.rightVal == nil:
 			d.currentVal = nil
 			return false
-		case d.leftVal != nil && d.rightVal != nil && d.leftVal.part.Name == d.rightVal.part.Name:
+		case d.leftVal != nil && d.rightVal != nil && d.leftVal.part.ID == d.rightVal.part.ID:
 			// skip identical parts
 			d.nextPart(d.left, &d.leftVal)
 			d.nextPart(d.right, &d.rightVal)

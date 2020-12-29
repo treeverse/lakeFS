@@ -328,12 +328,12 @@ func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *testut
 		_ = encoder.Encode(partKeys[partIdx])
 		_ = encoder.Encode(partIdentities[partIdx])
 		partName := hex.EncodeToString(b.Bytes())
-		var minKey, maxKey graveler.Key
+		var minKey, maxKey committed.Key
 		if len(partKeys[partIdx]) > 0 {
 			minKey = []byte(partKeys[partIdx][0])
 			maxKey = []byte(partKeys[partIdx][len(partKeys[partIdx])-1])
 		}
-		res.AddPart(&tree.Part{Name: committed.ID(partName), MinKey: minKey, MaxKey: maxKey})
+		res.AddPart(&tree.Part{ID: committed.ID(partName), MinKey: minKey, MaxKey: maxKey})
 		partValues := make([]*graveler.ValueRecord, 0, len(partKeys[partIdx]))
 		for idx := range keys {
 			partValues = append(partValues, &graveler.ValueRecord{
