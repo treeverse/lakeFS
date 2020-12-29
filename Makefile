@@ -137,6 +137,7 @@ validate-fmt:  ## Validate go format
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- catalog/rocks/catalog.pb.go
+	git diff --quiet -- graveler/committed/tree/tree.pb.go
 
 checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
 
@@ -157,6 +158,7 @@ gen-ddl: go-install ## Embed data migration files into the resulting binary
 
 proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=catalog/rocks --go_out=catalog/rocks --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=graveler/committed/tree --go_out=graveler/committed/tree --go_opt=paths=source_relative tree.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

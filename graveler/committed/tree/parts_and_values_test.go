@@ -24,7 +24,7 @@ var (
 func makePart(partIDs []graveler.Key) graveler.ValueIterator {
 	records := make([]graveler.ValueRecord, len(partIDs))
 	for i, id := range partIDs {
-		records[i] = graveler.ValueRecord{Key: graveler.Key(id)}
+		records[i] = graveler.ValueRecord{Key: id}
 	}
 	return testutil.NewValueIteratorFake(records)
 }
@@ -53,7 +53,7 @@ func keysByParts(t testing.TB, it tree.Iterator) []partKeys {
 		require.True(t, p != nil, "iterated past end, it = %+v", it)
 		if v == nil {
 			t.Logf("new part %+v", p)
-			ret = append(ret, partKeys{Name: p.Name})
+			ret = append(ret, partKeys{Name: p.ID})
 		} else {
 			t.Logf("    element %+v", v)
 			p := &ret[len(ret)-1]
@@ -115,7 +115,7 @@ func TestIterator(t *testing.T) {
 			parts := make([]tree.Part, 0, len(tt.PK))
 			for _, p := range tt.PK {
 				// MaxKey unused
-				parts = append(parts, tree.Part{Name: p.Name})
+				parts = append(parts, tree.Part{ID: p.Name})
 				repo.EXPECT().NewPartIterator(p.Name, nil).Return(makePart(p.Keys), nil)
 			}
 			pvi := tree.NewIterator(repo, parts)
