@@ -110,6 +110,7 @@ func (w *GeneralWriter) AddPart(part Part) error {
 		return err
 	}
 	w.lastKey = part.MaxKey
+	w.parts = append(w.parts, part)
 	return nil
 }
 

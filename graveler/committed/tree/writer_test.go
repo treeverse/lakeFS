@@ -102,8 +102,8 @@ func TestWriter_RecordPartAndClose(t *testing.T) {
 	part := tree.Part{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	// get writer - once for record writer, once for tree writer
 	partManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil).Times(2)
-
-	mockWriter.EXPECT().WriteRecord(gomock.Any())
+	// write two records on tree and one for part
+	mockWriter.EXPECT().WriteRecord(gomock.Any()).Times(2)
 	mockWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
 
 	w := tree.NewWriter(partManager, partManager, 100, namespace)
