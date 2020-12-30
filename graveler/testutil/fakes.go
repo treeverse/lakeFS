@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/treeverse/lakefs/graveler/committed"
+
 	"github.com/treeverse/lakefs/graveler"
 )
 
@@ -328,6 +330,44 @@ func (r *valueIteratorFake) Err() error {
 }
 
 func (r *valueIteratorFake) Close() {}
+
+type committedValueIteratorFake struct {
+	current int
+	records []committed.Record
+	err     error
+}
+
+func NewCommittedValueIteratorFake(records []committed.Record) *committedValueIteratorFake {
+	return &committedValueIteratorFake{records: records, current: -1}
+}
+
+func (r *committedValueIteratorFake) Next() bool {
+	r.current++
+	return r.current < len(r.records)
+}
+
+func (r *committedValueIteratorFake) SeekGE(id committed.Key) {
+	for i, record := range r.records {
+		if bytes.Compare(record.Key, id) >= 0 {
+			r.current = i - 1
+			return
+		}
+	}
+	r.current = len(r.records)
+}
+
+func (r *committedValueIteratorFake) Value() *committed.Record {
+	if r.current < 0 || r.current >= len(r.records) {
+		return nil
+	}
+	return &r.records[r.current]
+}
+
+func (r *committedValueIteratorFake) Err() error {
+	return r.err
+}
+
+func (r *committedValueIteratorFake) Close() {}
 
 type referenceFake struct {
 	refType  graveler.ReferenceType

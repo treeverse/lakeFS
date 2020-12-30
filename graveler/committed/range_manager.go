@@ -12,8 +12,8 @@ type Namespace string
 type Key []byte
 type Value []byte
 type Record struct {
-	Key
-	Value
+	Key   Key
+	Value Value
 }
 
 type ValueIterator interface {

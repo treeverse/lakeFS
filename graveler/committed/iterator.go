@@ -1,17 +1,24 @@
 package committed
 
-import "github.com/treeverse/lakefs/graveler"
+import (
+	"github.com/treeverse/lakefs/graveler"
+)
 
 type iterator struct {
-	started          bool
-	metaRangeManager MetaRangeManager
-	ranges           []Range
-	it               graveler.ValueIterator
-	err              error
+	started   bool
+	manager   RangeManager
+	ranges    []Range
+	it        graveler.ValueIterator
+	err       error
+	namespace Namespace
 }
 
-func NewIterator(repo MetaRangeManager, ranges []Range) Iterator {
-	return &iterator{metaRangeManager: repo, ranges: ranges}
+func NewIterator(manager RangeManager, namespace Namespace, ranges []Range) Iterator {
+	return &iterator{
+		manager:   manager,
+		namespace: namespace,
+		ranges:    ranges,
+	}
 }
 
 func (pvi *iterator) NextRange() bool {
@@ -41,7 +48,7 @@ func (pvi *iterator) Next() bool {
 		return false // Iteration was already finished.
 	}
 	var err error
-	pvi.it, err = pvi.metaRangeManager.NewRangeIterator(pvi.ranges[0].ID, nil)
+	pvi.it, err = pvi.newRangeIterator(pvi.ranges[0].ID)
 	if err != nil {
 		pvi.err = err
 		return false
@@ -79,4 +86,12 @@ func (pvi *iterator) Close() {
 		return
 	}
 	pvi.it.Close()
+}
+
+func (pvi *iterator) newRangeIterator(rangeID ID) (graveler.ValueIterator, error) {
+	it, err := pvi.manager.NewRangeIterator(pvi.namespace, rangeID, nil)
+	if err != nil {
+		return nil, err
+	}
+	return NewRangeIterator(it), nil
 }

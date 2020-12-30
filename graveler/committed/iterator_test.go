@@ -21,12 +21,12 @@ var (
 	five  = committed.ID("range5")
 )
 
-func makeRange(rangeIDs []graveler.Key) graveler.ValueIterator {
-	records := make([]graveler.ValueRecord, len(rangeIDs))
+func makeRange(rangeIDs []graveler.Key) committed.ValueIterator {
+	records := make([]committed.Record, len(rangeIDs))
 	for i, id := range rangeIDs {
-		records[i] = graveler.ValueRecord{Key: id}
+		records[i] = committed.Record{Key: committed.Key(id)}
 	}
-	return testutil.NewValueIteratorFake(records)
+	return testutil.NewCommittedValueIteratorFake(records)
 }
 
 func makeKeys(keys ...string) []graveler.Key {
@@ -47,8 +47,9 @@ type rangeKeys struct {
 }
 
 func keysByRanges(t testing.TB, it committed.Iterator) []rangeKeys {
+	t.Helper()
 	ret := make([]rangeKeys, 0)
-	for it.Err() == nil && it.Next() {
+	for it.Next() {
 		v, p := it.Value()
 		require.True(t, p != nil, "iterated past end, it = %+v", it)
 		if v == nil {
@@ -60,8 +61,8 @@ func keysByRanges(t testing.TB, it committed.Iterator) []rangeKeys {
 			p.Keys = append(p.Keys, v.Key)
 		}
 	}
-	if it.Err() != nil {
-		t.Error(it.Err())
+	if err := it.Err(); err != nil {
+		t.Error(err)
 	}
 	return ret
 }
@@ -110,15 +111,16 @@ func TestIterator(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			repo := mock.NewMockMetaRangeManager(ctrl)
+			manager := mock.NewMockRangeManager(ctrl)
 
+			namespace := committed.Namespace("ns")
 			ranges := make([]committed.Range, 0, len(tt.PK))
 			for _, p := range tt.PK {
 				// MaxKey unused
 				ranges = append(ranges, committed.Range{ID: p.Name})
-				repo.EXPECT().NewRangeIterator(p.Name, nil).Return(makeRange(p.Keys), nil)
+				manager.EXPECT().NewRangeIterator(gomock.Eq(namespace), p.Name, nil).Return(makeRange(p.Keys), nil)
 			}
-			pvi := committed.NewIterator(repo, ranges)
+			pvi := committed.NewIterator(manager, namespace, ranges)
 			assert.Equal(t, tt.PK, keysByRanges(t, pvi))
 			assert.False(t, pvi.NextRange())
 			assert.False(t, pvi.Next())
