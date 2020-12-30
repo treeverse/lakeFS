@@ -23,10 +23,12 @@ func (r *RangeIterator) Next() bool {
 		return false
 	}
 	val := r.it.Value()
+	// unmarshal value
 	var v *graveler.Value
 	if val.Value != nil {
 		v, r.err = UnmarshalValue(val.Value)
 		if r.err != nil {
+			r.value = nil
 			return false
 		}
 	}
