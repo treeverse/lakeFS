@@ -25,7 +25,7 @@ type RepoActions interface {
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
 }
 
-type CatalogRepoActions struct {
+type MVCCCatalogRepoActions struct {
 	WriteBatchSize  int
 	cataloger       catalog.Cataloger
 	repository      string
@@ -36,12 +36,12 @@ type CatalogRepoActions struct {
 	commitProgress  *cmdutils.Progress
 }
 
-func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
+func (c *MVCCCatalogRepoActions) Progress() []*cmdutils.Progress {
 	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress, c.commitProgress}
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) *CatalogRepoActions {
-	return &CatalogRepoActions{
+func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) *MVCCCatalogRepoActions {
+	return &MVCCCatalogRepoActions{
 		cataloger:       cataloger,
 		repository:      repository,
 		committer:       committer,
@@ -64,7 +64,7 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	wg.Done()
 }
 
-func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
+func (c *MVCCCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
 	c.logger.Trace("start apply import")
 	var stats Stats
 	var wg sync.WaitGroup
@@ -149,7 +149,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 	return &stats, nil
 }
 
-func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
+func (c *MVCCCatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
 	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, catalog.DefaultImportBranchName)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		return nil, err
@@ -167,7 +167,7 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 	return commit, nil
 }
 
-func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
+func (c *MVCCCatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
 	c.commitProgress.Activate()
 	res, err := c.cataloger.Commit(ctx, c.repository, catalog.DefaultImportBranchName,
 		commitMsg,

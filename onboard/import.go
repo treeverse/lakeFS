@@ -96,10 +96,10 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	return NewDiffIterator(previousObjs, currentObjs), nil
 }
 
-func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
+func (s *Importer) Import(ctx context.Context, dryRun, rocks bool) (*Stats, error) {
 	var dataToImport Iterator
 	var err error
-	if s.previousCommit == nil {
+	if rocks || s.previousCommit == nil {
 		it := s.inventory.Iterator()
 		// no previous commit, add whole inventory
 		dataToImport = NewInventoryIterator(it)
@@ -109,6 +109,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 			return nil, err
 		}
 	}
+
 	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {

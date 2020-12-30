@@ -180,7 +180,7 @@ func TestImport(t *testing.T) {
 				if test.ExpectedErr != nil {
 					t.Fatalf("error was expected but none was returned")
 				}
-				stats, err := importer.Import(context.Background(), dryRun)
+				stats, err := importer.Import(context.Background(), dryRun, false)
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}

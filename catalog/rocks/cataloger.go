@@ -39,6 +39,10 @@ func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error)
 	}, nil
 }
 
+func (c *cataloger) GetEntryCatalog() *EntryCatalog {
+	return c.EntryCatalog
+}
+
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*catalog.Repository, error) {
 	repositoryID, err := graveler.NewRepositoryID(repository)

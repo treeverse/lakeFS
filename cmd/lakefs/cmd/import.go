@@ -141,7 +141,7 @@ var importCmd = &cobra.Command{
 			multiBar = cmdutils.NewMultiBar(importer)
 			multiBar.Start()
 		}
-		stats, err := importer.Import(ctx, dryRun)
+		stats, err := importer.Import(ctx, dryRun, false)
 		if err != nil {
 			if multiBar != nil {
 				multiBar.Stop()
