@@ -7,9 +7,7 @@ import (
 	"hash"
 
 	"github.com/treeverse/lakefs/graveler/committed"
-
 	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/pyramid"
 )
 

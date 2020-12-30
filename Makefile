@@ -42,7 +42,8 @@ export REVISION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME)
+	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
+	    graveler/committed/mock graveler/sstable/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -87,7 +88,8 @@ del-gen-api:
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands
-	$(GOGENERATE) ./graveler/committed/...
+	$(GOGENERATE) ./graveler/sstable
+	$(GOGENERATE) ./graveler/committed
 	$(GOGENERATE) ./pyramid
 
 validate-swagger: go-install ## Validate swagger.yaml

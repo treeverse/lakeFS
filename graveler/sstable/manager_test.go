@@ -5,12 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/sstable"
-
-	"github.com/golang/mock/gomock"
 	ssMock "github.com/treeverse/lakefs/graveler/sstable/mock"
 	fsMock "github.com/treeverse/lakefs/pyramid/mock"
 )
