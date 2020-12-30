@@ -23,5 +23,5 @@ var (
 	ErrBranchLocked            = errors.New("branch locked for updates")
 	ErrTagAlreadyExists        = errors.New("tag already exists")
 	ErrDirtyBranch             = errors.New("can't apply tree on dirty branch")
-	ErrTreeNotFound            = errors.New("tree not found")
+	ErrMetaRangeNotFound       = errors.New("metarange not found")
 )

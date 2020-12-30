@@ -29,10 +29,10 @@ var (
 	ErrMultipleWaitCalls = errors.New("wait has already been called")
 )
 
-// CloseWriterAsync adds Writer instance for the BatchWriterCloser to handle.
+// CloseWriterAsync adds RangeWriter instance for the BatchWriterCloser to handle.
 // Any writes executed to the writer after this call are not guaranteed to succeed.
 // If Wait() has already been called, returns an error.
-func (bc *BatchCloser) CloseWriterAsync(w committed.Writer) error {
+func (bc *BatchCloser) CloseWriterAsync(w committed.RangeWriter) error {
 	bc.lock.Lock()
 	defer bc.lock.Unlock()
 
@@ -48,7 +48,7 @@ func (bc *BatchCloser) CloseWriterAsync(w committed.Writer) error {
 	return nil
 }
 
-func (bc *BatchCloser) closeWriter(w committed.Writer) {
+func (bc *BatchCloser) closeWriter(w committed.RangeWriter) {
 	defer bc.wg.Done()
 	res, err := w.Close()
 
@@ -68,7 +68,7 @@ func (bc *BatchCloser) closeWriter(w committed.Writer) {
 }
 
 // Wait returns when all Writers finished.
-// Any failure to close a single Writer will return with a nil results slice and an error.
+// Any failure to close a single RangeWriter will return with a nil results slice and an error.
 func (bc *BatchCloser) Wait() ([]committed.WriteResult, error) {
 	bc.lock.Lock()
 	if bc.err != nil {

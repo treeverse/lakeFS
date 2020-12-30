@@ -5,13 +5,11 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/thanhpk/randstr"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
+	"github.com/treeverse/lakefs/graveler/sstable"
 	"github.com/treeverse/lakefs/pyramid/mock"
 )
 
@@ -62,7 +60,7 @@ func TestWriter(t *testing.T) {
 	require.Equal(t, writes, wr.Count)
 	require.Equal(t, keys[0], string(wr.First))
 	require.Equal(t, keys[writes-1], string(wr.Last))
-	require.Equal(t, committed.ID(f), wr.PartID)
+	require.Equal(t, committed.ID(f), wr.RangeID)
 }
 
 func TestWriterAbort(t *testing.T) {

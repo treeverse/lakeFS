@@ -7,7 +7,7 @@ import (
 	pebble_sst "github.com/cockroachdb/pebble/sstable"
 	lru "github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
+	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
 // marker is an item that has an unusable SSTable reader but fakes behaviour on Close.

@@ -42,7 +42,7 @@ func (ci *CommitIterator) fetch() bool {
 	}
 	var rec commitRecord
 	err := ci.db.WithContext(ci.ctx).Get(&rec, `
-		SELECT id, committer, message, creation_date, parents, tree_id, metadata
+		SELECT id, committer, message, creation_date, parents, range_id, metadata
 		FROM graveler_commits
 		WHERE repository_id = $1 AND id = $2`,
 		ci.repositoryID, ci.next)

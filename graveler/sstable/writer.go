@@ -108,10 +108,10 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	dw.closed = true
 
 	return &committed.WriteResult{
-		PartID:                 committed.ID(sstableID),
-		First:                  dw.first,
-		Last:                   dw.last,
-		Count:                  dw.count,
-		EstimatedPartSizeBytes: dw.w.EstimatedSize(),
+		RangeID:                 committed.ID(sstableID),
+		First:                   dw.first,
+		Last:                    dw.last,
+		Count:                   dw.count,
+		EstimatedRangeSizeBytes: dw.w.EstimatedSize(),
 	}, nil
 }

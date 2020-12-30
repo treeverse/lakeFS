@@ -11,24 +11,24 @@ type uncommittedDiffIterator struct {
 	committedManager CommittedManager
 	list             ValueIterator
 	storageNamespace StorageNamespace
-	treeID           TreeID
+	rangeID          RangeID
 	value            *Diff
 	err              error
 	ctx              context.Context
 }
 
-func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, treeItreeID TreeID) DiffIterator {
+func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, rangeID RangeID) DiffIterator {
 	return &uncommittedDiffIterator{
 		ctx:              ctx,
 		committedManager: manager,
 		list:             list,
 		storageNamespace: sn,
-		treeID:           treeItreeID,
+		rangeID:          rangeID,
 	}
 }
 
 func (d *uncommittedDiffIterator) valueExistsInCommitted(val ValueRecord) (bool, error) {
-	_, err := d.committedManager.Get(d.ctx, d.storageNamespace, d.treeID, val.Key)
+	_, err := d.committedManager.Get(d.ctx, d.storageNamespace, d.rangeID, val.Key)
 	if errors.Is(err, ErrNotFound) {
 		return false, nil
 	}
@@ -48,7 +48,7 @@ func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (DiffType, error)
 		// tombstone
 		if !existsInCommitted {
 			logging.Default().
-				WithFields(logging.Fields{"tree_id": d.treeID, "storage_namespace": d.storageNamespace, "key": val.Key}).
+				WithFields(logging.Fields{"range_id": d.rangeID, "storage_namespace": d.storageNamespace, "key": val.Key}).
 				Warn("tombstone for a file that does not exist")
 		}
 		return DiffTypeRemoved, nil

@@ -275,7 +275,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 
 func TestGraveler_Commit(t *testing.T) {
 	expectedCommitID := graveler.CommitID("expectedCommitId")
-	expectedTreeID := graveler.TreeID("expectedTreeID")
+	expectedRangeID := graveler.RangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 	type fields struct {
 		CommittedManager *testutil.CommittedFake
@@ -300,9 +300,9 @@ func TestGraveler_Commit(t *testing.T) {
 		{
 			name: "valid commit",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: values},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -318,9 +318,9 @@ func TestGraveler_Commit(t *testing.T) {
 		{
 			name: "fail on staging",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: values, Err: graveler.ErrNotFound},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -336,9 +336,9 @@ func TestGraveler_Commit(t *testing.T) {
 		{
 			name: "fail on apply",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID, Err: graveler.ErrConflictFound},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID, Err: graveler.ErrConflictFound},
 				StagingManager:   &testutil.StagingFake{ValueIterator: values},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -354,9 +354,9 @@ func TestGraveler_Commit(t *testing.T) {
 		{
 			name: "fail on add commit",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: values},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, CommitErr: graveler.ErrConflictFound, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, CommitErr: graveler.ErrConflictFound, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -372,9 +372,9 @@ func TestGraveler_Commit(t *testing.T) {
 		{
 			name: "fail on drop",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: values, DropErr: graveler.ErrNotFound},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -391,10 +391,10 @@ func TestGraveler_Commit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedCommitID := graveler.CommitID("expectedCommitId")
-			expectedTreeID := graveler.TreeID("expectedTreeID")
+			expectedRangeID := graveler.RangeID("expectedRangeID")
 			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			//tt.fields.RefManager.Commit = &graveler.Commit{TreeID: expectedTreeID}
+			//tt.fields.RefManager.Commit = &graveler.Commit{RangeID: expectedRangeID}
 			got, err := g.Commit(context.Background(), "", "", tt.args.committer, tt.args.message, tt.args.metadata)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
@@ -403,8 +403,8 @@ func TestGraveler_Commit(t *testing.T) {
 				return
 			}
 			if diff := deep.Equal(tt.fields.CommittedManager.AppliedData, testutil.AppliedData{
-				Values: values,
-				TreeID: expectedTreeID,
+				Values:  values,
+				RangeID: expectedRangeID,
 			}); diff != nil {
 				t.Errorf("unexpected apply data %s", diff)
 			}
@@ -412,7 +412,7 @@ func TestGraveler_Commit(t *testing.T) {
 			if diff := deep.Equal(tt.fields.RefManager.AddedCommit, testutil.AddedCommitData{
 				Committer: tt.args.committer,
 				Message:   tt.args.message,
-				TreeID:    expectedTreeID,
+				RangeID:   expectedRangeID,
 				Parents:   graveler.CommitParents{expectedCommitID},
 				Metadata:  graveler.Metadata{},
 			}); diff != nil {
@@ -429,12 +429,12 @@ func TestGraveler_Commit(t *testing.T) {
 	}
 }
 
-func TestGraveler_CommitExistingTree(t *testing.T) {
+func TestGraveler_CommitExistingRange(t *testing.T) {
 	const (
 		expectedCommitID     = graveler.CommitID("expectedCommitId")
-		expectedTreeID       = graveler.TreeID("expectedTreeID")
+		expectedRangeID      = graveler.RangeID("expectedRangeID")
 		expectedBranchID     = graveler.BranchID("expectedBranchID")
-		expectedRepositoryID = graveler.RepositoryID("expectedTreeID")
+		expectedRepositoryID = graveler.RepositoryID("expectedRangeID")
 	)
 
 	type fields struct {
@@ -460,9 +460,9 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 		{
 			name: "valid existing commit",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -478,9 +478,9 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 		{
 			name: "staging is dirty",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("this-is-key"), Value: &graveler.Value{}}})},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -494,11 +494,11 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 			expectedErr: graveler.ErrDirtyBranch,
 		},
 		{
-			name: "tree not found",
+			name: "meta range not found",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{Err: graveler.ErrNotFound},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -509,14 +509,14 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 				metadata:     nil,
 			},
 			want:        expectedCommitID,
-			expectedErr: graveler.ErrTreeNotFound,
+			expectedErr: graveler.ErrMetaRangeNotFound,
 		},
 		{
 			name: "fail on add commit",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{TreeID: expectedTreeID},
+				CommittedManager: &testutil.CommittedFake{RangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
-				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, CommitErr: graveler.ErrConflictFound, Commit: &graveler.Commit{TreeID: expectedTreeID}},
+				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, CommitErr: graveler.ErrConflictFound, Commit: &graveler.Commit{RangeID: expectedRangeID}},
 			},
 			args: args{
 				ctx:          nil,
@@ -534,7 +534,7 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			got, err := g.CommitExistingTree(context.Background(), expectedRepositoryID, expectedBranchID, expectedTreeID, tt.args.committer, tt.args.message, tt.args.metadata)
+			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedBranchID, expectedRangeID, tt.args.committer, tt.args.message, tt.args.metadata)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}
@@ -545,7 +545,7 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 			if diff := deep.Equal(tt.fields.RefManager.AddedCommit, testutil.AddedCommitData{
 				Committer: tt.args.committer,
 				Message:   tt.args.message,
-				TreeID:    expectedTreeID,
+				RangeID:   expectedRangeID,
 				Parents:   graveler.CommitParents{expectedCommitID},
 				Metadata:  graveler.Metadata{},
 			}); diff != nil {
@@ -694,7 +694,7 @@ func TestGraveler_Delete(t *testing.T) {
 				t.Errorf("unexpected set value %s", diff)
 			}
 			// validate removed from staging
-			if bytes.Compare(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) != 0 {
+			if !bytes.Equal(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) {
 				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
 			}
 
