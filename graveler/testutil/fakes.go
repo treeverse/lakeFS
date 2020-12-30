@@ -3,6 +3,7 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"sort"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
@@ -271,12 +272,10 @@ func (r *diffIter) Next() bool {
 }
 
 func (r *diffIter) SeekGE(id graveler.Key) {
-	for i, record := range r.records {
-		if bytes.Compare(id, record.Key) >= 0 {
-			r.current = i - 1
-		}
-	}
-	r.current = len(r.records)
+	i := sort.Search(len(r.records), func(i int) bool {
+		return bytes.Compare(r.records[i].Key, id) >= 0
+	})
+	r.current = i - 1
 }
 
 func (r *diffIter) Value() *graveler.Diff {
@@ -346,13 +345,10 @@ func (r *committedValueIteratorFake) Next() bool {
 }
 
 func (r *committedValueIteratorFake) SeekGE(id committed.Key) {
-	for i, record := range r.records {
-		if bytes.Compare(record.Key, id) >= 0 {
-			r.current = i - 1
-			return
-		}
-	}
-	r.current = len(r.records)
+	i := sort.Search(len(r.records), func(i int) bool {
+		return bytes.Compare(r.records[i].Key, id) >= 0
+	})
+	r.current = i - 1
 }
 
 func (r *committedValueIteratorFake) Value() *committed.Record {
