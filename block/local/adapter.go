@@ -356,7 +356,7 @@ func (l *Adapter) BlockstoreType() string {
 }
 
 func isValidUploadID(uploadID string) error {
-	_, err := strconv.ParseUint(uploadID, 16, 64)
+	_, err := hex.DecodeString(uploadID)
 	if err != nil {
 		return fmt.Errorf("%w: %s", ErrInvalidUploadIDFormat, err)
 	}
