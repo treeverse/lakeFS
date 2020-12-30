@@ -86,7 +86,7 @@ parameters in the body:
   "exportPath": "s3://company-bucket/path/to/export",
   "exportStatusPath": "s3://company-bucket/path/to/status",
   "lastKeysInPrefixRegexp": [
-    ".*/2021-\d\d-\d\d/"
+    ".*/2021-\\d\\d-\\d\\d/"
   ]
 }
 ```
