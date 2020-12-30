@@ -114,7 +114,7 @@ func (w *GeneralMetaRangeWriter) WriteRange(rng Range) error {
 	return nil
 }
 
-func (w *GeneralMetaRangeWriter) Close() (*graveler.RangeID, error) {
+func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 	if err := w.closeCurrentRange(); err != nil {
 		return nil, err
 	}
@@ -154,8 +154,8 @@ func rangeToValue(rng Range) (Value, error) {
 	return MarshalValue(rangeValue)
 }
 
-// writeRangesToMetaRange writes all ranges to a MetaRange and returns the RangeID
-func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.RangeID, error) {
+// writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
+func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID, error) {
 	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
@@ -178,7 +178,7 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.RangeID, er
 	if err != nil {
 		return nil, fmt.Errorf("failed closing metarange writer: %w", err)
 	}
-	RangeID := graveler.RangeID(wr.RangeID)
+	RangeID := graveler.MetaRangeID(wr.RangeID)
 	return &RangeID, nil
 }
 
