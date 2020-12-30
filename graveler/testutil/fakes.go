@@ -6,14 +6,14 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/graveler/committed/tree"
+	"github.com/treeverse/lakefs/graveler/committed"
 )
 
 const DefaultBranchID = graveler.BranchID("master")
 
 type AppliedData struct {
-	Values graveler.ValueIterator
-	TreeID graveler.TreeID
+	Values  graveler.ValueIterator
+	RangeID graveler.RangeID
 }
 
 type CommittedFake struct {
@@ -21,49 +21,64 @@ type CommittedFake struct {
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	Err           error
-	TreeID        graveler.TreeID
+	RangeID       graveler.RangeID
 	AppliedData   AppliedData
+}
+
+type MetaRangeFake struct {
+	id graveler.RangeID
+}
+
+func (t *MetaRangeFake) ID() graveler.RangeID {
+	return t.id
 }
 
 func NewCommittedFake() *CommittedFake {
 	return &CommittedFake{}
 }
 
-func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID, key graveler.Key) (*graveler.Value, error) {
+func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID, key graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValuesByKey[string(key)], nil
 }
 
-func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (graveler.ValueIterator, error) {
+func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.MetaRange, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	return &MetaRangeFake{id: rangeID}, nil
+}
+
+func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID) (graveler.ValueIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValueIterator, nil
 }
 
-func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.TreeID) (graveler.DiffIterator, error) {
+func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.RangeID) (graveler.DiffIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.diffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.TreeID, _, _ string, _ graveler.Metadata) (graveler.TreeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.RangeID, _, _ string, _ graveler.Metadata) (graveler.RangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
-	return c.TreeID, nil
+	return c.RangeID, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, treeID graveler.TreeID, values graveler.ValueIterator) (graveler.TreeID, error) {
+func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.RangeID, values graveler.ValueIterator) (graveler.RangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	c.AppliedData.Values = values
-	c.AppliedData.TreeID = treeID
-	return c.TreeID, nil
+	c.AppliedData.RangeID = rangeID
+	return c.RangeID, nil
 }
 
 type StagingFake struct {
@@ -140,7 +155,7 @@ func (s *StagingFake) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 type AddedCommitData struct {
 	Committer string
 	Message   string
-	TreeID    graveler.TreeID
+	RangeID   graveler.RangeID
 	Parents   graveler.CommitParents
 	Metadata  graveler.Metadata
 }
@@ -227,7 +242,7 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 	m.AddedCommit = AddedCommitData{
 		Committer: commit.Committer,
 		Message:   commit.Message,
-		TreeID:    commit.TreeID,
+		RangeID:   commit.RangeID,
 		Parents:   commit.Parents,
 		Metadata:  commit.Metadata,
 	}
@@ -348,29 +363,100 @@ func (m *referenceFake) CommitID() graveler.CommitID {
 	return m.commitID
 }
 
-type PV struct {
-	P *tree.Part
+type RV struct {
+	R *committed.Range
 	V *graveler.ValueRecord
 }
 
-type FakePartsAndValuesIterator struct {
-	PV  []PV
-	idx int
-	err error
+type FakeIterator struct {
+	RV           []RV
+	idx          int
+	rangeIdx     int
+	err          error
+	closed       bool
+	readsByRange []int
 }
 
-func (i *FakePartsAndValuesIterator) nextKey() []byte {
-	if len(i.PV) <= i.idx+1 {
+func NewFakeIterator() *FakeIterator {
+	// Start with an empty record so the first `Next()` can skip it.
+	return &FakeIterator{RV: make([]RV, 1), idx: 0, rangeIdx: -1}
+}
+
+// ReadsByRange returns the number of Next operations performed inside each range
+func (i *FakeIterator) ReadsByRange() []int {
+	return i.readsByRange
+}
+
+func (i *FakeIterator) nextKey() []byte {
+	if len(i.RV) <= i.idx+1 {
 		return nil
 	}
-	if i.PV[i.idx+1].V == nil {
-		return i.PV[i.idx+1].P.MinKey
+	if i.RV[i.idx+1].V == nil {
+		return i.RV[i.idx+1].R.MinKey
 	}
-	return i.PV[i.idx+1].V.Key
+	return i.RV[i.idx+1].V.Key
 }
 
-func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
+func (i *FakeIterator) SetErr(err error) {
+	i.err = err
+}
+
+func (i *FakeIterator) AddRange(p *committed.Range) *FakeIterator {
+	i.RV = append(i.RV, RV{R: p})
+	i.readsByRange = append(i.readsByRange, 0)
+	return i
+}
+
+func (i *FakeIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakeIterator {
+	if len(i.RV) == 0 {
+		panic(fmt.Sprintf("cannot add ValueRecords %+v with no range", vs))
+	}
+	rng := i.RV[len(i.RV)-1].R
+	for _, v := range vs {
+		i.RV = append(i.RV, RV{R: rng, V: v})
+	}
+	return i
+}
+
+func (i *FakeIterator) Next() bool {
+	if i.err != nil || i.closed {
+		return false
+	}
+	if len(i.RV) <= i.idx+1 {
+		return false
+	}
+	i.idx++
+	if i.RV[i.idx].V == nil {
+		i.rangeIdx++
+	} else {
+		i.readsByRange[i.rangeIdx]++
+	}
+	return true
+}
+
+func (i *FakeIterator) NextRange() bool {
+	for {
+		if len(i.RV) <= i.idx+1 {
+			return false
+		}
+		i.idx++
+		if i.RV[i.idx].V == nil {
+			i.rangeIdx++
+			return true
+		}
+	}
+}
+
+func (i *FakeIterator) Value() (*graveler.ValueRecord, *committed.Range) {
+	if i.closed {
+		return nil, nil
+	}
+	return i.RV[i.idx].V, i.RV[i.idx].R
+}
+
+func (i *FakeIterator) SeekGE(id graveler.Key) {
 	i.idx = 0
+	i.rangeIdx = -1
 	for {
 		nextKey := i.nextKey()
 		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
@@ -382,57 +468,10 @@ func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
 	}
 }
 
-func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
-	// Start with an empty record so the first `Next()` can skip it.
-	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0}
-}
-
-func (i *FakePartsAndValuesIterator) SetErr(err error) {
-	i.err = err
-}
-
-func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
-	i.PV = append(i.PV, PV{P: p})
-	return i
-}
-
-func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakePartsAndValuesIterator {
-	if len(i.PV) == 0 {
-		panic(fmt.Sprintf("cannot add ValueRecords %+v with no part", vs))
-	}
-	part := i.PV[len(i.PV)-1].P
-	for _, v := range vs {
-		i.PV = append(i.PV, PV{P: part, V: v})
-	}
-	return i
-}
-
-func (i *FakePartsAndValuesIterator) Next() bool {
-	if len(i.PV) <= i.idx+1 {
-		return false
-	}
-	i.idx++
-	return true
-}
-
-func (i *FakePartsAndValuesIterator) NextPart() bool {
-	for {
-		if len(i.PV) <= i.idx+1 {
-			return false
-		}
-		i.idx++
-		if i.PV[i.idx].V == nil {
-			return true
-		}
-	}
-}
-
-func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part) {
-	return i.PV[i.idx].V, i.PV[i.idx].P
-}
-
-func (i *FakePartsAndValuesIterator) Err() error {
+func (i *FakeIterator) Err() error {
 	return i.err
 }
 
-func (i *FakePartsAndValuesIterator) Close() {}
+func (i *FakeIterator) Close() {
+	i.closed = true
+}

@@ -10,12 +10,12 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pyramid/params"
 
 	"github.com/google/uuid"
-
-	"github.com/treeverse/lakefs/block"
 )
 
 // TierFS is a filesystem where written files are never edited.
@@ -23,9 +23,9 @@ import (
 // cache layer that will be evicted according to the eviction control.
 type TierFS struct {
 	logger  logging.Logger
-	adaptor block.Adapter
+	adapter block.Adapter
 
-	eviction eviction
+	eviction params.Eviction
 	keyLock  cache.OnlyOne
 	syncDir  *directory
 
@@ -36,57 +36,35 @@ type TierFS struct {
 	remotePrefix string
 }
 
-type Config struct {
-	// fsName is the unique filesystem name for this TierFS instance.
-	// If two TierFS instances have the same name, behaviour is undefined.
-	fsName string
-
-	adaptor block.Adapter
-	logger  logging.Logger
-
-	eviction eviction
-
-	// Prefix for all metadata file lakeFS stores in the block storage.
-	fsBlockStoragePrefix string
-
-	// The directory where TierFS files are kept locally.
-	localBaseDir string
-
-	// Maximum number of bytes an instance of TierFS can allocate to local files.
-	// This is not a hard limit - there might be short period of times where TierFS
-	// uses more disk due to ongoing writes and slow disk cleanups.
-	allocatedDiskBytes int64
-}
-
 const workspaceDir = "workspace"
 
 // NewFS creates a new TierFS.
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
-func NewFS(c *Config) (FS, error) {
-	fsLocalBaseDir := filepath.Clean(path.Join(c.localBaseDir, c.fsName))
+func NewFS(c *params.Params) (FS, error) {
+	fsLocalBaseDir := filepath.Clean(path.Join(c.Local.BaseDir, c.FSName))
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
 	}
 
 	tierFS := &TierFS{
-		adaptor:        c.adaptor,
-		fsName:         c.fsName,
-		logger:         c.logger,
+		adapter:        c.Adapter,
+		fsName:         c.FSName,
+		logger:         c.Logger,
 		fsLocalBaseDir: fsLocalBaseDir,
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanOnlyOne(),
-		remotePrefix:   path.Join(c.fsBlockStoragePrefix, c.fsName),
+		remotePrefix:   path.Join(c.BlockStoragePrefix, c.FSName),
 	}
-	if c.eviction == nil {
+	if c.Eviction == nil {
 		var err error
-		c.eviction, err = newRistrettoEviction(c.allocatedDiskBytes, tierFS.removeFromLocal)
+		c.Eviction, err = newRistrettoEviction(c.Local.AllocatedBytes, tierFS.removeFromLocal)
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}
 	}
 
-	tierFS.eviction = c.eviction
+	tierFS.eviction = c.Eviction
 	if err := handleExistingFiles(tierFS.eviction, fsLocalBaseDir); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
@@ -99,7 +77,7 @@ func NewFS(c *Config) (FS, error) {
 // 1. Adds stored files to the eviction control
 // 2. Remove workspace directories and all its content if it
 //	  exist under the namespace dir.
-func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
+func handleExistingFiles(eviction params.Eviction, fsLocalBaseDir string) error {
 	if err := filepath.Walk(fsLocalBaseDir, func(rPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -126,14 +104,14 @@ func handleExistingFiles(eviction eviction, fsLocalBaseDir string) error {
 	return nil
 }
 
-func (tfs *TierFS) removeFromLocal(rPath relativePath, filesize int64) {
+func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 	// This will be called by the cache eviction mechanism during entry insert.
 	// We don't want to wait while the file is being removed from the local disk.
 	evictionHistograms.WithLabelValues(tfs.fsName).Observe(float64(filesize))
 	go tfs.removeFromLocalInternal(rPath)
 }
 
-func (tfs *TierFS) removeFromLocalInternal(rPath relativePath) {
+func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
 	if err := os.Remove(p); err != nil {
 		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
@@ -158,7 +136,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if err := tfs.adaptor.Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	if err := tfs.adapter.Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
 		return fmt.Errorf("adapter put %s: %w", filename, err)
 	}
 
@@ -168,7 +146,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 
-	if tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		// file was stored by the policy
 		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
 	} else {
@@ -238,7 +216,7 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
-	if !tfs.eviction.store(fileRef.fsRelativePath, stat.Size()) {
+	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		// This is where we get less strict.
 		// Ideally, newly fetched file will never be rejected by the cache.
 		// But if it did, we prefer to serve the file and delete it.
@@ -260,7 +238,7 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		var err error
-		reader, err := tfs.adaptor.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
+		reader, err := tfs.adapter.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
@@ -295,8 +273,8 @@ func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) 
 	return fh, nil
 }
 
-func storeLocalFile(rPath string, size int64, eviction eviction) error {
-	if !eviction.store(relativePath(rPath), size) {
+func storeLocalFile(rPath string, size int64, eviction params.Eviction) error {
+	if !eviction.Store(params.RelativePath(rPath), size) {
 		return fmt.Errorf("removing file: %w", os.Remove(rPath))
 	}
 	return nil
@@ -332,16 +310,13 @@ func validateNamespace(ns string) error {
 	return nil
 }
 
-// relativePath is the path of the file under TierFS
-type relativePath string
-
 // localFileRef consists of all possible local file references
 type localFileRef struct {
 	namespace string
 	filename  string
 
 	fullPath       string
-	fsRelativePath relativePath
+	fsRelativePath params.RelativePath
 }
 
 func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
@@ -350,7 +325,7 @@ func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
 		namespace: namespace,
 		filename:  filename,
 
-		fsRelativePath: relativePath(relative),
+		fsRelativePath: params.RelativePath(relative),
 		fullPath:       path.Join(tfs.fsLocalBaseDir, relative),
 	}
 }

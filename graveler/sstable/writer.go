@@ -14,13 +14,12 @@ import (
 type DiskWriter struct {
 	w      *sstable.Writer
 	tierFS pyramid.FS
-
-	first committed.Key
-	last  committed.Key
-	count int
-	hash  hash.Hash
-
-	fh pyramid.StoredFile
+	first  committed.Key
+	last   committed.Key
+	count  int
+	hash   hash.Hash
+	fh     pyramid.StoredFile
+	closed bool
 }
 
 func NewDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
@@ -82,6 +81,10 @@ func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
 }
 
 func (dw *DiskWriter) Abort() error {
+	if dw.closed {
+		return nil
+	}
+
 	if err := dw.w.Close(); err != nil {
 		return fmt.Errorf("sstable file close: %w", err)
 	}
@@ -89,7 +92,6 @@ func (dw *DiskWriter) Abort() error {
 	if err := dw.fh.Abort(); err != nil {
 		return fmt.Errorf("sstable file abort: %w", err)
 	}
-
 	return nil
 }
 
@@ -103,10 +105,13 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 		return nil, fmt.Errorf("error storing sstable: %w", err)
 	}
 
+	dw.closed = true
+
 	return &committed.WriteResult{
-		PartID: committed.ID(sstableID),
-		First:  dw.first,
-		Last:   dw.last,
-		Count:  dw.count,
+		RangeID:                 committed.ID(sstableID),
+		First:                   dw.first,
+		Last:                    dw.last,
+		Count:                   dw.count,
+		EstimatedRangeSizeBytes: dw.w.EstimatedSize(),
 	}, nil
 }

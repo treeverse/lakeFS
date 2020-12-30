@@ -42,7 +42,8 @@ export REVISION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME)
+	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
+	    graveler/committed/mock graveler/sstable/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -87,7 +88,8 @@ del-gen-api:
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands
-	$(GOGENERATE) ./graveler/committed/...
+	$(GOGENERATE) ./graveler/sstable
+	$(GOGENERATE) ./graveler/committed
 	$(GOGENERATE) ./pyramid
 
 validate-swagger: go-install ## Validate swagger.yaml
@@ -137,6 +139,7 @@ validate-fmt:  ## Validate go format
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- catalog/rocks/catalog.pb.go
+	git diff --quiet -- graveler/committed/committed.pb.go
 
 checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
 
@@ -157,6 +160,7 @@ gen-ddl: go-install ## Embed data migration files into the resulting binary
 
 proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=catalog/rocks --go_out=catalog/rocks --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=graveler/committed --go_out=graveler/committed --go_opt=paths=source_relative committed.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

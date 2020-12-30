@@ -5,13 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
-
 	"github.com/golang/mock/gomock"
-	ssMock "github.com/treeverse/lakefs/graveler/committed/sstable/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/sstable"
+	ssMock "github.com/treeverse/lakefs/graveler/sstable/mock"
 	fsMock "github.com/treeverse/lakefs/pyramid/mock"
 )
 
@@ -140,7 +138,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 				return nil
 			}, nil)
 
-	iter, err := sut.NewPartIterator(committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
+	iter, err := sut.NewRangeIterator(committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
 	require.NoError(t, err)
 	require.NotNil(t, iter)
 

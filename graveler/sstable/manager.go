@@ -7,9 +7,7 @@ import (
 	"hash"
 
 	"github.com/treeverse/lakefs/graveler/committed"
-
 	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/pyramid"
 )
 
@@ -20,7 +18,7 @@ type Manager struct {
 	hash   hash.Hash
 }
 
-func NewPebbleSSTableManager(cache cache, fs pyramid.FS, hash hash.Hash) committed.PartManager {
+func NewPebbleSSTableManager(cache cache, fs pyramid.FS, hash hash.Hash) committed.RangeManager {
 	return &Manager{cache: cache, fs: fs, hash: hash}
 }
 
@@ -67,8 +65,8 @@ func (m *Manager) GetValue(ns committed.Namespace, lookup committed.Key, tid com
 	}, nil
 }
 
-// SSTableIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from committed.Key) (committed.ValueIterator, error) {
+// NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
+func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID, from committed.Key) (committed.ValueIterator, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -86,8 +84,13 @@ func (m *Manager) NewPartIterator(ns committed.Namespace, tid committed.ID, from
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *Manager) GetWriter(ns committed.Namespace) (committed.Writer, error) {
+func (m *Manager) GetWriter(ns committed.Namespace) (committed.RangeWriter, error) {
 	return NewDiskWriter(m.fs, ns, m.hash)
+}
+
+// GetBatchManager returns a new BatchCloser
+func (m *Manager) GetBatchWriter() committed.BatchWriterCloser {
+	return NewBatchCloser()
 }
 
 func (m *Manager) execAndLog(f func() error, msg string) {

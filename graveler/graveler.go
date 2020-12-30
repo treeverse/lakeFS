@@ -59,7 +59,7 @@ type Ref string
 // TagID represents a named tag pointing at a commit
 type TagID string
 
-// CommitParents
+// CommitParents commit's parents slice
 type CommitParents []CommitID
 
 // BranchID is an identifier for a branch
@@ -68,8 +68,8 @@ type BranchID string
 // CommitID is a content addressable hash representing a Commit object
 type CommitID string
 
-// TreeID represents a snapshot of the tree, referenced by a commit
-type TreeID string
+// RangeID represents a snapshot of the metaRange, referenced by a commit
+type RangeID string
 
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
@@ -115,11 +115,11 @@ func (ps CommitParents) Identity() []byte {
 	return buf.Identity()
 }
 
-// Commit represents commit metadata (author, time, tree ID)
+// Commit represents commit metadata (author, time, RangeID)
 type Commit struct {
 	Committer    string        `db:"committer"`
 	Message      string        `db:"message"`
-	TreeID       TreeID        `db:"tree_id"`
+	RangeID      RangeID       `db:"range_id"`
 	CreationDate time.Time     `db:"creation_date"`
 	Parents      CommitParents `db:"parents"`
 	Metadata     Metadata      `db:"metadata"`
@@ -130,14 +130,14 @@ func (c Commit) Identity() []byte {
 	b.MarshalString("commit:v1")
 	b.MarshalString(c.Committer)
 	b.MarshalString(c.Message)
-	b.MarshalString(string(c.TreeID))
+	b.MarshalString(string(c.RangeID))
 	b.MarshalInt64(c.CreationDate.Unix())
 	b.MarshalStringMap(c.Metadata)
 	b.MarshalIdentifiable(c.Parents)
 	return b.Identity()
 }
 
-// CommitRecords holds CommitID with the associated Commit data
+// CommitRecord holds CommitID with the associated Commit data
 type CommitRecord struct {
 	CommitID CommitID `db:"id"`
 	*Commit
@@ -282,6 +282,7 @@ type Graveler interface {
 // In case `Next()` returns false, `Value()` returns nil and `Err()` should be checked.
 // nil error means we reached the end of the input.
 // `SeekGE()` behaviour is like as starting a new iterator - `Value()` returns nothing until the first `Next()`.
+
 type RepositoryIterator interface {
 	Next() bool
 	SeekGE(id RepositoryID)
@@ -389,28 +390,37 @@ type RefManager interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
+// MetaRange abstracts the data structure of the committed data.
+type MetaRange interface {
+	// ID returns the RangeID
+	ID() RangeID
+}
+
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
-	// Get returns the provided key, if exists, from the provided TreeID
-	Get(ctx context.Context, ns StorageNamespace, treeID TreeID, key Key) (*Value, error)
+	// Get returns the provided key, if exists, from the provided RangeID
+	Get(ctx context.Context, ns StorageNamespace, rangeID RangeID, key Key) (*Value, error)
 
-	// List takes a given tree and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
+	// GetMetaRange returns the MetaRange under the namespace with matching ID.
+	// If the meta-range is not found, returns ErrNotFound.
+	GetMetaRange(ns StorageNamespace, rangeID RangeID) (MetaRange, error)
 
-	// Diff receives two trees and returns their diff.
-	// It tracks changes from left to right, returning an iterator of Diff entries.
-	Diff(ctx context.Context, ns StorageNamespace, left, right TreeID) (DiffIterator, error)
+	// List takes a given meta-range and returns an ValueIterator
+	List(ctx context.Context, ns StorageNamespace, rangeID RangeID) (ValueIterator, error)
 
-	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
-	// it applies that changes from left to right, resulting in a new tree that
+	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
+	Diff(ctx context.Context, ns StorageNamespace, left, right RangeID) (DiffIterator, error)
+
+	// Merge receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
+	// it applies that changes from left to right, resulting in a new metaRange that
 	// is expected to be immediately addressable
-	Merge(ctx context.Context, ns StorageNamespace, left, right, base TreeID, committer string, message string, metadata Metadata) (TreeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, left, right, base RangeID, committer string, message string, metadata Metadata) (RangeID, error)
 
-	// Apply is the act of taking an existing tree (snapshot) and applying a set of changes to it.
+	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
-	// it returns a new treeID that is expected to be immediately addressable
-	Apply(ctx context.Context, ns StorageNamespace, treeID TreeID, iterator ValueIterator) (TreeID, error)
+	// it returns a new rangeID that is expected to be immediately addressable
+	Apply(ctx context.Context, ns StorageNamespace, rangeID RangeID, iterator ValueIterator) (RangeID, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -513,7 +523,7 @@ type graveler struct {
 	log              logging.Logger
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *graveler {
 	return &graveler{
 		CommittedManager: committedManager,
 		StagingManager:   stagingManager,
@@ -706,7 +716,7 @@ func (g *graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
+	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.RangeID, key)
 }
 
 func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error {
@@ -742,7 +752,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	}
 
 	// check key in committed - do we need tombstone?
-	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.TreeID, key)
+	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.RangeID, key)
 	if errors.Is(err, ErrNotFound) {
 		// no need for tombstone - drop key from stage
 		return g.StagingManager.DropKey(ctx, branch.StagingToken, key)
@@ -777,7 +787,7 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 
-	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.TreeID)
+	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.RangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -813,14 +823,14 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", fmt.Errorf("staging list: %w", err)
 	}
-	treeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.TreeID, changes)
+	rangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.RangeID, changes)
 	if err != nil {
 		return "", fmt.Errorf("apply: %w", err)
 	}
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 		Committer:    committer,
 		Message:      message,
-		TreeID:       treeID,
+		RangeID:      rangeID,
 		CreationDate: time.Now(),
 		Parents:      CommitParents{branch.CommitID},
 		Metadata:     metadata,
@@ -839,6 +849,61 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}).Error("Failed to drop staging data")
 	}
 	return newCommit, nil
+}
+
+func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID RangeID, committer string, message string, metadata Metadata) (CommitID, error) {
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("acquire metadata update: %w", err)
+	}
+	defer cancel()
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
+	}
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("get branch %s: %w", branchID, err)
+	}
+	if empty, err := g.stagingEmpty(ctx, branch); err != nil {
+		return "", err
+	} else if !empty {
+		return "", ErrDirtyBranch
+	}
+
+	if _, err := g.CommittedManager.GetMetaRange(repo.StorageNamespace, rangeID); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return "", ErrMetaRangeNotFound
+		}
+		return "", fmt.Errorf("checking for metarange %s: %w", rangeID, err)
+	}
+
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+		Committer:    committer,
+		Message:      message,
+		RangeID:      rangeID,
+		CreationDate: time.Now(),
+		Parents:      CommitParents{branch.CommitID},
+		Metadata:     metadata,
+	})
+	if err != nil {
+		return "", fmt.Errorf("add commit: %w", err)
+	}
+
+	return newCommit, nil
+}
+
+func (g *graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken)
+	if err != nil {
+		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
+	}
+	defer stIt.Close()
+
+	if stIt.Next() {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
@@ -908,14 +973,14 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		return "", err
 	}
 
-	treeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.TreeID, toCommit.TreeID, baseCommit.TreeID, committer, message, metadata)
+	rangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.RangeID, toCommit.RangeID, baseCommit.RangeID, committer, message, metadata)
 	if err != nil {
 		return "", err
 	}
 	commit := Commit{
 		Committer:    committer,
 		Message:      message,
-		TreeID:       treeID,
+		RangeID:      rangeID,
 		CreationDate: time.Time{},
 		Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 		Metadata:     metadata,
@@ -940,7 +1005,7 @@ func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	if err != nil {
 		return nil, err
 	}
-	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.TreeID), nil
+	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.RangeID), nil
 }
 
 func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
@@ -972,5 +1037,5 @@ func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 		return nil, err
 	}
 
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.TreeID, rightCommit.TreeID)
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.RangeID, rightCommit.RangeID)
 }
