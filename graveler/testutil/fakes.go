@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/treeverse/lakefs/graveler/committed"
-
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed"
 )
 
 const DefaultBranchID = graveler.BranchID("master")
