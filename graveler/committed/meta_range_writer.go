@@ -178,8 +178,8 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 	if err != nil {
 		return nil, fmt.Errorf("failed closing metarange writer: %w", err)
 	}
-	RangeID := graveler.MetaRangeID(wr.RangeID)
-	return &RangeID, nil
+	metaRangeID := graveler.MetaRangeID(wr.RangeID)
+	return &metaRangeID, nil
 }
 
 func (w *GeneralMetaRangeWriter) Abort() error {
