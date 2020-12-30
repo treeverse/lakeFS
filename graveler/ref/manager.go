@@ -202,7 +202,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 		// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
 		// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
 		err := tx.Select(&records, `
-					SELECT id, committer, message, creation_date, parents, range_id, metadata
+					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits
 					WHERE repository_id = $1 AND id >= $2
 					LIMIT 2`,
@@ -240,7 +240,7 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 	commit, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var rec commitRecord
 		err := tx.Get(&rec, `
-					SELECT committer, message, creation_date, parents, range_id, metadata
+					SELECT committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
 			repositoryID, commitID)
 		if errors.Is(err, db.ErrNotFound) {
@@ -271,11 +271,11 @@ func (m *Manager) AddCommit(ctx context.Context, repositoryID graveler.Repositor
 		// it will necessarily have the same attributes as the existing one, so no need to overwrite it
 		_, err := tx.Exec(`
 				INSERT INTO graveler_commits 
-				(repository_id, id, committer, message, creation_date, parents, range_id, metadata)
+				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT DO NOTHING`,
 			repositoryID, ident.ContentAddress(commit), commit.Committer, commit.Message,
-			commit.CreationDate, parents, commit.RangeID, commit.Metadata)
+			commit.CreationDate, parents, commit.MetaRangeID, commit.Metadata)
 		return nil, err
 	}, db.WithContext(ctx))
 	if err != nil {
