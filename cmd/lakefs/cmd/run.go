@@ -71,7 +71,10 @@ var runCmd = &cobra.Command{
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create cataloger")
+		}
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init block store

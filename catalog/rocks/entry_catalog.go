@@ -2,8 +2,13 @@ package rocks
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/ref"
+	"github.com/treeverse/lakefs/pyramid"
 )
 
 type Path string
@@ -61,10 +66,25 @@ type EntryCatalog struct {
 	store graveler.Graveler
 }
 
-func NewEntryCatalog() *EntryCatalog {
-	return &EntryCatalog{
-		store: graveler.NewGraveler(nil, nil, nil),
+func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) {
+	tierFSParams, err := cfg.GetCommittedTierFSParams()
+	if err != nil {
+		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
+	fs, err := pyramid.NewFS(tierFSParams)
+	if err != nil {
+		return nil, fmt.Errorf("create tiered FS for committed: %w", err)
+	}
+	_ = fs // silence error
+	// TODO(ariels): Create a CommittedManager on top of fs.
+	var committedManager graveler.CommittedManager
+
+	stagingManager := graveler.NewStagingManager(db)
+	refManager := ref.NewPGRefManager(db)
+
+	return &EntryCatalog{
+		store: graveler.NewGraveler(committedManager, stagingManager, refManager),
+	}, nil
 }
 
 func (e *EntryCatalog) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
