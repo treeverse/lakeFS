@@ -64,7 +64,11 @@ var importCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		if err != nil {
+			fmt.Printf("Failed to create cataloger: %s\n", err)
+			os.Exit(1)
+		}
 		defer func() { _ = cataloger.Close() }()
 
 		u := uri.Must(uri.Parse(args[0]))

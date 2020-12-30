@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -25,13 +27,17 @@ const (
 	ListEntriesLimitMax      = 10000
 )
 
-func NewCataloger() catalog.Cataloger {
+func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error) {
+	entryCatalog, err := NewEntryCatalog(cfg, db)
+	if err != nil {
+		return nil, err
+	}
 	return &cataloger{
-		EntryCatalog: NewEntryCatalog(),
+		EntryCatalog: entryCatalog,
 		log:          logging.Default(),
 		dummyDedupCh: make(chan *catalog.DedupReport),
 		hooks:        catalog.CatalogerHooks{},
-	}
+	}, nil
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
