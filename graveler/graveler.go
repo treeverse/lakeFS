@@ -388,14 +388,24 @@ type RefManager interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
+// Tree abstracts the data structure of the committed data.
+type Tree interface {
+	// ID returns the tree ID
+	ID() TreeID
+}
+
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided RangeID
 	Get(ctx context.Context, ns StorageNamespace, rangeID RangeID, key Key) (*Value, error)
 
-	// List takes a given metaRange and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, rangeID RangeID) (ValueIterator, error)
+	// GetTree returns the Tree under the namespace with matching ID.
+	// If tree not found, returns ErrNotFound.
+	GetTree(ns StorageNamespace, treeID TreeID) (Tree, error)
+
+	// List takes a given tree and returns an ValueIterator
+	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
@@ -512,7 +522,7 @@ type graveler struct {
 	log              logging.Logger
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *graveler {
 	return &graveler{
 		CommittedManager: committedManager,
 		StagingManager:   stagingManager,
@@ -838,6 +848,61 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}).Error("Failed to drop staging data")
 	}
 	return newCommit, nil
+}
+
+func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID RepositoryID, branchID BranchID, treeID TreeID, committer string, message string, metadata Metadata) (CommitID, error) {
+	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("acquire metadata update: %w", err)
+	}
+	defer cancel()
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
+	}
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return "", fmt.Errorf("get branch %s: %w", branchID, err)
+	}
+	if empty, err := g.stagingEmpty(ctx, branch); err != nil {
+		return "", err
+	} else if !empty {
+		return "", ErrDirtyBranch
+	}
+
+	if _, err := g.CommittedManager.GetTree(repo.StorageNamespace, treeID); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return "", ErrTreeNotFound
+		}
+		return "", fmt.Errorf("checking for tree %s: %w", treeID, err)
+	}
+
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+		Committer:    committer,
+		Message:      message,
+		TreeID:       treeID,
+		CreationDate: time.Now(),
+		Parents:      CommitParents{branch.CommitID},
+		Metadata:     metadata,
+	})
+	if err != nil {
+		return "", fmt.Errorf("add commit: %w", err)
+	}
+
+	return newCommit, nil
+}
+
+func (g *graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken)
+	if err != nil {
+		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
+	}
+	defer stIt.Close()
+
+	if stIt.Next() {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {
