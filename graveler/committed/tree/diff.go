@@ -40,6 +40,7 @@ const (
 	sameParts
 	sameIdentities
 	sameKeys
+	needStartPartBoth
 	needStartPartLeft
 	needStartPartRight
 	leftBeforeRight
@@ -93,14 +94,18 @@ func (d *diffIterator) updateState() {
 		return
 	}
 	comp := d.compareKeys()
+	leftStartPart := d.leftVal.part != nil && d.leftVal.record == nil
+	rightStartPart := d.rightVal.part != nil && d.rightVal.record == nil
 	switch {
 	case d.leftVal.part == nil && d.rightVal.part == nil:
 		d.state = done
 	case d.leftVal.part != nil && d.rightVal.part != nil && d.leftVal.part.ID == d.rightVal.part.ID:
 		d.state = sameParts
-	case d.leftVal.part != nil && d.leftVal.record == nil && comp <= 0:
+	case leftStartPart && rightStartPart && comp == 0:
+		d.state = needStartPartBoth
+	case leftStartPart && comp <= 0:
 		d.state = needStartPartLeft
-	case d.rightVal.part != nil && d.rightVal.record == nil && comp >= 0:
+	case rightStartPart && comp >= 0:
 		d.state = needStartPartRight
 	case comp == 0 && bytes.Equal(d.leftVal.record.Identity, d.rightVal.record.Identity):
 		d.state = sameIdentities
@@ -114,8 +119,11 @@ func (d *diffIterator) updateState() {
 }
 
 func (d *diffIterator) Next() bool {
+	if d.state == closed {
+		return false
+	}
 	for {
-		if d.err != nil || d.state == closed {
+		if d.err != nil {
 			return false
 		}
 		d.updateState()
@@ -135,7 +143,7 @@ func (d *diffIterator) Next() bool {
 		case beforeInit:
 			d.state = afterInit
 			fallthrough
-		case sameIdentities:
+		case sameIdentities, needStartPartBoth:
 			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
 			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 		case needStartPartLeft:

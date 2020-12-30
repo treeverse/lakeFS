@@ -407,8 +407,7 @@ type CommittedManager interface {
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
 
-	// Diff receives two trees and returns their diff.
-	// It tracks changes from left to right, returning an iterator of Diff entries.
+	// Diff receives two trees and returns a DiffIterator describing all differences between them.
 	Diff(ctx context.Context, ns StorageNamespace, left, right TreeID) (DiffIterator, error)
 
 	// Merge receives two trees and a 3rd merge base tree used to resolve the change type
