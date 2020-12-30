@@ -184,6 +184,7 @@ func TestDiff(t *testing.T) {
 			fakeLeft := newFakeTreeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeTreeIterator(tst.rightKeys, tst.rightIdentities)
 			it := tree.NewDiffIterator(fakeLeft, fakeRight)
+			defer it.Close()
 			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
 			for it.Next() {
@@ -230,6 +231,7 @@ func TestDiffSeek(t *testing.T) {
 	it := tree.NewDiffIterator(
 		newFakeTreeIterator(left, leftIdentities),
 		newFakeTreeIterator(right, rightIdentities))
+	defer it.Close()
 	var diffs []*graveler.Diff
 	tests := []struct {
 		seekTo        string
@@ -288,6 +290,7 @@ func TestDiffErr(t *testing.T) {
 	leftIt.SetErr(leftErr)
 	rightIt := newFakeTreeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
 	it := tree.NewDiffIterator(leftIt, rightIt)
+	defer it.Close()
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")
 	}
