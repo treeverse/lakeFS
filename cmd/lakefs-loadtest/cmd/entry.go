@@ -55,10 +55,14 @@ var entryCmd = &cobra.Command{
 		defer database.Close()
 
 		conf := config.NewConfig()
-		c := catalogfactory.BuildCataloger(database, conf)
+		c, err := catalogfactory.BuildCataloger(database, conf)
+		if err != nil {
+			fmt.Printf("Cannot create cataloger: %s\n", err)
+			os.Exit(1)
+		}
 
 		// validate repository and branch
-		_, err := c.GetRepository(ctx, u.Repository)
+		_, err = c.GetRepository(ctx, u.Repository)
 		if err != nil {
 			fmt.Printf("Get repository (%s) failed: %s", u.Repository, err)
 			os.Exit(1)

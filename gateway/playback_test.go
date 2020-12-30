@@ -114,7 +114,8 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	cataloger := catalogfactory.BuildCataloger(conn, nil)
+	cataloger, err := catalogfactory.BuildCataloger(conn, nil)
+	testutil.MustDo(t, "build cataloger", err)
 	multipartsTracker := multiparts.NewTracker(conn)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
@@ -133,7 +134,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		storageNamespace = "replay"
 	}
 
-	_, err := cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
+	_, err = cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
 
 	handler := gateway.NewHandler(

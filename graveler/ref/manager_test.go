@@ -406,7 +406,7 @@ func TestManager_AddCommit(t *testing.T) {
 	c := graveler.Commit{
 		Committer:    "user1",
 		Message:      "message1",
-		RangeID:      "deadbeef123",
+		MetaRangeID:  "deadbeef123",
 		CreationDate: ts,
 		Parents:      graveler.CommitParents{"deadbeef1", "deadbeef12"},
 		Metadata:     graveler.Metadata{"foo": "bar"},
@@ -451,7 +451,7 @@ func TestManager_Log(t *testing.T) {
 		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",
-			RangeID:      "deadbeef123",
+			MetaRangeID:  "deadbeef123",
 			CreationDate: ts,
 			Parents:      graveler.CommitParents{previous},
 			Metadata:     graveler.Metadata{"foo": "bar"},

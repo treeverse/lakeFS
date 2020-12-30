@@ -85,7 +85,8 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	}
 	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger := catalogfactory.BuildCataloger(conn, nil)
+	cataloger, err := catalogfactory.BuildCataloger(conn, nil)
+	testutil.MustDo(t, "build cataloger", err)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,

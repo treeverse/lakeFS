@@ -23,7 +23,10 @@ var diagnoseCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create cataloger")
+		}
 
 		numFailures := 0
 		repos, _, err := cataloger.ListRepositories(ctx, -1, "")

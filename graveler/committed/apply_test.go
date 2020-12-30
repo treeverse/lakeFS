@@ -2,7 +2,6 @@ package committed_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -21,69 +20,12 @@ func makeTombstoneV(k string) *graveler.ValueRecord {
 	return &graveler.ValueRecord{Key: graveler.Key(k)}
 }
 
-type PV struct {
-	P *committed.Range
-	V *graveler.ValueRecord
-}
-
-type FakeIterator struct {
-	PV []PV
-}
-
-func NewFakeIterator() *FakeIterator {
-	// Start with an empty record so the first `Next()` can skip it.
-	return &FakeIterator{PV: make([]PV, 1)}
-}
-
-func (i *FakeIterator) AddRange(p *committed.Range) *FakeIterator {
-	i.PV = append(i.PV, PV{P: p})
-	return i
-}
-
-func (i *FakeIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakeIterator {
-	if len(i.PV) == 0 {
-		panic(fmt.Sprintf("cannot add ValueRecords %+v with no range", vs))
-	}
-	rng := i.PV[len(i.PV)-1].P
-	for _, v := range vs {
-		i.PV = append(i.PV, PV{P: rng, V: v})
-	}
-	return i
-}
-
-func (i *FakeIterator) Next() bool {
-	if len(i.PV) <= 1 {
-		return false
-	}
-	i.PV = i.PV[1:]
-	return true
-}
-
-func (i *FakeIterator) NextRange() bool {
-	for {
-		if len(i.PV) <= 1 {
-			return false
-		}
-		i.PV = i.PV[1:]
-		if i.PV[0].V == nil {
-			return true
-		}
-	}
-}
-
-func (i *FakeIterator) Value() (*graveler.ValueRecord, *committed.Range) {
-	return i.PV[0].V, i.PV[0].P
-}
-
-func (i *FakeIterator) Err() error { return nil }
-func (i *FakeIterator) Close()     {}
-
 func TestApplyAdd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakeIterator()
+	source := testutil.NewFakeIterator()
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c")).
@@ -111,7 +53,7 @@ func TestApplyReplace(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakeIterator()
+	source := testutil.NewFakeIterator()
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -139,7 +81,7 @@ func TestApplyDelete(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakeIterator()
+	source := testutil.NewFakeIterator()
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -165,7 +107,7 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := NewFakeIterator()
+	source := testutil.NewFakeIterator()
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -195,7 +137,7 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz")}
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
 	range4 := &committed.Range{ID: "four", MaxKey: committed.Key("hz")}
-	source := NewFakeIterator()
+	source := testutil.NewFakeIterator()
 	source.
 		AddRange(range1).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
