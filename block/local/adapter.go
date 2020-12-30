@@ -233,8 +233,8 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request
 }
 
 func (l *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
-	if !isValidUploadID(uploadID) {
-		return "", ErrInvalidUploadIDFormat
+	if err := isValidUploadID(uploadID); err != nil {
+		return "", err
 	}
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
@@ -244,8 +244,8 @@ func (l *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader,
 }
 
 func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
-	if !isValidUploadID(uploadID) {
-		return ErrInvalidUploadIDFormat
+	if err := isValidUploadID(uploadID); err != nil {
+		return err
 	}
 	files, err := l.getPartFiles(uploadID, obj)
 	if err != nil {
@@ -256,8 +256,8 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 }
 
 func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
-	if !isValidUploadID(uploadID) {
-		return nil, -1, ErrInvalidUploadIDFormat
+	if err := isValidUploadID(uploadID); err != nil {
+		return nil, -1, err
 	}
 	etag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
 	partFiles, err := l.getPartFiles(uploadID, obj)
@@ -352,7 +352,10 @@ func (l *Adapter) BlockstoreType() string {
 	return BlockstoreType
 }
 
-func isValidUploadID(uploadID string) bool {
+func isValidUploadID(uploadID string) error {
 	_, err := strconv.ParseUint(uploadID, 16, 64)
-	return err != nil
+	if err != nil {
+		return fmt.Errorf("%w: %s", ErrInvalidUploadIDFormat, err)
+	}
+	return nil
 }
