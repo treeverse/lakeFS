@@ -12,8 +12,8 @@ import (
 const DefaultBranchID = graveler.BranchID("master")
 
 type AppliedData struct {
-	Values  graveler.ValueIterator
-	RangeID graveler.MetaRangeID
+	Values      graveler.ValueIterator
+	MetaRangeID graveler.MetaRangeID
 }
 
 type CommittedFake struct {
@@ -21,7 +21,7 @@ type CommittedFake struct {
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	Err           error
-	RangeID       graveler.MetaRangeID
+	MetaRangeID   graveler.MetaRangeID
 	AppliedData   AppliedData
 }
 
@@ -69,16 +69,16 @@ func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _,
 	if c.Err != nil {
 		return "", c.Err
 	}
-	return c.RangeID, nil
+	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	c.AppliedData.Values = values
-	c.AppliedData.RangeID = rangeID
-	return c.RangeID, nil
+	c.AppliedData.MetaRangeID = metaRangeID
+	return c.MetaRangeID, nil
 }
 
 type StagingFake struct {
@@ -153,11 +153,11 @@ func (s *StagingFake) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 }
 
 type AddedCommitData struct {
-	Committer string
-	Message   string
-	RangeID   graveler.MetaRangeID
-	Parents   graveler.CommitParents
-	Metadata  graveler.Metadata
+	Committer   string
+	Message     string
+	MetaRangeID graveler.MetaRangeID
+	Parents     graveler.CommitParents
+	Metadata    graveler.Metadata
 }
 
 type RefsFake struct {
@@ -240,11 +240,11 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 		return "", m.CommitErr
 	}
 	m.AddedCommit = AddedCommitData{
-		Committer: commit.Committer,
-		Message:   commit.Message,
-		RangeID:   commit.RangeID,
-		Parents:   commit.Parents,
-		Metadata:  commit.Metadata,
+		Committer:   commit.Committer,
+		Message:     commit.Message,
+		MetaRangeID: commit.MetaRangeID,
+		Parents:     commit.Parents,
+		Metadata:    commit.Metadata,
 	}
 	return m.CommitID, nil
 }

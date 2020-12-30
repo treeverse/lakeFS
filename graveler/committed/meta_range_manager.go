@@ -31,17 +31,17 @@ type Iterator interface {
 
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
-	GetMetaRange(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (*MetaRange, error)
+	GetMetaRange(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (*MetaRange, error)
 
 	// GetValue finds the matching graveler.ValueRecord in the MetaRange with the rangeID
-	GetValue(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
+	GetValue(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
 	NewWriter(ns graveler.StorageNamespace) MetaRangeWriter
 
 	// NewMetaRangeIterator accepts a MetaRange ID, and returns an Iterator
 	// over the MetaRange from the first value >= from
-	NewMetaRangeIterator(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, from graveler.Key) (Iterator, error)
+	NewMetaRangeIterator(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, from graveler.Key) (Iterator, error)
 
 	// NewRangeIterator accepts a Range ID, and returns a ValueIterator
 	// over this Range from the first value >= from
