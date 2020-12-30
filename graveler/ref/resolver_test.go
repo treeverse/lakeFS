@@ -43,10 +43,11 @@ func TestRefManager_Dereference(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	ids := make([]graveler.CommitID, 0)
 	for iter.Next() {
 		c := iter.Value()
-		ids = append(ids, c.CommitID)
+		if c == nil {
+			t.Fatal("Log iterator returned nil value after Next")
+		}
 	}
 	if iter.Err() != nil {
 		t.Fatalf("unexpected error: %v", iter.Err())

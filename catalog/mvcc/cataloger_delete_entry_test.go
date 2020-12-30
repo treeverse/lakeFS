@@ -140,8 +140,9 @@ func TestCataloger_DeleteEntryAndCheckItRemainsInCommits(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to commit before expect not found:", err)
 	}
-	entry, err := c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
-	_ = entry
+	_, err = c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
+	testutil.Must(t, err)
+
 	err = c.DeleteEntry(ctx, repository, "master", "/file2")
 	if err != nil {
 		t.Fatal("delete failed: ", err)
@@ -150,8 +151,11 @@ func TestCataloger_DeleteEntryAndCheckItRemainsInCommits(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to commit after delete:", err)
 	}
-	entry, err = c.GetEntry(ctx, repository, nextCommit.Reference, "/file2", catalog.GetEntryParams{})
-	entry, err = c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
+	_, err = c.GetEntry(ctx, repository, nextCommit.Reference, "/file2", catalog.GetEntryParams{})
+	testutil.Must(t, err)
+	_, err = c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
+	testutil.Must(t, err)
+
 	list, _, err := c.ListEntries(ctx, repository, nextCommit.Reference, "", "", "", 1000)
 	if len(list) != 0 {
 		t.Fatal("list entries returned deleted object")

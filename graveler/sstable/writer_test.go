@@ -91,6 +91,7 @@ func TestWriterAbort(t *testing.T) {
 		Key:   []byte("key-1"),
 		Value: []byte("some-data"),
 	})
+	require.NoError(t, err)
 
 	// Abort
 	require.NoError(t, dw.Abort())
@@ -121,6 +122,7 @@ func TestWriterAbortAfterClose(t *testing.T) {
 		Key:   []byte("key-1"),
 		Value: []byte("some-data"),
 	})
+	require.NoError(t, err)
 
 	// Close
 	result, err := dw.Close()

@@ -26,8 +26,7 @@ func Tracker_Get(t *testing.T) {
 	}
 
 	type args struct {
-		repository string
-		uploadID   string
+		uploadID string
 	}
 	tests := []struct {
 		name    string

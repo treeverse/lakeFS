@@ -52,11 +52,10 @@ func TestField_String(t *testing.T) {
 	}
 }
 
-var wErr error = fmt.Errorf("error for testing")
-
 func TestMapError(t *testing.T) {
-	err := retention.MapError{Fields: retention.Fields{"a": 1, "b": 2}, WrappedError: wErr}
-	if !errors.Is(err, wErr) {
-		t.Errorf("error %s failed to wrap its base %s", err, wErr)
+	errTesting := fmt.Errorf("error for testing")
+	err := retention.MapError{Fields: retention.Fields{"a": 1, "b": 2}, WrappedError: errTesting}
+	if !errors.Is(err, errTesting) {
+		t.Errorf("error %s failed to wrap its base %s", err, errTesting)
 	}
 }
