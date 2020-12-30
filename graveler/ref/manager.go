@@ -275,7 +275,7 @@ func (m *Manager) AddCommit(ctx context.Context, repositoryID graveler.Repositor
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT DO NOTHING`,
 			repositoryID, ident.ContentAddress(commit), commit.Committer, commit.Message,
-			commit.CreationDate, parents, commit.TreeID, commit.Metadata)
+			commit.CreationDate, parents, commit.RangeID, commit.Metadata)
 		return nil, err
 	}, db.WithContext(ctx))
 	if err != nil {

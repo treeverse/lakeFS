@@ -10,8 +10,8 @@ import (
 const DefaultBranchID = graveler.BranchID("master")
 
 type AppliedData struct {
-	Values graveler.ValueIterator
-	TreeID graveler.RangeID
+	Values  graveler.ValueIterator
+	RangeID graveler.RangeID
 }
 
 type CommittedFake struct {
@@ -19,7 +19,7 @@ type CommittedFake struct {
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	Err           error
-	TreeID        graveler.RangeID
+	RangeID       graveler.RangeID
 	AppliedData   AppliedData
 }
 
@@ -52,16 +52,16 @@ func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _,
 	if c.Err != nil {
 		return "", c.Err
 	}
-	return c.TreeID, nil
+	return c.RangeID, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, treeID graveler.RangeID, values graveler.ValueIterator) (graveler.RangeID, error) {
+func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.RangeID, values graveler.ValueIterator) (graveler.RangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	c.AppliedData.Values = values
-	c.AppliedData.TreeID = treeID
-	return c.TreeID, nil
+	c.AppliedData.RangeID = rangeID
+	return c.RangeID, nil
 }
 
 type StagingFake struct {
@@ -138,7 +138,7 @@ func (s *StagingFake) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 type AddedCommitData struct {
 	Committer string
 	Message   string
-	TreeID    graveler.RangeID
+	RangeID   graveler.RangeID
 	Parents   graveler.CommitParents
 	Metadata  graveler.Metadata
 }
@@ -225,7 +225,7 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 	m.AddedCommit = AddedCommitData{
 		Committer: commit.Committer,
 		Message:   commit.Message,
-		TreeID:    commit.TreeID,
+		RangeID:   commit.RangeID,
 		Parents:   commit.Parents,
 		Metadata:  commit.Metadata,
 	}
