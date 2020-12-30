@@ -29,12 +29,15 @@ const (
 
 func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error) {
 	entryCatalog, err := NewEntryCatalog(cfg, db)
+	if err != nil {
+		return nil, err
+	}
 	return &cataloger{
 		EntryCatalog: entryCatalog,
 		log:          logging.Default(),
 		dummyDedupCh: make(chan *catalog.DedupReport),
 		hooks:        catalog.CatalogerHooks{},
-	}, err
+	}, nil
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
