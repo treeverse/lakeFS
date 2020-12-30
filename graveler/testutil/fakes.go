@@ -25,6 +25,14 @@ type CommittedFake struct {
 	AppliedData   AppliedData
 }
 
+type TreeFake struct {
+	id graveler.TreeID
+}
+
+func (t *TreeFake) ID() graveler.TreeID {
+	return t.id
+}
+
 func NewCommittedFake() graveler.CommittedManager {
 	return &CommittedFake{}
 }
@@ -34,6 +42,13 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 		return nil, c.Err
 	}
 	return c.Value, nil
+}
+
+func (c *CommittedFake) GetTree(ns graveler.StorageNamespace, treeID graveler.TreeID) (graveler.Tree, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	return &TreeFake{id: treeID}, nil
 }
 
 func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (graveler.ValueIterator, error) {
