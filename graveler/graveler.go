@@ -401,16 +401,15 @@ type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided MetaRangeID
 	Get(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, key Key) (*Value, error)
 
-	// GetTree returns the MetaRange under the namespace with matching ID.
-	// If tree not found, returns ErrNotFound.
+	// GetMetaRange returns the MetaRange under the namespace with matching ID.
+	// If the meta-range is not found, returns ErrNotFound.
 	GetMetaRange(ns StorageNamespace, metaRangeID MetaRangeID) (MetaRange, error)
 
-	// List takes a given tree and returns an ValueIterator
+	// List takes a given meta-range and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
 
-	// Diff receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
-	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base MetaRangeID) (DiffIterator, error)
+	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
+	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
 
 	// Merge receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
 	// it applies that changes from left to right, resulting in a new metaRange that
@@ -1036,10 +1035,6 @@ func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	if err != nil {
 		return nil, err
 	}
-	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, leftCommit.CommitID, rightCommit.CommitID)
-	if err != nil {
-		return nil, err
-	}
 
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID, baseCommit.MetaRangeID)
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
 }
