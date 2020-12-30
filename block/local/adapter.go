@@ -52,6 +52,7 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 }
 
 func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
+	path = filepath.Clean(path)
 	stt, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -63,7 +64,8 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 		return nil, ErrPathNotWritable
 	}
 	adapter := &Adapter{
-		path: path, ctx: context.Background(),
+		path:               path,
+		ctx:                context.Background(),
 		uploadIDTranslator: &block.NoOpTranslator{},
 	}
 	for _, opt := range opts {
@@ -88,7 +90,7 @@ func (l *Adapter) getPath(identifier block.ObjectPointer) (string, error) {
 		return "", err
 	}
 	p := path.Join(l.path, obj.StorageNamespace, obj.Key)
-	return filepath.Clean(p), nil
+	return p, nil
 }
 
 // maybeMkdir runs f(path), but if f fails due to file-not-found MkdirAll's its dir and then
@@ -98,12 +100,11 @@ func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, erro
 	if !errors.Is(err, os.ErrNotExist) {
 		return ret, err
 	}
-	cleanPath := filepath.Clean(path)
-	d := filepath.Dir(cleanPath)
-	if err = os.MkdirAll(d, 0777); err != nil {
+	d := filepath.Dir(filepath.Clean(path))
+	if err = os.MkdirAll(d, 0750); err != nil {
 		return nil, err
 	}
-	return f(cleanPath)
+	return f(path)
 }
 
 func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
@@ -111,6 +112,7 @@ func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ bloc
 	if err != nil {
 		return err
 	}
+	p = filepath.Clean(p)
 	f, err := maybeMkdir(p, os.Create)
 	if err != nil {
 		return err
@@ -127,6 +129,7 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 	if err != nil {
 		return err
 	}
+	p = filepath.Clean(p)
 	return os.Remove(p)
 }
 
@@ -135,7 +138,7 @@ func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	if err != nil {
 		return err
 	}
-	sourceFile, err := os.Open(source)
+	sourceFile, err := os.Open(filepath.Clean(source))
 	defer func() {
 		_ = sourceFile.Close()
 	}()
@@ -162,7 +165,7 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(p, os.O_RDONLY, 0755)
+	f, err := os.OpenFile(filepath.Clean(p), os.O_RDONLY, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +177,7 @@ func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.Open(p)
+	f, err := os.Open(filepath.Clean(p))
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +224,7 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request
 			return "", err
 		}
 		fullDir := path.Dir(fullPath)
-		err = os.MkdirAll(fullDir, 0755)
+		err = os.MkdirAll(fullDir, 0750)
 		if err != nil {
 			return "", err
 		}
