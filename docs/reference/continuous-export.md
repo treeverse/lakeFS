@@ -80,17 +80,21 @@ lakectl export repair lakefs://REPO@BRANCH
 Configure and query continuous export configuration of a branch with a `PUT` or a `GET` to
 `/repositories/{repository}/branches/{branch}/continuous-export`.  Pass these JSON
 parameters in the body:
+
 ```json
 {
-  "exportPath": "s3://company-bucket/path/to/export", // export objects to this path (required)
-  "exportStatusPath": "s3://company-bucket/path/to/status", // write status to this path (optional)
+  "exportPath": "s3://company-bucket/path/to/export",
+  "exportStatusPath": "s3://company-bucket/path/to/status",
   "lastKeysInPrefixRegexp": [
-    // list of regexps of keys to exported last in each prefix (for signalling) (optional)
-    ".*/_SUCCESS"
+    ".*/2021-\d\d-\d\d/"
   ]
 }
 ```
-Once set on a branch, every commit or merge to that branch will be exported.
+
+Files will be exported under `exportPath`.  Status files will optionally be written under
+`exportStatusPath` if that field is specified.  And a `_lakefs_success` file will be generated
+in each prefix (directory) matching `lastKeysInPrefixRegexp` after all files under that prefix
+are exported.
 
 #### Operation
 
@@ -102,12 +106,12 @@ Resume export after repairing with a `POST` to
 
 ## Operation
 
-When continuous export is enabled for a branch its current state is exported to S3.  From
-then on, every commit or merge operation to that branch will be exported.  The commit or
-merge operation on the branch returns as soon as export starts.  Multiple commits to the
-same exported branch may cause some otherwise-overlapping exports to be skipped.
-Eventually the last export will appear.  This is in line with "eventual consistency" of
-S3.
+When continuous export is enabled for a branch its current state is exported to S3.  From then
+on, every commit or merge operation to that branch will be exported.  The commit or merge
+operation on the branch returns as soon as export starts.  Multiple commits to the same
+exported branch may cause some otherwise-overlapping exports to be skipped.  Eventually the
+last export will appear, per eventual consistency of S3.  You can use status files to sequence
+operations after the appearance of all files in a branch or a prefix.
 
 The export process runs for a while and copies all files.  This process is highly parallel and
 does not maintain the creation or modification orders of the source files.  Export can write
@@ -133,22 +137,19 @@ valid only while the above `_STATUS` file shows `"success"` and the `"commit"` i
 
 #### What happens if a continuously exported branch changes while a previous export is still in progress?
 
-lakeFS exports objects safely and will not export the same branch twice concurrently.
-However when multiple concurrent exports occur intermediate exports cannot be observed and
-may be dropped.  A dropped intermediate export does not create the `_SUCCESS` or
-`_STATUS_<timestamp>.json` and `_MANIFEST_<timestamp>.json` files; conversely, once these
-appear the export will run to completion.
+lakeFS exports objects safely and will not export the same branch twice concurrently.  However
+when multiple concurrent exports occur intermediate exports cannot be observed and may be
+dropped.  A dropped intermediate export does not create the `_lakefs_success` in failed
+directories or the `<REPO>-<BRANCH>-<COMMIT>` file in the exported directory.  Conversely,
+after these appear the export has run to completion.
 
-#### How consistent is export once the `_STATUS_<timestamp>.json` file appears?
+#### How consistent is export once the `<REPO>-<BRANCH>-<COMMIT>` file appears?
 
-Once the `_STATUS_<timestamp>.json` file holds status `success`, the export has finished,
-and S3 rules apply:
+Once the latest `<REPO>-<BRANCH>-<COMMIT>` file holds status `success`, the export has
+finished, and S3 rules apply:
 
-* Any file can be accessed.
-* Files names appear in the `_MANIFEST_<timestamp>.json` file.
-* However S3 file listings will only eventually show all accessible files.
-
-lakeFS exports to S3 and is bound by its consistency guarantees.
+* Any file can be listed and accessed (full read-after-write).
+* Later commits might be exported concurrently, and may affect previously-exported files.
 
 #### How can I trigger processes external to lakeFS to run after an export?
 
