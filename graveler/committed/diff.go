@@ -78,9 +78,6 @@ func (d *diffIterator) compareDiffKeys() int {
 }
 
 func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
-	if d.state == diffIteratorStatePreInit {
-		return -1
-	}
 	if d.leftValue.rng == nil && d.rightValue.rng == nil {
 		return diffItCompareResultDone
 	}
