@@ -12,18 +12,20 @@ type IteratorValue struct {
 }
 
 type diffIterator struct {
-	left          Iterator
-	right         Iterator
-	leftVal       *IteratorValue
-	rightVal      *IteratorValue
-	needLeftNext  bool
-	nextRightNext bool
-	currentVal    *graveler.Diff
-	err           error
+	left       Iterator
+	right      Iterator
+	leftVal    *IteratorValue
+	rightVal   *IteratorValue
+	beforeInit bool
+	currentVal *graveler.Diff
+	err        error
 }
 
+type diffIteratorState int
+
 const (
-	done = iota
+	beforeInit diffIteratorState = iota
+	done
 	sameParts
 	sameIdentities
 	sameKeys
@@ -35,66 +37,62 @@ const (
 
 func NewDiffIterator(left Iterator, right Iterator) graveler.DiffIterator {
 	return &diffIterator{
-		left:          left,
-		right:         right,
-		leftVal:       &IteratorValue{},
-		rightVal:      &IteratorValue{},
-		needLeftNext:  true,
-		nextRightNext: true,
+		left:       left,
+		right:      right,
+		leftVal:    &IteratorValue{},
+		rightVal:   &IteratorValue{},
+		beforeInit: true,
 	}
 }
 
-func (d *diffIterator) next(it Iterator, val **IteratorValue) {
+func (d *diffIterator) next(it Iterator) (*graveler.ValueRecord, *Part, error) {
+	if d.err != nil {
+		return nil, nil, d.err
+	}
 	if it.Next() {
-		(*val).record, (*val).part = it.Value()
-		return
+		rec, part := it.Value()
+		return rec, part, nil
 	}
-	*val = nil
-	if it.Err() != nil {
-		d.err = it.Err()
-	}
-
+	return nil, nil, it.Err()
 }
 
-func (d *diffIterator) nextPart(it Iterator, val **IteratorValue) {
+func (d *diffIterator) nextPart(it Iterator) (*Part, error) {
+	if d.err != nil {
+		return nil, d.err
+	}
 	if it.NextPart() {
-		(*val).record, (*val).part = it.Value()
-		return
+		_, part := it.Value()
+		return part, nil
 	}
-	*val = nil
-	if it.Err() != nil {
-		d.err = it.Err()
-	}
-}
-
-func key(it Iterator) []byte {
-	val, part := it.Value()
-	if val == nil {
-		return part.MinKey
-	}
-	return val.Key
+	return nil, it.Err()
 }
 
 func (d *diffIterator) compareKeys() int {
-	if d.leftVal == nil {
+	if d.beforeInit {
+		return 0
+	}
+	if d.leftVal.part == nil {
 		return 1
 	}
-	if d.rightVal == nil {
+	if d.rightVal.part == nil {
 		return -1
 	}
-	return bytes.Compare(key(d.left), key(d.right))
+	return bytes.Compare(getCurrentKey(d.left), getCurrentKey(d.right))
 }
 
-func (d *diffIterator) getState() int {
+func (d *diffIterator) getState() diffIteratorState {
 	comp := d.compareKeys()
 	switch {
-	case d.leftVal == nil && d.rightVal == nil:
+	case d.beforeInit:
+		d.beforeInit = false
+		return beforeInit
+	case d.leftVal.part == nil && d.rightVal.part == nil:
 		return done
-	case d.leftVal != nil && d.rightVal != nil && d.leftVal.part.ID == d.rightVal.part.ID:
+	case d.leftVal.part != nil && d.rightVal.part != nil && d.leftVal.part.ID == d.rightVal.part.ID:
 		return sameParts
-	case d.leftVal != nil && d.leftVal.record == nil && comp <= 0:
+	case d.leftVal.part != nil && d.leftVal.record == nil && comp <= 0:
 		return needStartPartLeft
-	case d.rightVal != nil && d.rightVal.record == nil && comp >= 0:
+	case d.rightVal.part != nil && d.rightVal.record == nil && comp >= 0:
 		return needStartPartRight
 	case comp == 0 && bytes.Equal(d.leftVal.record.Identity, d.rightVal.record.Identity):
 		return sameIdentities
@@ -112,55 +110,37 @@ func (d *diffIterator) Next() bool {
 		if d.err != nil {
 			return false
 		}
-		if d.needLeftNext {
-			d.needLeftNext = false
-			d.next(d.left, &d.leftVal)
-		}
-		if d.nextRightNext {
-			d.nextRightNext = false
-			d.next(d.right, &d.rightVal)
-		}
 		switch d.getState() {
 		case done:
 			d.currentVal = nil
 			return false
 		case sameParts:
-			d.nextPart(d.left, &d.leftVal)
-			d.nextPart(d.right, &d.rightVal)
-			continue
+			d.leftVal.part, d.err = d.nextPart(d.left)
+			d.rightVal.part, d.err = d.nextPart(d.right)
 		case sameKeys:
 			// same keys on different parts
-			d.needLeftNext = true
-			d.nextRightNext = true
-			d.currentVal = diff(d.rightVal, graveler.DiffTypeChanged)
+			d.currentVal = newDiff(d.rightVal, graveler.DiffTypeChanged)
+			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
+			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 			return true
-		case sameIdentities:
-			d.needLeftNext = true
-			d.nextRightNext = true
-			continue
+		case sameIdentities, beforeInit:
+			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
+			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 		case needStartPartLeft:
-			d.needLeftNext = true
+			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
 		case needStartPartRight:
-			d.nextRightNext = true
+			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 		case leftBeforeRight:
 			// nothing on right, or left before right
-			d.needLeftNext = true
-			d.currentVal = diff(d.leftVal, graveler.DiffTypeRemoved)
+			d.currentVal = newDiff(d.leftVal, graveler.DiffTypeRemoved)
+			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
 			return true
 		case rightBeforeLeft:
 			// nothing on left, or right before left
-			d.nextRightNext = true
-			d.currentVal = diff(d.rightVal, graveler.DiffTypeAdded)
+			d.currentVal = newDiff(d.rightVal, graveler.DiffTypeAdded)
+			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 			return true
 		}
-	}
-}
-
-func diff(val *IteratorValue, typ graveler.DiffType) *graveler.Diff {
-	return &graveler.Diff{
-		Type:  typ,
-		Key:   val.record.Key,
-		Value: val.record.Value,
 	}
 }
 
@@ -171,8 +151,7 @@ func (d *diffIterator) SeekGE(id graveler.Key) {
 	d.leftVal = &IteratorValue{}
 	d.rightVal = &IteratorValue{}
 	d.err = nil
-	d.nextRightNext = true
-	d.needLeftNext = true
+	d.beforeInit = true
 }
 
 func (d *diffIterator) Value() *graveler.Diff {
@@ -186,4 +165,20 @@ func (d *diffIterator) Err() error {
 func (d *diffIterator) Close() {
 	d.left.Close()
 	d.right.Close()
+}
+
+func getCurrentKey(it Iterator) []byte {
+	val, part := it.Value()
+	if val == nil {
+		return part.MinKey
+	}
+	return val.Key
+}
+
+func newDiff(val *IteratorValue, typ graveler.DiffType) *graveler.Diff {
+	return &graveler.Diff{
+		Type:  typ,
+		Key:   val.record.Key,
+		Value: val.record.Value,
+	}
 }
