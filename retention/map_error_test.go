@@ -2,7 +2,6 @@ package retention_test
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/treeverse/lakefs/retention"
@@ -53,7 +52,7 @@ func TestField_String(t *testing.T) {
 }
 
 func TestMapError(t *testing.T) {
-	errTesting := fmt.Errorf("error for testing")
+	errTesting := errors.New("error for testing")
 	err := retention.MapError{Fields: retention.Fields{"a": 1, "b": 2}, WrappedError: errTesting}
 	if !errors.Is(err, errTesting) {
 		t.Errorf("error %s failed to wrap its base %s", err, errTesting)
