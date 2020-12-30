@@ -68,8 +68,8 @@ type BranchID string
 // CommitID is a content addressable hash representing a Commit object
 type CommitID string
 
-// RangeID represents a snapshot of the metaRange, referenced by a commit
-type RangeID string
+// MetaRangeID represents a snapshot of the MetaRange, referenced by a commit
+type MetaRangeID string
 
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
@@ -115,11 +115,11 @@ func (ps CommitParents) Identity() []byte {
 	return buf.Identity()
 }
 
-// Commit represents commit metadata (author, time, RangeID)
+// Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
 	Committer    string        `db:"committer"`
 	Message      string        `db:"message"`
-	RangeID      RangeID       `db:"range_id"`
+	RangeID      MetaRangeID   `db:"range_id"`
 	CreationDate time.Time     `db:"creation_date"`
 	Parents      CommitParents `db:"parents"`
 	Metadata     Metadata      `db:"metadata"`
@@ -391,36 +391,36 @@ type RefManager interface {
 
 // MetaRange abstracts the data structure of the committed data.
 type MetaRange interface {
-	// ID returns the RangeID
-	ID() RangeID
+	// ID returns the MetaRangeID
+	ID() MetaRangeID
 }
 
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
-	// Get returns the provided key, if exists, from the provided RangeID
-	Get(ctx context.Context, ns StorageNamespace, rangeID RangeID, key Key) (*Value, error)
+	// Get returns the provided key, if exists, from the provided MetaRangeID
+	Get(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, key Key) (*Value, error)
 
 	// GetTree returns the MetaRange under the namespace with matching ID.
 	// If tree not found, returns ErrNotFound.
-	GetMetaRange(ns StorageNamespace, rangeID RangeID) (MetaRange, error)
+	GetMetaRange(ns StorageNamespace, metaRangeID MetaRangeID) (MetaRange, error)
 
 	// List takes a given tree and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, rangeID RangeID) (ValueIterator, error)
+	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
-	Diff(ctx context.Context, ns StorageNamespace, left, right, base RangeID) (DiffIterator, error)
+	Diff(ctx context.Context, ns StorageNamespace, left, right, base MetaRangeID) (DiffIterator, error)
 
 	// Merge receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
 	// it applies that changes from left to right, resulting in a new metaRange that
 	// is expected to be immediately addressable
-	Merge(ctx context.Context, ns StorageNamespace, left, right, base RangeID, committer string, message string, metadata Metadata) (RangeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, left, right, base MetaRangeID, committer string, message string, metadata Metadata) (MetaRangeID, error)
 
 	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new rangeID that is expected to be immediately addressable
-	Apply(ctx context.Context, ns StorageNamespace, rangeID RangeID, iterator ValueIterator) (RangeID, error)
+	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -851,7 +851,7 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	return newCommit, nil
 }
 
-func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID RangeID, committer string, message string, metadata Metadata) (CommitID, error) {
+func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
 		return "", fmt.Errorf("acquire metadata update: %w", err)
