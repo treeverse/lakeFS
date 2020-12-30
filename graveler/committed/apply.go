@@ -1,4 +1,4 @@
-package tree
+package committed
 
 import (
 	"bytes"
@@ -10,23 +10,23 @@ import (
 )
 
 // Just a sketch of Apply; it will probably be much harder to write...
-func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.ValueIterator) error {
+func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator) error {
 	logger := logging.FromContext(ctx)
 	haveSource, haveDiffs := source.Next(), diffs.Next()
 	for haveSource && haveDiffs {
-		sourceValue, sourcePart := source.Value()
+		sourceValue, sourceRange := source.Value()
 		diffValue := diffs.Value()
 		if sourceValue == nil {
-			if bytes.Compare(sourcePart.MaxKey, diffValue.Key) < 0 {
-				// Source at start of part which we do not need to scan --
-				// write and skip that entire part.
+			if bytes.Compare(sourceRange.MaxKey, diffValue.Key) < 0 {
+				// Source at start of range which we do not need to scan --
+				// write and skip that entire range.
 
-				if err := writer.AddPart(*sourcePart); err != nil {
-					return fmt.Errorf("copy source part %s: %w", sourcePart.ID, err)
+				if err := writer.WriteRange(*sourceRange); err != nil {
+					return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 				}
-				haveSource = source.NextPart()
+				haveSource = source.NextRange()
 			} else {
-				// Source is at start of part which we need to scan, enter it.
+				// Source is at start of range which we need to scan, enter it.
 				haveSource = source.Next()
 			}
 			continue
@@ -59,12 +59,12 @@ func Apply(ctx context.Context, writer Writer, source Iterator, diffs graveler.V
 		}
 	}
 	for haveSource {
-		sourceValue, sourcePart := source.Value()
+		sourceValue, sourceRange := source.Value()
 		if sourceValue == nil {
-			if err := writer.AddPart(*sourcePart); err != nil {
-				return fmt.Errorf("copy source part %s: %w", sourcePart.ID, err)
+			if err := writer.WriteRange(*sourceRange); err != nil {
+				return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 			}
-			haveSource = source.NextPart()
+			haveSource = source.NextRange()
 		} else {
 			if err := writer.WriteRecord(*sourceValue); err != nil {
 				return fmt.Errorf("write source record: %w", err)

@@ -6,15 +6,11 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/pebble"
-
-	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/sstable"
-
-	"github.com/stretchr/testify/require"
-
 	pebble_sst "github.com/cockroachdb/pebble/sstable"
-
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
 func TestIteratorSuccess(t *testing.T) {

@@ -112,7 +112,7 @@ func TestDropByPrefix(t *testing.T) {
 		// key1000 starts with the deleted prefix - should have been deleted
 		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
 	}
-	v, err = s.Get(ctx, "t1", []byte("key0000"))
+	_, err = s.Get(ctx, "t1", []byte("key0000"))
 	// key0000 does not start with the deleted prefix - should be returned
 	testutil.Must(t, err)
 	it, _ := s.List(ctx, "t1")
