@@ -43,3 +43,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, treeID graveler.TreeID, iterator graveler.ValueIterator) (graveler.TreeID, error) {
 	panic("implement me")
 }
+
+func (c *committedManager) GetTree(ns graveler.StorageNamespace, treeID graveler.TreeID) (graveler.Tree, error) {
+	panic("implement me")
+}
