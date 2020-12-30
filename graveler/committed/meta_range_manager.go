@@ -39,7 +39,7 @@ type MetaRangeManager interface {
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
 	NewWriter(ns graveler.StorageNamespace) MetaRangeWriter
 
-	// NewIterator accepts a MetaRange ID, and returns an Iterator
+	// NewMetaRangeIterator accepts a MetaRange ID, and returns an Iterator
 	// over the MetaRange from the first value >= from
 	NewMetaRangeIterator(ns graveler.StorageNamespace, rangeID graveler.RangeID, from graveler.Key) (Iterator, error)
 

@@ -8,6 +8,7 @@ type iterator struct {
 	ranges           []Range
 	it               graveler.ValueIterator
 	err              error
+	ns               graveler.StorageNamespace
 }
 
 func NewIterator(repo MetaRangeManager, ranges []Range) Iterator {
@@ -41,7 +42,7 @@ func (rvi *iterator) Next() bool {
 		return false // Iteration was already finished.
 	}
 	var err error
-	rvi.it, err = rvi.metaRangeManager.NewRangeIterator(rvi.ranges[0].ID, nil)
+	rvi.it, err = rvi.metaRangeManager.NewRangeIterator(rvi.ns, rvi.ranges[0].ID, nil)
 	if err != nil {
 		rvi.err = err
 		return false
