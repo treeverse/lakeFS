@@ -388,10 +388,10 @@ type RefManager interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
-// Tree abstracts the data structure of the committed data.
-type Tree interface {
-	// ID returns the tree ID
-	ID() TreeID
+// MetaRange abstracts the data structure of the committed data.
+type MetaRange interface {
+	// ID returns the RangeID
+	ID() RangeID
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -400,12 +400,12 @@ type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided RangeID
 	Get(ctx context.Context, ns StorageNamespace, rangeID RangeID, key Key) (*Value, error)
 
-	// GetTree returns the Tree under the namespace with matching ID.
+	// GetTree returns the MetaRange under the namespace with matching ID.
 	// If tree not found, returns ErrNotFound.
-	GetTree(ns StorageNamespace, treeID TreeID) (Tree, error)
+	GetTree(ns StorageNamespace, rangeID RangeID) (MetaRange, error)
 
 	// List takes a given tree and returns an ValueIterator
-	List(ctx context.Context, ns StorageNamespace, treeID TreeID) (ValueIterator, error)
+	List(ctx context.Context, ns StorageNamespace, rangeID RangeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
 	// it tracks changes from left to right, returning an iterator of Diff entries
@@ -850,7 +850,7 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	return newCommit, nil
 }
 
-func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID RepositoryID, branchID BranchID, treeID TreeID, committer string, message string, metadata Metadata) (CommitID, error) {
+func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID RangeID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
 		return "", fmt.Errorf("acquire metadata update: %w", err)
@@ -870,17 +870,17 @@ func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID Reposito
 		return "", ErrDirtyBranch
 	}
 
-	if _, err := g.CommittedManager.GetTree(repo.StorageNamespace, treeID); err != nil {
+	if _, err := g.CommittedManager.GetTree(repo.StorageNamespace, rangeID); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return "", ErrTreeNotFound
 		}
-		return "", fmt.Errorf("checking for tree %s: %w", treeID, err)
+		return "", fmt.Errorf("checking for metaRange %s: %w", rangeID, err)
 	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 		Committer:    committer,
 		Message:      message,
-		TreeID:       treeID,
+		RangeID:      rangeID,
 		CreationDate: time.Now(),
 		Parents:      CommitParents{branch.CommitID},
 		Metadata:     metadata,

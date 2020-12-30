@@ -24,10 +24,10 @@ type CommittedFake struct {
 }
 
 type TreeFake struct {
-	id graveler.TreeID
+	id graveler.RangeID
 }
 
-func (t *TreeFake) ID() graveler.TreeID {
+func (t *TreeFake) ID() graveler.RangeID {
 	return t.id
 }
 
@@ -42,21 +42,21 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 	return c.Value, nil
 }
 
-func (c *CommittedFake) GetTree(ns graveler.StorageNamespace, treeID graveler.TreeID) (graveler.Tree, error) {
+func (c *CommittedFake) GetTree(_ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.MetaRange, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return &TreeFake{id: treeID}, nil
+	return &TreeFake{id: rangeID}, nil
 }
 
-func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.TreeID) (graveler.ValueIterator, error) {
+func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID) (graveler.ValueIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValueIterator, nil
 }
 
-func (c *CommittedFake) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.RangeID) (graveler.DiffIterator, error) {
+func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.RangeID) (graveler.DiffIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
