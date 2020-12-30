@@ -32,19 +32,23 @@ type diffIterator struct {
 type diffIteratorState int
 
 const (
-	beforeInit diffIteratorState = iota
-	afterInit
-	done
-	closed
+	diffItBeforeInit diffIteratorState = iota
+	diffItInitialized
+	diffItClosed
+)
 
-	sameParts
-	sameIdentities
-	sameKeys
-	needStartPartBoth
-	needStartPartLeft
-	needStartPartRight
-	leftBeforeRight
-	rightBeforeLeft
+type diffIteratorCompareResult int
+
+const (
+	diffItCompareResultDone diffIteratorCompareResult = iota
+	diffItCompareResultSameParts
+	diffItCompareResultSameIdentities
+	diffItCompareResultSameKeys
+	diffItCompareResultNeedStartPartBoth
+	diffItCompareResultNeedStartPartLeft
+	diffItCompareResultNeedStartPartRight
+	diffItCompareResultLeftBeforeRight
+	diffItCompareResultRightBeforeLeft
 )
 
 func NewDiffIterator(left Iterator, right Iterator) graveler.DiffIterator {
@@ -53,11 +57,11 @@ func NewDiffIterator(left Iterator, right Iterator) graveler.DiffIterator {
 		right:    right,
 		leftVal:  &IteratorValue{},
 		rightVal: &IteratorValue{},
-		state:    beforeInit,
+		state:    diffItBeforeInit,
 	}
 }
 
-func (d *diffIterator) next(it Iterator) (*graveler.ValueRecord, *Part, error) {
+func (d *diffIterator) diffIteratorNextValue(it Iterator) (*graveler.ValueRecord, *Part, error) {
 	if d.err != nil {
 		return nil, nil, d.err
 	}
@@ -68,7 +72,7 @@ func (d *diffIterator) next(it Iterator) (*graveler.ValueRecord, *Part, error) {
 	return nil, nil, it.Err()
 }
 
-func (d *diffIterator) nextPart(it Iterator) (*Part, error) {
+func (d *diffIterator) diffIteratorNextPart(it Iterator) (*Part, error) {
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -79,7 +83,7 @@ func (d *diffIterator) nextPart(it Iterator) (*Part, error) {
 	return nil, it.Err()
 }
 
-func (d *diffIterator) compareKeys() int {
+func (d *diffIterator) compareDiffKeys() int {
 	if d.leftVal.part == nil {
 		return 1
 	}
@@ -89,76 +93,80 @@ func (d *diffIterator) compareKeys() int {
 	return bytes.Compare(getCurrentKey(d.left), getCurrentKey(d.right))
 }
 
-func (d *diffIterator) updateState() {
-	if d.state == beforeInit {
-		return
+func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
+	if d.state == diffItBeforeInit {
+		return -1
 	}
-	comp := d.compareKeys()
+	if d.leftVal.part == nil && d.rightVal.part == nil {
+		return diffItCompareResultDone
+	}
+	if d.leftVal.part != nil && d.rightVal.part != nil && d.leftVal.part.ID == d.rightVal.part.ID {
+		return diffItCompareResultSameParts
+	}
 	leftStartPart := d.leftVal.part != nil && d.leftVal.record == nil
 	rightStartPart := d.rightVal.part != nil && d.rightVal.record == nil
+	comp := d.compareDiffKeys()
 	switch {
-	case d.leftVal.part == nil && d.rightVal.part == nil:
-		d.state = done
-	case d.leftVal.part != nil && d.rightVal.part != nil && d.leftVal.part.ID == d.rightVal.part.ID:
-		d.state = sameParts
 	case leftStartPart && rightStartPart && comp == 0:
-		d.state = needStartPartBoth
+		return diffItCompareResultNeedStartPartBoth
 	case leftStartPart && comp <= 0:
-		d.state = needStartPartLeft
+		return diffItCompareResultNeedStartPartLeft
 	case rightStartPart && comp >= 0:
-		d.state = needStartPartRight
+		return diffItCompareResultNeedStartPartRight
 	case comp == 0 && bytes.Equal(d.leftVal.record.Identity, d.rightVal.record.Identity):
-		d.state = sameIdentities
+		return diffItCompareResultSameIdentities
 	case comp == 0:
-		d.state = sameKeys
+		return diffItCompareResultSameKeys
 	case comp < 0:
-		d.state = leftBeforeRight
+		return diffItCompareResultLeftBeforeRight
 	default:
-		d.state = rightBeforeLeft
+		return diffItCompareResultRightBeforeLeft
 	}
 }
 
 func (d *diffIterator) Next() bool {
-	if d.state == closed {
+	if d.state == diffItClosed {
 		return false
+	}
+	if d.state == diffItBeforeInit {
+		d.state = diffItInitialized
+		d.leftVal.record, d.leftVal.part, d.err = d.diffIteratorNextValue(d.left)
+		d.rightVal.record, d.rightVal.part, d.err = d.diffIteratorNextValue(d.right)
 	}
 	for {
 		if d.err != nil {
 			return false
 		}
-		d.updateState()
-		switch d.state {
-		case done:
+		compareResult := d.compareDiffIterators()
+		switch compareResult {
+		case diffItCompareResultDone:
 			d.currentVal = nil
 			return false
-		case sameParts:
-			d.leftVal.part, d.err = d.nextPart(d.left)
-			d.rightVal.part, d.err = d.nextPart(d.right)
-		case sameKeys:
+		case diffItCompareResultSameParts:
+			d.leftVal.part, d.err = d.diffIteratorNextPart(d.left)
+			d.rightVal.part, d.err = d.diffIteratorNextPart(d.right)
+		case diffItCompareResultSameKeys:
 			// same keys on different parts
 			d.currentVal = d.rightVal.asDiff(graveler.DiffTypeChanged)
-			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
-			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
+			d.leftVal.record, d.leftVal.part, d.err = d.diffIteratorNextValue(d.left)
+			d.rightVal.record, d.rightVal.part, d.err = d.diffIteratorNextValue(d.right)
 			return true
-		case beforeInit:
-			d.state = afterInit
-			fallthrough
-		case sameIdentities, needStartPartBoth:
-			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
-			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
-		case needStartPartLeft:
-			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
-		case needStartPartRight:
-			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
-		case leftBeforeRight:
+		case diffItCompareResultSameIdentities, diffItCompareResultNeedStartPartBoth:
+			d.leftVal.record, d.leftVal.part, d.err = d.diffIteratorNextValue(d.left)
+			d.rightVal.record, d.rightVal.part, d.err = d.diffIteratorNextValue(d.right)
+		case diffItCompareResultNeedStartPartLeft:
+			d.leftVal.record, d.leftVal.part, d.err = d.diffIteratorNextValue(d.left)
+		case diffItCompareResultNeedStartPartRight:
+			d.rightVal.record, d.rightVal.part, d.err = d.diffIteratorNextValue(d.right)
+		case diffItCompareResultLeftBeforeRight:
 			// nothing on right, or left before right
 			d.currentVal = d.leftVal.asDiff(graveler.DiffTypeRemoved)
-			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
+			d.leftVal.record, d.leftVal.part, d.err = d.diffIteratorNextValue(d.left)
 			return true
-		case rightBeforeLeft:
+		case diffItCompareResultRightBeforeLeft:
 			// nothing on left, or right before left
 			d.currentVal = d.rightVal.asDiff(graveler.DiffTypeAdded)
-			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
+			d.rightVal.record, d.rightVal.part, d.err = d.diffIteratorNextValue(d.right)
 			return true
 		}
 	}
@@ -171,7 +179,7 @@ func (d *diffIterator) SeekGE(id graveler.Key) {
 	d.leftVal = &IteratorValue{}
 	d.rightVal = &IteratorValue{}
 	d.err = nil
-	d.state = beforeInit
+	d.state = diffItBeforeInit
 }
 
 func (d *diffIterator) Value() *graveler.Diff {
@@ -187,7 +195,7 @@ func (d *diffIterator) Close() {
 	d.right.Close()
 	d.currentVal = nil
 	d.err = nil
-	d.state = closed
+	d.state = diffItClosed
 }
 
 func getCurrentKey(it Iterator) []byte {
