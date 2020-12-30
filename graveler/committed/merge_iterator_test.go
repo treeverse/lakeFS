@@ -148,8 +148,8 @@ func TestMergeIterator(t *testing.T) {
 			for i, k := range tst.baseKeys {
 				baseRecords[k] = &graveler.Value{Identity: []byte(tst.baseIdentities[i])}
 			}
-			rightIt := newFakeMetaRangeIterator([][]string{tst.rightKeys}, [][]string{tst.rightIdentities})
 			leftIt := newFakeMetaRangeIterator([][]string{tst.leftKeys}, [][]string{tst.leftIdentities})
+			rightIt := newFakeMetaRangeIterator([][]string{tst.rightKeys}, [][]string{tst.rightIdentities})
 			committedFake := &testutil.CommittedFake{
 				ValuesByKey:  baseRecords,
 				DiffIterator: committed.NewDiffIterator(leftIt, rightIt),
