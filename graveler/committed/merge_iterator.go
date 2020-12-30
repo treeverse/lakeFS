@@ -1,4 +1,4 @@
-package tree
+package committed
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 
 type mergeIterator struct {
 	diffIt       graveler.DiffIterator
-	base         graveler.TreeID
+	base         graveler.RangeID
 	committedMgr graveler.CommittedManager
 	ctx          context.Context
 	ns           graveler.StorageNamespace
@@ -18,7 +18,7 @@ type mergeIterator struct {
 
 // NewMergeIterator returns a ValueIterator with all changes to be performed on left in order to merge right into left, relative to base.
 // The iterator will return ErrConflictFound when it reaches a conflict.
-func NewMergeIterator(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.TreeID, committedMgr graveler.CommittedManager) (*mergeIterator, error) {
+func NewMergeIterator(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.RangeID, committedMgr graveler.CommittedManager) (*mergeIterator, error) {
 	diffIt, err := committedMgr.Diff(ctx, ns, left, right)
 	if err != nil {
 		return nil, err

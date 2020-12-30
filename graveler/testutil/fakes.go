@@ -19,7 +19,7 @@ type AppliedData struct {
 type CommittedFake struct {
 	ValuesByKey   map[string]*graveler.Value
 	ValueIterator graveler.ValueIterator
-	diffIterator  graveler.DiffIterator
+	DiffIterator  graveler.DiffIterator
 	Err           error
 	RangeID       graveler.RangeID
 	AppliedData   AppliedData
@@ -62,7 +62,7 @@ func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, 
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return c.diffIterator, nil
+	return c.DiffIterator, nil
 }
 
 func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.RangeID, _, _ string, _ graveler.Metadata) (graveler.RangeID, error) {

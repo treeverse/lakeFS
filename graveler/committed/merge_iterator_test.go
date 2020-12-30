@@ -1,16 +1,15 @@
-package tree_test
+package committed_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler/committed/tree"
-	"github.com/treeverse/lakefs/graveler/testutil"
-
 	"github.com/go-openapi/swag"
-
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
 func TestMergeIterator(t *testing.T) {
@@ -149,12 +148,18 @@ func TestMergeIterator(t *testing.T) {
 			for i, k := range tst.baseKeys {
 				baseRecords[k] = &graveler.Value{Identity: []byte(tst.baseIdentities[i])}
 			}
-			diffIt := tree.NewDiffIterator(
-				newFakeTreeIterator([][]string{tst.leftKeys}, [][]string{tst.leftIdentities}),
-				newFakeTreeIterator([][]string{tst.rightKeys}, [][]string{tst.rightIdentities}))
-			committedFake := testutil.NewCommittedFake()
+			rightIt := newFakeMetaRangeIterator([][]string{tst.rightKeys}, [][]string{tst.rightIdentities})
+			leftIt := newFakeMetaRangeIterator([][]string{tst.leftKeys}, [][]string{tst.leftIdentities})
+			committedFake := &testutil.CommittedFake{
+				ValuesByKey:  baseRecords,
+				DiffIterator: committed.NewDiffIterator(leftIt, rightIt),
+			}
+
 			committedFake.ValuesByKey = baseRecords
-			it := tree.NewMergeIterator(diffIt, "a", committedFake)
+			it, err := committed.NewMergeIterator(context.Background(), "a", "b", "c", "d", committedFake)
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
 			var values []*graveler.ValueRecord
 			idx := 0
 			for it.Next() {
