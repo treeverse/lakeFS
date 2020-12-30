@@ -24,32 +24,28 @@ type Iterator interface {
 	// Value returns a nil ValueRecord and a Range before starting a Range, or a Value and
 	// that Range when inside a Range.
 	Value() (*graveler.ValueRecord, *Range)
+	SeekGE(id graveler.Key)
 	Err() error
 	Close()
 }
 
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
-	GetMetaRange(metaRangeID graveler.MetaRangeID) (*MetaRange, error)
+	GetMetaRange(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (*MetaRange, error)
 
-	// GetValue finds the matching graveler.ValueRecord in the MetaRange with the metaRangeID
-	GetValue(metaRangeID graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
+	// GetValue finds the matching graveler.ValueRecord in the MetaRange with the rangeID
+	GetValue(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
-	NewWriter() MetaRangeWriter
+	NewWriter(ns graveler.StorageNamespace) MetaRangeWriter
 
-	// NewIterator accepts a MetaRange ID, and returns an iterator
-	// over the MetaRange from the first value GE than the from
-	NewIterator(metaRangeID graveler.MetaRangeID, from graveler.Key) (graveler.ValueIterator, error)
+	// NewMetaRangeIterator accepts a MetaRange ID, and returns an Iterator
+	// over the MetaRange from the first value >= from
+	NewMetaRangeIterator(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, from graveler.Key) (Iterator, error)
 
-	// NewIteratorFromMetaRange accept a MetaRange in memory, returns an iterator
-	// over the MetaRange from the first value GE than the from
-	NewIteratorFromMetaRange(metaRange MetaRange, from graveler.Key) (graveler.ValueIterator, error)
-
-	// NewRangeIterator accepts a MetaRange ID and a reading start point. it returns an iterator
-	// positioned at the start point. When Next() will be called, first value that is GE
-	// than the from key will be returned
-	NewRangeIterator(rangeID ID, from graveler.Key) (graveler.ValueIterator, error)
+	// NewRangeIterator accepts a Range ID, and returns a ValueIterator
+	// over this Range from the first value >= from
+	NewRangeIterator(ns graveler.StorageNamespace, rangeID ID, from graveler.Key) (graveler.ValueIterator, error)
 }
 
 // MetaRangeWriter is an abstraction for creating new MetaRanges
