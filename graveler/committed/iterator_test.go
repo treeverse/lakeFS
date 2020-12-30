@@ -116,7 +116,7 @@ func TestIterator(t *testing.T) {
 			for _, p := range tt.PK {
 				// MaxKey unused
 				ranges = append(ranges, committed.Range{ID: p.Name})
-				repo.EXPECT().NewRangeIterator(p.Name, nil).Return(makeRange(p.Keys), nil)
+				repo.EXPECT().NewRangeIterator(graveler.StorageNamespace(""), p.Name, nil).Return(makeRange(p.Keys), nil)
 			}
 			pvi := committed.NewIterator(repo, ranges)
 			assert.Equal(t, tt.PK, keysByRanges(t, pvi))

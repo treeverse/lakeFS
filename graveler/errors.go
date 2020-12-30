@@ -22,6 +22,6 @@ var (
 	ErrBranchExists            = errors.New("branch already exists")
 	ErrBranchLocked            = errors.New("branch locked for updates")
 	ErrTagAlreadyExists        = errors.New("tag already exists")
-	ErrDirtyBranch             = errors.New("can't apply tree on dirty branch")
+	ErrDirtyBranch             = errors.New("can't apply meta-range on dirty branch")
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 )

@@ -24,7 +24,11 @@ var expireCmd = &cobra.Command{
 		ctx := context.Background()
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+
+		if err != nil {
+			logger.WithError(err).Fatal("cannot create cataloger")
+		}
 
 		awsRetentionConfig := config.NewConfig().GetAwsS3RetentionConfig()
 
