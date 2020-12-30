@@ -7,7 +7,7 @@ import (
 )
 
 type committedManager struct {
-	metaRangeManagerProvider MetaRangeManagerProvider
+	metaRangeManager MetaRangeManager
 }
 
 func NewCommittedManager() graveler.CommittedManager {
@@ -27,12 +27,11 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.RangeID) (graveler.DiffIterator, error) {
-	mgr := c.metaRangeManagerProvider.GetMetaRangeManager(ns)
-	leftIt, err := mgr.NewIterator(left, nil)
+	leftIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, left, nil)
 	if err != nil {
 		return nil, err
 	}
-	rightIt, err := mgr.NewIterator(right, nil)
+	rightIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, right, nil)
 	if err != nil {
 		return nil, err
 	}
