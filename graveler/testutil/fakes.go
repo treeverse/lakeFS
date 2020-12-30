@@ -42,7 +42,7 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 	return c.Value, nil
 }
 
-func (c *CommittedFake) GetTree(_ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.MetaRange, error) {
+func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.MetaRange, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}

@@ -429,7 +429,7 @@ func TestGraveler_Commit(t *testing.T) {
 	}
 }
 
-func TestGraveler_CommitExistingTree(t *testing.T) {
+func TestGraveler_CommitExistingRange(t *testing.T) {
 	const (
 		expectedCommitID     = graveler.CommitID("expectedCommitId")
 		expectedRangeID      = graveler.RangeID("expectedRangeID")
@@ -494,7 +494,7 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 			expectedErr: graveler.ErrDirtyBranch,
 		},
 		{
-			name: "tree not found",
+			name: "meta range not found",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{Err: graveler.ErrNotFound},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
@@ -509,7 +509,7 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 				metadata:     nil,
 			},
 			want:        expectedCommitID,
-			expectedErr: graveler.ErrTreeNotFound,
+			expectedErr: graveler.ErrMetaRangeNotFound,
 		},
 		{
 			name: "fail on add commit",
@@ -534,7 +534,7 @@ func TestGraveler_CommitExistingTree(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			got, err := g.CommitExistingTree(context.Background(), expectedRepositoryID, expectedBranchID, expectedRangeID, tt.args.committer, tt.args.message, tt.args.metadata)
+			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedBranchID, expectedRangeID, tt.args.committer, tt.args.message, tt.args.metadata)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}

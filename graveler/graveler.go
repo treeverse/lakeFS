@@ -402,7 +402,7 @@ type CommittedManager interface {
 
 	// GetTree returns the MetaRange under the namespace with matching ID.
 	// If tree not found, returns ErrNotFound.
-	GetTree(ns StorageNamespace, rangeID RangeID) (MetaRange, error)
+	GetMetaRange(ns StorageNamespace, rangeID RangeID) (MetaRange, error)
 
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID RangeID) (ValueIterator, error)
@@ -850,7 +850,7 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	return newCommit, nil
 }
 
-func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID RangeID, committer string, message string, metadata Metadata) (CommitID, error) {
+func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID RangeID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
 		return "", fmt.Errorf("acquire metadata update: %w", err)
@@ -870,11 +870,11 @@ func (g *graveler) CommitExistingTree(ctx context.Context, repositoryID Reposito
 		return "", ErrDirtyBranch
 	}
 
-	if _, err := g.CommittedManager.GetTree(repo.StorageNamespace, rangeID); err != nil {
+	if _, err := g.CommittedManager.GetMetaRange(repo.StorageNamespace, rangeID); err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return "", ErrTreeNotFound
+			return "", ErrMetaRangeNotFound
 		}
-		return "", fmt.Errorf("checking for metaRange %s: %w", rangeID, err)
+		return "", fmt.Errorf("checking for metarange %s: %w", rangeID, err)
 	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
