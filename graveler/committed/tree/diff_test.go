@@ -97,9 +97,7 @@ func TestDiff(t *testing.T) {
 			expectedRightReadsByPart: []int{2, 2},
 		},
 		"diff between empty iterators": {
-			expectedDiffKeys:         []string{},
-			expectedLeftReadsByPart:  []int{},
-			expectedRightReadsByPart: []int{},
+			expectedDiffKeys: []string{},
 		},
 		"added on empty": {
 			leftKeys:                 [][]string{},
@@ -109,7 +107,7 @@ func TestDiff(t *testing.T) {
 			expectedDiffKeys:         []string{"k1", "k2", "k3"},
 			expectedDiffTypes:        []graveler.DiffType{added, added, added},
 			expectedDiffIdentities:   []string{"i1", "i2", "i3"},
-			expectedLeftReadsByPart:  []int{},
+			expectedLeftReadsByPart:  nil,
 			expectedRightReadsByPart: []int{2, 1},
 		},
 		"whole part was replaced": {
@@ -178,6 +176,17 @@ func TestDiff(t *testing.T) {
 			expectedLeftReadsByPart:  []int{0, 0},
 			expectedRightReadsByPart: []int{0, 2, 0},
 		},
+		"identical parts in the middle": {
+			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
+			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}, {"i5", "i6"}},
+			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
+			rightIdentities:          [][]string{{"i1", "i2a"}, {"i3", "i4"}, {"i5", "i6a"}},
+			expectedDiffKeys:         []string{"k2", "k6"},
+			expectedDiffTypes:        []graveler.DiffType{changed, changed},
+			expectedDiffIdentities:   []string{"i2a", "i6a"},
+			expectedLeftReadsByPart:  []int{2, 0, 2},
+			expectedRightReadsByPart: []int{2, 0, 2},
+		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -205,12 +214,12 @@ func TestDiff(t *testing.T) {
 					t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value.Identity))
 				}
 			}
-			//if diff := deep.Equal(tst.expectedLeftReadsByPart, fakeLeft.readsByPart); diff != nil {
-			//	t.Fatalf("unexpected number of reads on left parts. diff=%s", diff)
-			//}
-			//if diff := deep.Equal(tst.expectedRightReadsByPart, fakeRight.readsByPart); diff != nil {
-			//	t.Fatalf("unexpected number of reads on right parts. diff=%s", diff)
-			//}
+			if diff := deep.Equal(tst.expectedLeftReadsByPart, fakeLeft.ReadsByPart()); diff != nil {
+				t.Fatalf("unexpected number of reads on left parts. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedRightReadsByPart, fakeRight.ReadsByPart()); diff != nil {
+				t.Fatalf("unexpected number of reads on right parts. diff=%s", diff)
+			}
 		})
 	}
 }
@@ -284,6 +293,19 @@ func TestDiffSeek(t *testing.T) {
 	}
 }
 
+func TestNextOnClose(t *testing.T) {
+	it := tree.NewDiffIterator(
+		newFakeTreeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
+		newFakeTreeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	if !it.Next() {
+		t.Fatal("expected iterator to have value")
+	}
+	it.Close()
+	if it.Next() {
+		t.Fatal("expected false from iterator after close")
+	}
+}
+
 func TestDiffErr(t *testing.T) {
 	leftErr := errors.New("error from left")
 	leftIt := newFakeTreeIterator([][]string{{"k1"}, {"k2"}}, [][]string{{"i1"}, {"i2"}})
@@ -324,9 +346,9 @@ func TestDiffErr(t *testing.T) {
 
 func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *testutil.FakePartsAndValuesIterator {
 	res := testutil.NewFakePartsAndValuesIterator()
-	var b bytes.Buffer
 	for partIdx, keys := range partKeys {
 		identities := partIdentities[partIdx]
+		var b bytes.Buffer
 		encoder := gob.NewEncoder(&b)
 		_ = encoder.Encode(partKeys[partIdx])
 		_ = encoder.Encode(partIdentities[partIdx])

@@ -354,9 +354,17 @@ type PV struct {
 }
 
 type FakePartsAndValuesIterator struct {
-	PV  []PV
-	idx int
-	err error
+	PV          []PV
+	idx         int
+	partIdx     int
+	err         error
+	closed      bool
+	readsByPart []int
+}
+
+// ReadsByPart returns the number of Next operations performed inside each part
+func (i *FakePartsAndValuesIterator) ReadsByPart() []int {
+	return i.readsByPart
 }
 
 func (i *FakePartsAndValuesIterator) nextKey() []byte {
@@ -369,22 +377,9 @@ func (i *FakePartsAndValuesIterator) nextKey() []byte {
 	return i.PV[i.idx+1].V.Key
 }
 
-func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
-	i.idx = 0
-	for {
-		nextKey := i.nextKey()
-		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
-			return
-		}
-		if !i.Next() {
-			return
-		}
-	}
-}
-
 func NewFakePartsAndValuesIterator() *FakePartsAndValuesIterator {
 	// Start with an empty record so the first `Next()` can skip it.
-	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0}
+	return &FakePartsAndValuesIterator{PV: make([]PV, 1), idx: 0, partIdx: -1}
 }
 
 func (i *FakePartsAndValuesIterator) SetErr(err error) {
@@ -393,6 +388,7 @@ func (i *FakePartsAndValuesIterator) SetErr(err error) {
 
 func (i *FakePartsAndValuesIterator) AddPart(p *tree.Part) *FakePartsAndValuesIterator {
 	i.PV = append(i.PV, PV{P: p})
+	i.readsByPart = append(i.readsByPart, 0)
 	return i
 }
 
@@ -408,13 +404,18 @@ func (i *FakePartsAndValuesIterator) AddValueRecords(vs ...*graveler.ValueRecord
 }
 
 func (i *FakePartsAndValuesIterator) Next() bool {
-	if i.err != nil {
+	if i.err != nil || i.closed {
 		return false
 	}
 	if len(i.PV) <= i.idx+1 {
 		return false
 	}
 	i.idx++
+	if i.PV[i.idx].V == nil {
+		i.partIdx++
+	} else {
+		i.readsByPart[i.partIdx]++
+	}
 	return true
 }
 
@@ -425,17 +426,37 @@ func (i *FakePartsAndValuesIterator) NextPart() bool {
 		}
 		i.idx++
 		if i.PV[i.idx].V == nil {
+			i.partIdx++
 			return true
 		}
 	}
 }
 
 func (i *FakePartsAndValuesIterator) Value() (*graveler.ValueRecord, *tree.Part) {
+	if i.closed {
+		return nil, nil
+	}
 	return i.PV[i.idx].V, i.PV[i.idx].P
+}
+
+func (i *FakePartsAndValuesIterator) SeekGE(id graveler.Key) {
+	i.idx = 0
+	i.partIdx = -1
+	for {
+		nextKey := i.nextKey()
+		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
+			return
+		}
+		if !i.Next() {
+			return
+		}
+	}
 }
 
 func (i *FakePartsAndValuesIterator) Err() error {
 	return i.err
 }
 
-func (i *FakePartsAndValuesIterator) Close() {}
+func (i *FakePartsAndValuesIterator) Close() {
+	i.closed = true
+}
