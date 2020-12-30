@@ -11,6 +11,14 @@ type IteratorValue struct {
 	part   *Part
 }
 
+func (iv *IteratorValue) asDiff(typ graveler.DiffType) *graveler.Diff {
+	return &graveler.Diff{
+		Type:  typ,
+		Key:   iv.record.Key,
+		Value: iv.record.Value,
+	}
+}
+
 type diffIterator struct {
 	left       Iterator
 	right      Iterator
@@ -119,7 +127,7 @@ func (d *diffIterator) Next() bool {
 			d.rightVal.part, d.err = d.nextPart(d.right)
 		case sameKeys:
 			// same keys on different parts
-			d.currentVal = newDiff(d.rightVal, graveler.DiffTypeChanged)
+			d.currentVal = d.rightVal.asDiff(graveler.DiffTypeChanged)
 			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
 			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 			return true
@@ -132,12 +140,12 @@ func (d *diffIterator) Next() bool {
 			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 		case leftBeforeRight:
 			// nothing on right, or left before right
-			d.currentVal = newDiff(d.leftVal, graveler.DiffTypeRemoved)
+			d.currentVal = d.leftVal.asDiff(graveler.DiffTypeRemoved)
 			d.leftVal.record, d.leftVal.part, d.err = d.next(d.left)
 			return true
 		case rightBeforeLeft:
 			// nothing on left, or right before left
-			d.currentVal = newDiff(d.rightVal, graveler.DiffTypeAdded)
+			d.currentVal = d.rightVal.asDiff(graveler.DiffTypeAdded)
 			d.rightVal.record, d.rightVal.part, d.err = d.next(d.right)
 			return true
 		}
@@ -173,12 +181,4 @@ func getCurrentKey(it Iterator) []byte {
 		return part.MinKey
 	}
 	return val.Key
-}
-
-func newDiff(val *IteratorValue, typ graveler.DiffType) *graveler.Diff {
-	return &graveler.Diff{
-		Type:  typ,
-		Key:   val.record.Key,
-		Value: val.record.Value,
-	}
 }
