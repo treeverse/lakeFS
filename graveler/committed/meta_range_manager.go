@@ -8,7 +8,7 @@ import (
 
 // MetaRange is a sorted slice of ranges with no overlapping between the ranges
 type MetaRange struct {
-	ID     graveler.RangeID
+	ID     graveler.MetaRangeID
 	Ranges []Range
 }
 
@@ -31,21 +31,21 @@ type Iterator interface {
 
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
-	GetMetaRange(ns graveler.StorageNamespace, rangeID graveler.RangeID) (*MetaRange, error)
+	GetMetaRange(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (*MetaRange, error)
 
 	// GetValue finds the matching graveler.ValueRecord in the MetaRange with the rangeID
-	GetValue(ns graveler.StorageNamespace, rangeID graveler.RangeID, key graveler.Key) (*graveler.ValueRecord, error)
+	GetValue(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
 	NewWriter(ns graveler.StorageNamespace) MetaRangeWriter
 
 	// NewMetaRangeIterator accepts a MetaRange ID, and returns an Iterator
 	// over the MetaRange from the first value >= from
-	NewMetaRangeIterator(ns graveler.StorageNamespace, rangeID graveler.RangeID, from graveler.Key) (Iterator, error)
+	NewMetaRangeIterator(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, from graveler.Key) (Iterator, error)
 
 	// NewRangeIterator accepts a Range ID, and returns a ValueIterator
 	// over this Range from the first value >= from
-	NewRangeIterator(ns graveler.StorageNamespace, rangeID graveler.RangeID, from graveler.Key) (graveler.ValueIterator, error)
+	NewRangeIterator(ns graveler.StorageNamespace, rangeID ID, from graveler.Key) (graveler.ValueIterator, error)
 }
 
 // MetaRangeWriter is an abstraction for creating new MetaRanges
@@ -62,7 +62,7 @@ type MetaRangeWriter interface {
 	// Close finalizes the MetaRange creation. It's invalid to add records after calling this method.
 	// During MetaRange writing, ranges are closed asynchronously and copied by tierFS
 	// while writing continues. Close waits until closing and copying all ranges.
-	Close() (*graveler.RangeID, error)
+	Close() (*graveler.MetaRangeID, error)
 
 	Abort() error
 }

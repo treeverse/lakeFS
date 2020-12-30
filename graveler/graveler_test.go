@@ -275,7 +275,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 
 func TestGraveler_Commit(t *testing.T) {
 	expectedCommitID := graveler.CommitID("expectedCommitId")
-	expectedRangeID := graveler.RangeID("expectedRangeID")
+	expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 	type fields struct {
 		CommittedManager *testutil.CommittedFake
@@ -391,7 +391,7 @@ func TestGraveler_Commit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedCommitID := graveler.CommitID("expectedCommitId")
-			expectedRangeID := graveler.RangeID("expectedRangeID")
+			expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 			g := graveler.NewGraveler(tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
 			//tt.fields.RefManager.Commit = &graveler.Commit{RangeID: expectedRangeID}
@@ -432,7 +432,7 @@ func TestGraveler_Commit(t *testing.T) {
 func TestGraveler_CommitExistingRange(t *testing.T) {
 	const (
 		expectedCommitID     = graveler.CommitID("expectedCommitId")
-		expectedRangeID      = graveler.RangeID("expectedRangeID")
+		expectedRangeID      = graveler.MetaRangeID("expectedRangeID")
 		expectedBranchID     = graveler.BranchID("expectedBranchID")
 		expectedRepositoryID = graveler.RepositoryID("expectedRangeID")
 	)

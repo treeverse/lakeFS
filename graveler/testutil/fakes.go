@@ -13,7 +13,7 @@ const DefaultBranchID = graveler.BranchID("master")
 
 type AppliedData struct {
 	Values  graveler.ValueIterator
-	RangeID graveler.RangeID
+	RangeID graveler.MetaRangeID
 }
 
 type CommittedFake struct {
@@ -21,15 +21,15 @@ type CommittedFake struct {
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	Err           error
-	RangeID       graveler.RangeID
+	RangeID       graveler.MetaRangeID
 	AppliedData   AppliedData
 }
 
 type MetaRangeFake struct {
-	id graveler.RangeID
+	id graveler.MetaRangeID
 }
 
-func (t *MetaRangeFake) ID() graveler.RangeID {
+func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
@@ -37,42 +37,42 @@ func NewCommittedFake() graveler.CommittedManager {
 	return &CommittedFake{}
 }
 
-func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID, _ graveler.Key) (*graveler.Value, error) {
+func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, _ graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.Value, nil
 }
 
-func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.MetaRange, error) {
+func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRange, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return &MetaRangeFake{id: rangeID}, nil
+	return &MetaRangeFake{id: metaRangeID}, nil
 }
 
-func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID) (graveler.ValueIterator, error) {
+func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID) (graveler.ValueIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValueIterator, nil
 }
 
-func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.RangeID) (graveler.DiffIterator, error) {
+func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID) (graveler.DiffIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.diffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.RangeID, _, _ string, _ graveler.Metadata) (graveler.RangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _, _ string, _ graveler.Metadata) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	return c.RangeID, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.RangeID, values graveler.ValueIterator) (graveler.RangeID, error) {
+func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
@@ -155,7 +155,7 @@ func (s *StagingFake) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 type AddedCommitData struct {
 	Committer string
 	Message   string
-	RangeID   graveler.RangeID
+	RangeID   graveler.MetaRangeID
 	Parents   graveler.CommitParents
 	Metadata  graveler.Metadata
 }
