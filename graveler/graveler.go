@@ -59,7 +59,7 @@ type Ref string
 // TagID represents a named tag pointing at a commit
 type TagID string
 
-// CommitParents
+// CommitParents commit's parents slice
 type CommitParents []CommitID
 
 // BranchID is an identifier for a branch
@@ -137,7 +137,7 @@ func (c Commit) Identity() []byte {
 	return b.Identity()
 }
 
-// CommitRecords holds CommitID with the associated Commit data
+// CommitRecord holds CommitID with the associated Commit data
 type CommitRecord struct {
 	CommitID CommitID `db:"id"`
 	*Commit
@@ -281,6 +281,7 @@ type Graveler interface {
 // In case `Next()` returns false, `Value()` returns nil and `Err()` should be checked.
 // nil error means we reached the end of the input.
 // `SeekGE()` behaviour is like as starting a new iterator - `Value()` returns nothing until the first `Next()`.
+
 type RepositoryIterator interface {
 	Next() bool
 	SeekGE(id RepositoryID)

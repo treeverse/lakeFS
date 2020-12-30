@@ -694,7 +694,7 @@ func TestGraveler_Delete(t *testing.T) {
 				t.Errorf("unexpected set value %s", diff)
 			}
 			// validate removed from staging
-			if bytes.Compare(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) != 0 {
+			if !bytes.Equal(tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey) {
 				t.Errorf("unexpected removed key got = %s, expected = %s ", tt.fields.StagingManager.LastRemovedKey, tt.expectedRemovedKey)
 			}
 
