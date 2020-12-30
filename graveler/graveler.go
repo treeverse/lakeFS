@@ -401,11 +401,11 @@ type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided RangeID
 	Get(ctx context.Context, ns StorageNamespace, rangeID RangeID, key Key) (*Value, error)
 
-	// GetTree returns the MetaRange under the namespace with matching ID.
-	// If tree not found, returns ErrNotFound.
+	// GetMetaRange returns the MetaRange under the namespace with matching ID.
+	// If the meta-range is not found, returns ErrNotFound.
 	GetMetaRange(ns StorageNamespace, rangeID RangeID) (MetaRange, error)
 
-	// List takes a given tree and returns an ValueIterator
+	// List takes a given meta-range and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID RangeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.

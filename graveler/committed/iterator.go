@@ -14,69 +14,73 @@ func NewIterator(repo MetaRangeManager, ranges []Range) Iterator {
 	return &iterator{metaRangeManager: repo, ranges: ranges}
 }
 
-func (pvi *iterator) NextRange() bool {
-	if len(pvi.ranges) <= 1 {
+func (rvi *iterator) NextRange() bool {
+	if len(rvi.ranges) <= 1 {
 		return false
 	}
-	pvi.ranges = pvi.ranges[1:]
-	pvi.it.Close()
-	pvi.it = nil
+	rvi.ranges = rvi.ranges[1:]
+	rvi.it.Close()
+	rvi.it = nil
 	return true
 }
 
-func (pvi *iterator) Next() bool {
-	if !pvi.started {
-		pvi.started = true
-		return len(pvi.ranges) > 0
+func (rvi *iterator) Next() bool {
+	if !rvi.started {
+		rvi.started = true
+		return len(rvi.ranges) > 0
 	}
-	if pvi.it != nil {
-		if pvi.it.Next() {
+	if rvi.it != nil {
+		if rvi.it.Next() {
 			return true
 		}
 		// At end of range
-		return pvi.NextRange()
+		return rvi.NextRange()
 	}
 	// Start iterating inside range
-	if len(pvi.ranges) == 0 {
+	if len(rvi.ranges) == 0 {
 		return false // Iteration was already finished.
 	}
 	var err error
-	pvi.it, err = pvi.metaRangeManager.NewRangeIterator(pvi.ranges[0].ID, nil)
+	rvi.it, err = rvi.metaRangeManager.NewRangeIterator(rvi.ranges[0].ID, nil)
 	if err != nil {
-		pvi.err = err
+		rvi.err = err
 		return false
 	}
-	if pvi.it.Next() {
+	if rvi.it.Next() {
 		return true
 	}
 	// Already at end of empty range
-	return pvi.NextRange()
+	return rvi.NextRange()
 }
 
-func (pvi *iterator) Value() (*graveler.ValueRecord, *Range) {
-	if len(pvi.ranges) == 0 {
+func (rvi *iterator) Value() (*graveler.ValueRecord, *Range) {
+	if len(rvi.ranges) == 0 {
 		return nil, nil
 	}
-	rng := &pvi.ranges[0]
-	if pvi.it == nil {
+	rng := &rvi.ranges[0]
+	if rvi.it == nil {
 		return nil, rng // start new range
 	}
-	return pvi.it.Value(), rng
+	return rvi.it.Value(), rng
 }
 
-func (pvi *iterator) Err() error {
-	if pvi.err != nil {
-		return pvi.err
+func (rvi *iterator) Err() error {
+	if rvi.err != nil {
+		return rvi.err
 	}
-	if pvi.it == nil {
+	if rvi.it == nil {
 		return nil
 	}
-	return pvi.it.Err()
+	return rvi.it.Err()
 }
 
-func (pvi *iterator) Close() {
-	if pvi.it == nil {
+func (rvi *iterator) Close() {
+	if rvi.it == nil {
 		return
 	}
-	pvi.it.Close()
+	rvi.it.Close()
+}
+
+func (rvi *iterator) SeekGE(id graveler.Key) {
+	panic("implement me")
 }

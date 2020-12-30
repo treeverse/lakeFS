@@ -12,6 +12,10 @@ type MetaRange struct {
 	Ranges []Range
 }
 
+type MetaRangeManagerProvider interface {
+	GetMetaRangeManager(ns graveler.StorageNamespace) MetaRangeManager
+}
+
 // Iterator iterates over all Range headers and values of a MetaRange, allowing seeking by entire
 // ranges.
 type Iterator interface {
@@ -24,6 +28,7 @@ type Iterator interface {
 	// Value returns a nil ValueRecord and a Range before starting a Range, or a Value and
 	// that Range when inside a Range.
 	Value() (*graveler.ValueRecord, *Range)
+	SeekGE(id graveler.Key)
 	Err() error
 	Close()
 }
@@ -38,17 +43,12 @@ type MetaRangeManager interface {
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
 	NewWriter() MetaRangeWriter
 
-	// NewIterator accepts a MetaRange ID, and returns an iterator
-	// over the MetaRange from the first value GE than the from
-	NewIterator(rangeID graveler.RangeID, from graveler.Key) (graveler.ValueIterator, error)
+	// NewIterator accepts a MetaRange ID, and returns an Iterator
+	// over the MetaRange from the first value >= from
+	NewIterator(rangeID graveler.RangeID, from graveler.Key) (Iterator, error)
 
-	// NewIteratorFromMetaRange accept a MetaRange in memory, returns an iterator
-	// over the MetaRange from the first value GE than the from
-	NewIteratorFromMetaRange(metaRange MetaRange, from graveler.Key) (graveler.ValueIterator, error)
-
-	// NewRangeIterator accepts a MetaRange ID and a reading start point. it returns an iterator
-	// positioned at the start point. When Next() will be called, first value that is GE
-	// than the from key will be returned
+	// NewRangeIterator accepts a MetaRange ID, and returns a ValueIterator
+	// over the MetaRange from the first value >= from
 	NewRangeIterator(rangeID ID, from graveler.Key) (graveler.ValueIterator, error)
 }
 

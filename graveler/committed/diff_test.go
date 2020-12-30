@@ -1,4 +1,4 @@
-package tree_test
+package committed_test
 
 import (
 	"bytes"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/tree"
 	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
@@ -22,177 +21,177 @@ func TestDiff(t *testing.T) {
 		changed = graveler.DiffTypeChanged
 	)
 	tests := map[string]struct {
-		leftKeys                 [][]string
-		leftIdentities           [][]string
-		rightKeys                [][]string
-		rightIdentities          [][]string
-		expectedDiffKeys         []string
-		expectedDiffTypes        []graveler.DiffType
-		expectedDiffIdentities   []string
-		expectedLeftReadsByPart  []int
-		expectedRightReadsByPart []int
+		leftKeys                  [][]string
+		leftIdentities            [][]string
+		rightKeys                 [][]string
+		rightIdentities           [][]string
+		expectedDiffKeys          []string
+		expectedDiffTypes         []graveler.DiffType
+		expectedDiffIdentities    []string
+		expectedLeftReadsByRange  []int
+		expectedRightReadsByRange []int
 	}{
 		"empty diff": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3"}},
-			expectedDiffKeys:         []string{},
-			expectedLeftReadsByPart:  []int{0, 0},
-			expectedRightReadsByPart: []int{0, 0},
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
+			expectedDiffKeys:          []string{},
+			expectedLeftReadsByRange:  []int{0, 0},
+			expectedRightReadsByRange: []int{0, 0},
 		},
-		"added in existing part": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3", "i4"}},
-			expectedDiffKeys:         []string{"k4"},
-			expectedDiffTypes:        []graveler.DiffType{added},
-			expectedDiffIdentities:   []string{"i4"},
-			expectedLeftReadsByPart:  []int{0, 1},
-			expectedRightReadsByPart: []int{0, 2},
+		"added in existing rng": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}},
+			expectedDiffKeys:          []string{"k4"},
+			expectedDiffTypes:         []graveler.DiffType{added},
+			expectedDiffIdentities:    []string{"i4"},
+			expectedLeftReadsByRange:  []int{0, 1},
+			expectedRightReadsByRange: []int{0, 2},
 		},
-		"removed from existing part": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3"}},
-			expectedDiffKeys:         []string{"k4"},
-			expectedDiffTypes:        []graveler.DiffType{removed},
-			expectedDiffIdentities:   []string{"i4"},
-			expectedLeftReadsByPart:  []int{0, 2},
-			expectedRightReadsByPart: []int{0, 1},
+		"removed from existing rng": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3", "k4"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3", "i4"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
+			expectedDiffKeys:          []string{"k4"},
+			expectedDiffTypes:         []graveler.DiffType{removed},
+			expectedDiffIdentities:    []string{"i4"},
+			expectedLeftReadsByRange:  []int{0, 2},
+			expectedRightReadsByRange: []int{0, 1},
 		},
 		"added and removed": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k5"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i5"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3", "i4"}},
-			expectedDiffKeys:         []string{"k4", "k5"},
-			expectedDiffTypes:        []graveler.DiffType{added, removed},
-			expectedDiffIdentities:   []string{"i4", "i5"},
-			expectedLeftReadsByPart:  []int{0, 2},
-			expectedRightReadsByPart: []int{0, 2},
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3", "k5"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3", "i5"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}},
+			expectedDiffKeys:          []string{"k4", "k5"},
+			expectedDiffTypes:         []graveler.DiffType{added, removed},
+			expectedDiffIdentities:    []string{"i4", "i5"},
+			expectedLeftReadsByRange:  []int{0, 2},
+			expectedRightReadsByRange: []int{0, 2},
 		},
-		"change in existing part": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3a"}},
-			expectedDiffKeys:         []string{"k3"},
-			expectedDiffTypes:        []graveler.DiffType{changed},
-			expectedDiffIdentities:   []string{"i3a"},
-			expectedLeftReadsByPart:  []int{0, 1},
-			expectedRightReadsByPart: []int{0, 1},
+		"change in existing rng": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3a"}},
+			expectedDiffKeys:          []string{"k3"},
+			expectedDiffTypes:         []graveler.DiffType{changed},
+			expectedDiffIdentities:    []string{"i3a"},
+			expectedLeftReadsByRange:  []int{0, 1},
+			expectedRightReadsByRange: []int{0, 1},
 		},
-		"parts were split": {
-			leftKeys:                 [][]string{{"k1", "k2", "k3"}},
-			leftIdentities:           [][]string{{"i1", "i2", "i3"}},
-			rightKeys:                [][]string{{"k3", "k4"}, {"k5", "k6"}},
-			rightIdentities:          [][]string{{"i3a", "i4"}, {"i5", "i6"}},
-			expectedDiffKeys:         []string{"k1", "k2", "k3", "k4", "k5", "k6"},
-			expectedDiffTypes:        []graveler.DiffType{removed, removed, changed, added, added, added},
-			expectedDiffIdentities:   []string{"i1", "i2", "i3a", "i4", "i5", "i6"},
-			expectedLeftReadsByPart:  []int{3},
-			expectedRightReadsByPart: []int{2, 2},
+		"ranges were split": {
+			leftKeys:                  [][]string{{"k1", "k2", "k3"}},
+			leftIdentities:            [][]string{{"i1", "i2", "i3"}},
+			rightKeys:                 [][]string{{"k3", "k4"}, {"k5", "k6"}},
+			rightIdentities:           [][]string{{"i3a", "i4"}, {"i5", "i6"}},
+			expectedDiffKeys:          []string{"k1", "k2", "k3", "k4", "k5", "k6"},
+			expectedDiffTypes:         []graveler.DiffType{removed, removed, changed, added, added, added},
+			expectedDiffIdentities:    []string{"i1", "i2", "i3a", "i4", "i5", "i6"},
+			expectedLeftReadsByRange:  []int{3},
+			expectedRightReadsByRange: []int{2, 2},
 		},
 		"diff between empty iterators": {
 			expectedDiffKeys: []string{},
 		},
 		"added on empty": {
-			leftKeys:                 [][]string{},
-			leftIdentities:           [][]string{},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3"}},
-			expectedDiffKeys:         []string{"k1", "k2", "k3"},
-			expectedDiffTypes:        []graveler.DiffType{added, added, added},
-			expectedDiffIdentities:   []string{"i1", "i2", "i3"},
-			expectedLeftReadsByPart:  nil,
-			expectedRightReadsByPart: []int{2, 1},
+			leftKeys:                  [][]string{},
+			leftIdentities:            [][]string{},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
+			expectedDiffKeys:          []string{"k1", "k2", "k3"},
+			expectedDiffTypes:         []graveler.DiffType{added, added, added},
+			expectedDiffIdentities:    []string{"i1", "i2", "i3"},
+			expectedLeftReadsByRange:  nil,
+			expectedRightReadsByRange: []int{2, 1},
 		},
-		"whole part was replaced": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4", "k5", "k6"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4", "i5", "i6"}},
-			rightKeys:                [][]string{{"k3", "k4"}, {"k5", "k6", "k7"}},
-			rightIdentities:          [][]string{{"i3", "i4"}, {"i5", "i6", "i7"}},
-			expectedDiffKeys:         []string{"k1", "k2", "k7"},
-			expectedDiffTypes:        []graveler.DiffType{removed, removed, added},
-			expectedDiffIdentities:   []string{"i1", "i2", "i7"},
-			expectedLeftReadsByPart:  []int{2, 4},
-			expectedRightReadsByPart: []int{2, 3},
+		"whole rng was replaced": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3", "k4", "k5", "k6"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3", "i4", "i5", "i6"}},
+			rightKeys:                 [][]string{{"k3", "k4"}, {"k5", "k6", "k7"}},
+			rightIdentities:           [][]string{{"i3", "i4"}, {"i5", "i6", "i7"}},
+			expectedDiffKeys:          []string{"k1", "k2", "k7"},
+			expectedDiffTypes:         []graveler.DiffType{removed, removed, added},
+			expectedDiffIdentities:    []string{"i1", "i2", "i7"},
+			expectedLeftReadsByRange:  []int{2, 4},
+			expectedRightReadsByRange: []int{2, 3},
 		},
-		"added in beginning of part": {
-			leftKeys:                 [][]string{{"k3", "k4", "k5"}},
-			leftIdentities:           [][]string{{"i3", "i4", "i5"}},
-			rightKeys:                [][]string{{"k1", "k2", "k3", "k4", "k5"}},
-			rightIdentities:          [][]string{{"i1", "i2", "i3", "i4", "i5"}},
-			expectedDiffKeys:         []string{"k1", "k2"},
-			expectedDiffTypes:        []graveler.DiffType{added, added},
-			expectedDiffIdentities:   []string{"i1", "i2"},
-			expectedLeftReadsByPart:  []int{3},
-			expectedRightReadsByPart: []int{5},
+		"added in beginning of rng": {
+			leftKeys:                  [][]string{{"k3", "k4", "k5"}},
+			leftIdentities:            [][]string{{"i3", "i4", "i5"}},
+			rightKeys:                 [][]string{{"k1", "k2", "k3", "k4", "k5"}},
+			rightIdentities:           [][]string{{"i1", "i2", "i3", "i4", "i5"}},
+			expectedDiffKeys:          []string{"k1", "k2"},
+			expectedDiffTypes:         []graveler.DiffType{added, added},
+			expectedDiffIdentities:    []string{"i1", "i2"},
+			expectedLeftReadsByRange:  []int{3},
+			expectedRightReadsByRange: []int{5},
 		},
-		"small parts removed": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}, {"k4"}, {"k5"}, {"k6", "k7"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}, {"i4"}, {"i5"}, {"i6", "i7"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k6", "k7"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i6", "i7"}},
-			expectedDiffKeys:         []string{"k3", "k4", "k5"},
-			expectedDiffTypes:        []graveler.DiffType{removed, removed, removed},
-			expectedDiffIdentities:   []string{"i3", "i4", "i5"},
-			expectedLeftReadsByPart:  []int{0, 1, 1, 1, 0},
-			expectedRightReadsByPart: []int{0, 0},
+		"small ranges removed": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3"}, {"k4"}, {"k5"}, {"k6", "k7"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3"}, {"i4"}, {"i5"}, {"i6", "i7"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k6", "k7"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i6", "i7"}},
+			expectedDiffKeys:          []string{"k3", "k4", "k5"},
+			expectedDiffTypes:         []graveler.DiffType{removed, removed, removed},
+			expectedDiffIdentities:    []string{"i3", "i4", "i5"},
+			expectedLeftReadsByRange:  []int{0, 1, 1, 1, 0},
+			expectedRightReadsByRange: []int{0, 0},
 		},
-		"small parts merged": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3"}, {"k4"}, {"k5"}, {"k6", "k7"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3"}, {"i4"}, {"i5"}, {"i6", "i7"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k4", "k5"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i4", "i5"}},
-			expectedDiffKeys:         []string{"k3", "k6", "k7"},
-			expectedDiffTypes:        []graveler.DiffType{removed, removed, removed},
-			expectedDiffIdentities:   []string{"i3", "i6", "i7"},
-			expectedLeftReadsByPart:  []int{0, 1, 1, 1, 2},
-			expectedRightReadsByPart: []int{0, 2},
+		"small ranges merged": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3"}, {"k4"}, {"k5"}, {"k6", "k7"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3"}, {"i4"}, {"i5"}, {"i6", "i7"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k4", "k5"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i4", "i5"}},
+			expectedDiffKeys:          []string{"k3", "k6", "k7"},
+			expectedDiffTypes:         []graveler.DiffType{removed, removed, removed},
+			expectedDiffIdentities:    []string{"i3", "i6", "i7"},
+			expectedLeftReadsByRange:  []int{0, 1, 1, 1, 2},
+			expectedRightReadsByRange: []int{0, 2},
 		},
-		"empty parts": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {}, {}, {}, {}, {"k3", "k4"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {}, {}, {}, {}, {"i3", "i4"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {}, {}, {"k3", "k4"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {}, {}, {"i3", "i4"}},
-			expectedDiffKeys:         []string{},
-			expectedDiffTypes:        []graveler.DiffType{},
-			expectedDiffIdentities:   []string{},
-			expectedLeftReadsByPart:  []int{0, 0, 0, 0, 0, 0},
-			expectedRightReadsByPart: []int{0, 0, 0, 0},
+		"empty ranges": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {}, {}, {}, {}, {"k3", "k4"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {}, {}, {}, {}, {"i3", "i4"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {}, {}, {"k3", "k4"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {}, {}, {"i3", "i4"}},
+			expectedDiffKeys:          []string{},
+			expectedDiffTypes:         []graveler.DiffType{},
+			expectedDiffIdentities:    []string{},
+			expectedLeftReadsByRange:  []int{0, 0, 0, 0, 0, 0},
+			expectedRightReadsByRange: []int{0, 0, 0, 0},
 		},
-		"part added in the middle": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k5", "k6"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i5", "i6"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
-			rightIdentities:          [][]string{{"i1", "i2"}, {"i3", "i4"}, {"i5", "i6"}},
-			expectedDiffKeys:         []string{"k3", "k4"},
-			expectedDiffTypes:        []graveler.DiffType{added, added},
-			expectedDiffIdentities:   []string{"i3", "i4"},
-			expectedLeftReadsByPart:  []int{0, 0},
-			expectedRightReadsByPart: []int{0, 2, 0},
+		"rng added in the middle": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k5", "k6"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i5", "i6"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
+			rightIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}, {"i5", "i6"}},
+			expectedDiffKeys:          []string{"k3", "k4"},
+			expectedDiffTypes:         []graveler.DiffType{added, added},
+			expectedDiffIdentities:    []string{"i3", "i4"},
+			expectedLeftReadsByRange:  []int{0, 0},
+			expectedRightReadsByRange: []int{0, 2, 0},
 		},
-		"identical parts in the middle": {
-			leftKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
-			leftIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}, {"i5", "i6"}},
-			rightKeys:                [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
-			rightIdentities:          [][]string{{"i1", "i2a"}, {"i3", "i4"}, {"i5", "i6a"}},
-			expectedDiffKeys:         []string{"k2", "k6"},
-			expectedDiffTypes:        []graveler.DiffType{changed, changed},
-			expectedDiffIdentities:   []string{"i2a", "i6a"},
-			expectedLeftReadsByPart:  []int{2, 0, 2},
-			expectedRightReadsByPart: []int{2, 0, 2},
+		"identical ranges in the middle": {
+			leftKeys:                  [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
+			leftIdentities:            [][]string{{"i1", "i2"}, {"i3", "i4"}, {"i5", "i6"}},
+			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
+			rightIdentities:           [][]string{{"i1", "i2a"}, {"i3", "i4"}, {"i5", "i6a"}},
+			expectedDiffKeys:          []string{"k2", "k6"},
+			expectedDiffTypes:         []graveler.DiffType{changed, changed},
+			expectedDiffIdentities:    []string{"i2a", "i6a"},
+			expectedLeftReadsByRange:  []int{2, 0, 2},
+			expectedRightReadsByRange: []int{2, 0, 2},
 		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
-			fakeLeft := newFakeTreeIterator(tst.leftKeys, tst.leftIdentities)
-			fakeRight := newFakeTreeIterator(tst.rightKeys, tst.rightIdentities)
-			it := tree.NewDiffIterator(fakeLeft, fakeRight)
+			fakeLeft := newFakeMetaRangeIterator(tst.leftKeys, tst.leftIdentities)
+			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
+			it := committed.NewDiffIterator(fakeLeft, fakeRight)
 			defer it.Close()
 			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
@@ -214,11 +213,11 @@ func TestDiff(t *testing.T) {
 					t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value.Identity))
 				}
 			}
-			if diff := deep.Equal(tst.expectedLeftReadsByPart, fakeLeft.ReadsByPart()); diff != nil {
-				t.Fatalf("unexpected number of reads on left parts. diff=%s", diff)
+			if diff := deep.Equal(tst.expectedLeftReadsByRange, fakeLeft.ReadsByRange()); diff != nil {
+				t.Fatalf("unexpected number of reads on left ranges. diff=%s", diff)
 			}
-			if diff := deep.Equal(tst.expectedRightReadsByPart, fakeRight.ReadsByPart()); diff != nil {
-				t.Fatalf("unexpected number of reads on right parts. diff=%s", diff)
+			if diff := deep.Equal(tst.expectedRightReadsByRange, fakeRight.ReadsByRange()); diff != nil {
+				t.Fatalf("unexpected number of reads on right ranges. diff=%s", diff)
 			}
 		})
 	}
@@ -237,9 +236,9 @@ func TestDiffSeek(t *testing.T) {
 	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3": added, "k7": changed}
 	diffIdentityByKey := map[string]string{"k2": "i2", "k3": "i3", "k7": "i7a"}
 
-	it := tree.NewDiffIterator(
-		newFakeTreeIterator(left, leftIdentities),
-		newFakeTreeIterator(right, rightIdentities))
+	it := committed.NewDiffIterator(
+		newFakeMetaRangeIterator(left, leftIdentities),
+		newFakeMetaRangeIterator(right, rightIdentities))
 	defer it.Close()
 	var diffs []*graveler.Diff
 	tests := []struct {
@@ -294,9 +293,9 @@ func TestDiffSeek(t *testing.T) {
 }
 
 func TestNextOnClose(t *testing.T) {
-	it := tree.NewDiffIterator(
-		newFakeTreeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
-		newFakeTreeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	it := committed.NewDiffIterator(
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
 		t.Fatal("expected iterator to have value")
 	}
@@ -308,10 +307,10 @@ func TestNextOnClose(t *testing.T) {
 
 func TestDiffErr(t *testing.T) {
 	leftErr := errors.New("error from left")
-	leftIt := newFakeTreeIterator([][]string{{"k1"}, {"k2"}}, [][]string{{"i1"}, {"i2"}})
+	leftIt := newFakeMetaRangeIterator([][]string{{"k1"}, {"k2"}}, [][]string{{"i1"}, {"i2"}})
 	leftIt.SetErr(leftErr)
-	rightIt := newFakeTreeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
-	it := tree.NewDiffIterator(leftIt, rightIt)
+	rightIt := newFakeMetaRangeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
+	it := committed.NewDiffIterator(leftIt, rightIt)
 	defer it.Close()
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")
@@ -344,24 +343,24 @@ func TestDiffErr(t *testing.T) {
 	}
 }
 
-func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *testutil.FakePartsAndValuesIterator {
-	res := testutil.NewFakePartsAndValuesIterator()
-	for partIdx, keys := range partKeys {
-		identities := partIdentities[partIdx]
+func newFakeMetaRangeIterator(rangeKeys [][]string, rangeIdentities [][]string) *testutil.FakeIterator {
+	res := testutil.NewFakeIterator()
+	for rangeIdx, keys := range rangeKeys {
+		identities := rangeIdentities[rangeIdx]
 		var b bytes.Buffer
 		encoder := gob.NewEncoder(&b)
-		_ = encoder.Encode(partKeys[partIdx])
-		_ = encoder.Encode(partIdentities[partIdx])
-		partName := hex.EncodeToString(b.Bytes())
+		_ = encoder.Encode(rangeKeys[rangeIdx])
+		_ = encoder.Encode(rangeIdentities[rangeIdx])
+		rangeID := hex.EncodeToString(b.Bytes())
 		var minKey, maxKey committed.Key
-		if len(partKeys[partIdx]) > 0 {
-			minKey = []byte(partKeys[partIdx][0])
-			maxKey = []byte(partKeys[partIdx][len(partKeys[partIdx])-1])
+		if len(rangeKeys[rangeIdx]) > 0 {
+			minKey = []byte(rangeKeys[rangeIdx][0])
+			maxKey = []byte(rangeKeys[rangeIdx][len(rangeKeys[rangeIdx])-1])
 		}
-		res.AddPart(&tree.Part{ID: committed.ID(partName), MinKey: minKey, MaxKey: maxKey})
-		partValues := make([]*graveler.ValueRecord, 0, len(partKeys[partIdx]))
+		res.AddRange(&committed.Range{ID: committed.ID(rangeID), MinKey: minKey, MaxKey: maxKey})
+		rangeValues := make([]*graveler.ValueRecord, 0, len(rangeKeys[rangeIdx]))
 		for idx := range keys {
-			partValues = append(partValues, &graveler.ValueRecord{
+			rangeValues = append(rangeValues, &graveler.ValueRecord{
 				Key: []byte(keys[idx]),
 				Value: &graveler.Value{
 					Identity: []byte(identities[idx]),
@@ -369,7 +368,7 @@ func newFakeTreeIterator(partKeys [][]string, partIdentities [][]string) *testut
 				},
 			})
 		}
-		res.AddValueRecords(partValues...)
+		res.AddValueRecords(rangeValues...)
 	}
 	return res
 }
