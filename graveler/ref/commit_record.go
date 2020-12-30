@@ -10,7 +10,7 @@ type commitRecord struct {
 	CommitID     string            `db:"id"`
 	Committer    string            `db:"committer"`
 	Message      string            `db:"message"`
-	RangeID      string            `db:"range_id"`
+	RangeID      string            `db:"meta_range_id"`
 	CreationDate time.Time         `db:"creation_date"`
 	Parents      []string          `db:"parents"`
 	Metadata     map[string]string `db:"metadata"`
@@ -24,7 +24,7 @@ func (c *commitRecord) toGravelerCommit() *graveler.Commit {
 	return &graveler.Commit{
 		Committer:    c.Committer,
 		Message:      c.Message,
-		RangeID:      graveler.MetaRangeID(c.RangeID),
+		MetaRangeID:  graveler.MetaRangeID(c.RangeID),
 		CreationDate: c.CreationDate,
 		Parents:      parents,
 		Metadata:     c.Metadata,

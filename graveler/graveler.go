@@ -119,7 +119,7 @@ func (ps CommitParents) Identity() []byte {
 type Commit struct {
 	Committer    string        `db:"committer"`
 	Message      string        `db:"message"`
-	RangeID      MetaRangeID   `db:"range_id"`
+	MetaRangeID  MetaRangeID   `db:"meta_range_id"`
 	CreationDate time.Time     `db:"creation_date"`
 	Parents      CommitParents `db:"parents"`
 	Metadata     Metadata      `db:"metadata"`
@@ -130,7 +130,7 @@ func (c Commit) Identity() []byte {
 	b.MarshalString("commit:v1")
 	b.MarshalString(c.Committer)
 	b.MarshalString(c.Message)
-	b.MarshalString(string(c.RangeID))
+	b.MarshalString(string(c.MetaRangeID))
 	b.MarshalInt64(c.CreationDate.Unix())
 	b.MarshalStringMap(c.Metadata)
 	b.MarshalIdentifiable(c.Parents)
@@ -419,7 +419,7 @@ type CommittedManager interface {
 
 	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
-	// it returns a new rangeID that is expected to be immediately addressable
+	// it returns a new MetaRangeID that is expected to be immediately addressable
 	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, error)
 }
 
@@ -716,7 +716,7 @@ func (g *graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.RangeID, key)
+	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 }
 
 func (g *graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error {
@@ -752,7 +752,7 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 	}
 
 	// check key in committed - do we need tombstone?
-	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.RangeID, key)
+	_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 	if errors.Is(err, ErrNotFound) {
 		// no need for tombstone - drop key from stage
 		return g.StagingManager.DropKey(ctx, branch.StagingToken, key)
@@ -787,7 +787,7 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 		return nil, err
 	}
 
-	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.RangeID)
+	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.MetaRangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -823,14 +823,14 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", fmt.Errorf("staging list: %w", err)
 	}
-	rangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.RangeID, changes)
+	metaRangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.MetaRangeID, changes)
 	if err != nil {
 		return "", fmt.Errorf("apply: %w", err)
 	}
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 		Committer:    committer,
 		Message:      message,
-		RangeID:      rangeID,
+		MetaRangeID:  metaRangeID,
 		CreationDate: time.Now(),
 		Parents:      CommitParents{branch.CommitID},
 		Metadata:     metadata,
@@ -851,7 +851,7 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	return newCommit, nil
 }
 
-func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, rangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
+func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
 	cancel, err := g.branchLocker.AquireMetadataUpdate(repositoryID, branchID)
 	if err != nil {
 		return "", fmt.Errorf("acquire metadata update: %w", err)
@@ -871,17 +871,17 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		return "", ErrDirtyBranch
 	}
 
-	if _, err := g.CommittedManager.GetMetaRange(repo.StorageNamespace, rangeID); err != nil {
+	if _, err := g.CommittedManager.GetMetaRange(repo.StorageNamespace, metaRangeID); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return "", ErrMetaRangeNotFound
 		}
-		return "", fmt.Errorf("checking for metarange %s: %w", rangeID, err)
+		return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
 	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 		Committer:    committer,
 		Message:      message,
-		RangeID:      rangeID,
+		MetaRangeID:  metaRangeID,
 		CreationDate: time.Now(),
 		Parents:      CommitParents{branch.CommitID},
 		Metadata:     metadata,
@@ -973,14 +973,14 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		return "", err
 	}
 
-	rangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.RangeID, toCommit.RangeID, baseCommit.RangeID, committer, message, metadata)
+	metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.MetaRangeID, toCommit.MetaRangeID, baseCommit.MetaRangeID, committer, message, metadata)
 	if err != nil {
 		return "", err
 	}
 	commit := Commit{
 		Committer:    committer,
 		Message:      message,
-		RangeID:      rangeID,
+		MetaRangeID:  metaRangeID,
 		CreationDate: time.Time{},
 		Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 		Metadata:     metadata,
@@ -1005,7 +1005,7 @@ func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	if err != nil {
 		return nil, err
 	}
-	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.RangeID), nil
+	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.MetaRangeID), nil
 }
 
 func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
@@ -1041,5 +1041,5 @@ func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 		return nil, err
 	}
 
-	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.RangeID, rightCommit.RangeID, baseCommit.RangeID)
+	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
