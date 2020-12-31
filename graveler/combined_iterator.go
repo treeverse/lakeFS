@@ -66,7 +66,7 @@ func (c *CombinedIterator) advanceInnerIterators() bool {
 	return nextA || nextB
 }
 
-func (c *combinedIterator) Next() bool {
+func (c *CombinedIterator) Next() bool {
 	for {
 		if !c.advanceInnerIterators() {
 			return false
