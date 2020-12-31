@@ -4,19 +4,20 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
-type RangeIterator struct {
+// UnmarshalIterator wrap value iterator and unmarshal each value
+type UnmarshalIterator struct {
 	it    ValueIterator
-	err   error
 	value *graveler.ValueRecord
+	err   error
 }
 
-func NewRangeIterator(it ValueIterator) *RangeIterator {
-	return &RangeIterator{
+func NewUnmarshalIterator(it ValueIterator) *UnmarshalIterator {
+	return &UnmarshalIterator{
 		it: it,
 	}
 }
 
-func (r *RangeIterator) Next() bool {
+func (r *UnmarshalIterator) Next() bool {
 	if !r.it.Next() {
 		r.err = r.it.Err()
 		r.value = nil
@@ -39,23 +40,23 @@ func (r *RangeIterator) Next() bool {
 	return true
 }
 
-func (r *RangeIterator) SeekGE(id graveler.Key) {
+func (r *UnmarshalIterator) SeekGE(id graveler.Key) {
 	r.it.SeekGE(Key(id))
 	r.value = nil
 	r.err = r.Err()
 }
 
-func (r *RangeIterator) Value() *graveler.ValueRecord {
+func (r *UnmarshalIterator) Value() *graveler.ValueRecord {
 	if r.err != nil {
 		return nil
 	}
 	return r.value
 }
 
-func (r *RangeIterator) Err() error {
+func (r *UnmarshalIterator) Err() error {
 	return r.err
 }
 
-func (r *RangeIterator) Close() {
+func (r *UnmarshalIterator) Close() {
 	r.it.Close()
 }
