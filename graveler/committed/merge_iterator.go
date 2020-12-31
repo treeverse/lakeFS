@@ -59,11 +59,13 @@ func (d *mergeIterator) Next() bool {
 			}
 			return true
 		case graveler.DiffTypeRemoved:
-			if baseVal != nil && bytes.Equal(baseVal.Identity, val.OldIdentity) {
-				return true // removed
+			if baseVal != nil {
+				if bytes.Equal(baseVal.Identity, val.OldIdentity) {
+					return true // removed
+				}
+				d.err = graveler.ErrConflictFound
 			}
-			d.err = graveler.ErrConflictFound
-			return false // conflict
+			return false
 		}
 	}
 	return false

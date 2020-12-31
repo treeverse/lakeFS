@@ -6,18 +6,21 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-test/deep"
+
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
+const (
+	added   = graveler.DiffTypeAdded
+	removed = graveler.DiffTypeRemoved
+	changed = graveler.DiffTypeChanged
+)
+
 func TestMergeIterator(t *testing.T) {
-	const (
-		added   = graveler.DiffTypeAdded
-		removed = graveler.DiffTypeRemoved
-		changed = graveler.DiffTypeChanged
-	)
 	tests := []struct {
 		leftKeys            []string
 		leftIdentities      []string
@@ -189,6 +192,147 @@ func TestMergeIterator(t *testing.T) {
 				if tst.expectedDiffTypes[i] != removed && d.Value == nil {
 					t.Fatalf("unexpected nil value in diff index %d", i)
 				}
+			}
+		})
+	}
+}
+
+func testMergeIteratorNewDiff(typ graveler.DiffType, key string, newIdentity string, oldIdentity string) graveler.Diff {
+	return graveler.Diff{
+		Type:        typ,
+		Key:         graveler.Key(key),
+		Value:       &graveler.Value{Identity: []byte(newIdentity)},
+		OldIdentity: []byte(oldIdentity),
+	}
+}
+
+func TestMerge(t *testing.T) {
+	tests := map[string]struct {
+		baseKeyToIdentity   map[string]string
+		diffs               []graveler.Diff
+		conflictExpectedIdx *int
+		expectedKeys        []string
+		expectedIdentities  []string
+	}{
+		"added on right": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(added, "k3", "i3", "")},
+			conflictExpectedIdx: nil,
+			expectedKeys:        []string{"k3"},
+			expectedIdentities:  []string{"i3"},
+		},
+		"changed on right": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(changed, "k2", "i2a", "i2")},
+			conflictExpectedIdx: nil,
+			expectedKeys:        []string{"k2"},
+			expectedIdentities:  []string{"i2a"},
+		},
+		"deleted on right": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(removed, "k2", "i2", "i2")},
+			conflictExpectedIdx: nil,
+			expectedKeys:        []string{"k2"},
+			expectedIdentities:  []string{""},
+		},
+		"added on left": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(removed, "k2", "i2", "i2")},
+			conflictExpectedIdx: nil,
+			expectedIdentities:  nil,
+		},
+		"removed on left": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(added, "k2", "i2", "")},
+			conflictExpectedIdx: nil,
+			expectedIdentities:  nil,
+		},
+		"changed on left": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(changed, "k2", "i2", "i2a")},
+			conflictExpectedIdx: nil,
+			expectedIdentities:  nil,
+		},
+		"changed on both": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(changed, "k2", "i2b", "i2a")},
+			conflictExpectedIdx: swag.Int(0),
+		},
+		"changed on left, removed on right": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(removed, "k2", "i2a", "i2a")},
+			conflictExpectedIdx: swag.Int(0),
+		},
+		"removed on left, changed on right": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(added, "k2", "i2a", "")},
+			conflictExpectedIdx: swag.Int(0),
+		},
+		"added on both with different identities": {
+			baseKeyToIdentity:   map[string]string{"k1": "i1"},
+			diffs:               []graveler.Diff{testMergeIteratorNewDiff(changed, "k2", "i2a", "i2b")},
+			conflictExpectedIdx: swag.Int(0),
+		},
+		"multiple add and removes": {
+			baseKeyToIdentity: map[string]string{"k1": "i1", "k3": "i3"},
+			diffs: []graveler.Diff{testMergeIteratorNewDiff(removed, "k1", "i1", "i1"),
+				testMergeIteratorNewDiff(added, "k2", "i2", ""),
+				testMergeIteratorNewDiff(removed, "k3", "i3", "i3"),
+				testMergeIteratorNewDiff(added, "k4", "i4", "")},
+			expectedKeys:       []string{"k1", "k2", "k3", "k4"},
+			expectedIdentities: []string{"", "i2", "", "i4"},
+		},
+		"changes on each side": {
+			baseKeyToIdentity: map[string]string{"k1": "i1", "k2": "i2", "k3": "i3", "k4": "i4"},
+			diffs: []graveler.Diff{testMergeIteratorNewDiff(changed, "k1", "i1a", "i1"),
+				testMergeIteratorNewDiff(changed, "k2", "i2", "i2a"),
+				testMergeIteratorNewDiff(changed, "k3", "i3a", "i3"),
+				testMergeIteratorNewDiff(changed, "k4", "i4", "i4a")},
+			expectedKeys:       []string{"k1", "k3"},
+			expectedIdentities: []string{"i1a", "i3a"},
+		},
+	}
+
+	for name, tst := range tests {
+		t.Run(name, func(t *testing.T) {
+			diffIt := testutil.NewDiffIter(tst.diffs)
+			committedFake := testutil.NewCommittedFake()
+			committedFake.DiffIterator = diffIt
+			baseRecords := map[string]*graveler.Value{}
+			for k, identity := range tst.baseKeyToIdentity {
+				baseRecords[k] = &graveler.Value{Identity: []byte(identity)}
+			}
+			committedFake.ValuesByKey = baseRecords
+			it, err := committed.NewMergeIterator(context.Background(), "a", "b", "c", "d", committedFake)
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+			var gotValues, gotKeys []string
+			idx := 0
+			for it.Next() {
+				idx++
+				gotKeys = append(gotKeys, string(it.Value().Key))
+				if it.Value().Value == nil {
+					gotValues = append(gotValues, "")
+				} else {
+					gotValues = append(gotValues, string(it.Value().Identity))
+				}
+			}
+			if tst.conflictExpectedIdx != nil {
+				if !errors.Is(it.Err(), graveler.ErrConflictFound) {
+					t.Fatalf("expected conflict but didn't get one. err=%v", it.Err())
+				}
+				if *tst.conflictExpectedIdx != idx {
+					t.Fatalf("got conflict at unexpected index. expected at=%d, got at=%d", *tst.conflictExpectedIdx, idx)
+				}
+			} else if it.Err() != nil {
+				t.Fatalf("got unexpected error: %v", it.Err())
+			}
+			if diff := deep.Equal(tst.expectedKeys, gotKeys); diff != nil {
+				t.Fatalf("got unexpected keys from merge iterator. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedIdentities, gotValues); diff != nil {
+				t.Fatalf("got unexpected values from merge iterator. diff=%s", diff)
 			}
 		})
 	}
