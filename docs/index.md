@@ -35,13 +35,13 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. By creating a branch of the lake you get an isolated snapshot of the lake you can experiment with while others are not exposed. You can compare branches with different experiments or compare your branch to the main branch of the lake.  
 * **Reproducibility** - go back to any point in time to a consistent version of your data lake. By making commit history available for a configurable duration - you can read from the lake at any point in time, compare changes made, and safely roll back if necessary.
 
-[Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#development-environment) {: id="user-content-learn-more-env"}
+[Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#development-environment){:id="user-content-learn-more-env"}
 
 ### Continuous Data Integration
 * **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc. By consuming data to an isolated branch and creating pre-merge hooks you can define automated rules and tests that are required to pass before introducing new data sources.
 * **Metadata validation** - prevent breaking changes from entering the production data environment. Ingesting data to an isolated branch can also prevent breaking changes from entering your production data environment.
 
-[Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-integration) {: id="user-content-learn-more-int"}
+[Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-integration){:id="user-content-learn-more-int"}
 
 ### Continuous Data Deployment
 * **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake. By making commit history available for a configurable duration - you can revert the lake to the previous version instantly with one atomic action.
@@ -50,7 +50,7 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
    * Testing of production data before exposing it to users / consumers
    * Testing of intermediate results in your DAG to avoid cascading quality issues
    
-[Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-deployment) {: id="user-content-learn-more-dep"}
+[Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-deployment){:id="user-content-learn-more-dep"}
 
 
 
