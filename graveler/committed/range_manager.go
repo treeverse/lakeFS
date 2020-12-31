@@ -29,7 +29,7 @@ type RangeManager interface {
 	// If path not found, (nil, ErrPathNotFound) is returned.
 	GetValue(ns Namespace, key Key, pid ID) (*Record, error)
 
-	// NewUnmarshalIterator takes a Range ID and returns an ValueIterator seeked to >= "from" value
+	// NewRangeIterator takes a Range ID and returns an ValueIterator seeked to >= "from" value
 	NewRangeIterator(ns Namespace, pid ID, from Key) (ValueIterator, error)
 
 	// GetWriter returns a new Range writer instance
