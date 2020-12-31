@@ -133,12 +133,15 @@ func TestWriter_SortOnClose(t *testing.T) {
 	mockBatchWriter.EXPECT().Wait().Return([]committed.WriteResult{
 		{
 			First: committed.Key("c"),
+			Last:  committed.Key("cat"),
 		},
 		{
 			First: committed.Key("ab"),
+			Last:  committed.Key("abc"),
 		},
 		{
 			First: committed.Key("b"),
+			Last:  committed.Key("bz"),
 		},
 	}, nil)
 	var lastKey committed.Key
