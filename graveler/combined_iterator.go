@@ -2,23 +2,23 @@ package graveler
 
 import "bytes"
 
-// combinedIterator iterates over two listing iterators,
+// CombinedIterator iterates over two listing iterators,
 // in case of duplication (in values or in errors) returns value in iterA
-type combinedIterator struct {
+type CombinedIterator struct {
 	iterA ValueIterator
 	iterB ValueIterator
 	p     ValueIterator
 }
 
-func NewCombinedIterator(iterA, iterB ValueIterator) ValueIterator {
-	return &combinedIterator{
+func NewCombinedIterator(iterA, iterB ValueIterator) *CombinedIterator {
+	return &CombinedIterator{
 		iterA: iterA,
 		iterB: iterB,
 		p:     nil,
 	}
 }
 
-func (c *combinedIterator) Next() bool {
+func (c *CombinedIterator) Next() bool {
 	// call next with the relevant iterators
 	valA := c.iterA.Value()
 	valB := c.iterB.Value()
@@ -74,27 +74,27 @@ func (c *combinedIterator) Next() bool {
 	return true
 }
 
-func (c *combinedIterator) SeekGE(id Key) {
+func (c *CombinedIterator) SeekGE(id Key) {
 	c.p = nil
 	c.iterA.SeekGE(id)
 	c.iterB.SeekGE(id)
 }
 
-func (c *combinedIterator) Value() *ValueRecord {
+func (c *CombinedIterator) Value() *ValueRecord {
 	if c.p == nil {
 		return nil
 	}
 	return c.p.Value()
 }
 
-func (c *combinedIterator) Err() error {
+func (c *CombinedIterator) Err() error {
 	if c.p == nil {
 		return nil
 	}
 	return c.p.Err()
 }
 
-func (c *combinedIterator) Close() {
+func (c *CombinedIterator) Close() {
 	c.iterA.Close()
 	c.iterB.Close()
 }

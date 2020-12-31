@@ -1,4 +1,4 @@
-package graveler_test
+package staging_test
 
 import (
 	"flag"
