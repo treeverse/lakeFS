@@ -17,9 +17,9 @@ type AppliedData struct {
 }
 
 type CommittedFake struct {
-	Value         *graveler.Value
+	ValuesByKey   map[string]*graveler.Value
 	ValueIterator graveler.ValueIterator
-	diffIterator  graveler.DiffIterator
+	DiffIterator  graveler.DiffIterator
 	Err           error
 	MetaRangeID   graveler.MetaRangeID
 	AppliedData   AppliedData
@@ -33,15 +33,15 @@ func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
-func NewCommittedFake() graveler.CommittedManager {
+func NewCommittedFake() *CommittedFake {
 	return &CommittedFake{}
 }
 
-func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, _ graveler.Key) (*graveler.Value, error) {
+func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return c.Value, nil
+	return c.ValuesByKey[string(key)], nil
 }
 
 func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRange, error) {
@@ -62,7 +62,7 @@ func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, 
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return c.diffIterator, nil
+	return c.DiffIterator, nil
 }
 
 func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _, _ string, _ graveler.Metadata) (graveler.MetaRangeID, error) {
