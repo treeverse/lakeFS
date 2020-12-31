@@ -22,12 +22,12 @@ func NewCombinedIterator(iterA, iterB ValueIterator) ValueIterator {
 	}
 }
 
-// advanceInnerIterator advances the inner iterators and returns true if has more
-func (c *combinedIterator) advanceInnerIterator() bool {
+// advanceInnerIterators advances the inner iterators and returns true if has more
+func (c *combinedIterator) advanceInnerIterators() bool {
 	valA := c.iterA.Value()
 	valB := c.iterB.Value()
-	nextA := true
-	nextB := true
+	var nextA bool
+	var nextB bool
 	switch {
 	case c.p == nil:
 		// first
@@ -39,19 +39,21 @@ func (c *combinedIterator) advanceInnerIterator() bool {
 	case valA == nil:
 		// iterA is done
 		c.p = c.iterB
-		return c.iterB.Next()
+		nextB = c.iterB.Next()
 	case valB == nil:
 		// iterB is done
 		c.p = c.iterA
-		return c.iterA.Next()
+		nextA = c.iterA.Next()
 	case bytes.Equal(valA.Key, valB.Key):
-		c.iterA.Next()
-		c.iterB.Next()
+		nextA = c.iterA.Next()
+		nextB = c.iterB.Next()
 	case bytes.Compare(valA.Key, valB.Key) < 0:
-		c.iterA.Next()
+		nextA = c.iterA.Next()
+		nextB = true
 	default:
 		// value of iterA < value of iterB
-		c.iterB.Next()
+		nextB = c.iterB.Next()
+		nextA = true
 	}
 	if c.iterA.Err() != nil {
 		c.p = c.iterA
@@ -66,7 +68,7 @@ func (c *combinedIterator) advanceInnerIterator() bool {
 
 func (c *combinedIterator) Next() bool {
 	for {
-		if !c.advanceInnerIterator() {
+		if !c.advanceInnerIterators() {
 			return false
 		}
 		// set c.p to be the next (smaller) value or continue in case of tombstone
