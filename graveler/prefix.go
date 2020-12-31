@@ -2,7 +2,7 @@ package graveler
 
 import "math"
 
-// UpperBoundForPrefix returns an array 'q', for a prefix `p`, such that a byte array `s` starts with `p`
+// UpperBoundForPrefix returns, given a prefix `p`, an array 'q' such that a byte array `s` starts with `p`
 // if and only if p <= s < q. Namely, it returns an exclusive upper bound for the set of all byte arrays
 // that start with this prefix.
 func UpperBoundForPrefix(prefix []byte) []byte {
