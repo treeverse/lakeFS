@@ -5,10 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/testutil"
-
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_DeleteEntry(t *testing.T) {
@@ -152,7 +151,9 @@ func TestCataloger_DeleteEntryAndCheckItRemainsInCommits(t *testing.T) {
 		t.Fatal("Failed to commit after delete:", err)
 	}
 	_, err = c.GetEntry(ctx, repository, nextCommit.Reference, "/file2", catalog.GetEntryParams{})
-	testutil.Must(t, err)
+	if !errors.Is(err, catalog.ErrEntryNotFound) {
+		t.Fatalf("get deleted entry should not be found. err=%s", err)
+	}
 	_, err = c.GetEntry(ctx, repository, prevCommit.Reference, "/file2", catalog.GetEntryParams{})
 	testutil.Must(t, err)
 
