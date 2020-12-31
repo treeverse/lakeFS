@@ -36,6 +36,6 @@ func TestNewEntryToValueIterator(t *testing.T) {
 	}
 	// verify that what we produced is what we got from the iterator
 	if diff := deep.Equal(values, expectedRecords); diff != nil {
-		t.Fatal("ValueToEntry iterator found diff:", diff)
+		t.Fatal("EntryToValue iterator found diff:", diff)
 	}
 }

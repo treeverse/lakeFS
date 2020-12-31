@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/graveler"
 )
 
 type committedManager struct {
 	metaRangeManager MetaRangeManager
+	logger           logging.Logger
 }
 
 func NewCommittedManager() graveler.CommittedManager {
@@ -29,6 +32,12 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 
 func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	writer := c.metaRangeManager.NewWriter(ns)
+	defer func() {
+		if err := writer.Abort(); err != nil {
+			c.logger.Errorf("Aborting write to meta range: %w", err)
+		}
+	}()
+
 	for it.Next() {
 		if err := writer.WriteRecord(*it.Value()); err != nil {
 			return nil, fmt.Errorf("writing record: %w", err)
