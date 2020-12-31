@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed/mock"
 )
 
-func TestRangeIterator(t *testing.T) {
+func TestUnmarshalIterator(t *testing.T) {
 	tests := []struct {
 		Name   string
 		Keys   []graveler.Key
@@ -61,7 +61,7 @@ func TestRangeIterator(t *testing.T) {
 			// use the iterator and collect the values
 			keys := make([]graveler.Key, 0)
 			values := make([]*graveler.Value, 0)
-			it := committed.NewRangeIterator(mockIt)
+			it := committed.NewUnmarshalIterator(mockIt)
 			for it.Next() {
 				v := it.Value()
 				if v == nil {
