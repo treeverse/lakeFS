@@ -1,4 +1,4 @@
-package graveler_test
+package staging_test
 
 import (
 	"bytes"
@@ -9,13 +9,14 @@ import (
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/staging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManager) {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return context.Background(), graveler.NewStagingManager(conn)
+	return context.Background(), staging.NewManager(conn)
 }
 
 func TestSetGet(t *testing.T) {
