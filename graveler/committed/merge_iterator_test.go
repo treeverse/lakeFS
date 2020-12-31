@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-test/deep"
-
 	"github.com/go-openapi/swag"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/testutil"
