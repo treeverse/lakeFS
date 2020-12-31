@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -43,37 +44,44 @@ func TestRefManager_Dereference(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	var commitIDs []graveler.CommitID
 	for iter.Next() {
-		c := iter.Value()
-		if c == nil {
+		commit := iter.Value()
+		if commit == nil {
 			t.Fatal("Log iterator returned nil value after Next")
 		}
+		commitIDs = append(commitIDs, commit.CommitID)
 	}
-	if iter.Err() != nil {
-		t.Fatalf("unexpected error: %v", iter.Err())
+	if err := iter.Err(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	//  commit log:
+	commitLog := []graveler.CommitID{
+		"c3f815d633789cd7c1325352277d4de528844c758a9beedfa8a3cfcfb5c75627",
+		"8549d7544244ba1b63b5967b6b328b331658f627369cb89bd442684719c318ae",
+		"13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",
+		"7de38592b9e6046ffb55915a40848f05749f168531f0cd6a2aa61fe6e8d92d02",
+		"94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca",
+		"0efcb6e81db6bdd2cfeb77664b6573a7d69f555bbe561fd1fd018a4e4cac7603",
+		"d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e",
+		"a766cfdb311fe5f18f489d90d283f65ed522e719fe1ad5397277339eee0d1964",
+		"67ea954d570e20172775f41ac9763905d16d73490d9b72731d353db33f85d437",
+		"d3b16c2cf7f5b9adc2770976bcabe463a5bdd3b5dbf740034f09a9c663620aed",
+		"d420fbf793716d6d53798218d7a247f38a5bbed095d57df71ee79e05446e46ec",
+		"cc72bda1adade1a72b3de617472c16af187063c79e7edc7921c04e883b44de4c",
+		"752581ac60bd8e38a2e65a754591a93a1703dc6c658f91380b8836013188c566",
+		"3cf70857454c71fd0bbf69af8a5360671ba98f6ac9371b047144208c58c672a2",
+		"bfa1e0382ff3c51905dc62ced0a67588b5219c1bba71a517ae7e7857f0c26afe",
+		"d2248dcc1a4de004e10e3bc6b820655e649b8d986d983b60ec98a357a0df194b",
+		"a2d98d820f6ff3f221223dbe6a22548f78549830d3b19286b101f13a0ee34085",
+		"4f13621ec00d4e44e8a0f0ad340224f9d51db9b6518ee7bef17f598aea9e0431",
+		"df87d5329f4438662d6ecb9b90ee17c0bdc9a78a884acc93c0c4fe9f0f79d059",
+		"29706d36de7219e0796c31b278f87201ef835e8cdafbcc3c907d292cd31f77d5",
 	}
 
-	//  commit log:
-	//  "c3f815d633789cd7c1325352277d4de528844c758a9beedfa8a3cfcfb5c75627",
-	//	"8549d7544244ba1b63b5967b6b328b331658f627369cb89bd442684719c318ae",
-	//	"13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",
-	//	"7de38592b9e6046ffb55915a40848f05749f168531f0cd6a2aa61fe6e8d92d02",
-	//	"94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca",
-	//	"0efcb6e81db6bdd2cfeb77664b6573a7d69f555bbe561fd1fd018a4e4cac7603",
-	//	"d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e",
-	//	"a766cfdb311fe5f18f489d90d283f65ed522e719fe1ad5397277339eee0d1964",
-	//	"67ea954d570e20172775f41ac9763905d16d73490d9b72731d353db33f85d437",
-	//	"d3b16c2cf7f5b9adc2770976bcabe463a5bdd3b5dbf740034f09a9c663620aed",
-	//	"d420fbf793716d6d53798218d7a247f38a5bbed095d57df71ee79e05446e46ec",
-	//	"cc72bda1adade1a72b3de617472c16af187063c79e7edc7921c04e883b44de4c",
-	//	"752581ac60bd8e38a2e65a754591a93a1703dc6c658f91380b8836013188c566",
-	//	"3cf70857454c71fd0bbf69af8a5360671ba98f6ac9371b047144208c58c672a2",
-	//	"bfa1e0382ff3c51905dc62ced0a67588b5219c1bba71a517ae7e7857f0c26afe",
-	//	"d2248dcc1a4de004e10e3bc6b820655e649b8d986d983b60ec98a357a0df194b",
-	//	"a2d98d820f6ff3f221223dbe6a22548f78549830d3b19286b101f13a0ee34085",
-	//	"4f13621ec00d4e44e8a0f0ad340224f9d51db9b6518ee7bef17f598aea9e0431",
-	//	"df87d5329f4438662d6ecb9b90ee17c0bdc9a78a884acc93c0c4fe9f0f79d059",
-	//	"29706d36de7219e0796c31b278f87201ef835e8cdafbcc3c907d292cd31f77d5",
+	if diff := deep.Equal(commitIDs, commitLog); diff != nil {
+		t.Fatal("Difference found on commit log", diff)
+	}
 
 	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch1", graveler.Branch{
 		CommitID: "13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",
