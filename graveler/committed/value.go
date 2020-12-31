@@ -8,6 +8,10 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
+// ErrBadValueBytes is an error that is probably returned when unmarshalling bytes that are
+// supposed to encode a Value.
+var ErrBadValueBytes = errors.New("bad bytes format for graveler.Value")
+
 /*
  * Value is serialized in a trivial fixed-order format:
  *
@@ -36,9 +40,14 @@ func MarshalValue(v *graveler.Value) ([]byte, error) {
 	return ret, nil
 }
 
-// ErrBadValueBytes is an error that is probably returned when unmarshalling bytes that are
-// supposed to encode a Value.
-var ErrBadValueBytes = errors.New("bad bytes format for graveler.Value")
+// MustMarshalValue an MarshalValue that will panic on error
+func MustMarshalValue(v *graveler.Value) []byte {
+	val, err := MarshalValue(v)
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
 
 func getBytes(b *[]byte) ([]byte, error) {
 	l, o := binary.Varint(*b)
@@ -68,6 +77,15 @@ func UnmarshalValue(b []byte) (*graveler.Value, error) {
 		return nil, fmt.Errorf("data field: %w", err)
 	}
 	return ret, nil
+}
+
+// MustUnmarshalValue an UnmarshalValue that will panic on error
+func MustUnmarshalValue(b []byte) *graveler.Value {
+	val, err := UnmarshalValue(b)
+	if err != nil {
+		panic(err)
+	}
+	return val
 }
 
 // UnmarshalIdentity returns *only* the Identity field encoded by b.  It does not even examine
