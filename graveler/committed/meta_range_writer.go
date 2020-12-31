@@ -170,7 +170,7 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 		if err != nil {
 			return nil, err
 		}
-		if err := metaRangeWriter.WriteRecord(Record{Key: p.MinKey, Value: rangeValue}); err != nil {
+		if err := metaRangeWriter.WriteRecord(Record{Key: p.MaxKey, Value: rangeValue}); err != nil {
 			return nil, fmt.Errorf("failed writing range to metarange writer: %w", err)
 		}
 	}
