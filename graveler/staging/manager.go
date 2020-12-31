@@ -1,47 +1,47 @@
-package graveler
+package staging
 
 import (
 	"context"
-	"math"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 )
 
-type stagingManager struct {
+type Manager struct {
 	db  db.Database
 	log logging.Logger
 }
 
-func NewStagingManager(db db.Database) StagingManager {
-	return &stagingManager{
+func NewManager(db db.Database) *Manager {
+	return &Manager{
 		db:  db,
 		log: logging.Default().WithField("service_name", "postgres_staging_manager"),
 	}
 }
 
-func (p *stagingManager) Get(ctx context.Context, st StagingToken, key Key) (*Value, error) {
+func (p *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
 	res, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
-		value := &Value{}
+		value := &graveler.Value{}
 		err := tx.Get(value, "SELECT identity, data FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
 		return value, err
 	}, p.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return nil, err
 	}
-	value := res.(*Value)
+	value := res.(*graveler.Value)
 	if value.Identity == nil {
 		return nil, nil
 	}
 	return value, nil
 }
 
-func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, value *Value) error {
+func (p *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
 	if value == nil {
-		value = new(Value)
+		value = new(graveler.Value)
 	} else if value.Identity == nil {
-		return ErrInvalidValue
+		return graveler.ErrInvalidValue
 	}
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec(`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
@@ -54,26 +54,26 @@ func (p *stagingManager) Set(ctx context.Context, st StagingToken, key Key, valu
 	return err
 }
 
-func (p *stagingManager) DropKey(ctx context.Context, st StagingToken, key Key) error {
+func (p *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key graveler.Key) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
 	}, p.txOpts(ctx)...)
 	return err
 }
 
-func (p *stagingManager) List(ctx context.Context, st StagingToken) (ValueIterator, error) {
+func (p *Manager) List(ctx context.Context, st graveler.StagingToken) (graveler.ValueIterator, error) {
 	return NewStagingIterator(ctx, p.db, p.log, st), nil
 }
 
-func (p *stagingManager) Drop(ctx context.Context, st StagingToken) error {
+func (p *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("DELETE FROM graveler_staging_kv WHERE staging_token=$1", st)
 	}, p.txOpts(ctx)...)
 	return err
 }
 
-func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error {
-	upperBound := UpperBoundForPrefix(prefix)
+func (p *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
+	upperBound := graveler.UpperBoundForPrefix(prefix)
 	builder := sq.Delete("graveler_staging_kv").Where(sq.Eq{"staging_token": st}).Where("key >= ?::bytea", prefix)
 	_, err := p.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if upperBound != nil {
@@ -88,21 +88,7 @@ func (p *stagingManager) DropByPrefix(ctx context.Context, st StagingToken, pref
 	return err
 }
 
-func UpperBoundForPrefix(prefix []byte) []byte {
-	idx := len(prefix) - 1
-	for idx >= 0 && prefix[idx] == math.MaxUint8 {
-		idx--
-	}
-	if idx == -1 {
-		return nil
-	}
-	upperBound := make([]byte, idx+1)
-	copy(upperBound, prefix[:idx+1])
-	upperBound[idx]++
-	return upperBound
-}
-
-func (p *stagingManager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
+func (p *Manager) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 	o := []db.TxOpt{
 		db.WithContext(ctx),
 		db.WithLogger(p.log),

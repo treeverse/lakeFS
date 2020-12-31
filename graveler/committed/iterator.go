@@ -1,18 +1,24 @@
 package committed
 
-import "github.com/treeverse/lakefs/graveler"
+import (
+	"github.com/treeverse/lakefs/graveler"
+)
 
 type iterator struct {
-	started          bool
-	metaRangeManager MetaRangeManager
-	ranges           []Range
-	it               graveler.ValueIterator
-	err              error
-	ns               graveler.StorageNamespace
+	started   bool
+	manager   RangeManager
+	ranges    []Range
+	it        graveler.ValueIterator
+	err       error
+	namespace Namespace
 }
 
-func NewIterator(repo MetaRangeManager, ranges []Range) Iterator {
-	return &iterator{metaRangeManager: repo, ranges: ranges}
+func NewIterator(manager RangeManager, namespace Namespace, ranges []Range) Iterator {
+	return &iterator{
+		manager:   manager,
+		namespace: namespace,
+		ranges:    ranges,
+	}
 }
 
 func (rvi *iterator) NextRange() bool {
@@ -42,7 +48,7 @@ func (rvi *iterator) Next() bool {
 		return false // Iteration was already finished.
 	}
 	var err error
-	rvi.it, err = rvi.metaRangeManager.NewRangeIterator(rvi.ns, rvi.ranges[0].ID, nil)
+	rvi.it, err = rvi.newRangeIterator(rvi.ranges[0].ID)
 	if err != nil {
 		rvi.err = err
 		return false
@@ -84,4 +90,12 @@ func (rvi *iterator) Close() {
 
 func (rvi *iterator) SeekGE(id graveler.Key) {
 	panic("implement me")
+}
+
+func (rvi *iterator) newRangeIterator(rangeID ID) (graveler.ValueIterator, error) {
+	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rangeID, nil)
+	if err != nil {
+		return nil, err
+	}
+	return NewUnmarshalIterator(it), nil
 }

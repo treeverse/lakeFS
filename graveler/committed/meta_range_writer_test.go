@@ -5,11 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler/committed/mock"
-
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/committed/mock"
 	"github.com/treeverse/lakefs/testutil"
 )
 
