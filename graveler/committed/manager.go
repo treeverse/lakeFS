@@ -30,12 +30,12 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	writer := c.metaRangeManager.NewWriter(ns)
 	for it.Next() {
-		if err := it.Err(); err != nil {
-			return nil, fmt.Errorf("getting value from iterator: %w", err)
-		}
 		if err := writer.WriteRecord(*it.Value()); err != nil {
 			return nil, fmt.Errorf("writing record: %w", err)
 		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, fmt.Errorf("getting value from iterator: %w", err)
 	}
 	id, err := writer.Close()
 	if err != nil {

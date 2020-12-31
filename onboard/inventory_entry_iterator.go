@@ -3,20 +3,22 @@ package onboard
 import (
 	"errors"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/cmdutils"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type inventoryEntryIterator struct {
-	it    *InventoryIterator
-	value *rocks.EntryRecord
-	err   error
+	it       *InventoryIterator
+	value    *rocks.EntryRecord
+	err      error
+	progress *cmdutils.Progress
 }
 
-func NewValueToEntryIterator(it *InventoryIterator) rocks.EntryIterator {
+func NewValueToEntryIterator(it *InventoryIterator, progress *cmdutils.Progress) rocks.EntryIterator {
 	return &inventoryEntryIterator{
-		it: it,
+		it:       it,
+		progress: progress,
 	}
 }
 
@@ -24,8 +26,7 @@ func (e *inventoryEntryIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-	hasNext := e.it.Next()
-	if !hasNext {
+	if !e.it.Next() {
 		e.value = nil
 		e.err = e.it.Err()
 		return false
@@ -44,13 +45,15 @@ func (e *inventoryEntryIterator) Next() bool {
 	if v.Obj.LastModified != nil {
 		e.value.LastModified = timestamppb.New(*v.Obj.LastModified)
 	}
+
+	e.progress.Add(1)
 	return true
 }
 
-var ErrIteratorNotSeakable = errors.New("can't seek on inventory iterator")
+var ErrIteratorNotSeekable = errors.New("can't seek on inventory iterator")
 
 func (e *inventoryEntryIterator) SeekGE(_ rocks.Path) {
-	e.err = ErrIteratorNotSeakable
+	e.err = ErrIteratorNotSeekable
 }
 
 func (e *inventoryEntryIterator) Value() *rocks.EntryRecord {

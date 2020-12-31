@@ -122,9 +122,9 @@ func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catal
 	return &catalog.CommitLog{Metadata: metadata}, nil
 }
 
-func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
+func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (string, error) {
 	m.lastCommitMetadata = metadata
-	return &catalog.CommitLog{}, nil
+	return "", nil
 }
 
 func (m *mockCatalogActions) Progress() []*cmdutils.Progress {

@@ -22,7 +22,7 @@ type RepoActions interface {
 	cmdutils.ProgressReporter
 	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
-	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
+	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (commitRef string, err error)
 }
 
 type MVCCCatalogRepoActions struct {
@@ -167,14 +167,16 @@ func (c *MVCCCatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit 
 	return commit, nil
 }
 
-func (c *MVCCCatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
+func (c *MVCCCatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (string, error) {
 	c.commitProgress.Activate()
 	res, err := c.cataloger.Commit(ctx, c.repository, catalog.DefaultImportBranchName,
 		commitMsg,
 		c.committer,
 		metadata)
-	if err == nil {
-		c.commitProgress.SetCompleted(true)
+	if err != nil {
+		return "", err
 	}
-	return res, err
+
+	c.commitProgress.SetCompleted(true)
+	return res.Reference, nil
 }
