@@ -97,5 +97,5 @@ func (rvi *iterator) newRangeIterator(rangeID ID) (graveler.ValueIterator, error
 	if err != nil {
 		return nil, err
 	}
-	return NewRangeIterator(it), nil
+	return NewUnmarshalIterator(it), nil
 }

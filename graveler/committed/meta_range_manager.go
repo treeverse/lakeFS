@@ -43,7 +43,7 @@ type MetaRangeManager interface {
 	// over the MetaRange from the first value >= from
 	NewMetaRangeIterator(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, from graveler.Key) (Iterator, error)
 
-	// NewRangeIterator accepts a Range ID, and returns a ValueIterator
+	// NewUnmarshalIterator accepts a Range ID, and returns a ValueIterator
 	// over this Range from the first value >= from
 	NewRangeIterator(ns graveler.StorageNamespace, rangeID ID, from graveler.Key) (graveler.ValueIterator, error)
 }
