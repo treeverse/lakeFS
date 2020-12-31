@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
@@ -272,12 +273,10 @@ func (r *diffIter) Next() bool {
 }
 
 func (r *diffIter) SeekGE(id graveler.Key) {
-	for i, record := range r.records {
-		if bytes.Compare(id, record.Key) >= 0 {
-			r.current = i - 1
-		}
-	}
-	r.current = len(r.records)
+	i := sort.Search(len(r.records), func(i int) bool {
+		return bytes.Compare(r.records[i].Key, id) >= 0
+	})
+	r.current = i - 1
 }
 
 func (r *diffIter) Value() *graveler.Diff {
@@ -330,6 +329,41 @@ func (r *valueIteratorFake) Err() error {
 }
 
 func (r *valueIteratorFake) Close() {}
+
+type committedValueIteratorFake struct {
+	current int
+	records []committed.Record
+	err     error
+}
+
+func NewCommittedValueIteratorFake(records []committed.Record) *committedValueIteratorFake {
+	return &committedValueIteratorFake{records: records, current: -1}
+}
+
+func (r *committedValueIteratorFake) Next() bool {
+	r.current++
+	return r.current < len(r.records)
+}
+
+func (r *committedValueIteratorFake) SeekGE(id committed.Key) {
+	i := sort.Search(len(r.records), func(i int) bool {
+		return bytes.Compare(r.records[i].Key, id) >= 0
+	})
+	r.current = i - 1
+}
+
+func (r *committedValueIteratorFake) Value() *committed.Record {
+	if r.current < 0 || r.current >= len(r.records) {
+		return nil
+	}
+	return &r.records[r.current]
+}
+
+func (r *committedValueIteratorFake) Err() error {
+	return r.err
+}
+
+func (r *committedValueIteratorFake) Close() {}
 
 type referenceFake struct {
 	refType  graveler.ReferenceType
