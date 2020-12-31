@@ -8,6 +8,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/ref"
+	"github.com/treeverse/lakefs/graveler/staging"
 	"github.com/treeverse/lakefs/pyramid"
 )
 
@@ -79,7 +80,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	// TODO(ariels): Create a CommittedManager on top of fs.
 	var committedManager graveler.CommittedManager
 
-	stagingManager := graveler.NewStagingManager(db)
+	stagingManager := staging.NewManager(db)
 	refManager := ref.NewPGRefManager(db)
 
 	return &EntryCatalog{
