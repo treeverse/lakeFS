@@ -273,8 +273,9 @@ func (r *diffIter) Next() bool {
 
 func (r *diffIter) SeekGE(id graveler.Key) {
 	for i, record := range r.records {
-		if bytes.Compare(id, record.Key) >= 0 {
+		if bytes.Compare(id, record.Key) <= 0 {
 			r.current = i - 1
+			return
 		}
 	}
 	r.current = len(r.records)

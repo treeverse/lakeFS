@@ -9,6 +9,7 @@ import (
 
 type mergeIterator struct {
 	diffIt       graveler.DiffIterator
+	val          *graveler.ValueRecord
 	base         graveler.MetaRangeID
 	committedMgr graveler.CommittedManager
 	ctx          context.Context
@@ -38,6 +39,7 @@ func (d *mergeIterator) Next() bool {
 		switch typ {
 		case graveler.DiffTypeAdded:
 			if baseVal == nil {
+				d.setValue()
 				return true
 			}
 			if !bytes.Equal(baseVal.Identity, val.Value.Identity) {
@@ -57,33 +59,43 @@ func (d *mergeIterator) Next() bool {
 				d.err = graveler.ErrConflictFound
 				return false
 			}
+			d.setValue()
 			return true
 		case graveler.DiffTypeRemoved:
 			if baseVal != nil {
 				if bytes.Equal(baseVal.Identity, val.OldIdentity) {
+					d.setValue()
 					return true // removed
 				}
 				d.err = graveler.ErrConflictFound
 			}
-			return false
+			// continue
 		}
 	}
 	return false
 }
 
+func (d *mergeIterator) setValue() {
+	diff := d.diffIt.Value()
+	if diff.Type == graveler.DiffTypeRemoved {
+		d.val = &graveler.ValueRecord{Key: diff.Key}
+	} else {
+		d.val = &graveler.ValueRecord{
+			Key:   diff.Key,
+			Value: diff.Value,
+		}
+	}
+
+}
+
 func (d *mergeIterator) SeekGE(id graveler.Key) {
+	d.val = nil
+	d.err = nil
 	d.diffIt.SeekGE(id)
 }
 
 func (d *mergeIterator) Value() *graveler.ValueRecord {
-	diff := d.diffIt.Value()
-	if diff.Type == graveler.DiffTypeRemoved {
-		return &graveler.ValueRecord{Key: diff.Key}
-	}
-	return &graveler.ValueRecord{
-		Key:   diff.Key,
-		Value: diff.Value,
-	}
+	return d.val
 }
 
 func (d *mergeIterator) Err() error {
