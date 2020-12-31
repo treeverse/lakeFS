@@ -12,8 +12,8 @@ type Namespace string
 type Key []byte
 type Value []byte
 type Record struct {
-	Key
-	Value
+	Key   Key
+	Value Value
 }
 
 type ValueIterator interface {
@@ -39,7 +39,7 @@ type RangeManager interface {
 	GetBatchWriter() BatchWriterCloser
 }
 
-// WriteResult is the result of a completed write of an Range
+// WriteResult is the result of a completed write of a Range
 type WriteResult struct {
 	// ID is the identifier for the written Range.
 	// Calculated by an hash function to all keys and values' identity.

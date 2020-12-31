@@ -3,15 +3,18 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"sort"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed"
 )
 
 const DefaultBranchID = graveler.BranchID("master")
 
 type AppliedData struct {
-	Values  graveler.ValueIterator
-	RangeID graveler.RangeID
+	Values      graveler.ValueIterator
+	MetaRangeID graveler.MetaRangeID
 }
 
 type CommittedFake struct {
@@ -19,15 +22,15 @@ type CommittedFake struct {
 	ValueIterator graveler.ValueIterator
 	diffIterator  graveler.DiffIterator
 	Err           error
-	RangeID       graveler.RangeID
+	MetaRangeID   graveler.MetaRangeID
 	AppliedData   AppliedData
 }
 
-type TreeFake struct {
-	id graveler.RangeID
+type MetaRangeFake struct {
+	id graveler.MetaRangeID
 }
 
-func (t *TreeFake) ID() graveler.RangeID {
+func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
@@ -35,48 +38,48 @@ func NewCommittedFake() graveler.CommittedManager {
 	return &CommittedFake{}
 }
 
-func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID, _ graveler.Key) (*graveler.Value, error) {
+func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, _ graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.Value, nil
 }
 
-func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.MetaRange, error) {
+func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRange, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return &TreeFake{id: rangeID}, nil
+	return &MetaRangeFake{id: metaRangeID}, nil
 }
 
-func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.RangeID) (graveler.ValueIterator, error) {
+func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID) (graveler.ValueIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValueIterator, nil
 }
 
-func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.RangeID) (graveler.DiffIterator, error) {
+func (c *CommittedFake) Diff(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID) (graveler.DiffIterator, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.diffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.RangeID, _, _ string, _ graveler.Metadata) (graveler.RangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _, _ string, _ graveler.Metadata) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
-	return c.RangeID, nil
+	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.RangeID, values graveler.ValueIterator) (graveler.RangeID, error) {
+func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	c.AppliedData.Values = values
-	c.AppliedData.RangeID = rangeID
-	return c.RangeID, nil
+	c.AppliedData.MetaRangeID = metaRangeID
+	return c.MetaRangeID, nil
 }
 
 type StagingFake struct {
@@ -151,11 +154,11 @@ func (s *StagingFake) ListSnapshot(_ context.Context, _ graveler.StagingToken, _
 }
 
 type AddedCommitData struct {
-	Committer string
-	Message   string
-	RangeID   graveler.RangeID
-	Parents   graveler.CommitParents
-	Metadata  graveler.Metadata
+	Committer   string
+	Message     string
+	MetaRangeID graveler.MetaRangeID
+	Parents     graveler.CommitParents
+	Metadata    graveler.Metadata
 }
 
 type RefsFake struct {
@@ -238,11 +241,11 @@ func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit 
 		return "", m.CommitErr
 	}
 	m.AddedCommit = AddedCommitData{
-		Committer: commit.Committer,
-		Message:   commit.Message,
-		RangeID:   commit.RangeID,
-		Parents:   commit.Parents,
-		Metadata:  commit.Metadata,
+		Committer:   commit.Committer,
+		Message:     commit.Message,
+		MetaRangeID: commit.MetaRangeID,
+		Parents:     commit.Parents,
+		Metadata:    commit.Metadata,
 	}
 	return m.CommitID, nil
 }
@@ -270,12 +273,10 @@ func (r *diffIter) Next() bool {
 }
 
 func (r *diffIter) SeekGE(id graveler.Key) {
-	for i, record := range r.records {
-		if bytes.Compare(id, record.Key) >= 0 {
-			r.current = i - 1
-		}
-	}
-	r.current = len(r.records)
+	i := sort.Search(len(r.records), func(i int) bool {
+		return bytes.Compare(r.records[i].Key, id) >= 0
+	})
+	r.current = i - 1
 }
 
 func (r *diffIter) Value() *graveler.Diff {
@@ -329,6 +330,41 @@ func (r *valueIteratorFake) Err() error {
 
 func (r *valueIteratorFake) Close() {}
 
+type committedValueIteratorFake struct {
+	current int
+	records []committed.Record
+	err     error
+}
+
+func NewCommittedValueIteratorFake(records []committed.Record) *committedValueIteratorFake {
+	return &committedValueIteratorFake{records: records, current: -1}
+}
+
+func (r *committedValueIteratorFake) Next() bool {
+	r.current++
+	return r.current < len(r.records)
+}
+
+func (r *committedValueIteratorFake) SeekGE(id committed.Key) {
+	i := sort.Search(len(r.records), func(i int) bool {
+		return bytes.Compare(r.records[i].Key, id) >= 0
+	})
+	r.current = i - 1
+}
+
+func (r *committedValueIteratorFake) Value() *committed.Record {
+	if r.current < 0 || r.current >= len(r.records) {
+		return nil
+	}
+	return &r.records[r.current]
+}
+
+func (r *committedValueIteratorFake) Err() error {
+	return r.err
+}
+
+func (r *committedValueIteratorFake) Close() {}
+
 type referenceFake struct {
 	refType  graveler.ReferenceType
 	branch   graveler.Branch
@@ -359,4 +395,117 @@ func (m *referenceFake) Branch() graveler.Branch {
 
 func (m *referenceFake) CommitID() graveler.CommitID {
 	return m.commitID
+}
+
+type RV struct {
+	R *committed.Range
+	V *graveler.ValueRecord
+}
+
+type FakeIterator struct {
+	RV           []RV
+	idx          int
+	rangeIdx     int
+	err          error
+	closed       bool
+	readsByRange []int
+}
+
+func NewFakeIterator() *FakeIterator {
+	// Start with an empty record so the first `Next()` can skip it.
+	return &FakeIterator{RV: make([]RV, 1), idx: 0, rangeIdx: -1}
+}
+
+// ReadsByRange returns the number of Next operations performed inside each range
+func (i *FakeIterator) ReadsByRange() []int {
+	return i.readsByRange
+}
+
+func (i *FakeIterator) nextKey() []byte {
+	if len(i.RV) <= i.idx+1 {
+		return nil
+	}
+	if i.RV[i.idx+1].V == nil {
+		return i.RV[i.idx+1].R.MinKey
+	}
+	return i.RV[i.idx+1].V.Key
+}
+
+func (i *FakeIterator) SetErr(err error) {
+	i.err = err
+}
+
+func (i *FakeIterator) AddRange(p *committed.Range) *FakeIterator {
+	i.RV = append(i.RV, RV{R: p})
+	i.readsByRange = append(i.readsByRange, 0)
+	return i
+}
+
+func (i *FakeIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakeIterator {
+	if len(i.RV) == 0 {
+		panic(fmt.Sprintf("cannot add ValueRecords %+v with no range", vs))
+	}
+	rng := i.RV[len(i.RV)-1].R
+	for _, v := range vs {
+		i.RV = append(i.RV, RV{R: rng, V: v})
+	}
+	return i
+}
+
+func (i *FakeIterator) Next() bool {
+	if i.err != nil || i.closed {
+		return false
+	}
+	if len(i.RV) <= i.idx+1 {
+		return false
+	}
+	i.idx++
+	if i.RV[i.idx].V == nil {
+		i.rangeIdx++
+	} else {
+		i.readsByRange[i.rangeIdx]++
+	}
+	return true
+}
+
+func (i *FakeIterator) NextRange() bool {
+	for {
+		if len(i.RV) <= i.idx+1 {
+			return false
+		}
+		i.idx++
+		if i.RV[i.idx].V == nil {
+			i.rangeIdx++
+			return true
+		}
+	}
+}
+
+func (i *FakeIterator) Value() (*graveler.ValueRecord, *committed.Range) {
+	if i.closed {
+		return nil, nil
+	}
+	return i.RV[i.idx].V, i.RV[i.idx].R
+}
+
+func (i *FakeIterator) SeekGE(id graveler.Key) {
+	i.idx = 0
+	i.rangeIdx = -1
+	for {
+		nextKey := i.nextKey()
+		if nextKey == nil || bytes.Compare(nextKey, id) >= 0 {
+			return
+		}
+		if !i.Next() {
+			return
+		}
+	}
+}
+
+func (i *FakeIterator) Err() error {
+	return i.err
+}
+
+func (i *FakeIterator) Close() {
+	i.closed = true
 }

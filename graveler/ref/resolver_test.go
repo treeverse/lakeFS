@@ -26,7 +26,7 @@ func TestRefManager_Dereference(t *testing.T) {
 		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",
-			RangeID:      "deadbeef123",
+			MetaRangeID:  "deadbeef123",
 			CreationDate: ts,
 			Parents:      graveler.CommitParents{previous},
 			Metadata:     graveler.Metadata{"foo": "bar"},
