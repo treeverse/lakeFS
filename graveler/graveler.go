@@ -166,7 +166,7 @@ type Diff struct {
 	Type        DiffType
 	Key         Key
 	Value       *Value
-	OldIdentity []byte
+	OldIdentity []byte // the Identity of the value on the left side of the diff
 }
 
 // Interfaces
