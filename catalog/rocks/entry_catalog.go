@@ -88,6 +88,10 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	}, nil
 }
 
+func (e *EntryCatalog) CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+	return e.store.CommitExistingMetaRange(ctx, repositoryID, branchID, metaRangeID, committer, message, metadata)
+}
+
 func (e *EntryCatalog) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
 	return e.store.GetRepository(ctx, repositoryID)
 }
@@ -149,6 +153,10 @@ func (e *EntryCatalog) ListBranches(ctx context.Context, repositoryID graveler.R
 
 func (e *EntryCatalog) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
 	return e.store.DeleteBranch(ctx, repositoryID, branchID)
+}
+
+func (e *EntryCatalog) WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it EntryIterator) (*graveler.MetaRangeID, error) {
+	return e.store.WriteMetaRange(ctx, repositoryID, NewEntryToValueIterator(it))
 }
 
 func (e *EntryCatalog) Commit(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {

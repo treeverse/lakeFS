@@ -161,6 +161,14 @@ func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ gra
 	return g.DiffIterator, nil
 }
 
+func (g *FakeGraveler) CommitExistingMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.MetaRangeID, _ string, _ string, _ graveler.Metadata) (graveler.CommitID, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) WriteMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int

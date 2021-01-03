@@ -33,6 +33,7 @@ func (m mockCataloger) CreateEntries(_ context.Context, _, _ string, entries []c
 	atomic.AddInt32(catalogCallData.callLog["CreateEntries"], 1)
 	return nil
 }
+
 func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) error {
 	catalogCallData.mux.Lock()
 	defer catalogCallData.mux.Unlock()
