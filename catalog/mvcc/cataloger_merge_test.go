@@ -77,7 +77,7 @@ func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// merge again - nothing should happen
-	res, err = c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
+	_, err = c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	if err != catalog.ErrNoDifferenceWasFound {
 		t.Fatal("Merge() expected ErrNoDifferenceWasFound, got:", err)
 	}
@@ -1087,6 +1087,7 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	// create and commit the same file, different content, on 'master', merge to 'b1' and check that we get the file on 'b1'
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master2")
 	_, err = c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit on master", err)
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge changes from master to b1", nil)
 	testutil.MustDo(t, "merge master to b1", err)
 	ent, err := c.GetEntry(ctx, repository, "b1", "fileX", catalog.GetEntryParams{})

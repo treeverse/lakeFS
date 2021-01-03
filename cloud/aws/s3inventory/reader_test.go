@@ -72,6 +72,9 @@ func generateParquet(t *testing.T, objs <-chan *TestObject, fieldToRemove string
 		_ = fw.Close()
 	}()
 	jsonSchema, err := json.Marshal(parquetSchema(fieldToRemove))
+	if err != nil {
+		t.Fatalf("failed to marshal to JSON %+v: %s", parquetSchema(fieldToRemove), err)
+	}
 	jsonSchemaStr := string(jsonSchema)
 	pw, err := writer.NewParquetWriter(fw, jsonSchemaStr, 4)
 	if err != nil {
