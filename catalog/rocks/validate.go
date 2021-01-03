@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/ident"
 )
 
 var (
@@ -14,62 +15,83 @@ var (
 	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
-var ErrInvalidValue = errors.New("invalid value")
+var (
+	ErrInvalidValue = errors.New("invalid value")
+	ErrInvalidType  = errors.New("invalid type")
+)
 
-type ValidateFunc func(v interface{}) bool
+type ValidateFunc func(v interface{}) error
 
 func Validate(name string, value interface{}, fn ValidateFunc) error {
-	if fn(value) {
-		return nil
+	err := fn(value)
+	if err != nil {
+		return fmt.Errorf("%s: %w", name, err)
 	}
-	return fmt.Errorf("%w: %s", ErrInvalidValue, name)
+	return nil
 }
 
-func IsNonEmptyString(v interface{}) bool {
+func ValidateNonEmptyString(v interface{}) error {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return ErrInvalidType
 	}
-	return len(s) > 0
+	if len(s) == 0 {
+		return ErrInvalidValue
+	}
+	return nil
 }
 
-func IsValidRef(v interface{}) bool {
+func ValidateRef(v interface{}) error {
 	s, ok := v.(graveler.Ref)
 	if !ok {
-		return false
+		return ErrInvalidType
 	}
-	return validRefRegexp.MatchString(s.String())
+	if !validRefRegexp.MatchString(s.String()) {
+		return ErrInvalidValue
+	}
+	return nil
 }
 
-func IsValidBranchID(v interface{}) bool {
+func ValidateBranchID(v interface{}) error {
 	s, ok := v.(graveler.BranchID)
 	if !ok {
-		return false
+		return ErrInvalidType
 	}
-	return validBranchNameRegexp.MatchString(s.String())
+	if !validBranchNameRegexp.MatchString(s.String()) {
+		return ErrInvalidValue
+	}
+	return nil
 }
 
-func IsValidTagID(v interface{}) bool {
+func ValidateTagID(v interface{}) error {
 	s, ok := v.(graveler.TagID)
 	if !ok {
-		return false
+		return ErrInvalidType
 	}
-	return validBranchNameRegexp.MatchString(string(s))
+	if !validBranchNameRegexp.MatchString(string(s)) {
+		return ErrInvalidValue
+	}
+	return nil
 }
 
-func IsValidCommitID(v interface{}) bool {
+func ValidateCommitID(v interface{}) error {
 	s, ok := v.(graveler.CommitID)
 	if !ok {
-		return false
+		return ErrInvalidType
 	}
-	// TODO(barak): identify what is a valid commit ID
-	return len(s.String()) > 0
+	if !ident.IsContentAddress(s.String()) {
+		return ErrInvalidValue
+	}
+	return nil
 }
 
-func IsValidRepositoryID(v interface{}) bool {
+func ValidateRepositoryID(v interface{}) error {
 	s, ok := v.(graveler.RepositoryID)
 	if !ok {
-		return false
+		return ErrInvalidType
 	}
-	return validRepositoryNameRegexp.MatchString(s.String())
+	if !validRepositoryNameRegexp.MatchString(s.String()) {
+		return ErrInvalidValue
+	}
+	return nil
 }
