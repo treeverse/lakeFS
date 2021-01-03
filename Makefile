@@ -80,7 +80,7 @@ go-install: go-mod-download ## Install dependencies
 
 
 gen-api: go-install del-gen-api ## Run the go-swagger code generator
-	$(GOGENERATE) ./api/...
+	$(GOGENERATE) ./api
 
 del-gen-api:
 	@rm -rf $(API_BUILD_DIR)

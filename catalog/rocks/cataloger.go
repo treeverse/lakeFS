@@ -2,7 +2,6 @@ package rocks
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -245,32 +244,23 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, _ catalog.CreateEntryParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	p := Path(entry.Path)
-	etag, err := hex.DecodeString(entry.Checksum)
-	if err != nil {
-		return err
-	}
 	ent := &Entry{
 		Address:  entry.PhysicalAddress,
 		Metadata: map[string]string(entry.Metadata),
-		ETag:     etag,
+		ETag:     entry.Checksum,
 		Size:     entry.Size,
 	}
-	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent)
+	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent)
 }
 
 func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []catalog.Entry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	for _, entry := range entries {
-		etag, err := hex.DecodeString(entry.Checksum)
-		if err != nil {
-			return err
-		}
 		ent := &Entry{
 			Address:  entry.PhysicalAddress,
 			Metadata: map[string]string(entry.Metadata),
-			ETag:     etag,
+			ETag:     entry.Checksum,
 			Size:     entry.Size,
 		}
 		if err := c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent); err != nil {
@@ -588,7 +578,7 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 		catEnt.PhysicalAddress = ent.Address
 		catEnt.CreationDate = ent.LastModified.AsTime()
 		catEnt.Size = ent.Size
-		catEnt.Checksum = hex.EncodeToString(ent.ETag)
+		catEnt.Checksum = ent.ETag
 		catEnt.Metadata = ent.Metadata
 		catEnt.Expired = false
 	}

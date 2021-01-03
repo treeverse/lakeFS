@@ -106,7 +106,7 @@ func TestStartup(t *testing.T) {
 	require.True(t, os.IsNotExist(err))
 
 	f, err := localFS.Open(namespace, filename)
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	require.NoError(t, err)
 
 	bytes, err := ioutil.ReadAll(f)
@@ -208,8 +208,8 @@ func checkContent(t *testing.T, namespace string, filename string, content []byt
 
 type mockEv struct{}
 
-func (_ *mockEv) Touch(_ params.RelativePath) {}
+func (*mockEv) Touch(params.RelativePath) {}
 
-func (_ *mockEv) Store(_ params.RelativePath, _ int64) bool {
+func (*mockEv) Store(params.RelativePath, int64) bool {
 	return true
 }

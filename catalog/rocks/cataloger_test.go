@@ -211,11 +211,11 @@ func TestCataloger_ListEntries(t *testing.T) {
 	// prepare branch data
 	now := time.Now()
 	gravelerData := []*graveler.ValueRecord{
-		{Key: graveler.Key("file1"), Value: MustEntryToValue(&Entry{Address: "file1", LastModified: timestamppb.New(now), Size: 1, ETag: []byte{1}})},
-		{Key: graveler.Key("file2"), Value: MustEntryToValue(&Entry{Address: "file2", LastModified: timestamppb.New(now), Size: 2, ETag: []byte{2}})},
-		{Key: graveler.Key("file3"), Value: MustEntryToValue(&Entry{Address: "file3", LastModified: timestamppb.New(now), Size: 3, ETag: []byte{3}})},
-		{Key: graveler.Key("h/file1"), Value: MustEntryToValue(&Entry{Address: "h/file1", LastModified: timestamppb.New(now), Size: 1, ETag: []byte{1}})},
-		{Key: graveler.Key("h/file2"), Value: MustEntryToValue(&Entry{Address: "h/file2", LastModified: timestamppb.New(now), Size: 2, ETag: []byte{2}})},
+		{Key: graveler.Key("file1"), Value: MustEntryToValue(&Entry{Address: "file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
+		{Key: graveler.Key("file2"), Value: MustEntryToValue(&Entry{Address: "file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
+		{Key: graveler.Key("file3"), Value: MustEntryToValue(&Entry{Address: "file3", LastModified: timestamppb.New(now), Size: 3, ETag: "03"})},
+		{Key: graveler.Key("h/file1"), Value: MustEntryToValue(&Entry{Address: "h/file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
+		{Key: graveler.Key("h/file2"), Value: MustEntryToValue(&Entry{Address: "h/file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
 	}
 	type args struct {
 		prefix    string

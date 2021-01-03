@@ -153,15 +153,6 @@ func makeAllDependencies(dd directDependencies) allDependencies {
 	return &allDependenciesSet{dd: dd, s: make(map[parade.TaskID]map[parade.TaskID]struct{})}
 }
 
-func validateAllAfter(t *testing.T, d allDependencies, typ string, before parade.TaskID, afters []parade.TaskID) {
-	t.Helper()
-	for _, after := range afters {
-		if !d.depends(before, after) {
-			t.Errorf("missing %s dependency %s->%s", typ, before, after)
-		}
-	}
-}
-
 func cleanup(tasks []parade.TaskData) []parade.TaskData {
 	ret := make([]parade.TaskData, len(tasks))
 	for i, t := range tasks {

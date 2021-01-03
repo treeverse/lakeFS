@@ -66,6 +66,7 @@ resource "aws_ecs_task_definition" "benchmark" {
             {"name": "LAKEFS_AUTH_ENCRYPT_SECRET_KEY", "value": "${random_string.encryptKey.result}"},
             {"name": "LAKEFS_DATABASE_CONNECTION_STRING", "value": "postgres://benchmarks:${random_string.password.result}@${module.db.this_db_instance_endpoint}/postgres?sslmode=disable"},
             {"name": "LAKEFS_BLOCKSTORE_TYPE", "value": "s3"},
+            {"name": "LAKEFS_STATS_ENABLED", "value": "false"},
             {"name": "LAKEFS_LOGGING_LEVEL", "value": "DEBUG"}
         ],
         "essential": true,

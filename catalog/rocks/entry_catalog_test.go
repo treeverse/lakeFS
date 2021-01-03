@@ -84,11 +84,9 @@ func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 
 func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
 	// prepare data
-	var entriesData []*Entry
 	var gravelerData []*graveler.ValueRecord
 	for _, name := range []string{"file1", "folder/file1", "folder/file2", "zzz"} {
 		entry := &Entry{Address: name}
-		entriesData = append(entriesData, entry)
 		record := &graveler.ValueRecord{Value: MustEntryToValue(entry), Key: graveler.Key(name)}
 		gravelerData = append(gravelerData, record)
 	}

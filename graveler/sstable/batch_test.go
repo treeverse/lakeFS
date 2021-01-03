@@ -46,7 +46,7 @@ func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 
 	writer := mock.NewMockRangeWriter(ctrl)
 	writer.EXPECT().Close().Return(&committed.WriteResult{
-		RangeID: committed.ID("last"),
+		RangeID: "last",
 		First:   committed.Key("row_1"),
 		Last:    committed.Key("row_2"),
 		Count:   4321,
@@ -62,8 +62,8 @@ func runSuccessScenario(t *testing.T) (*sstable.BatchCloser, *gomock.Controller)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	writersCount := 10
-	writers := make([]*mock.MockRangeWriter, writersCount, writersCount)
+	const writersCount = 10
+	writers := make([]*mock.MockRangeWriter, writersCount)
 	for i := 0; i < writersCount; i++ {
 		writers[i] = mock.NewMockRangeWriter(ctrl)
 		writers[i].EXPECT().Close().Return(&committed.WriteResult{
