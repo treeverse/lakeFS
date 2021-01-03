@@ -16,7 +16,7 @@ func TestEntryToValueAndBack(t *testing.T) {
 		Address:      "entry1",
 		LastModified: timestamppb.New(now),
 		Size:         99,
-		ETag:         []byte("\xba\xdc\x0f\xfe"),
+		ETag:         "123456789",
 		Metadata:     map[string]string{"key9": "value9", "key1": "value1"},
 	}
 	val, err := EntryToValue(entry)

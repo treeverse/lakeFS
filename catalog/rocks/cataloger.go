@@ -2,7 +2,6 @@ package rocks
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -312,14 +311,10 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 	if err != nil {
 		return err
 	}
-	etag, err := hex.DecodeString(entry.Checksum)
-	if err != nil {
-		return err
-	}
 	ent := &Entry{
 		Address:  entry.PhysicalAddress,
 		Metadata: map[string]string(entry.Metadata),
-		ETag:     etag,
+		ETag:     entry.Checksum,
 		Size:     entry.Size,
 	}
 	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent)
@@ -339,14 +334,10 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 		if err != nil {
 			return err
 		}
-		etag, err := hex.DecodeString(entry.Checksum)
-		if err != nil {
-			return err
-		}
 		ent := &Entry{
 			Address:  entry.PhysicalAddress,
 			Metadata: map[string]string(entry.Metadata),
-			ETag:     etag,
+			ETag:     entry.Checksum,
 			Size:     entry.Size,
 		}
 		if err := c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, p, ent); err != nil {
@@ -715,7 +706,7 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 		catEnt.PhysicalAddress = ent.Address
 		catEnt.CreationDate = ent.LastModified.AsTime()
 		catEnt.Size = ent.Size
-		catEnt.Checksum = hex.EncodeToString(ent.ETag)
+		catEnt.Checksum = ent.ETag
 		catEnt.Metadata = ent.Metadata
 		catEnt.Expired = false
 	}
