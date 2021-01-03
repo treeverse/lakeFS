@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -12,6 +11,8 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/testutil"
 )
+
+var baseKeyToIdentity = map[string]string{"k1": "i1", "k2": "i2", "k3": "i3", "k4": "i4", "k6": "i6"}
 
 const (
 	added   = graveler.DiffTypeAdded
@@ -30,73 +31,73 @@ func testMergeNewDiff(typ graveler.DiffType, key string, newIdentity string, old
 
 func TestMerge(t *testing.T) {
 	tests := map[string]struct {
-		baseKeyToIdentity   map[string]string
+		baseKeys            []string
 		diffs               []graveler.Diff
 		conflictExpectedIdx *int
 		expectedKeys        []string
 		expectedIdentities  []string
 	}{
 		"added on right": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(added, "k3", "i3", "")},
 			conflictExpectedIdx: nil,
 			expectedKeys:        []string{"k3"},
 			expectedIdentities:  []string{"i3"},
 		},
 		"changed on right": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(changed, "k2", "i2a", "i2")},
 			conflictExpectedIdx: nil,
 			expectedKeys:        []string{"k2"},
 			expectedIdentities:  []string{"i2a"},
 		},
 		"deleted on right": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(removed, "k2", "i2", "i2")},
 			conflictExpectedIdx: nil,
 			expectedKeys:        []string{"k2"},
 			expectedIdentities:  []string{""},
 		},
 		"added on left": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1"},
+			baseKeys:            []string{"k1"},
 			diffs:               []graveler.Diff{testMergeNewDiff(removed, "k2", "i2", "i2")},
 			conflictExpectedIdx: nil,
 			expectedIdentities:  nil,
 		},
 		"removed on left": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(added, "k2", "i2", "")},
 			conflictExpectedIdx: nil,
 			expectedIdentities:  nil,
 		},
 		"changed on left": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(changed, "k2", "i2", "i2a")},
 			conflictExpectedIdx: nil,
 			expectedIdentities:  nil,
 		},
 		"changed on both": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(changed, "k2", "i2b", "i2a")},
 			conflictExpectedIdx: swag.Int(0),
 		},
 		"changed on left, removed on right": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(removed, "k2", "i2a", "i2a")},
 			conflictExpectedIdx: swag.Int(0),
 		},
 		"removed on left, changed on right": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1", "k2": "i2"},
+			baseKeys:            []string{"k1", "k2"},
 			diffs:               []graveler.Diff{testMergeNewDiff(added, "k2", "i2a", "")},
 			conflictExpectedIdx: swag.Int(0),
 		},
 		"added on both with different identities": {
-			baseKeyToIdentity:   map[string]string{"k1": "i1"},
+			baseKeys:            []string{"k1"},
 			diffs:               []graveler.Diff{testMergeNewDiff(changed, "k2", "i2a", "i2b")},
 			conflictExpectedIdx: swag.Int(0),
 		},
 		"multiple add and removes": {
-			baseKeyToIdentity: map[string]string{"k1": "i1", "k3": "i3"},
+			baseKeys: []string{"k1", "k3"},
 			diffs: []graveler.Diff{testMergeNewDiff(removed, "k1", "i1", "i1"),
 				testMergeNewDiff(added, "k2", "i2", ""),
 				testMergeNewDiff(removed, "k3", "i3", "i3"),
@@ -105,7 +106,7 @@ func TestMerge(t *testing.T) {
 			expectedIdentities: []string{"", "i2", "", "i4"},
 		},
 		"changes on each side": {
-			baseKeyToIdentity: map[string]string{"k1": "i1", "k2": "i2", "k3": "i3", "k4": "i4"},
+			baseKeys: []string{"k1", "k2", "k3", "k4"},
 			diffs: []graveler.Diff{testMergeNewDiff(changed, "k1", "i1a", "i1"),
 				testMergeNewDiff(changed, "k2", "i2", "i2a"),
 				testMergeNewDiff(changed, "k3", "i3a", "i3"),
@@ -119,14 +120,8 @@ func TestMerge(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			diffIt := testutil.NewDiffIter(tst.diffs)
 			defer diffIt.Close()
-			committedFake := testutil.NewCommittedFake()
-			committedFake.DiffIterator = diffIt
-			baseRecords := map[string]*graveler.Value{}
-			for k, identity := range tst.baseKeyToIdentity {
-				baseRecords[k] = &graveler.Value{Identity: []byte(identity)}
-			}
-			committedFake.ValuesByKey = baseRecords
-			it, err := committed.NewMergeIterator(context.Background(), "a", "b", "c", "d", committedFake)
+			base := makeBaseIterator(tst.baseKeys)
+			it, err := committed.NewMergeIterator(diffIt, base)
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
 			}
@@ -168,21 +163,15 @@ func TestMergeSeek(t *testing.T) {
 		testMergeNewDiff(changed, "k3", "i3a", "i3"),
 		testMergeNewDiff(added, "k4", "i4", ""),
 		testMergeNewDiff(removed, "k5", "i5", "i5"),
-		testMergeNewDiff(changed, "k6", "i6a", "i6"),
+		testMergeNewDiff(changed, "k6", "i6", "i6a"),
 		testMergeNewDiff(added, "k7", "i7", ""),
 		testMergeNewDiff(removed, "k8", "i8", "i8"),
 		testMergeNewDiff(changed, "k9", "i9a", "i9"),
 	}
 	diffIt := testutil.NewDiffIter(diffs)
-	committedFake := testutil.NewCommittedFake()
-	committedFake.DiffIterator = diffIt
-	baseKeyToIdentity := map[string]string{"k2": "i2", "k3": "i3", "k4": "i4", "k6": "i6a"}
-	baseRecords := map[string]*graveler.Value{}
-	for k, identity := range baseKeyToIdentity {
-		baseRecords[k] = &graveler.Value{Identity: []byte(identity)}
-	}
-	committedFake.ValuesByKey = baseRecords
-	it, err := committed.NewMergeIterator(context.Background(), "a", "b", "c", "d", committedFake)
+	baseKeys := []string{"k2", "k3", "k4", "k6"}
+	base := makeBaseIterator(baseKeys)
+	it, err := committed.NewMergeIterator(diffIt, base)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -274,4 +263,24 @@ func TestMergeSeek(t *testing.T) {
 			}
 		})
 	}
+}
+
+func makeBaseIterator(keys []string) *testutil.FakeIterator {
+	base := testutil.NewFakeIterator()
+	if len(keys) == 0 {
+		return base
+	}
+	var baseRecords []*graveler.ValueRecord
+	for _, key := range keys {
+		baseRecords = append(baseRecords, &graveler.ValueRecord{
+			Key:   []byte(key),
+			Value: &graveler.Value{Identity: []byte(baseKeyToIdentity[key])},
+		})
+	}
+	base.AddRange(&committed.Range{
+		ID:     "range",
+		MinKey: []byte(keys[0]),
+	})
+	base.AddValueRecords(baseRecords...)
+	return base
 }

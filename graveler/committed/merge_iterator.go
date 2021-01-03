@@ -3,29 +3,37 @@ package committed
 import (
 	"bytes"
 	"context"
-	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
 )
 
 type mergeIterator struct {
-	diffIt       graveler.DiffIterator
-	val          *graveler.ValueRecord
-	base         graveler.MetaRangeID
-	committedMgr graveler.CommittedManager
-	ctx          context.Context
-	ns           graveler.StorageNamespace
-	err          error
+	diffIt graveler.DiffIterator
+	val    *graveler.ValueRecord
+	base   Iterator
+	ctx    context.Context
+	ns     graveler.StorageNamespace
+	err    error
 }
 
-// NewMergeIterator returns a ValueIterator with all changes to be performed on left in order to merge right into left, relative to base.
+// NewMergeIterator accepts an iterator describing a diff from theirs to ours.
+// It returns a ValueIterator with the changes to perform on theirs, in order to merge ours into it,
+// relative to base as the merge base.
 // The iterator will return ErrConflictFound when it reaches a conflict.
-func NewMergeIterator(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.MetaRangeID, committedMgr graveler.CommittedManager) (*mergeIterator, error) {
-	diffIt, err := committedMgr.Diff(ctx, ns, left, right)
-	if err != nil {
-		return nil, err
+func NewMergeIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) (*mergeIterator, error) {
+	return &mergeIterator{diffIt: diffTheirsToOurs, base: base}, nil
+}
+
+func (d *mergeIterator) valueFromBase(key graveler.Key) *graveler.ValueRecord {
+	d.base.SeekGE(key)
+	var val *graveler.ValueRecord
+	for d.base.Next() && val == nil {
+		val, _ = d.base.Value()
 	}
-	return &mergeIterator{diffIt: diffIt, base: base, committedMgr: committedMgr}, nil
+	if val == nil || !bytes.Equal(val.Key, key) {
+		return nil
+	}
+	return val
 }
 
 func (d *mergeIterator) Next() bool {
@@ -33,11 +41,7 @@ func (d *mergeIterator) Next() bool {
 		val := d.diffIt.Value()
 		key := val.Key
 		typ := val.Type
-		baseVal, err := d.committedMgr.Get(d.ctx, d.ns, d.base, key)
-		if err != nil {
-			d.err = fmt.Errorf("get from base tree: %w", err)
-			return false
-		}
+		baseVal := d.valueFromBase(key)
 		switch typ {
 		case graveler.DiffTypeAdded:
 			if baseVal == nil {
