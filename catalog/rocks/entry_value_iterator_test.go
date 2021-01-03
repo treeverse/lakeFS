@@ -34,6 +34,10 @@ func TestNewEntryToValueIterator(t *testing.T) {
 	for it.Next() {
 		values = append(values, it.Value())
 	}
+	if err := it.Err(); err != nil {
+		t.Fatal("Iterator ended with an error", err)
+	}
+
 	// verify that what we produced is what we got from the iterator
 	if diff := deep.Equal(values, expectedRecords); diff != nil {
 		t.Fatal("EntryToValue iterator found diff:", diff)

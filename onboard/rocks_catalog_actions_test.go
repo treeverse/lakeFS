@@ -5,18 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog"
-
-	"github.com/treeverse/lakefs/graveler"
-
-	"github.com/stretchr/testify/require"
-
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/onboard"
-
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/onboard"
 	"github.com/treeverse/lakefs/onboard/mock"
 )
 
@@ -26,20 +21,6 @@ const (
 	commitID    = graveler.CommitID("some-commit-id")
 	committer   = "john-doe"
 	msg         = "awesome-import-commit"
-)
-
-var (
-	innerIt = &mockInventoryIterator{
-		rows: []block.InventoryObject{
-			{
-				Bucket:          "bucket-1",
-				Key:             "key-1",
-				Size:            1024,
-				Checksum:        "checksum-1",
-				PhysicalAddress: "/some/path/to/object",
-			},
-		}}
-	validIt = onboard.NewInventoryIterator(innerIt)
 )
 
 func TestFullCycleSuccess(t *testing.T) {
@@ -54,6 +35,7 @@ func TestFullCycleSuccess(t *testing.T) {
 
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
+	validIt := getValidIt()
 	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
@@ -68,6 +50,7 @@ func TestApplyImportWrongIt(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockmetaRangeManager(ctrl)
 
+	innerIt := getValidInnerIt()
 	diffIt := onboard.NewDiffIterator(innerIt, innerIt)
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
@@ -86,6 +69,7 @@ func TestApplyImportWriteFailure(t *testing.T) {
 
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
+	validIt := getValidIt()
 	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
 	require.Error(t, err)
 	require.Nil(t, stats)
@@ -114,6 +98,7 @@ func TestCommitFailed(t *testing.T) {
 		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
 
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
+	validIt := getValidIt()
 
 	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
 	require.NoError(t, err)
@@ -122,4 +107,21 @@ func TestCommitFailed(t *testing.T) {
 	retCommitID, err := rocks.Commit(context.Background(), msg, nil)
 	require.Error(t, err)
 	require.Equal(t, "", retCommitID)
+}
+
+func getValidIt() *onboard.InventoryIterator {
+	return onboard.NewInventoryIterator(getValidInnerIt())
+}
+
+func getValidInnerIt() block.InventoryIterator {
+	return &mockInventoryIterator{
+		rows: []block.InventoryObject{
+			{
+				Bucket:          "bucket-1",
+				Key:             "key-1",
+				Size:            1024,
+				Checksum:        "checksum-1",
+				PhysicalAddress: "/some/path/to/object",
+			},
+		}}
 }
