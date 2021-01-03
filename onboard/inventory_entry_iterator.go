@@ -1,7 +1,6 @@
 package onboard
 
 import (
-	"encoding/hex"
 	"errors"
 
 	"github.com/treeverse/lakefs/catalog/rocks"
@@ -25,7 +24,6 @@ func NewValueToEntryIterator(it *InventoryIterator, progress *cmdutils.Progress)
 
 var (
 	ErrIteratorNotSeekable = errors.New("can't seek on inventory iterator")
-	ErrChecksumInvalidHex  = errors.New("checksum isn't a valid hash")
 )
 
 func (e *inventoryEntryIterator) Next() bool {
@@ -44,15 +42,8 @@ func (e *inventoryEntryIterator) Next() bool {
 		Entry: &rocks.Entry{
 			Address: v.Obj.PhysicalAddress,
 			Size:    v.Obj.Size,
+			ETag:    v.Obj.Checksum,
 		},
-	}
-
-	var err error
-	e.value.ETag, err = hex.DecodeString(v.Obj.Checksum)
-	if err != nil {
-		e.err = ErrChecksumInvalidHex
-		e.value = nil
-		return false
 	}
 
 	if v.Obj.LastModified != nil {
