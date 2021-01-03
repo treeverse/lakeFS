@@ -273,6 +273,9 @@ func (e *EntryCatalog) ResetKey(ctx context.Context, repositoryID graveler.Repos
 	if err := Validate("branchID", branchID, ValidateBranchID); err != nil {
 		return err
 	}
+	if err := Validate("path", path, ValidatePath); err != nil {
+		return err
+	}
 	if err := Validate("path", path.String(), ValidateNonEmptyString); err != nil {
 		return err
 	}
@@ -308,13 +311,10 @@ func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.Reposito
 	if err := Validate("from", from, ValidateRef); err != nil {
 		return "", err
 	}
-	if err := Validate("to", to, ValidateRef); err != nil {
+	if err := Validate("to", to, ValidateBranchID); err != nil {
 		return "", err
 	}
 	if err := Validate("committer", committer, ValidateNonEmptyString); err != nil {
-		return "", err
-	}
-	if err := Validate("message", message, ValidateNonEmptyString); err != nil {
 		return "", err
 	}
 	if err := Validate("message", message, ValidateNonEmptyString); err != nil {
@@ -364,6 +364,9 @@ func (e *EntryCatalog) GetEntry(ctx context.Context, repositoryID graveler.Repos
 	if err := Validate("ref", ref, ValidateRef); err != nil {
 		return nil, err
 	}
+	if err := Validate("path", path, ValidatePath); err != nil {
+		return nil, err
+	}
 	if err := Validate("path", path.String(), ValidateNonEmptyString); err != nil {
 		return nil, err
 	}
@@ -380,6 +383,9 @@ func (e *EntryCatalog) SetEntry(ctx context.Context, repositoryID graveler.Repos
 		return err
 	}
 	if err := Validate("branchID", branchID, ValidateBranchID); err != nil {
+		return err
+	}
+	if err := Validate("path", path, ValidatePath); err != nil {
 		return err
 	}
 	if err := Validate("path", path.String(), ValidateNonEmptyString); err != nil {
@@ -414,6 +420,12 @@ func (e *EntryCatalog) ListEntries(ctx context.Context, repositoryID graveler.Re
 		return nil, err
 	}
 	if err := Validate("ref", ref, ValidateRef); err != nil {
+		return nil, err
+	}
+	if err := Validate("prefix", prefix, ValidatePath); err != nil {
+		return nil, err
+	}
+	if err := Validate("delimiter", delimiter, ValidatePath); err != nil {
 		return nil, err
 	}
 

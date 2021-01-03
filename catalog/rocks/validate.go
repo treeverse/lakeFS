@@ -9,6 +9,10 @@ import (
 	"github.com/treeverse/lakefs/ident"
 )
 
+const (
+	MaxPathLength = 1024
+)
+
 var (
 	validRefRegexp            = regexp.MustCompile(`^[^\s]+$`)
 	validBranchNameRegexp     = regexp.MustCompile(`^\w[-\w]*$`)
@@ -92,6 +96,18 @@ func ValidateRepositoryID(v interface{}) error {
 	}
 	if !validRepositoryNameRegexp.MatchString(s.String()) {
 		return ErrInvalidValue
+	}
+	return nil
+}
+
+func ValidatePath(v interface{}) error {
+	s, ok := v.(Path)
+	if !ok {
+		return ErrInvalidType
+	}
+	l := len(s.String())
+	if l > MaxPathLength {
+		return fmt.Errorf("%w: %d is above maximum length (%d)", ErrInvalidValue, l, MaxPathLength)
 	}
 	return nil
 }
