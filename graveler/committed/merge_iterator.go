@@ -3,6 +3,7 @@ package committed
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
 )
@@ -34,6 +35,7 @@ func (d *mergeIterator) Next() bool {
 		typ := val.Type
 		baseVal, err := d.committedMgr.Get(d.ctx, d.ns, d.base, key)
 		if err != nil {
+			d.err = fmt.Errorf("get from base tree: %w", err)
 			return false
 		}
 		switch typ {
@@ -85,7 +87,6 @@ func (d *mergeIterator) setValue() {
 			Value: diff.Value,
 		}
 	}
-
 }
 
 func (d *mergeIterator) SeekGE(id graveler.Key) {
