@@ -48,14 +48,14 @@ func (d *mergeIterator) Next() bool {
 				d.err = graveler.ErrConflictFound
 				return false
 			}
-			return d.Next()
+			continue
 		case graveler.DiffTypeChanged:
 			if baseVal == nil {
 				d.err = graveler.ErrConflictFound
 				return false
 			}
 			if bytes.Equal(baseVal.Identity, val.Value.Identity) {
-				return d.Next() // no change from base
+				continue // no change from base
 			}
 			if !bytes.Equal(baseVal.Identity, val.OldIdentity) {
 				d.err = graveler.ErrConflictFound
