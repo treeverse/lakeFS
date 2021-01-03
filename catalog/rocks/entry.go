@@ -28,7 +28,7 @@ func EntryToValue(entry *Entry) (*graveler.Value, error) {
 	checksum := ident.NewAddressWriter().
 		MarshalString(entry.Address).
 		MarshalInt64(entry.Size).
-		MarshalBytes(entry.ETag).
+		MarshalString(entry.ETag).
 		MarshalStringMap(entry.Metadata).
 		Identity()
 	return &graveler.Value{

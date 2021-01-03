@@ -9,6 +9,6 @@ message Entry {
 	string address = 1;
 	google.protobuf.Timestamp last_modified = 2;
 	int64 size = 3;
-	bytes e_tag = 4;
+	string e_tag = 4;
 	map<string,string> metadata = 5;
 }
