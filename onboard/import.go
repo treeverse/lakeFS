@@ -24,6 +24,7 @@ type Importer struct {
 	previousCommit     *catalog.CommitLog
 	progress           []*cmdutils.Progress
 	prefixes           []string
+	rocks              bool
 }
 
 type Config struct {
@@ -34,6 +35,7 @@ type Config struct {
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
+	Rocks              bool
 }
 
 type Stats struct {
@@ -99,7 +101,7 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	var dataToImport Iterator
 	var err error
-	if s.previousCommit == nil {
+	if s.rocks || s.previousCommit == nil {
 		it := s.inventory.Iterator()
 		// no previous commit, add whole inventory
 		dataToImport = NewInventoryIterator(it)
@@ -109,6 +111,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 			return nil, err
 		}
 	}
+
 	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
@@ -121,11 +124,10 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	}
 	if !dryRun {
 		commitMetadata := CreateCommitMetadata(s.inventory, *stats, s.prefixes)
-		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
+		stats.CommitRef, err = s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
 			return nil, err
 		}
-		stats.CommitRef = commitLog.Reference
 	}
 	return stats, nil
 }

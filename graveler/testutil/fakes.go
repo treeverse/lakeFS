@@ -82,6 +82,13 @@ func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, me
 	return c.MetaRangeID, nil
 }
 
+func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	return &c.MetaRangeID, nil
+}
+
 type StagingFake struct {
 	Err                error
 	DropErr            error // specific error for drop call

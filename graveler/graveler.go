@@ -232,6 +232,15 @@ type VersionController interface {
 	//   ErrNothingToCommit in case there is no data in stage
 	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error)
 
+	// WriteMetaRange accepts a ValueIterator and writes the entire iterator to a new MetaRange
+	// and returns the result ID.
+	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
+
+	// CommitExistingMetaRange creates a commit in the branch from the given pre-existing tree.
+	// Returns ErrDirtyBranch if the branch has uncommitted changes.
+	// Returns ErrTreeNotFound if the referenced treeID doesn't exist.
+	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error)
+
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
@@ -405,7 +414,10 @@ type CommittedManager interface {
 	// If the meta-range is not found, returns ErrNotFound.
 	GetMetaRange(ns StorageNamespace, metaRangeID MetaRangeID) (MetaRange, error)
 
-	// List takes a given meta-range and returns an ValueIterator
+	// WriteMetaRange flushes the iterator to a new MetaRange and returns the created ID.
+	WriteMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*MetaRangeID, error)
+
+	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
@@ -554,6 +566,14 @@ func (g *graveler) CreateRepository(ctx context.Context, repositoryID Repository
 
 func (g *graveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
 	return g.RefManager.ListRepositories(ctx)
+}
+
+func (g *graveler) WriteMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, it)
 }
 
 func (g *graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
