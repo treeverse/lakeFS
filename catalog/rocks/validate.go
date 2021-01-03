@@ -14,9 +14,9 @@ const (
 )
 
 var (
-	validRefRegexp            = regexp.MustCompile(`^[^\s]+$`)
-	validBranchNameRegexp     = regexp.MustCompile(`^\w[-\w]*$`)
-	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
+	reValidRef          = regexp.MustCompile(`^[^\s]+$`)
+	reValidBranchID     = regexp.MustCompile(`^\w[-\w]*$`)
+	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
 var (
@@ -50,7 +50,7 @@ func ValidateRef(v interface{}) error {
 	if !ok {
 		return ErrInvalidType
 	}
-	if !validRefRegexp.MatchString(s.String()) {
+	if !reValidRef.MatchString(s.String()) {
 		return ErrInvalidValue
 	}
 	return nil
@@ -61,7 +61,7 @@ func ValidateBranchID(v interface{}) error {
 	if !ok {
 		return ErrInvalidType
 	}
-	if !validBranchNameRegexp.MatchString(s.String()) {
+	if !reValidBranchID.MatchString(s.String()) {
 		return ErrInvalidValue
 	}
 	return nil
@@ -72,7 +72,7 @@ func ValidateTagID(v interface{}) error {
 	if !ok {
 		return ErrInvalidType
 	}
-	if !validBranchNameRegexp.MatchString(string(s)) {
+	if !reValidBranchID.MatchString(string(s)) {
 		return ErrInvalidValue
 	}
 	return nil
@@ -94,7 +94,7 @@ func ValidateRepositoryID(v interface{}) error {
 	if !ok {
 		return ErrInvalidType
 	}
-	if !validRepositoryNameRegexp.MatchString(s.String()) {
+	if !reValidRepositoryID.MatchString(s.String()) {
 		return ErrInvalidValue
 	}
 	return nil
