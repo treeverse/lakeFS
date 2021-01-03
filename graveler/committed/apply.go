@@ -9,7 +9,6 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-// Just a sketch of Apply; it will probably be much harder to write...
 func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator) error {
 	logger := logging.FromContext(ctx)
 	haveSource, haveDiffs := source.Next(), diffs.Next()

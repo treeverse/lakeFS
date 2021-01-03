@@ -34,6 +34,34 @@ func (m *Manager) Exists(ns committed.Namespace, id committed.ID) (bool, error) 
 	return m.cache.Exists(string(ns), id)
 }
 
+func (m *Manager) GetValueGE(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
+	if err != nil {
+		return nil, err
+	}
+	defer m.execAndLog(derefer, "Failed to dereference reader")
+
+	it, err := reader.NewIter(nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create iterator: %w", err)
+	}
+	defer m.execAndLog(it.Close, "Failed to close iterator")
+
+	// Ranges are keyed by MaxKey, seek to the range that might contain key.
+	key, value := it.SeekGE(lookup)
+	if key == nil {
+		if it.Error() != nil {
+			return nil, fmt.Errorf("read metarange from sstable id %s: %w", id, it.Error())
+		}
+		return nil, ErrKeyNotFound
+	}
+
+	return &committed.Record{
+		Key:   key.UserKey,
+		Value: value,
+	}, nil
+}
+
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
 func (m *Manager) GetValue(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
@@ -87,7 +115,7 @@ func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (co
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return NewIterator(iter, derefer, nil), nil
+	return NewIterator(iter, derefer), nil
 }
 
 // GetWriter returns a new SSTable writer instance

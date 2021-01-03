@@ -14,12 +14,12 @@ type committedManager struct {
 	logger           logging.Logger
 }
 
-func NewCommittedManager() graveler.CommittedManager {
-	return &committedManager{}
+func NewCommittedManager(m MetaRangeManager) graveler.CommittedManager {
+	return &committedManager{metaRangeManager: m, logger: logging.Default()}
 }
 
-func (c *committedManager) Exists(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (bool, error) {
-	panic("implement me")
+func (c *committedManager) Exists(ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
+	return c.metaRangeManager.Exists(ns, id)
 }
 
 func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
@@ -55,11 +55,11 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 }
 
 func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.MetaRangeID) (graveler.DiffIterator, error) {
-	leftIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, left, nil)
+	leftIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, left)
 	if err != nil {
 		return nil, err
 	}
-	rightIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, right, nil)
+	rightIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, right)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +70,25 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 	panic("implement me")
 }
 
-func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, iterator graveler.ValueIterator) (graveler.MetaRangeID, error) {
-	panic("implement me")
+func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, error) {
+	mwWriter := c.metaRangeManager.NewWriter(ns)
+	defer func() {
+		if mwWriter != nil {
+			mwWriter.Abort()
+		}
+	}()
+	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	if err != nil {
+		return "", fmt.Errorf("get metarange ns=%s id=%s: %w", ns, rangeID, err)
+	}
+	err = Apply(ctx, mwWriter, metaRangeIterator, diffs)
+	if err != nil {
+		return "", fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
+	}
+	newId, err := mwWriter.Close()
+	mwWriter = nil
+	if newId == nil {
+		return "", fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
+	}
+	return *newId, err
 }

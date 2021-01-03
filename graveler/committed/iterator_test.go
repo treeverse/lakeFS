@@ -66,6 +66,17 @@ func keysByRanges(t testing.TB, it committed.Iterator) []rangeKeys {
 	return ret
 }
 
+func makeRangesValues(ranges []committed.Range) []graveler.ValueRecord {
+	ret := make([]graveler.ValueRecord, len(ranges))
+	for i, rng := range ranges {
+		ret[i] = graveler.ValueRecord{
+			Key:   graveler.Key(rng.MaxKey),
+			Value: &graveler.Value{Identity: []byte(rng.ID)},
+		}
+	}
+	return ret
+}
+
 func TestIterator(t *testing.T) {
 	tests := []struct {
 		Name string
@@ -119,10 +130,13 @@ func TestIterator(t *testing.T) {
 				ranges = append(ranges, committed.Range{ID: p.Name})
 				manager.EXPECT().NewRangeIterator(gomock.Eq(namespace), p.Name).Return(makeRange(p.Keys), nil)
 			}
-			pvi := committed.NewIterator(manager, namespace, ranges)
+			rangesIt := testutil.NewValueIteratorFake(makeRangesValues(ranges))
+			pvi := committed.NewIterator(manager, namespace, rangesIt)
 			assert.Equal(t, tt.PK, keysByRanges(t, pvi))
 			assert.False(t, pvi.NextRange())
 			assert.False(t, pvi.Next())
 		})
 	}
 }
+
+// TODO(ariels): Test SeekGE.

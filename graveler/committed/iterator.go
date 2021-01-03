@@ -1,40 +1,40 @@
 package committed
 
 import (
+	"fmt"
+
 	"github.com/treeverse/lakefs/graveler"
 )
 
 type iterator struct {
 	started   bool
 	manager   RangeManager
-	ranges    []Range
+	rangesIt  graveler.ValueIterator
 	it        graveler.ValueIterator
 	err       error
 	namespace Namespace
 }
 
-func NewIterator(manager RangeManager, namespace Namespace, ranges []Range) Iterator {
+func NewIterator(manager RangeManager, namespace Namespace, rangesIt graveler.ValueIterator) Iterator {
 	return &iterator{
 		manager:   manager,
 		namespace: namespace,
-		ranges:    ranges,
+		rangesIt:  rangesIt,
 	}
 }
 
 func (rvi *iterator) NextRange() bool {
-	if len(rvi.ranges) <= 1 {
-		return false
+	if rvi.it != nil {
+		rvi.it.Close()
+		rvi.it = nil
 	}
-	rvi.ranges = rvi.ranges[1:]
-	rvi.it.Close()
-	rvi.it = nil
-	return true
+	return rvi.rangesIt.Next()
 }
 
 func (rvi *iterator) Next() bool {
 	if !rvi.started {
 		rvi.started = true
-		return len(rvi.ranges) > 0
+		return rvi.NextRange()
 	}
 	if rvi.it != nil {
 		if rvi.it.Next() {
@@ -43,12 +43,13 @@ func (rvi *iterator) Next() bool {
 		// At end of range
 		return rvi.NextRange()
 	}
-	// Start iterating inside range
-	if len(rvi.ranges) == 0 {
-		return false // Iteration was already finished.
-	}
+	// Start iterating inside the range of rvi.RangesIt
 	var err error
-	rvi.it, err = rvi.newRangeIterator(rvi.ranges[0].ID)
+	rngVal := rvi.rangesIt.Value()
+	if rngVal == nil {
+		return rvi.NextRange()
+	}
+	rvi.it, err = rvi.newRangeIterator(ID(rngVal.Identity))
 	if err != nil {
 		rvi.err = err
 		return false
@@ -61,14 +62,20 @@ func (rvi *iterator) Next() bool {
 }
 
 func (rvi *iterator) Value() (*graveler.ValueRecord, *Range) {
-	if len(rvi.ranges) == 0 {
+	rngVal := rvi.rangesIt.Value()
+	if rngVal == nil || rngVal.Value == nil {
 		return nil, nil
 	}
-	rng := &rvi.ranges[0]
-	if rvi.it == nil {
-		return nil, rng // start new range
+	rng, err := UnmarshalRange(rngVal.Value.Data)
+	if err != nil {
+		rvi.err = fmt.Errorf("unmarshal %s: %w", rngVal.Identity, err)
+		return nil, nil
 	}
-	return rvi.it.Value(), rng
+	rng.ID = ID(rngVal.Identity)
+	if rvi.it == nil {
+		return nil, &rng // start new range
+	}
+	return rvi.it.Value(), &rng
 }
 
 func (rvi *iterator) Err() error {
@@ -86,10 +93,28 @@ func (rvi *iterator) Close() {
 		return
 	}
 	rvi.it.Close()
+	rvi.rangesIt.Close()
 }
 
 func (rvi *iterator) SeekGE(id graveler.Key) {
-	panic("implement me")
+	var err error
+	rvi.rangesIt.SeekGE(id)
+	if err = rvi.rangesIt.Err(); err != nil {
+		rvi.err = err
+		return
+	}
+	rngVal := rvi.rangesIt.Value()
+	if rngVal == nil {
+		rvi.err = fmt.Errorf("no metarange: %w", graveler.ErrNotFound)
+		return
+	}
+	rvi.it, err = rvi.newRangeIterator(ID(rngVal.Identity))
+	if err != nil {
+		rvi.err = err
+		return
+	}
+	rvi.it.SeekGE(id)
+	rvi.err = rvi.it.Err()
 }
 
 func (rvi *iterator) newRangeIterator(rangeID ID) (graveler.ValueIterator, error) {

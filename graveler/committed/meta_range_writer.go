@@ -7,9 +7,8 @@ import (
 	"hash/fnv"
 	"sort"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type GeneralMetaRangeWriter struct {
@@ -28,7 +27,7 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) MetaRangeWriter {
 	return &GeneralMetaRangeWriter{
 		rangeManager:              rangeManager,
 		metaRangeManager:          metaRangeManager,
@@ -139,19 +138,6 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) (bool, error
 	}
 	n := h.Sum64() % w.approximateRangeSizeBytes
 	return n == 0, nil
-}
-
-// rangeToValue returns a Value representing a Range in MetaRange
-func rangeToValue(rng Range) (Value, error) {
-	data, err := MarshalRange(rng)
-	if err != nil {
-		return nil, err
-	}
-	rangeValue := &graveler.Value{
-		Identity: []byte(rng.ID),
-		Data:     data,
-	}
-	return MarshalValue(rangeValue)
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID

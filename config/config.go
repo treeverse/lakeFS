@@ -21,6 +21,7 @@ import (
 	blockparams "github.com/treeverse/lakefs/block/params"
 	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/logging"
 	pyramidparams "github.com/treeverse/lakefs/pyramid/params"
 )
@@ -37,6 +38,7 @@ const (
 	DefaultCommittedLocalCacheBytes            = 1 * 1024 * 1024 * 1024
 	DefaultCommittedLocalCacheDir              = "~/lakefs/local_tier"
 	DefaultCommittedBlockStoragePrefix         = "_lakefs"
+	DefaultCommittedPermanentRangeSizeBytes    = 10 * 1024 * 1024
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -105,6 +107,7 @@ const (
 	CommittedLocalCacheRangeProportion     = "committed.local_cache.range_proportion"
 	CommittedLocalCacheMetaRangeProportion = "committed.local_cache.metarange_proportion"
 	CommittedBlockStoragePrefixKey         = "committed.block_storage_prefix"
+	CommittedPermanentStorageRangeSizeKey  = "committed.permanent.approximate_range_size_bytes"
 	GatewaysS3DomainNameKey                = "gateways.s3.domain_name"
 	GatewaysS3RegionKey                    = "gateways.s3.region"
 
@@ -139,6 +142,7 @@ func setDefaults() {
 	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
 	viper.SetDefault(CommittedLocalCacheRangeProportion, DefaultCommittedLocalCacheRangePercent)
 	viper.SetDefault(CommittedLocalCacheMetaRangeProportion, DefaultCommittedLocalCacheMetaRangePercent)
+	viper.SetDefault(CommittedPermanentStorageRangeSizeKey, DefaultCommittedPermanentRangeSizeBytes)
 
 	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
@@ -384,6 +388,12 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 			},
 		},
 	}, nil
+}
+
+func (c *Config) GetCommittedParams() *committed.Params {
+	return &committed.Params{
+		ApproximateRangeSizeBytes: viper.GetUint64(CommittedPermanentStorageRangeSizeKey),
+	}
 }
 
 func GetMetastoreAwsConfig() *aws.Config {
