@@ -75,7 +75,7 @@ func TestGraveler_Get(t *testing.T) {
 	}{
 		{
 			name: "commit - exists",
-			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, nil,
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, nil,
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeCommit, Commit: &graveler.Commit{}},
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("committed")},
@@ -101,7 +101,7 @@ func TestGraveler_Get(t *testing.T) {
 		},
 		{
 			name: "branch - committed and staged",
-			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
 
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, Commit: &graveler.Commit{}},
 			),
@@ -109,7 +109,7 @@ func TestGraveler_Get(t *testing.T) {
 		},
 		{
 			name: "branch - only committed",
-			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, &testutil.StagingFake{Err: graveler.ErrNotFound},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, &testutil.StagingFake{Err: graveler.ErrNotFound},
 
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, Commit: &graveler.Commit{}},
 			),
@@ -117,7 +117,7 @@ func TestGraveler_Get(t *testing.T) {
 		},
 		{
 			name: "branch - tombstone",
-			r: graveler.NewGraveler(&testutil.CommittedFake{Value: &graveler.Value{Identity: []byte("committed")}}, &testutil.StagingFake{Value: nil},
+			r: graveler.NewGraveler(&testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("committed")}}}, &testutil.StagingFake{Value: nil},
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, Commit: &graveler.Commit{}},
 			),
 			expectedErr: graveler.ErrNotFound,
@@ -132,7 +132,7 @@ func TestGraveler_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Value, err := tt.r.Get(context.Background(), "", "", nil)
+			Value, err := tt.r.Get(context.Background(), "", "", []byte("key"))
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
@@ -586,7 +586,7 @@ func TestGraveler_Delete(t *testing.T) {
 			name: "exists only in committed",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
-					Value: &graveler.Value{},
+					ValuesByKey: map[string]*graveler.Value{"key": {}},
 				},
 				StagingManager: &testutil.StagingFake{
 					Err: graveler.ErrNotFound,
@@ -609,7 +609,7 @@ func TestGraveler_Delete(t *testing.T) {
 			name: "exists in committed and in staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
-					Value: &graveler.Value{},
+					ValuesByKey: map[string]*graveler.Value{"key": {}},
 				},
 				StagingManager: &testutil.StagingFake{
 					Value: &graveler.Value{},
@@ -632,7 +632,7 @@ func TestGraveler_Delete(t *testing.T) {
 			name: "exists in committed tombstone in staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
-					Value: &graveler.Value{},
+					ValuesByKey: map[string]*graveler.Value{"key": {}},
 				},
 				StagingManager: &testutil.StagingFake{
 					Value: nil,
