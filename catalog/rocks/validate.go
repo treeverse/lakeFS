@@ -54,6 +54,8 @@ func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
 			if len(s.String()) == 0 {
 				return nil
 			}
+		case nil:
+			return nil
 		}
 		return fn(v)
 	}
