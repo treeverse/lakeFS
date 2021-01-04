@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"bytes"
 	"errors"
 	"testing"
 
@@ -25,7 +24,6 @@ func TestWriter_WriteRecords(t *testing.T) {
 
 	rangeManager := mock.NewMockRangeManager(ctrl)
 	mockWriter := mock.NewMockRangeWriter(ctrl)
-	rangeManager.EXPECT().GetBatchWriter()
 	rangeManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil).MinTimes(1)
 	namespace := committed.Namespace("ns")
 	w := committed.NewGeneralMetaRangeWriter(rangeManager, rangeManager, 100, namespace)
@@ -71,7 +69,6 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 	defer ctrl.Finish()
 
 	rangeManager := mock.NewMockRangeManager(ctrl)
-	rangeManager.EXPECT().GetBatchWriter()
 	namespace := committed.Namespace("ns")
 	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	rng2 := committed.Range{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
@@ -91,22 +88,27 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	defer ctrl.Finish()
 
 	rangeManager := mock.NewMockRangeManager(ctrl)
-	mockBatchWriter := mock.NewMockBatchWriterCloser(ctrl)
-	rangeManager.EXPECT().GetBatchWriter().Return(mockBatchWriter)
-	mockBatchWriter.EXPECT().CloseWriterAsync(gomock.Any())
-	mockBatchWriter.EXPECT().Wait()
 	mockWriter := mock.NewMockRangeWriter(ctrl)
+
+	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
+	mockMetaWriter := mock.NewMockRangeWriter(ctrl)
+
 	namespace := committed.Namespace("ns")
 	record := graveler.ValueRecord{Key: nil, Value: &graveler.Value{}}
 	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
-	// get writer - once for record writer, once for range writer
-	rangeManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil).Times(2)
-	// write two records on MetaRange and one for Range
-	mockWriter.EXPECT().WriteRecord(gomock.Any()).Times(2)
-	mockWriter.EXPECT().Abort()
-	mockWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
 
-	w := committed.NewGeneralMetaRangeWriter(rangeManager, rangeManager, 100, namespace)
+	// get writer - once for record writer, once for range writer
+	rangeManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil)
+	rangeManagerMeta.EXPECT().GetWriter(gomock.Any()).Return(mockMetaWriter, nil)
+	// write two records on MetaRange and one for Range
+	mockWriter.EXPECT().WriteRecord(gomock.Any())
+	mockMetaWriter.EXPECT().WriteRecord(gomock.Any()).Times(2)
+	mockWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
+	mockMetaWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
+	mockWriter.EXPECT().Abort().AnyTimes()
+	mockMetaWriter.EXPECT().Abort().AnyTimes()
+
+	w := committed.NewGeneralMetaRangeWriter(rangeManager, rangeManagerMeta, 100, namespace)
 	err := w.WriteRecord(record)
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
@@ -117,46 +119,6 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	}
 
 	_, err = w.Close()
-	if err != nil {
-		t.Fatal("unexpected error %w", err)
-	}
-}
-
-func TestWriter_SortOnClose(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	rangeManager := mock.NewMockRangeManager(ctrl)
-	mockBatchWriter := mock.NewMockBatchWriterCloser(ctrl)
-	mockWriter := mock.NewMockRangeWriter(ctrl)
-	rangeManager.EXPECT().GetBatchWriter().Return(mockBatchWriter)
-	mockBatchWriter.EXPECT().Wait().Return([]committed.WriteResult{
-		{
-			First: committed.Key("c"),
-			Last:  committed.Key("cat"),
-		},
-		{
-			First: committed.Key("ab"),
-			Last:  committed.Key("abc"),
-		},
-		{
-			First: committed.Key("b"),
-			Last:  committed.Key("bz"),
-		},
-	}, nil)
-	var lastKey committed.Key
-	mockWriter.EXPECT().WriteRecord(gomock.Any()).Do(func(record committed.Record) {
-		if bytes.Compare(record.Key, lastKey) <= 0 {
-			t.Error("ranges written in unsorted order")
-		}
-		lastKey = record.Key
-	}).Times(3)
-	rangeManager.EXPECT().GetWriter(gomock.Any()).Return(mockWriter, nil)
-	mockWriter.EXPECT().Close().Return(&committed.WriteResult{RangeID: ""}, nil)
-	mockWriter.EXPECT().Abort()
-	namespace := committed.Namespace("ns")
-	w := committed.NewGeneralMetaRangeWriter(rangeManager, rangeManager, 100, namespace)
-	_, err := w.Close()
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
 	}
