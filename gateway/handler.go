@@ -449,7 +449,10 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 		if ref == "" {
 			return h.repositoryBasedHandlerIfValid(r.Method, repository)
 		}
-		return h.NotFoundHandler
+		if h.sc.fallbackProxy == nil {
+			return h.NotFoundHandler
+		}
+		return h.sc.fallbackProxy
 	}
 
 	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
@@ -494,9 +497,12 @@ func (h *handler) serveVirtualHost(r *http.Request) http.Handler {
 		return h.pathBasedHandler(r.Method, repository, ref, key)
 	}
 
-	// Paths that only have a repository and a refId (always 404)
+	// Paths that only have a repository and a refId - not valid for a path operation
 	if _, ok := SplitFirst(r.URL.Path, 1); ok {
-		return h.NotFoundHandler
+		if h.sc.fallbackProxy == nil {
+			return h.NotFoundHandler // return 404
+		}
+		return h.sc.fallbackProxy // handle this from proxy
 	}
 
 	return h.repositoryBasedHandler(r.Method, repository)
