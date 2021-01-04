@@ -99,10 +99,14 @@ func NewHandler(
 
 	// setup routes
 	var h http.Handler
+	notFoundHandler := http.HandlerFunc(notFound)
+	if sc.fallbackProxy != nil {
+		notFoundHandler = sc.fallbackProxy.ServeHTTP
+	}
 	h = &handler{
 		BareDomain:         bareDomain,
 		sc:                 sc,
-		NotFoundHandler:    http.HandlerFunc(notFound),
+		NotFoundHandler:    notFoundHandler,
 		ServerErrorHandler: nil,
 	}
 	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
@@ -449,10 +453,7 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 		if ref == "" {
 			return h.repositoryBasedHandlerIfValid(r.Method, repository)
 		}
-		if h.sc.fallbackProxy == nil {
-			return h.NotFoundHandler
-		}
-		return h.sc.fallbackProxy
+		return h.NotFoundHandler
 	}
 
 	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
@@ -497,12 +498,9 @@ func (h *handler) serveVirtualHost(r *http.Request) http.Handler {
 		return h.pathBasedHandler(r.Method, repository, ref, key)
 	}
 
-	// Paths that only have a repository and a refId - not valid for a path operation
+	// Paths that only have a repository and a refId (always 404)
 	if _, ok := SplitFirst(r.URL.Path, 1); ok {
-		if h.sc.fallbackProxy == nil {
-			return h.NotFoundHandler // return 404
-		}
-		return h.sc.fallbackProxy // handle this from proxy
+		return h.NotFoundHandler
 	}
 
 	return h.repositoryBasedHandler(r.Method, repository)
