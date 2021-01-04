@@ -40,7 +40,7 @@ func setupLogger() {
 	}
 
 	// set output format
-	if strings.EqualFold(viper.GetString("logging.format"), "text") {
+	if strings.EqualFold(viper.GetString(LoggingFormatKey), "text") {
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp:          true,
 			DisableLevelTruncation: true,
@@ -48,7 +48,7 @@ func setupLogger() {
 			QuoteEmptyFields:       true,
 			CallerPrettyfier:       logPrettyfier,
 		})
-	} else if strings.EqualFold(viper.GetString("logging.format"), "json") {
+	} else if strings.EqualFold(viper.GetString(LoggingFormatKey), "json") {
 		log.SetFormatter(&log.JSONFormatter{
 			CallerPrettyfier: logPrettyfier,
 			PrettyPrint:      false,
@@ -56,7 +56,7 @@ func setupLogger() {
 	}
 
 	// set output
-	if strings.EqualFold(viper.GetString("logging.output"), "-") {
+	if strings.EqualFold(viper.GetString(LoggingOutputKey), "-") {
 		log.SetOutput(os.Stdout)
 	} else {
 		filename := viper.GetString("logging.output")
@@ -85,7 +85,7 @@ func setupLogger() {
 	}
 
 	// set level
-	switch strings.ToLower(viper.GetString("logging.level")) {
+	switch strings.ToLower(viper.GetString(LoggingLevelKey)) {
 	case "trace":
 		log.SetLevel(log.TraceLevel)
 	case "debug":
