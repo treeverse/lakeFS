@@ -30,6 +30,7 @@ func TestWriter(t *testing.T) {
 	require.NotNil(t, dw)
 
 	keys := randomStrings(writes)
+	sort.Strings(keys)
 	var f string
 
 	// expect the specific write file actions
@@ -139,6 +140,5 @@ func randomStrings(writes int) []string {
 	for i := 0; i < writes; i++ {
 		keys = append(keys, randstr.String(20, "abcdefghijklmnopqrstuvwyz0123456789"))
 	}
-	sort.Strings(keys)
 	return keys
 }

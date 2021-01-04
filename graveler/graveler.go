@@ -394,21 +394,14 @@ type RefManager interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
-// MetaRange abstracts the data structure of the committed data.
-type MetaRange interface {
-	// ID returns the MetaRangeID
-	ID() MetaRangeID
-}
-
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided MetaRangeID
 	Get(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, key Key) (*Value, error)
 
-	// GetMetaRange returns the MetaRange under the namespace with matching ID.
-	// If the meta-range is not found, returns ErrNotFound.
-	GetMetaRange(ns StorageNamespace, metaRangeID MetaRangeID) (MetaRange, error)
+	// Exists returns true if a MetaRange matching ID exists in namespace ns.
+	Exists(ns StorageNamespace, id MetaRangeID) (bool, error)
 
 	// WriteMetaRange flushes the iterator to a new MetaRange and returns the created ID.
 	WriteMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*MetaRangeID, error)
@@ -840,11 +833,12 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		return "", ErrDirtyBranch
 	}
 
-	if _, err := g.CommittedManager.GetMetaRange(repo.StorageNamespace, metaRangeID); err != nil {
-		if errors.Is(err, ErrNotFound) {
-			return "", ErrMetaRangeNotFound
-		}
+	ok, err := g.CommittedManager.Exists(repo.StorageNamespace, metaRangeID)
+	if err != nil {
 		return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
+	}
+	if !ok {
+		return "", ErrMetaRangeNotFound
 	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
