@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	ErrNotImplemented      = fmt.Errorf("not implemented")
+	ErrNotImplemented      = errors.New("not implemented")
 	ErrMissingPartNumber   = errors.New("missing part number")
 	ErrMissingPartETag     = errors.New("missing part ETag")
 	ErrMismatchPartETag    = errors.New("mismatch part ETag")
