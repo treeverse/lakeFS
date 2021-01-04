@@ -80,7 +80,7 @@ func TestRefManager_Dereference(t *testing.T) {
 	}
 
 	if diff := deep.Equal(commitIDs, commitLog); diff != nil {
-		t.Fatal("Difference found on commit log", diff)
+		t.Error("Difference found on commit log", diff)
 	}
 
 	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch1", graveler.Branch{
