@@ -55,7 +55,7 @@ func (i *item) Close() error {
 func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.ReaderOptions) Cache {
 	return NewCacheWithOpener(p,
 		func(namespace string, id string) (Item, error) {
-			file, err := fs.Open(namespace, string(id))
+			file, err := fs.Open(namespace, id)
 			if err != nil {
 				return nil, fmt.Errorf("fetch %s from next tier: %w", id, err)
 			}
@@ -66,9 +66,7 @@ func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.Rea
 			}
 			return &item{reader}, nil
 		},
-		func(namespace string, id string) (bool, error) {
-			return fs.Exists(namespace, id)
-		},
+		fs.Exists,
 	)
 }
 
