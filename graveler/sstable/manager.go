@@ -36,13 +36,13 @@ func (*Manager) GetBatchWriter() committed.BatchWriterCloser {
 }
 
 func (m *Manager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
-	return m.cache.Exists(string(ns), ID(id))
+	return m.cache.Exists(string(ns), id)
 }
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
 func (m *Manager) GetValue(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, derefer, err := m.cache.GetOrOpen(string(ns), ID(id))
+	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (m *Manager) GetValue(ns committed.Namespace, id committed.ID, lookup commi
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
 func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
-	reader, derefer, err := m.cache.GetOrOpen(string(ns), ID(tid))
+	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	lru "github.com/treeverse/lakefs/cache"
+	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/pyramid"
 
 	"github.com/cockroachdb/pebble/sstable"
@@ -17,15 +18,13 @@ type opener = func(namespace string, filename string) (Item, error)
 
 type existser = func(namespace string, filename string) (bool, error)
 
-type ID string
-
 type Cache interface {
 	// GetOrOpen returns a reader for id in namespace ns, and a Derefer which must be
 	// called to release the reader.
-	GetOrOpen(namespace string, id ID) (*sstable.Reader, Derefer, error)
+	GetOrOpen(namespace string, id committed.ID) (*sstable.Reader, Derefer, error)
 	// Exists returns true if id exists in namespace ns and could be fetched.  It ignores
 	// all caching.
-	Exists(namespace string, id ID) (bool, error)
+	Exists(namespace string, id committed.ID) (bool, error)
 }
 
 type lruCache struct {
@@ -82,17 +81,18 @@ func NewCacheWithOpener(p lru.ParamsWithDisposal, open opener, exists existser) 
 		return item.Close()
 	}
 	return &lruCache{
-		c:    lru.NewCacheWithDisposal(p),
-		open: open,
+		c:      lru.NewCacheWithDisposal(p),
+		open:   open,
+		exists: exists,
 	}
 }
 
 type namespaceID struct {
 	namespace string
-	id        ID
+	id        committed.ID
 }
 
-func (c *lruCache) GetOrOpen(namespace string, id ID) (*sstable.Reader, Derefer, error) {
+func (c *lruCache) GetOrOpen(namespace string, id committed.ID) (*sstable.Reader, Derefer, error) {
 	e, derefer, err := c.c.GetOrSet(namespaceID{namespace, id}, func() (interface{}, error) {
 		r, err := c.open(namespace, string(id))
 		if err != nil {
@@ -107,6 +107,6 @@ func (c *lruCache) GetOrOpen(namespace string, id ID) (*sstable.Reader, Derefer,
 	return item.GetSSTable(), Derefer(derefer), err
 }
 
-func (c *lruCache) Exists(namespace string, id ID) (bool, error) {
+func (c *lruCache) Exists(namespace string, id committed.ID) (bool, error) {
 	return c.exists(namespace, string(id))
 }

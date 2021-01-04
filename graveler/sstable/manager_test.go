@@ -31,7 +31,7 @@ func TestGetEntrySuccess(t *testing.T) {
 	reader := createSStableReader(t, keys, vals)
 
 	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ns, sstable.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
 		Return(reader,
 			func() error {
 				derefCount++
@@ -54,10 +54,10 @@ func TestGetEntryCacheFailure(t *testing.T) {
 	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
-	sstableID := "some-id"
+	sstableID := committed.ID("some-id")
 
 	expectedErr := errors.New("cache failure")
-	mockCache.EXPECT().GetOrOpen(ns, sstable.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, sstableID).Times(1).
 		Return(nil, nil, expectedErr)
 
 	val, err := sut.GetValue(committed.Namespace(ns), committed.ID(sstableID), committed.Key("some-key"))
@@ -77,12 +77,12 @@ func TestGetEntryNotFound(t *testing.T) {
 	keys := randomStrings(10)
 	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := "some-id"
+	sstableID := committed.ID("some-id")
 
 	reader := createSStableReader(t, keys, vals)
 
 	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ns, sstable.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, sstableID).Times(1).
 		Return(reader,
 			func() error {
 				derefCount++
@@ -131,11 +131,11 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	keys := randomStrings(10)
 	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := "some-id"
+	sstableID := committed.ID("some-id")
 
 	reader := createSStableReader(t, keys, vals)
 	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ns, sstable.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, sstableID).Times(1).
 		Return(reader,
 			func() error {
 				derefCount++
