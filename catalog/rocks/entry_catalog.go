@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/treeverse/lakefs/pyramid/params"
+
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -68,11 +70,27 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	if err != nil {
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
-	fs, err := pyramid.NewFS(tierFSParams)
+	metaRangeFS, err := pyramid.NewFS(&params.InstanceParams{
+		SharedParams:        tierFSParams.SharedParams,
+		FSName:              "meta-range",
+		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("create tiered FS for committed: %w", err)
+		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
 	}
-	_ = fs // silence error
+
+	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
+		SharedParams:        tierFSParams.SharedParams,
+		FSName:              "range",
+		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
+	}
+
+	_ = metaRangeFS // silence error
+	_ = rangeFS     // silence error
+
 	// TODO(ariels): Create a CommittedManager on top of fs.
 	var committedManager graveler.CommittedManager
 

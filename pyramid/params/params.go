@@ -21,20 +21,16 @@ type Eviction interface {
 // LocalDiskParams is pyramid.FS params that are identical for all file-systems
 // in a single lakeFS instance.
 type LocalDiskParams struct {
-	// AllocatedDiskBytes is the maximum number of bytes an instance of TierFS can
+	// TotalAllocatedBytes is the maximum number of bytes an instance of TierFS can
 	// allocate to local files.  It is not a hard limit - there may be short period of
 	// times where TierFS uses more disk due to ongoing writes and slow disk cleanups.
-	AllocatedBytes int64
+	TotalAllocatedBytes int64
 
 	// BaseDir names a directory for TierFS to store local copies of files.
 	BaseDir string
 }
 
-type Params struct {
-	// FSName is the unique filesystem name for this TierFS instance.
-	// If two TierFS instances have the same name, behaviour is undefined.
-	FSName string
-
+type SharedParams struct {
 	// Logger receives all logs for this FS.
 	Logger logging.Logger
 
@@ -53,7 +49,34 @@ type Params struct {
 	Eviction Eviction
 }
 
-func (p Params) WithLogger(logger logging.Logger) Params {
+type ExtParams struct {
+	SharedParams
+
+	// RangeAllocationProportion is the proportion allocated to range TierFS instance.
+	// The rest of the allocation is to be used by the meta-range TierFS instance.
+	// TODO(itai): make this configurable for more than 2 TierFS intances.
+	RangeAllocationProportion     float64
+	MetaRangeAllocationProportion float64
+}
+
+type InstanceParams struct {
+	SharedParams
+
+	// FSName is the unique filesystem name for this TierFS instance.
+	// If two TierFS instances have the same name, behaviour is undefined.
+	FSName string
+
+	// DiskAllocProportion is the proportion of the SharedParams.LocalDiskParams.TotalAllocatedBytes the TierFS instance
+	// is allowed to use. Each instance treats the multiplication of the two as its cap.
+	DiskAllocProportion float64
+}
+
+// AllocatedBytes returns the maximum bytes an instance of TierFS is allowed to use.
+func (ip InstanceParams) AllocatedBytes() int64 {
+	return int64(ip.DiskAllocProportion / 100 * float64(ip.Local.TotalAllocatedBytes))
+}
+
+func (p ExtParams) WithLogger(logger logging.Logger) ExtParams {
 	p.Logger = logger
 	return p
 }
