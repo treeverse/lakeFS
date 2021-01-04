@@ -88,13 +88,16 @@ func TestStartup(t *testing.T) {
 		t.Fatal("write file", err)
 	}
 
-	localFS, err := NewFS(&params.Params{
-		FSName:             fsName,
-		Adapter:            mem.New(),
-		BlockStoragePrefix: blockStoragePrefix,
-		Local: params.LocalDiskParams{
-			BaseDir:        os.TempDir(),
-			AllocatedBytes: allocatedDiskBytes,
+	localFS, err := NewFS(&params.InstanceParams{
+		FSName:           fsName,
+		DiskAllocPercent: 1.0,
+		SharedParams: params.SharedParams{
+			Adapter:            mem.New(),
+			BlockStoragePrefix: blockStoragePrefix,
+			Local: params.LocalDiskParams{
+				BaseDir:             os.TempDir(),
+				TotalAllocatedBytes: allocatedDiskBytes,
+			},
 		},
 	})
 	if err != nil {

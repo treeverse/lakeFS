@@ -41,7 +41,7 @@ const workspaceDir = "workspace"
 // NewFS creates a new TierFS.
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
-func NewFS(c *params.Params) (FS, error) {
+func NewFS(c *params.InstanceParams) (FS, error) {
 	fsLocalBaseDir := filepath.Clean(path.Join(c.Local.BaseDir, c.FSName))
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
@@ -58,7 +58,7 @@ func NewFS(c *params.Params) (FS, error) {
 	}
 	if c.Eviction == nil {
 		var err error
-		c.Eviction, err = newRistrettoEviction(c.Local.AllocatedBytes, tierFS.removeFromLocal)
+		c.Eviction, err = newRistrettoEviction(c.AllocatedBytes(), tierFS.removeFromLocal)
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}
