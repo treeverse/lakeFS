@@ -45,11 +45,7 @@ func (e *entryDiffIterator) Next() bool {
 
 func (e *entryDiffIterator) SeekGE(id Path) {
 	e.value = nil
-	var key graveler.Key
-	key, e.err = graveler.NewKey(id.String())
-	if e.err != nil {
-		return
-	}
+	key := graveler.Key(id)
 	e.it.SeekGE(key)
 }
 

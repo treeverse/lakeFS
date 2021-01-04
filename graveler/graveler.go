@@ -2,12 +2,8 @@ package graveler
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -456,70 +452,24 @@ type StagingManager interface {
 	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
-var (
-	reValidBranchID     = regexp.MustCompile(`^\w[-\w]*$`)
-	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-)
-
-func NewRepositoryID(id string) (RepositoryID, error) {
-	if !reValidRepositoryID.MatchString(id) {
-		return "", ErrInvalidRepositoryID
-	}
-	return RepositoryID(id), nil
-}
-
 func (id RepositoryID) String() string {
 	return string(id)
-}
-
-func NewStorageNamespace(ns string) (StorageNamespace, error) {
-	u, err := url.Parse(ns)
-	if err != nil || u.Scheme == "" {
-		return "", ErrInvalidStorageNamespace
-	}
-	return StorageNamespace(ns), nil
 }
 
 func (ns StorageNamespace) String() string {
 	return string(ns)
 }
 
-func NewBranchID(id string) (BranchID, error) {
-	if !reValidBranchID.MatchString(id) {
-		return "", ErrInvalidBranchID
-	}
-	return BranchID(id), nil
-}
-
 func (id BranchID) String() string {
 	return string(id)
-}
-
-func NewRef(id string) (Ref, error) {
-	if id == "" || strings.ContainsAny(id, " \t\r\n") {
-		return "", ErrInvalidRef
-	}
-	return Ref(id), nil
 }
 
 func (id Ref) String() string {
 	return string(id)
 }
 
-func NewKey(id string) (Key, error) {
-	return Key(id), nil
-}
-
 func (id Key) String() string {
 	return string(id)
-}
-
-func NewCommitID(id string) (CommitID, error) {
-	_, err := hex.DecodeString(id)
-	if err != nil {
-		return "", ErrInvalidCommitID
-	}
-	return CommitID(id), nil
 }
 
 func (id CommitID) String() string {
