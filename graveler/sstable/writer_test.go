@@ -2,6 +2,7 @@ package sstable_test
 
 import (
 	"crypto/sha256"
+	"sort"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -29,6 +30,7 @@ func TestWriter(t *testing.T) {
 	require.NotNil(t, dw)
 
 	keys := randomStrings(writes)
+	sort.Strings(keys)
 	var f string
 
 	// expect the specific write file actions

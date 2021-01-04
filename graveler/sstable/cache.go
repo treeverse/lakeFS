@@ -3,9 +3,10 @@ package sstable
 import (
 	"fmt"
 
-	"github.com/cockroachdb/pebble/sstable"
 	lru "github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/pyramid"
+
+	"github.com/cockroachdb/pebble/sstable"
 )
 
 //go:generate mockgen -source=cache.go -destination=mock/cache.go -package=mock
@@ -88,12 +89,12 @@ func NewCacheWithOpener(p lru.ParamsWithDisposal, open opener, exists existser) 
 
 type namespaceID struct {
 	namespace string
-	id        committed.ID
+	id        ID
 }
 
-func (c *lruCache) GetOrOpen(namespace string, id committed.ID) (*sstable.Reader, Derefer, error) {
+func (c *lruCache) GetOrOpen(namespace string, id ID) (*sstable.Reader, Derefer, error) {
 	e, derefer, err := c.c.GetOrSet(namespaceID{namespace, id}, func() (interface{}, error) {
-		r, err := c.open(namespace, id)
+		r, err := c.open(namespace, string(id))
 		if err != nil {
 			return nil, fmt.Errorf("open SSTable %s after fetch from next tier: %w", id, err)
 		}

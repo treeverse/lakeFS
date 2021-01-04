@@ -30,6 +30,11 @@ var (
 	_ committed.RangeManager = &Manager{}
 )
 
+// TODO(ariels): This method is going away!
+func (*Manager) GetBatchWriter() committed.BatchWriterCloser {
+	return NewBatchCloser()
+}
+
 func (m *Manager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
 	return m.cache.Exists(string(ns), ID(id))
 }
@@ -87,7 +92,7 @@ func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (co
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return NewIterator(iter, derefer), nil
+	return NewIterator(iter, derefer, nil), nil
 }
 
 // GetWriter returns a new SSTable writer instance

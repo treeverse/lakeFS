@@ -6,7 +6,6 @@ import (
 
 	pebble_sst "github.com/cockroachdb/pebble/sstable"
 	lru "github.com/treeverse/lakefs/cache"
-	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
@@ -30,7 +29,7 @@ func (m *marker) GetSSTable() *pebble_sst.Reader {
 
 type namespaceID struct {
 	namespace string
-	id        committed.ID
+	id        string
 }
 
 type fakeOpener struct {
@@ -51,11 +50,11 @@ func NewFakeOpener(t *testing.T, names []namespaceID) *fakeOpener {
 }
 
 func (fo *fakeOpener) Open(namespace string, id string) (sstable.Item, error) {
-	return fo.byName[namespaceID{namespace, sstable.ID(id)}], nil
+	return fo.byName[namespaceID{namespace, id}], nil
 }
 
 func (fo *fakeOpener) Exists(namespace string, id string) (bool, error) {
-	_, ok := fo.byName[namespaceID{namespace, sstable.ID(id)}]
+	_, ok := fo.byName[namespaceID{namespace, id}]
 	return ok, nil
 }
 
@@ -70,7 +69,7 @@ func TestCacheGet(t *testing.T) {
 
 	// TODO(ariels): Add error
 	for _, nid := range nids {
-		_, deref, err := c.GetOrOpen(nid.namespace, nid.id)
+		_, deref, err := c.GetOrOpen(nid.namespace, sstable.ID(nid.id))
 		if err != nil {
 			t.Error(err)
 		}
