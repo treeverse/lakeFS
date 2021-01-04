@@ -45,11 +45,15 @@ func Validate(args []ValidateArg) error {
 
 func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
 	return func(v interface{}) error {
-		if v == nil {
-			return nil
-		}
-		if s, ok := v.(string); ok && len(s) == 0 {
-			return nil
+		switch s := v.(type) {
+		case string:
+			if len(s) == 0 {
+				return nil
+			}
+		case fmt.Stringer:
+			if len(s.String()) == 0 {
+				return nil
+			}
 		}
 		return fn(v)
 	}
