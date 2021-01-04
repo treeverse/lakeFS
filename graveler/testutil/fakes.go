@@ -34,8 +34,11 @@ func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
-func NewCommittedFake() graveler.CommittedManager {
-	return &CommittedFake{}
+func (c *CommittedFake) Exists(graveler.StorageNamespace, graveler.MetaRangeID) (bool, error) {
+	if c.Err != nil {
+		return false, c.Err
+	}
+	return true, nil
 }
 
 func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, _ graveler.Key) (*graveler.Value, error) {
@@ -43,13 +46,6 @@ func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ gr
 		return nil, c.Err
 	}
 	return c.Value, nil
-}
-
-func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRange, error) {
-	if c.Err != nil {
-		return nil, c.Err
-	}
-	return &MetaRangeFake{id: metaRangeID}, nil
 }
 
 func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID) (graveler.ValueIterator, error) {

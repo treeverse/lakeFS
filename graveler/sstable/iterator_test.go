@@ -3,6 +3,7 @@ package sstable_test
 import (
 	"io/ioutil"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/cockroachdb/pebble"
@@ -19,6 +20,7 @@ func TestIteratorSuccess(t *testing.T) {
 
 	count := 1000
 	keys := randomStrings(count)
+	sort.Strings(keys)
 	vals := randomStrings(count)
 	iter := createSStableIterator(t, keys, vals)
 

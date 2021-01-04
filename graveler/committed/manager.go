@@ -18,7 +18,7 @@ func NewCommittedManager() graveler.CommittedManager {
 	return &committedManager{}
 }
 
-func (c *committedManager) GetMetaRange(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.MetaRange, error) {
+func (c *committedManager) Exists(ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (bool, error) {
 	panic("implement me")
 }
 

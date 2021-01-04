@@ -27,10 +27,10 @@ type ValueIterator interface {
 type RangeManager interface {
 	// GetValue returns the value matching the key in the Range referenced by the id.
 	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetValue(ns Namespace, key Key, pid ID) (*Record, error)
+	GetValue(ns Namespace, pid ID, key Key) (*Record, error)
 
 	// NewRangeIterator takes a Range ID and returns an ValueIterator seeked to >= "from" value
-	NewRangeIterator(ns Namespace, pid ID, from Key) (ValueIterator, error)
+	NewRangeIterator(ns Namespace, pid ID) (ValueIterator, error)
 
 	// GetWriter returns a new Range writer instance
 	GetWriter(ns Namespace) (RangeWriter, error)
