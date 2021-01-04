@@ -20,27 +20,48 @@ var (
 )
 
 var (
-	ErrInvalidValue = errors.New("invalid value")
-	ErrInvalidType  = errors.New("invalid type")
+	ErrInvalidType   = errors.New("invalid type")
+	ErrInvalidValue  = errors.New("invalid value")
+	ErrRequiredValue = errors.New("required value")
 )
 
 type ValidateFunc func(v interface{}) error
 
-func Validate(name string, value interface{}, fn ValidateFunc) error {
-	err := fn(value)
-	if err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+type ValidateArg struct {
+	Name  string
+	Value interface{}
+	Fn    ValidateFunc
+}
+
+func Validate(args []ValidateArg) error {
+	for _, arg := range args {
+		err := arg.Fn(arg.Value)
+		if err != nil {
+			return fmt.Errorf("argument %s: %w", arg.Name, err)
+		}
 	}
 	return nil
 }
 
-func ValidateNonEmptyString(v interface{}) error {
-	s, ok := v.(string)
+func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
+	return func(v interface{}) error {
+		if v == nil {
+			return nil
+		}
+		if s, ok := v.(string); ok && len(s) == 0 {
+			return nil
+		}
+		return fn(v)
+	}
+}
+
+func ValidateStorageNamespace(v interface{}) error {
+	s, ok := v.(graveler.StorageNamespace)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
 	}
 	if len(s) == 0 {
-		return ErrInvalidValue
+		return ErrRequiredValue
 	}
 	return nil
 }
@@ -48,7 +69,10 @@ func ValidateNonEmptyString(v interface{}) error {
 func ValidateRef(v interface{}) error {
 	s, ok := v.(graveler.Ref)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
+	}
+	if len(s) == 0 {
+		return ErrRequiredValue
 	}
 	if !reValidRef.MatchString(s.String()) {
 		return ErrInvalidValue
@@ -59,7 +83,10 @@ func ValidateRef(v interface{}) error {
 func ValidateBranchID(v interface{}) error {
 	s, ok := v.(graveler.BranchID)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
+	}
+	if len(s) == 0 {
+		return ErrRequiredValue
 	}
 	if !reValidBranchID.MatchString(s.String()) {
 		return ErrInvalidValue
@@ -70,7 +97,10 @@ func ValidateBranchID(v interface{}) error {
 func ValidateTagID(v interface{}) error {
 	s, ok := v.(graveler.TagID)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
+	}
+	if len(s) == 0 {
+		return ErrRequiredValue
 	}
 	if !reValidBranchID.MatchString(string(s)) {
 		return ErrInvalidValue
@@ -81,7 +111,10 @@ func ValidateTagID(v interface{}) error {
 func ValidateCommitID(v interface{}) error {
 	s, ok := v.(graveler.CommitID)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
+	}
+	if len(s) == 0 {
+		return ErrRequiredValue
 	}
 	if !ident.IsContentAddress(s.String()) {
 		return ErrInvalidValue
@@ -92,7 +125,10 @@ func ValidateCommitID(v interface{}) error {
 func ValidateRepositoryID(v interface{}) error {
 	s, ok := v.(graveler.RepositoryID)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
+	}
+	if len(s) == 0 {
+		return ErrRequiredValue
 	}
 	if !reValidRepositoryID.MatchString(s.String()) {
 		return ErrInvalidValue
@@ -103,11 +139,28 @@ func ValidateRepositoryID(v interface{}) error {
 func ValidatePath(v interface{}) error {
 	s, ok := v.(Path)
 	if !ok {
-		return ErrInvalidType
+		panic(ErrInvalidType)
 	}
 	l := len(s.String())
+	if l == 0 {
+		return ErrRequiredValue
+	}
 	if l > MaxPathLength {
 		return fmt.Errorf("%w: %d is above maximum length (%d)", ErrInvalidValue, l, MaxPathLength)
 	}
 	return nil
 }
+
+func ValidateRequiredString(v interface{}) error {
+	s, ok := v.(string)
+	if !ok {
+		panic(ErrInvalidType)
+	}
+	if len(s) == 0 {
+		return ErrRequiredValue
+	}
+	return nil
+}
+
+var ValidatePathOptional = MakeValidateOptional(ValidatePath)
+var ValidateTagIDOptional = MakeValidateOptional(ValidateTagID)
