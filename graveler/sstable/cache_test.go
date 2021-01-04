@@ -1,6 +1,7 @@
 package sstable_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -30,7 +31,7 @@ func (m *marker) GetSSTable() *pebble_sst.Reader {
 
 type namespaceID struct {
 	namespace string
-	id        string
+	id        committed.ID
 }
 
 type fakeOpener struct {
@@ -51,11 +52,11 @@ func NewFakeOpener(t *testing.T, names []namespaceID) *fakeOpener {
 }
 
 func (fo *fakeOpener) Open(namespace string, id string) (sstable.Item, error) {
-	return fo.byName[namespaceID{namespace, id}], nil
+	return fo.byName[namespaceID{namespace, committed.ID(id)}], nil
 }
 
 func (fo *fakeOpener) Exists(namespace string, id string) (bool, error) {
-	_, ok := fo.byName[namespaceID{namespace, id}]
+	_, ok := fo.byName[namespaceID{namespace, committed.ID(id)}]
 	return ok, nil
 }
 
@@ -70,7 +71,7 @@ func TestCacheGet(t *testing.T) {
 
 	// TODO(ariels): Add error
 	for _, nid := range nids {
-		_, deref, err := c.GetOrOpen(nid.namespace, committed.ID(nid.id))
+		_, deref, err := c.GetOrOpen(nid.namespace, nid.id)
 		if err != nil {
 			t.Error(err)
 		}
@@ -92,5 +93,34 @@ func TestCacheGet(t *testing.T) {
 			}
 			t.Errorf("got that %+v was%s closed", c, not)
 		}
+	}
+}
+
+func TestCacheExists(t *testing.T) {
+	nids := []namespaceID{{"foo", "a"}, {"bar", "a"}, {"foo", "b-dontclose"}}
+	fo := NewFakeOpener(t, nids)
+	c := sstable.NewCacheWithOpener(
+		lru.ParamsWithDisposal{Name: t.Name(), Size: 50, Shards: 3},
+		fo.Open,
+		fo.Exists,
+	)
+
+	for _, nid := range nids {
+		t.Run(fmt.Sprintf("exists:%v", nid), func(t *testing.T) {
+			ok, err := c.Exists(nid.namespace, nid.id)
+			if err != nil {
+				t.Error(err)
+			}
+			if !ok {
+				t.Errorf("did not find expected %+v", nid)
+			}
+		})
+	}
+	ok, err := c.Exists("foo", "b")
+	if err != nil {
+		t.Error(err)
+	}
+	if ok {
+		t.Error("found unexpected namespace: foo id: b")
 	}
 }
