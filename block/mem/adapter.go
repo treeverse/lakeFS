@@ -121,6 +121,13 @@ func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadClose
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 
+func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+	_, ok := a.data[getKey(obj)]
+	return ok, nil
+}
+
 func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()

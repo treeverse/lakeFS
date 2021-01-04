@@ -50,8 +50,13 @@ func NewFakeOpener(t *testing.T, names []namespaceID) *fakeOpener {
 	return ret
 }
 
-func (fo *fakeOpener) Open(namespace string, id committed.ID) (sstable.Item, error) {
-	return fo.byName[namespaceID{namespace, id}], nil
+func (fo *fakeOpener) Open(namespace string, id string) (sstable.Item, error) {
+	return fo.byName[namespaceID{namespace, sstable.ID(id)}], nil
+}
+
+func (fo *fakeOpener) Exists(namespace string, id string) (bool, error) {
+	_, ok := fo.byName[namespaceID{namespace, sstable.ID(id)}]
+	return ok, nil
 }
 
 func TestCacheGet(t *testing.T) {
@@ -60,6 +65,7 @@ func TestCacheGet(t *testing.T) {
 	c := sstable.NewCacheWithOpener(
 		lru.ParamsWithDisposal{Name: t.Name(), Size: 50, Shards: 3},
 		fo.Open,
+		fo.Exists,
 	)
 
 	// TODO(ariels): Add error

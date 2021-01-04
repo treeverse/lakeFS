@@ -121,6 +121,23 @@ func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	return r, err
 }
 
+func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+	var err error
+	defer reportMetrics("Exists", time.Now(), nil, &err)
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return false, err
+	}
+	_, err = a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).Attrs(a.ctx)
+	if errors.Is(err, storage.ErrObjectNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
 	defer reportMetrics("GetRange", time.Now(), nil, &err)

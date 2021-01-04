@@ -2,7 +2,6 @@ package sstable_test
 
 import (
 	"crypto/sha256"
-	"sort"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -139,6 +138,5 @@ func randomStrings(writes int) []string {
 	for i := 0; i < writes; i++ {
 		keys = append(keys, randstr.String(20, "abcdefghijklmnopqrstuvwyz0123456789"))
 	}
-	sort.Strings(keys)
 	return keys
 }

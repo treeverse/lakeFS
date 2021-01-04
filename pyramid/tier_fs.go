@@ -209,6 +209,11 @@ func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	return tfs.openFile(fileRef, fh)
 }
 
+func (tfs *TierFS) Exists(namespace, filename string) (bool, error) {
+	cacheAccess.WithLabelValues(tfs.fsName, "Exists").Inc()
+	return tfs.adapter.Exists(tfs.objPointer(namespace, filename))
+}
+
 // openFile converts an os.File to pyramid.ROFile and updates the eviction control.
 func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) {
 	stat, err := fh.Stat()
