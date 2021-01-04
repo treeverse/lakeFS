@@ -69,29 +69,24 @@ type EntryCatalog struct {
 	store graveler.Graveler
 }
 
-const (
-	rangeAllocationPercent     = 0.8
-	metaRangeAllocationPercent = 1 - rangeAllocationPercent
-)
-
 func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) {
 	tierFSParams, err := cfg.GetCommittedTierFSParams()
 	if err != nil {
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
 	metaRangeFS, err := pyramid.NewFS(&params.InstanceParams{
-		SharedParams:     *tierFSParams,
-		FSName:           "meta-range",
-		DiskAllocPercent: metaRangeAllocationPercent,
+		SharedParams:        tierFSParams.SharedParams,
+		FSName:              "meta-range",
+		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
 	}
 
 	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
-		SharedParams:     *tierFSParams,
-		FSName:           "range",
-		DiskAllocPercent: rangeAllocationPercent,
+		SharedParams:        tierFSParams.SharedParams,
+		FSName:              "range",
+		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)

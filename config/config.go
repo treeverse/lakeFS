@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -31,9 +32,11 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultCommittedLocalCacheBytes    = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir      = "~/lakefs/local_tier"
-	DefaultCommittedBlockStoragePrefix = "_lakefs"
+	DefaultCommittedLocalCacheRangePercent     = 0.9
+	DefaultCommittedLocalCacheMetaRangePercent = 0.1
+	DefaultCommittedLocalCacheBytes            = 1 * 1024 * 1024 * 1024
+	DefaultCommittedLocalCacheDir              = "~/lakefs/local_tier"
+	DefaultCommittedBlockStoragePrefix         = "_lakefs"
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -57,7 +60,8 @@ const (
 )
 
 var (
-	ErrMissingSecretKey = errors.New("auth.encrypt.secret_key cannot be empty")
+	ErrMissingSecretKey  = errors.New("auth.encrypt.secret_key cannot be empty")
+	ErrInvalidProportion = errors.New("total proportion isn't 1.0")
 )
 
 type LogrusAWSAdapter struct {
@@ -96,12 +100,13 @@ const (
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
 
-	CommittedLocalCacheSizeBytesKey = "committed.local_cache.size_bytes"
-	CommittedLocalCacheDirKey       = "committed.local_cache.dir"
-	CommittedBlockStoragePrefixKey  = "committed.block_storage_prefix"
-
-	GatewaysS3DomainNameKey = "gateways.s3.domain_name"
-	GatewaysS3RegionKey     = "gateways.s3.region"
+	CommittedLocalCacheSizeBytesKey        = "committed.local_cache.size_bytes"
+	CommittedLocalCacheDirKey              = "committed.local_cache.dir"
+	CommittedLocalCacheRangeProportion     = "committed.local_cache.range_proportion"
+	CommittedLocalCacheMetaRangeProportion = "committed.local_cache.metarange_proportion"
+	CommittedBlockStoragePrefixKey         = "committed.block_storage_prefix"
+	GatewaysS3DomainNameKey                = "gateways.s3.domain_name"
+	GatewaysS3RegionKey                    = "gateways.s3.region"
 
 	BlockstoreGSS3EndpointKey = "blockstore.gs.s3_endpoint"
 
@@ -132,6 +137,8 @@ func setDefaults() {
 	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
 	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
 	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
+	viper.SetDefault(CommittedLocalCacheRangeProportion, DefaultCommittedLocalCacheRangePercent)
+	viper.SetDefault(CommittedLocalCacheMetaRangeProportion, DefaultCommittedLocalCacheMetaRangePercent)
 
 	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
@@ -347,21 +354,34 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return viper.GetDuration(StatsFlushIntervalKey)
 }
 
+const floatSumTolerance = 1e-6
+
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams() (*pyramidparams.SharedParams, error) {
+func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 	adapter, err := factory.BuildBlockAdapter(c)
 	if err != nil {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
+	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportion)
+	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportion)
+
+	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
+		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
+	}
+
 	logger := logging.Default().WithField("module", "pyramid")
-	return &pyramidparams.SharedParams{
-		Logger:             logger,
-		Adapter:            adapter,
-		BlockStoragePrefix: viper.GetString(CommittedBlockStoragePrefixKey),
-		Local: pyramidparams.LocalDiskParams{
-			BaseDir:             viper.GetString(CommittedLocalCacheDirKey),
-			TotalAllocatedBytes: viper.GetInt64(CommittedLocalCacheSizeBytesKey),
+	return &pyramidparams.ExtParams{
+		RangeAllocationProportion:     rangePro,
+		MetaRangeAllocationProportion: metaRangePro,
+		SharedParams: pyramidparams.SharedParams{
+			Logger:             logger,
+			Adapter:            adapter,
+			BlockStoragePrefix: viper.GetString(CommittedBlockStoragePrefixKey),
+			Local: pyramidparams.LocalDiskParams{
+				BaseDir:             viper.GetString(CommittedLocalCacheDirKey),
+				TotalAllocatedBytes: viper.GetInt64(CommittedLocalCacheSizeBytesKey),
+			},
 		},
 	}, nil
 }

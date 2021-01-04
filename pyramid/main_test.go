@@ -49,8 +49,8 @@ func createFSWithEviction(ev params.Eviction) (FS, string) {
 
 	var err error
 	fs, err = NewFS(&params.InstanceParams{
-		FSName:           fsName,
-		DiskAllocPercent: 1.0,
+		FSName:              fsName,
+		DiskAllocProportion: 1.0,
 		SharedParams: params.SharedParams{
 			Adapter:            adapter,
 			Logger:             logging.Dummy(),

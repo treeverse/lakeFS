@@ -89,8 +89,8 @@ func TestStartup(t *testing.T) {
 	}
 
 	localFS, err := NewFS(&params.InstanceParams{
-		FSName:           fsName,
-		DiskAllocPercent: 1.0,
+		FSName:              fsName,
+		DiskAllocProportion: 1.0,
 		SharedParams: params.SharedParams{
 			Adapter:            mem.New(),
 			BlockStoragePrefix: blockStoragePrefix,

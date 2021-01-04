@@ -49,6 +49,16 @@ type SharedParams struct {
 	Eviction Eviction
 }
 
+type ExtParams struct {
+	SharedParams
+
+	// RangeAllocationProportion is the proportion allocated to range TierFS instance.
+	// The rest of the allocation is to be used by the meta-range TierFS instance.
+	// TODO(itai): make this configurable for more than 2 TierFS intances.
+	RangeAllocationProportion     float64
+	MetaRangeAllocationProportion float64
+}
+
 type InstanceParams struct {
 	SharedParams
 
@@ -56,17 +66,17 @@ type InstanceParams struct {
 	// If two TierFS instances have the same name, behaviour is undefined.
 	FSName string
 
-	// DiskAllocPercent is the percentage of the SharedParams.LocalDiskParams.TotalAllocatedBytes the TierFS instance
+	// DiskAllocProportion is the proportion of the SharedParams.LocalDiskParams.TotalAllocatedBytes the TierFS instance
 	// is allowed to use. Each instance treats the multiplication of the two as its cap.
-	DiskAllocPercent float64
+	DiskAllocProportion float64
 }
 
 // AllocatedBytes returns the maximum bytes an instance of TierFS is allowed to use.
 func (ip InstanceParams) AllocatedBytes() int64 {
-	return int64(ip.DiskAllocPercent * float64(ip.Local.TotalAllocatedBytes))
+	return int64(ip.DiskAllocProportion / 100 * float64(ip.Local.TotalAllocatedBytes))
 }
 
-func (p SharedParams) WithLogger(logger logging.Logger) SharedParams {
+func (p ExtParams) WithLogger(logger logging.Logger) ExtParams {
 	p.Logger = logger
 	return p
 }
