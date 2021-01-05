@@ -190,6 +190,7 @@ func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 		return nil, err
 	}
 
+	// check if file is there - without taking the lock
 	fileRef := tfs.newLocalFileRef(namespace, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
@@ -201,7 +202,7 @@ func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	}
 
 	cacheAccess.WithLabelValues(tfs.fsName, "Miss").Inc()
-	fh, err = tfs.readFromBlockStorage(fileRef)
+	fh, err = tfs.openWithLock(fileRef)
 	if err != nil {
 		return nil, err
 	}
@@ -237,33 +238,52 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 	}, nil
 }
 
-// readFromBlockStorage reads the referenced file from the block storage
+// openWithLock reads the referenced file from the block storage
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
-func (tfs *TierFS) readFromBlockStorage(fileRef localFileRef) (*os.File, error) {
+func (tfs *TierFS) openWithLock(fileRef localFileRef) (*os.File, error) {
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
-		var err error
+		// check again file existence, now that we have the lock
+		_, err := os.Stat(fileRef.fullPath)
+		if err == nil {
+			// file exists after all
+			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
+			return nil, nil
+		}
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("stat file: %w", err)
+		}
+
+		// get the file from the block storage
 		reader, err := tfs.adapter.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
 		defer reader.Close()
 
-		writer, err := tfs.syncDir.createFile(fileRef.fullPath)
+		// write to temp file - otherwise the file is available to other readers with partial data
+		tmpFullPath := fileRef.fullPath + ".tmp"
+		writer, err := tfs.syncDir.createFile(tmpFullPath)
 		if err != nil {
 			return nil, fmt.Errorf("creating file: %w", err)
 		}
 
 		written, err := io.Copy(writer, reader)
 		if err != nil {
-			return nil, fmt.Errorf("copying date to file: %w", err)
-		}
-
-		if err = writer.Close(); err != nil {
-			err = fmt.Errorf("writer close: %w", err)
+			return nil, fmt.Errorf("copying data to file: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
-		return nil, err
+
+		if err = writer.Close(); err != nil {
+			return nil, fmt.Errorf("writer close: %w", err)
+		}
+
+		// copy from temp path to actual path
+		if err = tfs.syncDir.renameFile(tmpFullPath, fileRef.fullPath); err != nil {
+			return nil, fmt.Errorf("rename temp file: %w", err)
+		}
+
+		return nil, nil
 	})
 
 	if err != nil {
