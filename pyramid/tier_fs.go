@@ -239,15 +239,14 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 func (tfs *TierFS) openWithLock(fileRef localFileRef) (*os.File, error) {
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
-		fh, err := os.Open(fileRef.fullPath)
+		_, err := os.Stat(fileRef.fullPath)
 		if err == nil {
 			// file exists after all
 			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
-			_ = fh.Close()
 			return nil, nil
 		}
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("open file: %w", err)
+			return nil, fmt.Errorf("stat file: %w", err)
 		}
 
 		// get the file from the block storage
@@ -266,7 +265,7 @@ func (tfs *TierFS) openWithLock(fileRef localFileRef) (*os.File, error) {
 
 		written, err := io.Copy(writer, reader)
 		if err != nil {
-			return nil, fmt.Errorf("copying date to file: %w", err)
+			return nil, fmt.Errorf("copying data to file: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
 
