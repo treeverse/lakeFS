@@ -12,9 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -99,14 +98,10 @@ func NewHandler(
 
 	// setup routes
 	var h http.Handler
-	notFoundHandler := http.HandlerFunc(notFound)
-	if sc.fallbackProxy != nil {
-		notFoundHandler = sc.fallbackProxy.ServeHTTP
-	}
 	h = &handler{
 		BareDomain:         bareDomain,
 		sc:                 sc,
-		NotFoundHandler:    notFoundHandler,
+		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
 	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
@@ -117,7 +112,6 @@ func NewHandler(
 		"s3_bare_domain": bareDomain,
 		"s3_region":      region,
 	}).Info("initialized S3 Gateway handler")
-
 	return h
 }
 
@@ -130,69 +124,7 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perms []permissions.Permission) *operations.AuthenticatedOperation {
-	o := &operations.Operation{
-		Request:           request,
-		ResponseWriter:    writer,
-		Region:            s.region,
-		FQDN:              s.bareDomain,
-		Cataloger:         s.cataloger,
-		MultipartsTracker: s.multipartsTracker,
-		BlockStore:        s.blockStore,
-		Auth:              s.authService,
-		Incr: func(action string) {
-			logging.FromContext(request.Context()).
-				WithField("action", action).
-				WithField("message_type", "action").
-				Debug("performing S3 action")
-			s.stats.CollectEvent("s3_gateway", action)
-		},
-		DedupCleaner: s.dedupCleaner,
-	}
-
-	// authenticate
-	authenticator := sig.ChainedAuthenticator(
-		sig.NewV4Authenticator(request),
-		sig.NewV2SigAuthenticator(request))
-
-	authContext, err := authenticator.Parse()
-	if err != nil {
-		o.Log().WithError(err).Warn("failed to parse signature")
-		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
-		return nil
-	}
-	creds, err := s.authService.GetCredentials(authContext.GetAccessKeyID())
-	if err != nil {
-		if !errors.Is(err, db.ErrNotFound) {
-			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
-			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-		} else {
-			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
-			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrAccessDenied))
-		}
-		return nil
-	}
-
-	err = authenticator.Verify(creds, s.bareDomain)
-	if err != nil {
-		o.Log().WithError(err).WithFields(logging.Fields{
-			"key":           authContext.GetAccessKeyID(),
-			"authenticator": authenticator,
-		}).Warn("error verifying credentials for key")
-		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
-		return nil
-	}
-
-	user, err := s.authService.GetUserByID(creds.UserID)
-	if err != nil {
-		o.Log().WithError(err).WithFields(logging.Fields{
-			"key":           authContext.GetAccessKeyID(),
-			"authenticator": authenticator,
-		}).Warn("could not get user for credentials key")
-		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
-		return nil
-	}
-
+func authorize(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, perms []permissions.Permission) *operations.AuthenticatedOperation {
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
 		Operation: o,
@@ -226,6 +158,39 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	return op
 }
 
+func authenticate(authenticator sig.SigAuthenticator, authContext sig.SigContext, o *operations.Operation, s *ServerContext) *model.User {
+	creds, err := s.authService.GetCredentials(authContext.GetAccessKeyID())
+	if err != nil {
+		if !errors.Is(err, db.ErrNotFound) {
+			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		} else {
+			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrAccessDenied))
+		}
+		return nil
+	}
+	err = authenticator.Verify(creds, s.bareDomain)
+	if err != nil {
+		o.Log().WithError(err).WithFields(logging.Fields{
+			"key":           authContext.GetAccessKeyID(),
+			"authenticator": authenticator,
+		}).Warn("error verifying credentials for key")
+		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+		return nil
+	}
+	user, err := s.authService.GetUserByID(creds.UserID)
+	if err != nil {
+		o.Log().WithError(err).WithFields(logging.Fields{
+			"key":           authContext.GetAccessKeyID(),
+			"authenticator": authenticator,
+		}).Warn("could not get user for credentials key")
+		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+		return nil
+	}
+	return user
+}
+
 func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
 	return &operations.Operation{
 		Request:           request,
@@ -247,51 +212,17 @@ func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Requ
 	}
 }
 
-func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
+func RepoOperationHandler(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, repo *catalog.Repository, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request)
+		perms, err := handler.RequiredPermissions(request, repo.Name)
 		if err != nil {
-			o := operation(sc, writer, request)
+			o := operation(s, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
+		authOp := authorize(authContext, s.WithContext(request.Context()), o, user, perms)
 		if authOp == nil {
-			return
-		}
-		// run callback
-		handler.Handle(authOp)
-	})
-}
-
-func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.RepoOperationHandler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		// structure operation
-		perms, err := handler.RequiredPermissions(request, repoID)
-		if err != nil {
-			o := operation(sc, writer, request)
-			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
-			return
-		}
-		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
-		if authOp == nil {
-			return
-		}
-
-		// validate repo exists
-		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
-		if errors.Is(err, db.ErrNotFound) {
-			if sc.fallbackProxy == nil {
-				authOp.Log().WithField("repository", repoID).Debug("the specified repo does not exist")
-				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
-			} else {
-				sc.fallbackProxy.ServeHTTP(writer, request)
-			}
-			return
-		}
-		if err != nil {
-			authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
 		// run callback
@@ -306,35 +237,16 @@ func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.R
 	})
 }
 
-func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler operations.PathOperationHandler) http.Handler {
+func PathOperationHandler(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, repo *catalog.Repository, refID, path string, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repoID, refID, path)
+		perms, err := handler.RequiredPermissions(request, repo.Name, refID, path)
 		if err != nil {
-			o := operation(sc, writer, request)
+			o := operation(s, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
-		if authOp == nil {
-			return
-		}
-
-		// validate repo exists
-		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
-		if errors.Is(err, db.ErrNotFound) {
-			if sc.fallbackProxy == nil {
-				authOp.Log().WithField("repository", repoID).Debug("the specified repo does not exist")
-				authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
-			} else {
-				sc.fallbackProxy.ServeHTTP(writer, request)
-			}
-			return
-		}
-		if err != nil {
-			authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
-			return
-		}
+		authOp := authorize(authContext, s, o, user, perms)
 		// run callback
 		operation := &operations.PathOperation{
 			RefOperation: &operations.RefOperation{
@@ -407,14 +319,94 @@ func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
 		// none is specified by the adapter.
 	}
 }
+func (h *handler) isPathStyle(r *http.Request) bool {
+	host := httputil.HostOnly(r.Host)
+	return strings.EqualFold(host, httputil.HostOnly(h.BareDomain))
+}
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler := h.servePathBased(r)
-	if handler == nil {
-		handler = h.serveVirtualHost(r)
+func (h *handler) getRepoIDFromAction(isPathStyle bool, r *http.Request) string {
+	if isPathStyle {
+		urlPath := strings.TrimPrefix(r.URL.Path, path.Separator)
+		if !strings.Contains(urlPath, path.Separator) {
+			return urlPath
+		}
+		return urlPath[:strings.Index(urlPath, path.Separator)]
 	}
-	if handler == nil {
-		handler = h.NotFoundHandler
+	// virtual host style:
+	host := httputil.HostOnly(r.Host)
+	ourHost := httputil.HostOnly(h.BareDomain)
+	if !strings.HasSuffix(host, ourHost) {
+		return ""
+	}
+	return strings.TrimSuffix(host, "."+ourHost)
+
+}
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	o := &operations.Operation{
+		Request:           r,
+		ResponseWriter:    w,
+		Region:            h.sc.region,
+		FQDN:              h.sc.bareDomain,
+		Cataloger:         h.sc.cataloger,
+		MultipartsTracker: h.sc.multipartsTracker,
+		BlockStore:        h.sc.blockStore,
+		Auth:              h.sc.authService,
+		Incr: func(action string) {
+			logging.FromContext(r.Context()).
+				WithField("action", action).
+				WithField("message_type", "action").
+				Debug("performing S3 action")
+			h.sc.stats.CollectEvent("s3_gateway", action)
+		},
+		DedupCleaner: h.sc.dedupCleaner,
+	}
+	authenticator := sig.ChainedAuthenticator(
+		sig.NewV4Authenticator(r),
+		sig.NewV2SigAuthenticator(r))
+	authContext, err := authenticator.Parse()
+	// authenticate
+	if err != nil {
+		o.Log().WithError(err).Warn("failed to parse signature")
+		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+		return
+	}
+	user := authenticate(authenticator, authContext, o, h.sc)
+	if user == nil {
+		// TODO not authenticated
+		return
+	}
+	isPathStyle := h.isPathStyle(r)
+	repoID := h.getRepoIDFromAction(isPathStyle, r)
+	var repo *catalog.Repository
+	var handler http.Handler
+
+	if repoID != "" {
+		repo, err = h.sc.cataloger.GetRepository(h.sc.ctx, repoID)
+		if errors.Is(err, db.ErrNotFound) {
+			if h.handleRepoNotFound(user, o, authContext, repoID) {
+				return
+			}
+		}
+		if repo == nil {
+			o.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+			return
+		}
+		ref, pth := h.parts(isPathStyle, r)
+		if pth != "" {
+			handler = PathOperationHandler(authContext, h.sc, o, user, repo, ref, pth, h.pathBasedHandler(r.Method))
+		} else {
+			if ref != "" {
+				handler = h.NotFoundHandler
+			} else {
+				handler = RepoOperationHandler(authContext, h.sc, o, user, repo, h.repositoryBasedHandler(r.Method))
+			}
+		}
+	} else {
+		if r.Method == http.MethodGet {
+			handler = OperationHandler(authContext, h.sc, o, user, &operations.ListBuckets{})
+		} else {
+			handler = unsupportedOperationHandler()
+		}
 	}
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
@@ -423,90 +415,74 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestHistograms.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }
 
-func (h *handler) servePathBased(r *http.Request) http.Handler {
-	host := httputil.HostOnly(r.Host)
-	if !strings.EqualFold(host, httputil.HostOnly(h.BareDomain)) {
-		return nil // maybe it's a virtual host, but def not a path based request because the host is wrong
-	}
-
-	if parts, ok := SplitFirst(r.URL.Path, 3); ok {
-		repository := parts[0]
-		ref := parts[1]
-		key := parts[2]
-		if err := mvcc.Validate(mvcc.ValidateFields{
-			{Name: "repository", IsValid: mvcc.ValidateRepositoryName(repository)},
-			{Name: "reference", IsValid: mvcc.ValidateReference(ref)},
-			{Name: "path", IsValid: mvcc.ValidatePath(key)},
-		}); err != nil {
-			return h.NotFoundHandler
+func OperationHandler(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, handler operations.AuthenticatedOperationHandler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		// structure operation
+		perms, err := handler.RequiredPermissions(request)
+		if err != nil {
+			o := operation(s, writer, request)
+			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			return
 		}
-
-		return h.pathBasedHandler(r.Method, repository, ref, key)
-	}
-
-	// paths for repository and ref only (none exist)
-	if parts, ok := SplitFirst(r.URL.Path, 2); ok {
-		repository := parts[0]
-		ref := parts[1]
-
-		// s3 allows trailing slash for bucket name
-		if ref == "" {
-			return h.repositoryBasedHandlerIfValid(r.Method, repository)
+		authOp := authorize(authContext, s, o, user, perms)
+		if authOp == nil {
+			return
 		}
-		return h.NotFoundHandler
-	}
-
-	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
-		// Paths for bare repository
-		repository := parts[0]
-		return h.repositoryBasedHandlerIfValid(r.Method, repository)
-	}
-	// no repository given
-	if r.Method == http.MethodGet {
-		h.operationID = "list_buckets"
-		return OperationHandler(h.sc, &operations.ListBuckets{})
-	}
-	h.operationID = operationIDNotFound
-	return h.NotFoundHandler
+		// run callback
+		handler.Handle(authOp)
+	})
 }
 
-func (h *handler) serveVirtualHost(r *http.Request) http.Handler {
-	// is it a virtual host?
-	host := httputil.HostOnly(r.Host)
-	ourHost := httputil.HostOnly(h.BareDomain)
-	if !strings.HasSuffix(host, ourHost) {
-		return nil
+func (h *handler) handleRepoNotFound(user *model.User, o *operations.Operation, authContext sig.SigContext, repoID string) bool {
+	authResp, err := h.sc.authService.Authorize(&auth.AuthorizationRequest{
+		Username: user.Username,
+		RequiredPermissions: []permissions.Permission{{
+			Action:   permissions.ListRepositoriesAction,
+			Resource: permissions.All,
+		}},
+	})
+	if err != nil {
+		o.Log().WithError(err).Error("failed to authorize")
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return true
 	}
 
-	// remove bare domain suffix
-	repository := strings.TrimSuffix(host, "."+ourHost)
-	if !mvcc.IsValidRepositoryName(repository) {
-		return h.NotFoundHandler
+	if authResp.Error != nil || !authResp.Allowed {
+		o.Log().WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrAccessDenied))
+		return true
 	}
-
-	// Paths that have both a repository, a refId and a path
-	if parts, ok := SplitFirst(r.URL.Path, 2); ok {
-		// validate ref, key
-		ref := parts[0]
-		key := parts[1]
-		if err := mvcc.Validate(mvcc.ValidateFields{
-			{Name: "reference", IsValid: mvcc.ValidateReference(ref)},
-			{Name: "path", IsValid: mvcc.ValidatePath(key)},
-		}); err != nil {
-			return h.NotFoundHandler
-		}
-		return h.pathBasedHandler(r.Method, repository, ref, key)
+	if h.sc.fallbackProxy != nil /* TODO && has list repos permission */ {
+		// do fallback
 	}
-
-	// Paths that only have a repository and a refId (always 404)
-	if _, ok := SplitFirst(r.URL.Path, 1); ok {
-		return h.NotFoundHandler
-	}
-
-	return h.repositoryBasedHandler(r.Method, repository)
+	o.Log().WithField("repository", repoID).Debug("the specified repo does not exist")
+	o.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+	return false
 }
 
-func (h *handler) pathBasedHandler(method, repository, ref, path string) http.Handler {
+func (h *handler) parts(isPathStyle bool, r *http.Request) (ref string, pth string) {
+	urlPath := strings.TrimPrefix(r.URL.Path, path.Separator)
+	if isPathStyle {
+		parts := strings.SplitN(urlPath, path.Separator, 3)
+		if len(parts) <= 1 {
+			return "", ""
+		}
+		if len(parts) == 2 {
+			return parts[1], ""
+		}
+		return parts[1], parts[2]
+	}
+	parts := strings.SplitN(urlPath, path.Separator, 2)
+	if len(parts) == 0 {
+		return "", ""
+	}
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], parts[1]
+}
+
+func (h *handler) pathBasedHandler(method string) operations.PathOperationHandler {
 	var handler operations.PathOperationHandler
 	switch method {
 	case http.MethodDelete:
@@ -521,26 +497,18 @@ func (h *handler) pathBasedHandler(method, repository, ref, path string) http.Ha
 		handler = &operations.PutObject{}
 	default:
 		h.operationID = operationIDNotFound
-		return h.NotFoundHandler
+		return nil
 	}
 	h.operationID = reflect.TypeOf(handler).Elem().Name()
-	return PathOperationHandler(h.sc, repository, ref, path, handler)
+	return handler
 }
 
-func (h *handler) repositoryBasedHandlerIfValid(method, repository string) http.Handler {
-	if !mvcc.IsValidRepositoryName(repository) {
-		return h.NotFoundHandler
-	}
-
-	return h.repositoryBasedHandler(method, repository)
-}
-
-func (h *handler) repositoryBasedHandler(method, repository string) http.Handler {
+func (h *handler) repositoryBasedHandler(method string) operations.RepoOperationHandler {
 	var handler operations.RepoOperationHandler
 	switch method {
 	case http.MethodDelete, http.MethodPut:
 		h.operationID = "unsupported_operation"
-		return unsupportedOperationHandler()
+		return nil
 	case http.MethodHead:
 		handler = &operations.HeadBucket{}
 	case http.MethodPost:
@@ -549,11 +517,10 @@ func (h *handler) repositoryBasedHandler(method, repository string) http.Handler
 		handler = &operations.ListObjects{}
 	default:
 		h.operationID = operationIDNotFound
-		return h.NotFoundHandler
+		return nil
 	}
 	h.operationID = reflect.TypeOf(handler).Elem().Name()
-
-	return RepoOperationHandler(h.sc, repository, handler)
+	return handler
 }
 
 func SplitFirst(pth string, parts int) ([]string, bool) {
