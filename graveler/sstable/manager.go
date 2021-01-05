@@ -30,11 +30,6 @@ var (
 	_ committed.RangeManager = &Manager{}
 )
 
-// TODO(ariels): This method is going away!
-func (*Manager) GetBatchWriter() committed.BatchWriterCloser {
-	return NewBatchCloser()
-}
-
 func (m *Manager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
 	return m.cache.Exists(string(ns), id)
 }

@@ -1,14 +1,16 @@
-package sstable
+package committed
 
 import (
 	"errors"
 	"sync"
-
-	"github.com/treeverse/lakefs/graveler/committed"
 )
 
+type ResultCloser interface {
+	Close() (*WriteResult, error)
+}
+
 type BatchCloser struct {
-	results []committed.WriteResult
+	results []WriteResult
 	err     error
 
 	wg sync.WaitGroup
@@ -29,10 +31,10 @@ var (
 	ErrMultipleWaitCalls = errors.New("wait has already been called")
 )
 
-// CloseWriterAsync adds RangeWriter instance for the BatchWriterCloser to handle.
+// CloseWriterAsync adds RangeWriter instance for the BatchCloser to handle.
 // Any writes executed to the writer after this call are not guaranteed to succeed.
 // If Wait() has already been called, returns an error.
-func (bc *BatchCloser) CloseWriterAsync(w committed.RangeWriter) error {
+func (bc *BatchCloser) CloseWriterAsync(w ResultCloser) error {
 	bc.lock.Lock()
 	defer bc.lock.Unlock()
 
@@ -48,7 +50,7 @@ func (bc *BatchCloser) CloseWriterAsync(w committed.RangeWriter) error {
 	return nil
 }
 
-func (bc *BatchCloser) closeWriter(w committed.RangeWriter) {
+func (bc *BatchCloser) closeWriter(w ResultCloser) {
 	defer bc.wg.Done()
 	res, err := w.Close()
 
@@ -69,7 +71,7 @@ func (bc *BatchCloser) closeWriter(w committed.RangeWriter) {
 
 // Wait returns when all Writers finished.
 // Any failure to close a single RangeWriter will return with a nil results slice and an error.
-func (bc *BatchCloser) Wait() ([]committed.WriteResult, error) {
+func (bc *BatchCloser) Wait() ([]WriteResult, error) {
 	bc.lock.Lock()
 	if bc.err != nil {
 		defer bc.lock.Unlock()
