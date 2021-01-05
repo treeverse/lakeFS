@@ -86,7 +86,7 @@ func TestResolveRef_Dereference(t *testing.T) {
 	}
 
 	if diff := deep.Equal(commitIDs, commitLog); diff != nil {
-		t.Fatal("Difference found on commit log", diff)
+		t.Error("Difference found on commit log", diff)
 	}
 
 	branch1CommitID := commitLog[3]

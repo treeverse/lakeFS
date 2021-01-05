@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -31,9 +32,11 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultCommittedLocalCacheBytes    = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir      = "~/lakefs/local_tier"
-	DefaultCommittedBlockStoragePrefix = "_lakefs"
+	DefaultCommittedLocalCacheRangePercent     = 0.9
+	DefaultCommittedLocalCacheMetaRangePercent = 0.1
+	DefaultCommittedLocalCacheBytes            = 1 * 1024 * 1024 * 1024
+	DefaultCommittedLocalCacheDir              = "~/lakefs/local_tier"
+	DefaultCommittedBlockStoragePrefix         = "_lakefs"
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -57,7 +60,8 @@ const (
 )
 
 var (
-	ErrMissingSecretKey = errors.New("auth.encrypt.secret_key cannot be empty")
+	ErrMissingSecretKey  = errors.New("auth.encrypt.secret_key cannot be empty")
+	ErrInvalidProportion = errors.New("total proportion isn't 1.0")
 )
 
 type LogrusAWSAdapter struct {
@@ -76,37 +80,74 @@ func NewConfig() *Config {
 	return &Config{}
 }
 
+// Default flag keys
+const (
+	ListenAddressKey = "listen_address"
+
+	LoggingFormatKey = "logging.format"
+	LoggingLevelKey  = "logging.level"
+	LoggingOutputKey = "logging.output"
+
+	AuthCacheEnabledKey = "auth.cache.enabled"
+	AuthCacheSizeKey    = "auth.cache.size"
+	AuthCacheTTLKey     = "auth.cache.ttl"
+	AuthCacheJitterKey  = "auth.cache.jitter"
+
+	BlockstoreTypeKey                    = "blockstore.type"
+	BlockstoreLocalPathKey               = "blockstore.local.path"
+	BlockstoreS3RegionKey                = "blockstore.s3.region"
+	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
+	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
+	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
+
+	CommittedLocalCacheSizeBytesKey        = "committed.local_cache.size_bytes"
+	CommittedLocalCacheDirKey              = "committed.local_cache.dir"
+	CommittedLocalCacheRangeProportion     = "committed.local_cache.range_proportion"
+	CommittedLocalCacheMetaRangeProportion = "committed.local_cache.metarange_proportion"
+	CommittedBlockStoragePrefixKey         = "committed.block_storage_prefix"
+	GatewaysS3DomainNameKey                = "gateways.s3.domain_name"
+	GatewaysS3RegionKey                    = "gateways.s3.region"
+
+	BlockstoreGSS3EndpointKey = "blockstore.gs.s3_endpoint"
+
+	StatsEnabledKey       = "stats.enabled"
+	StatsAddressKey       = "stats.address"
+	StatsFlushIntervalKey = "stats.flush_interval"
+)
+
 func setDefaults() {
-	viper.SetDefault("listen_address", DefaultListenAddr)
+	viper.SetDefault(ListenAddressKey, DefaultListenAddr)
 
-	viper.SetDefault("logging.format", DefaultLoggingFormat)
-	viper.SetDefault("logging.level", DefaultLoggingLevel)
-	viper.SetDefault("logging.output", DefaultLoggingOutput)
+	viper.SetDefault(LoggingFormatKey, DefaultLoggingFormat)
+	viper.SetDefault(LoggingLevelKey, DefaultLoggingLevel)
+	viper.SetDefault(LoggingOutputKey, DefaultLoggingOutput)
 
-	viper.SetDefault("auth.cache.enabled", DefaultAuthCacheEnabled)
-	viper.SetDefault("auth.cache.size", DefaultAuthCacheSize)
-	viper.SetDefault("auth.cache.ttl", DefaultAuthCacheTTL)
-	viper.SetDefault("auth.cache.jitter", DefaultAuthCacheJitter)
+	viper.SetDefault(AuthCacheEnabledKey, DefaultAuthCacheEnabled)
+	viper.SetDefault(AuthCacheSizeKey, DefaultAuthCacheSize)
+	viper.SetDefault(AuthCacheTTLKey, DefaultAuthCacheTTL)
+	viper.SetDefault(AuthCacheJitterKey, DefaultAuthCacheJitter)
 
-	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
-	viper.SetDefault("blockstore.local.path", DefaultBlockStoreLocalPath)
-	viper.SetDefault("blockstore.s3.region", DefaultBlockStoreS3Region)
-	viper.SetDefault("blockstore.s3.streaming_chunk_size", DefaultBlockStoreS3StreamingChunkSize)
-	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
-	viper.SetDefault("blockstore.s3.max_retries", DefaultS3MaxRetries)
+	viper.SetDefault(BlockstoreTypeKey, DefaultBlockStoreType)
+	viper.SetDefault(BlockstoreLocalPathKey, DefaultBlockStoreLocalPath)
+	viper.SetDefault(BlockstoreS3RegionKey, DefaultBlockStoreS3Region)
+	viper.SetDefault(BlockstoreS3StreamingChunkSizeKey, DefaultBlockStoreS3StreamingChunkSize)
+	viper.SetDefault(BlockstoreS3StreamingChunkTimeoutKey, DefaultBlockStoreS3StreamingChunkTimeout)
+	viper.SetDefault(BlockstoreS3MaxRetriesKey, DefaultS3MaxRetries)
 
-	viper.SetDefault("committed.local_cache.size_bytes", DefaultCommittedLocalCacheBytes)
-	viper.SetDefault("committed.local_cache.dir", DefaultCommittedLocalCacheDir)
-	viper.SetDefault("committed.block_storage_prefix", DefaultCommittedBlockStoragePrefix)
+	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
+	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
+	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
+	viper.SetDefault(CommittedLocalCacheRangeProportion, DefaultCommittedLocalCacheRangePercent)
+	viper.SetDefault(CommittedLocalCacheMetaRangeProportion, DefaultCommittedLocalCacheMetaRangePercent)
 
-	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
-	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
+	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
+	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
 
-	viper.SetDefault("blockstore.gs.s3_endpoint", DefaultBlockStoreGSS3Endpoint)
+	viper.SetDefault(BlockstoreGSS3EndpointKey, DefaultBlockStoreGSS3Endpoint)
 
-	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
-	viper.SetDefault("stats.address", DefaultStatsAddr)
-	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
+	viper.SetDefault(StatsEnabledKey, DefaultStatsEnabled)
+	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
+	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 }
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
@@ -177,7 +218,7 @@ func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
 
 func (c *Config) GetAwsConfig() *aws.Config {
 	cfg := &aws.Config{
-		Region: aws.String(viper.GetString("blockstore.s3.region")),
+		Region: aws.String(viper.GetString(BlockstoreS3RegionKey)),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
 	}
 	level := strings.ToLower(logging.Level())
@@ -204,7 +245,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
-	cfg.WithMaxRetries(viper.GetInt("blockstore.s3.max_retries"))
+	cfg.WithMaxRetries(viper.GetInt(BlockstoreS3MaxRetriesKey))
 	return cfg
 }
 
@@ -238,7 +279,7 @@ func GetAccount(awsConfig *aws.Config) (string, error) {
 }
 
 func (c *Config) GetBlockstoreType() string {
-	return viper.GetString("blockstore.type")
+	return viper.GetString(BlockstoreTypeKey)
 }
 
 func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
@@ -246,13 +287,13 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 
 	return blockparams.S3{
 		AwsConfig:             cfg,
-		StreamingChunkSize:    viper.GetInt("blockstore.s3.streaming_chunk_size"),
-		StreamingChunkTimeout: viper.GetDuration("blockstore.s3.streaming_chunk_timeout"),
+		StreamingChunkSize:    viper.GetInt(BlockstoreS3StreamingChunkSizeKey),
+		StreamingChunkTimeout: viper.GetDuration(BlockstoreS3StreamingChunkTimeoutKey),
 	}, nil
 }
 
 func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
-	localPath := viper.GetString("blockstore.local.path")
+	localPath := viper.GetString(BlockstoreLocalPathKey)
 	path, err := homedir.Expand(localPath)
 	if err != nil {
 		return blockparams.Local{}, fmt.Errorf("could not parse blockstore location URI: %w", err)
@@ -270,10 +311,10 @@ func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
 
 func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
 	return authparams.ServiceCache{
-		Enabled:        viper.GetBool("auth.cache.enabled"),
-		Size:           viper.GetInt("auth.cache.size"),
-		TTL:            viper.GetDuration("auth.cache.ttl"),
-		EvictionJitter: viper.GetDuration("auth.cache.jitter"),
+		Enabled:        viper.GetBool(AuthCacheEnabledKey),
+		Size:           viper.GetInt(AuthCacheSizeKey),
+		TTL:            viper.GetDuration(AuthCacheTTLKey),
+		EvictionJitter: viper.GetDuration(AuthCacheJitterKey),
 	}
 }
 
@@ -286,11 +327,11 @@ func (c *Config) GetAuthEncryptionSecret() []byte {
 }
 
 func (c *Config) GetS3GatewayRegion() string {
-	return viper.GetString("gateways.s3.region")
+	return viper.GetString(GatewaysS3RegionKey)
 }
 
 func (c *Config) GetS3GatewayDomainName() string {
-	return viper.GetString("gateways.s3.domain_name")
+	return viper.GetString(GatewaysS3DomainNameKey)
 }
 
 func (c *Config) GetS3GatewayFallbackURL() string {
@@ -298,37 +339,49 @@ func (c *Config) GetS3GatewayFallbackURL() string {
 }
 
 func (c *Config) GetListenAddress() string {
-	return viper.GetString("listen_address")
+	return viper.GetString(ListenAddressKey)
 }
 
 func (c *Config) GetStatsEnabled() bool {
-	return viper.GetBool("stats.enabled")
+	return viper.GetBool(StatsEnabledKey)
 }
 
 func (c *Config) GetStatsAddress() string {
-	return viper.GetString("stats.address")
+	return viper.GetString(StatsAddressKey)
 }
 
 func (c *Config) GetStatsFlushInterval() time.Duration {
-	return viper.GetDuration("stats.flush_interval")
+	return viper.GetDuration(StatsFlushIntervalKey)
 }
+
+const floatSumTolerance = 1e-6
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams() (*pyramidparams.Params, error) {
+func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 	adapter, err := factory.BuildBlockAdapter(c)
 	if err != nil {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
+	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportion)
+	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportion)
+
+	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
+		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
+	}
+
 	logger := logging.Default().WithField("module", "pyramid")
-	return &pyramidparams.Params{
-		FSName:             "committed",
-		Logger:             logger,
-		Adapter:            adapter,
-		BlockStoragePrefix: viper.GetString("committed.block_storage_prefix"),
-		Local: pyramidparams.LocalDiskParams{
-			BaseDir:        viper.GetString("committed.local_cache.dir"),
-			AllocatedBytes: viper.GetInt64("committed.local_cache.size_bytes"),
+	return &pyramidparams.ExtParams{
+		RangeAllocationProportion:     rangePro,
+		MetaRangeAllocationProportion: metaRangePro,
+		SharedParams: pyramidparams.SharedParams{
+			Logger:             logger,
+			Adapter:            adapter,
+			BlockStoragePrefix: viper.GetString(CommittedBlockStoragePrefixKey),
+			Local: pyramidparams.LocalDiskParams{
+				BaseDir:             viper.GetString(CommittedLocalCacheDirKey),
+				TotalAllocatedBytes: viper.GetInt64(CommittedLocalCacheSizeBytesKey),
+			},
 		},
 	}, nil
 }

@@ -3,6 +3,7 @@ package sstable_test
 import (
 	"crypto/sha256"
 	"errors"
+	"sort"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -16,13 +17,14 @@ import (
 func TestGetEntrySuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockcache(ctrl)
+	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	keys := randomStrings(10)
+	sort.Strings(keys)
 	vals := randomStrings(len(keys))
 	sstableID := "some-id"
 
@@ -36,7 +38,7 @@ func TestGetEntrySuccess(t *testing.T) {
 				return nil
 			}, nil)
 
-	val, err := sut.GetValue(committed.Namespace(ns), committed.Key(keys[len(keys)/3]), committed.ID(sstableID))
+	val, err := sut.GetValue(committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
 	require.NoError(t, err)
 	require.NotNil(t, val)
 
@@ -46,19 +48,19 @@ func TestGetEntrySuccess(t *testing.T) {
 func TestGetEntryCacheFailure(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockcache(ctrl)
+	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
-	sstableID := "some-id"
+	sstableID := committed.ID("some-id")
 
 	expectedErr := errors.New("cache failure")
-	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, sstableID).Times(1).
 		Return(nil, nil, expectedErr)
 
-	val, err := sut.GetValue(committed.Namespace(ns), committed.Key("some-key"), committed.ID(sstableID))
+	val, err := sut.GetValue(committed.Namespace(ns), committed.ID(sstableID), committed.Key("some-key"))
 	require.Error(t, expectedErr, err)
 	require.Nil(t, val)
 }
@@ -66,27 +68,28 @@ func TestGetEntryCacheFailure(t *testing.T) {
 func TestGetEntryNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockcache(ctrl)
+	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	keys := randomStrings(10)
+	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := "some-id"
+	sstableID := committed.ID("some-id")
 
 	reader := createSStableReader(t, keys, vals)
 
 	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, sstableID).Times(1).
 		Return(reader,
 			func() error {
 				derefCount++
 				return nil
 			}, nil)
 
-	val, err := sut.GetValue(committed.Namespace(ns), committed.Key("does-not-exist"), committed.ID(sstableID))
+	val, err := sut.GetValue(committed.Namespace(ns), committed.ID(sstableID), committed.Key("does-not-exist"))
 	require.Error(t, err)
 	require.Nil(t, val)
 
@@ -96,10 +99,10 @@ func TestGetEntryNotFound(t *testing.T) {
 func TestGetWriterSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockcache(ctrl)
+	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	mockFile := fsMock.NewMockStoredFile(ctrl)
@@ -119,26 +122,28 @@ func TestGetWriterSuccess(t *testing.T) {
 func TestNewPartIteratorSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockcache(ctrl)
+	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
 
 	ns := "some-ns"
 	keys := randomStrings(10)
+	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := "some-id"
+	sstableID := committed.ID("some-id")
 
 	reader := createSStableReader(t, keys, vals)
 	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ns, committed.ID(sstableID)).Times(1).
+	mockCache.EXPECT().GetOrOpen(ns, sstableID).Times(1).
 		Return(reader,
 			func() error {
 				derefCount++
 				return nil
 			}, nil)
 
-	iter, err := sut.NewRangeIterator(committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
+	iter, err := sut.NewRangeIterator(committed.Namespace(ns), committed.ID(sstableID))
+	// TODO(ariels): call iter.SeekGE(committed.Key(keys[len(keys)/3])) and verify
 	require.NoError(t, err)
 	require.NotNil(t, iter)
 

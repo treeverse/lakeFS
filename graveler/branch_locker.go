@@ -31,7 +31,7 @@ func NewBranchLocker() branchLocker {
 }
 
 // AquireWrite returns a cancel function to release if write is currently available
-// returns ErrBranchUpdateInProgress if metadata update is currently in progress
+// returns ErrBranchLocked if metadata update is currently in progress
 func (l *branchLocker) AquireWrite(repositoryID RepositoryID, branchID BranchID) (func(), error) {
 	key := formatBranchLockerKey(repositoryID, branchID)
 	l.locker.Lock()
@@ -64,7 +64,7 @@ func (l *branchLocker) releaseWrite(key string) {
 
 // AquireMetadataUpdate returns a cancel function to release if metadata update is currently available
 // Will wait until all current writers are done
-// returns ErrBranchUpdateInProgress if metadata update is currently in progress
+// returns ErrBranchLocked if metadata update is currently in progress
 func (l *branchLocker) AquireMetadataUpdate(repositoryID RepositoryID, branchID BranchID) (func(), error) {
 	key := formatBranchLockerKey(repositoryID, branchID)
 	l.locker.Lock()

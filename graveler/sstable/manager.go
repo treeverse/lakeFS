@@ -12,25 +12,32 @@ import (
 )
 
 type Manager struct {
-	cache  cache
-	fs     pyramid.FS
+	cache Cache
+	fs    pyramid.FS
+	// TODO(ariels): Replace with loggers constructed from context.
 	logger logging.Logger
 	hash   hash.Hash
 }
 
-func NewPebbleSSTableManager(cache cache, fs pyramid.FS, hash hash.Hash) committed.RangeManager {
-	return &Manager{cache: cache, fs: fs, hash: hash}
+func NewPebbleSSTableRangeManager(cache Cache, fs pyramid.FS, hash hash.Hash) *Manager {
+	return &Manager{cache: cache, logger: logging.Default(), fs: fs, hash: hash}
 }
 
 var (
-	// ErrPathNotFound is the error returned when the path is not found
-	ErrPathNotFound = errors.New("path not found")
+	// ErrKeyNotFound is the error returned when a path is not found
+	ErrKeyNotFound = errors.New("path not found")
+
+	_ committed.RangeManager = &Manager{}
 )
+
+func (m *Manager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
+	return m.cache.Exists(string(ns), id)
+}
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *Manager) GetValue(ns committed.Namespace, lookup committed.Key, tid committed.ID) (*committed.Record, error) {
-	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
+func (m *Manager) GetValue(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
 	if err != nil {
 		return nil, err
 	}
@@ -43,30 +50,30 @@ func (m *Manager) GetValue(ns committed.Namespace, lookup committed.Key, tid com
 	defer m.execAndLog(it.Close, "Failed to close iterator")
 
 	// actual reading
-	key, val := it.SeekGE(lookup)
+	key, value := it.SeekGE(lookup)
 	if key == nil {
 		// checking if an error occurred or key simply not found
 		if it.Error() != nil {
-			return nil, fmt.Errorf("reading key from sstable id %s: %w", tid, it.Error())
+			return nil, fmt.Errorf("reading key from sstable id %s: %w", id, it.Error())
 		}
 
 		// lookup path is bigger than the last path in the SSTable
-		return nil, ErrPathNotFound
+		return nil, ErrKeyNotFound
 	}
 
 	if !bytes.Equal(lookup, key.UserKey) {
 		// lookup path in range but key not found
-		return nil, ErrPathNotFound
+		return nil, ErrKeyNotFound
 	}
 
 	return &committed.Record{
 		Key:   key.UserKey,
-		Value: val,
+		Value: value,
 	}, nil
 }
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID, from committed.Key) (committed.ValueIterator, error) {
+func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -80,17 +87,12 @@ func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID, fro
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return NewIterator(iter, derefer, from), nil
+	return NewIterator(iter, derefer, nil), nil
 }
 
 // GetWriter returns a new SSTable writer instance
 func (m *Manager) GetWriter(ns committed.Namespace) (committed.RangeWriter, error) {
 	return NewDiskWriter(m.fs, ns, m.hash)
-}
-
-// GetBatchManager returns a new BatchCloser
-func (m *Manager) GetBatchWriter() committed.BatchWriterCloser {
-	return NewBatchCloser()
 }
 
 func (m *Manager) execAndLog(f func() error, msg string) {

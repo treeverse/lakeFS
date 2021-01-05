@@ -43,6 +43,10 @@ func (a *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, op
 	return nil
 }
 
+func (a *mockAdapter) Exists(block.ObjectPointer) (bool, error) {
+	return false, nil
+}
+
 func (a *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	return nil, nil
 }

@@ -2,12 +2,8 @@ package graveler
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -232,6 +228,15 @@ type VersionController interface {
 	//   ErrNothingToCommit in case there is no data in stage
 	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error)
 
+	// WriteMetaRange accepts a ValueIterator and writes the entire iterator to a new MetaRange
+	// and returns the result ID.
+	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
+
+	// CommitExistingMetaRange creates a commit in the branch from the given pre-existing tree.
+	// Returns ErrDirtyBranch if the branch has uncommitted changes.
+	// Returns ErrTreeNotFound if the referenced treeID doesn't exist.
+	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error)
+
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
 
@@ -392,23 +397,19 @@ type RefManager interface {
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
 }
 
-// MetaRange abstracts the data structure of the committed data.
-type MetaRange interface {
-	// ID returns the MetaRangeID
-	ID() MetaRangeID
-}
-
 // CommittedManager reads and applies committed snapshots
 // it is responsible for de-duping them, persisting them and providing basic diff, merge and list capabilities
 type CommittedManager interface {
 	// Get returns the provided key, if exists, from the provided MetaRangeID
 	Get(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, key Key) (*Value, error)
 
-	// GetMetaRange returns the MetaRange under the namespace with matching ID.
-	// If the meta-range is not found, returns ErrNotFound.
-	GetMetaRange(ns StorageNamespace, metaRangeID MetaRangeID) (MetaRange, error)
+	// Exists returns true if a MetaRange matching ID exists in namespace ns.
+	Exists(ns StorageNamespace, id MetaRangeID) (bool, error)
 
-	// List takes a given meta-range and returns an ValueIterator
+	// WriteMetaRange flushes the iterator to a new MetaRange and returns the created ID.
+	WriteMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*MetaRangeID, error)
+
+	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
@@ -447,70 +448,24 @@ type StagingManager interface {
 	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
-var (
-	reValidBranchID     = regexp.MustCompile(`^\w[-\w]*$`)
-	reValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-)
-
-func NewRepositoryID(id string) (RepositoryID, error) {
-	if !reValidRepositoryID.MatchString(id) {
-		return "", ErrInvalidRepositoryID
-	}
-	return RepositoryID(id), nil
-}
-
 func (id RepositoryID) String() string {
 	return string(id)
-}
-
-func NewStorageNamespace(ns string) (StorageNamespace, error) {
-	u, err := url.Parse(ns)
-	if err != nil || u.Scheme == "" {
-		return "", ErrInvalidStorageNamespace
-	}
-	return StorageNamespace(ns), nil
 }
 
 func (ns StorageNamespace) String() string {
 	return string(ns)
 }
 
-func NewBranchID(id string) (BranchID, error) {
-	if !reValidBranchID.MatchString(id) {
-		return "", ErrInvalidBranchID
-	}
-	return BranchID(id), nil
-}
-
 func (id BranchID) String() string {
 	return string(id)
-}
-
-func NewRef(id string) (Ref, error) {
-	if id == "" || strings.ContainsAny(id, " \t\r\n") {
-		return "", ErrInvalidRef
-	}
-	return Ref(id), nil
 }
 
 func (id Ref) String() string {
 	return string(id)
 }
 
-func NewKey(id string) (Key, error) {
-	return Key(id), nil
-}
-
 func (id Key) String() string {
 	return string(id)
-}
-
-func NewCommitID(id string) (CommitID, error) {
-	_, err := hex.DecodeString(id)
-	if err != nil {
-		return "", ErrInvalidCommitID
-	}
-	return CommitID(id), nil
 }
 
 func (id CommitID) String() string {
@@ -557,6 +512,14 @@ func (g *graveler) CreateRepository(ctx context.Context, repositoryID Repository
 
 func (g *graveler) ListRepositories(ctx context.Context) (RepositoryIterator, error) {
 	return g.RefManager.ListRepositories(ctx)
+}
+
+func (g *graveler) WriteMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, it)
 }
 
 func (g *graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
@@ -873,11 +836,12 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		return "", ErrDirtyBranch
 	}
 
-	if _, err := g.CommittedManager.GetMetaRange(repo.StorageNamespace, metaRangeID); err != nil {
-		if errors.Is(err, ErrNotFound) {
-			return "", ErrMetaRangeNotFound
-		}
+	ok, err := g.CommittedManager.Exists(repo.StorageNamespace, metaRangeID)
+	if err != nil {
 		return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
+	}
+	if !ok {
+		return "", ErrMetaRangeNotFound
 	}
 
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{

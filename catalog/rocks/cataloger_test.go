@@ -122,9 +122,10 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{BranchID: "branch3", Branch: &graveler.Branch{CommitID: "commit3"}},
 	}
 	type args struct {
-		prefix string
-		limit  int
-		after  string
+		repository graveler.RepositoryID
+		prefix     string
+		limit      int
+		after      string
 	}
 	tests := []struct {
 		name        string
@@ -137,9 +138,9 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "all",
 			args: args{limit: -1},
 			want: []*catalog.Branch{
-				{Name: "branch1"},
-				{Name: "branch2"},
-				{Name: "branch3"},
+				{Repository: "repo", Name: "branch1"},
+				{Repository: "repo", Name: "branch2"},
+				{Repository: "repo", Name: "branch3"},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -148,7 +149,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "first",
 			args: args{limit: 1},
 			want: []*catalog.Branch{
-				{Name: "branch1"},
+				{Repository: "repo", Name: "branch1"},
 			},
 			wantHasMore: true,
 			wantErr:     false,
@@ -157,7 +158,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "second",
 			args: args{limit: 1, after: "branch1"},
 			want: []*catalog.Branch{
-				{Name: "branch2"},
+				{Repository: "repo", Name: "branch2"},
 			},
 			wantHasMore: true,
 			wantErr:     false,
@@ -166,8 +167,8 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "last2",
 			args: args{limit: 10, after: "branch1"},
 			want: []*catalog.Branch{
-				{Name: "branch2"},
-				{Name: "branch3"},
+				{Repository: "repo", Name: "branch2"},
+				{Repository: "repo", Name: "branch3"},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -192,7 +193,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			}
 			// test method
 			ctx := context.Background()
-			got, hasMore, err := c.ListBranches(ctx, "", tt.args.prefix, tt.args.limit, tt.args.after)
+			got, hasMore, err := c.ListBranches(ctx, "repo", tt.args.prefix, tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
 			}

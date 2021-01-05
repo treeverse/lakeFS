@@ -41,6 +41,10 @@ func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadClose
 	return ioutil.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
 }
 
+func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+	return true, nil
+}
+
 func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	n := endPosition - startPosition
 	if n < 0 {

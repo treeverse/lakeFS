@@ -48,15 +48,18 @@ func createFSWithEviction(ev params.Eviction) (FS, string) {
 	close(adapter.wait)
 
 	var err error
-	fs, err = NewFS(&params.Params{
-		FSName:             fsName,
-		Adapter:            adapter,
-		Logger:             logging.Dummy(),
-		Eviction:           ev,
-		BlockStoragePrefix: blockStoragePrefix,
-		Local: params.LocalDiskParams{
-			BaseDir:        baseDir,
-			AllocatedBytes: allocatedDiskBytes,
+	fs, err = NewFS(&params.InstanceParams{
+		FSName:              fsName,
+		DiskAllocProportion: 1.0,
+		SharedParams: params.SharedParams{
+			Adapter:            adapter,
+			Logger:             logging.Dummy(),
+			Eviction:           ev,
+			BlockStoragePrefix: blockStoragePrefix,
+			Local: params.LocalDiskParams{
+				BaseDir:             baseDir,
+				TotalAllocatedBytes: allocatedDiskBytes,
+			},
 		},
 	})
 	if err != nil {
