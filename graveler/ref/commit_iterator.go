@@ -36,7 +36,7 @@ func (c commitsPriorityQueue) Len() int {
 
 func (c commitsPriorityQueue) Less(i, j int) bool {
 	if c[i].Commit.CreationDate.Equal(c[j].Commit.CreationDate) {
-		return c[i].CommitID < c[j].CommitID
+		return c[i].CommitID > c[j].CommitID
 	}
 	return c[i].Commit.CreationDate.After(c[j].Commit.CreationDate)
 }

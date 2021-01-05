@@ -188,6 +188,52 @@ func TestResolveRef_Dereference(t *testing.T) {
 	}
 }
 
+func TestResolveRef_SameDate(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{}))
+
+	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
+	addCommit := func(message string, parents ...graveler.CommitID) graveler.CommitID {
+		c := graveler.Commit{
+			Message:      message,
+			Committer:    "tester",
+			MetaRangeID:  "deadbeef1",
+			CreationDate: ts,
+			Parents:      graveler.CommitParents{},
+		}
+		for _, p := range parents {
+			c.Parents = append(c.Parents, p)
+		}
+		cid, err := r.AddCommit(ctx, "repo1", c)
+		testutil.MustDo(t, "add commit", err)
+		return cid
+	}
+	c1 := addCommit("c1")
+	c2 := addCommit("c2", c1)
+	c3 := addCommit("c3", c1)
+	c4 := addCommit("c4", c3)
+	c5 := addCommit("c5", c4, c2)
+
+	it, err := r.Log(ctx, "repo1", c5)
+	testutil.MustDo(t, "Log request", err)
+	var commitIDs []graveler.CommitID
+	for it.Next() {
+		commit := it.Value()
+		commitIDs = append(commitIDs, commit.CommitID)
+	}
+	testutil.MustDo(t, "Log complete iteration", it.Err())
+
+	expected := []graveler.CommitID{c5, c4, c3, c2, c1}
+	if diff := deep.Equal(commitIDs, expected); diff != nil {
+		t.Fatal("Iterator over commits found diff:", diff)
+	}
+}
+
 func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	/*
 		This is taken from `git help rev-parse` - let's run these tests
