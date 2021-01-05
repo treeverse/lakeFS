@@ -48,8 +48,9 @@ type Shutter interface {
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "Run lakeFS",
+	Use:     "run",
+	Aliases: []string{"swim"},
+	Short:   "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
