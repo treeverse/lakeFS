@@ -1,4 +1,4 @@
-package sstable_test
+package committed_test
 
 import (
 	"errors"
@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/committed/mock"
-	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
 func TestBatchCloserSuccess(t *testing.T) {
@@ -32,7 +31,7 @@ func TestBatchWriterFailed(t *testing.T) {
 	expectedErr := errors.New("failure")
 	writerFailure.EXPECT().Close().Return(nil, expectedErr).Times(1)
 
-	sut := sstable.NewBatchCloser()
+	sut := committed.NewBatchCloser()
 	require.NoError(t, sut.CloseWriterAsync(writerSuccess))
 	require.NoError(t, sut.CloseWriterAsync(writerFailure))
 
@@ -46,24 +45,24 @@ func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 
 	writer := mock.NewMockRangeWriter(ctrl)
 	writer.EXPECT().Close().Return(&committed.WriteResult{
-		RangeID: "last",
+		RangeID: committed.ID("last"),
 		First:   committed.Key("row_1"),
 		Last:    committed.Key("row_2"),
 		Count:   4321,
 	}, nil).Times(1)
 
-	require.Error(t, sut.CloseWriterAsync(writer), sstable.ErrMultipleWaitCalls)
+	require.Error(t, sut.CloseWriterAsync(writer), committed.ErrMultipleWaitCalls)
 	res, err := sut.Wait()
 	require.Nil(t, res)
-	require.Error(t, err, sstable.ErrMultipleWaitCalls)
+	require.Error(t, err, committed.ErrMultipleWaitCalls)
 }
 
-func runSuccessScenario(t *testing.T) (*sstable.BatchCloser, *gomock.Controller) {
+func runSuccessScenario(t *testing.T) (*committed.BatchCloser, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	const writersCount = 10
-	writers := make([]*mock.MockRangeWriter, writersCount)
+	writersCount := 10
+	writers := make([]*mock.MockRangeWriter, writersCount, writersCount)
 	for i := 0; i < writersCount; i++ {
 		writers[i] = mock.NewMockRangeWriter(ctrl)
 		writers[i].EXPECT().Close().Return(&committed.WriteResult{
@@ -74,7 +73,7 @@ func runSuccessScenario(t *testing.T) (*sstable.BatchCloser, *gomock.Controller)
 		}, nil).Times(1)
 	}
 
-	sut := sstable.NewBatchCloser()
+	sut := committed.NewBatchCloser()
 
 	for i := 0; i < writersCount; i++ {
 		require.NoError(t, sut.CloseWriterAsync(writers[i]))

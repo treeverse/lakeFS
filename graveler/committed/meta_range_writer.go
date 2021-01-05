@@ -32,7 +32,7 @@ func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, appr
 	return &GeneralMetaRangeWriter{
 		rangeManager:              rangeManager,
 		metaRangeManager:          metaRangeManager,
-		batchWriteCloser:          rangeManager.GetBatchWriter(),
+		batchWriteCloser:          NewBatchCloser(),
 		approximateRangeSizeBytes: approximateRangeSizeBytes,
 		namespace:                 namespace,
 	}
@@ -124,7 +124,7 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 	}
 	ranges = append(ranges, w.ranges...)
 	sort.Slice(ranges, func(i, j int) bool {
-		return bytes.Compare(ranges[i].MinKey, ranges[j].MinKey) < 0
+		return bytes.Compare(ranges[i].MaxKey, ranges[j].MaxKey) < 0
 	})
 	w.ranges = ranges
 	return w.writeRangesToMetaRange()
