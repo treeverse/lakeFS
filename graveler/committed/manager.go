@@ -73,8 +73,9 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, error) {
 	mwWriter := c.metaRangeManager.NewWriter(ns)
 	defer func() {
-		if mwWriter != nil {
-			mwWriter.Abort()
+		err := mwWriter.Abort()
+		if err != nil {
+			c.logger.WithError(err).Error("Abort failed after Apply")
 		}
 	}()
 	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
@@ -85,10 +86,10 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 	if err != nil {
 		return "", fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
 	}
-	newId, err := mwWriter.Close()
+	newID, err := mwWriter.Close()
 	mwWriter = nil
-	if newId == nil {
+	if newID == nil {
 		return "", fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
 	}
-	return *newId, err
+	return *newID, err
 }

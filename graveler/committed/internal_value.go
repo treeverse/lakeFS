@@ -16,16 +16,3 @@ func rangeToValue(rng Range) (Value, error) {
 	}
 	return MarshalValue(rangeValue)
 }
-
-// valueToRange returns the Range that value encodes in its Data as a MetaRange
-func valueToRange(value Value) (*Range, error) {
-	v, err := UnmarshalValue([]byte(value))
-	if err != nil {
-		return nil, err
-	}
-	rng, err := UnmarshalRange(v.Data)
-	if err != nil {
-		return nil, err
-	}
-	return &rng, nil
-}

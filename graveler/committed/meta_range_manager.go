@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/logging"
 )
 
 type Params struct {
@@ -19,8 +18,6 @@ type metaRangeManager struct {
 	params       Params
 	metaManager  RangeManager // For metaranges
 	rangeManager RangeManager // For ranges
-	// TODO(ariels): Replace with loggers constructed from context.
-	logger logging.Logger
 }
 
 func NewPebbleSSTableMetaRangeManager(params Params, metaManager, rangeManager RangeManager) MetaRangeManager {
@@ -28,7 +25,6 @@ func NewPebbleSSTableMetaRangeManager(params Params, metaManager, rangeManager R
 		params:       params,
 		metaManager:  metaManager,
 		rangeManager: rangeManager,
-		logger:       logging.Default(),
 	}
 }
 
@@ -61,6 +57,9 @@ func (m *metaRangeManager) GetValue(ns graveler.StorageNamespace, id graveler.Me
 		return nil, fmt.Errorf("get value in range %s of %s for %s: %w", rng.ID, id, key, err)
 	}
 	value, err := UnmarshalValue(r.Value)
+	if err != nil {
+		return nil, err
+	}
 	return &graveler.ValueRecord{
 		Key:   key,
 		Value: value,
@@ -79,12 +78,6 @@ func (m *metaRangeManager) NewMetaRangeIterator(ns graveler.StorageNamespace, id
 	return NewIterator(m.rangeManager, Namespace(ns), &adaptIt{it: rangesIt}), nil
 }
 
-func (m *metaRangeManager) execAndLog(f func() error, msg string) {
-	if err := f(); err != nil {
-		m.logger.WithError(err).Error(msg)
-	}
-}
-
 // adaptIt adapts a ValueIterator to be a graveler.ValueIterator
 type adaptIt struct {
 	it  ValueIterator
@@ -101,7 +94,7 @@ func (a *adaptIt) SeekGE(id graveler.Key) {
 
 func (a *adaptIt) Value() *graveler.ValueRecord {
 	rec := a.it.Value()
-	v, err := UnmarshalValue(*&rec.Value)
+	v, err := UnmarshalValue(rec.Value)
 	if err != nil {
 		a.err = err
 		return nil
@@ -120,5 +113,5 @@ func (a *adaptIt) Err() error {
 }
 
 func (a *adaptIt) Close() {
-	a.Close()
+	a.it.Close()
 }
