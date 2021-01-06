@@ -569,11 +569,27 @@ func TestManager_LogGraph(t *testing.T) {
 		c := it.Value()
 		commits = append(commits, c.Message)
 	}
-
 	if err := it.Err(); err != nil {
 		t.Fatal("Iteration ended with error", err)
 	}
 	if diff := deep.Equal(commits, expected); diff != nil {
 		t.Fatal("Found diff between expected commits:", diff)
+	}
+
+	// test SeekGE to "c4"
+	it.SeekGE(c4)
+	expectedAfterSeek := []string{
+		"c4", "c3", "c2", "c1",
+	}
+	var commitsAfterSeek []string
+	for it.Next() {
+		c := it.Value()
+		commitsAfterSeek = append(commitsAfterSeek, c.Message)
+	}
+	if err := it.Err(); err != nil {
+		t.Fatal("Iteration ended with error", err)
+	}
+	if diff := deep.Equal(commitsAfterSeek, expectedAfterSeek); diff != nil {
+		t.Fatal("Found diff between expected commits (after seek):", diff)
 	}
 }

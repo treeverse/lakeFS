@@ -88,29 +88,35 @@ func (ci *CommitIterator) Next() bool {
 	}
 
 	if ci.state == commitIteratorStateInit {
+		// first time we lookup the 'start' commit and push it into the queue
 		ci.state = commitIteratorStateQuery
 		rec, err := ci.getCommitRecord(ci.start)
 		if err != nil {
+			ci.value = nil
 			ci.err = err
 			return false
 		}
 		ci.queue.Push(rec)
 	}
 
+	// nothing in our queue - work is done
 	if ci.queue.Len() == 0 {
 		ci.value = nil
 		ci.state = commitIteratorStateDone
 		return false
 	}
 
+	// as long as we have something in the queue we will
+	// set it as the current value and push the current commit's parents to the queue
 	ci.value = heap.Pop(&ci.queue).(*graveler.CommitRecord)
 	for _, p := range ci.value.Parents {
 		rec, err := ci.getCommitRecord(p)
 		if err != nil {
-			ci.err = err
 			ci.value = nil
+			ci.err = err
 			return false
 		}
+		// skip commits we already visited
 		if _, visited := ci.visit[rec.CommitID]; visited {
 			continue
 		}
@@ -120,21 +126,31 @@ func (ci *CommitIterator) Next() bool {
 	return true
 }
 
+// SeekGE skip under the point of 'id' commit ID based on a a new
+//   The list of commit
 func (ci *CommitIterator) SeekGE(id graveler.CommitID) {
-	// Setting value to nil so that next Value() call
-	// returns nil as the interface commands
-	ci.value = nil
 	ci.err = nil
-	ci.start = id
 	ci.queue = make(commitsPriorityQueue, 0)
 	ci.visit = make(map[graveler.CommitID]struct{})
 	ci.state = commitIteratorStateInit
+
+	// skip until we get into our commit
+	for ci.Next() {
+		if ci.Value().CommitID == id {
+			break
+		}
+	}
+	if ci.Err() != nil {
+		return
+	}
+
+	// step back - in order to have Next to read the value we just got,
+	// we push back the current value to our queue and set the current value to nil.
+	heap.Push(&ci.queue, ci.value)
+	ci.value = nil
 }
 
 func (ci *CommitIterator) Value() *graveler.CommitRecord {
-	if ci.err != nil {
-		return nil
-	}
 	return ci.value
 }
 
