@@ -12,8 +12,8 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// Collector collects diagnostics information and write the collected content into a writer in a zip format
-type Collector struct {
+// DBCollector collects diagnostics information and write the collected content into a writer in a zip format
+type DBCollector struct {
 	db db.Database
 }
 
@@ -24,18 +24,29 @@ const (
 
 var errNoColumnsFound = errors.New("no columns found")
 
-// NewCollector accepts database to work with during collect
-func NewCollector(adb db.Database) *Collector {
-	return &Collector{
+// NewDBCollector accepts database to work with during collect
+func NewDBCollector(adb db.Database) *DBCollector {
+	return &DBCollector{
 		db: adb,
 	}
 }
 
-// Collect query information from the database into csv files and write everything to io writer
-func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
+func (c *DBCollector) Collect(ctx context.Context, w io.Writer) (err error) {
 	writer := zip.NewWriter(w)
 	defer func() { err = writer.Close() }()
 
+	errs := c.collectWithZip(ctx, writer)
+
+	// write all errors into log
+	if err := writeErrors(writer, errs); err != nil {
+		return fmt.Errorf("write errors: %w", err)
+	}
+
+	return nil
+}
+
+// Collect query information from the database into csv files and write everything to io writer
+func (c *DBCollector) collectWithZip(ctx context.Context, writer *zip.Writer) []error {
 	var errs []error
 	contentFromTables := []string{
 		"auth_installation_metadata",
@@ -43,7 +54,7 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 		"pg_stat_database",
 	}
 	for _, tbl := range contentFromTables {
-		err = c.writeTableContent(ctx, writer, tbl)
+		err := c.writeTableContent(ctx, writer, tbl)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("write table content for %s: %w", tbl, err))
 		}
@@ -54,15 +65,20 @@ func (c *Collector) Collect(ctx context.Context, w io.Writer) (err error) {
 		"catalog_commits",
 		"catalog_repositories",
 		"auth_users",
+		"graveler_staging_kv",
+		"graveler_repositories",
+		"graveler_branches",
+		"graveler_commits",
+		"graveler_tags",
 	}
 	for _, tbl := range countFromTables {
-		err = c.writeTableCount(ctx, writer, tbl)
+		err := c.writeTableCount(ctx, writer, tbl)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("write table count for %s: %w", tbl, err))
 		}
 	}
 
-	err = c.writeRawQueryContent(ctx, writer, "db_version", `SELECT version();`)
+	err := c.writeRawQueryContent(ctx, writer, "db_version", `SELECT version();`)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("get db version %w", err))
 	}
@@ -85,14 +101,10 @@ SELECT *, pg_size_pretty(total_bytes) AS total
 		errs = append(errs, fmt.Errorf("get table sizes %w", err))
 	}
 
-	// write all errors into log
-	if err := c.writeErrors(ctx, writer, errs); err != nil {
-		return fmt.Errorf("write errors: %w", err)
-	}
-	return nil
+	return errs
 }
 
-func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, name string, selectBuilder sq.SelectBuilder) error {
+func (c *DBCollector) writeQueryContent(ctx context.Context, writer *zip.Writer, name string, selectBuilder sq.SelectBuilder) error {
 	q := selectBuilder.Limit(maxRecordsPerQueryCollect)
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -101,7 +113,7 @@ func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, n
 	return c.writeRawQueryContent(ctx, writer, name, query, args...)
 }
 
-func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer, name string, query string, args ...interface{}) error {
+func (c *DBCollector) writeRawQueryContent(ctx context.Context, writer *zip.Writer, name string, query string, args ...interface{}) error {
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		rows, err := tx.Query(query, args...)
 		if err != nil {
@@ -153,17 +165,17 @@ func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer
 	return err
 }
 
-func (c *Collector) writeTableContent(ctx context.Context, writer *zip.Writer, name string) error {
+func (c *DBCollector) writeTableContent(ctx context.Context, writer *zip.Writer, name string) error {
 	q := sq.Select("*").From(name)
 	return c.writeQueryContent(ctx, writer, name, q)
 }
 
-func (c *Collector) writeTableCount(ctx context.Context, writer *zip.Writer, name string) error {
+func (c *DBCollector) writeTableCount(ctx context.Context, writer *zip.Writer, name string) error {
 	q := sq.Select("COUNT(*)").From(name)
 	return c.writeQueryContent(ctx, writer, name+"_count", q)
 }
 
-func (c *Collector) writeErrors(_ context.Context, writer *zip.Writer, errs []error) error {
+func writeErrors(writer *zip.Writer, errs []error) error {
 	if len(errs) == 0 {
 		return nil
 	}

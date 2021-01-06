@@ -53,6 +53,7 @@ type Adapter interface {
 	WithContext(ctx context.Context) Adapter
 	Put(obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
+	List(storageNamespace, prefix string) ([]string, error)
 	Exists(obj ObjectPointer) (bool, error)
 	GetRange(obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(obj ObjectPointer) (Properties, error)

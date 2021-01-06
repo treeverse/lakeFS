@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/treeverse/lakefs/block/factory"
+	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/diagnostics"
@@ -20,8 +23,16 @@ var diagnosticsCmd = &cobra.Command{
 
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
+		adapter, err := factory.BuildBlockAdapter(cfg)
+		if err != nil {
+			log.Print("Failed to create block adapter")
+		}
+		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		if err != nil {
+			log.Print("Failed to create cataloger")
+		}
 
-		c := diagnostics.NewCollector(dbPool)
+		c := diagnostics.CreateCollector(dbPool, cataloger, cfg, adapter)
 
 		f, err := os.Create(output)
 		if err != nil {

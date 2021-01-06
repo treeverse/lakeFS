@@ -230,6 +230,10 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	return &hexCode, int64(len(data)), nil
 }
 
+func (a *Adapter) List(_, _ string) ([]string, error) {
+	return nil, nil
+}
+
 func (a *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }

@@ -308,6 +308,34 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return objectOutput.Body, nil
 }
 
+func (a *Adapter) List(storageNamespace, prefix string) ([]string, error) {
+	log := a.log().WithField("operation", "ListObjects")
+	var err error
+	var lenRes int64
+	defer reportMetrics("GetRange", time.Now(), &lenRes, &err)
+
+	listObjectInput := s3.ListObjectsInput{
+		Bucket: aws.String(storageNamespace),
+		Prefix: aws.String(prefix),
+	}
+	listOutput, err := a.s3.ListObjects(&listObjectInput)
+	if err != nil {
+		log.WithError(err).WithFields(logging.Fields{
+			"bucket": storageNamespace,
+			"prefix": prefix,
+		}).Error("failed to list S3 objects")
+		return nil, err
+	}
+
+	var keys []string
+	for _, obj := range listOutput.Contents {
+		keys = append(keys, *obj.Key)
+	}
+	lenRes = int64(len(keys))
+
+	return keys, nil
+}
+
 func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)

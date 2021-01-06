@@ -51,6 +51,10 @@ func (a *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadC
 	return nil, nil
 }
 
+func (a *mockAdapter) List(_, _ string) ([]string, error) {
+	return nil, nil
+}
+
 func (a *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }

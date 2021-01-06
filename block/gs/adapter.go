@@ -121,6 +121,29 @@ func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	return r, err
 }
 
+func (a *Adapter) List(storageNamespace, prefix string) ([]string, error) {
+	var err error
+	defer reportMetrics("List", time.Now(), nil, &err)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []string
+	iter := a.client.Bucket(storageNamespace).Objects(context.Background(), &storage.Query{Prefix: prefix})
+	for {
+		attrs, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bucket(%s).Objects(): %w", storageNamespace, err)
+		}
+		keys = append(keys, attrs.Name)
+	}
+	return keys, nil
+}
+
 func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)

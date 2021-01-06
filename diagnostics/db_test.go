@@ -13,7 +13,7 @@ import (
 func TestCollector_Collector(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 
-	collector := NewCollector(conn)
+	collector := NewDBCollector(conn)
 
 	var out bytes.Buffer
 	err := collector.Collect(context.Background(), &out)

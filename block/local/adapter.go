@@ -172,6 +172,24 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 	return f, nil
 }
 
+func (l *Adapter) List(storageNamespace, prefix string) ([]string, error) {
+	p := path.Join(l.path, storageNamespace, prefix)
+	files, err := ioutil.ReadDir(p)
+	if errors.Is(err, os.ErrNotExist) {
+		// no files under prefix
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("stat on a dir path %s: %w", p, err)
+	}
+
+	var keys []string
+	for _, f := range files {
+		keys = append(keys, f.Name())
+	}
+	return keys, nil
+}
+
 func (l *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 	p, err := l.getPath(obj)
 	if err != nil {

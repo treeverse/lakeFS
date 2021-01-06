@@ -10,6 +10,7 @@ require (
 	github.com/apache/thrift v0.13.0
 	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.36.15
+	github.com/aws/aws-sdk-go-v2 v0.18.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cockroachdb/pebble v0.0.0-20201130172119-f19faf8529d6
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
@@ -28,6 +29,7 @@ require (
 	github.com/go-openapi/validate v0.20.0
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/go-test/deep v1.0.7
+	github.com/gobuffalo/logger v0.0.0-20190315122211-86e12af44bc2
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/mock v1.4.4

@@ -69,6 +69,10 @@ func (a *Adapter) Copy(_, _ block.ObjectPointer) error {
 	return nil
 }
 
+func (a *Adapter) List(storageNamespace, prefix string) ([]string, error) {
+	return nil, nil
+}
+
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
