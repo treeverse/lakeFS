@@ -6,7 +6,6 @@ import (
 	"net/http"
 	gohttputil "net/http/httputil"
 	"net/url"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -50,8 +49,6 @@ type ServerContext struct {
 	dedupCleaner      *dedup.Cleaner
 	fallbackProxy     *gohttputil.ReverseProxy
 }
-
-const operationIDNotFound = "not_found_operation"
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
@@ -124,7 +121,8 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func authorize(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, perms []permissions.Permission) *operations.AuthenticatedOperation {
+func authorize(authContext sig.SigContext, s *ServerContext, writer http.ResponseWriter, request *http.Request, user *model.User, perms []permissions.Permission) *operations.AuthenticatedOperation {
+	o := operation(s, writer, request)
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
 		Operation: o,
@@ -212,16 +210,17 @@ func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Requ
 	}
 }
 
-func RepoOperationHandler(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, repo *catalog.Repository, handler operations.RepoOperationHandler) http.Handler {
+func RepoOperationHandler(authContext sig.SigContext, s *ServerContext, user *model.User, repo *catalog.Repository) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repo.Name)
+		operationHandler := repositoryBasedHandler(request.Method)
+		perms, err := operationHandler.RequiredPermissions(request, repo.Name)
+		o := operation(s, writer, request)
 		if err != nil {
-			o := operation(s, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authorize(authContext, s.WithContext(request.Context()), o, user, perms)
+		authOp := authorize(authContext, s.WithContext(request.Context()), writer, request, user, perms)
 		if authOp == nil {
 			return
 		}
@@ -233,20 +232,21 @@ func RepoOperationHandler(authContext sig.SigContext, s *ServerContext, o *opera
 		repoOperation.AddLogFields(logging.Fields{
 			"repository": repo.Name,
 		})
-		handler.Handle(repoOperation)
+		operationHandler.Handle(repoOperation)
 	})
 }
 
-func PathOperationHandler(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, repo *catalog.Repository, refID, path string, handler operations.PathOperationHandler) http.Handler {
+func PathOperationHandler(authContext sig.SigContext, s *ServerContext, user *model.User, repo *catalog.Repository, refID, path string) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		operationHandler := pathOperationHandler(request.Method)
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repo.Name, refID, path)
+		perms, err := operationHandler.RequiredPermissions(request, repo.Name, refID, path)
+		o := operation(s, writer, request)
 		if err != nil {
-			o := operation(s, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authorize(authContext, s, o, user, perms)
+		authOp := authorize(authContext, s, writer, request, user, perms)
 		// run callback
 		operation := &operations.PathOperation{
 			RefOperation: &operations.RefOperation{
@@ -263,7 +263,7 @@ func PathOperationHandler(authContext sig.SigContext, s *ServerContext, o *opera
 			"ref":        refID,
 			"path":       path,
 		})
-		handler.Handle(operation)
+		operationHandler.Handle(operation)
 	})
 }
 
@@ -319,13 +319,10 @@ func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
 		// none is specified by the adapter.
 	}
 }
-func (h *handler) isPathStyle(r *http.Request) bool {
-	host := httputil.HostOnly(r.Host)
-	return strings.EqualFold(host, httputil.HostOnly(h.BareDomain))
-}
 
-func (h *handler) getRepoIDFromAction(isPathStyle bool, r *http.Request) string {
-	if isPathStyle {
+func (h *handler) getRepoIDFromAction(r *http.Request) string {
+	if strings.EqualFold(httputil.HostOnly(r.Host), httputil.HostOnly(h.BareDomain)) {
+		// path style request
 		urlPath := strings.TrimPrefix(r.URL.Path, path.Separator)
 		if !strings.Contains(urlPath, path.Separator) {
 			return urlPath
@@ -341,30 +338,12 @@ func (h *handler) getRepoIDFromAction(isPathStyle bool, r *http.Request) string 
 	return strings.TrimSuffix(host, "."+ourHost)
 
 }
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	o := &operations.Operation{
-		Request:           r,
-		ResponseWriter:    w,
-		Region:            h.sc.region,
-		FQDN:              h.sc.bareDomain,
-		Cataloger:         h.sc.cataloger,
-		MultipartsTracker: h.sc.multipartsTracker,
-		BlockStore:        h.sc.blockStore,
-		Auth:              h.sc.authService,
-		Incr: func(action string) {
-			logging.FromContext(r.Context()).
-				WithField("action", action).
-				WithField("message_type", "action").
-				Debug("performing S3 action")
-			h.sc.stats.CollectEvent("s3_gateway", action)
-		},
-		DedupCleaner: h.sc.dedupCleaner,
-	}
+func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	o := operation(h.sc, w, req)
 	authenticator := sig.ChainedAuthenticator(
-		sig.NewV4Authenticator(r),
-		sig.NewV2SigAuthenticator(r))
+		sig.NewV4Authenticator(req),
+		sig.NewV2SigAuthenticator(req))
 	authContext, err := authenticator.Parse()
-	// authenticate
 	if err != nil {
 		o.Log().WithError(err).Warn("failed to parse signature")
 		o.EncodeError(getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
@@ -372,59 +351,62 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	user := authenticate(authenticator, authContext, o, h.sc)
 	if user == nil {
-		// TODO not authenticated
 		return
 	}
-	isPathStyle := h.isPathStyle(r)
-	repoID := h.getRepoIDFromAction(isPathStyle, r)
-	var repo *catalog.Repository
-	var handler http.Handler
-
-	if repoID != "" {
-		repo, err = h.sc.cataloger.GetRepository(h.sc.ctx, repoID)
-		if errors.Is(err, db.ErrNotFound) {
-			if h.handleRepoNotFound(user, o, authContext, repoID) {
-				return
-			}
-		}
-		if repo == nil {
-			o.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
-			return
-		}
-		ref, pth := h.parts(isPathStyle, r)
-		if pth != "" {
-			handler = PathOperationHandler(authContext, h.sc, o, user, repo, ref, pth, h.pathBasedHandler(r.Method))
-		} else {
-			if ref != "" {
-				handler = h.NotFoundHandler
-			} else {
-				handler = RepoOperationHandler(authContext, h.sc, o, user, repo, h.repositoryBasedHandler(r.Method))
-			}
-		}
-	} else {
-		if r.Method == http.MethodGet {
-			handler = OperationHandler(authContext, h.sc, o, user, &operations.ListBuckets{})
-		} else {
-			handler = unsupportedOperationHandler()
-		}
-	}
+	repoID := h.getRepoIDFromAction(req)
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
-	setDefaultContentType(mrw, r)
-	handler.ServeHTTP(mrw, r)
+	setDefaultContentType(mrw, req)
+	h.getHandler(repoID, authContext, user, req).ServeHTTP(mrw, req)
 	requestHistograms.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }
 
-func OperationHandler(authContext sig.SigContext, s *ServerContext, o *operations.Operation, user *model.User, handler operations.AuthenticatedOperationHandler) http.Handler {
+func (h *handler) getHandler(repoID string, authContext sig.SigContext, user *model.User, req *http.Request) http.Handler {
+	if repoID == "" {
+		if req.Method == http.MethodGet {
+			return OperationHandler(authContext, h.sc, user, &operations.ListBuckets{})
+		}
+		return unsupportedOperationHandler()
+	}
+	repo, err := h.sc.cataloger.GetRepository(h.sc.ctx, repoID)
+	if errors.Is(err, db.ErrNotFound) {
+		listReposPermissions := []permissions.Permission{{
+			Action:   permissions.ListRepositoriesAction,
+			Resource: "*",
+		}}
+		if authorize(authContext, h.sc, user, listReposPermissions) != nil {
+			if h.sc.fallbackProxy != nil {
+				return h.sc.fallbackProxy
+			}
+			return nil
+		}
+		o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+		return nil
+	}
+	if repo == nil {
+		o.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+		return nil
+	}
+	ref, pth := h.parts(req)
+	if pth != "" {
+		return PathOperationHandler(authContext, h.sc, user, repo, ref, pth)
+	}
+	if ref == "" {
+		return RepoOperationHandler(authContext, h.sc, user, repo)
+	}
+	return h.NotFoundHandler
+}
+
+func OperationHandler(authContext sig.SigContext, s *ServerContext, user *model.User, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
 		perms, err := handler.RequiredPermissions(request)
+		o := operation(s, writer, request)
 		if err != nil {
-			o := operation(s, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authorize(authContext, s, o, user, perms)
+		authOp := authorize(authContext, s, writer, request, user, perms)
 		if authOp == nil {
 			return
 		}
@@ -433,44 +415,14 @@ func OperationHandler(authContext sig.SigContext, s *ServerContext, o *operation
 	})
 }
 
-func (h *handler) handleRepoNotFound(user *model.User, o *operations.Operation, authContext sig.SigContext, repoID string) bool {
-	authResp, err := h.sc.authService.Authorize(&auth.AuthorizationRequest{
-		Username: user.Username,
-		RequiredPermissions: []permissions.Permission{{
-			Action:   permissions.ListRepositoriesAction,
-			Resource: permissions.All,
-		}},
-	})
-	if err != nil {
-		o.Log().WithError(err).Error("failed to authorize")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-		return true
-	}
-
-	if authResp.Error != nil || !authResp.Allowed {
-		o.Log().WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrAccessDenied))
-		return true
-	}
-	if h.sc.fallbackProxy != nil /* TODO && has list repos permission */ {
-		// do fallback
-	}
-	o.Log().WithField("repository", repoID).Debug("the specified repo does not exist")
-	o.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
-	return false
-}
-
-func (h *handler) parts(isPathStyle bool, r *http.Request) (ref string, pth string) {
+func (h *handler) parts(r *http.Request) (ref string, pth string) {
 	urlPath := strings.TrimPrefix(r.URL.Path, path.Separator)
-	if isPathStyle {
-		parts := strings.SplitN(urlPath, path.Separator, 3)
-		if len(parts) <= 1 {
+	if strings.EqualFold(httputil.HostOnly(r.Host), httputil.HostOnly(h.BareDomain)) {
+		// path style request - need to remove repo from path
+		if !strings.Contains(urlPath, path.Separator) {
 			return "", ""
 		}
-		if len(parts) == 2 {
-			return parts[1], ""
-		}
-		return parts[1], parts[2]
+		urlPath = urlPath[strings.Index(urlPath, path.Separator)+1:]
 	}
 	parts := strings.SplitN(urlPath, path.Separator, 2)
 	if len(parts) == 0 {
@@ -482,45 +434,32 @@ func (h *handler) parts(isPathStyle bool, r *http.Request) (ref string, pth stri
 	return parts[0], parts[1]
 }
 
-func (h *handler) pathBasedHandler(method string) operations.PathOperationHandler {
-	var handler operations.PathOperationHandler
+func pathOperationHandler(method string) operations.PathOperationHandler {
 	switch method {
 	case http.MethodDelete:
-		handler = &operations.DeleteObject{}
+		return &operations.DeleteObject{}
 	case http.MethodPost:
-		handler = &operations.PostObject{}
+		return &operations.PostObject{}
 	case http.MethodGet:
-		handler = &operations.GetObject{}
+		return &operations.GetObject{}
 	case http.MethodHead:
-		handler = &operations.HeadObject{}
+		return &operations.HeadObject{}
 	case http.MethodPut:
-		handler = &operations.PutObject{}
-	default:
-		h.operationID = operationIDNotFound
-		return nil
+		return &operations.PutObject{}
 	}
-	h.operationID = reflect.TypeOf(handler).Elem().Name()
-	return handler
+	return nil
 }
 
-func (h *handler) repositoryBasedHandler(method string) operations.RepoOperationHandler {
-	var handler operations.RepoOperationHandler
+func repositoryBasedHandler(method string) operations.RepoOperationHandler {
 	switch method {
-	case http.MethodDelete, http.MethodPut:
-		h.operationID = "unsupported_operation"
-		return nil
 	case http.MethodHead:
-		handler = &operations.HeadBucket{}
+		return &operations.HeadBucket{}
 	case http.MethodPost:
-		handler = &operations.DeleteObjects{}
+		return &operations.DeleteObjects{}
 	case http.MethodGet:
-		handler = &operations.ListObjects{}
-	default:
-		h.operationID = operationIDNotFound
-		return nil
+		return &operations.ListObjects{}
 	}
-	h.operationID = reflect.TypeOf(handler).Elem().Name()
-	return handler
+	return nil
 }
 
 func SplitFirst(pth string, parts int) ([]string, bool) {
