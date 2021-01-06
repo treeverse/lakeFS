@@ -22,7 +22,6 @@ func TestResolveRef_Dereference(t *testing.T) {
 	}, graveler.Branch{}))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
-	var createdCommitIDs []graveler.CommitID
 	var previous graveler.CommitID
 	for i := 0; i < 20; i++ {
 		c := graveler.Commit{
@@ -42,7 +41,6 @@ func TestResolveRef_Dereference(t *testing.T) {
 		}
 		previous = cid
 		ts.Add(time.Minute)
-		createdCommitIDs = append(createdCommitIDs, cid)
 	}
 
 	iter, err := r.Log(ctx, "repo1", previous)
