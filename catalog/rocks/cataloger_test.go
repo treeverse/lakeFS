@@ -122,10 +122,9 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{BranchID: "branch3", Branch: &graveler.Branch{CommitID: "commit3"}},
 	}
 	type args struct {
-		repository graveler.RepositoryID
-		prefix     string
-		limit      int
-		after      string
+		prefix string
+		limit  int
+		after  string
 	}
 	tests := []struct {
 		name        string
