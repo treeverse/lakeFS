@@ -91,10 +91,11 @@ func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, reposito
 func findLowestCommonAncestorNextIter(discoveredSet map[string]struct{}, iter *CommitWalker) (*graveler.Commit, error) {
 	if iter.Next() {
 		commit := iter.Value()
-		if _, wasDiscovered := discoveredSet[ident.ContentAddress(commit)]; wasDiscovered {
+		addr := ident.ContentAddress(commit)
+		if _, wasDiscovered := discoveredSet[addr]; wasDiscovered {
 			return commit, nil
 		}
-		discoveredSet[ident.ContentAddress(commit)] = struct{}{}
+		discoveredSet[addr] = struct{}{}
 	}
 	return nil, iter.Err()
 }

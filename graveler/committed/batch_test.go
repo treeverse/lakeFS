@@ -61,8 +61,8 @@ func runSuccessScenario(t *testing.T) (*committed.BatchCloser, *gomock.Controlle
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	writersCount := 10
-	writers := make([]*mock.MockRangeWriter, writersCount, writersCount)
+	const writersCount = 10
+	writers := make([]*mock.MockRangeWriter, writersCount)
 	for i := 0; i < writersCount; i++ {
 		writers[i] = mock.NewMockRangeWriter(ctrl)
 		writers[i].EXPECT().Close().Return(&committed.WriteResult{

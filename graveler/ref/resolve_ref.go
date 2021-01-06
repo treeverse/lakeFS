@@ -12,7 +12,7 @@ type Store interface {
 	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
 	GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error)
 	GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error)
-	Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error)
+	GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error)
 }
 
 type reference struct {
@@ -74,27 +74,15 @@ func ResolveRef(ctx context.Context, store Store, repositoryID graveler.Reposito
 		switch mod.Type {
 		case RevModTypeTilde:
 			// skip mod.ValueNumeric iterations
-			iter, err := store.Log(ctx, repositoryID, baseCommit)
-			if err != nil {
-				return nil, err
-			}
-			i := 0
-			found := false
-			for iter.Next() {
-				i++ // adding 1 because we start at base commit
-				if i == mod.Value+1 {
-					baseCommit = iter.Value().CommitID
-					found = true
-					break
+			for i := 0; i < mod.Value; i++ {
+				commit, err := store.GetCommit(ctx, repositoryID, baseCommit)
+				if err != nil {
+					return nil, err
 				}
-			}
-			if iter.Err() != nil {
-				return nil, iter.Err()
-			}
-			iter.Close()
-			// went too far!
-			if !found {
-				return nil, graveler.ErrNotFound
+				if len(commit.Parents) == 0 {
+					return nil, graveler.ErrNotFound
+				}
+				baseCommit = commit.Parents[0]
 			}
 		case RevModTypeCaret:
 			switch mod.Value {
