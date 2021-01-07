@@ -23,42 +23,42 @@ func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, 
 	}, nil
 }
 
-func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
+func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter, r *http.Request, o *PathOperation) {
 	o.Incr("abort_mpu")
-	query := o.Request.URL.Query()
+	query := r.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
-	o.AddLogFields(logging.Fields{"upload_id": uploadID})
+	o.AddLogFields(r, logging.Fields{"upload_id": uploadID})
 	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: o.Path}, uploadID)
 	if err != nil {
-		o.Log().WithError(err).Error("could not abort multipart upload")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		o.Log(r).WithError(err).Error("could not abort multipart upload")
+		o.EncodeError(w, r, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	// done.
-	o.ResponseWriter.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func (controller *DeleteObject) Handle(o *PathOperation) {
-	query := o.Request.URL.Query()
+func (controller *DeleteObject) Handle(w http.ResponseWriter, r *http.Request, o *PathOperation) {
+	query := r.URL.Query()
 
 	_, hasUploadID := query[QueryParamUploadID]
 	if hasUploadID {
-		controller.HandleAbortMultipartUpload(o)
+		controller.HandleAbortMultipartUpload(w, r, o)
 		return
 	}
 
 	o.Incr("delete_object")
-	lg := o.Log().WithField("key", o.Path)
-	err := o.Cataloger.DeleteEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
+	lg := o.Log(r).WithField("key", o.Path)
+	err := o.Cataloger.DeleteEntry(o.Context(r), o.Repository.Name, o.Reference, o.Path)
 	switch {
 	case errors.Is(err, db.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		o.EncodeError(w, r, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	default:
 		lg.Debug("object set for deletion")
 	}
-	o.ResponseWriter.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }

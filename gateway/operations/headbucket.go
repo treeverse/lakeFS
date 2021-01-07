@@ -17,7 +17,7 @@ func (controller *HeadBucket) RequiredPermissions(_ *http.Request, repoID string
 	}, nil
 }
 
-func (controller *HeadBucket) Handle(o *RepoOperation) {
+func (controller *HeadBucket) Handle(w http.ResponseWriter, r *http.Request, o *RepoOperation) {
 	o.Incr("get_repo")
-	o.ResponseWriter.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }

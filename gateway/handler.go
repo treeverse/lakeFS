@@ -130,49 +130,47 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 		o := request.Context().Value("operation").(*operations.Operation)
 		perms, err := handler.RequiredPermissions(request, repoID)
 		if err != nil {
-			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(writer, request, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
 			Operation: o,
 			Principal: username,
 		}
-		if !authorize(authOp, authContext, sc.authService, perms) {
+		if !authorize(writer, request, authOp, authContext, sc.authService, perms) {
 			return
 		}
 		repoOperation := &operations.RepoOperation{
 			AuthenticatedOperation: authOp,
 			Repository:             repo,
 		}
-		repoOperation.AddLogFields(logging.Fields{
+		repoOperation.AddLogFields(request, logging.Fields{
 			"repository": repo.Name,
 		})
-		handler.Handle(repoOperation)
+		handler.Handle(writer, request, repoOperation)
 	})
 }
 
-func authorize(o *operations.AuthenticatedOperation, authContext sig.SigContext, authService simulator.GatewayAuthService, perms []permissions.Permission) bool {
+func authorize(w http.ResponseWriter, r *http.Request, o *operations.AuthenticatedOperation, authContext sig.SigContext, authService simulator.GatewayAuthService, perms []permissions.Permission) bool {
 	authResp, err := authService.Authorize(&auth.AuthorizationRequest{
 		Username:            o.Principal,
 		RequiredPermissions: perms,
 	})
 	if err != nil {
-		o.Log().WithError(err).Error("failed to authorize")
-		o.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+		o.Log(r).WithError(err).Error("failed to authorize")
+		o.EncodeError(w, r, gatewayerrors.ErrInternalError.ToAPIErr())
 		return false
 	}
 	if authResp.Error != nil || !authResp.Allowed {
-		o.Log().WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
-		o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+		o.Log(r).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
+		o.EncodeError(w, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
 		return false
 	}
 	return true
 }
 
-func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
+func operation(sc *ServerContext, ctx context.Context) *operations.Operation {
 	return &operations.Operation{
-		Request:           request,
-		ResponseWriter:    writer,
 		Region:            sc.region,
 		FQDN:              sc.bareDomain,
 		Cataloger:         sc.cataloger,
@@ -180,7 +178,7 @@ func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Requ
 		BlockStore:        sc.blockStore,
 		Auth:              sc.authService,
 		Incr: func(action string) {
-			logging.FromContext(request.Context()).
+			logging.FromContext(ctx).
 				WithField("action", action).
 				WithField("message_type", "action").
 				Debug("performing S3 action")
@@ -201,14 +199,14 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		o := request.Context().Value("operation").(*operations.Operation)
 		perms, err := handler.RequiredPermissions(request, repoID, refID, path)
 		if err != nil {
-			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(writer, request, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
 			Operation: o,
 			Principal: username,
 		}
-		if !authorize(authOp, authContext, sc.authService, perms) {
+		if !authorize(writer, request, authOp, authContext, sc.authService, perms) {
 			return
 		}
 		// run callback
@@ -222,12 +220,12 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 			},
 			Path: path,
 		}
-		operation.AddLogFields(logging.Fields{
+		operation.AddLogFields(request, logging.Fields{
 			"repository": repo.Name,
 			"ref":        refID,
 			"path":       path,
 		})
-		handler.Handle(operation)
+		handler.Handle(writer, request, operation)
 	})
 }
 
@@ -292,17 +290,17 @@ func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperati
 		o := request.Context().Value("operation").(*operations.Operation)
 		perms, err := handler.RequiredPermissions(request)
 		if err != nil {
-			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(writer, request, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
 			Operation: o,
 			Principal: username,
 		}
-		if !authorize(authOp, authContext, sc.authService, perms) {
+		if !authorize(writer, request, authOp, authContext, sc.authService, perms) {
 			return
 		}
-		handler.Handle(authOp)
+		handler.Handle(writer, request, authOp)
 	})
 }
 
@@ -336,10 +334,7 @@ func getOperationHandler(sc *ServerContext, operationID string) http.Handler {
 
 func unsupportedOperationHandler() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		o := &operations.Operation{
-			Request:        request,
-			ResponseWriter: writer,
-		}
-		o.EncodeError(gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		o := &operations.Operation{}
+		o.EncodeError(writer, request, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 	})
 }

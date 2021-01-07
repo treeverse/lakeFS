@@ -20,11 +20,11 @@ func (controller *ListBuckets) RequiredPermissions(_ *http.Request) ([]permissio
 	}, nil
 }
 
-func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
+func (controller *ListBuckets) Handle(w http.ResponseWriter, r *http.Request, o *AuthenticatedOperation) {
 	o.Incr("list_repos")
-	repos, _, err := o.Cataloger.ListRepositories(o.Context(), -1, "")
+	repos, _, err := o.Cataloger.ListRepositories(o.Context(r), -1, "")
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(w, r, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 
@@ -37,7 +37,7 @@ func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
 		}
 	}
 	// write response
-	o.EncodeResponse(serde.ListAllMyBucketsResult{
+	o.EncodeResponse(w, r, serde.ListAllMyBucketsResult{
 		Buckets: serde.Buckets{Bucket: buckets},
 	}, http.StatusOK)
 }

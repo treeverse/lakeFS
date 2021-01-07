@@ -38,30 +38,30 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 		creds, err := authService.GetCredentials(authContext.GetAccessKeyID())
 		if err != nil {
 			if !errors.Is(err, db.ErrNotFound) {
-				o.Log().WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
-				o.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+				o.Log(r).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
+				o.EncodeError(writer, r, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
-				o.Log().WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
-				o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+				o.Log(r).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
+				o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
 		err = authenticator.Verify(creds, bareDomain)
 		if err != nil {
-			o.Log().WithError(err).WithFields(logging.Fields{
+			o.Log(r).WithError(err).WithFields(logging.Fields{
 				"key":           authContext.GetAccessKeyID(),
 				"authenticator": authenticator,
 			}).Warn("error verifying credentials for key")
-			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		user, err := authService.GetUserByID(creds.UserID)
 		if err != nil {
-			o.Log().WithError(err).WithFields(logging.Fields{
+			o.Log(r).WithError(err).WithFields(logging.Fields{
 				"key":           authContext.GetAccessKeyID(),
 				"authenticator": authenticator,
 			}).Warn("could not get user for credentials key")
-			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		r = r.WithContext(context.WithValue(r.Context(), "user", user))
@@ -96,7 +96,7 @@ func RepoIDHandler(bareDomain string, next http.Handler) http.Handler {
 }
 func EnrichOperationHandler(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		o := operation(sc, w, req)
+		o := operation(sc, req.Context())
 		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), "operation", o)))
 	})
 }
@@ -128,16 +128,16 @@ func EnrichRepoHandler(cataloger catalog.Cataloger, authService simulator.Gatewa
 				RequiredPermissions: []permissions.Permission{{Action: permissions.ListRepositoriesAction, Resource: "*"}},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
-				o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+				o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			//if h.sc.fallbackProxy != nil {
 			//	h.sc.fallbackProxy.ServeHTTP(writer, r)
 			//}
-			o.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			o.EncodeError(writer, r, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
 		if repo == nil {
-			o.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
+			o.EncodeError(writer, r, gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
 		r = r.WithContext(context.WithValue(r.Context(), "repo", repo))
@@ -173,7 +173,7 @@ func OperationLookupHandler(bareDomain string, next http.Handler) http.Handler {
 			if r.Method == http.MethodGet {
 				operationID = operations.OperationIDListBuckets
 			} else {
-				o.EncodeError(gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+				o.EncodeError(writer, r, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 			}
 		} else {
 			ref, pth := parts(r, bareDomain)
@@ -182,7 +182,7 @@ func OperationLookupHandler(bareDomain string, next http.Handler) http.Handler {
 				r = r.WithContext(context.WithValue(r.Context(), "path", *pth))
 				operationID = pathBasedOperationID(r.Method)
 			} else if ref != nil && *ref != "" && pth == nil {
-				o.EncodeError(gatewayerrors.ErrBadRequest.ToAPIErr())
+				writer.WriteHeader(http.StatusNotFound)
 			} else {
 				operationID = repositoryBasedOperationID(r.Method)
 			}
