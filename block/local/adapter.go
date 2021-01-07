@@ -173,22 +173,15 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 	return f, nil
 }
 
-func (l *Adapter) List(lsOpt block.ListOpts) ([]string, error) {
-	p := filepath.Clean(path.Join(l.path, lsOpt.StorageNamespace, lsOpt.Prefix))
-	files, err := ioutil.ReadDir(p)
-	if errors.Is(err, os.ErrNotExist) {
-		// no files under prefix
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("read dir path %s: %w", p, err)
-	}
+func (l *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	p := filepath.Clean(path.Join(l.path, walkOpt.StorageNamespace, walkOpt.Prefix))
+	return filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 
-	var keys []string
-	for _, f := range files {
-		keys = append(keys, f.Name())
-	}
-	return keys, nil
+		return walkFn(p)
+	})
 }
 
 func (l *Adapter) Exists(obj block.ObjectPointer) (bool, error) {

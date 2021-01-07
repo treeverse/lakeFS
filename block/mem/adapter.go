@@ -88,7 +88,7 @@ func getKey(obj block.ObjectPointer) string {
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
-func getPrefix(lsOpts block.ListOpts) string {
+func getPrefix(lsOpts block.WalkOpts) string {
 	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
 }
 
@@ -235,18 +235,19 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	return &hexCode, int64(len(data)), nil
 }
 
-func (a *Adapter) List(lsOpts block.ListOpts) ([]string, error) {
-	a.mutex.Lock()
+func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	fullPrefix := getPrefix(lsOpts)
-	var keys []string
+	fullPrefix := getPrefix(walkOpt)
 	for k := range a.data {
 		if strings.HasPrefix(k, fullPrefix) {
-			keys = append(keys, k)
+			if err := walkFn(k); err != nil {
+				return err
+			}
 		}
 	}
-	return keys, nil
+	return nil
 }
 
 func (a *Adapter) ValidateConfiguration(_ string) error {

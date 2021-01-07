@@ -91,25 +91,31 @@ func (c *BlockCollector) rangesStats(ctx context.Context, writer *zip.Writer) []
 			continue
 		}
 
-		metaranges, err := c.adapter.List(block.ListOpts{
+		count := 0
+		counter := func(id string) error {
+			count++
+			return nil
+		}
+
+		if err := c.adapter.Walk(block.WalkOpts{
 			StorageNamespace: repo.StorageNamespace,
 			Prefix:           path.Join(tierFSParams.BlockStoragePrefix, rocks.MetaRangeFSName),
-		})
-		if err != nil {
+		}, counter); err != nil {
 			errs = append(errs, fmt.Errorf("listing meta-ranges: %w", err))
 		}
-		if err := csvWriter.Write([]string{repo.Name, "meta-range", strconv.Itoa(len(metaranges))}); err != nil {
+		if err := csvWriter.Write([]string{repo.Name, "meta-range", strconv.Itoa(count)}); err != nil {
 			errs = append(errs, fmt.Errorf("writing meta-ranges for repo (%s): %w", repo.Name, err))
 		}
 
-		ranges, err := c.adapter.List(block.ListOpts{
+		count = 0
+		if err := c.adapter.Walk(block.WalkOpts{
 			StorageNamespace: repo.StorageNamespace,
 			Prefix:           path.Join(tierFSParams.BlockStoragePrefix, rocks.RangeFSName),
-		})
-		if err != nil {
+		}, counter); err != nil {
 			errs = append(errs, fmt.Errorf("listing ranges: %w", err))
 		}
-		if err := csvWriter.Write([]string{repo.Name, "range", strconv.Itoa(len(ranges))}); err != nil {
+
+		if err := csvWriter.Write([]string{repo.Name, "range", strconv.Itoa(count)}); err != nil {
 			errs = append(errs, fmt.Errorf("writing ranges for repo (%s): %w", repo.Name, err))
 		}
 	}

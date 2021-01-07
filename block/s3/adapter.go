@@ -44,7 +44,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
-func resolveNamespacePrefix(opts block.ListOpts) (block.QualifiedPrefix, error) {
+func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) {
 	qualifiedPrefix, err := block.ResolveNamespacePrefix(opts.StorageNamespace, opts.Prefix)
 	if err != nil {
 		return qualifiedPrefix, err
@@ -319,37 +319,47 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return objectOutput.Body, nil
 }
 
-func (a *Adapter) List(lsOpt block.ListOpts) ([]string, error) {
-	log := a.log().WithField("operation", "ListObjects")
+func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	log := a.log().WithField("operation", "Walk")
 	var err error
 	var lenRes int64
-	defer reportMetrics("GetRange", time.Now(), &lenRes, &err)
+	defer reportMetrics("Walk", time.Now(), &lenRes, &err)
 
-	qualifiedPrefix, err := resolveNamespacePrefix(lsOpt)
+	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	listObjectInput := s3.ListObjectsInput{
 		Bucket: aws.String(qualifiedPrefix.StorageNamespace),
 		Prefix: aws.String(qualifiedPrefix.Prefix),
 	}
-	listOutput, err := a.s3.ListObjects(&listObjectInput)
-	if err != nil {
-		log.WithError(err).WithFields(logging.Fields{
-			"bucket": qualifiedPrefix.StorageNamespace,
-			"prefix": qualifiedPrefix.Prefix,
-		}).Error("failed to list S3 objects")
-		return nil, err
+
+	for {
+		listOutput, err := a.s3.ListObjects(&listObjectInput)
+		if err != nil {
+			log.WithError(err).WithFields(logging.Fields{
+				"bucket": qualifiedPrefix.StorageNamespace,
+				"prefix": qualifiedPrefix.Prefix,
+			}).Error("failed to list S3 objects")
+			return err
+		}
+
+		for _, obj := range listOutput.Contents {
+			if err := walkFn(*obj.Key); err != nil {
+				return err
+			}
+		}
+
+		if listOutput.IsTruncated == nil || !*listOutput.IsTruncated {
+			break
+		}
+
+		// start with the next marker
+		listObjectInput.Marker = listOutput.NextMarker
 	}
 
-	var keys []string
-	for _, obj := range listOutput.Contents {
-		keys = append(keys, *obj.Key)
-	}
-	lenRes = int64(len(keys))
-
-	return keys, nil
+	return nil
 }
 
 func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {

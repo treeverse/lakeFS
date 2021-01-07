@@ -69,8 +69,8 @@ func (a *Adapter) Copy(_, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) List(_ block.ListOpts) ([]string, error) {
-	return nil, nil
+func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	return nil
 }
 
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
