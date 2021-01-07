@@ -496,7 +496,7 @@ func TestGraveler_CommitExistingRange(t *testing.T) {
 		{
 			name: "meta range not found",
 			fields: fields{
-				CommittedManager: &testutil.CommittedFake{Err: graveler.ErrNotFound},
+				CommittedManager: &testutil.CommittedFake{Err: graveler.ErrMetaRangeNotFound},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
 				RefManager:       &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedCommitID}, Commit: &graveler.Commit{MetaRangeID: expectedRangeID}},
 			},

@@ -93,7 +93,7 @@ func (rvi *iterator) SeekGE(id graveler.Key) {
 }
 
 func (rvi *iterator) newRangeIterator(rangeID ID) (graveler.ValueIterator, error) {
-	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rangeID, nil)
+	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rangeID)
 	if err != nil {
 		return nil, err
 	}

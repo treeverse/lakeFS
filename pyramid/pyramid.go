@@ -18,6 +18,9 @@ type FS interface {
 	// Open finds the referenced file and returns its read-only File.
 	// If file isn't in the local disk, it is fetched from the block storage.
 	Open(namespace, filename string) (File, error)
+
+	// Exists returns true if filename currently exists on block storage.
+	Exists(namespace, filename string) (bool, error)
 }
 
 // File is pyramid abstraction for an os.File

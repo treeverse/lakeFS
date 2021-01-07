@@ -172,6 +172,21 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 	return f, nil
 }
 
+func (l *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+	p, err := l.getPath(obj)
+	if err != nil {
+		return false, err
+	}
+	_, err = os.Stat(p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
 	p, err := l.getPath(obj)
 	if err != nil {

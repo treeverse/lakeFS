@@ -64,12 +64,12 @@ val branch = "master"
 val dataPath = s"s3a://${repo}/${branch}/example-path/example-file.parquet"
 ...
 ...
-val basics = spark.read.option("header", "true").parquet(dataPath)
+val basics = spark.read.parquet(dataPath)
 ```
 
 ## Creating Objects
 
 If we would like to create new parquet files partitioned by column `example-column`
 ```scala
-basics.toDF().write.partitionBy("example-column").parquet(outputPath)
+basics.write.partitionBy("example-column").parquet(outputPath)
 ```

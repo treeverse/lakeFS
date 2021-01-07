@@ -117,7 +117,7 @@ func TestIterator(t *testing.T) {
 			for _, p := range tt.PK {
 				// MaxKey unused
 				ranges = append(ranges, committed.Range{ID: p.Name})
-				manager.EXPECT().NewRangeIterator(gomock.Eq(namespace), p.Name, nil).Return(makeRange(p.Keys), nil)
+				manager.EXPECT().NewRangeIterator(gomock.Eq(namespace), p.Name).Return(makeRange(p.Keys), nil)
 			}
 			pvi := committed.NewIterator(manager, namespace, ranges)
 			assert.Equal(t, tt.PK, keysByRanges(t, pvi))

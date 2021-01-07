@@ -256,6 +256,32 @@ func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	return objectOutput.Body, nil
 }
 
+func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+	var err error
+	defer reportMetrics("Exists", time.Now(), nil, &err)
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return false, err
+	}
+	log := a.log().WithField("operation", "HeadObject")
+	input := s3.HeadObjectInput{
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
+	}
+	_, err = a.s3.HeadObject(&input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == s3.ErrCodeNoSuchKey {
+				return false, nil
+			}
+		}
+
+		log.WithError(err).Errorf("failed to stat S3 object")
+		return false, err
+	}
+	return true, nil
+}
+
 func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64

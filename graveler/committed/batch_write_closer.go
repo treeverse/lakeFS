@@ -23,7 +23,7 @@ type BatchWriterCloser interface {
 	// CloseWriterAsync adds MetaRangeWriter instance for the BatchWriterCloser to handle.
 	// Any writes executed to the writer after this call are not guaranteed to succeed.
 	// If Wait() has already been called, returns an error.
-	CloseWriterAsync(RangeWriter) error
+	CloseWriterAsync(ResultCloser) error
 
 	// Wait returns when all Writers finished.
 	// Any failure to close a single MetaRangeWriter will return with a nil results slice and an error.
