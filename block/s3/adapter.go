@@ -44,6 +44,17 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
+func resolveNamespacePrefix(opts block.ListOpts) (block.QualifiedPrefix, error) {
+	qualifiedPrefix, err := block.ResolveNamespacePrefix(opts.StorageNamespace, opts.Prefix)
+	if err != nil {
+		return qualifiedPrefix, err
+	}
+	if qualifiedPrefix.StorageType != block.StorageTypeS3 {
+		return qualifiedPrefix, block.ErrInvalidNamespace
+	}
+	return qualifiedPrefix, nil
+}
+
 type Adapter struct {
 	s3                    s3iface.S3API
 	httpClient            *http.Client
@@ -308,21 +319,26 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return objectOutput.Body, nil
 }
 
-func (a *Adapter) List(storageNamespace, prefix string) ([]string, error) {
+func (a *Adapter) List(lsOpt block.ListOpts) ([]string, error) {
 	log := a.log().WithField("operation", "ListObjects")
 	var err error
 	var lenRes int64
 	defer reportMetrics("GetRange", time.Now(), &lenRes, &err)
 
+	qualifiedPrefix, err := resolveNamespacePrefix(lsOpt)
+	if err != nil {
+		return nil, err
+	}
+
 	listObjectInput := s3.ListObjectsInput{
-		Bucket: aws.String(storageNamespace),
-		Prefix: aws.String(prefix),
+		Bucket: aws.String(qualifiedPrefix.StorageNamespace),
+		Prefix: aws.String(qualifiedPrefix.Prefix),
 	}
 	listOutput, err := a.s3.ListObjects(&listObjectInput)
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{
-			"bucket": storageNamespace,
-			"prefix": prefix,
+			"bucket": qualifiedPrefix.StorageNamespace,
+			"prefix": qualifiedPrefix.Prefix,
 		}).Error("failed to list S3 objects")
 		return nil, err
 	}

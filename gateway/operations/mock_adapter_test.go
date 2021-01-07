@@ -51,7 +51,7 @@ func (a *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadC
 	return nil, nil
 }
 
-func (a *mockAdapter) List(_, _ string) ([]string, error) {
+func (a *mockAdapter) List(_ block.ListOpts) ([]string, error) {
 	return nil, nil
 }
 

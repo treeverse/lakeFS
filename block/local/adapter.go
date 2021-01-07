@@ -73,6 +73,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	}
 	return adapter, nil
 }
+
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
 	if err != nil {
@@ -172,15 +173,15 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 	return f, nil
 }
 
-func (l *Adapter) List(storageNamespace, prefix string) ([]string, error) {
-	p := path.Join(l.path, storageNamespace, prefix)
+func (l *Adapter) List(lsOpt block.ListOpts) ([]string, error) {
+	p := filepath.Clean(path.Join(l.path, lsOpt.StorageNamespace, lsOpt.Prefix))
 	files, err := ioutil.ReadDir(p)
 	if errors.Is(err, os.ErrNotExist) {
 		// no files under prefix
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("stat on a dir path %s: %w", p, err)
+		return nil, fmt.Errorf("read dir path %s: %w", p, err)
 	}
 
 	var keys []string

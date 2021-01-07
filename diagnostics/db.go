@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// DBCollector collects diagnostics information and write the collected content into a writer in a zip format
+// DBCollector collects diagnostics information from the database and write the collected content into a writer
 type DBCollector struct {
 	db db.Database
 }

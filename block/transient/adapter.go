@@ -69,7 +69,7 @@ func (a *Adapter) Copy(_, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) List(storageNamespace, prefix string) ([]string, error) {
+func (a *Adapter) List(_ block.ListOpts) ([]string, error) {
 	return nil, nil
 }
 

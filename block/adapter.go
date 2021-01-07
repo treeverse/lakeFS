@@ -29,6 +29,13 @@ type PutOpts struct {
 	StorageClass *string // S3 storage class
 }
 
+// ListOpts is a unique identifier of a prefix in the object
+// store.
+type ListOpts struct {
+	StorageNamespace string
+	Prefix           string
+}
+
 // CreateMultiPartOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
@@ -53,7 +60,7 @@ type Adapter interface {
 	WithContext(ctx context.Context) Adapter
 	Put(obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
-	List(storageNamespace, prefix string) ([]string, error)
+	List(lsOpt ListOpts) ([]string, error)
 	Exists(obj ObjectPointer) (bool, error)
 	GetRange(obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(obj ObjectPointer) (Properties, error)

@@ -8,19 +8,16 @@ import (
 	"io"
 	"net/url"
 	"path"
-
-	"github.com/treeverse/lakefs/catalog/rocks"
-
-	"github.com/treeverse/lakefs/config"
+	"strconv"
 
 	"github.com/treeverse/lakefs/block"
-
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 )
 
-// DBCollector collects diagnostics information and write the collected content into a writer in a zip format
+// BlockCollector collects diagnostics information and write the collected content into a writer in a zip format
 type BlockCollector struct {
 	cataloger   catalog.Cataloger
 	adapter     block.Adapter
@@ -65,7 +62,7 @@ func (c *BlockCollector) rangesStats(ctx context.Context, writer *zip.Writer) []
 
 	tierFSParams, err := c.cfg.GetCommittedTierFSParams()
 	if err != nil {
-		errs = append(errs, fmt.Errorf("listing repositories: %w", err))
+		errs = append(errs, fmt.Errorf("get tierFS params: %w", err))
 		return errs
 	}
 
@@ -77,7 +74,7 @@ func (c *BlockCollector) rangesStats(ctx context.Context, writer *zip.Writer) []
 
 	csvWriter := csv.NewWriter(rangesFile)
 	defer csvWriter.Flush()
-	if err := csvWriter.Write([]string{"repo", "type", "count"}); err != nil {
+	if err := csvWriter.Write([]string{"repo", "type", "count(max:1000)"}); err != nil {
 		errs = append(errs, fmt.Errorf("writing headers: %w", err))
 	}
 
@@ -94,19 +91,25 @@ func (c *BlockCollector) rangesStats(ctx context.Context, writer *zip.Writer) []
 			continue
 		}
 
-		metaranges, err := c.adapter.List(repo.StorageNamespace, path.Join(tierFSParams.BlockStoragePrefix, rocks.MetaRangeFSName))
+		metaranges, err := c.adapter.List(block.ListOpts{
+			StorageNamespace: repo.StorageNamespace,
+			Prefix:           path.Join(tierFSParams.BlockStoragePrefix, rocks.MetaRangeFSName),
+		})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("listing meta-ranges: %w", err))
 		}
-		if err := csvWriter.Write([]string{repo.Name, "meta-range", string(len(metaranges))}); err != nil {
+		if err := csvWriter.Write([]string{repo.Name, "meta-range", strconv.Itoa(len(metaranges))}); err != nil {
 			errs = append(errs, fmt.Errorf("writing meta-ranges for repo (%s): %w", repo.Name, err))
 		}
 
-		ranges, err := c.adapter.List(repo.StorageNamespace, path.Join(tierFSParams.BlockStoragePrefix, rocks.RangeFSName))
+		ranges, err := c.adapter.List(block.ListOpts{
+			StorageNamespace: repo.StorageNamespace,
+			Prefix:           path.Join(tierFSParams.BlockStoragePrefix, rocks.RangeFSName),
+		})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("listing ranges: %w", err))
 		}
-		if err := csvWriter.Write([]string{repo.Name, "range", string(len(ranges))}); err != nil {
+		if err := csvWriter.Write([]string{repo.Name, "range", strconv.Itoa(len(ranges))}); err != nil {
 			errs = append(errs, fmt.Errorf("writing ranges for repo (%s): %w", repo.Name, err))
 		}
 	}
