@@ -152,3 +152,38 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 
 	require.Equal(t, 1, derefCount)
 }
+
+func TestGetWriterRangeID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	mockCache := ssMock.NewMockCache(ctrl)
+	mockFS := fsMock.NewMockFS(ctrl)
+
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
+
+	for times := 0; times < 2; times++ {
+		const ns = "some-ns"
+		mockFile := fsMock.NewMockStoredFile(ctrl)
+		mockFile.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
+			return len(b), nil
+		}).AnyTimes()
+		mockFile.EXPECT().Sync().Return(nil).AnyTimes()
+		mockFile.EXPECT().Close().Return(nil).Times(1)
+		mockFile.EXPECT().Store(gomock.Any()).Return(nil).Times(1)
+		mockFS.EXPECT().Create(ns).Return(mockFile, nil).Times(1)
+
+		writer, err := sut.GetWriter(ns)
+		require.NoError(t, err)
+		require.NotNil(t, writer)
+		err = writer.WriteRecord(committed.Record{
+			Key:   []byte("key"),
+			Value: []byte("value"),
+		})
+		require.NoError(t, err)
+		result, err := writer.Close()
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		expectedID := committed.ID("573176aa7fc6f9123e509c560b8a4d7d3384d85c9a74f72890c0276a70f7bf67")
+		require.Equal(t, expectedID, result.RangeID, "Range ID should be kept the same based on the content")
+	}
+}
