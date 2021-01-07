@@ -1,6 +1,6 @@
 package committed
 
-//go:generate mockgen -source=meta_range.go -destination=mock/meta_range_manager.go -package=mock
+//go:generate mockgen -source=meta_range.go -destination=mock/meta_range.go -package=mock
 
 import (
 	"github.com/treeverse/lakefs/graveler"
@@ -12,8 +12,7 @@ type Iterator interface {
 	// Next moves to look at the next value in the current Range, or a header for the next
 	// Range if the current Range is over.
 	Next() bool
-	// NextRange() skips over the entire remainder of the current Range and continues at the
-	// header for the next Range.
+	// NextRange() skips the current Range and continues at the header for the next Range.
 	NextRange() bool
 	// Value returns a nil ValueRecord and a Range before starting a Range, or a Value and
 	// that Range when inside a Range.

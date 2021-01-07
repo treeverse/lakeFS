@@ -108,7 +108,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	sha256 := sha256.New()
 	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, sha256)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, sha256)
-	sstableMetaRangeManager := committed.NewPebbleSSTableMetaRangeManager(
+	sstableMetaRangeManager := committed.NewMetaRangeManager(
 		*cfg.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,

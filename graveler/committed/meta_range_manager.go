@@ -20,7 +20,7 @@ type metaRangeManager struct {
 	rangeManager RangeManager // For ranges
 }
 
-func NewPebbleSSTableMetaRangeManager(params Params, metaManager, rangeManager RangeManager) MetaRangeManager {
+func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager) MetaRangeManager {
 	return &metaRangeManager{
 		params:       params,
 		metaManager:  metaManager,

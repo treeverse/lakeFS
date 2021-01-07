@@ -27,7 +27,7 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) MetaRangeWriter {
+func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
 		rangeManager:              rangeManager,
 		metaRangeManager:          metaRangeManager,

@@ -87,7 +87,6 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 		return "", fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
 	}
 	newID, err := mwWriter.Close()
-	mwWriter = nil
 	if newID == nil {
 		return "", fmt.Errorf("close writer ns=%s id=%s: %w", ns, rangeID, err)
 	}
