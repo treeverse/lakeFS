@@ -2,9 +2,9 @@ package sstable
 
 import (
 	"bytes"
+	"crypto"
 	"errors"
 	"fmt"
-	"hash"
 
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/logging"
@@ -16,10 +16,10 @@ type Manager struct {
 	fs    pyramid.FS
 	// TODO(ariels): Replace with loggers constructed from context.
 	logger logging.Logger
-	hash   hash.Hash
+	hash   crypto.Hash
 }
 
-func NewPebbleSSTableRangeManager(cache Cache, fs pyramid.FS, hash hash.Hash) *Manager {
+func NewPebbleSSTableRangeManager(cache Cache, fs pyramid.FS, hash crypto.Hash) *Manager {
 	return &Manager{cache: cache, logger: logging.Default(), fs: fs, hash: hash}
 }
 
@@ -92,7 +92,7 @@ func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (co
 
 // GetWriter returns a new SSTable writer instance
 func (m *Manager) GetWriter(ns committed.Namespace) (committed.RangeWriter, error) {
-	return NewDiskWriter(m.fs, ns, m.hash)
+	return NewDiskWriter(m.fs, ns, m.hash.New())
 }
 
 func (m *Manager) execAndLog(f func() error, msg string) {

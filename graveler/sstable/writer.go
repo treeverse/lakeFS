@@ -1,6 +1,7 @@
 package sstable
 
 import (
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"strconv"
@@ -76,7 +77,6 @@ func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
 	if _, err := dw.hash.Write([]byte("|")); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -96,13 +96,15 @@ func (dw *DiskWriter) Abort() error {
 }
 
 func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
+	tableHash := dw.hash.Sum(nil)
+	sstableID := hex.EncodeToString(tableHash)
+
 	if err := dw.w.Close(); err != nil {
-		return nil, fmt.Errorf("sstable file close: %w", err)
+		return nil, fmt.Errorf("sstable close (%s): %w", sstableID, err)
 	}
 
-	sstableID := fmt.Sprintf("%x", dw.hash.Sum(nil))
 	if err := dw.fh.Store(sstableID); err != nil {
-		return nil, fmt.Errorf("error storing sstable: %w", err)
+		return nil, fmt.Errorf("sstable store (%s): %w", sstableID, err)
 	}
 
 	dw.closed = true
