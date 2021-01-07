@@ -23,15 +23,17 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
+type ContextKey string
+
 const (
-	ContextKeyUser            = "user"
-	ContextKeyRepositoryID    = "repository_id"
-	ContextKeyRepository      = "repository"
-	ContextKeyAuthContext     = "auth_context"
-	ContextKeyOperation       = "operation"
-	ContextKeyRef             = "ref"
-	ContextKeyPath            = "path"
-	ContextKeyOriginalRequest = "original_request"
+	ContextKeyUser            ContextKey = "user"
+	ContextKeyRepositoryID    ContextKey = "repository_id"
+	ContextKeyRepository      ContextKey = "repository"
+	ContextKeyAuthContext     ContextKey = "auth_context"
+	ContextKeyOperation       ContextKey = "operation"
+	ContextKeyRef             ContextKey = "ref"
+	ContextKeyPath            ContextKey = "path"
+	ContextKeyOriginalRequest ContextKey = "original_request"
 )
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
@@ -155,7 +157,7 @@ func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperati
 		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req)
 		if err != nil {
-			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
@@ -177,7 +179,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
-			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
@@ -191,7 +193,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 			AuthenticatedOperation: authOp,
 			Repository:             repo,
 		}
-		repoOperation.AddLogFields(req, logging.Fields{
+		logging.AddFields(req.Context(), logging.Fields{
 			"repository": repo.Name,
 		})
 		handler.Handle(w, req, repoOperation)
@@ -208,7 +210,7 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
 		if err != nil {
-			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
@@ -229,7 +231,7 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 			},
 			Path: path,
 		}
-		operation.AddLogFields(req, logging.Fields{
+		logging.AddFields(req.Context(), logging.Fields{
 			"repository": repo.Name,
 			"ref":        refID,
 			"path":       path,
@@ -245,12 +247,12 @@ func authorize(w http.ResponseWriter, req *http.Request, o *operations.Authentic
 	})
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to authorize")
-		o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 		return false
 	}
 	if authResp.Error != nil || !authResp.Allowed {
 		o.Log(req).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
-		o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+		_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 		return false
 	}
 	return true
@@ -271,7 +273,6 @@ func operation(sc *ServerContext, ctx context.Context) *operations.Operation {
 				Debug("performing S3 action")
 			sc.stats.CollectEvent("s3_gateway", action)
 		},
-		DedupCleaner: sc.dedupCleaner,
 	}
 }
 
@@ -332,12 +333,11 @@ func getOperationHandler(sc *ServerContext, operationID string) http.Handler {
 	default:
 		return nil
 	}
-
 }
 
 func unsupportedOperationHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := &operations.Operation{}
-		o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 	})
 }

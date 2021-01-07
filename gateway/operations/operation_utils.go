@@ -20,7 +20,7 @@ func (o *PathOperation) finishUpload(req *http.Request, storageNamespace, checks
 		CreationDate:    writeTime,
 	}
 
-	err := o.Cataloger.CreateEntry(o.Context(req), o.Repository.Name, o.Reference, entry,
+	err := o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry,
 		catalog.CreateEntryParams{
 			Dedup: catalog.DedupParams{
 				ID:               checksum,

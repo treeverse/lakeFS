@@ -46,32 +46,32 @@ func (controller *PutObject) HandleCopy(w http.ResponseWriter, req *http.Request
 	p, err := path.ResolveAbsolutePath(copySourceDecoded)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse copy source path")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 
 	// validate src and dst are in the same repository
 	if !strings.EqualFold(o.Repository.Name, p.Repo) {
 		o.Log(req).WithError(err).Error("cannot copy objects across repos")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	ent, err := o.Cataloger.GetEntry(o.Context(req), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+	ent, err := o.Cataloger.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read copy source")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 	// write this object to workspace
 	// TODO: move this logic into the Index impl.
 	ent.CreationDate = time.Now()
 	ent.Path = o.Path
-	err = o.Cataloger.CreateEntry(o.Context(req), o.Repository.Name, o.Reference, *ent, catalog.CreateEntryParams{})
+	err = o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent, catalog.CreateEntryParams{})
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write copy destination")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
 		return
 	}
 
@@ -90,20 +90,20 @@ func (controller *PutObject) HandleUploadPart(w http.ResponseWriter, req *http.R
 	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
 	if err != nil {
 		o.Log(req).WithError(err).Error("invalid part number")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
 		return
 	}
 
-	o.AddLogFields(req, logging.Fields{
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
 		"part_number": partNumber,
 		"upload_id":   uploadID,
-	})
+	}))
 
 	// handle the upload itself
-	multiPart, err := o.MultipartsTracker.Get(o.Context(req), uploadID)
+	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read  multipart record")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	byteSize := req.ContentLength
@@ -111,7 +111,7 @@ func (controller *PutObject) HandleUploadPart(w http.ResponseWriter, req *http.R
 		byteSize, req.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log(req).WithError(err).Error("part " + partNumberStr + " upload failed")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	o.SetHeader(w, "ETag", etag)
@@ -120,15 +120,15 @@ func (controller *PutObject) HandleUploadPart(w http.ResponseWriter, req *http.R
 
 func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// verify branch before we upload data - fail early
-	branchExists, err := o.Cataloger.BranchExists(o.Context(req), o.Repository.Name, o.Reference)
+	branchExists, err := o.Cataloger.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not check if branch exists")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	if !branchExists {
 		o.Log(req).Debug("branch not found")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
 		return
 	}
 
@@ -162,14 +162,14 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	blob, err := upload.WriteBlob(o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 
 	// write metadata
 	err = o.finishUpload(req, o.Repository.StorageNamespace, blob.Checksum, blob.PhysicalAddress, blob.Size)
 	if err != nil {
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	o.SetHeader(w, "ETag", httputil.ETag(blob.Checksum))

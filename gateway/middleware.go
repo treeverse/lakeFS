@@ -8,17 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog"
-
-	"github.com/treeverse/lakefs/gateway/simulator"
-
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/sig"
+	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
@@ -33,17 +31,17 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 		authContext, err := authenticator.Parse()
 		if err != nil {
 			o.Log(req).WithError(err).Warn("failed to parse signature")
-			o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 		creds, err := authService.GetCredentials(authContext.GetAccessKeyID())
 		if err != nil {
 			if !errors.Is(err, db.ErrNotFound) {
 				o.Log(req).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
-				o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+				_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
 				o.Log(req).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
-				o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
@@ -53,7 +51,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 				"key":           authContext.GetAccessKeyID(),
 				"authenticator": authenticator,
 			}).Warn("error verifying credentials for key")
-			o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 		user, err := authService.GetUserByID(creds.UserID)
@@ -62,10 +60,10 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 				"key":           authContext.GetAccessKeyID(),
 				"authenticator": authenticator,
 			}).Warn("could not get user for credentials key")
-			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		o.AddLogFields(req, logging.Fields{"user": user.Username})
+		req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"user": user.Username}))
 		req = req.WithContext(context.WithValue(req.Context(), ContextKeyUser, user))
 		req = req.WithContext(context.WithValue(req.Context(), ContextKeyAuthContext, authContext))
 		next.ServeHTTP(w, req)
@@ -137,18 +135,19 @@ func EnrichRepoHandler(cataloger catalog.Cataloger, authService simulator.Gatewa
 				RequiredPermissions: []permissions.Permission{{Action: permissions.ListRepositoriesAction, Resource: "*"}},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
-				o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				return
 			}
 			if fallbackProxy != nil {
 				originalRequest := req.Context().Value(ContextKeyOriginalRequest).(*http.Request)
 				fallbackProxy.ServeHTTP(w, originalRequest)
 				return
 			}
-			o.EncodeError(w, req, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			_ = o.EncodeError(w, req, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
 		if repo == nil {
-			o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+			_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
 		req = req.WithContext(context.WithValue(req.Context(), ContextKeyRepository, repo))
@@ -165,18 +164,20 @@ func OperationLookupHandler(bareDomain string, next http.Handler) http.Handler {
 			if req.Method == http.MethodGet {
 				operationID = operations.OperationIDListBuckets
 			} else {
-				o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+				_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+				return
 			}
 		} else {
 			ref, pth := parts(req, bareDomain)
-			if ref != nil && pth != nil {
+			switch {
+			case ref != nil && pth != nil:
 				req = req.WithContext(context.WithValue(req.Context(), ContextKeyRef, *ref))
 				req = req.WithContext(context.WithValue(req.Context(), ContextKeyPath, *pth))
 				operationID = pathBasedOperationID(req.Method)
-			} else if ref != nil && *ref != "" && pth == nil {
-				w.WriteHeader(http.StatusNotFound)
-			} else {
+			case (ref == nil || *ref == "") && pth == nil:
 				operationID = repositoryBasedOperationID(req.Method)
+			default:
+				w.WriteHeader(http.StatusNotFound)
 			}
 		}
 		o.OperationID = operationID

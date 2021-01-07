@@ -2,23 +2,19 @@ package operations
 
 import (
 	"bytes"
-	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/httputil"
-
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/dedup"
-	"github.com/treeverse/lakefs/gateway/multiparts"
-	"github.com/treeverse/lakefs/gateway/simulator"
-
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/multiparts"
+	"github.com/treeverse/lakefs/gateway/simulator"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 )
@@ -51,7 +47,6 @@ type Operation struct {
 	BlockStore        block.Adapter
 	Auth              simulator.GatewayAuthService
 	Incr              ActionIncr
-	DedupCleaner      *dedup.Cleaner
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -62,17 +57,8 @@ func StorageClassFromHeader(header http.Header) *string {
 	return &storageClass
 }
 
-func (o *Operation) AddLogFields(req *http.Request, fields logging.Fields) {
-	ctx := logging.AddFields(o.Context(req), fields)
-	req = req.WithContext(ctx)
-}
-
-func (o *Operation) Context(req *http.Request) context.Context {
-	return req.Context()
-}
-
 func (o *Operation) Log(req *http.Request) logging.Logger {
-	return logging.FromContext(o.Context(req))
+	return logging.FromContext(req.Context())
 }
 
 func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
@@ -173,7 +159,6 @@ type RepoOperation struct {
 
 func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
 	req, rid := httputil.RequestID(req)
-
 	writeErr := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,

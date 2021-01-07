@@ -44,13 +44,13 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	uploadID, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, req, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not create multipart upload")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	err = o.MultipartsTracker.Create(o.Context(req), uploadID, o.Path, objName, time.Now())
+	err = o.MultipartsTracker.Create(req.Context(), uploadID, o.Path, objName, time.Now())
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write multipart upload to DB")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	o.EncodeResponse(w, req, &serde.InitiateMultipartUploadResult{
@@ -69,42 +69,42 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	var size int64
 	o.Incr("complete_mpu")
 	uploadID := req.URL.Query().Get(CompleteMultipartUploadQueryParam)
-	o.AddLogFields(req, logging.Fields{"upload_id": uploadID})
-	multiPart, err := o.MultipartsTracker.Get(o.Context(req), uploadID)
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"upload_id": uploadID}))
+	multiPart, err := o.MultipartsTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	objName := multiPart.PhysicalAddress
-	o.AddLogFields(req, logging.Fields{"physical_address": objName})
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"physical_address": objName}))
 	xmlMultipartComplete, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read request body")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	var MultipartList block.MultipartUploadCompletion
 	err = xml.Unmarshal(xmlMultipartComplete, &MultipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse multipart XML on complete multipart")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	etag, size, err = o.BlockStore.CompleteMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, uploadID, &MultipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not complete multipart upload")
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
 	err = o.finishUpload(req, o.Repository.StorageNamespace, checksum, objName, size)
 	if err != nil {
-		o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	err = o.MultipartsTracker.Delete(o.Context(req), uploadID)
+	err = o.MultipartsTracker.Delete(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Warn("could not delete multipart record")
 	}

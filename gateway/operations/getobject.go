@@ -42,7 +42,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Cataloger.GetEntry(o.Context(req), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+	entry, err := o.Cataloger.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
 	o.Log(req).
 		WithField("took", metaTook).
@@ -51,14 +51,14 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if errors.Is(err, catalog.ErrExpired) {
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 	}
 	if err != nil {
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -89,7 +89,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	defer func() {

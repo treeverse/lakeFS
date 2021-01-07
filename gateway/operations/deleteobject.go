@@ -27,11 +27,11 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	o.Incr("abort_mpu")
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
-	o.AddLogFields(req, logging.Fields{"upload_id": uploadID})
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"upload_id": uploadID}))
 	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: o.Path}, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not abort multipart upload")
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	// done.
@@ -49,13 +49,13 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 
 	o.Incr("delete_object")
 	lg := o.Log(req).WithField("key", o.Path)
-	err := o.Cataloger.DeleteEntry(o.Context(req), o.Repository.Name, o.Reference, o.Path)
+	err := o.Cataloger.DeleteEntry(req.Context(), o.Repository.Name, o.Reference, o.Path)
 	switch {
 	case errors.Is(err, db.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	default:
 		lg.Debug("object set for deletion")

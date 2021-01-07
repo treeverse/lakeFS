@@ -90,9 +90,7 @@ func (controller *ListObjects) serializeBranches(branches []*catalog.Branch) ([]
 }
 
 func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.AddLogFields(req, logging.Fields{
-		"list_type": "v2",
-	})
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"list_type": "v2"}))
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
 	startAfter := params.Get("start-after")
@@ -114,7 +112,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 	}
@@ -129,7 +127,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 			WithError(err).
 			WithField("path", params.Get("prefix")).
 			Error("could not resolve path for prefix")
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 		return
 	}
 
@@ -138,10 +136,10 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
 		o.Log(req).WithField("prefix", branchPrefix).Debug("listing branches with prefix")
-		branches, hasMore, err := o.Cataloger.ListBranches(o.Context(req), o.Repository.Name, branchPrefix, maxKeys, fromStr)
+		branches, hasMore, err := o.Cataloger.ListBranches(req.Context(), o.Repository.Name, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log(req).WithError(err).Error("could not list branches")
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 		// return branch response
@@ -178,13 +176,13 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 					"path":   prefix.Path,
 					"from":   fromStr,
 				}).Error("invalid marker - doesnt start with branch name")
-				o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+				_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 				return
 			}
 		}
 
 		results, hasMore, err = o.Cataloger.ListEntries(
-			o.Context(req),
+			req.Context(),
 			o.Repository.Name,
 			prefix.Ref,
 			prefix.Path,
@@ -202,7 +200,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 				"ref":  prefix.Ref,
 				"path": prefix.Path,
 			}).Error("could not list objects in path")
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 	}
@@ -231,10 +229,9 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 }
 
 func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.AddLogFields(req, logging.Fields{
+	logging.AddFields(req.Context(), logging.Fields{
 		"list_type": "v1",
 	})
-
 	// handle ListObjects (v1)
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
@@ -242,7 +239,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		descend = false
@@ -261,17 +258,17 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 			WithError(err).
 			WithField("path", params.Get("prefix")).
 			Error("could not resolve path for prefix")
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 		return
 	}
 
 	if !prefix.WithPath {
 		// list branches then.
-		branches, hasMore, err := o.Cataloger.ListBranches(o.Context(req), o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
+		branches, hasMore, err := o.Cataloger.ListBranches(req.Context(), o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log(req).WithError(err).Error("could not list branches")
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		// return branch response
@@ -301,7 +298,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 		prefix, err := path.ResolvePath(params.Get("prefix"))
 		if err != nil {
 			o.Log(req).WithError(err).Error("could not list branches")
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		ref = prefix.Ref
@@ -316,12 +313,12 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 					"path":   prefix.Path,
 					"marker": marker,
 				}).Error("invalid marker - doesnt start with branch name")
-				o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+				_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 				return
 			}
 		}
 		results, hasMore, err = o.Cataloger.ListEntries(
-			o.Context(req),
+			req.Context(),
 			o.Repository.Name,
 			prefix.Ref,
 			prefix.Path,
@@ -336,7 +333,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 				"branch": prefix.Ref,
 				"path":   prefix.Path,
 			}).Error("could not list objects in path")
-			o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 	}
@@ -386,6 +383,6 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 		controller.ListV2(w, req, o)
 	default:
 		o.Log(req).WithField("list-type", listType).Error("listObjects version not supported")
-		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 	}
 }
