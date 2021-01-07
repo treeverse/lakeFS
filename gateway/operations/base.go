@@ -24,6 +24,21 @@ import (
 
 const StorageClassHeader = "x-amz-storage-class"
 
+const (
+	OperationIDDeleteObject  = "delete_object"
+	OperationIDDeleteObjects = "delete_objects"
+	OperationIDGetObject     = "get_object"
+	OperationIDHeadBucket    = "head_bucket"
+	OperationIDHeadObject    = "head_object"
+	OperationIDListBuckets   = "list_buckets"
+	OperationIDListObjects   = "list_objects"
+	OperationIDPostObject    = "post_object"
+	OperationIDPutObject     = "put_object"
+
+	OperationIDUnsupportedOperation = "unsupported"
+	OperationIDOperationNotFound    = "not_found"
+)
+
 type ActionIncr func(string)
 
 type Operation struct {
@@ -206,4 +221,23 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 type OperationHandler interface {
 	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
 	Handle(op *Operation)
+}
+
+type AuthenticatedOperationHandler interface {
+	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
+	Handle(op *AuthenticatedOperation)
+}
+
+type RepoOperationHandler interface {
+	RequiredPermissions(request *http.Request, repository string) ([]permissions.Permission, error)
+	Handle(op *RepoOperation)
+}
+
+type BranchOperationHandler interface {
+	RequiredPermissions(request *http.Request, repository, branch string) ([]permissions.Permission, error)
+	Handle(op *RefOperation)
+}
+type PathOperationHandler interface {
+	RequiredPermissions(request *http.Request, repository, branch, path string) ([]permissions.Permission, error)
+	Handle(op *PathOperation)
 }
