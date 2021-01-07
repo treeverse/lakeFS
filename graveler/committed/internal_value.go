@@ -4,7 +4,7 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
-// rangeToValue returns a Value representing a Range in MetaRange
+// rangeToValue returns the Value representing rng in a MetaRange
 func rangeToValue(rng Range) (Value, error) {
 	data, err := MarshalRange(rng)
 	if err != nil {

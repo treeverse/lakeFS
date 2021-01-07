@@ -75,43 +75,5 @@ func (m *metaRangeManager) NewMetaRangeIterator(ns graveler.StorageNamespace, id
 	if err != nil {
 		return nil, fmt.Errorf("manage metarange %s: %w", id, err)
 	}
-	return NewIterator(m.rangeManager, Namespace(ns), &adaptIt{it: rangesIt}), nil
-}
-
-// adaptIt adapts a ValueIterator to be a graveler.ValueIterator
-type adaptIt struct {
-	it  ValueIterator
-	err error
-}
-
-func (a *adaptIt) Next() bool {
-	return a.it.Next()
-}
-
-func (a *adaptIt) SeekGE(id graveler.Key) {
-	a.it.SeekGE(Key(id))
-}
-
-func (a *adaptIt) Value() *graveler.ValueRecord {
-	rec := a.it.Value()
-	v, err := UnmarshalValue(rec.Value)
-	if err != nil {
-		a.err = err
-		return nil
-	}
-	return &graveler.ValueRecord{
-		Key:   graveler.Key(rec.Key),
-		Value: v,
-	}
-}
-
-func (a *adaptIt) Err() error {
-	if err := a.it.Err(); err != nil {
-		return err
-	}
-	return a.err
-}
-
-func (a *adaptIt) Close() {
-	a.it.Close()
+	return NewIterator(m.rangeManager, Namespace(ns), rangesIt), nil
 }
