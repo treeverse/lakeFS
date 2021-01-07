@@ -1,7 +1,7 @@
 package sstable_test
 
 import (
-	"crypto/sha256"
+	"crypto"
 	"errors"
 	"sort"
 	"testing"
@@ -20,7 +20,7 @@ func TestGetEntrySuccess(t *testing.T) {
 	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	keys := randomStrings(10)
@@ -51,7 +51,7 @@ func TestGetEntryCacheFailure(t *testing.T) {
 	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
@@ -71,7 +71,7 @@ func TestGetEntryNotFound(t *testing.T) {
 	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	keys := randomStrings(10)
@@ -102,7 +102,7 @@ func TestGetWriterSuccess(t *testing.T) {
 	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	mockFile := fsMock.NewMockStoredFile(ctrl)
@@ -125,7 +125,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, sha256.New())
+	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	keys := randomStrings(10)
