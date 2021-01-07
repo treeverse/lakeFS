@@ -9,13 +9,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/dedup"
-	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
+
+	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
@@ -26,6 +27,7 @@ const StorageClassHeader = "x-amz-storage-class"
 type ActionIncr func(string)
 
 type Operation struct {
+	OperationID       string
 	Request           *http.Request
 	ResponseWriter    http.ResponseWriter
 	Region            string
@@ -204,23 +206,4 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 type OperationHandler interface {
 	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
 	Handle(op *Operation)
-}
-
-type AuthenticatedOperationHandler interface {
-	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
-	Handle(op *AuthenticatedOperation)
-}
-
-type RepoOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository string) ([]permissions.Permission, error)
-	Handle(op *RepoOperation)
-}
-
-type BranchOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository, branch string) ([]permissions.Permission, error)
-	Handle(op *RefOperation)
-}
-type PathOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository, branch, path string) ([]permissions.Permission, error)
-	Handle(op *PathOperation)
 }
