@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pyramid"
 )
 
-type Manager struct {
+type RangeManager struct {
 	cache Cache
 	fs    pyramid.FS
 	// TODO(ariels): Replace with loggers constructed from context.
@@ -19,22 +19,22 @@ type Manager struct {
 	hash   crypto.Hash
 }
 
-func NewPebbleSSTableRangeManager(cache Cache, fs pyramid.FS, hash crypto.Hash) *Manager {
-	return &Manager{cache: cache, logger: logging.Default(), fs: fs, hash: hash}
+func NewPebbleSSTableRangeManager(cache Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+	return &RangeManager{cache: cache, logger: logging.Default(), fs: fs, hash: hash}
 }
 
 var (
 	// ErrKeyNotFound is the error returned when a path is not found
 	ErrKeyNotFound = errors.New("path not found")
 
-	_ committed.RangeManager = &Manager{}
+	_ committed.RangeManager = &RangeManager{}
 )
 
-func (m *Manager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
+func (m *RangeManager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
 	return m.cache.Exists(string(ns), id)
 }
 
-func (m *Manager) GetValueGE(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+func (m *RangeManager) GetValueGE(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (m *Manager) GetValueGE(ns committed.Namespace, id committed.ID, lookup com
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *Manager) GetValue(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+func (m *RangeManager) GetValue(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (m *Manager) GetValue(ns committed.Namespace, id committed.ID, lookup commi
 }
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
+func (m *RangeManager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
 	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
 	if err != nil {
 		return nil, err
@@ -119,11 +119,11 @@ func (m *Manager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (co
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *Manager) GetWriter(ns committed.Namespace) (committed.RangeWriter, error) {
+func (m *RangeManager) GetWriter(ns committed.Namespace) (committed.RangeWriter, error) {
 	return NewDiskWriter(m.fs, ns, m.hash.New())
 }
 
-func (m *Manager) execAndLog(f func() error, msg string) {
+func (m *RangeManager) execAndLog(f func() error, msg string) {
 	if err := f(); err != nil {
 		m.logger.WithError(err).Error(msg)
 	}
