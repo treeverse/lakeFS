@@ -19,17 +19,17 @@ func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) 
 	return nil, nil
 }
 
-func (controller *DeleteObjects) Handle(w http.ResponseWriter, r *http.Request, o *RepoOperation) {
+func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
 	o.Incr("delete_objects")
-	req := &serde.Delete{}
-	err := DecodeXMLBody(r.Body, req)
+	deleteXml := &serde.Delete{}
+	err := DecodeXMLBody(req.Body, deleteXml)
 	if err != nil {
-		o.EncodeError(w, r, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 	}
 	// delete all the files and collect responses
 	errs := make([]serde.DeleteError, 0)
 	responses := make([]serde.Deleted, 0)
-	for _, obj := range req.Object {
+	for _, obj := range deleteXml.Object {
 		resolvedPath, err := path.ResolvePath(obj.Key)
 		if err != nil {
 			errs = append(errs, serde.DeleteError{
@@ -57,8 +57,8 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, r *http.Request, 
 			})
 		}
 
-		lg := o.Log(r).WithField("key", obj.Key)
-		err = o.Cataloger.DeleteEntry(o.Context(r), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
+		lg := o.Log(req).WithField("key", obj.Key)
+		err = o.Cataloger.DeleteEntry(o.Context(req), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
 		switch {
 		case errors.Is(err, db.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")
@@ -73,7 +73,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, r *http.Request, 
 		default:
 			lg.Debug("object set for deletion")
 		}
-		if !req.Quiet {
+		if !deleteXml.Quiet {
 			responses = append(responses, serde.Deleted{Key: obj.Key})
 		}
 	}
@@ -82,8 +82,8 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, r *http.Request, 
 	if len(errs) > 0 {
 		resp.Error = errs
 	}
-	if !req.Quiet && len(responses) > 0 {
+	if !deleteXml.Quiet && len(responses) > 0 {
 		resp.Deleted = responses
 	}
-	o.EncodeResponse(w, r, resp, http.StatusOK)
+	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

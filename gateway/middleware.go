@@ -25,48 +25,50 @@ import (
 )
 
 func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
-		o := r.Context().Value("operation").(*operations.Operation)
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 		authenticator := sig.ChainedAuthenticator(
-			sig.NewV4Authenticator(r),
-			sig.NewV2SigAuthenticator(r))
+			sig.NewV4Authenticator(req),
+			sig.NewV2SigAuthenticator(req))
 		authContext, err := authenticator.Parse()
 		if err != nil {
-			// TODO err
+			o.Log(req).WithError(err).Warn("failed to parse signature")
+			o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 		creds, err := authService.GetCredentials(authContext.GetAccessKeyID())
 		if err != nil {
 			if !errors.Is(err, db.ErrNotFound) {
-				o.Log(r).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
-				o.EncodeError(writer, r, gatewayerrors.ErrInternalError.ToAPIErr())
+				o.Log(req).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("error getting access key")
+				o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
-				o.Log(r).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
-				o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				o.Log(req).WithError(err).WithField("key", authContext.GetAccessKeyID()).Warn("could not find access key")
+				o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
 		err = authenticator.Verify(creds, bareDomain)
 		if err != nil {
-			o.Log(r).WithError(err).WithFields(logging.Fields{
+			o.Log(req).WithError(err).WithFields(logging.Fields{
 				"key":           authContext.GetAccessKeyID(),
 				"authenticator": authenticator,
 			}).Warn("error verifying credentials for key")
-			o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 		user, err := authService.GetUserByID(creds.UserID)
 		if err != nil {
-			o.Log(r).WithError(err).WithFields(logging.Fields{
+			o.Log(req).WithError(err).WithFields(logging.Fields{
 				"key":           authContext.GetAccessKeyID(),
 				"authenticator": authenticator,
 			}).Warn("could not get user for credentials key")
-			o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		r = r.WithContext(context.WithValue(r.Context(), "user", user))
-		r = r.WithContext(context.WithValue(r.Context(), "auth_context", authContext))
-		next.ServeHTTP(writer, r)
+		o.AddLogFields(req, logging.Fields{"user": user.Username})
+		req = req.WithContext(context.WithValue(req.Context(), ContextKeyUser, user))
+		req = req.WithContext(context.WithValue(req.Context(), ContextKeyAuthContext, authContext))
+		next.ServeHTTP(w, req)
 	})
 }
 
@@ -90,19 +92,27 @@ func RepoIDHandler(bareDomain string, next http.Handler) http.Handler {
 				repo = strings.TrimSuffix(host, "."+ourHost)
 			}
 		}
-		req = req.WithContext(context.WithValue(req.Context(), "repo_id", repo))
+		req = req.WithContext(context.WithValue(req.Context(), ContextKeyRepositoryID, repo))
 		next.ServeHTTP(w, req)
 	})
 }
+
+func EnrichOriginalRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), ContextKeyOriginalRequest, req)))
+	})
+}
+
 func EnrichOperationHandler(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := operation(sc, req.Context())
-		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), "operation", o)))
+		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), ContextKeyOperation, o)))
 	})
 }
+
 func DurationHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		o := req.Context().Value("operation").(*operations.Operation)
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
 		next.ServeHTTP(w, req)
@@ -110,44 +120,73 @@ func DurationHandler(next http.Handler) http.Handler {
 	})
 }
 
-// TODO split fallback to handler
-func EnrichRepoHandler(cataloger catalog.Cataloger, authService simulator.GatewayAuthService, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
-		repoID := r.Context().Value("repo_id").(string)
-		username := r.Context().Value("user").(*model.User).Username
-		o := r.Context().Value("operation").(*operations.Operation)
+func EnrichRepoHandler(cataloger catalog.Cataloger, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		repoID := req.Context().Value(ContextKeyRepositoryID).(string)
+		username := req.Context().Value(ContextKeyUser).(*model.User).Username
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 		if repoID == "" {
 			// action without repo
-			next.ServeHTTP(writer, r)
+			next.ServeHTTP(w, req)
 			return
 		}
-		repo, err := cataloger.GetRepository(r.Context(), repoID)
+		repo, err := cataloger.GetRepository(req.Context(), repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authResp, authErr := authService.Authorize(&auth.AuthorizationRequest{
 				Username:            username,
 				RequiredPermissions: []permissions.Permission{{Action: permissions.ListRepositoriesAction, Resource: "*"}},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
-				o.EncodeError(writer, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
-			//if h.sc.fallbackProxy != nil {
-			//	h.sc.fallbackProxy.ServeHTTP(writer, r)
-			//}
-			o.EncodeError(writer, r, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			if fallbackProxy != nil {
+				originalRequest := req.Context().Value(ContextKeyOriginalRequest).(*http.Request)
+				fallbackProxy.ServeHTTP(w, originalRequest)
+				return
+			}
+			o.EncodeError(w, req, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
 		if repo == nil {
-			o.EncodeError(writer, r, gatewayerrors.ErrInternalError.ToAPIErr())
+			o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
-		r = r.WithContext(context.WithValue(r.Context(), "repo", repo))
-		next.ServeHTTP(writer, r)
+		req = req.WithContext(context.WithValue(req.Context(), ContextKeyRepository, repo))
+		next.ServeHTTP(w, req)
 	})
 }
 
-func parts(r *http.Request, bareDomain string) (ref *string, pth *string) {
-	urlPath := strings.TrimPrefix(r.URL.Path, path.Separator)
-	if strings.EqualFold(httputil.HostOnly(r.Host), httputil.HostOnly(bareDomain)) {
+func OperationLookupHandler(bareDomain string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		repoID := req.Context().Value(ContextKeyRepositoryID).(string)
+		var operationID string
+		if repoID == "" {
+			if req.Method == http.MethodGet {
+				operationID = operations.OperationIDListBuckets
+			} else {
+				o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+			}
+		} else {
+			ref, pth := parts(req, bareDomain)
+			if ref != nil && pth != nil {
+				req = req.WithContext(context.WithValue(req.Context(), ContextKeyRef, *ref))
+				req = req.WithContext(context.WithValue(req.Context(), ContextKeyPath, *pth))
+				operationID = pathBasedOperationID(req.Method)
+			} else if ref != nil && *ref != "" && pth == nil {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				operationID = repositoryBasedOperationID(req.Method)
+			}
+		}
+		o.OperationID = operationID
+		next.ServeHTTP(w, req)
+	})
+}
+
+func parts(req *http.Request, bareDomain string) (ref *string, pth *string) {
+	urlPath := strings.TrimPrefix(req.URL.Path, path.Separator)
+	if strings.EqualFold(httputil.HostOnly(req.Host), httputil.HostOnly(bareDomain)) {
 		// path style request - need to remove repo from path
 		if !strings.Contains(urlPath, path.Separator) {
 			return nil, nil
@@ -162,34 +201,6 @@ func parts(r *http.Request, bareDomain string) (ref *string, pth *string) {
 		return &p[0], nil
 	}
 	return &p[0], &p[1]
-}
-
-func OperationLookupHandler(bareDomain string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
-		o := r.Context().Value("operation").(*operations.Operation)
-		repoID := r.Context().Value("repo_id").(string)
-		var operationID string
-		if repoID == "" {
-			if r.Method == http.MethodGet {
-				operationID = operations.OperationIDListBuckets
-			} else {
-				o.EncodeError(writer, r, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
-			}
-		} else {
-			ref, pth := parts(r, bareDomain)
-			if ref != nil && pth != nil {
-				r = r.WithContext(context.WithValue(r.Context(), "ref", *ref))
-				r = r.WithContext(context.WithValue(r.Context(), "path", *pth))
-				operationID = pathBasedOperationID(r.Method)
-			} else if ref != nil && *ref != "" && pth == nil {
-				writer.WriteHeader(http.StatusNotFound)
-			} else {
-				operationID = repositoryBasedOperationID(r.Method)
-			}
-		}
-		o.OperationID = operationID
-		next.ServeHTTP(writer, r)
-	})
 }
 
 func pathBasedOperationID(method string) string {

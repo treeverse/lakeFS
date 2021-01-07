@@ -28,37 +28,37 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 	}, nil
 }
 
-func (controller *GetObject) Handle(w http.ResponseWriter, r *http.Request, o *PathOperation) {
+func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("get_object")
-	query := r.URL.Query()
+	query := req.URL.Query()
 	if _, exists := query["versioning"]; exists {
-		o.EncodeResponse(w, r, serde.VersioningConfiguration{}, http.StatusOK)
+		o.EncodeResponse(w, req, serde.VersioningConfiguration{}, http.StatusOK)
 		return
 	}
 
 	if _, exists := query["tagging"]; exists {
-		o.EncodeResponse(w, r, serde.Tagging{}, http.StatusOK)
+		o.EncodeResponse(w, req, serde.Tagging{}, http.StatusOK)
 		return
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Cataloger.GetEntry(o.Context(r), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+	entry, err := o.Cataloger.GetEntry(o.Context(req), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
-	o.Log(r).
+	o.Log(req).
 		WithField("took", metaTook).
 		WithError(err).
 		Debug("metadata operation to retrieve object done")
 
 	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.EncodeError(w, r, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if errors.Is(err, catalog.ErrExpired) {
-		o.EncodeError(w, r, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 	}
 	if err != nil {
-		o.EncodeError(w, r, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -73,11 +73,11 @@ func (controller *GetObject) Handle(w http.ResponseWriter, r *http.Request, o *P
 	var rng ghttp.Range
 	rng.StartOffset = -1
 	// range query
-	rangeSpec := r.Header.Get("Range")
+	rangeSpec := req.Header.Get("Range")
 	if len(rangeSpec) > 0 {
 		rng, err = ghttp.ParseRange(rangeSpec, entry.Size)
 		if err != nil {
-			o.Log(r).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
+			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}
 	}
 	if rangeSpec == "" || err != nil {
@@ -89,7 +89,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, r *http.Request, o *P
 		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
-		o.EncodeError(w, r, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	defer func() {
@@ -104,6 +104,6 @@ func (controller *GetObject) Handle(w http.ResponseWriter, r *http.Request, o *P
 	o.DeleteHeader(w, "Content-Type")
 	_, err = io.Copy(w, data)
 	if err != nil {
-		o.Log(r).WithError(err).Error("could not write response body for object")
+		o.Log(req).WithError(err).Error("could not write response body for object")
 	}
 }

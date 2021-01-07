@@ -7,28 +7,43 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/treeverse/lakefs/auth/model"
-
 	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/gateway/sig"
-	"github.com/treeverse/lakefs/permissions"
-
+	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/dedup"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/gateway/sig"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/stats"
+)
+
+const (
+	ContextKeyUser            = "user"
+	ContextKeyRepositoryID    = "repository_id"
+	ContextKeyRepository      = "repository"
+	ContextKeyAuthContext     = "auth_context"
+	ContextKeyOperation       = "operation"
+	ContextKeyRef             = "ref"
+	ContextKeyPath            = "path"
+	ContextKeyOriginalRequest = "original_request"
+)
+
+var commaSeparator = regexp.MustCompile(`,\s*`)
+
+var (
+	contentTypeApplicationXML = "application/xml"
+	contentTypeTextXML        = "text/xml"
 )
 
 type handler struct {
 	BareDomain         string
 	sc                 *ServerContext
-	NotFoundHandler    http.Handler
 	ServerErrorHandler http.Handler
 }
 
@@ -93,23 +108,35 @@ func NewHandler(
 	h = &handler{
 		BareDomain:         bareDomain,
 		sc:                 sc,
-		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
 	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, h,
 	), authService, region, bareDomain)
-	h = EnrichOperationHandler(sc,
-		DurationHandler(
-			AuthenticationHandler(authService, bareDomain,
-				RepoIDHandler(bareDomain,
-					OperationLookupHandler(bareDomain,
-						EnrichRepoHandler(cataloger, authService, h))))))
+	h = EnrichOriginalRequest(
+		EnrichOperationHandler(sc,
+			DurationHandler(
+				AuthenticationHandler(authService, bareDomain,
+					RepoIDHandler(bareDomain,
+						OperationLookupHandler(bareDomain,
+							EnrichRepoHandler(cataloger, authService, fallbackProxy,
+								h)))))))
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
 		"s3_region":      region,
 	}).Info("initialized S3 Gateway handler")
 	return h
+}
+
+func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+	setDefaultContentType(w, req)
+	actionHandler := getOperationHandler(h.sc, o.OperationID)
+	if actionHandler == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	actionHandler.ServeHTTP(w, req)
 }
 
 func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
@@ -121,49 +148,109 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHandler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		username := request.Context().Value("user").(*model.User).Username
-		repoID := request.Context().Value("repo_id").(string)
-		repo := request.Context().Value("repo").(*catalog.Repository)
-		authContext := request.Context().Value("auth_context").(sig.SigContext)
-		o := request.Context().Value("operation").(*operations.Operation)
-		perms, err := handler.RequiredPermissions(request, repoID)
+func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		username := req.Context().Value(ContextKeyUser).(*model.User).Username
+		authContext := req.Context().Value(ContextKeyAuthContext).(sig.SigContext)
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		perms, err := handler.RequiredPermissions(req)
 		if err != nil {
-			o.EncodeError(writer, request, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := &operations.AuthenticatedOperation{
 			Operation: o,
 			Principal: username,
 		}
-		if !authorize(writer, request, authOp, authContext, sc.authService, perms) {
+		if !authorize(w, req, authOp, authContext, sc.authService, perms) {
+			return
+		}
+		handler.Handle(w, req, authOp)
+	})
+}
+
+func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		username := req.Context().Value(ContextKeyUser).(*model.User).Username
+		repo := req.Context().Value(ContextKeyRepository).(*catalog.Repository)
+		authContext := req.Context().Value(ContextKeyAuthContext).(sig.SigContext)
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		perms, err := handler.RequiredPermissions(req, repo.Name)
+		if err != nil {
+			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			return
+		}
+		authOp := &operations.AuthenticatedOperation{
+			Operation: o,
+			Principal: username,
+		}
+		if !authorize(w, req, authOp, authContext, sc.authService, perms) {
 			return
 		}
 		repoOperation := &operations.RepoOperation{
 			AuthenticatedOperation: authOp,
 			Repository:             repo,
 		}
-		repoOperation.AddLogFields(request, logging.Fields{
+		repoOperation.AddLogFields(req, logging.Fields{
 			"repository": repo.Name,
 		})
-		handler.Handle(writer, request, repoOperation)
+		handler.Handle(w, req, repoOperation)
 	})
 }
 
-func authorize(w http.ResponseWriter, r *http.Request, o *operations.AuthenticatedOperation, authContext sig.SigContext, authService simulator.GatewayAuthService, perms []permissions.Permission) bool {
+func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		username := req.Context().Value(ContextKeyUser).(*model.User).Username
+		repo := req.Context().Value(ContextKeyRepository).(*catalog.Repository)
+		refID := req.Context().Value(ContextKeyRef).(string)
+		path := req.Context().Value(ContextKeyPath).(string)
+		authContext := req.Context().Value(ContextKeyAuthContext).(sig.SigContext)
+		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
+		if err != nil {
+			o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			return
+		}
+		authOp := &operations.AuthenticatedOperation{
+			Operation: o,
+			Principal: username,
+		}
+		if !authorize(w, req, authOp, authContext, sc.authService, perms) {
+			return
+		}
+		// run callback
+		operation := &operations.PathOperation{
+			RefOperation: &operations.RefOperation{
+				RepoOperation: &operations.RepoOperation{
+					AuthenticatedOperation: authOp,
+					Repository:             repo,
+				},
+				Reference: refID,
+			},
+			Path: path,
+		}
+		operation.AddLogFields(req, logging.Fields{
+			"repository": repo.Name,
+			"ref":        refID,
+			"path":       path,
+		})
+		handler.Handle(w, req, operation)
+	})
+}
+
+func authorize(w http.ResponseWriter, req *http.Request, o *operations.AuthenticatedOperation, authContext sig.SigContext, authService simulator.GatewayAuthService, perms []permissions.Permission) bool {
 	authResp, err := authService.Authorize(&auth.AuthorizationRequest{
 		Username:            o.Principal,
 		RequiredPermissions: perms,
 	})
 	if err != nil {
-		o.Log(r).WithError(err).Error("failed to authorize")
-		o.EncodeError(w, r, gatewayerrors.ErrInternalError.ToAPIErr())
+		o.Log(req).WithError(err).Error("failed to authorize")
+		o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 		return false
 	}
 	if authResp.Error != nil || !authResp.Allowed {
-		o.Log(r).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
-		o.EncodeError(w, r, gatewayerrors.ErrAccessDenied.ToAPIErr())
+		o.Log(req).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
+		o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 		return false
 	}
 	return true
@@ -188,58 +275,6 @@ func operation(sc *ServerContext, ctx context.Context) *operations.Operation {
 	}
 }
 
-func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHandler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		username := request.Context().Value("user").(*model.User).Username
-		repoID := request.Context().Value("repo_id").(string)
-		repo := request.Context().Value("repo").(*catalog.Repository)
-		refID := request.Context().Value("ref").(string)
-		path := request.Context().Value("path").(string)
-		authContext := request.Context().Value("auth_context").(sig.SigContext)
-		o := request.Context().Value("operation").(*operations.Operation)
-		perms, err := handler.RequiredPermissions(request, repoID, refID, path)
-		if err != nil {
-			o.EncodeError(writer, request, gatewayerrors.ErrAccessDenied.ToAPIErr())
-			return
-		}
-		authOp := &operations.AuthenticatedOperation{
-			Operation: o,
-			Principal: username,
-		}
-		if !authorize(writer, request, authOp, authContext, sc.authService, perms) {
-			return
-		}
-		// run callback
-		operation := &operations.PathOperation{
-			RefOperation: &operations.RefOperation{
-				RepoOperation: &operations.RepoOperation{
-					AuthenticatedOperation: authOp,
-					Repository:             repo,
-				},
-				Reference: refID,
-			},
-			Path: path,
-		}
-		operation.AddLogFields(request, logging.Fields{
-			"repository": repo.Name,
-			"ref":        refID,
-			"path":       path,
-		})
-		handler.Handle(writer, request, operation)
-	})
-}
-
-func notFound(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-}
-
-var commaSeparator = regexp.MustCompile(`,\s*`)
-
-var (
-	contentTypeApplicationXML = "application/xml"
-	contentTypeTextXML        = "text/xml"
-)
-
 func selectContentType(acceptable []string) *string {
 	for _, acceptableTypes := range acceptable {
 		acceptable := commaSeparator.Split(acceptableTypes, -1)
@@ -255,8 +290,8 @@ func selectContentType(acceptable []string) *string {
 	return nil
 }
 
-func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
-	acceptable, ok := r.Header["Accept"]
+func setDefaultContentType(w http.ResponseWriter, req *http.Request) {
+	acceptable, ok := req.Header["Accept"]
 	if ok {
 		defaultContentType := selectContentType(acceptable)
 		if defaultContentType != nil {
@@ -270,38 +305,6 @@ func setDefaultContentType(w http.ResponseWriter, r *http.Request) {
 		// whatever headers arrive, including setting up to auto-detect content-type if
 		// none is specified by the adapter.
 	}
-}
-
-func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	o := req.Context().Value("operation").(*operations.Operation)
-	setDefaultContentType(w, req)
-	actionHandler := getOperationHandler(h.sc, o.OperationID)
-	if actionHandler == nil {
-		h.NotFoundHandler.ServeHTTP(w, req)
-		return
-	}
-	actionHandler.ServeHTTP(w, req)
-}
-
-func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		username := request.Context().Value("user").(*model.User).Username
-		authContext := request.Context().Value("auth_context").(sig.SigContext)
-		o := request.Context().Value("operation").(*operations.Operation)
-		perms, err := handler.RequiredPermissions(request)
-		if err != nil {
-			o.EncodeError(writer, request, gatewayerrors.ErrAccessDenied.ToAPIErr())
-			return
-		}
-		authOp := &operations.AuthenticatedOperation{
-			Operation: o,
-			Principal: username,
-		}
-		if !authorize(writer, request, authOp, authContext, sc.authService, perms) {
-			return
-		}
-		handler.Handle(writer, request, authOp)
-	})
 }
 
 func getOperationHandler(sc *ServerContext, operationID string) http.Handler {
@@ -333,8 +336,8 @@ func getOperationHandler(sc *ServerContext, operationID string) http.Handler {
 }
 
 func unsupportedOperationHandler() http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := &operations.Operation{}
-		o.EncodeError(writer, request, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 	})
 }

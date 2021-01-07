@@ -62,17 +62,17 @@ func StorageClassFromHeader(header http.Header) *string {
 	return &storageClass
 }
 
-func (o *Operation) AddLogFields(request *http.Request, fields logging.Fields) {
-	ctx := logging.AddFields(o.Context(request), fields)
-	request = request.WithContext(ctx)
+func (o *Operation) AddLogFields(req *http.Request, fields logging.Fields) {
+	ctx := logging.AddFields(o.Context(req), fields)
+	req = req.WithContext(ctx)
 }
 
-func (o *Operation) Context(request *http.Request) context.Context {
-	return request.Context()
+func (o *Operation) Context(req *http.Request) context.Context {
+	return req.Context()
 }
 
-func (o *Operation) Log(request *http.Request) logging.Logger {
-	return logging.FromContext(o.Context(request))
+func (o *Operation) Log(req *http.Request) logging.Logger {
+	return logging.FromContext(o.Context(req))
 }
 
 func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
@@ -84,10 +84,10 @@ func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
 	return err
 }
 
-func (o *Operation) EncodeXMLBytes(writer http.ResponseWriter, request *http.Request, t []byte, statusCode int) {
-	err := EncodeXMLBytes(writer, t, statusCode)
+func (o *Operation) EncodeXMLBytes(w http.ResponseWriter, req *http.Request, t []byte, statusCode int) {
+	err := EncodeXMLBytes(w, t, statusCode)
 	if err != nil {
-		o.Log(request).WithError(err).Error("failed to encode XML to response")
+		o.Log(req).WithError(err).Error("failed to encode XML to response")
 	}
 }
 
@@ -101,10 +101,10 @@ func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) e
 	return EncodeXMLBytes(w, payload, statusCode)
 }
 
-func (o *Operation) EncodeResponse(writer http.ResponseWriter, request *http.Request, entity interface{}, statusCode int) {
-	err := EncodeResponse(writer, entity, statusCode)
+func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity interface{}, statusCode int) {
+	err := EncodeResponse(w, entity, statusCode)
 	if err != nil {
-		o.Log(request).WithError(err).Error("encoding response failed")
+		o.Log(req).WithError(err).Error("encoding response failed")
 	}
 }
 
@@ -122,25 +122,25 @@ func DecodeXMLBody(reader io.Reader, entity interface{}) error {
 }
 
 // SetHeader sets a header on the response while preserving its case
-func (o *Operation) SetHeader(writer http.ResponseWriter, key, value string) {
-	writer.Header()[key] = []string{value}
+func (o *Operation) SetHeader(w http.ResponseWriter, key, value string) {
+	w.Header()[key] = []string{value}
 }
 
 // DeleteHeader deletes a header from the response
-func (o *Operation) DeleteHeader(writer http.ResponseWriter, key string) {
-	writer.Header().Del(key)
+func (o *Operation) DeleteHeader(w http.ResponseWriter, key string) {
+	w.Header().Del(key)
 }
 
 // SetHeaders sets a map of headers on the response while preserving the header's case
-func (o *Operation) SetHeaders(writer http.ResponseWriter, headers map[string]string) {
+func (o *Operation) SetHeaders(w http.ResponseWriter, headers map[string]string) {
 	for k, v := range headers {
-		o.SetHeader(writer, k, v)
+		o.SetHeader(w, k, v)
 	}
 }
 
-func (o *Operation) EncodeError(writer http.ResponseWriter, request *http.Request, e errors.APIError) *http.Request {
-	request, rid := httputil.RequestID(request)
-	err := EncodeResponse(writer, errors.APIErrorResponse{
+func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e errors.APIError) *http.Request {
+	req, rid := httputil.RequestID(req)
+	err := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       e.Code,
 		Message:    e.Description,
 		BucketName: "",
@@ -151,9 +151,9 @@ func (o *Operation) EncodeError(writer http.ResponseWriter, request *http.Reques
 		HostID:     generateHostID(), // just for compatibility, meaningless in our case
 	}, e.HTTPStatusCode)
 	if err != nil {
-		o.Log(request).WithError(err).Error("encoding response failed")
+		o.Log(req).WithError(err).Error("encoding response failed")
 	}
-	return request
+	return req
 }
 
 func generateHostID() string {
@@ -171,10 +171,10 @@ type RepoOperation struct {
 	Repository *catalog.Repository
 }
 
-func (o *RepoOperation) EncodeError(writer http.ResponseWriter, request *http.Request, err errors.APIError) *http.Request {
-	request, rid := httputil.RequestID(request)
+func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+	req, rid := httputil.RequestID(req)
 
-	writeErr := EncodeResponse(writer, errors.APIErrorResponse{
+	writeErr := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
@@ -185,9 +185,9 @@ func (o *RepoOperation) EncodeError(writer http.ResponseWriter, request *http.Re
 		HostID:     generateHostID(),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
-		o.Log(request).WithError(writeErr).Error("encoding response failed")
+		o.Log(req).WithError(writeErr).Error("encoding response failed")
 	}
-	return request
+	return req
 }
 
 type RefOperation struct {
@@ -200,10 +200,9 @@ type PathOperation struct {
 	Path string
 }
 
-func (o *PathOperation) EncodeError(writer http.ResponseWriter, request *http.Request, err errors.APIError) *http.Request {
-	request, rid := httputil.RequestID(request)
-
-	writeErr := EncodeResponse(writer, errors.APIErrorResponse{
+func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+	req, rid := httputil.RequestID(req)
+	writeErr := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
@@ -214,31 +213,31 @@ func (o *PathOperation) EncodeError(writer http.ResponseWriter, request *http.Re
 		HostID:     generateHostID(),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
-		o.Log(request).WithError(writeErr).Error("encoding response failed")
+		o.Log(req).WithError(writeErr).Error("encoding response failed")
 	}
-	return request
+	return req
 }
 
 type OperationHandler interface {
-	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
-	Handle(w http.ResponseWriter, r *http.Request, op *Operation)
+	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
-	Handle(w http.ResponseWriter, r *http.Request, op *AuthenticatedOperation)
+	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *AuthenticatedOperation)
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository string) ([]permissions.Permission, error)
-	Handle(w http.ResponseWriter, r *http.Request, op *RepoOperation)
+	RequiredPermissions(req *http.Request, repository string) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository, branch string) ([]permissions.Permission, error)
-	Handle(w http.ResponseWriter, r *http.Request, op *RefOperation)
+	RequiredPermissions(req *http.Request, repository, branch string) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *RefOperation)
 }
 type PathOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository, branch, path string) ([]permissions.Permission, error)
-	Handle(w http.ResponseWriter, r *http.Request, op *PathOperation)
+	RequiredPermissions(req *http.Request, repository, branch, path string) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *PathOperation)
 }
