@@ -2,7 +2,8 @@ package rocks
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto"
+	_ "crypto/sha256"
 	"fmt"
 
 	"github.com/treeverse/lakefs/cache"
@@ -18,6 +19,11 @@ import (
 
 	pebble_sst "github.com/cockroachdb/pebble/sstable"
 )
+
+// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
+// causes all old identifiers to change, so while existing installations will continue to
+// function they will be unable to re-use any existing objects.
+var hashAlg = crypto.SHA256
 
 type Path string
 
@@ -105,9 +111,8 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		rangeFS,
 		pebble_sst.ReaderOptions{})
 
-	sha256 := sha256.New()
-	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, sha256)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, sha256)
+	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, hashAlg)
 	sstableMetaRangeManager := committed.NewMetaRangeManager(
 		*cfg.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
