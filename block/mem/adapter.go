@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -85,6 +86,10 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 
 func getKey(obj block.ObjectPointer) string {
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
+}
+
+func getPrefix(lsOpts block.WalkOpts) string {
+	return fmt.Sprintf("%s:%s", lsOpts.StorageNamespace, lsOpts.Prefix)
 }
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
@@ -228,6 +233,21 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.data[getKey(obj)] = data
 	return &hexCode, int64(len(data)), nil
+}
+
+func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	fullPrefix := getPrefix(walkOpt)
+	for k := range a.data {
+		if strings.HasPrefix(k, fullPrefix) {
+			if err := walkFn(k); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (a *Adapter) ValidateConfiguration(_ string) error {
