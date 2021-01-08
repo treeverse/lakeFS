@@ -44,6 +44,17 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
+func resolveNamespacePrefix(opts block.WalkOpts) (block.QualifiedPrefix, error) {
+	qualifiedPrefix, err := block.ResolveNamespacePrefix(opts.StorageNamespace, opts.Prefix)
+	if err != nil {
+		return qualifiedPrefix, err
+	}
+	if qualifiedPrefix.StorageType != block.StorageTypeS3 {
+		return qualifiedPrefix, block.ErrInvalidNamespace
+	}
+	return qualifiedPrefix, nil
+}
+
 type Adapter struct {
 	s3                    s3iface.S3API
 	httpClient            *http.Client
@@ -306,6 +317,49 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	}
 	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
+}
+
+func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	log := a.log().WithField("operation", "Walk")
+	var err error
+	var lenRes int64
+	defer reportMetrics("Walk", time.Now(), &lenRes, &err)
+
+	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
+	if err != nil {
+		return err
+	}
+
+	listObjectInput := s3.ListObjectsInput{
+		Bucket: aws.String(qualifiedPrefix.StorageNamespace),
+		Prefix: aws.String(qualifiedPrefix.Prefix),
+	}
+
+	for {
+		listOutput, err := a.s3.ListObjects(&listObjectInput)
+		if err != nil {
+			log.WithError(err).WithFields(logging.Fields{
+				"bucket": qualifiedPrefix.StorageNamespace,
+				"prefix": qualifiedPrefix.Prefix,
+			}).Error("failed to list S3 objects")
+			return err
+		}
+
+		for _, obj := range listOutput.Contents {
+			if err := walkFn(*obj.Key); err != nil {
+				return err
+			}
+		}
+
+		if listOutput.IsTruncated == nil || !*listOutput.IsTruncated {
+			break
+		}
+
+		// start with the next marker
+		listObjectInput.Marker = listOutput.NextMarker
+	}
+
+	return nil
 }
 
 func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
