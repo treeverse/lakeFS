@@ -17,7 +17,7 @@ type uncommittedDiffIterator struct {
 	ctx              context.Context
 }
 
-// NewUncommittedDiffIterator list uncommitted changes as diff. The `metaRangeID` can be empty in case there is no commit
+// NewUncommittedDiffIterator lists uncommitted changes as a diff. If `metaRangeID` is empty then there is no commit and it returns all objects as added
 func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, metaRangeID MetaRangeID) DiffIterator {
 	return &uncommittedDiffIterator{
 		ctx:              ctx,

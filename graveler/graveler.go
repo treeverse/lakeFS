@@ -777,15 +777,20 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", fmt.Errorf("get branch: %w", err)
 	}
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
-	if err != nil {
-		return "", fmt.Errorf("get commit: %w", err)
+	var branchMetaRangeID MetaRangeID
+	if branch.CommitID != "" {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		if err != nil {
+			return "", fmt.Errorf("get commit: %w", err)
+		}
+		branchMetaRangeID = commit.MetaRangeID
 	}
+
 	changes, err := g.StagingManager.List(ctx, branch.StagingToken)
 	if err != nil {
 		return "", fmt.Errorf("staging list: %w", err)
 	}
-	metaRangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, commit.MetaRangeID, changes)
+	metaRangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
 	if err != nil {
 		return "", fmt.Errorf("apply: %w", err)
 	}
@@ -961,13 +966,14 @@ func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 		return nil, err
 	}
 	var metaRangeID MetaRangeID
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
-	if err != nil && !errors.Is(err, ErrCommitNotFound) {
-		return nil, err
-	}
-	if commit != nil {
+	if branch.CommitID != "" {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+		if err != nil {
+			return nil, err
+		}
 		metaRangeID = commit.MetaRangeID
 	}
+
 	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken)
 	if err != nil {
 		return nil, err
