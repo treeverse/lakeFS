@@ -72,7 +72,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 func EnrichWithParts(bareDomain string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		repo, ref, pth := parts(req, bareDomain)
+		repo, ref, pth := Parts(req.Host, req.URL.Path, bareDomain)
 		ctx = context.WithValue(ctx, ContextKeyRepositoryID, repo)
 		ctx = context.WithValue(ctx, ContextKeyRef, ref)
 		ctx = context.WithValue(ctx, ContextKeyPath, pth)
@@ -189,10 +189,11 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 	})
 }
 
-func parts(req *http.Request, bareDomain string) (repo string, ref string, pth string) {
-	urlPath := strings.TrimPrefix(req.URL.Path, path.Separator)
+// Parts returns the repo id, ref and path according to whether the request is path-style or virtual-host-style.
+func Parts(host string, urlPath string, bareDomain string) (repo string, ref string, pth string) {
+	urlPath = strings.TrimPrefix(urlPath, path.Separator)
 	var p []string
-	if strings.EqualFold(httputil.HostOnly(req.Host), httputil.HostOnly(bareDomain)) {
+	if strings.EqualFold(httputil.HostOnly(host), httputil.HostOnly(bareDomain)) {
 		// path style: extract repo from first part
 		p = strings.SplitN(urlPath, path.Separator, 3)
 		repo = p[0]
@@ -201,7 +202,7 @@ func parts(req *http.Request, bareDomain string) (repo string, ref string, pth s
 		}
 	} else {
 		// virtual host style: extract repo from subdomain
-		host := httputil.HostOnly(req.Host)
+		host := httputil.HostOnly(host)
 		ourHost := httputil.HostOnly(bareDomain)
 		if !strings.HasSuffix(host, ourHost) {
 			repo = ""
