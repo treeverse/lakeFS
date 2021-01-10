@@ -29,6 +29,12 @@ type PutOpts struct {
 	StorageClass *string // S3 storage class
 }
 
+// WalkOpts is a unique identifier of a prefix in the object store.
+type WalkOpts struct {
+	StorageNamespace string
+	Prefix           string
+}
+
 // CreateMultiPartOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
@@ -48,11 +54,20 @@ type Properties struct {
 	StorageClass *string
 }
 
+// WalkFunc is called for each object visited by the Walk.
+// The id argument contains the argument to Walk as a prefix; that is, if Walk is called with "test/data/",
+// which is a prefix containing the object "test/data/a", the walk function will be called with argument "test/data/a".
+// If there was a problem walking to the object, the incoming error will describe the problem and the function can decide
+// how to handle that error.
+// If an error is returned, processing stops.
+type WalkFunc func(id string) error
+
 type Adapter interface {
 	InventoryGenerator
 	WithContext(ctx context.Context) Adapter
 	Put(obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
+	Walk(walkOpt WalkOpts, walkFn WalkFunc) error
 	Exists(obj ObjectPointer) (bool, error)
 	GetRange(obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(obj ObjectPointer) (Properties, error)

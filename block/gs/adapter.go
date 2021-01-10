@@ -88,6 +88,17 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
+func resolveNamespacePrefix(lsOpts block.WalkOpts) (block.QualifiedPrefix, error) {
+	qualifiedPrefix, err := block.ResolveNamespacePrefix(lsOpts.StorageNamespace, lsOpts.Prefix)
+	if err != nil {
+		return qualifiedPrefix, err
+	}
+	if qualifiedPrefix.StorageType != block.StorageTypeGS {
+		return qualifiedPrefix, block.ErrInvalidNamespace
+	}
+	return qualifiedPrefix, nil
+}
+
 func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
@@ -119,6 +130,33 @@ func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	}
 	r, err := a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).NewReader(a.ctx)
 	return r, err
+}
+
+func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	var err error
+	defer reportMetrics("Walk", time.Now(), nil, &err)
+	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
+	if err != nil {
+		return err
+	}
+
+	iter := a.client.Bucket(qualifiedPrefix.StorageNamespace).Objects(context.Background(), &storage.Query{Prefix: qualifiedPrefix.Prefix})
+
+	for {
+		attrs, err := iter.Next()
+
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedPrefix.StorageNamespace, err)
+		}
+
+		if err := walkFn(attrs.Name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {

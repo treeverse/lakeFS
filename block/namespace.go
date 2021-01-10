@@ -26,6 +26,12 @@ type QualifiedKey struct {
 	Key              string
 }
 
+type QualifiedPrefix struct {
+	StorageType      StorageType
+	StorageNamespace string
+	Prefix           string
+}
+
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 	var st StorageType
 	switch namespaceURL.Scheme {
@@ -57,6 +63,20 @@ func formatPathWithNamespace(namespacePath, keyPath string) string {
 func IsResolvableKey(key string) bool {
 	_, err := url.ParseRequestURI(key)
 	return err != nil
+}
+
+func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, error) {
+	// behaviour for key and prefix is the same
+	key, err := ResolveNamespace(defaultNamespace, prefix)
+	if err != nil {
+		return QualifiedPrefix{}, fmt.Errorf("resolving namespace: %w", err)
+	}
+
+	return QualifiedPrefix{
+		StorageType:      key.StorageType,
+		StorageNamespace: key.StorageNamespace,
+		Prefix:           key.Key,
+	}, nil
 }
 
 func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {

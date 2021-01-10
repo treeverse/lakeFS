@@ -4,6 +4,9 @@ ARG VERSION=dev
 
 WORKDIR /build
 
+# Packages required to build
+RUN apk add --no-cache gcc
+
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
 RUN go mod download
