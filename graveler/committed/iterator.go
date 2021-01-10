@@ -1,40 +1,66 @@
 package committed
 
 import (
+	"fmt"
+
 	"github.com/treeverse/lakefs/graveler"
 )
 
 type iterator struct {
 	started   bool
 	manager   RangeManager
-	ranges    []Range
+	rangesIt  ValueIterator
+	rng       *Range // Decoded value at which rangeIt point
 	it        graveler.ValueIterator
 	err       error
 	namespace Namespace
 }
 
-func NewIterator(manager RangeManager, namespace Namespace, ranges []Range) Iterator {
+func NewIterator(manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
 	return &iterator{
 		manager:   manager,
 		namespace: namespace,
-		ranges:    ranges,
+		rangesIt:  rangesIt,
 	}
 }
 
 func (rvi *iterator) NextRange() bool {
-	if len(rvi.ranges) <= 1 {
+	if rvi.it != nil {
+		rvi.it.Close()
+		rvi.it = nil
+	}
+	rvi.rng = nil
+	if !rvi.rangesIt.Next() {
 		return false
 	}
-	rvi.ranges = rvi.ranges[1:]
-	rvi.it.Close()
-	rvi.it = nil
+	rngRecord := rvi.rangesIt.Value()
+	if rngRecord == nil {
+		return rvi.NextRange()
+	}
+
+	rng, err := UnmarshalRange(rngRecord.Value)
+	if err != nil {
+		rvi.err = fmt.Errorf("unmarshal %s: %w", string(rngRecord.Key), err)
+		return false
+	}
+
+	rng.ID = ID(rngRecord.Key)
+	rvi.rng = &rng
+
+	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rvi.rng.ID)
+	if err != nil {
+		rvi.err = fmt.Errorf("open range %s: %w", rvi.rng.ID, err)
+		return false
+	}
+	rvi.it = NewUnmarshalIterator(it)
+
 	return true
 }
 
 func (rvi *iterator) Next() bool {
 	if !rvi.started {
 		rvi.started = true
-		return len(rvi.ranges) > 0
+		return rvi.NextRange()
 	}
 	if rvi.it != nil {
 		if rvi.it.Next() {
@@ -43,15 +69,9 @@ func (rvi *iterator) Next() bool {
 		// At end of range
 		return rvi.NextRange()
 	}
-	// Start iterating inside range
-	if len(rvi.ranges) == 0 {
-		return false // Iteration was already finished.
-	}
-	var err error
-	rvi.it, err = rvi.newRangeIterator(rvi.ranges[0].ID)
-	if err != nil {
-		rvi.err = err
-		return false
+	// Start iterating inside the range of rvi.RangesIt
+	if rvi.rng == nil {
+		return rvi.NextRange()
 	}
 	if rvi.it.Next() {
 		return true
@@ -61,14 +81,10 @@ func (rvi *iterator) Next() bool {
 }
 
 func (rvi *iterator) Value() (*graveler.ValueRecord, *Range) {
-	if len(rvi.ranges) == 0 {
-		return nil, nil
-	}
-	rng := &rvi.ranges[0]
 	if rvi.it == nil {
-		return nil, rng // start new range
+		return nil, rvi.rng // start new range
 	}
-	return rvi.it.Value(), rng
+	return rvi.it.Value(), rvi.rng
 }
 
 func (rvi *iterator) Err() error {
@@ -86,16 +102,22 @@ func (rvi *iterator) Close() {
 		return
 	}
 	rvi.it.Close()
+	rvi.rangesIt.Close()
 }
 
-func (rvi *iterator) SeekGE(id graveler.Key) {
-	panic("implement me")
-}
-
-func (rvi *iterator) newRangeIterator(rangeID ID) (graveler.ValueIterator, error) {
-	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rangeID)
-	if err != nil {
-		return nil, err
+func (rvi *iterator) SeekGE(key graveler.Key) {
+	var err error
+	// TODO(ariels): rangesIt might already be on correct range.
+	rvi.rangesIt.SeekGE(Key(key))
+	if err = rvi.rangesIt.Err(); err != nil {
+		rvi.err = err
+		return
 	}
-	return NewUnmarshalIterator(it), nil
+	if !rvi.NextRange() {
+		return // Reached end.
+	}
+	rvi.started = true // "Started": rangesIt is valid.
+	rvi.it.SeekGE(key)
+	// Ready to call Next to see values.
+	rvi.err = rvi.it.Err()
 }

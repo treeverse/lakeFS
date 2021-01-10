@@ -40,6 +40,10 @@ type RangeManager interface {
 	// found, it return (nil, ErrNotFound).
 	GetValue(ns Namespace, id ID, key Key) (*Record, error)
 
+	// GetValueGE returns the first value keyed at or after key in the Range referenced by
+	// id.  If all values are keyed before key, it returns (nil, ErrNotFound).
+	GetValueGE(ns Namespace, id ID, key Key) (*Record, error)
+
 	// NewRangeIterator returns an iterator over values in the Range with ID.
 	NewRangeIterator(ns Namespace, pid ID) (ValueIterator, error)
 
