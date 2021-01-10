@@ -960,15 +960,19 @@ func (g *graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryI
 	if err != nil {
 		return nil, err
 	}
+	var metaRangeID MetaRangeID
 	commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrCommitNotFound) {
 		return nil, err
+	}
+	if commit != nil {
+		metaRangeID = commit.MetaRangeID
 	}
 	valueIterator, err := g.StagingManager.List(ctx, branch.StagingToken)
 	if err != nil {
 		return nil, err
 	}
-	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, commit.MetaRangeID), nil
+	return NewUncommittedDiffIterator(ctx, g.CommittedManager, valueIterator, repo.StorageNamespace, metaRangeID), nil
 }
 
 func (g *graveler) getCommitRecordFromRef(ctx context.Context, repositoryID RepositoryID, ref Ref) (*CommitRecord, error) {
