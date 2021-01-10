@@ -374,11 +374,18 @@ func parseNamespacePath(namespace string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse namespace: %w", err)
 	}
+	// extract host without port
 	h := u.Host
-	idx := strings.Index(u.Host, ":")
+	idx := strings.Index(h, ":")
 	if idx != -1 {
 		h = h[:idx]
 	}
-	nsPath := h + "/" + u.Path
+	// namespace path include host if found
+	var nsPath string
+	if h == "" {
+		nsPath = u.Path
+	} else {
+		nsPath = h + "/" + u.Path
+	}
 	return nsPath, nil
 }

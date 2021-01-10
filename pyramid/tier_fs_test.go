@@ -156,12 +156,13 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	writeToFile(t, namespace, filename, content)
 
 	// remove the file
-	require.NoError(t, filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, filename) {
 			return os.Remove(path)
 		}
 		return nil
-	}))
+	})
+	require.NoError(t, err)
 	// try to read that file - only a single access to block storage is expected
 	const concurrencyLevel = 50
 	adapter.wait = make(chan struct{})
