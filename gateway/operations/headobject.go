@@ -14,7 +14,7 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) RequiredPermissions(request *http.Request, repoID, branchID, path string) ([]permissions.Permission, error) {
+func (controller *HeadObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.ReadObjectAction,
@@ -23,32 +23,32 @@ func (controller *HeadObject) RequiredPermissions(request *http.Request, repoID,
 	}, nil
 }
 
-func (controller *HeadObject) Handle(o *PathOperation) {
+func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("stat_object")
-	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{ReturnExpired: true})
+	entry, err := o.Cataloger.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{ReturnExpired: true})
 	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.Log().Debug("path not found")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		o.Log(req).Debug("path not found")
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if err != nil {
-		o.Log().WithError(err).Error("failed querying path")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		o.Log(req).WithError(err).Error("failed querying path")
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	if entry.Expired {
-		o.Log().WithError(err).Info("querying expired object")
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		o.Log(req).WithError(err).Info("querying expired object")
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 		return
 	}
 
-	o.SetHeader("Accept-Ranges", "bytes")
-	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
-	o.SetHeader("ETag", httputil.ETag(entry.Checksum))
-	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.Size))
+	o.SetHeader(w, "Accept-Ranges", "bytes")
+	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
+	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
+	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
 
 	// Delete the default content-type header so http.Server will detect it from contents
 	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
-	o.DeleteHeader("Content-Type")
+	o.DeleteHeader(w, "Content-Type")
 }
