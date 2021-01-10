@@ -421,8 +421,8 @@ func (c *Config) GetCommittedRangeSSTableCacheParams() *cache.ParamsWithDisposal
 
 func (c *Config) GetCommittedMetaRangeSSTableCacheParams() *cache.ParamsWithDisposal {
 	return &cache.ParamsWithDisposal{
-		Name:   "ranges SSTable reader cache",
-		Logger: logging.Default().WithField("cache", "range_reader"),
+		Name:   "meta-ranges SSTable reader cache",
+		Logger: logging.Default().WithField("cache", "meta_range_reader"),
 		Size:   viper.GetInt(CommittedMetaRangeReaderCacheSize),
 		Shards: viper.GetInt(CommittedMetaRangeReaderCacheNumShards),
 	}
