@@ -114,7 +114,7 @@ func DurationHandler(next http.Handler) http.Handler {
 	})
 }
 
-func EnrichWithRepository(cataloger catalog.Cataloger, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepositoryOrFallback(cataloger catalog.Cataloger, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)

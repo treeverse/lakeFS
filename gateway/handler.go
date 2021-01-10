@@ -133,7 +133,7 @@ func NewHandler(
 		DurationHandler(
 			AuthenticationHandler(authService, bareDomain,
 				EnrichWithParts(bareDomain,
-					EnrichWithRepository(cataloger, authService, fallbackHandler,
+					EnrichWithRepositoryOrFallback(cataloger, authService, fallbackHandler,
 						OperationLookupHandler(
 							h))))))
 	logging.Default().WithFields(logging.Fields{
