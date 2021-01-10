@@ -13,15 +13,7 @@ import (
 	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
-func makeEmptyValue() committed.Value {
-	ret, err := committed.MarshalValue(&graveler.Value{})
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}
-
-var emptyValue = makeEmptyValue()
+var emptyValue = committed.MustMarshalValue(&graveler.Value{})
 
 func makeRangeIterator(rangeIDs []graveler.Key) committed.ValueIterator {
 	records := make([]committed.Record, len(rangeIDs))

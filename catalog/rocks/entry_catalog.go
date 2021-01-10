@@ -23,7 +23,7 @@ import (
 // hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
 // causes all old identifiers to change, so while existing installations will continue to
 // function they will be unable to re-use any existing objects.
-var hashAlg = crypto.SHA256
+const hashAlg = crypto.SHA256
 
 type Path string
 
