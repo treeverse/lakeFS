@@ -810,7 +810,7 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		g.log.WithContext(ctx).WithFields(logging.Fields{
 			"repository_id": repositoryID,
 			"branch_id":     branchID,
-			"commit_id":     *commit,
+			"commit_id":     branch.CommitID,
 			"message":       message,
 			"staging_token": branch.StagingToken,
 		}).Error("Failed to drop staging data")
