@@ -229,9 +229,9 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 }
 
 func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	logging.AddFields(req.Context(), logging.Fields{
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
 		"list_type": "v1",
-	})
+	}))
 	// handle ListObjects (v1)
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")

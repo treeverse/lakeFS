@@ -47,7 +47,7 @@ type handler struct {
 	BareDomain         string
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
-	operationHandlers  map[string]http.Handler
+	operationHandlers  map[operations.OperationID]http.Handler
 }
 
 type ServerContext struct {
@@ -112,7 +112,7 @@ func NewHandler(
 		BareDomain:         bareDomain,
 		sc:                 sc,
 		ServerErrorHandler: nil,
-		operationHandlers: map[string]http.Handler{
+		operationHandlers: map[operations.OperationID]http.Handler{
 			operations.OperationIDDeleteObject:         PathOperationHandler(sc, &operations.DeleteObject{}),
 			operations.OperationIDDeleteObjects:        RepoOperationHandler(sc, &operations.DeleteObjects{}),
 			operations.OperationIDGetObject:            PathOperationHandler(sc, &operations.GetObject{}),
@@ -167,19 +167,14 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		username := ctx.Value(ContextKeyUser).(*model.User).Username
-		authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req)
 		if err != nil {
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := &operations.AuthenticatedOperation{
-			Operation: o,
-			Principal: username,
-		}
-		if !authorize(w, req, authOp, authContext, sc.authService, perms) {
+		authOp := authorize(w, req, sc.authService, perms)
+		if authOp == nil {
 			return
 		}
 		handler.Handle(w, req, authOp)
@@ -189,25 +184,20 @@ func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperati
 func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		username := ctx.Value(ContextKeyUser).(*model.User).Username
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
-		authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := &operations.AuthenticatedOperation{
-			Operation: o,
-			Principal: username,
-		}
-		if !authorize(w, req, authOp, authContext, sc.authService, perms) {
+		authOp := authorize(w, req, sc.authService, perms)
+		if authOp == nil {
 			return
 		}
 		repoOperation := &operations.RepoOperation{
-			AuthenticatedOperation: authOp,
-			Repository:             repo,
+			AuthorizedOperation: authOp,
+			Repository:          repo,
 		}
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
 			"repository": repo.Name,
@@ -219,30 +209,25 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		username := ctx.Value(ContextKeyUser).(*model.User).Username
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
 		refID := ctx.Value(ContextKeyRef).(string)
 		path := ctx.Value(ContextKeyPath).(string)
-		authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
 		if err != nil {
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := &operations.AuthenticatedOperation{
-			Operation: o,
-			Principal: username,
-		}
-		if !authorize(w, req, authOp, authContext, sc.authService, perms) {
+		authOp := authorize(w, req, sc.authService, perms)
+		if authOp == nil {
 			return
 		}
 		// run callback
 		operation := &operations.PathOperation{
 			RefOperation: &operations.RefOperation{
 				RepoOperation: &operations.RepoOperation{
-					AuthenticatedOperation: authOp,
-					Repository:             repo,
+					AuthorizedOperation: authOp,
+					Repository:          repo,
 				},
 				Reference: refID,
 			},
@@ -257,22 +242,29 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 	})
 }
 
-func authorize(w http.ResponseWriter, req *http.Request, o *operations.AuthenticatedOperation, authContext sig.SigContext, authService simulator.GatewayAuthService, perms []permissions.Permission) bool {
+func authorize(w http.ResponseWriter, req *http.Request, authService simulator.GatewayAuthService, perms []permissions.Permission) *operations.AuthorizedOperation {
+	ctx := req.Context()
+	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
+	username := ctx.Value(ContextKeyUser).(*model.User).Username
+	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
 	authResp, err := authService.Authorize(&auth.AuthorizationRequest{
-		Username:            o.Principal,
+		Username:            username,
 		RequiredPermissions: perms,
 	})
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to authorize")
 		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
-		return false
+		return nil
 	}
 	if authResp.Error != nil || !authResp.Allowed {
 		o.Log(req).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
 		_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
-		return false
+		return nil
 	}
-	return true
+	return &operations.AuthorizedOperation{
+		Operation: o,
+		Principal: username,
+	}
 }
 
 func selectContentType(acceptable []string) *string {

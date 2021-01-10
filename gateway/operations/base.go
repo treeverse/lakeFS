@@ -21,25 +21,27 @@ import (
 
 const StorageClassHeader = "x-amz-storage-class"
 
-const (
-	OperationIDDeleteObject  = "delete_object"
-	OperationIDDeleteObjects = "delete_objects"
-	OperationIDGetObject     = "get_object"
-	OperationIDHeadBucket    = "head_bucket"
-	OperationIDHeadObject    = "head_object"
-	OperationIDListBuckets   = "list_buckets"
-	OperationIDListObjects   = "list_objects"
-	OperationIDPostObject    = "post_object"
-	OperationIDPutObject     = "put_object"
+type OperationID string
 
-	OperationIDUnsupportedOperation = "unsupported"
-	OperationIDOperationNotFound    = "not_found"
+const (
+	OperationIDDeleteObject  OperationID = "delete_object"
+	OperationIDDeleteObjects OperationID = "delete_objects"
+	OperationIDGetObject     OperationID = "get_object"
+	OperationIDHeadBucket    OperationID = "head_bucket"
+	OperationIDHeadObject    OperationID = "head_object"
+	OperationIDListBuckets   OperationID = "list_buckets"
+	OperationIDListObjects   OperationID = "list_objects"
+	OperationIDPostObject    OperationID = "post_object"
+	OperationIDPutObject     OperationID = "put_object"
+
+	OperationIDUnsupportedOperation OperationID = "unsupported"
+	OperationIDOperationNotFound    OperationID = "not_found"
 )
 
 type ActionIncr func(string)
 
 type Operation struct {
-	OperationID       string
+	OperationID       OperationID
 	Region            string
 	FQDN              string
 	Cataloger         catalog.Cataloger
@@ -147,13 +149,13 @@ func generateHostID() string {
 	return auth.HexStringGenerator(generatedHostIDLength)
 }
 
-type AuthenticatedOperation struct {
+type AuthorizedOperation struct {
 	*Operation
 	Principal string
 }
 
 type RepoOperation struct {
-	*AuthenticatedOperation
+	*AuthorizedOperation
 	Repository *catalog.Repository
 }
 
@@ -210,7 +212,7 @@ type OperationHandler interface {
 
 type AuthenticatedOperationHandler interface {
 	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
-	Handle(w http.ResponseWriter, req *http.Request, op *AuthenticatedOperation)
+	Handle(w http.ResponseWriter, req *http.Request, op *AuthorizedOperation)
 }
 
 type RepoOperationHandler interface {

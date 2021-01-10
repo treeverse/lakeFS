@@ -116,7 +116,7 @@ func DurationHandler(next http.Handler) http.Handler {
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
 		next.ServeHTTP(w, req)
-		requestHistograms.WithLabelValues(o.OperationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
+		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
 
@@ -163,7 +163,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		var operationID string
+		var operationID operations.OperationID
 		if repoID == "" {
 			if req.Method == http.MethodGet {
 				operationID = operations.OperationIDListBuckets
@@ -221,7 +221,7 @@ func Parts(host string, urlPath string, bareDomain string) (repo string, ref str
 	return repo, p[0], p[1]
 }
 
-func pathBasedOperationID(method string) string {
+func pathBasedOperationID(method string) operations.OperationID {
 	switch method {
 	case http.MethodDelete:
 		return operations.OperationIDDeleteObject
@@ -238,7 +238,7 @@ func pathBasedOperationID(method string) string {
 	}
 }
 
-func repositoryBasedOperationID(method string) string {
+func repositoryBasedOperationID(method string) operations.OperationID {
 	switch method {
 	case http.MethodDelete, http.MethodPut:
 		return operations.OperationIDUnsupportedOperation

@@ -20,7 +20,7 @@ func (controller *ListBuckets) RequiredPermissions(_ *http.Request) ([]permissio
 	}, nil
 }
 
-func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, o *AuthenticatedOperation) {
+func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, o *AuthorizedOperation) {
 	o.Incr("list_repos")
 	repos, _, err := o.Cataloger.ListRepositories(req.Context(), -1, "")
 	if err != nil {
