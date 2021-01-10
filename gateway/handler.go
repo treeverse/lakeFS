@@ -6,6 +6,7 @@ import (
 	gohttputil "net/http/httputil"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
@@ -26,14 +27,13 @@ import (
 type contextKey string
 
 const (
-	ContextKeyUser            contextKey = "user"
-	ContextKeyRepositoryID    contextKey = "repository_id"
-	ContextKeyRepository      contextKey = "repository"
-	ContextKeyAuthContext     contextKey = "auth_context"
-	ContextKeyOperation       contextKey = "operation"
-	ContextKeyRef             contextKey = "ref"
-	ContextKeyPath            contextKey = "path"
-	ContextKeyOriginalRequest contextKey = "original_request"
+	ContextKeyUser         contextKey = "user"
+	ContextKeyRepositoryID contextKey = "repository_id"
+	ContextKeyRepository   contextKey = "repository"
+	ContextKeyAuthContext  contextKey = "auth_context"
+	ContextKeyOperation    contextKey = "operation"
+	ContextKeyRef          contextKey = "ref"
+	ContextKeyPath         contextKey = "path"
 )
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
@@ -60,7 +60,6 @@ type ServerContext struct {
 	authService       simulator.GatewayAuthService
 	stats             stats.Collector
 	dedupCleaner      *dedup.Cleaner
-	fallbackProxy     *gohttputil.ReverseProxy
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
@@ -74,7 +73,6 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 		authService:       c.authService,
 		stats:             c.stats,
 		dedupCleaner:      c.dedupCleaner,
-		fallbackProxy:     c.fallbackProxy,
 	}
 }
 
@@ -89,9 +87,13 @@ func NewHandler(
 	dedupCleaner *dedup.Cleaner,
 	fallbackURL *url.URL,
 ) http.Handler {
-	var fallbackProxy *gohttputil.ReverseProxy
+	var fallbackHandler http.Handler
 	if fallbackURL != nil {
-		fallbackProxy = gohttputil.NewSingleHostReverseProxy(fallbackURL)
+		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
+		fallbackHandler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			request.Host = strings.Replace(request.Host, bareDomain, fallbackURL.Host, 1)
+			fallbackProxy.ServeHTTP(writer, request)
+		})
 	}
 	sc := &ServerContext{
 		ctx:               context.Background(),
@@ -103,7 +105,6 @@ func NewHandler(
 		authService:       authService,
 		stats:             stats,
 		dedupCleaner:      dedupCleaner,
-		fallbackProxy:     fallbackProxy,
 	}
 
 	// setup routes
@@ -128,14 +129,13 @@ func NewHandler(
 	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, h,
 	), authService, region, bareDomain)
-	h = EnrichWithOriginalRequest(
-		EnrichWithOperation(sc,
-			DurationHandler(
-				AuthenticationHandler(authService, bareDomain,
-					EnrichWithParts(bareDomain,
-						EnrichWithRepository(cataloger, authService, fallbackProxy,
-							OperationLookupHandler(
-								h)))))))
+	h = EnrichWithOperation(sc,
+		DurationHandler(
+			AuthenticationHandler(authService, bareDomain,
+				EnrichWithParts(bareDomain,
+					EnrichWithRepository(cataloger, authService, fallbackHandler,
+						OperationLookupHandler(
+							h))))))
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
 		"s3_region":      region,

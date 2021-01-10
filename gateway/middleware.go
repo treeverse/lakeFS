@@ -81,12 +81,6 @@ func EnrichWithParts(bareDomain string, next http.Handler) http.Handler {
 	})
 }
 
-func EnrichWithOriginalRequest(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), ContextKeyOriginalRequest, req)))
-	})
-}
-
 func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -142,8 +136,7 @@ func EnrichWithRepository(cataloger catalog.Cataloger, authService simulator.Gat
 				return
 			}
 			if fallbackProxy != nil {
-				originalRequest := ctx.Value(ContextKeyOriginalRequest).(*http.Request)
-				fallbackProxy.ServeHTTP(w, originalRequest)
+				fallbackProxy.ServeHTTP(w, req)
 				return
 			}
 			_ = o.EncodeError(w, req, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
