@@ -53,21 +53,26 @@ func (i *item) Close() error {
 }
 
 func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.ReaderOptions) Cache {
-	return NewCacheWithOpener(p,
-		func(namespace string, id string) (Item, error) {
-			file, err := fs.Open(namespace, id)
-			if err != nil {
-				return nil, fmt.Errorf("fetch %s from next tier: %w", id, err)
-			}
+	opener := makePyramidOpener(fs, readerOptions)
+	if p.Size == 0 {
+		return &noCache{opener: opener}
+	}
+	return NewCacheWithOpener(p, opener, fs.Exists)
+}
 
-			reader, err := sstable.NewReader(file, readerOptions)
-			if err != nil {
-				return nil, fmt.Errorf("open SSTable %s: %w", id, err)
-			}
-			return &item{reader}, nil
-		},
-		fs.Exists,
-	)
+func makePyramidOpener(fs pyramid.FS, readerOptions sstable.ReaderOptions) opener {
+	return func(namespace string, id string) (Item, error) {
+		file, err := fs.Open(namespace, id)
+		if err != nil {
+			return nil, fmt.Errorf("fetch %s from next tier: %w", id, err)
+		}
+
+		reader, err := sstable.NewReader(file, readerOptions)
+		if err != nil {
+			return nil, fmt.Errorf("open SSTable %s: %w", id, err)
+		}
+		return &item{reader}, nil
+	}
 }
 
 func NewCacheWithOpener(p lru.ParamsWithDisposal, open opener, exists existser) Cache {
@@ -107,4 +112,21 @@ func (c *lruCache) GetOrOpen(namespace string, id committed.ID) (*sstable.Reader
 
 func (c *lruCache) Exists(namespace string, id committed.ID) (bool, error) {
 	return c.exists(namespace, string(id))
+}
+
+type noCache struct {
+	opener opener
+}
+
+func (n *noCache) GetOrOpen(namespace string, id committed.ID) (*sstable.Reader, Derefer, error) {
+	item, err := n.opener(namespace, string(id))
+	if err != nil {
+		return nil, nil, err
+	}
+	reader := item.GetSSTable()
+	return reader, reader.Close, nil
+}
+
+func (n *noCache) Exists(namespace string, id committed.ID) (bool, error) {
+	panic("implement me")
 }

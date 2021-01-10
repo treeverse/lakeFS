@@ -42,17 +42,9 @@ type shardedCacheWithDisposal struct {
 	Shards []CacheWithDisposal
 }
 
-const (
-	DefaultCacheWithDisposalShards = 1
-	DefaultCacheWithDisposalSize   = 1000
-)
-
 func NewCacheWithDisposal(p ParamsWithDisposal) *shardedCacheWithDisposal {
 	if p.Shards <= 0 {
-		p.Shards = DefaultCacheWithDisposalShards
-	}
-	if p.Size <= 0 {
-		p.Size = DefaultCacheWithDisposalSize
+		panic("need at least 1 shard")
 	}
 	shards := make([]CacheWithDisposal, p.Shards)
 	for i := 0; i < p.Shards; i++ {
