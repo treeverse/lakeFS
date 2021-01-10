@@ -1,7 +1,6 @@
 package pyramid
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -126,7 +125,7 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	}
 }
 
-func (tfs *TierFS) store(namespace, originalPath, filename string) error {
+func (tfs *TierFS) store(namespace, originalPath, nsPath, filename string) error {
 	f, err := os.Open(originalPath)
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", originalPath, err)
@@ -145,8 +144,7 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 		return fmt.Errorf("closing file %s: %w", filename, err)
 	}
 
-	fileRef := tfs.newLocalFileRef(namespace, filename)
-
+	fileRef := tfs.newLocalFileRef(nsPath, filename)
 	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		// file was stored by the policy
 		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
@@ -159,15 +157,15 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
 func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
-	u, err := url.Parse(namespace)
+	nsPath, err := parseNamespacePath(namespace)
 	if err != nil {
-		return nil, fmt.Errorf("parse namespace: %w", err)
+		return nil, err
 	}
-	if err := tfs.createNSWorkspaceDir(u.Path); err != nil {
+	if err := tfs.createNSWorkspaceDir(nsPath); err != nil {
 		return nil, fmt.Errorf("create namespace dir: %w", err)
 	}
 
-	tempPath := tfs.workspaceTempFilePath(u.Path)
+	tempPath := tfs.workspaceTempFilePath(nsPath)
 	fh, err := os.Create(tempPath)
 	if err != nil {
 		return nil, fmt.Errorf("creating file: %w", err)
@@ -176,7 +174,7 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 	return &WRFile{
 		File: fh,
 		store: func(filename string) error {
-			return tfs.store(namespace, tempPath, filename)
+			return tfs.store(namespace, tempPath, nsPath, filename)
 		},
 		abort: func() error {
 			return os.Remove(tempPath)
@@ -187,12 +185,16 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 // Open returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
 func (tfs *TierFS) Open(namespace, filename string) (File, error) {
-	if err := validateArgs(namespace, filename); err != nil {
+	nsPath, err := parseNamespacePath(namespace)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateFilename(filename); err != nil {
 		return nil, err
 	}
 
 	// check if file is there - without taking the lock
-	fileRef := tfs.newLocalFileRef(namespace, filename)
+	fileRef := tfs.newLocalFileRef(nsPath, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
 		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
@@ -300,24 +302,15 @@ func (tfs *TierFS) openWithLock(fileRef localFileRef) (*os.File, error) {
 }
 
 func storeLocalFile(rPath string, size int64, eviction params.Eviction) error {
-	if !eviction.Store(params.RelativePath(rPath), size) {
-		return fmt.Errorf("removing file: %w", os.Remove(rPath))
+	relativePath := params.RelativePath(rPath)
+	if !eviction.Store(relativePath, size) {
+		err := os.Remove(rPath)
+		if err != nil {
+			return fmt.Errorf("removing file: %w", err)
+		}
 	}
 	return nil
 }
-
-func validateArgs(namespace, filename string) error {
-	if err := validateNamespace(namespace); err != nil {
-		return err
-	}
-	return validateFilename(filename)
-}
-
-var (
-	errSeparatorInFS   = errors.New("path contains separator")
-	errPathInWorkspace = errors.New("file cannot be located in the workspace")
-	errEmptyDirInPath  = errors.New("file path cannot contain an empty directory")
-)
 
 func validateFilename(filename string) error {
 	if strings.HasPrefix(filename, workspaceDir+string(os.PathSeparator)) {
@@ -325,13 +318,6 @@ func validateFilename(filename string) error {
 	}
 	if strings.Contains(filename, strings.Repeat(string(os.PathSeparator), 2)) {
 		return errEmptyDirInPath
-	}
-	return nil
-}
-
-func validateNamespace(ns string) error {
-	if strings.ContainsRune(ns, os.PathSeparator) {
-		return errSeparatorInFS
 	}
 	return nil
 }
@@ -381,4 +367,18 @@ func (tfs *TierFS) workspaceDirPath(namespace string) string {
 
 func (tfs *TierFS) workspaceTempFilePath(namespace string) string {
 	return path.Join(tfs.workspaceDirPath(namespace), uuid.Must(uuid.NewRandom()).String())
+}
+
+func parseNamespacePath(namespace string) (string, error) {
+	u, err := url.Parse(namespace)
+	if err != nil {
+		return "", fmt.Errorf("parse namespace: %w", err)
+	}
+	h := u.Host
+	idx := strings.Index(u.Host, ":")
+	if idx != -1 {
+		h = h[:idx]
+	}
+	nsPath := h + "/" + u.Path
+	return nsPath, nil
 }

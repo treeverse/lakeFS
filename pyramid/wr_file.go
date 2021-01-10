@@ -16,11 +16,6 @@ type WRFile struct {
 	aborted   bool
 }
 
-var (
-	errFilePersisted = errors.New("file is persisted")
-	errFileAborted   = errors.New("file is aborted")
-)
-
 // Store copies the closed file to all tiers of the pyramid.
 func (f *WRFile) Store(filename string) error {
 	if f.aborted {
