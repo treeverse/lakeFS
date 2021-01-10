@@ -10,9 +10,10 @@ import (
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/testutil"
 )
 
-func Test_cataloger_ListRepositories(t *testing.T) {
+func TestCataloger_ListRepositories(t *testing.T) {
 	// prepare data tests
 	now := time.Now()
 	gravelerData := []*graveler.RepositoryRecord{
@@ -88,7 +89,7 @@ func Test_cataloger_ListRepositories(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup cataloger
 			gravelerMock := &FakeGraveler{
-				RepositoryIterator: NewFakeRepositoryIterator(gravelerData),
+				RepositoryIteratorFactory: NewFakeRepositoryIteratorFactory(gravelerData),
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
@@ -109,6 +110,43 @@ func Test_cataloger_ListRepositories(t *testing.T) {
 			}
 			if diff := deep.Equal(got, tt.want); diff != nil {
 				t.Error("ListRepositories diff found:", diff)
+			}
+		})
+	}
+}
+
+func TestCataloger_BranchExists(t *testing.T) {
+	// prepare branch data
+	gravelerData := []*graveler.BranchRecord{
+		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
+		{BranchID: "branch2", Branch: &graveler.Branch{CommitID: "commit2"}},
+		{BranchID: "branch3", Branch: &graveler.Branch{CommitID: "commit3"}},
+	}
+	tests := []struct {
+		Branch      string
+		ShouldExist bool
+	}{{"branch1", true}, {"branch2", true}, {"branch-foo", false}}
+	for _, tt := range tests {
+		t.Run(tt.Branch, func(t *testing.T) {
+			// setup cataloger
+			gravelerMock := &FakeGraveler{
+				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
+			}
+			c := &cataloger{
+				EntryCatalog: &EntryCatalog{
+					store: gravelerMock,
+				},
+			}
+			// test method
+			ctx := context.Background()
+			exists, err := c.BranchExists(ctx, "repo", tt.Branch)
+			testutil.MustDo(t, "BranchExists", err)
+			if exists != tt.ShouldExist {
+				not := ""
+				if !tt.ShouldExist {
+					not = " not"
+				}
+				t.Errorf("branch %s should%s exist", tt.Branch, not)
 			}
 		})
 	}
@@ -183,7 +221,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup cataloger
 			gravelerMock := &FakeGraveler{
-				BranchIterator: NewFakeBranchIterator(gravelerData),
+				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
@@ -306,7 +344,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup cataloger
 			gravelerMock := &FakeGraveler{
-				ListIterator: NewFakeValueIterator(gravelerData),
+				ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
