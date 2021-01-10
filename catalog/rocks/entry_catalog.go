@@ -6,7 +6,6 @@ import (
 	_ "crypto/sha256"
 	"fmt"
 
-	"github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -104,10 +103,10 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
 	}
 
-	metaRangeCache := sstable.NewCache(cache.ParamsWithDisposal{ /* TODO */ },
+	metaRangeCache := sstable.NewCache(*cfg.GetCommittedRangeSSTableCacheParams(),
 		metaRangeFS,
 		pebble_sst.ReaderOptions{})
-	rangeCache := sstable.NewCache(cache.ParamsWithDisposal{ /* TODO */ },
+	rangeCache := sstable.NewCache(*cfg.GetCommittedMetaRangeSSTableCacheParams(),
 		rangeFS,
 		pebble_sst.ReaderOptions{})
 
