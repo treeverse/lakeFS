@@ -2,6 +2,7 @@ package rocks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -208,7 +209,13 @@ func (c *cataloger) BranchExists(ctx context.Context, repository string, branch 
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	_, err := c.EntryCatalog.GetBranch(ctx, repositoryID, branchID)
-	return err != nil, err
+	if errors.Is(err, graveler.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (c *cataloger) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
