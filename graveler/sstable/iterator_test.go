@@ -28,7 +28,7 @@ func TestIteratorSuccess(t *testing.T) {
 	sut := sstable.NewIterator(iter, func() error {
 		called++
 		return nil
-	}, nil)
+	})
 	require.NotNil(t, sut)
 
 	// read first -> nothing to read

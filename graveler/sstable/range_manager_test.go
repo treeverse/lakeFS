@@ -143,9 +143,12 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 			}, nil)
 
 	iter, err := sut.NewRangeIterator(committed.Namespace(ns), committed.ID(sstableID))
-	// TODO(ariels): call iter.SeekGE(committed.Key(keys[len(keys)/3])) and verify
+
 	require.NoError(t, err)
 	require.NotNil(t, iter)
+
+	iter.SeekGE(committed.Key(keys[len(keys)/3]))
+	require.NoError(t, iter.Err())
 
 	iter.Close()
 	require.NoError(t, iter.Err())

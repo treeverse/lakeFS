@@ -2,17 +2,28 @@ package rocks
 
 import (
 	"context"
+	"crypto"
+	_ "crypto/sha256"
 	"fmt"
 
-	"github.com/treeverse/lakefs/pyramid/params"
-
+	"github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/ref"
+	"github.com/treeverse/lakefs/graveler/sstable"
 	"github.com/treeverse/lakefs/graveler/staging"
 	"github.com/treeverse/lakefs/pyramid"
+	"github.com/treeverse/lakefs/pyramid/params"
+
+	pebble_sst "github.com/cockroachdb/pebble/sstable"
 )
+
+// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
+// causes all old identifiers to change, so while existing installations will continue to
+// function they will be unable to re-use any existing objects.
+const hashAlg = crypto.SHA256
 
 type Path string
 
@@ -93,11 +104,22 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
 	}
 
-	_ = metaRangeFS // silence error
-	_ = rangeFS     // silence error
+	metaRangeCache := sstable.NewCache(cache.ParamsWithDisposal{ /* TODO */ },
+		metaRangeFS,
+		pebble_sst.ReaderOptions{})
+	rangeCache := sstable.NewCache(cache.ParamsWithDisposal{ /* TODO */ },
+		rangeFS,
+		pebble_sst.ReaderOptions{})
 
-	// TODO(ariels): Create a CommittedManager on top of fs.
-	var committedManager graveler.CommittedManager
+	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, hashAlg)
+	sstableMetaRangeManager := committed.NewMetaRangeManager(
+		*cfg.GetCommittedParams(),
+		// TODO(ariels): Use separate range managers for metaranges and ranges
+		sstableMetaManager,
+		sstableManager,
+	)
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
 	stagingManager := staging.NewManager(db)
 	refManager := ref.NewPGRefManager(db)
