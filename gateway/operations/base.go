@@ -2,7 +2,6 @@ package operations
 
 import (
 	"bytes"
-	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
@@ -23,11 +21,27 @@ import (
 
 const StorageClassHeader = "x-amz-storage-class"
 
+type OperationID string
+
+const (
+	OperationIDDeleteObject  OperationID = "delete_object"
+	OperationIDDeleteObjects OperationID = "delete_objects"
+	OperationIDGetObject     OperationID = "get_object"
+	OperationIDHeadBucket    OperationID = "head_bucket"
+	OperationIDHeadObject    OperationID = "head_object"
+	OperationIDListBuckets   OperationID = "list_buckets"
+	OperationIDListObjects   OperationID = "list_objects"
+	OperationIDPostObject    OperationID = "post_object"
+	OperationIDPutObject     OperationID = "put_object"
+
+	OperationIDUnsupportedOperation OperationID = "unsupported"
+	OperationIDOperationNotFound    OperationID = "not_found"
+)
+
 type ActionIncr func(string)
 
 type Operation struct {
-	Request           *http.Request
-	ResponseWriter    http.ResponseWriter
+	OperationID       OperationID
 	Region            string
 	FQDN              string
 	Cataloger         catalog.Cataloger
@@ -35,13 +49,6 @@ type Operation struct {
 	BlockStore        block.Adapter
 	Auth              simulator.GatewayAuthService
 	Incr              ActionIncr
-	DedupCleaner      *dedup.Cleaner
-}
-
-func (o *Operation) RequestID() string {
-	req, rid := httputil.RequestID(o.Request)
-	o.Request = req
-	return rid
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -52,17 +59,8 @@ func StorageClassFromHeader(header http.Header) *string {
 	return &storageClass
 }
 
-func (o *Operation) AddLogFields(fields logging.Fields) {
-	ctx := logging.AddFields(o.Context(), fields)
-	o.Request = o.Request.WithContext(ctx)
-}
-
-func (o *Operation) Context() context.Context {
-	return o.Request.Context()
-}
-
-func (o *Operation) Log() logging.Logger {
-	return logging.FromContext(o.Context())
+func (o *Operation) Log(req *http.Request) logging.Logger {
+	return logging.FromContext(req.Context())
 }
 
 func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
@@ -74,10 +72,10 @@ func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
 	return err
 }
 
-func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
-	err := EncodeXMLBytes(o.ResponseWriter, t, statusCode)
+func (o *Operation) EncodeXMLBytes(w http.ResponseWriter, req *http.Request, t []byte, statusCode int) {
+	err := EncodeXMLBytes(w, t, statusCode)
 	if err != nil {
-		o.Log().WithError(err).Error("failed to encode XML to response")
+		o.Log(req).WithError(err).Error("failed to encode XML to response")
 	}
 }
 
@@ -91,10 +89,10 @@ func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) e
 	return EncodeXMLBytes(w, payload, statusCode)
 }
 
-func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
-	err := EncodeResponse(o.ResponseWriter, entity, statusCode)
+func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity interface{}, statusCode int) {
+	err := EncodeResponse(w, entity, statusCode)
 	if err != nil {
-		o.Log().WithError(err).Error("encoding response failed")
+		o.Log(req).WithError(err).Error("encoding response failed")
 	}
 }
 
@@ -112,36 +110,38 @@ func DecodeXMLBody(reader io.Reader, entity interface{}) error {
 }
 
 // SetHeader sets a header on the response while preserving its case
-func (o *Operation) SetHeader(key, value string) {
-	o.ResponseWriter.Header()[key] = []string{value}
+func (o *Operation) SetHeader(w http.ResponseWriter, key, value string) {
+	w.Header()[key] = []string{value}
 }
 
 // DeleteHeader deletes a header from the response
-func (o *Operation) DeleteHeader(key string) {
-	o.ResponseWriter.Header().Del(key)
+func (o *Operation) DeleteHeader(w http.ResponseWriter, key string) {
+	w.Header().Del(key)
 }
 
 // SetHeaders sets a map of headers on the response while preserving the header's case
-func (o *Operation) SetHeaders(headers map[string]string) {
+func (o *Operation) SetHeaders(w http.ResponseWriter, headers map[string]string) {
 	for k, v := range headers {
-		o.SetHeader(k, v)
+		o.SetHeader(w, k, v)
 	}
 }
 
-func (o *Operation) EncodeError(e errors.APIError) {
-	err := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
+func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e errors.APIError) *http.Request {
+	req, rid := httputil.RequestID(req)
+	err := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       e.Code,
 		Message:    e.Description,
 		BucketName: "",
 		Key:        "",
 		Resource:   "",
 		Region:     o.Region,
-		RequestID:  o.RequestID(),
+		RequestID:  rid,
 		HostID:     generateHostID(), // just for compatibility, meaningless in our case
 	}, e.HTTPStatusCode)
 	if err != nil {
-		o.Log().WithError(err).Error("encoding response failed")
+		o.Log(req).WithError(err).Error("encoding response failed")
 	}
+	return req
 }
 
 func generateHostID() string {
@@ -149,30 +149,32 @@ func generateHostID() string {
 	return auth.HexStringGenerator(generatedHostIDLength)
 }
 
-type AuthenticatedOperation struct {
+type AuthorizedOperation struct {
 	*Operation
 	Principal string
 }
 
 type RepoOperation struct {
-	*AuthenticatedOperation
+	*AuthorizedOperation
 	Repository *catalog.Repository
 }
 
-func (o *RepoOperation) EncodeError(err errors.APIError) {
-	writeErr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
+func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+	req, rid := httputil.RequestID(req)
+	writeErr := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
 		Key:        "",
 		Resource:   o.Repository.Name,
 		Region:     o.Region,
-		RequestID:  o.RequestID(),
+		RequestID:  rid,
 		HostID:     generateHostID(),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
-		o.Log().WithError(writeErr).Error("encoding response failed")
+		o.Log(req).WithError(writeErr).Error("encoding response failed")
 	}
+	return req
 }
 
 type RefOperation struct {
@@ -185,42 +187,44 @@ type PathOperation struct {
 	Path string
 }
 
-func (o *PathOperation) EncodeError(err errors.APIError) {
-	writeErr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
+func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+	req, rid := httputil.RequestID(req)
+	writeErr := EncodeResponse(w, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
 		Key:        o.Path,
 		Resource:   fmt.Sprintf("%s@%s", o.Reference, o.Repository.Name),
 		Region:     o.Region,
-		RequestID:  o.RequestID(),
+		RequestID:  rid,
 		HostID:     generateHostID(),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
-		o.Log().WithError(writeErr).Error("encoding response failed")
+		o.Log(req).WithError(writeErr).Error("encoding response failed")
 	}
+	return req
 }
 
 type OperationHandler interface {
-	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
-	Handle(op *Operation)
+	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
-	Handle(op *AuthenticatedOperation)
+	RequiredPermissions(req *http.Request) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *AuthorizedOperation)
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository string) ([]permissions.Permission, error)
-	Handle(op *RepoOperation)
+	RequiredPermissions(req *http.Request, repository string) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository, branch string) ([]permissions.Permission, error)
-	Handle(op *RefOperation)
+	RequiredPermissions(req *http.Request, repository, branch string) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *RefOperation)
 }
 type PathOperationHandler interface {
-	RequiredPermissions(request *http.Request, repository, branch, path string) ([]permissions.Permission, error)
-	Handle(op *PathOperation)
+	RequiredPermissions(req *http.Request, repository, branch, path string) ([]permissions.Permission, error)
+	Handle(w http.ResponseWriter, req *http.Request, op *PathOperation)
 }

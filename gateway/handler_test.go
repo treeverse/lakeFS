@@ -1,13 +1,14 @@
 package gateway_test
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/treeverse/lakefs/gateway/simulator"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/treeverse/lakefs/gateway/simulator"
 )
 
 func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
