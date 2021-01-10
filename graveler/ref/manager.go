@@ -252,9 +252,6 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 					SELECT committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
 			repositoryID, commitID)
-		if errors.Is(err, db.ErrNotFound) {
-			return nil, graveler.ErrNotFound
-		}
 		if err != nil {
 			return nil, err
 		}
