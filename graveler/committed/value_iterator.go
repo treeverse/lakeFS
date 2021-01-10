@@ -7,18 +7,12 @@ type valueIterator struct {
 }
 
 func (v *valueIterator) Next() bool {
-	for {
-		r := v.it.Next()
-		if !r {
-			return false
-		}
-		// skip ranges
-		_, rng := v.it.Value()
-		if rng == nil {
-			break
+	for v.it.Next() {
+		if val, _ := v.it.Value(); val != nil {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (v *valueIterator) SeekGE(id graveler.Key) {

@@ -56,7 +56,6 @@ type Ref string
 // TagID represents a named tag pointing at a commit
 type TagID string
 
-// CommitParents commit parents slice
 type CommitParents []CommitID
 
 // BranchID is an identifier for a branch
