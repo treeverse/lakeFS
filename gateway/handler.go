@@ -115,13 +115,13 @@ func NewHandler(
 	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, h,
 	), authService, region, bareDomain)
-	h = EnrichOriginalRequest(
-		EnrichOperationHandler(sc,
+	h = EnrichWithOriginalRequest(
+		EnrichWithOperation(sc,
 			DurationHandler(
 				AuthenticationHandler(authService, bareDomain,
-					RepoIDHandler(bareDomain,
+					EnrichWithRepoID(bareDomain,
 						OperationLookupHandler(bareDomain,
-							EnrichRepoHandler(cataloger, authService, fallbackProxy,
+							EnrichWithRepository(cataloger, authService, fallbackProxy,
 								h)))))))
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
@@ -142,7 +142,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
-	apiError, ok := err.(*gatewayerrors.APIErrorCode)
+	apiError, ok := err.(gatewayerrors.APIErrorCode)
 	if ok {
 		return apiError.ToAPIErr()
 	} else {

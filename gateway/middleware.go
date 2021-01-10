@@ -70,7 +70,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 	})
 }
 
-func RepoIDHandler(bareDomain string, next http.Handler) http.Handler {
+func EnrichWithRepoID(bareDomain string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var repo string
 		if strings.EqualFold(httputil.HostOnly(req.Host), httputil.HostOnly(bareDomain)) {
@@ -95,13 +95,13 @@ func RepoIDHandler(bareDomain string, next http.Handler) http.Handler {
 	})
 }
 
-func EnrichOriginalRequest(next http.Handler) http.Handler {
+func EnrichWithOriginalRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), ContextKeyOriginalRequest, req)))
 	})
 }
 
-func EnrichOperationHandler(sc *ServerContext, next http.Handler) http.Handler {
+func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := operation(sc, req.Context())
 		next.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), ContextKeyOperation, o)))
@@ -118,7 +118,7 @@ func DurationHandler(next http.Handler) http.Handler {
 	})
 }
 
-func EnrichRepoHandler(cataloger catalog.Cataloger, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepository(cataloger catalog.Cataloger, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		repoID := req.Context().Value(ContextKeyRepositoryID).(string)
 		username := req.Context().Value(ContextKeyUser).(*model.User).Username
