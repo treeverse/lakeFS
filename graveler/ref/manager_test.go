@@ -19,8 +19,8 @@ func TestManager_GetRepository(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("repo_doesnt_exist", func(t *testing.T) {
 		_, err := r.GetRepository(context.Background(), "example-repo")
-		if err != graveler.ErrNotFound {
-			t.Fatalf("expected ErrNotFound got error: %v", err)
+		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
+			t.Fatalf("expected ErrRepositoryNotFound got error: %v", err)
 		}
 	})
 	t.Run("repo_exists", func(t *testing.T) {
@@ -116,8 +116,8 @@ func TestManager_DeleteRepository(t *testing.T) {
 		}
 
 		_, err = r.GetRepository(context.Background(), "example-repo")
-		if err != graveler.ErrNotFound {
-			t.Fatalf("expected ErrNotFound, got: %v", err)
+		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
+			t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
 		}
 	})
 
@@ -151,8 +151,8 @@ func TestManager_GetBranch(t *testing.T) {
 
 	t.Run("get_branch_doesnt_exists", func(t *testing.T) {
 		_, err := r.GetBranch(context.Background(), "repo1", "masterrrrr")
-		if err != graveler.ErrNotFound {
-			t.Fatalf("expected ErrNotFound, got error: %v", err)
+		if !errors.Is(err, graveler.ErrBranchNotFound) {
+			t.Fatalf("expected ErrBranchNotFound, got error: %v", err)
 		}
 	})
 }
@@ -198,7 +198,8 @@ func TestManager_SetBranch(t *testing.T) {
 
 func TestManager_DeleteBranch(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
@@ -206,17 +207,16 @@ func TestManager_DeleteBranch(t *testing.T) {
 		CommitID: "c1",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
 		CommitID: "c2",
 	}))
 
-	testutil.Must(t, r.DeleteBranch(context.Background(), "repo1", "branch2"))
+	testutil.Must(t, r.DeleteBranch(ctx, "repo1", "branch2"))
 
-	_, err := r.GetBranch(context.Background(), "repo1", "branch2")
-	if err != graveler.ErrNotFound {
-		t.Fatalf("unexpected error: %v", err)
+	_, err := r.GetBranch(ctx, "repo1", "branch2")
+	if !errors.Is(err, graveler.ErrBranchNotFound) {
+		t.Fatalf("Expected ErrBranchNotFound, got error: %v", err)
 	}
-
 }
 
 func TestManager_ListBranches(t *testing.T) {

@@ -142,12 +142,6 @@ func testEviction(t *testing.T, namespaces ...string) {
 	}
 }
 
-func TestInvalidArgs(t *testing.T) {
-	f, err := fs.Create("not/a/valid/namespace")
-	require.Nil(t, f)
-	require.Error(t, err)
-}
-
 func TestMultipleConcurrentReads(t *testing.T) {
 	var baseDir string
 	fs, baseDir = createFSWithEviction(&mockEv{})
