@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,7 +56,7 @@ type Ref string
 // TagID represents a named tag pointing at a commit
 type TagID string
 
-// CommitParents commit's parents slice
+// CommitParents commit parents slice
 type CommitParents []CommitID
 
 // BranchID is an identifier for a branch
@@ -744,12 +745,17 @@ func (g *graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	if err != nil {
 		return nil, err
 	}
-	commit, err := g.RefManager.GetCommit(ctx, repositoryID, reference.CommitID())
-	if err != nil {
-		return nil, err
+	commitID := reference.CommitID()
+	var metaRangeID MetaRangeID
+	if commitID != "" {
+		commit, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+		if err != nil {
+			return nil, err
+		}
+		metaRangeID = commit.MetaRangeID
 	}
 
-	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, commit.MetaRangeID)
+	listing, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -794,16 +800,29 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", fmt.Errorf("apply: %w", err)
 	}
-	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+
+	// fill and add commit
+	commit := Commit{
 		Committer:    committer,
 		Message:      message,
 		MetaRangeID:  metaRangeID,
 		CreationDate: time.Now(),
-		Parents:      CommitParents{branch.CommitID},
 		Metadata:     metadata,
-	})
+	}
+	if branch.CommitID != "" {
+		commit.Parents = CommitParents{branch.CommitID}
+	}
+
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 	if err != nil {
 		return "", fmt.Errorf("add commit: %w", err)
+	}
+	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+		CommitID:     newCommit,
+		StagingToken: newStagingToken(repositoryID, branchID),
+	})
+	if err != nil {
+		return "", fmt.Errorf("set branch commit %s: %w", newCommit, err)
 	}
 	err = g.StagingManager.Drop(ctx, branch.StagingToken)
 	if err != nil {
@@ -816,6 +835,11 @@ func (g *graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}).Error("Failed to drop staging data")
 	}
 	return newCommit, nil
+}
+
+func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
+	v := strings.Join([]string{repositoryID.String(), branchID.String(), uuid.New().String()}, "-")
+	return StagingToken(v)
 }
 
 func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {

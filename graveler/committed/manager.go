@@ -27,7 +27,11 @@ func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace
 }
 
 func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
-	panic("implement me")
+	it, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	if err != nil {
+		return nil, err
+	}
+	return NewValueIterator(it), nil
 }
 
 func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {

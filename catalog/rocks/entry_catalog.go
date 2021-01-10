@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto"
 	_ "crypto/sha256"
-	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/cache"
@@ -447,9 +446,6 @@ func (e *EntryCatalog) ListEntries(ctx context.Context, repositoryID graveler.Re
 		return nil, err
 	}
 	iter, err := e.store.List(ctx, repositoryID, ref)
-	if errors.Is(err, graveler.ErrCommitNotFound) {
-		return &EmptyListingIterator{}, nil
-	}
 	if err != nil {
 		return nil, err
 	}

@@ -121,3 +121,29 @@ func (rvi *iterator) SeekGE(key graveler.Key) {
 	// Ready to call Next to see values.
 	rvi.err = rvi.it.Err()
 }
+
+type emptyIterator struct{}
+
+func NewEmptyIterator() Iterator {
+	return &emptyIterator{}
+}
+
+func (e *emptyIterator) Next() bool {
+	return false
+}
+
+func (e *emptyIterator) NextRange() bool {
+	return false
+}
+
+func (e *emptyIterator) Value() (*graveler.ValueRecord, *Range) {
+	return nil, nil
+}
+
+func (e *emptyIterator) SeekGE(graveler.Key) {}
+
+func (e *emptyIterator) Err() error {
+	return nil
+}
+
+func (e *emptyIterator) Close() {}

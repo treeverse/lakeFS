@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -158,15 +159,15 @@ func (tfs *TierFS) store(namespace, originalPath, filename string) error {
 // File isn't stored in TierFS until a successful close operation.
 // Open(namespace, filename) calls will return an error before the close was called.
 func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
-	if err := validateNamespace(namespace); err != nil {
-		return nil, fmt.Errorf("invalid args: %w", err)
+	u, err := url.Parse(namespace)
+	if err != nil {
+		return nil, fmt.Errorf("parse namespace: %w", err)
 	}
-
-	if err := tfs.createNSWorkspaceDir(namespace); err != nil {
+	if err := tfs.createNSWorkspaceDir(u.Path); err != nil {
 		return nil, fmt.Errorf("create namespace dir: %w", err)
 	}
 
-	tempPath := tfs.workspaceTempFilePath(namespace)
+	tempPath := tfs.workspaceTempFilePath(u.Path)
 	fh, err := os.Create(tempPath)
 	if err != nil {
 		return nil, fmt.Errorf("creating file: %w", err)
