@@ -23,17 +23,17 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
-type ContextKey string
+type contextKey string
 
 const (
-	ContextKeyUser            ContextKey = "user"
-	ContextKeyRepositoryID    ContextKey = "repository_id"
-	ContextKeyRepository      ContextKey = "repository"
-	ContextKeyAuthContext     ContextKey = "auth_context"
-	ContextKeyOperation       ContextKey = "operation"
-	ContextKeyRef             ContextKey = "ref"
-	ContextKeyPath            ContextKey = "path"
-	ContextKeyOriginalRequest ContextKey = "original_request"
+	ContextKeyUser            contextKey = "user"
+	ContextKeyRepositoryID    contextKey = "repository_id"
+	ContextKeyRepository      contextKey = "repository"
+	ContextKeyAuthContext     contextKey = "auth_context"
+	ContextKeyOperation       contextKey = "operation"
+	ContextKeyRef             contextKey = "ref"
+	ContextKeyPath            contextKey = "path"
+	ContextKeyOriginalRequest contextKey = "original_request"
 )
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
@@ -47,6 +47,7 @@ type handler struct {
 	BareDomain         string
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
+	operationHandlers  map[string]http.Handler
 }
 
 type ServerContext struct {
@@ -111,6 +112,18 @@ func NewHandler(
 		BareDomain:         bareDomain,
 		sc:                 sc,
 		ServerErrorHandler: nil,
+		operationHandlers: map[string]http.Handler{
+			operations.OperationIDDeleteObject:         PathOperationHandler(sc, &operations.DeleteObject{}),
+			operations.OperationIDDeleteObjects:        RepoOperationHandler(sc, &operations.DeleteObjects{}),
+			operations.OperationIDGetObject:            PathOperationHandler(sc, &operations.GetObject{}),
+			operations.OperationIDHeadBucket:           RepoOperationHandler(sc, &operations.HeadBucket{}),
+			operations.OperationIDHeadObject:           PathOperationHandler(sc, &operations.HeadObject{}),
+			operations.OperationIDListBuckets:          OperationHandler(sc, &operations.ListBuckets{}),
+			operations.OperationIDListObjects:          RepoOperationHandler(sc, &operations.ListObjects{}),
+			operations.OperationIDPostObject:           PathOperationHandler(sc, &operations.PostObject{}),
+			operations.OperationIDPutObject:            PathOperationHandler(sc, &operations.PutObject{}),
+			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
+		},
 	}
 	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, h,
@@ -119,9 +132,9 @@ func NewHandler(
 		EnrichWithOperation(sc,
 			DurationHandler(
 				AuthenticationHandler(authService, bareDomain,
-					EnrichWithRepoID(bareDomain,
-						OperationLookupHandler(bareDomain,
-							EnrichWithRepository(cataloger, authService, fallbackProxy,
+					EnrichWithParts(bareDomain,
+						EnrichWithRepository(cataloger, authService, fallbackProxy,
+							OperationLookupHandler(
 								h)))))))
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
@@ -131,14 +144,15 @@ func NewHandler(
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 	setDefaultContentType(w, req)
-	actionHandler := getOperationHandler(h.sc, o.OperationID)
-	if actionHandler == nil {
+	o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+	operationHandler := h.operationHandlers[o.OperationID]
+	if operationHandler == nil {
+		// TODO(johnnyaug): consider other status code or add text with unknown gateway operation
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	actionHandler.ServeHTTP(w, req)
+	operationHandler.ServeHTTP(w, req)
 }
 
 func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
@@ -152,9 +166,10 @@ func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gat
 
 func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		username := req.Context().Value(ContextKeyUser).(*model.User).Username
-		authContext := req.Context().Value(ContextKeyAuthContext).(sig.SigContext)
-		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		ctx := req.Context()
+		username := ctx.Value(ContextKeyUser).(*model.User).Username
+		authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
+		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req)
 		if err != nil {
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -173,10 +188,11 @@ func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperati
 
 func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		username := req.Context().Value(ContextKeyUser).(*model.User).Username
-		repo := req.Context().Value(ContextKeyRepository).(*catalog.Repository)
-		authContext := req.Context().Value(ContextKeyAuthContext).(sig.SigContext)
-		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		ctx := req.Context()
+		username := ctx.Value(ContextKeyUser).(*model.User).Username
+		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
+		authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
+		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -193,21 +209,22 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 			AuthenticatedOperation: authOp,
 			Repository:             repo,
 		}
-		logging.AddFields(req.Context(), logging.Fields{
+		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
 			"repository": repo.Name,
-		})
+		}))
 		handler.Handle(w, req, repoOperation)
 	})
 }
 
 func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		username := req.Context().Value(ContextKeyUser).(*model.User).Username
-		repo := req.Context().Value(ContextKeyRepository).(*catalog.Repository)
-		refID := req.Context().Value(ContextKeyRef).(string)
-		path := req.Context().Value(ContextKeyPath).(string)
-		authContext := req.Context().Value(ContextKeyAuthContext).(sig.SigContext)
-		o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
+		ctx := req.Context()
+		username := ctx.Value(ContextKeyUser).(*model.User).Username
+		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
+		refID := ctx.Value(ContextKeyRef).(string)
+		path := ctx.Value(ContextKeyPath).(string)
+		authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
+		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
 		if err != nil {
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -231,11 +248,11 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 			},
 			Path: path,
 		}
-		logging.AddFields(req.Context(), logging.Fields{
+		req = req.WithContext(logging.AddFields(ctx, logging.Fields{
 			"repository": repo.Name,
 			"ref":        refID,
 			"path":       path,
-		})
+		}))
 		handler.Handle(w, req, operation)
 	})
 }
@@ -256,24 +273,6 @@ func authorize(w http.ResponseWriter, req *http.Request, o *operations.Authentic
 		return false
 	}
 	return true
-}
-
-func operation(sc *ServerContext, ctx context.Context) *operations.Operation {
-	return &operations.Operation{
-		Region:            sc.region,
-		FQDN:              sc.bareDomain,
-		Cataloger:         sc.cataloger,
-		MultipartsTracker: sc.multipartsTracker,
-		BlockStore:        sc.blockStore,
-		Auth:              sc.authService,
-		Incr: func(action string) {
-			logging.FromContext(ctx).
-				WithField("action", action).
-				WithField("message_type", "action").
-				Debug("performing S3 action")
-			sc.stats.CollectEvent("s3_gateway", action)
-		},
-	}
 }
 
 func selectContentType(acceptable []string) *string {
@@ -305,33 +304,6 @@ func setDefaultContentType(w http.ResponseWriter, req *http.Request) {
 		// For proxied content (GET or HEAD) the type will be reset according to
 		// whatever headers arrive, including setting up to auto-detect content-type if
 		// none is specified by the adapter.
-	}
-}
-
-func getOperationHandler(sc *ServerContext, operationID string) http.Handler {
-	switch operationID {
-	case operations.OperationIDDeleteObject:
-		return PathOperationHandler(sc, &operations.DeleteObject{})
-	case operations.OperationIDDeleteObjects:
-		return RepoOperationHandler(sc, &operations.DeleteObjects{})
-	case operations.OperationIDGetObject:
-		return PathOperationHandler(sc, &operations.GetObject{})
-	case operations.OperationIDHeadBucket:
-		return RepoOperationHandler(sc, &operations.HeadBucket{})
-	case operations.OperationIDHeadObject:
-		return PathOperationHandler(sc, &operations.HeadObject{})
-	case operations.OperationIDListBuckets:
-		return OperationHandler(sc, &operations.ListBuckets{})
-	case operations.OperationIDListObjects:
-		return RepoOperationHandler(sc, &operations.ListObjects{})
-	case operations.OperationIDPostObject:
-		return PathOperationHandler(sc, &operations.PostObject{})
-	case operations.OperationIDPutObject:
-		return PathOperationHandler(sc, &operations.PutObject{})
-	case operations.OperationIDUnsupportedOperation:
-		return unsupportedOperationHandler()
-	default:
-		return nil
 	}
 }
 
