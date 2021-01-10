@@ -58,7 +58,7 @@ func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 		{Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
 	gravelerMock := &FakeGraveler{
-		ListIteratorFactory: NewFakeValueIteratorFactory(listingData),
+		ListIterator: NewFakeValueIterator(listingData),
 	}
 	cat := EntryCatalog{store: gravelerMock}
 	ctx := context.Background()
@@ -91,7 +91,7 @@ func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
 		gravelerData = append(gravelerData, record)
 	}
 	gravelerMock := &FakeGraveler{
-		ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
+		ListIterator: NewFakeValueIterator(gravelerData),
 	}
 	cat := EntryCatalog{store: gravelerMock}
 	ctx := context.Background()
@@ -145,7 +145,7 @@ func TestEntryCatalog_Diff(t *testing.T) {
 		{Type: graveler.DiffTypeChanged, Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
 	gravelerMock := &FakeGraveler{
-		DiffIteratorFactory: NewFakeDiffIteratorFactory(diffData),
+		DiffIterator: NewFakeDiffIterator(diffData),
 	}
 	cat := EntryCatalog{store: gravelerMock}
 	ctx := context.Background()

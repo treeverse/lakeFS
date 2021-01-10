@@ -9,12 +9,12 @@ import (
 )
 
 type FakeGraveler struct {
-	KeyValue                  map[string]*graveler.Value
-	Err                       error
-	ListIteratorFactory       func() graveler.ValueIterator
-	DiffIteratorFactory       func() graveler.DiffIterator
-	RepositoryIteratorFactory func() graveler.RepositoryIterator
-	BranchIteratorFactory     func() graveler.BranchIterator
+	KeyValue           map[string]*graveler.Value
+	Err                error
+	ListIterator       graveler.ValueIterator
+	DiffIterator       graveler.DiffIterator
+	RepositoryIterator graveler.RepositoryIterator
+	BranchIterator     graveler.BranchIterator
 }
 
 func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
@@ -50,7 +50,7 @@ func (g *FakeGraveler) List(_ context.Context, _ graveler.RepositoryID, _ gravel
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	return g.ListIteratorFactory(), nil
+	return g.ListIterator, nil
 }
 
 func (g *FakeGraveler) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
@@ -65,7 +65,7 @@ func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.Repositor
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	return g.RepositoryIteratorFactory(), nil
+	return g.RepositoryIterator, nil
 }
 
 func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
@@ -81,23 +81,7 @@ func (g *FakeGraveler) UpdateBranch(ctx context.Context, repositoryID graveler.R
 }
 
 func (g *FakeGraveler) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
-	if g.Err != nil {
-		return nil, g.Err
-	}
-	it := g.BranchIteratorFactory()
-	// TODO(nopcoder): handle repositoryID
-	it.SeekGE(branchID)
-	if it.Err() != nil {
-		return nil, it.Err()
-	}
-	if !it.Next() {
-		return nil, graveler.ErrNotFound
-	}
-	branch := it.Value()
-	if branch.BranchID != branchID {
-		return nil, graveler.ErrNotFound
-	}
-	return &graveler.Branch{CommitID: branch.CommitID, StagingToken: branch.StagingToken}, nil
+	panic("implement me")
 }
 
 func (g *FakeGraveler) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
@@ -124,7 +108,7 @@ func (g *FakeGraveler) ListBranches(_ context.Context, _ graveler.RepositoryID) 
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	return g.BranchIteratorFactory(), nil
+	return g.BranchIterator, nil
 }
 
 func (g *FakeGraveler) DeleteBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) error {
@@ -167,14 +151,14 @@ func (g *FakeGraveler) DiffUncommitted(ctx context.Context, repositoryID gravele
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	return g.DiffIteratorFactory(), nil
+	return g.DiffIterator, nil
 }
 
 func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
-	return g.DiffIteratorFactory(), nil
+	return g.DiffIterator, nil
 }
 
 func (g *FakeGraveler) CommitExistingMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.MetaRangeID, _ string, _ string, _ graveler.Metadata) (graveler.CommitID, error) {
@@ -193,12 +177,6 @@ type FakeValueIterator struct {
 
 func NewFakeValueIterator(data []*graveler.ValueRecord) *FakeValueIterator {
 	return &FakeValueIterator{Data: data, Index: -1}
-}
-
-func NewFakeValueIteratorFactory(data []*graveler.ValueRecord) func() graveler.ValueIterator {
-	return func() graveler.ValueIterator {
-		return NewFakeValueIterator(data)
-	}
 }
 
 func (m *FakeValueIterator) Next() bool {
@@ -238,12 +216,6 @@ func NewFakeDiffIterator(data []*graveler.Diff) *FakeDiffIterator {
 	return &FakeDiffIterator{Data: data, Index: -1}
 }
 
-func NewFakeDiffIteratorFactory(data []*graveler.Diff) func() graveler.DiffIterator {
-	return func() graveler.DiffIterator {
-		return NewFakeDiffIterator(data)
-	}
-}
-
 func (m *FakeDiffIterator) Next() bool {
 	if m.Index >= len(m.Data) {
 		return false
@@ -273,12 +245,6 @@ type FakeRepositoryIterator struct {
 
 func NewFakeRepositoryIterator(data []*graveler.RepositoryRecord) *FakeRepositoryIterator {
 	return &FakeRepositoryIterator{Data: data, Index: -1}
-}
-
-func NewFakeRepositoryIteratorFactory(data []*graveler.RepositoryRecord) func() graveler.RepositoryIterator {
-	return func() graveler.RepositoryIterator {
-		return NewFakeRepositoryIterator(data)
-	}
 }
 
 func (m *FakeRepositoryIterator) Next() bool {
@@ -316,10 +282,6 @@ type FakeBranchIterator struct {
 
 func NewFakeBranchIterator(data []*graveler.BranchRecord) *FakeBranchIterator {
 	return &FakeBranchIterator{Data: data, Index: -1}
-}
-
-func NewFakeBranchIteratorFactory(data []*graveler.BranchRecord) func() graveler.BranchIterator {
-	return func() graveler.BranchIterator { return NewFakeBranchIterator(data) }
 }
 
 func (m *FakeBranchIterator) Next() bool {
