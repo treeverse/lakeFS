@@ -127,6 +127,6 @@ func (n *noCache) GetOrOpen(namespace string, id committed.ID) (*sstable.Reader,
 	return reader, reader.Close, nil
 }
 
-func (n *noCache) Exists(namespace string, id committed.ID) (bool, error) {
-	panic("implement me")
+func (n *noCache) Exists(string, committed.ID) (bool, error) {
+	return false, nil
 }
