@@ -388,6 +388,11 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
 	}
 
+	localCacheDir, err := homedir.Expand(viper.GetString(CommittedLocalCacheDirKey))
+	if err != nil {
+		return nil, fmt.Errorf("expand %s: %w", viper.GetString(CommittedLocalCacheDirKey), err)
+	}
+
 	logger := logging.Default().WithField("module", "pyramid")
 	return &pyramidparams.ExtParams{
 		RangeAllocationProportion:     rangePro,
@@ -397,7 +402,7 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 			Adapter:            adapter,
 			BlockStoragePrefix: viper.GetString(CommittedBlockStoragePrefixKey),
 			Local: pyramidparams.LocalDiskParams{
-				BaseDir:             viper.GetString(CommittedLocalCacheDirKey),
+				BaseDir:             localCacheDir,
 				TotalAllocatedBytes: viper.GetInt64(CommittedLocalCacheSizeBytesKey),
 			},
 		},
