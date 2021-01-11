@@ -51,7 +51,7 @@ func MustMarshalValue(v *graveler.Value) []byte {
 
 func getBytes(b *[]byte) ([]byte, error) {
 	l, o := binary.Varint(*b)
-	if o <= 0 {
+	if o < 0 {
 		return nil, fmt.Errorf("read length: %w", ErrBadValueBytes)
 	}
 	*b = (*b)[o:]
