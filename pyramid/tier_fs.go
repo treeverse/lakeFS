@@ -144,7 +144,7 @@ func (tfs *TierFS) store(namespace, originalPath, nsPath, filename string) error
 		return fmt.Errorf("closing file %s: %w", filename, err)
 	}
 
-	fileRef := tfs.newLocalFileRef(nsPath, filename)
+	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
 	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		// file was stored by the policy
 		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
@@ -194,7 +194,7 @@ func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	}
 
 	// check if file is there - without taking the lock
-	fileRef := tfs.newLocalFileRef(nsPath, filename)
+	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
 		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
@@ -324,19 +324,17 @@ func validateFilename(filename string) error {
 
 // localFileRef consists of all possible local file references
 type localFileRef struct {
-	namespace string
-	filename  string
-
+	namespace      string
+	filename       string
 	fullPath       string
 	fsRelativePath params.RelativePath
 }
 
-func (tfs *TierFS) newLocalFileRef(namespace, filename string) localFileRef {
-	relative := path.Join(namespace, filename)
+func (tfs *TierFS) newLocalFileRef(namespace, nsPath, filename string) localFileRef {
+	relative := path.Join(nsPath, filename)
 	return localFileRef{
-		namespace: namespace,
-		filename:  filename,
-
+		namespace:      namespace,
+		filename:       filename,
 		fsRelativePath: params.RelativePath(relative),
 		fullPath:       path.Join(tfs.fsLocalBaseDir, relative),
 	}
