@@ -113,9 +113,9 @@ func TestStartup(t *testing.T) {
 	defer func() { _ = f.Close() }()
 	require.NoError(t, err)
 
-	bytes, err := ioutil.ReadAll(f)
+	data, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
-	require.Equal(t, content, bytes)
+	require.Equal(t, content, data)
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
