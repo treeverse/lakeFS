@@ -44,9 +44,13 @@ type SharedParams struct {
 	// the blockstore.
 	BlockStoragePrefix string
 
-	// eviction is the cache to use to evict objects from local storage.  Only
+	// Eviction is the cache to use to evict objects from local storage.  Only
 	// configurable in testing.
 	Eviction Eviction
+
+	// PebbleSSTableCacheSizeBytes is the size (in bytes) of the cache used by the Pebble
+	// SSTable library.  This cache is shared between all readers active on the system.
+	PebbleSSTableCacheSizeBytes int64
 }
 
 type ExtParams struct {
