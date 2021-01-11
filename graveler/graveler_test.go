@@ -159,7 +159,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "no changes",
 			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}}), Err: graveler.ErrNotFound},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
-				&testutil.RefsFake{Branch: &graveler.Branch{}, Commit: &graveler.Commit{}},
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commit: &graveler.Commit{MetaRangeID: "mri1"}},
 			),
 			amount:       10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{}),
@@ -168,7 +168,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "added one",
 			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{}), Err: graveler.ErrNotFound},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{}, Commit: &graveler.Commit{}},
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commit: &graveler.Commit{MetaRangeID: "mri1"}},
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
@@ -181,7 +181,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "changed one",
 			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{}, Commit: &graveler.Commit{}},
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commit: &graveler.Commit{MetaRangeID: "mri1"}},
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
@@ -194,7 +194,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "removed one",
 			r: graveler.NewGraveler(&testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: nil}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{}, Commit: &graveler.Commit{}},
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commit: &graveler.Commit{MetaRangeID: "mri1"}},
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
@@ -206,7 +206,8 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := tt.r.DiffUncommitted(context.Background(), "repo", "branch")
+			ctx := context.Background()
+			diff, err := tt.r.DiffUncommitted(ctx, "repo", "branch")
 			if err != tt.expectedErr {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}

@@ -1,6 +1,7 @@
 package pyramid
 
 import (
+	"bytes"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -142,12 +143,6 @@ func testEviction(t *testing.T, namespaces ...string) {
 	}
 }
 
-func TestInvalidArgs(t *testing.T) {
-	f, err := fs.Create("not/a/valid/namespace")
-	require.Nil(t, f)
-	require.Error(t, err)
-}
-
 func TestMultipleConcurrentReads(t *testing.T) {
 	var baseDir string
 	fs, baseDir = createFSWithEviction(&mockEv{})
@@ -161,18 +156,19 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	writeToFile(t, namespace, filename, content)
 
 	// remove the file
-	require.NoError(t, filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, filename) {
 			return os.Remove(path)
 		}
 		return nil
-	}))
+	})
+	require.NoError(t, err)
 	// try to read that file - only a single access to block storage is expected
-	concurrencyLevel := 50
+	const concurrencyLevel = 50
 	adapter.wait = make(chan struct{})
 	var wg sync.WaitGroup
+	wg.Add(concurrencyLevel)
 	for i := 0; i < concurrencyLevel; i++ {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			checkContent(t, namespace, filename, content)
@@ -201,12 +197,20 @@ func writeToFile(t *testing.T, namespace, filename string, content []byte) {
 func checkContent(t *testing.T, namespace string, filename string, content []byte) {
 	t.Helper()
 	f, err := fs.Open(namespace, filename)
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
+		return
+	}
 	defer f.Close()
 
-	bytes, err := ioutil.ReadAll(f)
-	require.NoError(t, err)
-	require.Equal(t, content, bytes)
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Errorf("Failed to read all namespace:%s filename:%s - %s", namespace, filename, err)
+		return
+	}
+	if !bytes.Equal(content, data) {
+		t.Errorf("Content mismatch reading namespace:%s filename:%s", namespace, filename)
+	}
 }
 
 type mockEv struct{}
