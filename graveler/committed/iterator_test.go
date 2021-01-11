@@ -13,12 +13,27 @@ import (
 	"github.com/treeverse/lakefs/graveler/testutil"
 )
 
-var emptyValue = committed.MustMarshalValue(&graveler.Value{})
+func mustMarshalRange(rng committed.Range) []byte {
+	ret, err := committed.MarshalRange(rng)
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
+func makeValueBytesForRangeKey(key graveler.Key, idx int) []byte {
+	return committed.MustMarshalValue(&graveler.Value{
+		Identity: []byte(fmt.Sprintf("%s:%d", key, idx)),
+		Data:     mustMarshalRange(committed.Range{ID: ""})})
+}
 
 func makeRangeIterator(rangeIDs []graveler.Key) committed.ValueIterator {
 	records := make([]committed.Record, len(rangeIDs))
 	for i, id := range rangeIDs {
-		records[i] = committed.Record{Key: committed.Key(id), Value: emptyValue}
+		records[i] = committed.Record{
+			Key:   committed.Key(id),
+			Value: makeValueBytesForRangeKey(id, i),
+		}
 	}
 	return testutil.NewCommittedValueIteratorFake(records)
 }
@@ -67,9 +82,11 @@ func makeRangeRecords(rk []rangeKeys) []committed.Record {
 			// Empty range, MaxKey unchanged
 			key = lastKey
 		}
+		v := graveler.Value{Identity: key, Data: rangeVal}
+		vBytes := committed.MustMarshalValue(&v)
 		ret[i] = committed.Record{
 			Key:   key,
-			Value: rangeVal,
+			Value: vBytes,
 		}
 		lastKey = key
 	}
