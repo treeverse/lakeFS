@@ -104,11 +104,11 @@ func (rvi *iterator) Err() error {
 }
 
 func (rvi *iterator) Close() {
+	rvi.rangesIt.Close()
 	if rvi.it == nil {
 		return
 	}
 	rvi.it.Close()
-	rvi.rangesIt.Close()
 }
 
 func (rvi *iterator) SeekGE(key graveler.Key) {
