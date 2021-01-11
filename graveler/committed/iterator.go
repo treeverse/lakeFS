@@ -38,13 +38,19 @@ func (rvi *iterator) NextRange() bool {
 		return rvi.NextRange()
 	}
 
-	rng, err := UnmarshalRange(rngRecord.Value)
+	gv, err := UnmarshalValue(rngRecord.Value)
+	if err != nil {
+		rvi.err = fmt.Errorf("unmarshal value for %s: %w", string(rngRecord.Key), err)
+		return false
+	}
+
+	rng, err := UnmarshalRange(gv.Data)
 	if err != nil {
 		rvi.err = fmt.Errorf("unmarshal %s: %w", string(rngRecord.Key), err)
 		return false
 	}
 
-	rng.ID = ID(rngRecord.Key)
+	rng.ID = ID(gv.Identity)
 	rvi.rng = &rng
 
 	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rvi.rng.ID)
