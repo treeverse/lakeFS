@@ -71,6 +71,9 @@ func (m *metaRangeManager) NewWriter(ns graveler.StorageNamespace) MetaRangeWrit
 }
 
 func (m *metaRangeManager) NewMetaRangeIterator(ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
+	if id == "" {
+		return NewEmptyIterator(), nil
+	}
 	rangesIt, err := m.metaManager.NewRangeIterator(Namespace(ns), ID(id))
 	if err != nil {
 		return nil, fmt.Errorf("manage metarange %s: %w", id, err)

@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 
 	"github.com/hnlq715/golang-lru/simplelru"
-
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -35,7 +34,7 @@ type ParamsWithDisposal struct {
 }
 
 // shardedCacheWithDisposal shards a CacheWithDisposal across its keys.  It requires that its
-// keyus have a String() method that is compatible with their equality, i.e. k1.GoString() ==
+// keys have a String() method that is compatible with their equality, i.e. k1.GoString() ==
 // k2.GoString() implies k1 equals k2 in the sense of map comparison.
 type shardedCacheWithDisposal struct {
 	name   string

@@ -33,7 +33,7 @@ func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.Repos
 		return repository, nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrNotFound
+		return nil, graveler.ErrRepositoryNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -79,6 +79,9 @@ func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.Re
 		_, err = tx.Exec(`DELETE FROM graveler_repositories WHERE id = $1`, repositoryID)
 		return nil, err
 	}, db.WithContext(ctx))
+	if errors.Is(err, db.ErrNotFound) {
+		return graveler.ErrRepositoryNotFound
+	}
 	return err
 }
 
@@ -100,7 +103,7 @@ func (m *Manager) GetBranch(ctx context.Context, repositoryID graveler.Repositor
 		}, nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrNotFound
+		return nil, graveler.ErrBranchNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -134,6 +137,9 @@ func (m *Manager) DeleteBranch(ctx context.Context, repositoryID graveler.Reposi
 		}
 		return nil, nil
 	}, db.WithContext(ctx))
+	if errors.Is(err, db.ErrNotFound) {
+		return graveler.ErrBranchNotFound
+	}
 	return err
 }
 
@@ -152,7 +158,7 @@ func (m *Manager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID
 		return &commitID, nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrNotFound
+		return nil, graveler.ErrTagNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -189,6 +195,9 @@ func (m *Manager) DeleteTag(ctx context.Context, repositoryID graveler.Repositor
 		}
 		return nil, nil
 	}, db.WithContext(ctx))
+	if errors.Is(err, db.ErrNotFound) {
+		return graveler.ErrTagNotFound
+	}
 	return err
 }
 
@@ -228,7 +237,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 		return startWith[0], nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrNotFound
+		return nil, graveler.ErrCommitNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -243,16 +252,13 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 					SELECT committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
 			repositoryID, commitID)
-		if errors.Is(err, db.ErrNotFound) {
-			return nil, graveler.ErrNotFound
-		}
 		if err != nil {
 			return nil, err
 		}
 		return rec.toGravelerCommit(), nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, graveler.ErrNotFound
+		return nil, graveler.ErrCommitNotFound
 	}
 	if err != nil {
 		return nil, err
