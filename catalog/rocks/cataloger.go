@@ -507,7 +507,7 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Diff
 	if afterPath != "" {
 		it.SeekGE(afterPath)
 	}
-	var diffs catalog.Differences
+	diffs := make(catalog.Differences, 0)
 	for it.Next() {
 		v := it.Value()
 		if v.Path == afterPath {
