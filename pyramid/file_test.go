@@ -3,6 +3,7 @@ package pyramid
 import (
 	"github.com/treeverse/lakefs/pyramid/params"
 
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestPyramidWriteFile(t *testing.T) {
+	ctx := context.Background()
 	filename := uuid.New().String()
 
 	fh, err := ioutil.TempFile("", filename)
@@ -28,11 +30,11 @@ func TestPyramidWriteFile(t *testing.T) {
 	abortCalled := false
 	sut := WRFile{
 		File: fh,
-		store: func(string) error {
+		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
 		},
-		abort: func() error {
+		abort: func(context.Context) error {
 			abortCalled = true
 			return nil
 		},
@@ -48,15 +50,16 @@ func TestPyramidWriteFile(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, sut.Close())
-	require.NoError(t, sut.Store(filename))
+	require.NoError(t, sut.Store(ctx, filename))
 
 	require.True(t, storeCalled)
 
-	require.Error(t, sut.Abort())
+	require.Error(t, sut.Abort(ctx))
 	require.False(t, abortCalled)
 }
 
 func TestWriteValidate(t *testing.T) {
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
@@ -70,7 +73,7 @@ func TestWriteValidate(t *testing.T) {
 
 	sut := WRFile{
 		File: fh,
-		store: func(string) error {
+		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
 		},
@@ -82,13 +85,14 @@ func TestWriteValidate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, sut.Close())
-	require.Error(t, sut.Store("workspace"+string(os.PathSeparator)))
+	require.Error(t, sut.Store(ctx, "workspace"+string(os.PathSeparator)))
 	require.False(t, storeCalled)
 
 	require.Error(t, sut.Close())
 }
 
 func TestMultipleWriteCalls(t *testing.T) {
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
@@ -102,7 +106,7 @@ func TestMultipleWriteCalls(t *testing.T) {
 
 	sut := WRFile{
 		File: fh,
-		store: func(string) error {
+		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
 		},
@@ -114,13 +118,14 @@ func TestMultipleWriteCalls(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, sut.Close())
-	require.NoError(t, sut.Store("validfilename"))
+	require.NoError(t, sut.Store(ctx, "validfilename"))
 	require.True(t, storeCalled)
 
-	require.Error(t, sut.Store("validfilename"))
+	require.Error(t, sut.Store(ctx, "validfilename"))
 }
 
 func TestAbort(t *testing.T) {
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
@@ -135,11 +140,11 @@ func TestAbort(t *testing.T) {
 
 	sut := WRFile{
 		File: fh,
-		store: func(string) error {
+		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
 		},
-		abort: func() error {
+		abort: func(context.Context) error {
 			abortCalled = true
 			return nil
 		},
@@ -152,11 +157,11 @@ func TestAbort(t *testing.T) {
 
 	require.NoError(t, sut.Close())
 	require.False(t, abortCalled)
-	require.NoError(t, sut.Abort())
+	require.NoError(t, sut.Abort(ctx))
 	require.False(t, storeCalled)
 	require.True(t, abortCalled)
 
-	require.Error(t, sut.Store("validfilename"))
+	require.Error(t, sut.Store(ctx, "validfilename"))
 	require.False(t, storeCalled)
 }
 

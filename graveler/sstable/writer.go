@@ -1,6 +1,7 @@
 package sstable
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"hash"
@@ -13,6 +14,7 @@ import (
 )
 
 type DiskWriter struct {
+	ctx    context.Context
 	w      *sstable.Writer
 	tierFS pyramid.FS
 	first  committed.Key
@@ -23,8 +25,8 @@ type DiskWriter struct {
 	closed bool
 }
 
-func NewDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
-	fh, err := tierFS.Create(string(ns))
+func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
+	fh, err := tierFS.Create(ctx, string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
@@ -34,6 +36,7 @@ func NewDiskWriter(tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*
 	})
 
 	return &DiskWriter{
+		ctx:    ctx,
 		w:      writer,
 		fh:     fh,
 		tierFS: tierFS,
@@ -89,7 +92,7 @@ func (dw *DiskWriter) Abort() error {
 		return fmt.Errorf("sstable file close: %w", err)
 	}
 
-	if err := dw.fh.Abort(); err != nil {
+	if err := dw.fh.Abort(dw.ctx); err != nil {
 		return fmt.Errorf("sstable file abort: %w", err)
 	}
 	return nil
@@ -103,7 +106,7 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 		return nil, fmt.Errorf("sstable close (%s): %w", sstableID, err)
 	}
 
-	if err := dw.fh.Store(sstableID); err != nil {
+	if err := dw.fh.Store(dw.ctx, sstableID); err != nil {
 		return nil, fmt.Errorf("sstable store (%s): %w", sstableID, err)
 	}
 

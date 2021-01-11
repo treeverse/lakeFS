@@ -1,6 +1,7 @@
 package pyramid
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -125,7 +126,7 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	}
 }
 
-func (tfs *TierFS) store(namespace, originalPath, nsPath, filename string) error {
+func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
 	f, err := os.Open(originalPath)
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", originalPath, err)
@@ -136,7 +137,7 @@ func (tfs *TierFS) store(namespace, originalPath, nsPath, filename string) error
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if err := tfs.adapter.Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	if err := tfs.adapter.WithContext(ctx).Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
 		return fmt.Errorf("adapter put %s: %w", filename, err)
 	}
 
@@ -153,10 +154,10 @@ func (tfs *TierFS) store(namespace, originalPath, nsPath, filename string) error
 	}
 }
 
-// Create creates a new file in TierFS.
-// File isn't stored in TierFS until a successful close operation.
-// Open(namespace, filename) calls will return an error before the close was called.
-func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
+// Create creates a new file in TierFS.  File isn't stored in TierFS until a successful close
+// operation.  Open(namespace, filename) calls will return an error before the close was
+// called.  Create only performs local operations so it ignores the context.
+func (tfs *TierFS) Create(_ context.Context, namespace string) (StoredFile, error) {
 	nsPath, err := parseNamespacePath(namespace)
 	if err != nil {
 		return nil, err
@@ -173,10 +174,10 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 
 	return &WRFile{
 		File: fh,
-		store: func(filename string) error {
-			return tfs.store(namespace, tempPath, nsPath, filename)
+		store: func(ctx context.Context, filename string) error {
+			return tfs.store(ctx, namespace, tempPath, nsPath, filename)
 		},
-		abort: func() error {
+		abort: func(context.Context) error {
 			return os.Remove(tempPath)
 		},
 	}, nil
@@ -184,7 +185,7 @@ func (tfs *TierFS) Create(namespace string) (StoredFile, error) {
 
 // Open returns the a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
-func (tfs *TierFS) Open(namespace, filename string) (File, error) {
+func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, error) {
 	nsPath, err := parseNamespacePath(namespace)
 	if err != nil {
 		return nil, err
@@ -205,7 +206,7 @@ func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	}
 
 	cacheAccess.WithLabelValues(tfs.fsName, "Miss").Inc()
-	fh, err = tfs.openWithLock(fileRef)
+	fh, err = tfs.openWithLock(ctx, fileRef)
 	if err != nil {
 		return nil, err
 	}
@@ -213,9 +214,9 @@ func (tfs *TierFS) Open(namespace, filename string) (File, error) {
 	return tfs.openFile(fileRef, fh)
 }
 
-func (tfs *TierFS) Exists(namespace, filename string) (bool, error) {
+func (tfs *TierFS) Exists(ctx context.Context, namespace, filename string) (bool, error) {
 	cacheAccess.WithLabelValues(tfs.fsName, "Exists").Inc()
-	return tfs.adapter.Exists(tfs.objPointer(namespace, filename))
+	return tfs.adapter.WithContext(ctx).Exists(tfs.objPointer(namespace, filename))
 }
 
 // openFile converts an os.File to pyramid.ROFile and updates the eviction control.
@@ -244,7 +245,7 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 // openWithLock reads the referenced file from the block storage
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
-func (tfs *TierFS) openWithLock(fileRef localFileRef) (*os.File, error) {
+func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.File, error) {
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
@@ -258,7 +259,7 @@ func (tfs *TierFS) openWithLock(fileRef localFileRef) (*os.File, error) {
 		}
 
 		// get the file from the block storage
-		reader, err := tfs.adapter.Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
+		reader, err := tfs.adapter.WithContext(ctx).Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}

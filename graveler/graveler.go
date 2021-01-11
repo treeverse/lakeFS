@@ -401,7 +401,7 @@ type CommittedManager interface {
 	Get(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, key Key) (*Value, error)
 
 	// Exists returns true if a MetaRange matching ID exists in namespace ns.
-	Exists(ns StorageNamespace, id MetaRangeID) (bool, error)
+	Exists(ctx context.Context, ns StorageNamespace, id MetaRangeID) (bool, error)
 
 	// WriteMetaRange flushes the iterator to a new MetaRange and returns the created ID.
 	WriteMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*MetaRangeID, error)
@@ -861,7 +861,7 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		return "", ErrDirtyBranch
 	}
 
-	ok, err := g.CommittedManager.Exists(repo.StorageNamespace, metaRangeID)
+	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, metaRangeID)
 	if err != nil {
 		return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
 	}
