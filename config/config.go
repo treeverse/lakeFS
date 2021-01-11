@@ -34,16 +34,17 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultCommittedLocalCacheRangePercent     = 0.9
-	DefaultCommittedLocalCacheMetaRangePercent = 0.1
-	DefaultCommittedLocalCacheBytes            = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir              = "~/lakefs/local_tier"
-	DefaultCommittedMetaRangeReaderCacheSize   = 20
-	DefaultCommittedMetaRangeReaderNumShards   = 6
-	DefaultCommittedRangeReaderCacheSize       = 100
-	DefaultCommittedRangeReaderNumShards       = 12
-	DefaultCommittedBlockStoragePrefix         = "_lakefs"
-	DefaultCommittedPermanentRangeSizeBytes    = 10 * 1024 * 1024
+	DefaultCommittedLocalCacheRangePercent      = 0.9
+	DefaultCommittedLocalCacheMetaRangePercent  = 0.1
+	DefaultCommittedLocalCacheBytes             = 1 * 1024 * 1024 * 1024
+	DefaultCommittedLocalCacheDir               = "~/lakefs/local_tier"
+	DefaultCommittedMetaRangeReaderCacheSize    = 20
+	DefaultCommittedMetaRangeReaderNumShards    = 6
+	DefaultCommittedRangeReaderCacheSize        = 100
+	DefaultCommittedRangeReaderNumShards        = 12
+	DefaultCommittedPebbleSSTableCacheSizeBytes = 200_000_000
+	DefaultCommittedBlockStoragePrefix          = "_lakefs"
+	DefaultCommittedPermanentRangeSizeBytes     = 10 * 1024 * 1024
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -117,8 +118,11 @@ const (
 	CommittedMetaRangeReaderCacheNumShards = "committed.local_cache.metarange.num_shards"
 	CommittedBlockStoragePrefixKey         = "committed.block_storage_prefix"
 	CommittedPermanentStorageRangeSizeKey  = "committed.permanent.approximate_range_size_bytes"
-	GatewaysS3DomainNameKey                = "gateways.s3.domain_name"
-	GatewaysS3RegionKey                    = "gateways.s3.region"
+
+	CommittedPebbleSSTableCacheSizeBytesKey = "committed.sstable.memory.cache_size_bytes"
+
+	GatewaysS3DomainNameKey = "gateways.s3.domain_name"
+	GatewaysS3RegionKey     = "gateways.s3.region"
 
 	BlockstoreGSS3EndpointKey = "blockstore.gs.s3_endpoint"
 
@@ -405,6 +409,7 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 				BaseDir:             localCacheDir,
 				TotalAllocatedBytes: viper.GetInt64(CommittedLocalCacheSizeBytesKey),
 			},
+			PebbleSSTableCacheSizeBytes: viper.GetInt64(CommittedPebbleSSTableCacheSizeBytesKey),
 		},
 	}, nil
 }

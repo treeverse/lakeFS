@@ -7,10 +7,13 @@ import (
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/pyramid"
 
+	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/sstable"
 )
 
 //go:generate mockgen -source=cache.go -destination=mock/cache.go -package=mock
+
+const DefaultPebbleSSTableCacheSize = 10_000_000
 
 type Derefer lru.Derefer
 
@@ -53,6 +56,12 @@ func (i *item) Close() error {
 }
 
 func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.ReaderOptions) Cache {
+	if readerOptions.Cache == nil {
+		// Shared cache between *all* readers, otherwise sstable.NewReader keeps its
+		// refcnt but forgets only reference.  *This* cache is held inside opener so
+		// can never be finalized.
+		readerOptions.Cache = pebble.NewCache(DefaultPebbleSSTableCacheSize)
+	}
 	opener := makePyramidOpener(fs, readerOptions)
 	if p.Size == 0 {
 		return &noCache{opener: opener}

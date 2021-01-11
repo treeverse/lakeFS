@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pyramid"
 	"github.com/treeverse/lakefs/pyramid/params"
 
+	pebble "github.com/cockroachdb/pebble"
 	pebble_sst "github.com/cockroachdb/pebble/sstable"
 )
 
@@ -103,12 +104,14 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
 	}
 
+	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	metaRangeCache := sstable.NewCache(*cfg.GetCommittedRangeSSTableCacheParams(),
 		metaRangeFS,
-		pebble_sst.ReaderOptions{})
+		pebble_sst.ReaderOptions{Cache: pebbleSSTableCache})
+	pebbleSSTableCache.Ref() // rangeCache keeps a second reference.
 	rangeCache := sstable.NewCache(*cfg.GetCommittedMetaRangeSSTableCacheParams(),
 		rangeFS,
-		pebble_sst.ReaderOptions{})
+		pebble_sst.ReaderOptions{Cache: pebbleSSTableCache})
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, hashAlg)
