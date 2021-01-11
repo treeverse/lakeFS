@@ -29,6 +29,7 @@ func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace
 		return nil, err
 	}
 	valIt := NewValueIterator(it)
+	defer valIt.Close()
 	valIt.SeekGE(key)
 	// return the next value
 	if !valIt.Next() {
@@ -106,6 +107,7 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 	if err != nil {
 		return "", fmt.Errorf("get metarange ns=%s id=%s: %w", ns, rangeID, err)
 	}
+	defer metaRangeIterator.Close()
 	err = Apply(ctx, mwWriter, metaRangeIterator, diffs)
 	if err != nil {
 		return "", fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
