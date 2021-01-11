@@ -1,6 +1,7 @@
 package committed
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -23,7 +24,26 @@ func (c *committedManager) Exists(ns graveler.StorageNamespace, id graveler.Meta
 }
 
 func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
-	panic("implement me")
+	it, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	if err != nil {
+		return nil, err
+	}
+	valIt := NewValueIterator(it)
+	valIt.SeekGE(key)
+	// return the next value
+	if !valIt.Next() {
+		// error or not found
+		if err := valIt.Err(); err != nil {
+			return nil, err
+		}
+		return nil, graveler.ErrNotFound
+	}
+	// compare the key we found
+	rec := valIt.Value()
+	if !bytes.Equal(rec.Key, key) {
+		return nil, graveler.ErrNotFound
+	}
+	return rec.Value, nil
 }
 
 func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
