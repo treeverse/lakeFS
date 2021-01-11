@@ -1,6 +1,7 @@
 package committed
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -30,15 +31,19 @@ func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace
 	valIt := NewValueIterator(it)
 	valIt.SeekGE(key)
 	// return the next value
-	if valIt.Next() {
-		rec := valIt.Value()
-		return rec.Value, nil
+	if !valIt.Next() {
+		// error or not found
+		if err := valIt.Err(); err != nil {
+			return nil, err
+		}
+		return nil, graveler.ErrNotFound
 	}
-	// report an error or not found
-	if err := valIt.Err(); err != nil {
-		return nil, err
+	// compare the key we found
+	rec := valIt.Value()
+	if !bytes.Equal(rec.Key, key) {
+		return nil, graveler.ErrNotFound
 	}
-	return nil, graveler.ErrNotFound
+	return rec.Value, nil
 }
 
 func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
