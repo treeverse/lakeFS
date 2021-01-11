@@ -61,6 +61,7 @@ func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.Rea
 		// refcnt but forgets only reference.  *This* cache is held inside opener so
 		// can never be finalized.
 		readerOptions.Cache = pebble.NewCache(DefaultPebbleSSTableCacheSize)
+		defer readerOptions.Cache.Unref()
 	}
 	opener := makePyramidOpener(fs, readerOptions)
 	if p.Size == 0 {
@@ -70,6 +71,10 @@ func NewCache(p lru.ParamsWithDisposal, fs pyramid.FS, readerOptions sstable.Rea
 }
 
 func makePyramidOpener(fs pyramid.FS, readerOptions sstable.ReaderOptions) opener {
+	if readerOptions.Cache != nil { // Returned opener closure refers to readerOptions.Cache
+		readerOptions.Cache.Ref()
+	}
+
 	return func(namespace string, id string) (Item, error) {
 		file, err := fs.Open(namespace, id)
 		if err != nil {
