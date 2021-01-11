@@ -23,7 +23,22 @@ func (c *committedManager) Exists(ns graveler.StorageNamespace, id graveler.Meta
 }
 
 func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
-	panic("implement me")
+	it, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	if err != nil {
+		return nil, err
+	}
+	valIt := NewValueIterator(it)
+	valIt.SeekGE(key)
+	// return the next value
+	if valIt.Next() {
+		rec := valIt.Value()
+		return rec.Value, nil
+	}
+	// report an error or not found
+	if err := valIt.Err(); err != nil {
+		return nil, err
+	}
+	return nil, graveler.ErrNotFound
 }
 
 func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
