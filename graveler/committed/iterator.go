@@ -1,12 +1,14 @@
 package committed
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/treeverse/lakefs/graveler"
 )
 
 type iterator struct {
+	ctx       context.Context
 	started   bool
 	manager   RangeManager
 	rangesIt  ValueIterator
@@ -16,8 +18,9 @@ type iterator struct {
 	namespace Namespace
 }
 
-func NewIterator(manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
+func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
 	return &iterator{
+		ctx:       ctx,
 		manager:   manager,
 		namespace: namespace,
 		rangesIt:  rangesIt,
@@ -53,7 +56,7 @@ func (rvi *iterator) NextRange() bool {
 	rng.ID = ID(gv.Identity)
 	rvi.rng = &rng
 
-	it, err := rvi.manager.NewRangeIterator(rvi.namespace, rvi.rng.ID)
+	it, err := rvi.manager.NewRangeIterator(rvi.ctx, rvi.namespace, rvi.rng.ID)
 	if err != nil {
 		rvi.err = fmt.Errorf("open range %s: %w", rvi.rng.ID, err)
 		return false
