@@ -55,16 +55,16 @@ func (d *mergeIterator) Next() bool {
 			continue
 		case graveler.DiffTypeChanged:
 			if baseVal == nil {
-				// value was added on theirs and ours, with different identities
+				// added on theirs and ours, with different identities
 				d.err = graveler.ErrConflictFound
 				return false
 			}
 			if bytes.Equal(baseVal.Identity, val.Value.Identity) {
-				// value was changed on theirs, but not on ours
+				// changed on theirs, but not on ours
 				continue
 			}
 			if !bytes.Equal(baseVal.Identity, val.LeftIdentity) {
-				// value was changed on theirs and ours, to different identities
+				// changed on theirs and ours, to different identities
 				d.err = graveler.ErrConflictFound
 				return false
 			}
