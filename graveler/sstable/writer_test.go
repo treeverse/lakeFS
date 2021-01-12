@@ -1,6 +1,7 @@
 package sstable_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"sort"
 	"testing"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestWriter(t *testing.T) {
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	mockFS := mock.NewMockFS(ctrl)
 	defer ctrl.Finish()
@@ -22,10 +24,10 @@ func TestWriter(t *testing.T) {
 	// create the mock file with the matching file-system
 	mockFile := mock.NewMockStoredFile(ctrl)
 	mockFile.EXPECT().Close().Return(nil).Times(1)
-	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
+	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
 
 	writes := 500
-	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -39,8 +41,8 @@ func TestWriter(t *testing.T) {
 			return len(b), nil
 		}).MinTimes(1)
 	mockFile.EXPECT().Sync().Return(nil).AnyTimes()
-	mockFile.EXPECT().Store(gomock.Any()).DoAndReturn(
-		func(filename string) error {
+	mockFile.EXPECT().Store(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, filename string) error {
 			f = filename
 			return nil
 		}).AnyTimes()
@@ -65,6 +67,7 @@ func TestWriter(t *testing.T) {
 }
 
 func TestWriterAbort(t *testing.T) {
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	mockFS := mock.NewMockFS(ctrl)
 	defer ctrl.Finish()
@@ -72,11 +75,11 @@ func TestWriterAbort(t *testing.T) {
 
 	// create the mock file with the matching file-system
 	mockFile := mock.NewMockStoredFile(ctrl)
-	mockFile.EXPECT().Abort().Return(nil).Times(1)
+	mockFile.EXPECT().Abort(gomock.Any()).Return(nil).Times(1)
 	mockFile.EXPECT().Close().Return(nil).Times(1)
-	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
+	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
 
-	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -99,6 +102,7 @@ func TestWriterAbort(t *testing.T) {
 }
 
 func TestWriterAbortAfterClose(t *testing.T) {
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	mockFS := mock.NewMockFS(ctrl)
 	defer ctrl.Finish()
@@ -107,14 +111,14 @@ func TestWriterAbortAfterClose(t *testing.T) {
 	// create the mock file with the matching file-system
 	mockFile := mock.NewMockStoredFile(ctrl)
 	mockFile.EXPECT().Close().Return(nil).Times(1)
-	mockFS.EXPECT().Create(string(ns)).Return(mockFile, nil)
+	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
 	// expect any write file actions
 	mockFile.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) { return len(b), nil }).Times(1)
 	mockFile.EXPECT().Sync().Return(nil).Times(1)
-	mockFile.EXPECT().Store(gomock.Any()).DoAndReturn(func(filename string) error { return nil }).Times(1)
+	mockFile.EXPECT().Store(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, filename string) error { return nil }).Times(1)
 
 	// Create writer
-	dw, err := sstable.NewDiskWriter(mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New())
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 

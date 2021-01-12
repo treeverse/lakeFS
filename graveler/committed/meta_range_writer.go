@@ -2,6 +2,7 @@ package committed
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -12,6 +13,7 @@ import (
 )
 
 type GeneralMetaRangeWriter struct {
+	ctx                       context.Context
 	namespace                 Namespace
 	metaRangeManager          RangeManager
 	rangeManager              RangeManager
@@ -27,8 +29,9 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
+		ctx:                       ctx,
 		rangeManager:              rangeManager,
 		metaRangeManager:          metaRangeManager,
 		batchWriteCloser:          NewBatchCloser(),
@@ -48,7 +51,7 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 
 	var err error
 	if w.rangeWriter == nil {
-		w.rangeWriter, err = w.rangeManager.GetWriter(w.namespace)
+		w.rangeWriter, err = w.rangeManager.GetWriter(w.ctx, w.namespace)
 		if err != nil {
 			return fmt.Errorf("get range writer: %w", err)
 		}
@@ -142,7 +145,7 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) (bool, error
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
 func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID, error) {
-	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.namespace)
+	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
 	}

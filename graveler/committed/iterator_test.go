@@ -1,6 +1,7 @@
 package committed_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -173,6 +174,7 @@ func TestIterator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Iteration<%s>", tt.Name), func(t *testing.T) {
+			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			manager := mock.NewMockRangeManager(ctrl)
@@ -184,18 +186,19 @@ func TestIterator(t *testing.T) {
 					key = committed.Key(p.Keys[len(p.Keys)-1])
 				}
 				manager.EXPECT().
-					NewRangeIterator(gomock.Eq(namespace), committed.ID(key)).
+					NewRangeIterator(gomock.Any(), gomock.Eq(namespace), committed.ID(key)).
 					Return(makeRangeIterator(p.Keys), nil)
 				lastKey = key
 			}
 			rangesIt := testutil.NewCommittedValueIteratorFake(makeRangeRecords(tt.PK))
-			pvi := committed.NewIterator(manager, namespace, rangesIt)
+			pvi := committed.NewIterator(ctx, manager, namespace, rangesIt)
 			defer pvi.Close()
 			assert.Equal(t, tt.PK, keysByRanges(t, pvi))
 			assert.False(t, pvi.NextRange())
 			assert.False(t, pvi.Next())
 		})
 		t.Run(fmt.Sprintf("SeekGE<%s>", tt.Name), func(t *testing.T) {
+			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			manager := mock.NewMockRangeManager(ctrl)
@@ -207,13 +210,13 @@ func TestIterator(t *testing.T) {
 					key = committed.Key(p.Keys[len(p.Keys)-1])
 				}
 				manager.EXPECT().
-					NewRangeIterator(gomock.Eq(namespace), committed.ID(key)).
+					NewRangeIterator(gomock.Any(), gomock.Eq(namespace), committed.ID(key)).
 					Return(makeRangeIterator(p.Keys), nil).
 					AnyTimes()
 				lastKey = key
 			}
 			rangesIt := testutil.NewCommittedValueIteratorFake(makeRangeRecords(tt.PK))
-			pvi := committed.NewIterator(manager, namespace, rangesIt)
+			pvi := committed.NewIterator(ctx, manager, namespace, rangesIt)
 			defer pvi.Close()
 
 			if len(tt.PK) == 0 {

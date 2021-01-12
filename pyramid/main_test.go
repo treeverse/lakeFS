@@ -1,6 +1,7 @@
 package pyramid
 
 import (
+	"context"
 	"io"
 	"os"
 	"path"
@@ -37,6 +38,10 @@ func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, er
 	atomic.AddInt64(&a.gets, 1)
 	<-a.wait
 	return a.Adapter.Get(obj, size)
+}
+
+func (a *memAdapter) WithContext(context.Context) block.Adapter {
+	return a
 }
 
 func createFSWithEviction(ev params.Eviction) (FS, string) {

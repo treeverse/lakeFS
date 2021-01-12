@@ -2,6 +2,7 @@ package pyramid
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -24,18 +25,20 @@ const (
 )
 
 func TestSimpleWriteRead(t *testing.T) {
+	ctx := context.Background()
 	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
 
 	content := []byte("hello world!")
-	writeToFile(t, namespace, filename, content)
-	checkContent(t, namespace, filename, content)
+	writeToFile(t, ctx, namespace, filename, content)
+	checkContent(t, ctx, namespace, filename, content)
 }
 
 func TestReadFailDuringWrite(t *testing.T) {
+	ctx := context.Background()
 	namespace := uuid.New().String()
 	filename := "file1"
-	f, err := fs.Create(namespace)
+	f, err := fs.Create(ctx, namespace)
 	require.NoError(t, err)
 
 	content := []byte("some content")
@@ -43,12 +46,12 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(content), n)
 
-	readF, err := fs.Open(namespace, filename)
+	readF, err := fs.Open(ctx, namespace, filename)
 	require.Nil(t, readF)
 	require.Error(t, err)
 	require.NoError(t, f.Close())
-	require.NoError(t, f.Store(filename))
-	checkContent(t, namespace, filename, content)
+	require.NoError(t, f.Store(ctx, filename))
+	checkContent(t, ctx, namespace, filename, content)
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
@@ -62,6 +65,7 @@ func TestEvictionMultipleNamespaces(t *testing.T) {
 }
 
 func TestStartup(t *testing.T) {
+	ctx := context.Background()
 	fsName := uuid.New().String()
 	namespace := uuid.New().String()
 
@@ -109,7 +113,7 @@ func TestStartup(t *testing.T) {
 	require.Nil(t, dir)
 	require.True(t, os.IsNotExist(err))
 
-	f, err := localFS.Open(namespace, filename)
+	f, err := localFS.Open(ctx, namespace, filename)
 	defer func() { _ = f.Close() }()
 	require.NoError(t, err)
 
@@ -119,6 +123,7 @@ func TestStartup(t *testing.T) {
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
+	ctx := context.Background()
 	// making sure to fill the cache
 	fileBytes := 512 * 1024
 	numFiles := 5 * allocatedDiskBytes / fileBytes
@@ -127,14 +132,14 @@ func testEviction(t *testing.T, namespaces ...string) {
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
 		rand.Read(content)
-		writeToFile(t, namespaces[i%len(namespaces)], filename, content)
+		writeToFile(t, ctx, namespaces[i%len(namespaces)], filename, content)
 	}
 
 	// read
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
 
-		f, err := fs.Open(namespaces[i%len(namespaces)], filename)
+		f, err := fs.Open(ctx, namespaces[i%len(namespaces)], filename)
 		require.NoError(t, err)
 
 		_, err = ioutil.ReadAll(f)
@@ -144,6 +149,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 }
 
 func TestMultipleConcurrentReads(t *testing.T) {
+	ctx := context.Background()
 	var baseDir string
 	fs, baseDir = createFSWithEviction(&mockEv{})
 
@@ -153,7 +159,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
 	content := []byte("hello world!")
-	writeToFile(t, namespace, filename, content)
+	writeToFile(t, ctx, namespace, filename, content)
 
 	// remove the file
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
@@ -171,7 +177,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	for i := 0; i < concurrencyLevel; i++ {
 		go func() {
 			defer wg.Done()
-			checkContent(t, namespace, filename, content)
+			checkContent(t, ctx, namespace, filename, content)
 		}()
 	}
 
@@ -181,9 +187,9 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	require.Equal(t, int64(1), adapter.GetCount())
 }
 
-func writeToFile(t *testing.T, namespace, filename string, content []byte) {
+func writeToFile(t *testing.T, ctx context.Context, namespace, filename string, content []byte) {
 	t.Helper()
-	f, err := fs.Create(namespace)
+	f, err := fs.Create(ctx, namespace)
 	require.NoError(t, err)
 
 	n, err := f.Write(content)
@@ -191,12 +197,12 @@ func writeToFile(t *testing.T, namespace, filename string, content []byte) {
 	require.Equal(t, len(content), n)
 
 	require.NoError(t, f.Close())
-	require.NoError(t, f.Store(filename))
+	require.NoError(t, f.Store(ctx, filename))
 }
 
-func checkContent(t *testing.T, namespace string, filename string, content []byte) {
+func checkContent(t *testing.T, ctx context.Context, namespace string, filename string, content []byte) {
 	t.Helper()
-	f, err := fs.Open(namespace, filename)
+	f, err := fs.Open(ctx, namespace, filename)
 	if err != nil {
 		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
 		return
