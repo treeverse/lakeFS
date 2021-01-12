@@ -2,6 +2,7 @@ package sstable
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"errors"
 	"fmt"
@@ -30,12 +31,12 @@ var (
 	_ committed.RangeManager = &RangeManager{}
 )
 
-func (m *RangeManager) Exists(ns committed.Namespace, id committed.ID) (bool, error) {
-	return m.cache.Exists(string(ns), id)
+func (m *RangeManager) Exists(ctx context.Context, ns committed.Namespace, id committed.ID) (bool, error) {
+	return m.cache.Exists(ctx, string(ns), id)
 }
 
-func (m *RangeManager) GetValueGE(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
+func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, derefer, err := m.cache.GetOrOpen(ctx, string(ns), id)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +65,8 @@ func (m *RangeManager) GetValueGE(ns committed.Namespace, id committed.ID, looku
 
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
-func (m *RangeManager) GetValue(ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, derefer, err := m.cache.GetOrOpen(string(ns), id)
+func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, derefer, err := m.cache.GetOrOpen(ctx, string(ns), id)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +102,8 @@ func (m *RangeManager) GetValue(ns committed.Namespace, id committed.ID, lookup 
 }
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *RangeManager) NewRangeIterator(ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
-	reader, derefer, err := m.cache.GetOrOpen(string(ns), tid)
+func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
+	reader, derefer, err := m.cache.GetOrOpen(ctx, string(ns), tid)
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +120,8 @@ func (m *RangeManager) NewRangeIterator(ns committed.Namespace, tid committed.ID
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *RangeManager) GetWriter(ns committed.Namespace) (committed.RangeWriter, error) {
-	return NewDiskWriter(m.fs, ns, m.hash.New())
+func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace) (committed.RangeWriter, error) {
+	return NewDiskWriter(ctx, m.fs, ns, m.hash.New())
 }
 
 func (m *RangeManager) execAndLog(f func() error, msg string) {

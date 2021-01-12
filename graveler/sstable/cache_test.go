@@ -1,6 +1,7 @@
 package sstable_test
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -51,16 +52,17 @@ func NewFakeOpener(t *testing.T, names []namespaceID) *fakeOpener {
 	return ret
 }
 
-func (fo *fakeOpener) Open(namespace string, id string) (sstable.Item, error) {
+func (fo *fakeOpener) Open(_ context.Context, namespace string, id string) (sstable.Item, error) {
 	return fo.byName[namespaceID{namespace, committed.ID(id)}], nil
 }
 
-func (fo *fakeOpener) Exists(namespace string, id string) (bool, error) {
+func (fo *fakeOpener) Exists(_ context.Context, namespace string, id string) (bool, error) {
 	_, ok := fo.byName[namespaceID{namespace, committed.ID(id)}]
 	return ok, nil
 }
 
 func TestCacheGet(t *testing.T) {
+	ctx := context.Background()
 	nids := []namespaceID{{"foo", "a"}, {"bar", "a"}, {"foo", "b-dontclose"}}
 	fo := NewFakeOpener(t, nids)
 	c := sstable.NewCacheWithOpener(
@@ -71,7 +73,7 @@ func TestCacheGet(t *testing.T) {
 
 	// TODO(ariels): Add error
 	for _, nid := range nids {
-		_, deref, err := c.GetOrOpen(nid.namespace, nid.id)
+		_, deref, err := c.GetOrOpen(ctx, nid.namespace, nid.id)
 		if err != nil {
 			t.Error(err)
 		}
@@ -97,6 +99,7 @@ func TestCacheGet(t *testing.T) {
 }
 
 func TestCacheExists(t *testing.T) {
+	ctx := context.Background()
 	nids := []namespaceID{{"foo", "a"}, {"bar", "a"}, {"foo", "b-dontclose"}}
 	fo := NewFakeOpener(t, nids)
 	c := sstable.NewCacheWithOpener(
@@ -107,7 +110,7 @@ func TestCacheExists(t *testing.T) {
 
 	for _, nid := range nids {
 		t.Run(fmt.Sprintf("exists:%v", nid), func(t *testing.T) {
-			ok, err := c.Exists(nid.namespace, nid.id)
+			ok, err := c.Exists(ctx, nid.namespace, nid.id)
 			if err != nil {
 				t.Error(err)
 			}
@@ -116,7 +119,7 @@ func TestCacheExists(t *testing.T) {
 			}
 		})
 	}
-	ok, err := c.Exists("foo", "b")
+	ok, err := c.Exists(ctx, "foo", "b")
 	if err != nil {
 		t.Error(err)
 	}

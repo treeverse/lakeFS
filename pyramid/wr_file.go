@@ -1,6 +1,7 @@
 package pyramid
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -11,13 +12,13 @@ type WRFile struct {
 	*os.File
 
 	persisted bool
-	store     func(string) error
-	abort     func() error
+	store     func(context.Context, string) error
+	abort     func(context.Context) error
 	aborted   bool
 }
 
 // Store copies the closed file to all tiers of the pyramid.
-func (f *WRFile) Store(filename string) error {
+func (f *WRFile) Store(ctx context.Context, filename string) error {
 	if f.aborted {
 		return errFileAborted
 	}
@@ -34,12 +35,12 @@ func (f *WRFile) Store(filename string) error {
 		return err
 	}
 
-	return f.store(filename)
+	return f.store(ctx, filename)
 }
 
 // Abort delete the file and cleans all traces of it.
 // If file was already stored, returns an error.
-func (f *WRFile) Abort() error {
+func (f *WRFile) Abort(ctx context.Context) error {
 	if f.persisted {
 		return errFilePersisted
 	}
@@ -49,7 +50,7 @@ func (f *WRFile) Abort() error {
 		return err
 	}
 
-	return f.abort()
+	return f.abort(ctx)
 }
 
 // idempotentClose is like Close(), but doesn't fail when the file is already closed.

@@ -3,6 +3,8 @@ package committed
 //go:generate mockgen -source=meta_range.go -destination=mock/meta_range.go -package=mock
 
 import (
+	"context"
+
 	"github.com/treeverse/lakefs/graveler"
 )
 
@@ -24,17 +26,17 @@ type Iterator interface {
 
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
-	Exists(ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error)
+	Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error)
 
 	// GetValue returns the matching in-range graveler.ValueRecord for key in the
 	// MetaRange with id.
-	GetValue(ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
+	GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
-	NewWriter(ns graveler.StorageNamespace) MetaRangeWriter
+	NewWriter(ctx context.Context, ns graveler.StorageNamespace) MetaRangeWriter
 
 	// NewMetaRangeIterator returns an Iterator over the MetaRange with id.
-	NewMetaRangeIterator(ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)
+	NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)
 }
 
 // MetaRangeWriter is an abstraction for creating new MetaRanges

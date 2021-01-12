@@ -19,12 +19,12 @@ func NewCommittedManager(m MetaRangeManager) graveler.CommittedManager {
 	return &committedManager{metaRangeManager: m, logger: logging.Default()}
 }
 
-func (c *committedManager) Exists(ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
-	return c.metaRangeManager.Exists(ns, id)
+func (c *committedManager) Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
+	return c.metaRangeManager.Exists(ctx, ns, id)
 }
 
 func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
-	it, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	it, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, rangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *committedManager) Get(ctx context.Context, ns graveler.StorageNamespace
 }
 
 func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
-	it, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	it, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, rangeID)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 }
 
 func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
-	writer := c.metaRangeManager.NewWriter(ns)
+	writer := c.metaRangeManager.NewWriter(ctx, ns)
 	defer func() {
 		if err := writer.Abort(); err != nil {
 			c.logger.Errorf("Aborting write to meta range: %w", err)
@@ -80,11 +80,11 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 }
 
 func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.MetaRangeID) (graveler.DiffIterator, error) {
-	leftIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, left)
+	leftIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, left)
 	if err != nil {
 		return nil, err
 	}
-	rightIt, err := c.metaRangeManager.NewMetaRangeIterator(ns, right)
+	rightIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, right)
 	if err != nil {
 		return nil, err
 	}
@@ -96,14 +96,14 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 }
 
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, error) {
-	mwWriter := c.metaRangeManager.NewWriter(ns)
+	mwWriter := c.metaRangeManager.NewWriter(ctx, ns)
 	defer func() {
 		err := mwWriter.Abort()
 		if err != nil {
 			c.logger.WithError(err).Error("Abort failed after Apply")
 		}
 	}()
-	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ns, rangeID)
+	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, rangeID)
 	if err != nil {
 		return "", fmt.Errorf("get metarange ns=%s id=%s: %w", ns, rangeID, err)
 	}
