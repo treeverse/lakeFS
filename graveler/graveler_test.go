@@ -577,7 +577,6 @@ func TestGraveler_Delete(t *testing.T) {
 		RefManager       graveler.RefManager
 	}
 	type args struct {
-		ctx          context.Context
 		repositoryID graveler.RepositoryID
 		branchID     graveler.BranchID
 		key          graveler.Key
@@ -693,8 +692,9 @@ func TestGraveler_Delete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			g := graveler.NewGraveler(conn, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			if err := g.Delete(tt.args.ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
+			if err := g.Delete(ctx, tt.args.repositoryID, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
 			}
 			// validate set on staging

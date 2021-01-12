@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -41,7 +43,7 @@ func (l *BranchLocker) Writer(ctx context.Context, repositoryID RepositoryID, br
 			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
 		}
 		return lockedCB()
-	}, db.WithContext(ctx))
+	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
 // MetadataUpdater try to lock as committer, using postgres advisory lock for the span of calling `lockedCB`.
@@ -68,7 +70,7 @@ func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID Reposit
 			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
 		}
 		return lockedCB()
-	}, db.WithContext(ctx))
+	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
 func calculateBranchLockerKeys(repositoryID RepositoryID, branchID BranchID) (int32, int32) {
