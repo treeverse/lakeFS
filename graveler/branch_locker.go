@@ -1,96 +1,83 @@
 package graveler
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"sync"
+	"hash/fnv"
+
+	"github.com/treeverse/lakefs/db"
 )
 
-// branchLocker enforces the branch locking logic
+// BranchLocker enforces the branch locking logic
 // The logic is as follows:
 // allow concurrent writers to branch
 // metadata update commands will wait until all current running writers are done
 // while metadata update is running or waiting to run, writes and metadata update commands will be blocked
-type branchLocker struct {
-	locker   sync.Locker
-	c        *sync.Cond
-	branches map[string]*branchLockerData
+type BranchLocker struct {
+	db db.Database
 }
 
-type branchLockerData struct {
-	writers        int
-	metadataUpdate bool
-}
+var ErrLockNotAcquired = errors.New("lock not acquired")
 
-func NewBranchLocker() branchLocker {
-	m := sync.Mutex{}
-	return branchLocker{
-		locker:   &m,
-		c:        sync.NewCond(&m),
-		branches: make(map[string]*branchLockerData),
+func NewBranchLocker(db db.Database) *BranchLocker {
+	return &BranchLocker{
+		db: db,
 	}
 }
 
-// AquireWrite returns a cancel function to release if write is currently available
-// returns ErrBranchLocked if metadata update is currently in progress
-func (l *branchLocker) AquireWrite(repositoryID RepositoryID, branchID BranchID) (func(), error) {
-	key := formatBranchLockerKey(repositoryID, branchID)
-	l.locker.Lock()
-	defer l.locker.Unlock()
-	data := l.branches[key]
-	if data == nil {
-		data = &branchLockerData{}
-		l.branches[key] = data
-	} else if data.metadataUpdate {
-		return nil, ErrBranchLocked
-	}
-	data.writers++
-	return func() { l.releaseWrite(key) }, nil
+// Writer try to lock as writer, using postgres advisory lock for the span of calling `lockedCB`.
+// returns ErrLockNotAcquired in case we fail to acquire the lock or commit is in progress
+func (l *BranchLocker) Writer(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedCB func() (interface{}, error)) (interface{}, error) {
+	key1, _ := calculateBranchLockerKeys(repositoryID, branchID)
+	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// try lock committer key
+		var locked bool
+		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock_shared($1)`, key1)
+		if err != nil {
+			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, key1, err)
+		}
+		if !locked {
+			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
+		}
+		return lockedCB()
+	}, db.WithContext(ctx))
 }
 
-func (l *branchLocker) releaseWrite(key string) {
-	l.locker.Lock()
-	defer l.locker.Unlock()
-	branchData := l.branches[key]
-	branchData.writers--
-	if branchData.writers > 0 {
-		return
-	}
-	if branchData.metadataUpdate {
-		l.c.Broadcast()
-	} else {
-		delete(l.branches, key)
-	}
+// MetadataUpdater try to lock as committer, using postgres advisory lock for the span of calling `lockedCB`.
+// The call is blocked if all until all writers ends their work before calling the callback.
+// returns ErrLockNotAcquired in case we fail to acquire the lock or committer already acquired the same lock
+func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedCB func() (interface{}, error)) (interface{}, error) {
+	key1, key2 := calculateBranchLockerKeys(repositoryID, branchID)
+	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// try lock committer key
+		var locked bool
+		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock($1);`, key2)
+		if err != nil {
+			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, key2, err)
+		}
+		if !locked {
+			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
+		}
+		// lock writer key
+		_, err = tx.Exec(`SELECT pg_advisory_xact_lock($1);`, key1)
+		if err != nil {
+			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, key1, err)
+		}
+		if !locked {
+			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
+		}
+		return lockedCB()
+	}, db.WithContext(ctx))
 }
 
-// AquireMetadataUpdate returns a cancel function to release if metadata update is currently available
-// Will wait until all current writers are done
-// returns ErrBranchLocked if metadata update is currently in progress
-func (l *branchLocker) AquireMetadataUpdate(repositoryID RepositoryID, branchID BranchID) (func(), error) {
-	key := formatBranchLockerKey(repositoryID, branchID)
-	l.locker.Lock()
-	defer l.locker.Unlock()
-	data := l.branches[key]
-	if data == nil {
-		data = &branchLockerData{}
-		l.branches[key] = data
-	} else if data.metadataUpdate {
-		// allow just one metadata update at a time
-		return nil, ErrBranchLocked
-	}
-	// wait until all writers will leave
-	data.metadataUpdate = true
-	for data.writers > 0 {
-		l.c.Wait()
-	}
-	return func() { l.releaseMetadataUpdate(key) }, nil
-}
-
-func (l *branchLocker) releaseMetadataUpdate(key string) {
-	l.locker.Lock()
-	defer l.locker.Unlock()
-	delete(l.branches, key)
-}
-
-func formatBranchLockerKey(repositoryID RepositoryID, branchID BranchID) string {
-	return fmt.Sprintf("%s/%s", repositoryID, branchID)
+func calculateBranchLockerKeys(repositoryID RepositoryID, branchID BranchID) (int32, int32) {
+	h := fnv.New32()
+	_, _ = h.Write([]byte(repositoryID))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(branchID))
+	_, _ = h.Write([]byte{0})
+	key1 := int32(h.Sum32())
+	key2 := key1 + 1
+	return key1, key2
 }

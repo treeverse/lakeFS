@@ -1,6 +1,7 @@
 package graveler_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -10,13 +11,20 @@ import (
 )
 
 func TestBranchLock(t *testing.T) {
-	bl := graveler.NewBranchLocker()
+	t.Skip("re-implement with new interface")
+	conn, _ := tu.GetDB(t, databaseURI)
+	bl := graveler.NewBranchLocker(conn)
 
-	closeWrite, err := bl.AquireWrite("a", testutil.DefaultBranchID)
+	ctx := context.Background()
+	_, err := bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+		return nil, nil
+	})
 	tu.MustDo(t, "acquire write I", err)
-	closeWrite()
+	//closeWrite()
 
-	closeWrite, err = bl.AquireWrite("a", testutil.DefaultBranchID)
+	_, err = bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+		return nil, nil
+	})
 	tu.MustDo(t, "acquire write II", err)
 
 	ch := make([]chan struct{}, 2)
@@ -28,14 +36,16 @@ func TestBranchLock(t *testing.T) {
 		ch[i] = make(chan struct{})
 		errs[i] = make(chan error, 1)
 		go func(id int) {
-			closeMetadataUpdate, err := bl.AquireMetadataUpdate("a", testutil.DefaultBranchID)
+			_, err := bl.MetadataUpdater(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+				return nil, nil
+			})
 			close(ch[id])
 			errs[id] <- err
 			if err != nil {
 				return
 			}
 			<-doneCh
-			closeMetadataUpdate()
+			//closeMetadataUpdate()
 			close(closeMetadataUpdateDoneCh)
 		}(i)
 	}
@@ -54,19 +64,23 @@ func TestBranchLock(t *testing.T) {
 	}
 
 	// make sure we can't write while metadata update is pending
-	_, err = bl.AquireWrite("a", testutil.DefaultBranchID)
+	_, err = bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+		return nil, nil
+	})
 	if !errors.Is(err, graveler.ErrBranchLocked) {
 		t.Fatal("can't write when metadata update is pending")
 	}
 
 	// release the last writer and make sure all goroutines inside metadata update\ scope
-	closeWrite()
+	//closeWrite()
 	<-ch[pendingID]
 	err = <-errs[pendingID]
 	tu.MustDo(t, "pending metadata update goroutine after acquire", err)
 
 	// try to write again - should fail
-	_, err = bl.AquireWrite("a", testutil.DefaultBranchID)
+	_, err = bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+		return nil, nil
+	})
 	if !errors.Is(err, graveler.ErrBranchLocked) {
 		t.Fatal("can't write when metadata update is running")
 	}
@@ -76,7 +90,9 @@ func TestBranchLock(t *testing.T) {
 	<-closeMetadataUpdateDoneCh
 
 	// try to write again - should work, single writer
-	closeWrite, err = bl.AquireWrite("a", testutil.DefaultBranchID)
+	_, err = bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+		return nil, nil
+	})
 	tu.MustDo(t, "acquire write after metadata update", err)
-	closeWrite()
+	//closeWrite()
 }
