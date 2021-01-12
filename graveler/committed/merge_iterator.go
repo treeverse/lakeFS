@@ -41,38 +41,47 @@ func (d *mergeIterator) Next() bool {
 		baseVal := d.valueFromBase(key)
 		switch typ {
 		case graveler.DiffTypeAdded:
+			// exists on ours, but not on theirs
 			if baseVal == nil {
+				// added only on ours
 				d.setValue()
 				return true
 			}
 			if !bytes.Equal(baseVal.Identity, val.Value.Identity) {
+				// removed on theirs, but changed on ours
 				d.err = graveler.ErrConflictFound
 				return false
 			}
 			continue
 		case graveler.DiffTypeChanged:
 			if baseVal == nil {
+				// value was added on theirs and ours, with different identities
 				d.err = graveler.ErrConflictFound
 				return false
 			}
 			if bytes.Equal(baseVal.Identity, val.Value.Identity) {
-				continue // no change from base
+				// value was changed on theirs, but not on ours
+				continue
 			}
-			if !bytes.Equal(baseVal.Identity, val.OldIdentity) {
+			if !bytes.Equal(baseVal.Identity, val.LeftIdentity) {
+				// value was changed on theirs and ours, to different identities
 				d.err = graveler.ErrConflictFound
 				return false
 			}
 			d.setValue()
 			return true
 		case graveler.DiffTypeRemoved:
+			// exists on theirs, but not on ours
 			if baseVal != nil {
-				if bytes.Equal(baseVal.Identity, val.OldIdentity) {
+				if bytes.Equal(baseVal.Identity, val.LeftIdentity) {
+					// removed on ours, not changed on theirs
 					d.setValue()
-					return true // removed
+					return true
 				}
+				// changed on theirs, removed on ours
 				d.err = graveler.ErrConflictFound
 			}
-			// continue
+			// added on theirs, but not on ours - continue
 		}
 	}
 	return false
