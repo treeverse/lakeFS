@@ -2,7 +2,6 @@ package committed
 
 import (
 	"bytes"
-	"context"
 
 	"github.com/treeverse/lakefs/graveler"
 )
@@ -11,8 +10,6 @@ type mergeIterator struct {
 	diffIt graveler.DiffIterator
 	val    *graveler.ValueRecord
 	base   Iterator
-	ctx    context.Context
-	ns     graveler.StorageNamespace
 	err    error
 }
 
