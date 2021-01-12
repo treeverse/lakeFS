@@ -349,7 +349,7 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	// amount
 	amount := MaxResultsPerPage
-	if swagAmount != nil {
+	if swagAmount != nil && 0 <= *swagAmount && *swagAmount <= MaxResultsPerPage {
 		amount = int(swag.Int64Value(swagAmount))
 	}
 
