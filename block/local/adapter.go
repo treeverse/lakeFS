@@ -73,6 +73,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	}
 	return adapter, nil
 }
+
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
 	if err != nil {
@@ -170,6 +171,32 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 		return nil, err
 	}
 	return f, nil
+}
+
+func (l *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+	p := filepath.Clean(path.Join(l.path, walkOpt.StorageNamespace, walkOpt.Prefix))
+	return filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		return walkFn(p)
+	})
+}
+
+func (l *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+	p, err := l.getPath(obj)
+	if err != nil {
+		return false, err
+	}
+	_, err = os.Stat(p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {

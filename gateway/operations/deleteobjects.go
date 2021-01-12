@@ -19,17 +19,18 @@ func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) 
 	return nil, nil
 }
 
-func (controller *DeleteObjects) Handle(o *RepoOperation) {
+func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
 	o.Incr("delete_objects")
-	req := &serde.Delete{}
-	err := DecodeXMLBody(o.Request.Body, req)
+	decodedXML := &serde.Delete{}
+	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {
-		o.EncodeError(gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		return
 	}
 	// delete all the files and collect responses
 	errs := make([]serde.DeleteError, 0)
 	responses := make([]serde.Deleted, 0)
-	for _, obj := range req.Object {
+	for _, obj := range decodedXML.Object {
 		resolvedPath, err := path.ResolvePath(obj.Key)
 		if err != nil {
 			errs = append(errs, serde.DeleteError{
@@ -57,8 +58,8 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			})
 		}
 
-		lg := o.Log().WithField("key", obj.Key)
-		err = o.Cataloger.DeleteEntry(o.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
+		lg := o.Log(req).WithField("key", obj.Key)
+		err = o.Cataloger.DeleteEntry(req.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
 		switch {
 		case errors.Is(err, db.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")
@@ -73,7 +74,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		default:
 			lg.Debug("object set for deletion")
 		}
-		if !req.Quiet {
+		if !decodedXML.Quiet {
 			responses = append(responses, serde.Deleted{Key: obj.Key})
 		}
 	}
@@ -82,8 +83,8 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 	if len(errs) > 0 {
 		resp.Error = errs
 	}
-	if !req.Quiet && len(responses) > 0 {
+	if !decodedXML.Quiet && len(responses) > 0 {
 		resp.Deleted = responses
 	}
-	o.EncodeResponse(resp, http.StatusOK)
+	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

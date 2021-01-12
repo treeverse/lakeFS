@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"testing"
 	"time"
 
@@ -18,8 +19,8 @@ func TestManager_GetRepository(t *testing.T) {
 	r := testRefManager(t)
 	t.Run("repo_doesnt_exist", func(t *testing.T) {
 		_, err := r.GetRepository(context.Background(), "example-repo")
-		if err != graveler.ErrNotFound {
-			t.Fatalf("expected ErrNotFound got error: %v", err)
+		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
+			t.Fatalf("expected ErrRepositoryNotFound got error: %v", err)
 		}
 	})
 	t.Run("repo_exists", func(t *testing.T) {
@@ -115,8 +116,8 @@ func TestManager_DeleteRepository(t *testing.T) {
 		}
 
 		_, err = r.GetRepository(context.Background(), "example-repo")
-		if err != graveler.ErrNotFound {
-			t.Fatalf("expected ErrNotFound, got: %v", err)
+		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
+			t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
 		}
 	})
 
@@ -150,8 +151,8 @@ func TestManager_GetBranch(t *testing.T) {
 
 	t.Run("get_branch_doesnt_exists", func(t *testing.T) {
 		_, err := r.GetBranch(context.Background(), "repo1", "masterrrrr")
-		if err != graveler.ErrNotFound {
-			t.Fatalf("expected ErrNotFound, got error: %v", err)
+		if !errors.Is(err, graveler.ErrBranchNotFound) {
+			t.Fatalf("expected ErrBranchNotFound, got error: %v", err)
 		}
 	})
 }
@@ -197,7 +198,8 @@ func TestManager_SetBranch(t *testing.T) {
 
 func TestManager_DeleteBranch(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
@@ -205,17 +207,16 @@ func TestManager_DeleteBranch(t *testing.T) {
 		CommitID: "c1",
 	}))
 
-	testutil.Must(t, r.SetBranch(context.Background(), "repo1", "branch2", graveler.Branch{
+	testutil.Must(t, r.SetBranch(ctx, "repo1", "branch2", graveler.Branch{
 		CommitID: "c2",
 	}))
 
-	testutil.Must(t, r.DeleteBranch(context.Background(), "repo1", "branch2"))
+	testutil.Must(t, r.DeleteBranch(ctx, "repo1", "branch2"))
 
-	_, err := r.GetBranch(context.Background(), "repo1", "branch2")
-	if err != graveler.ErrNotFound {
-		t.Fatalf("unexpected error: %v", err)
+	_, err := r.GetBranch(ctx, "repo1", "branch2")
+	if !errors.Is(err, graveler.ErrBranchNotFound) {
+		t.Fatalf("Expected ErrBranchNotFound, got error: %v", err)
 	}
-
 }
 
 func TestManager_ListBranches(t *testing.T) {
@@ -453,14 +454,18 @@ func TestManager_Log(t *testing.T) {
 			Message:      "message1",
 			MetaRangeID:  "deadbeef123",
 			CreationDate: ts,
-			Parents:      graveler.CommitParents{previous},
+			Parents:      graveler.CommitParents{},
 			Metadata:     graveler.Metadata{"foo": "bar"},
+		}
+		if previous != "" {
+			c.Parents = append(c.Parents, previous)
 		}
 		cid, err := r.AddCommit(context.Background(), "repo1", c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		previous = cid
+		ts = ts.Add(time.Second)
 	}
 
 	iter, err := r.Log(context.Background(), "repo1", previous)
@@ -477,36 +482,114 @@ func TestManager_Log(t *testing.T) {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
 
-	expected := graveler.CommitParents{
-		"c3f815d633789cd7c1325352277d4de528844c758a9beedfa8a3cfcfb5c75627",
-		"8549d7544244ba1b63b5967b6b328b331658f627369cb89bd442684719c318ae",
-		"13dafa9c45bcf67e6997776039cbf8ab571ace560ce9e13665f383434a495774",
-		"7de38592b9e6046ffb55915a40848f05749f168531f0cd6a2aa61fe6e8d92d02",
-		"94c7773c89650e99671c33d46e31226230cdaeed79a77cdbd7c7419ea68b91ca",
-		"0efcb6e81db6bdd2cfeb77664b6573a7d69f555bbe561fd1fd018a4e4cac7603",
-		"d85e4ae46b63f641b439afde9ebab794a3c39c203a42190c0b9d7773ab71a60e",
-		"a766cfdb311fe5f18f489d90d283f65ed522e719fe1ad5397277339eee0d1964",
-		"67ea954d570e20172775f41ac9763905d16d73490d9b72731d353db33f85d437",
-		"d3b16c2cf7f5b9adc2770976bcabe463a5bdd3b5dbf740034f09a9c663620aed",
-		"d420fbf793716d6d53798218d7a247f38a5bbed095d57df71ee79e05446e46ec",
-		"cc72bda1adade1a72b3de617472c16af187063c79e7edc7921c04e883b44de4c",
-		"752581ac60bd8e38a2e65a754591a93a1703dc6c658f91380b8836013188c566",
-		"3cf70857454c71fd0bbf69af8a5360671ba98f6ac9371b047144208c58c672a2",
-		"bfa1e0382ff3c51905dc62ced0a67588b5219c1bba71a517ae7e7857f0c26afe",
-		"d2248dcc1a4de004e10e3bc6b820655e649b8d986d983b60ec98a357a0df194b",
-		"a2d98d820f6ff3f221223dbe6a22548f78549830d3b19286b101f13a0ee34085",
-		"4f13621ec00d4e44e8a0f0ad340224f9d51db9b6518ee7bef17f598aea9e0431",
-		"df87d5329f4438662d6ecb9b90ee17c0bdc9a78a884acc93c0c4fe9f0f79d059",
-		"29706d36de7219e0796c31b278f87201ef835e8cdafbcc3c907d292cd31f77d5",
+	expected := []graveler.CommitID{
+		"663b7520a2a05aaeed17de6136fa80eb5cd8417982011eb551230571ee412f2f",
+		"87856d024fbe092852118edd958717d905019fa4eae40bac18a719e2f869e0f7",
+		"25e51c6a8675c52558f8e303757624fca629bbc81f53afffa71a560df1c03948",
+		"7653a24da53a43b229a64c7fec4a3259ed2cd3cba8b0021650dd54ea286a06cd",
+		"d19e92e3b0717236255b529b35a7f1ec33e716be58af01c0f2fda80f4ded5a7a",
+		"ac2f92fbefff7914f82c148a391c4705555aacb4ef9fe2c43c21e88f92e459ec",
+		"fecd3e1f97cc1e54df6a06737d98931a8298c7ab1c870042666a10b42f7f7c0a",
+		"1d6e9e55a600eceead14e70a903cea94df5a7b74a6ca4de6f8206ab45d60a5bd",
+		"1f147e667ad0db53c2e9392d4bd35cb649269762f1da19e9e4d2e7b444dfd875",
+		"61d527f08cc67522728f8ffc93bcb91cc789de80beb9c43a41ee225fb9c446b2",
+		"32700dc4b5355be186976745fbef029f8ef7533170c0766ed77c9e3f574178c5",
+		"4d82f11b02d6cb609d2bc1007620f578733ffff971a749ff4462dc69b834c20a",
+		"2b4bb867adb1ac94c2f569dca92b9156a40ba0cd22a4bdc63cac1eb6b21b6f63",
+		"72ee57f5cb8dddb264624f9ac7266c6ebc82af509e69f84d592a6732e74af06c",
+		"3bbd01827326eba3f2a60e2ec98573cff1d2ead6c53336a5796ccf9d6401b052",
+		"8107b1d0a1ce6f75a1848f31ab3261eb86acdfe9b4e84b7eaf329b3904179de9",
+		"988c38b9f7d9b5df7242c3e837dac93e91dc0ff73da7dae1e010bcf18e3e0fa6",
+		"cb5dca579b23b81f8148fc9153a4c9c733d830c26be1d5f8d12496300c02dd89",
+		"ebbd689937253304ae29a541a727bfd11ab59a5659bb293e8ab2ed407c9a74c1",
+		"fac53a04432b2e6e7185f3ac8314a874c556b2557adf3aa8d5b1df985cf96566",
 	}
-
-	if len(expected) != len(ids) {
-		t.Fatalf("wrong size of log: %d - expected %d", len(ids), len(expected))
+	if diff := deep.Equal(ids, expected); diff != nil {
+		t.Fatal("Commits log wrong result:", diff)
 	}
+}
 
-	for i, cid := range ids {
-		if cid != expected[i] {
-			t.Fatalf("wrong commit ID at index %d: got %v expected %v", i, cid, expected[i])
+func TestManager_LogGraph(t *testing.T) {
+	r := testRefManager(t)
+	ctx := context.Background()
+	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{
+		CommitID: "root",
+	})
+	testutil.MustDo(t, "Create repository", err)
+
+	/*
+		---1----2----4----7
+		    \	           \
+			 3----5----6----8---
+	*/
+	nextCommitNumber := 0
+	nextCommitTS, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
+	addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
+		nextCommitTS = nextCommitTS.Add(time.Minute)
+		nextCommitNumber++
+		id := "c" + strconv.Itoa(nextCommitNumber)
+		c := graveler.Commit{
+			Committer:    "user1",
+			Message:      id,
+			MetaRangeID:  "fefe1221",
+			CreationDate: nextCommitTS,
+			Parents:      parents,
+			Metadata:     graveler.Metadata{"foo": "bar"},
 		}
+		cid, err := r.AddCommit(ctx, "repo1", c)
+		testutil.MustDo(t, "Add commit "+id, err)
+		return cid
+	}
+	c1 := addNextCommit()
+	c2 := addNextCommit(c1)
+	c3 := addNextCommit(c1)
+	c4 := addNextCommit(c2)
+	c5 := addNextCommit(c3)
+	c6 := addNextCommit(c5)
+	c7 := addNextCommit(c4)
+	c8 := addNextCommit(c6, c7)
+
+	expected := []string{
+		"c8", "c7", "c6", "c5", "c4", "c3", "c2", "c1",
+	}
+
+	// iterate over the commits
+	it, err := r.Log(ctx, "repo1", c8)
+	if err != nil {
+		t.Fatal("Error during create Log iterator", err)
+	}
+	defer it.Close()
+
+	var commits []string
+	for it.Next() {
+		c := it.Value()
+		commits = append(commits, c.Message)
+	}
+	if err := it.Err(); err != nil {
+		t.Fatal("Iteration ended with error", err)
+	}
+	if diff := deep.Equal(commits, expected); diff != nil {
+		t.Fatal("Found diff between expected commits:", diff)
+	}
+
+	// test SeekGE to "c4"
+	it.SeekGE(c4)
+	expectedAfterSeek := []string{
+		"c4", "c3", "c2", "c1",
+	}
+	var commitsAfterSeek []string
+	for it.Next() {
+		c := it.Value()
+		commitsAfterSeek = append(commitsAfterSeek, c.Message)
+	}
+	if err := it.Err(); err != nil {
+		t.Fatal("Iteration ended with error", err)
+	}
+	if diff := deep.Equal(commitsAfterSeek, expectedAfterSeek); diff != nil {
+		t.Fatal("Found diff between expected commits (after seek):", diff)
 	}
 }

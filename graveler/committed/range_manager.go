@@ -1,5 +1,9 @@
 package committed
 
+import (
+	"errors"
+)
+
 //go:generate mockgen -source=range_manager.go -destination=mock/range_manager.go -package=mock
 
 // ID is an identifier for a Range
@@ -24,19 +28,27 @@ type ValueIterator interface {
 	Close()
 }
 
-type RangeManager interface {
-	// GetValue returns the value matching the key in the Range referenced by the id.
-	// If path not found, (nil, ErrPathNotFound) is returned.
-	GetValue(ns Namespace, key Key, pid ID) (*Record, error)
+var (
+	ErrNotFound = errors.New("not found")
+)
 
-	// NewRangeIterator takes a Range ID and returns an ValueIterator seeked to >= "from" value
-	NewRangeIterator(ns Namespace, pid ID, from Key) (ValueIterator, error)
+type RangeManager interface {
+	// Exists returns true if id references a Range.
+	Exists(ns Namespace, id ID) (bool, error)
+
+	// GetValue returns the value matching key in the Range referenced by id.  If id not
+	// found, it return (nil, ErrNotFound).
+	GetValue(ns Namespace, id ID, key Key) (*Record, error)
+
+	// GetValueGE returns the first value keyed at or after key in the Range referenced by
+	// id.  If all values are keyed before key, it returns (nil, ErrNotFound).
+	GetValueGE(ns Namespace, id ID, key Key) (*Record, error)
+
+	// NewRangeIterator returns an iterator over values in the Range with ID.
+	NewRangeIterator(ns Namespace, pid ID) (ValueIterator, error)
 
 	// GetWriter returns a new Range writer instance
 	GetWriter(ns Namespace) (RangeWriter, error)
-
-	// GetBatchWriter returns a BatchWriterCloser instance
-	GetBatchWriter() BatchWriterCloser
 }
 
 // WriteResult is the result of a completed write of a Range

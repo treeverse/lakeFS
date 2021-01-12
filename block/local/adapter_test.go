@@ -32,7 +32,7 @@ func makePointer(path string) block.ObjectPointer {
 	return block.ObjectPointer{Identifier: path, StorageNamespace: "local://test/"}
 }
 
-func TestLocalPutGet(t *testing.T) {
+func TestLocalPutExistsGet(t *testing.T) {
 	a, cleanup := makeAdapter(t)
 	defer cleanup()
 
@@ -49,12 +49,33 @@ func TestLocalPutGet(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			testutil.MustDo(t, "Put", a.Put(makePointer(c.path), 0, strings.NewReader(contents), block.PutOpts{}))
+			ok, err := a.Exists(makePointer(c.path))
+			testutil.MustDo(t, "Exists", err)
+			if !ok {
+				t.Errorf("expected to detect existence of %s", c.path)
+			}
 			reader, err := a.Get(makePointer(c.path), 0)
 			testutil.MustDo(t, "Get", err)
 			got, err := ioutil.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
 			if string(got) != contents {
 				t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))
+			}
+		})
+	}
+}
+
+func TestLocalNotExists(t *testing.T) {
+	a, cleanup := makeAdapter(t)
+	defer cleanup()
+
+	cases := []string{"missing", "nested/down", "nested/quite/deeply/and/missing"}
+	for _, c := range cases {
+		t.Run(c, func(t *testing.T) {
+			ok, err := a.Exists(makePointer(c))
+			testutil.MustDo(t, "Exists", err)
+			if ok {
+				t.Errorf("expected not to find %s", c)
 			}
 		})
 	}

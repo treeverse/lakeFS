@@ -7,9 +7,8 @@ import (
 	"hash/fnv"
 	"sort"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type GeneralMetaRangeWriter struct {
@@ -32,7 +31,7 @@ func NewGeneralMetaRangeWriter(rangeManager, metaRangeManager RangeManager, appr
 	return &GeneralMetaRangeWriter{
 		rangeManager:              rangeManager,
 		metaRangeManager:          metaRangeManager,
-		batchWriteCloser:          rangeManager.GetBatchWriter(),
+		batchWriteCloser:          NewBatchCloser(),
 		approximateRangeSizeBytes: approximateRangeSizeBytes,
 		namespace:                 namespace,
 	}
@@ -124,7 +123,7 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 	}
 	ranges = append(ranges, w.ranges...)
 	sort.Slice(ranges, func(i, j int) bool {
-		return bytes.Compare(ranges[i].MinKey, ranges[j].MinKey) < 0
+		return bytes.Compare(ranges[i].MaxKey, ranges[j].MaxKey) < 0
 	})
 	w.ranges = ranges
 	return w.writeRangesToMetaRange()
@@ -139,19 +138,6 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) (bool, error
 	}
 	n := h.Sum64() % w.approximateRangeSizeBytes
 	return n == 0, nil
-}
-
-// rangeToValue returns a Value representing a Range in MetaRange
-func rangeToValue(rng Range) (Value, error) {
-	data, err := MarshalRange(rng)
-	if err != nil {
-		return nil, err
-	}
-	rangeValue := &graveler.Value{
-		Identity: []byte(rng.ID),
-		Data:     data,
-	}
-	return MarshalValue(rangeValue)
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID

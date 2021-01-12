@@ -1,8 +1,9 @@
 package sstable
 
 import (
-	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/graveler/committed"
+
+	"github.com/cockroachdb/pebble/sstable"
 )
 
 // Iterator returns ordered iteration of the SSTable entries
@@ -17,14 +18,10 @@ type Iterator struct {
 	derefer  func() error
 }
 
-func NewIterator(it sstable.Iterator, derefer func() error, from committed.Key) *Iterator {
+func NewIterator(it sstable.Iterator, derefer func() error) *Iterator {
 	iter := &Iterator{
 		it:      it,
 		derefer: derefer,
-	}
-
-	if from != nil {
-		iter.SeekGE(from)
 	}
 
 	return iter

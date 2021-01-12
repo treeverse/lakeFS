@@ -91,6 +91,7 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./graveler/sstable
 	$(GOGENERATE) ./graveler/committed
 	$(GOGENERATE) ./pyramid
+	$(GOGENERATE) ./onboard
 
 validate-swagger: go-install ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml

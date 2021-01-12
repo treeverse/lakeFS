@@ -38,18 +38,18 @@ func NewCommittedFake() *CommittedFake {
 	return &CommittedFake{}
 }
 
+func (c *CommittedFake) Exists(graveler.StorageNamespace, graveler.MetaRangeID) (bool, error) {
+	if c.Err != nil {
+		return false, c.Err
+	}
+	return true, nil
+}
+
 func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return c.ValuesByKey[string(key)], nil
-}
-
-func (c *CommittedFake) GetMetaRange(_ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRange, error) {
-	if c.Err != nil {
-		return nil, c.Err
-	}
-	return &MetaRangeFake{id: metaRangeID}, nil
 }
 
 func (c *CommittedFake) List(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID) (graveler.ValueIterator, error) {
@@ -80,6 +80,13 @@ func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, me
 	c.AppliedData.Values = values
 	c.AppliedData.MetaRangeID = metaRangeID
 	return c.MetaRangeID, nil
+}
+
+func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	return &c.MetaRangeID, nil
 }
 
 type StagingFake struct {
