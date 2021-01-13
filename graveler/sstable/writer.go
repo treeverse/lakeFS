@@ -70,6 +70,10 @@ func (dw *DiskWriter) WriteRecord(record committed.Record) error {
 	return dw.writeHashWithLen(record.Value)
 }
 
+func (dw *DiskWriter) GetApproximateSize() uint64 {
+	return dw.w.EstimatedSize()
+}
+
 func (dw *DiskWriter) writeHashWithLen(buf []byte) error {
 	if _, err := dw.hash.Write([]byte(strconv.Itoa(len(buf)))); err != nil {
 		return err
