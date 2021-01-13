@@ -12,9 +12,9 @@ import (
 
 // BranchLocker enforces the branch locking logic
 // The logic is as follows:
-// allow concurrent writers to branch
-// metadata update commands will wait until all current running writers are done
-// while metadata update is running or waiting to run, writes and metadata update commands will be blocked
+// - Allow concurrent writers to acquire the lock.
+// - A Metadata update waits for all current writers to release the lock, and then gets the lock.
+// - While a metadata update has the lock or is waiting for the lock, any other operation fails to acquire the lock.
 type BranchLocker struct {
 	db db.Database
 }
@@ -25,58 +25,55 @@ func NewBranchLocker(db db.Database) *BranchLocker {
 	}
 }
 
-// Writer try to lock as writer, using postgres advisory lock for the span of calling `lockedCB`.
-// returns ErrLockNotAcquired in case we fail to acquire the lock or commit is in progress
+// Writer tries to acquire a write lock using a Postgres advisory lock for the span of calling `lockedCB`.
+// Returns ErrLockNotAcquired if it cannot acquire the lock or if a commit is in progress.
 func (l *BranchLocker) Writer(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedCB func() (interface{}, error)) (interface{}, error) {
-	key1, _ := calculateBranchLockerKeys(repositoryID, branchID)
+	writerLockKey, _ := calculateBranchLockerKeys(repositoryID, branchID)
 	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// try lock committer key
 		var locked bool
-		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock_shared($1)`, key1)
+		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock_shared($1)`, writerLockKey)
 		if err != nil {
-			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, key1, err)
+			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, writerLockKey, err)
 		}
 		if !locked {
-			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
+			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, writerLockKey)
 		}
 		return lockedCB()
 	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
-// MetadataUpdater try to lock as committer, using postgres advisory lock for the span of calling `lockedCB`.
-// The call is blocked if all until all writers ends their work before calling the callback.
-// returns ErrLockNotAcquired in case we fail to acquire the lock or committer already acquired the same lock
+// MetadataUpdater tries to lock as committer using a Postgres advisory lock for the span of calling `lockedCB`.
+// The call is blocked until all writers end their work.
+// It returns ErrLockNotAcquired if it fails to acquire the lock or if another commit is already in progress.
 func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedCB func() (interface{}, error)) (interface{}, error) {
-	key1, key2 := calculateBranchLockerKeys(repositoryID, branchID)
+	writerLockKey, committerLockKey := calculateBranchLockerKeys(repositoryID, branchID)
 	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// try lock committer key
 		var locked bool
-		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock($1);`, key2)
+		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock($1);`, committerLockKey)
 		if err != nil {
-			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, key2, err)
+			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, committerLockKey, err)
 		}
 		if !locked {
-			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
+			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, writerLockKey)
 		}
 		// lock writer key
-		_, err = tx.Exec(`SELECT pg_advisory_xact_lock($1);`, key1)
+		_, err = tx.Exec(`SELECT pg_advisory_xact_lock($1);`, writerLockKey)
 		if err != nil {
-			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, key1, err)
-		}
-		if !locked {
-			return nil, fmt.Errorf("%w (%d)", ErrLockNotAcquired, key1)
+			return nil, fmt.Errorf("%w (%d): %s", ErrLockNotAcquired, writerLockKey, err)
 		}
 		return lockedCB()
 	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
-func calculateBranchLockerKeys(repositoryID RepositoryID, branchID BranchID) (int32, int32) {
-	h := fnv.New32()
+func calculateBranchLockerKeys(repositoryID RepositoryID, branchID BranchID) (writerLockKey int64, committerLockKey int64) {
+	h := fnv.New64()
 	_, _ = h.Write([]byte(repositoryID))
 	_, _ = h.Write([]byte{0})
 	_, _ = h.Write([]byte(branchID))
 	_, _ = h.Write([]byte{0})
-	key1 := int32(h.Sum32())
-	key2 := key1 + 1
-	return key1, key2
+	writerLockKey = int64(h.Sum64())
+	committerLockKey = writerLockKey + 1
+	return
 }

@@ -18,31 +18,42 @@ func TestBranchLock(t *testing.T) {
 
 	ctx := context.Background()
 	t.Run("multiple_writers", func(t *testing.T) {
-		stopWritersCh := make(chan struct{})
-		const writers = 5
-		var wgLocked sync.WaitGroup
-		var wgDone sync.WaitGroup
-		wgLocked.Add(writers)
-		wgDone.Add(writers)
-		for i := 0; i < writers; i++ {
-			go func() {
-				defer wgDone.Done()
-				_, err := bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
-					wgLocked.Done()
-					<-stopWritersCh
-					return nil, nil
-				})
-				if err != nil {
-					t.Errorf("Failed to acquire writer, err=%s", err)
-				}
-			}()
+		const rounds = 100
+		for round := 0; round < rounds; round++ {
+
+			stopWritersCh := make(chan struct{})
+			const writers = 5
+			chStart := make(chan struct{})
+			var wgStarted sync.WaitGroup
+			var wgLocked sync.WaitGroup
+			var wgDone sync.WaitGroup
+			wgStarted.Add(writers)
+			wgLocked.Add(writers)
+			wgDone.Add(writers)
+			for i := 0; i < writers; i++ {
+				go func() {
+					defer wgDone.Done()
+					wgStarted.Done()
+					_, err := bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+						wgLocked.Done()
+						<-stopWritersCh
+						return nil, nil
+					})
+					if err != nil {
+						t.Errorf("Failed to acquire writer, err=%s", err)
+					}
+				}()
+			}
+			// wait until every goroutine started
+			wgStarted.Wait()
+			close(chStart)
+			// wait until everything is locked
+			wgLocked.Wait()
+			// release them
+			close(stopWritersCh)
+			// wait done
+			wgDone.Wait()
 		}
-		// wait until everything is locked
-		wgLocked.Wait()
-		// release them
-		close(stopWritersCh)
-		// wait done
-		wgDone.Wait()
 	})
 
 	t.Run("committer_blocks_all", func(t *testing.T) {
