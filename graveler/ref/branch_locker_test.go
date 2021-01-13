@@ -3,6 +3,7 @@ package ref_test
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -21,25 +22,16 @@ func TestBranchLock(t *testing.T) {
 		const rounds = 10
 		for round := 0; round < rounds; round++ {
 			const writers = 5
-			stopWritersCh := make(chan struct{})
-			chStart := make(chan struct{})
 			var writerCounter int64
-			var wgStarted sync.WaitGroup
-			var wgLocked sync.WaitGroup
 			var wgDone sync.WaitGroup
-			wgStarted.Add(writers)
-			wgLocked.Add(writers)
 			wgDone.Add(writers)
 			for i := 0; i < writers; i++ {
 				go func() {
 					defer wgDone.Done()
-					wgStarted.Done()
-					<-chStart
 					ctx := context.Background()
 					_, err := bl.Writer(ctx, "repo-writers", testutil.DefaultBranchID, func() (interface{}, error) {
+						runtime.Gosched()
 						atomic.AddInt64(&writerCounter, 1)
-						wgLocked.Done()
-						<-stopWritersCh
 						return nil, nil
 					})
 					if err != nil {
@@ -47,20 +39,12 @@ func TestBranchLock(t *testing.T) {
 					}
 				}()
 			}
-			// wait until every goroutine started
-			wgStarted.Wait()
-			close(chStart)
-			// wait until everything is locked
-			wgLocked.Wait()
+			wgDone.Wait()
 			// verify all writers worked
 			counter := atomic.LoadInt64(&writerCounter)
 			if counter != writers {
 				t.Fatalf("Writer worked %d, expected %d", counter, writers)
 			}
-			// release them
-			close(stopWritersCh)
-			// wait done
-			wgDone.Wait()
 		}
 	})
 
