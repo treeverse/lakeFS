@@ -731,11 +731,15 @@ func (g *graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 			return nil, err
 		}
 
-		// make sure we have tombstone in staging
+		// is the key in staging?
 		entry, err := g.StagingManager.Get(ctx, branch.StagingToken, key)
-		if err != nil && !errors.Is(err, ErrNotFound) {
+
+		if err != nil {
+			// Either err is ErrNotFound -- and should be returned -- or some other error
+			// -- which should also be returned.
 			return nil, err
 		}
+
 		// return not found if we already got tombstone
 		if err == nil && entry == nil {
 			return nil, ErrNotFound
