@@ -16,10 +16,10 @@ type Params struct {
 	// MaxRangeSizeBytes is the largest size of a range partition.  In practice the range
 	// is split only after an additional record.
 	MaxRangeSizeBytes uint64
-	// RangeSizeRaggedness allows raggedness in splitting range partitions.  It is
+	// RangeSizeEntriesRaggedness allows raggedness in splitting range partitions.  It is
 	// the expected number of records after MinRangeSizeBytes at which to split the range
 	// -- ranges are split at the first key with hash divisible by this raggedness.
-	RangeSizeRaggedness float64
+	RangeSizeEntriesRaggedness float64
 }
 
 type metaRangeManager struct {

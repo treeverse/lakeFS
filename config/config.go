@@ -422,9 +422,9 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 
 func (c *Config) GetCommittedParams() *committed.Params {
 	return &committed.Params{
-		MinRangeSizeBytes:   viper.GetUint64(CommittedPermanentStorageMinRangeSizeKey),
-		MaxRangeSizeBytes:   viper.GetUint64(CommittedPermanentStorageMaxRangeSizeKey),
-		RangeSizeRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
+		MinRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMinRangeSizeKey),
+		MaxRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMaxRangeSizeKey),
+		RangeSizeEntriesRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
 	}
 }
 

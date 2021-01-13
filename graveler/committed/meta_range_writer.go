@@ -142,7 +142,7 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 	h := fnv.New64a()
 	// FNV always reads all bytes and never fails; ignore its return values
 	_, _ = h.Write(key)
-	r := h.Sum64() % uint64(w.params.RangeSizeRaggedness)
+	r := h.Sum64() % uint64(w.params.RangeSizeEntriesRaggedness)
 	return r == 0
 }
 

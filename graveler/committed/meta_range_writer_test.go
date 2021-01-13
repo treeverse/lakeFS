@@ -20,9 +20,9 @@ func getExpected(t *testing.T, record graveler.ValueRecord) committed.Record {
 }
 
 var params = committed.Params{
-	MinRangeSizeBytes:   0,
-	MaxRangeSizeBytes:   50_000,
-	RangeSizeRaggedness: 100,
+	MinRangeSizeBytes:          0,
+	MaxRangeSizeBytes:          50_000,
+	RangeSizeEntriesRaggedness: 100,
 }
 
 func TestWriter_WriteRecords(t *testing.T) {
