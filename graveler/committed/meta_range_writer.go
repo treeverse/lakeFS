@@ -96,7 +96,7 @@ func (w *GeneralMetaRangeWriter) getBatchedRanges() ([]Range, error) {
 			MinKey:        r.First,
 			MaxKey:        r.Last,
 			EstimatedSize: r.EstimatedRangeSizeBytes,
-			Count:         uint32(r.Count),
+			Count:         int64(r.Count),
 		}
 	}
 	return ranges, nil
