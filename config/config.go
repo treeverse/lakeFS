@@ -34,19 +34,17 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultCommittedLocalCacheRangePercent          = 0.9
-	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
-	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir                   = "~/lakefs/local_tier"
-	DefaultCommittedMetaRangeReaderCacheSize        = 20
-	DefaultCommittedMetaRangeReaderNumShards        = 6
-	DefaultCommittedRangeReaderCacheSize            = 100
-	DefaultCommittedRangeReaderNumShards            = 12
-	DefaultCommittedPebbleSSTableCacheSizeBytes     = 200_000_000
-	DefaultCommittedBlockStoragePrefix              = "_lakefs"
-	DefaultCommittedPermanentMinRangeSizeBytes      = 0
-	DefaultCommittedPermanentMaxRangeSizeBytes      = 20 * 1024 * 1024
-	DefaultCommittedPermanentRangeRaggednessEntries = 50_000
+	DefaultCommittedLocalCacheRangePercent      = 0.9
+	DefaultCommittedLocalCacheMetaRangePercent  = 0.1
+	DefaultCommittedLocalCacheBytes             = 1 * 1024 * 1024 * 1024
+	DefaultCommittedLocalCacheDir               = "~/lakefs/local_tier"
+	DefaultCommittedMetaRangeReaderCacheSize    = 20
+	DefaultCommittedMetaRangeReaderNumShards    = 6
+	DefaultCommittedRangeReaderCacheSize        = 100
+	DefaultCommittedRangeReaderNumShards        = 12
+	DefaultCommittedPebbleSSTableCacheSizeBytes = 200_000_000
+	DefaultCommittedBlockStoragePrefix          = "_lakefs"
+	DefaultCommittedPermanentRangeSizeBytes     = 10 * 1024 * 1024
 
 	DefaultBlockStoreGSS3Endpoint = "https://storage.googleapis.com"
 
@@ -110,18 +108,16 @@ const (
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
 
-	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
-	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
-	CommittedLocalCacheRangeProportion          = "committed.local_cache.range_proportion"
-	CommittedRangeReaderCacheSize               = "committed.local_cache.range.open_readers"
-	CommittedRangeReaderCacheNumShards          = "committed.local_cache.range.num_shards"
-	CommittedLocalCacheMetaRangeProportion      = "committed.local_cache.metarange_proportion"
-	CommittedMetaRangeReaderCacheSize           = "committed.local_cache.metarange.open_readers"
-	CommittedMetaRangeReaderCacheNumShards      = "committed.local_cache.metarange.num_shards"
-	CommittedBlockStoragePrefixKey              = "committed.block_storage_prefix"
-	CommittedPermanentStorageMinRangeSizeKey    = "committed.permanent.min_range_size_bytes"
-	CommittedPermanentStorageMaxRangeSizeKey    = "committed.permanent.max_range_size_bytes"
-	CommittedPermanentStorageRangeRaggednessKey = "committed.permanent.range_raggedness_entries"
+	CommittedLocalCacheSizeBytesKey        = "committed.local_cache.size_bytes"
+	CommittedLocalCacheDirKey              = "committed.local_cache.dir"
+	CommittedLocalCacheRangeProportion     = "committed.local_cache.range_proportion"
+	CommittedRangeReaderCacheSize          = "committed.local_cache.range.open_readers"
+	CommittedRangeReaderCacheNumShards     = "committed.local_cache.range.num_shards"
+	CommittedLocalCacheMetaRangeProportion = "committed.local_cache.metarange_proportion"
+	CommittedMetaRangeReaderCacheSize      = "committed.local_cache.metarange.open_readers"
+	CommittedMetaRangeReaderCacheNumShards = "committed.local_cache.metarange.num_shards"
+	CommittedBlockStoragePrefixKey         = "committed.block_storage_prefix"
+	CommittedPermanentStorageRangeSizeKey  = "committed.permanent.approximate_range_size_bytes"
 
 	CommittedPebbleSSTableCacheSizeBytesKey = "committed.sstable.memory.cache_size_bytes"
 
@@ -164,9 +160,7 @@ func setDefaults() {
 	viper.SetDefault(CommittedMetaRangeReaderCacheNumShards, DefaultCommittedMetaRangeReaderNumShards)
 
 	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
-	viper.SetDefault(CommittedPermanentStorageMinRangeSizeKey, DefaultCommittedPermanentMinRangeSizeBytes)
-	viper.SetDefault(CommittedPermanentStorageMaxRangeSizeKey, DefaultCommittedPermanentMaxRangeSizeBytes)
-	viper.SetDefault(CommittedPermanentStorageRangeRaggednessKey, DefaultCommittedPermanentRangeRaggednessEntries)
+	viper.SetDefault(CommittedPermanentStorageRangeSizeKey, DefaultCommittedPermanentRangeSizeBytes)
 
 	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
@@ -422,9 +416,7 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 
 func (c *Config) GetCommittedParams() *committed.Params {
 	return &committed.Params{
-		MinRangeSizeBytes:   viper.GetUint64(CommittedPermanentStorageMinRangeSizeKey),
-		MaxRangeSizeBytes:   viper.GetUint64(CommittedPermanentStorageMaxRangeSizeKey),
-		RangeSizeRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
+		ApproximateRangeSizeBytes: viper.GetUint64(CommittedPermanentStorageRangeSizeKey),
 	}
 }
 
