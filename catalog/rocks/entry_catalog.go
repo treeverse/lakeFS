@@ -6,6 +6,8 @@ import (
 	_ "crypto/sha256"
 	"fmt"
 
+	"github.com/cockroachdb/pebble"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -15,9 +17,6 @@ import (
 	"github.com/treeverse/lakefs/graveler/staging"
 	"github.com/treeverse/lakefs/pyramid"
 	"github.com/treeverse/lakefs/pyramid/params"
-
-	pebble "github.com/cockroachdb/pebble"
-	pebble_sst "github.com/cockroachdb/pebble/sstable"
 )
 
 // hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
@@ -108,10 +107,10 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	defer pebbleSSTableCache.Unref()
 	metaRangeCache := sstable.NewCache(*cfg.GetCommittedRangeSSTableCacheParams(),
 		metaRangeFS,
-		pebble_sst.ReaderOptions{Cache: pebbleSSTableCache})
+		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
 	rangeCache := sstable.NewCache(*cfg.GetCommittedMetaRangeSSTableCacheParams(),
 		rangeFS,
-		pebble_sst.ReaderOptions{Cache: pebbleSSTableCache})
+		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, hashAlg)
@@ -125,9 +124,9 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 
 	stagingManager := staging.NewManager(db)
 	refManager := ref.NewPGRefManager(db)
-
+	branchLocker := ref.NewBranchLocker(db)
 	return &EntryCatalog{
-		store: graveler.NewGraveler(committedManager, stagingManager, refManager),
+		store: graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager),
 	}, nil
 }
 
