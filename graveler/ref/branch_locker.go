@@ -20,9 +20,9 @@ func NewBranchLocker(db db.Database) *BranchLocker {
 	}
 }
 
-// Writer tries to acquire a write lock using a Postgres advisory lock for the span of calling `lockedCB`.
+// Writer tries to acquire a write lock using a Postgres advisory lock for the span of calling `lockedFn`.
 // Returns ErrLockNotAcquired if it cannot acquire the lock or if a commit is in progress.
-func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedCB func() (interface{}, error)) (interface{}, error) {
+func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
 	writerLockKey, _ := calculateBranchLockerKeys(repositoryID, branchID)
 	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// try lock committer key
@@ -34,14 +34,14 @@ func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.Reposit
 		if !locked {
 			return nil, fmt.Errorf("%w (%d)", graveler.ErrLockNotAcquired, writerLockKey)
 		}
-		return lockedCB()
+		return lockedFn()
 	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
-// MetadataUpdater tries to lock as committer using a Postgres advisory lock for the span of calling `lockedCB`.
+// MetadataUpdater tries to lock as committer using a Postgres advisory lock for the span of calling `lockedFn`.
 // The call is blocked until all writers end their work.
 // It returns ErrLockNotAcquired if it fails to acquire the lock or if another commit is already in progress.
-func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedCB func() (interface{}, error)) (interface{}, error) {
+func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
 	writerLockKey, committerLockKey := calculateBranchLockerKeys(repositoryID, branchID)
 	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// try lock committer key
@@ -58,7 +58,7 @@ func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID gravele
 		if err != nil {
 			return nil, fmt.Errorf("%w (%d): %s", graveler.ErrLockNotAcquired, writerLockKey, err)
 		}
-		return lockedCB()
+		return lockedFn()
 	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
