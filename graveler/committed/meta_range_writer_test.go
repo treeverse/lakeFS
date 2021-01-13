@@ -19,6 +19,12 @@ func getExpected(t *testing.T, record graveler.ValueRecord) committed.Record {
 	return committed.Record{Key: committed.Key(record.Key), Value: expectedValue}
 }
 
+var params = committed.Params{
+	MinRangeSizeBytes:          0,
+	MaxRangeSizeBytes:          50_000,
+	RangeSizeEntriesRaggedness: 100,
+}
+
 func TestWriter_WriteRecords(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
@@ -27,8 +33,10 @@ func TestWriter_WriteRecords(t *testing.T) {
 	rangeManager := mock.NewMockRangeManager(ctrl)
 	mockWriter := mock.NewMockRangeWriter(ctrl)
 	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any()).Return(mockWriter, nil).MinTimes(1)
+	// Never attempt to split files.
+	mockWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
 	namespace := committed.Namespace("ns")
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, 100, namespace)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, &params, namespace)
 
 	// Add first record
 	firstRecord := graveler.ValueRecord{
@@ -75,7 +83,7 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 	namespace := committed.Namespace("ns")
 	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	rng2 := committed.Range{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, 100, namespace)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, &params, namespace)
 	err := w.WriteRange(rng)
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
@@ -104,6 +112,11 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	// get writer - once for record writer, once for range writer
 	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any()).Return(mockWriter, nil)
 	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any()).Return(mockMetaWriter, nil)
+
+	// Never attempt to split files.
+	mockWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
+	mockMetaWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
+
 	// write two records on MetaRange and one for Range
 	mockWriter.EXPECT().WriteRecord(gomock.Any())
 	mockMetaWriter.EXPECT().WriteRecord(gomock.Any()).Times(2)
@@ -112,7 +125,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	mockWriter.EXPECT().Abort().AnyTimes()
 	mockMetaWriter.EXPECT().Abort().AnyTimes()
 
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, 100, namespace)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, namespace)
 	err := w.WriteRecord(record)
 	if err != nil {
 		t.Fatal("unexpected error %w", err)
