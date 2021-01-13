@@ -16,11 +16,9 @@ func TestBranchLock(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	bl := graveler.NewBranchLocker(conn)
 
-	ctx := context.Background()
 	t.Run("multiple_writers", func(t *testing.T) {
 		const rounds = 100
 		for round := 0; round < rounds; round++ {
-
 			stopWritersCh := make(chan struct{})
 			const writers = 5
 			chStart := make(chan struct{})
@@ -34,7 +32,8 @@ func TestBranchLock(t *testing.T) {
 				go func() {
 					defer wgDone.Done()
 					wgStarted.Done()
-					_, err := bl.Writer(ctx, "a", testutil.DefaultBranchID, func() (interface{}, error) {
+					ctx := context.Background()
+					_, err := bl.Writer(ctx, "repo-writers", testutil.DefaultBranchID, func() (interface{}, error) {
 						wgLocked.Done()
 						<-stopWritersCh
 						return nil, nil
@@ -61,6 +60,7 @@ func TestBranchLock(t *testing.T) {
 		chReleaseAcquired := make(chan struct{})
 		chDone := make(chan struct{})
 		go func() {
+			ctx := context.Background()
 			_, err := bl.MetadataUpdater(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
 				close(chAcquired)
 				<-chReleaseAcquired
@@ -71,6 +71,8 @@ func TestBranchLock(t *testing.T) {
 			}
 			close(chDone)
 		}()
+
+		ctx := context.Background()
 		// wait until we acquire metadata update lock
 		<-chAcquired
 		// try to acquire writer
@@ -105,6 +107,7 @@ func TestBranchLock(t *testing.T) {
 		chReleaseWriter := make(chan struct{})
 		chDoneWriter := make(chan struct{})
 		go func() {
+			ctx := context.Background()
 			_, err := bl.Writer(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
 				close(chAcquireWriter)
 				<-chReleaseWriter
@@ -124,6 +127,7 @@ func TestBranchLock(t *testing.T) {
 		for i := 0; i < len(chDoneCommitter); i++ {
 			chDoneCommitter[i] = make(chan struct{})
 			go func(pos int) {
+				ctx := context.Background()
 				_, committersErr[pos] = bl.MetadataUpdater(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
 					atomic.AddInt64(&metadataUpdates, 1)
 					return nil, nil
@@ -151,6 +155,7 @@ func TestBranchLock(t *testing.T) {
 		}
 
 		// verify that another writer can't start while committer is waiting
+		ctx := context.Background()
 		_, err := bl.Writer(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
 			return nil, nil
 		})
