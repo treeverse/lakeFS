@@ -2,6 +2,7 @@ package staging
 
 import (
 	"context"
+	"errors"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
@@ -27,6 +28,9 @@ func (p *Manager) Get(ctx context.Context, st graveler.StagingToken, key gravele
 		err := tx.Get(value, "SELECT identity, data FROM graveler_staging_kv WHERE staging_token=$1 AND key=$2", st, key)
 		return value, err
 	}, p.txOpts(ctx, db.ReadOnly())...)
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, graveler.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
