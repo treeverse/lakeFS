@@ -95,11 +95,20 @@ jobs:
             docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
           fi
 
+  run-system-on-the-rocks:
+    # TODO(ariels): merge into run-system below when Rocks replaces MVCC as the default.
+    name: Run latest lakeFS app on the rocks
+    needs: deploy-image
+    runs-on: ubuntu-20.04
+    env:
+      LAKEFS_CATALOGER_TYPE: rocks
+    steps: *run-system-steps
+
   run-system:
     name: Run latest lakeFS app
     needs: deploy-image
     runs-on: ubuntu-20.04
-    steps:
+    steps: &run-system-steps
       - name: Check-out code
         uses: actions/checkout@v2
       - name: Setup Go
