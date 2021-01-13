@@ -99,7 +99,12 @@ jobs:
     name: Run latest lakeFS app
     needs: deploy-image
     runs-on: ubuntu-20.04
-    steps: &run-system-steps
+    strategy:
+      matrix:
+        cataloger:
+          - mvcc
+          - rocks
+    steps:
       - name: Check-out code
         uses: actions/checkout@v2
       - name: Setup Go
@@ -128,6 +133,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -165,6 +171,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -183,6 +190,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -201,13 +209,4 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
-
-  run-system-on-the-rocks:
-    # TODO(ariels): merge into run-system below when Rocks replaces MVCC as the default.
-    name: Run latest lakeFS app on the rocks
-    needs: deploy-image
-    runs-on: ubuntu-20.04
-    env:
-      LAKEFS_CATALOGER_TYPE: rocks
-    steps: *run-system-steps
 
