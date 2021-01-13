@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/block"
@@ -51,7 +52,7 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 	lg := o.Log(req).WithField("key", o.Path)
 	err := o.Cataloger.DeleteEntry(req.Context(), o.Repository.Name, o.Reference, o.Path)
 	switch {
-	case errors.Is(err, db.ErrNotFound):
+	case errors.Is(err, db.ErrNotFound) || errors.Is(err, graveler.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
