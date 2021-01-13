@@ -8,7 +8,7 @@ type Range struct {
 	MinKey        Key
 	MaxKey        Key
 	EstimatedSize uint64 // EstimatedSize estimated Range size in bytes
-	Count         uint32
+	Count         int64
 }
 
 func MarshalRange(r Range) ([]byte, error) {

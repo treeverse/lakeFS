@@ -118,14 +118,14 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	mockMetaWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
 
 	// write two records on MetaRange and one for Range
-	call0 := mockWriter.EXPECT().WriteRecord(gomock.Any())
-	call1 := mockWriter.EXPECT().Close().Return(&committed.WriteResult{
+	writeRecordCall := mockWriter.EXPECT().WriteRecord(gomock.Any())
+	closeRangeCall1 := mockWriter.EXPECT().Close().Return(&committed.WriteResult{
 		RangeID: "rng-id",
 		First:   []byte("a"),
 		Last:    []byte("a"),
 		Count:   1,
-	}, nil).After(call0)
-	call2 := mockMetaWriter.EXPECT().WriteRecord(getExpected(t, graveler.ValueRecord{
+	}, nil).After(writeRecordCall)
+	writeRangeCall1 := mockMetaWriter.EXPECT().WriteRecord(getExpected(t, graveler.ValueRecord{
 		Key: []byte("a"),
 		Value: &graveler.Value{
 			Identity: []byte("rng-id"),
@@ -136,15 +136,15 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 				Count:  1,
 			}),
 		},
-	})).After(call1)
-	call3 := mockMetaWriter.EXPECT().WriteRecord(getExpected(t, graveler.ValueRecord{
+	})).After(closeRangeCall1)
+	writeRangeCall2 := mockMetaWriter.EXPECT().WriteRecord(getExpected(t, graveler.ValueRecord{
 		Key: []byte("g"),
 		Value: &graveler.Value{
 			Identity: []byte("rng2-id"),
 			Data:     mustMarshalRange(rng),
 		},
-	})).After(call2)
-	mockMetaWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil).After(call3)
+	})).After(writeRangeCall1)
+	mockMetaWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil).After(writeRangeCall2)
 	mockWriter.EXPECT().Abort().AnyTimes()
 	mockMetaWriter.EXPECT().Abort().AnyTimes()
 
