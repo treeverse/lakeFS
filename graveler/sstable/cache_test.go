@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	pebble_sst "github.com/cockroachdb/pebble/sstable"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	lru "github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/sstable"
@@ -26,7 +26,7 @@ func (m *marker) Close() error {
 	return nil
 }
 
-func (m *marker) GetSSTable() *pebble_sst.Reader {
+func (m *marker) GetSSTable() *pebblesst.Reader {
 	return nil
 }
 
