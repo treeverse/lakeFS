@@ -18,12 +18,12 @@ func TestBranchLock(t *testing.T) {
 	bl := ref.NewBranchLocker(conn)
 
 	t.Run("multiple_writers", func(t *testing.T) {
-		t.Skip("temp skip")
-		const rounds = 100
+		const rounds = 10
 		for round := 0; round < rounds; round++ {
-			stopWritersCh := make(chan struct{})
 			const writers = 5
+			stopWritersCh := make(chan struct{})
 			chStart := make(chan struct{})
+			var writerCounter int64
 			var wgStarted sync.WaitGroup
 			var wgLocked sync.WaitGroup
 			var wgDone sync.WaitGroup
@@ -36,6 +36,7 @@ func TestBranchLock(t *testing.T) {
 					wgStarted.Done()
 					ctx := context.Background()
 					_, err := bl.Writer(ctx, "repo-writers", testutil.DefaultBranchID, func() (interface{}, error) {
+						atomic.AddInt64(&writerCounter, 1)
 						wgLocked.Done()
 						<-stopWritersCh
 						return nil, nil
@@ -50,6 +51,11 @@ func TestBranchLock(t *testing.T) {
 			close(chStart)
 			// wait until everything is locked
 			wgLocked.Wait()
+			// verify all writers worked
+			counter := atomic.LoadInt64(&writerCounter)
+			if counter != writers {
+				t.Fatalf("Writer worked %d, expected %d", counter, writers)
+			}
 			// release them
 			close(stopWritersCh)
 			// wait done
