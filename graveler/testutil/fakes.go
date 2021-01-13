@@ -18,9 +18,9 @@ type AppliedData struct {
 }
 
 type CommittedFake struct {
-	Value         *graveler.Value
+	ValuesByKey   map[string]*graveler.Value
 	ValueIterator graveler.ValueIterator
-	diffIterator  graveler.DiffIterator
+	DiffIterator  graveler.DiffIterator
 	Err           error
 	MetaRangeID   graveler.MetaRangeID
 	AppliedData   AppliedData
@@ -34,6 +34,10 @@ func (t *MetaRangeFake) ID() graveler.MetaRangeID {
 	return t.id
 }
 
+func NewCommittedFake() *CommittedFake {
+	return &CommittedFake{}
+}
+
 func (c *CommittedFake) Exists(context.Context, graveler.StorageNamespace, graveler.MetaRangeID) (bool, error) {
 	if c.Err != nil {
 		return false, c.Err
@@ -41,11 +45,11 @@ func (c *CommittedFake) Exists(context.Context, graveler.StorageNamespace, grave
 	return true, nil
 }
 
-func (c *CommittedFake) Get(context.Context, graveler.StorageNamespace, graveler.MetaRangeID, graveler.Key) (*graveler.Value, error) {
+func (c *CommittedFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return c.Value, nil
+	return c.ValuesByKey[string(key)], nil
 }
 
 func (c *CommittedFake) List(context.Context, graveler.StorageNamespace, graveler.MetaRangeID) (graveler.ValueIterator, error) {
@@ -59,7 +63,7 @@ func (c *CommittedFake) Diff(context.Context, graveler.StorageNamespace, gravele
 	if c.Err != nil {
 		return nil, c.Err
 	}
-	return c.diffIterator, nil
+	return c.DiffIterator, nil
 }
 
 func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _, _ string, _ graveler.Metadata) (graveler.MetaRangeID, error) {
