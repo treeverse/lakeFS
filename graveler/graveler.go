@@ -159,9 +159,10 @@ type TagRecord struct {
 
 // Diff represents a change in value based on key
 type Diff struct {
-	Type  DiffType
-	Key   Key
-	Value *Value
+	Type         DiffType
+	Key          Key
+	Value        *Value
+	LeftIdentity []byte // the Identity of the value on the left side of the diff
 }
 
 // Interfaces
