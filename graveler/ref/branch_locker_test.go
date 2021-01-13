@@ -34,6 +34,7 @@ func TestBranchLock(t *testing.T) {
 				go func() {
 					defer wgDone.Done()
 					wgStarted.Done()
+					<-chStart
 					ctx := context.Background()
 					_, err := bl.Writer(ctx, "repo-writers", testutil.DefaultBranchID, func() (interface{}, error) {
 						atomic.AddInt64(&writerCounter, 1)
