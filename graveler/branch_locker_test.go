@@ -32,7 +32,9 @@ func TestBranchLock(t *testing.T) {
 					<-stopWritersCh
 					return nil, nil
 				})
-				tu.MustDo(t, "acquired write failed", err)
+				if err != nil {
+					t.Errorf("Failed to acquire writer, err=%s", err)
+				}
 			}()
 		}
 		// wait until everything is locked
