@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/staging"
 	"github.com/treeverse/lakefs/testutil"
@@ -22,8 +21,8 @@ func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManag
 func TestSetGet(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
-	if !errors.Is(err, db.ErrNotFound) {
-		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
 	value := newTestValue("identity1", "value1")
 	err = s.Set(ctx, "t1", []byte("a/b/c/"), value)
@@ -38,8 +37,8 @@ func TestSetGet(t *testing.T) {
 func TestMultiToken(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
-	if !errors.Is(err, db.ErrNotFound) {
-		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
 	err = s.Set(ctx, "t1", []byte("a/b/c/"), newTestValue("identity1", "value1"))
 	testutil.Must(t, err)
@@ -75,7 +74,7 @@ func TestDrop(t *testing.T) {
 	err := s.Drop(ctx, "t1")
 	testutil.Must(t, err)
 	v, err := s.Get(ctx, "t1", []byte("key0000"))
-	if !errors.Is(err, db.ErrNotFound) {
+	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
 	}
 	it, _ := s.List(ctx, "t1")
@@ -109,7 +108,7 @@ func TestDropByPrefix(t *testing.T) {
 	err := s.DropByPrefix(ctx, "t1", []byte("key1"))
 	testutil.Must(t, err)
 	v, err := s.Get(ctx, "t1", []byte("key1000"))
-	if !errors.Is(err, db.ErrNotFound) {
+	if !errors.Is(err, graveler.ErrNotFound) {
 		// key1000 starts with the deleted prefix - should have been deleted
 		t.Fatalf("after dropping staging area, expected ErrNotFound in Get. got err=%v, got value=%v", err, v)
 	}
@@ -357,8 +356,8 @@ func TestNilIdentity(t *testing.T) {
 func TestDeleteAndTombstone(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("key1"))
-	if !errors.Is(err, db.ErrNotFound) {
-		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
 	tombstoneValues := []*graveler.Value{
 		{
@@ -404,8 +403,8 @@ func TestDeleteAndTombstone(t *testing.T) {
 	err = s.DropKey(ctx, "t1", []byte("key1"))
 	testutil.Must(t, err)
 	_, err = s.Get(ctx, "t1", []byte("key1"))
-	if !errors.Is(err, db.ErrNotFound) {
-		t.Fatalf("error different than expected. expected=%v, got=%v", db.ErrNotFound, err)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatalf("error different than expected. expected=%v, got=%v", graveler.ErrNotFound, err)
 	}
 }
 
