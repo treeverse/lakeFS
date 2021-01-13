@@ -8,4 +8,5 @@ message RangeData {
 	bytes min_key = 1;
 	bytes max_key = 2;
 	uint64 estimated_size = 3;
+	uint32 count = 4;
 }
