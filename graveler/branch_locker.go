@@ -2,7 +2,6 @@ package graveler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
 
@@ -19,8 +18,6 @@ import (
 type BranchLocker struct {
 	db db.Database
 }
-
-var ErrLockNotAcquired = errors.New("lock not acquired")
 
 func NewBranchLocker(db db.Database) *BranchLocker {
 	return &BranchLocker{
