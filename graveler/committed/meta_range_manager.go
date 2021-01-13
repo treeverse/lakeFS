@@ -10,16 +10,9 @@ import (
 )
 
 type Params struct {
-	// MinRangeSizeBytes is the smallest size for splitting a range partition as a result
-	// of adding a record.  Smaller ranges are still possible due to re-using an existing
-	MinRangeSizeBytes uint64
-	// MaxRangeSizeBytes is the largest size of a range partition.  In practice the range
-	// is split only after an additional record.
-	MaxRangeSizeBytes uint64
-	// RangeSizeRaggedness allows raggedness in splitting range partitions.  It is
-	// the expected number of records after MinRangeSizeBytes at which to split the range
-	// -- ranges are split at the first key with hash divisible by this raggedness.
-	RangeSizeRaggedness float64
+	// ApproximateRangeSizeBytes is a target for sizes of range partitions.  It should be
+	// kept fixed to maximize re-use of range partitions.
+	ApproximateRangeSizeBytes uint64
 }
 
 type metaRangeManager struct {
@@ -75,7 +68,7 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 }
 
 func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace) MetaRangeWriter {
-	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, Namespace(ns))
+	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, m.params.ApproximateRangeSizeBytes, Namespace(ns))
 }
 
 func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {

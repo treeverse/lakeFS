@@ -74,11 +74,8 @@ type WriteResult struct {
 // RangeWriter is an abstraction for writing Ranges.
 // Written records must be sorted by key.
 type RangeWriter interface {
-	// WriteRecord appends the given record to the Range.
+	// WriteRecord appends the given record to the Range
 	WriteRecord(record Record) error
-
-	// GetApproximateSize returns an estimate of the current written size of the Range.
-	GetApproximateSize() uint64
 
 	// Close flushes all records to the disk and returns the WriteResult.
 	Close() (*WriteResult, error)

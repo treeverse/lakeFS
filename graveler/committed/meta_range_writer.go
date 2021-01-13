@@ -13,15 +13,15 @@ import (
 )
 
 type GeneralMetaRangeWriter struct {
-	ctx              context.Context
-	params           *Params // for breaking ranges
-	namespace        Namespace
-	metaRangeManager RangeManager
-	rangeManager     RangeManager
-	rangeWriter      RangeWriter // writer for the current range
-	lastKey          Key
-	batchWriteCloser BatchWriterCloser
-	ranges           []Range
+	ctx                       context.Context
+	namespace                 Namespace
+	metaRangeManager          RangeManager
+	rangeManager              RangeManager
+	rangeWriter               RangeWriter // writer for the current range
+	lastKey                   Key
+	approximateRangeSizeBytes uint64 // indicates when to break the ranges
+	batchWriteCloser          BatchWriterCloser
+	ranges                    []Range
 }
 
 var (
@@ -29,14 +29,14 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, approximateRangeSizeBytes uint64, namespace Namespace) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
-		ctx:              ctx,
-		rangeManager:     rangeManager,
-		metaRangeManager: metaRangeManager,
-		batchWriteCloser: NewBatchCloser(),
-		params:           params,
-		namespace:        namespace,
+		ctx:                       ctx,
+		rangeManager:              rangeManager,
+		metaRangeManager:          metaRangeManager,
+		batchWriteCloser:          NewBatchCloser(),
+		approximateRangeSizeBytes: approximateRangeSizeBytes,
+		namespace:                 namespace,
 	}
 }
 
@@ -66,8 +66,11 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 		return fmt.Errorf("write record to range: %w", err)
 	}
 	w.lastKey = Key(record.Key)
-
-	if w.shouldBreakAtKey(record.Key) {
+	breakpoint, err := w.shouldBreakAtKey(record.Key)
+	if err != nil {
+		return err
+	}
+	if breakpoint {
 		return w.closeCurrentRange()
 	}
 	return nil
@@ -130,20 +133,14 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 }
 
 // shouldBreakAtKey returns true if should break range after the given key
-func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
-	approximateSize := w.rangeWriter.GetApproximateSize()
-	if approximateSize < w.params.MinRangeSizeBytes {
-		return false
-	}
-	if approximateSize >= w.params.MaxRangeSizeBytes {
-		return true
-	}
-
+func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) (bool, error) {
 	h := fnv.New64a()
-	// FNV always reads all bytes and never fails; ignore its return values
-	_, _ = h.Write(key)
-	r := h.Sum64() % uint64(w.params.RangeSizeRaggedness)
-	return r == 0
+	_, err := h.Write(key)
+	if err != nil {
+		return false, err
+	}
+	n := h.Sum64() % w.approximateRangeSizeBytes
+	return n == 0, nil
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
