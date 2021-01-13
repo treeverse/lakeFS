@@ -124,9 +124,9 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 
 	stagingManager := staging.NewManager(db)
 	refManager := ref.NewPGRefManager(db)
-
+	branchLocker := ref.NewBranchLocker(db)
 	return &EntryCatalog{
-		store: graveler.NewGraveler(db, committedManager, stagingManager, refManager),
+		store: graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager),
 	}, nil
 }
 

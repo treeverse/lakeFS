@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
@@ -448,6 +446,16 @@ type StagingManager interface {
 	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
+// BranchLocker enforces the branch locking logic
+// The logic is as follows:
+// - Allow concurrent writers to acquire the lock.
+// - A Metadata update waits for all current writers to release the lock, and then gets the lock.
+// - While a metadata update has the lock or is waiting for the lock, any other operation fails to acquire the lock.
+type BranchLocker interface {
+	Writer(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedCB func() (interface{}, error)) (interface{}, error)
+	MetadataUpdater(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedCB func() (interface{}, error)) (interface{}, error)
+}
+
 func (id RepositoryID) String() string {
 	return string(id)
 }
@@ -476,17 +484,17 @@ type graveler struct {
 	CommittedManager CommittedManager
 	StagingManager   StagingManager
 	RefManager       RefManager
-	branchLocker     *BranchLocker
+	branchLocker     BranchLocker
 	log              logging.Logger
 }
 
-func NewGraveler(db db.Database, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *graveler {
+func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, stagingManager StagingManager, refManager RefManager) *graveler {
 	return &graveler{
 		CommittedManager: committedManager,
 		StagingManager:   stagingManager,
 		RefManager:       refManager,
+		branchLocker:     branchLocker,
 		log:              logging.Default().WithField("service_name", "graveler_graveler"),
-		branchLocker:     NewBranchLocker(db),
 	}
 }
 

@@ -1,4 +1,4 @@
-package graveler_test
+package ref_test
 
 import (
 	"context"
@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/testutil"
 	tu "github.com/treeverse/lakefs/testutil"
 )
 
 func TestBranchLock(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
-	bl := graveler.NewBranchLocker(conn)
+	bl := ref.NewBranchLocker(conn)
 
 	t.Run("multiple_writers", func(t *testing.T) {
 		const rounds = 100
