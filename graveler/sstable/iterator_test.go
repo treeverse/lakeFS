@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/pebble"
-	pebble_sst "github.com/cockroachdb/pebble/sstable"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/graveler/committed"
@@ -85,7 +85,7 @@ func TestIteratorSuccess(t *testing.T) {
 }
 
 // createSStableIterator creates the iterator from keys, vals passed to it
-func createSStableIterator(t *testing.T, keys, vals []string) pebble_sst.Iterator {
+func createSStableIterator(t *testing.T, keys, vals []string) pebblesst.Iterator {
 	ssReader := createSStableReader(t, keys, vals)
 
 	iter, err := ssReader.NewIter(nil, nil)
@@ -99,11 +99,11 @@ func createSStableIterator(t *testing.T, keys, vals []string) pebble_sst.Iterato
 }
 
 // createSStableReader creates the table from keys, vals passed to it
-func createSStableReader(t *testing.T, keys []string, vals []string) *pebble_sst.Reader {
+func createSStableReader(t *testing.T, keys []string, vals []string) *pebblesst.Reader {
 	f, err := ioutil.TempFile(os.TempDir(), "test file")
 	require.NoError(t, err)
-	w := pebble_sst.NewWriter(f, pebble_sst.WriterOptions{
-		Compression: pebble_sst.SnappyCompression,
+	w := pebblesst.NewWriter(f, pebblesst.WriterOptions{
+		Compression: pebblesst.SnappyCompression,
 	})
 	for i, key := range keys {
 		require.NoError(t, w.Set([]byte(key), []byte(vals[i])))
@@ -117,7 +117,7 @@ func createSStableReader(t *testing.T, keys []string, vals []string) *pebble_sst
 
 	readF, err := os.Open(f.Name())
 	require.NoError(t, err)
-	ssReader, err := pebble_sst.NewReader(readF, pebble_sst.ReaderOptions{Cache: cache})
+	ssReader, err := pebblesst.NewReader(readF, pebblesst.ReaderOptions{Cache: cache})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
