@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
@@ -39,7 +41,20 @@ func TestEntryCatalog_SetEntry(t *testing.T) {
 	gravelerMock := &FakeGraveler{KeyValue: make(map[string]*graveler.Value)}
 	cat := EntryCatalog{store: gravelerMock}
 	ctx := context.Background()
-	entry := &Entry{Address: "addr1"}
+	var (
+		addr           = "addr1"
+		now            = time.Now()
+		size     int64 = 1234
+		tag            = "quick brown fox"
+		metadata       = map[string]string{"one": "1", "two": "2"}
+	)
+	entry := &Entry{
+		Address:      addr,
+		LastModified: timestamppb.New(now),
+		Size:         size,
+		ETag:         tag,
+		Metadata:     metadata,
+	}
 	err := cat.SetEntry(ctx, "repo", "ref", "path1", entry)
 	testutil.MustDo(t, "set entry", err)
 	// verify that mock got the right entry

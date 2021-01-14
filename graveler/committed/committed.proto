@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/treevese/lakefs/graveler/committed";
+option go_package = "github.com/treeverse/lakefs/graveler/committed";
 
 package committed;
 
