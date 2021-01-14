@@ -107,7 +107,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 
 	namespace := committed.Namespace("ns")
 	record := graveler.ValueRecord{Key: nil, Value: &graveler.Value{}}
-	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
+	rng := committed.Range{ID: "rng2-id", MinKey: committed.Key("a"), MaxKey: committed.Key("g"), Count: 4}
 
 	// get writer - once for record writer, once for range writer
 	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any()).Return(mockWriter, nil)
@@ -119,8 +119,31 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 
 	// write two records on MetaRange and one for Range
 	mockWriter.EXPECT().WriteRecord(gomock.Any())
-	mockMetaWriter.EXPECT().WriteRecord(gomock.Any()).Times(2)
-	mockWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
+	mockWriter.EXPECT().Close().Return(&committed.WriteResult{
+		RangeID: "rng-id",
+		First:   []byte("a"),
+		Last:    []byte("a"),
+		Count:   1,
+	}, nil)
+	mockMetaWriter.EXPECT().WriteRecord(getExpected(t, graveler.ValueRecord{
+		Key: []byte("a"),
+		Value: &graveler.Value{
+			Identity: []byte("rng-id"),
+			Data: mustMarshalRange(committed.Range{
+				ID:     "rng-id",
+				MinKey: []byte("a"),
+				MaxKey: []byte("a"),
+				Count:  1,
+			}),
+		},
+	}))
+	mockMetaWriter.EXPECT().WriteRecord(getExpected(t, graveler.ValueRecord{
+		Key: []byte("g"),
+		Value: &graveler.Value{
+			Identity: []byte("rng2-id"),
+			Data:     mustMarshalRange(rng),
+		},
+	}))
 	mockMetaWriter.EXPECT().Close().Return(&committed.WriteResult{}, nil)
 	mockWriter.EXPECT().Abort().AnyTimes()
 	mockMetaWriter.EXPECT().Abort().AnyTimes()
