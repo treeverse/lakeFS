@@ -1002,7 +1002,8 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
 		}
-		_, err = g.UpdateBranch(ctx, repositoryID, to, Ref(commitID))
+		branch.CommitID = commitID
+		err = g.RefManager.SetBranch(ctx, repositoryID, to, *branch)
 		if err != nil {
 			return "", fmt.Errorf("update branch %s: %w", to, err)
 		}
