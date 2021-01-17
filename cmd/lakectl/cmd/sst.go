@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	sst "github.com/cockroachdb/pebble/sstable"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/graveler/committed"
@@ -46,7 +46,7 @@ func (r *InMemReadableFile) Stat() (os.FileInfo, error) {
 }
 
 func getIterFromFile(filePath string) (committed.ValueIterator, map[string]string, error) {
-	var file sst.ReadableFile
+	var file pebblesst.ReadableFile
 	var err error
 	// read from stdin (file has to be seekable/stat-able so we have this weird wrapper
 	if filePath == "-" {
@@ -64,7 +64,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 		}
 	}
 	// read file descriptor
-	reader, err := sst.NewReader(file, sst.ReaderOptions{})
+	reader, err := pebblesst.NewReader(file, pebblesst.ReaderOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
