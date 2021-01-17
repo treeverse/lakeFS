@@ -65,7 +65,8 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 	if err != nil {
 		return fmt.Errorf("write record to range: %w", err)
 	}
-	w.lastKey = Key(record.Key)
+	w.lastKey = make(Key, len(record.Key))
+	copy(w.lastKey, record.Key)
 
 	if w.shouldBreakAtKey(record.Key) {
 		return w.closeCurrentRange()
@@ -109,7 +110,8 @@ func (w *GeneralMetaRangeWriter) WriteRange(rng Range) error {
 	if err := w.closeCurrentRange(); err != nil {
 		return err
 	}
-	w.lastKey = rng.MaxKey
+	w.lastKey = make(Key, len(rng.MaxKey))
+	copy(w.lastKey, rng.MaxKey)
 	w.ranges = append(w.ranges, rng)
 	return nil
 }
