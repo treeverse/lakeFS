@@ -52,7 +52,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil
 }
 
-func formatRangeSSTable(iter committed.ValueIterator, amount int) *Table {
+func formatRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -77,13 +77,16 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int) *Table {
 			fmt.Sprint(ent.GetMetadata()),
 		})
 	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
 	return &Table{
 		Headers: []interface{}{"path", "identity", "size", "etag", "last_modified", "address", "metadata"},
 		Rows:    rows,
-	}
+	}, nil
 }
 
-func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) *Table {
+func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -106,10 +109,13 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) *Table {
 			fmt.Sprint(r.EstimatedSize),
 		})
 	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
 	return &Table{
 		Headers: []interface{}{"range_id", "min_key", "max_key", "count", "estimated_size"},
 		Rows:    rows,
-	}
+	}, nil
 }
 
 var sstCatTemplate = `{{ .Table | table }}`
@@ -135,11 +141,16 @@ var sstCmd = &cobra.Command{
 
 		var table *Table
 		if typ == committed.MetadataMetarangesType {
-			table = formatMetaRangeSSTable(iter, amount)
+			table, err = formatMetaRangeSSTable(iter, amount)
 		} else {
 			// otherwise, a normal range
-			table = formatRangeSSTable(iter, amount)
+			table, err = formatRangeSSTable(iter, amount)
 		}
+
+		if err != nil {
+			DieErr(err)
+		}
+
 		// write to stdout
 		Write(sstCatTemplate, struct {
 			Table *Table
