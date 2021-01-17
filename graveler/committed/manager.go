@@ -91,8 +91,20 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffIterator(leftIt, rightIt), nil
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, left, right, base graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.MetaRangeID, error) {
-	panic("implement me")
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, theirs, ours, base graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+	diffIt, err := c.Diff(ctx, ns, theirs, ours)
+	if err != nil {
+		return "", fmt.Errorf("diff: %w", err)
+	}
+	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
+	if err != nil {
+		return "", fmt.Errorf("get base iterator: %w", err)
+	}
+	patchIterator, err := NewMergeIterator(diffIt, baseIt)
+	if err != nil {
+		return "", fmt.Errorf("get merge iterator: %w", err)
+	}
+	return c.Apply(ctx, ns, theirs, patchIterator)
 }
 
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, error) {
