@@ -963,6 +963,17 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if err != nil {
 			return "", err
 		}
+		branch, err := g.GetBranch(ctx, repositoryID, to)
+		if err != nil {
+			return "", fmt.Errorf("get branch: %w", err)
+		}
+		empty, err := g.stagingEmpty(ctx, branch)
+		if err != nil {
+			return "", fmt.Errorf("check if staging empty: %w", err)
+		}
+		if !empty {
+			return "", ErrDirtyBranch
+		}
 		fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
 		if err != nil {
 			return "", err
@@ -991,12 +1002,9 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
 		}
-		err = g.RefManager.SetBranch(ctx, repositoryID, to, Branch{
-			CommitID:     commitID,
-			StagingToken: newStagingToken(repositoryID, to),
-		})
+		_, err = g.UpdateBranch(ctx, repositoryID, to, Ref(commitID))
 		if err != nil {
-			return "", fmt.Errorf("set branch commit %s: %w", to, err)
+			return "", fmt.Errorf("update branch %s: %w", to, err)
 		}
 		return commitID, nil
 	})
