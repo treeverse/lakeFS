@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
-	"time"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
@@ -14,49 +13,24 @@ import (
 	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
-type InMemFileInfo struct {
-	name string
-	size int64
-}
-
-func (r *InMemFileInfo) Name() string       { return r.name }
-func (r *InMemFileInfo) Size() int64        { return r.size }
-func (r *InMemFileInfo) Mode() os.FileMode  { return os.ModePerm }
-func (r *InMemFileInfo) ModTime() time.Time { return time.Now() }
-func (r *InMemFileInfo) IsDir() bool        { return false }
-func (r *InMemFileInfo) Sys() interface{}   { return nil }
-
-type InMemReadableFile struct {
-	data *bytes.Reader
-}
-
-func (r *InMemReadableFile) ReadAt(p []byte, off int64) (n int, err error) {
-	return r.data.ReadAt(p, off)
-}
-
-func (r *InMemReadableFile) Close() error {
-	return nil
-}
-
-func (r *InMemReadableFile) Stat() (os.FileInfo, error) {
-	return &InMemFileInfo{
-		name: "stdin",
-		size: r.data.Size(),
-	}, nil
-}
-
 func getIterFromFile(filePath string) (committed.ValueIterator, map[string]string, error) {
 	var file pebblesst.ReadableFile
 	var err error
 	// read from stdin (file has to be seekable/stat-able so we have this weird wrapper
 	if filePath == "-" {
-		data, err := ioutil.ReadAll(os.Stdin)
+		fh, err := ioutil.TempFile("", "cat-sst-*")
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("error creating tempfile: %w", err)
 		}
-		file = &InMemReadableFile{
-			bytes.NewReader(data),
+		_, err = io.Copy(fh, os.Stdin)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error copying from stdin to tempfile: %w", err)
 		}
+		err = os.Remove(fh.Name())
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not unlink temp file %s: %w", fh.Name(), err)
+		}
+		file = fh
 	} else {
 		file, err = os.Open(filePath)
 		if err != nil {
@@ -78,7 +52,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil
 }
 
-func writeRangeSSTable(iter committed.ValueIterator, amount int) *Table {
+func formatRangeSSTable(iter committed.ValueIterator, amount int) *Table {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -109,7 +83,7 @@ func writeRangeSSTable(iter committed.ValueIterator, amount int) *Table {
 	}
 }
 
-func writeMetaRangeSSTable(iter committed.ValueIterator, amount int) *Table {
+func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) *Table {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -161,10 +135,10 @@ var sstCmd = &cobra.Command{
 
 		var table *Table
 		if typ == committed.MetadataMetarangesType {
-			table = writeMetaRangeSSTable(iter, amount)
+			table = formatMetaRangeSSTable(iter, amount)
 		} else {
 			// otherwise, a normal range
-			table = writeRangeSSTable(iter, amount)
+			table = formatRangeSSTable(iter, amount)
 		}
 		// write to stdout
 		Write(sstCatTemplate, struct {
