@@ -903,11 +903,12 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 
 		// serialize entry
 		obj := &models.ObjectStats{
-			Checksum:  entry.Checksum,
-			Mtime:     entry.CreationDate.Unix(),
-			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeObject,
-			SizeBytes: entry.Size,
+			Checksum:        entry.Checksum,
+			Mtime:           entry.CreationDate.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: entry.PhysicalAddress,
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       entry.Size,
 		}
 
 		if entry.Expired {
@@ -1143,8 +1144,9 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		for i, entry := range res {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
-					Path:     entry.Path,
-					PathType: models.ObjectStatsPathTypeCommonPrefix,
+					Path:            entry.Path,
+					PhysicalAddress: entry.PhysicalAddress,
+					PathType:        models.ObjectStatsPathTypeCommonPrefix,
 				}
 			} else {
 				var mtime int64
@@ -1152,11 +1154,12 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					mtime = entry.CreationDate.Unix()
 				}
 				objList[i] = &models.ObjectStats{
-					Checksum:  entry.Checksum,
-					Mtime:     mtime,
-					Path:      entry.Path,
-					PathType:  models.ObjectStatsPathTypeObject,
-					SizeBytes: entry.Size,
+					Checksum:        entry.Checksum,
+					Mtime:           mtime,
+					Path:            entry.Path,
+					PhysicalAddress: entry.PhysicalAddress,
+					PathType:        models.ObjectStatsPathTypeObject,
+					SizeBytes:       entry.Size,
 				}
 			}
 			lastID = entry.Path
@@ -1213,7 +1216,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 		byteSize := file.Header.Size
 
-		// read the content
+		// write the content
 		blob, err := upload.WriteBlob(deps.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -1242,11 +1245,12 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  blob.Checksum,
-			Mtime:     writeTime.Unix(),
-			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeObject,
-			SizeBytes: blob.Size,
+			Checksum:        blob.Checksum,
+			Mtime:           writeTime.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: blob.PhysicalAddress,
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       blob.Size,
 		})
 	})
 }
