@@ -962,7 +962,12 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		if len(commitRecord.Parents) > 1 {
 			return "", ErrRevertMergeCommit
 		}
+		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+		if err != nil {
+			return nil, fmt.Errorf("get repo %s: %w", repositoryID, err)
+		}
 		if len(commitRecord.Parents) == 0 {
+			g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, nil)
 			// TODO commit empty tree
 			return "", nil
 		}
@@ -979,13 +984,15 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[0], err)
 		}
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+		branchCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, Ref(branchID))
 		if err != nil {
-			return nil, fmt.Errorf("get repo %s: %w", repositoryID, err)
+			return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[0], err)
 		}
-		metaRangeID, err := MetaRangeID(""), nil // TODO call merge from committed mgr
+
+		// merge from the parent to the top of the branch, with the given ref as the merge base:
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentCommit.MetaRangeID, commitRecord.MetaRangeID)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("merge: %w", err)
 		}
 		commit := Commit{
 			Committer:    committer,
