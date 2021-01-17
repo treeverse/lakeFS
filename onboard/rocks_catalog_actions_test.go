@@ -16,11 +16,12 @@ import (
 )
 
 const (
-	repoID      = graveler.RepositoryID("some-repo-id")
-	metaRangeID = graveler.MetaRangeID("some-mr-id")
-	commitID    = graveler.CommitID("some-commit-id")
-	committer   = "john-doe"
-	msg         = "awesome-import-commit"
+	repoID         = graveler.RepositoryID("some-repo-id")
+	metaRangeID    = graveler.MetaRangeID("some-mr-id")
+	commitID       = graveler.CommitID("some-commit-id")
+	parentCommitID = graveler.CommitID("some-parent-commit-id")
+	committer      = "john-doe"
+	msg            = "awesome-import-commit"
 )
 
 func TestFullCycleSuccess(t *testing.T) {
@@ -36,7 +37,7 @@ func TestFullCycleSuccess(t *testing.T) {
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
 	validIt := getValidIt()
-	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
+	stats, err := rocks.ApplyImport(context.Background(), validIt, parentCommitID, nil, false)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 
@@ -54,7 +55,7 @@ func TestApplyImportWrongIt(t *testing.T) {
 	diffIt := onboard.NewDiffIterator(innerIt, innerIt)
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
-	stats, err := rocks.ApplyImport(context.Background(), diffIt, false)
+	stats, err := rocks.ApplyImport(context.Background(), diffIt, parentCommitID, nil, false)
 	require.Error(t, err)
 	require.IsType(t, onboard.ErrWrongIterator, err)
 	require.Nil(t, stats)
@@ -70,7 +71,7 @@ func TestApplyImportWriteFailure(t *testing.T) {
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
 	validIt := getValidIt()
-	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
+	stats, err := rocks.ApplyImport(context.Background(), validIt, parentCommitID, nil, false)
 	require.Error(t, err)
 	require.Nil(t, stats)
 }
@@ -100,7 +101,7 @@ func TestCommitFailed(t *testing.T) {
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 	validIt := getValidIt()
 
-	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
+	stats, err := rocks.ApplyImport(context.Background(), validIt, parentCommitID, nil, false)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 

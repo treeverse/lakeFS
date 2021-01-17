@@ -22,9 +22,10 @@ type RocksCatalogRepoActions struct {
 
 	metaRanger         metaRangeManager
 	createdMetaRangeID *graveler.MetaRangeID
-	progress           *cmdutils.Progress
-	commit             *cmdutils.Progress
 	commitID           graveler.CommitID
+
+	progress *cmdutils.Progress
+	commit   *cmdutils.Progress
 }
 
 func (c *RocksCatalogRepoActions) Progress() []*cmdutils.Progress {
@@ -39,11 +40,10 @@ type metaRangeManager interface {
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 }
 
-func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler.RepositoryID, commitID graveler.CommitID, committer string, logger logging.Logger) *RocksCatalogRepoActions {
+func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler.RepositoryID, committer string, logger logging.Logger) *RocksCatalogRepoActions {
 	return &RocksCatalogRepoActions{
 		metaRanger: metaRanger,
 		repoID:     repository,
-		commitID:   commitID,
 		committer:  committer,
 		logger:     logger,
 
@@ -56,6 +56,8 @@ var ErrWrongIterator = errors.New("rocksCatalogRepoActions can only accept Inven
 
 func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, commitID graveler.CommitID, prefixes []string, _ bool) (*Stats, error) {
 	c.logger.Trace("start apply import")
+	c.commitID = commitID
+
 	c.progress.Activate()
 
 	invIt, ok := it.(*InventoryIterator)
@@ -63,7 +65,7 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 		return nil, ErrWrongIterator
 	}
 
-	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, graveler.Ref(commitID), "", catalog.DefaultPathDelimiter)
+	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, graveler.Ref(c.commitID), "", catalog.DefaultPathDelimiter)
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}
