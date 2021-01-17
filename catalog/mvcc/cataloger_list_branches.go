@@ -25,14 +25,24 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 			return nil, err
 		}
 
-		query := `SELECT $2 AS repository, name
-			FROM catalog_branches
-			WHERE repository_id = $1 AND name like $3 AND name > $4
-			ORDER BY name
-			LIMIT $5`
-		var branches []*catalog.Branch
-		if err := tx.Select(&branches, query, repoID, repository, prefixCond, after, limit+1); err != nil {
+		const query = `SELECT b.name, (SELECT MAX(commit_id) FROM catalog_commits WHERE catalog_commits.branch_id = b.id) AS commit_id
+			FROM catalog_branches b
+			WHERE b.repository_id = $1 AND b.name like $2 AND b.name > $3
+			ORDER BY b.name
+			LIMIT $4`
+		var branchesNameAndCommit []struct {
+			Name     string `db:"name"`
+			CommitID int64  `db:"commit_id"`
+		}
+		if err := tx.Select(&branchesNameAndCommit, query, repoID, prefixCond, after, limit+1); err != nil {
 			return nil, err
+		}
+		branches := make([]*catalog.Branch, 0, len(branchesNameAndCommit))
+		for _, nc := range branchesNameAndCommit {
+			branches = append(branches, &catalog.Branch{
+				Name:      nc.Name,
+				Reference: MakeReference(nc.Name, CommitID(nc.CommitID)),
+			})
 		}
 		return branches, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
