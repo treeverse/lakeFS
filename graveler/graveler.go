@@ -992,7 +992,7 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			Message:      message,
 			MetaRangeID:  metaRangeID,
 			CreationDate: time.Time{},
-			Parents:      []CommitID{},
+			Parents:      []CommitID{branch.CommitID},
 			Metadata:     metadata,
 		}
 		return g.RefManager.AddCommit(ctx, repositoryID, commit)

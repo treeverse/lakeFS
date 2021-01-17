@@ -480,7 +480,7 @@ func (c *cataloger) RollbackCommit(ctx context.Context, repository string, branc
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(reference)
-	_, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref)
+	_, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, catalog.DefaultCommitter, fmt.Sprintf("Revert %s", reference), nil)
 	return err
 }
 
