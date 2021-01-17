@@ -850,7 +850,6 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 			Limit: limit,
 			After: after,
 		})
-		// TODO(ariels): check if yoni added something for here!
 		if errors.Is(err, catalog.ErrFeatureNotSupported) {
 			return refs.NewDiffRefsDefault(http.StatusNotImplemented).WithPayload(responseError(err.Error()))
 		}
