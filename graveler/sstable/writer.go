@@ -13,9 +13,17 @@ import (
 	"github.com/treeverse/lakefs/pyramid"
 )
 
+const (
+	MetadataFirstKey         = "min_key"
+	MetadataLastKey          = "max_key"
+	MetadataNumRecordsKey    = "count"
+	MetadataEstimatedSizeKey = "estimated_size_bytes"
+)
+
 type DiskWriter struct {
 	ctx    context.Context
 	w      *sstable.Writer
+	props  map[string]string
 	tierFS pyramid.FS
 	first  committed.Key
 	last   committed.Key
@@ -31,17 +39,26 @@ func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespac
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
 
+	props := make(map[string]string)
+
 	writer := sstable.NewWriter(fh, sstable.WriterOptions{
-		Compression: sstable.SnappyCompression,
+		Compression:             sstable.SnappyCompression,
+		TablePropertyCollectors: []func() sstable.TablePropertyCollector{NewStaticCollector(props)},
 	})
 
 	return &DiskWriter{
 		ctx:    ctx,
 		w:      writer,
+		props:  props,
 		fh:     fh,
 		tierFS: tierFS,
 		hash:   hash,
 	}, nil
+}
+
+// AddMetadata associates metadata value (which will be stringified) with key.
+func (dw *DiskWriter) AddMetadata(key, value string) {
+	dw.props[key] = value
 }
 
 func (dw *DiskWriter) GetFS() pyramid.FS {
@@ -105,6 +122,14 @@ func (dw *DiskWriter) Abort() error {
 func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	tableHash := dw.hash.Sum(nil)
 	sstableID := hex.EncodeToString(tableHash)
+
+	// Prepare metadata properties for Close to write.  The map was already set in the
+	// sstable.Writer constructor and cannot be changed, but we can replace its values
+	// before writing it out.
+	dw.AddMetadata(MetadataFirstKey, string(dw.first))
+	dw.AddMetadata(MetadataLastKey, string(dw.last))
+	dw.AddMetadata(MetadataNumRecordsKey, fmt.Sprint(dw.count))
+	dw.AddMetadata(MetadataEstimatedSizeKey, fmt.Sprint(dw.w.EstimatedSize()))
 
 	if err := dw.w.Close(); err != nil {
 		return nil, fmt.Errorf("sstable close (%s): %w", sstableID, err)
