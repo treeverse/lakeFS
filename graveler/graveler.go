@@ -874,9 +874,12 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 	if err != nil {
 		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
 	}
-	_, err = g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
-	if err != nil {
-		return "", fmt.Errorf("get commit %s: %w", parentCommitID, err)
+
+	if parentCommitID != "" {
+		_, err = g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+		if err != nil {
+			return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
+		}
 	}
 
 	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, metaRangeID)
@@ -887,17 +890,22 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		return "", ErrMetaRangeNotFound
 	}
 
-	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+	commit := Commit{
 		Committer:    committer,
 		Message:      message,
 		MetaRangeID:  metaRangeID,
 		CreationDate: time.Now(),
-		Parents:      CommitParents{parentCommitID},
 		Metadata:     metadata,
-	})
+	}
+	if parentCommitID != "" {
+		commit.Parents = CommitParents{parentCommitID}
+	}
+
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 	if err != nil {
 		return "", fmt.Errorf("add commit: %w", err)
 	}
+
 	return newCommit, nil
 }
 

@@ -23,7 +23,7 @@ func NewValueToEntryIterator(it *InventoryIterator, progress *cmdutils.Progress)
 }
 
 var (
-	ErrIteratorNotSeekable = errors.New("can't seek on inventory invIt")
+	ErrIteratorNotSeekable = errors.New("can't seek on inventory iterator")
 )
 
 func (e *inventoryEntryIterator) Next() bool {
