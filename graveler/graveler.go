@@ -414,9 +414,9 @@ type CommittedManager interface {
 	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
 
 	// Merge receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
-	// it applies that changes from left to right, resulting in a new metaRange that
+	// it applies that changes from ours to theirs, resulting in a new metaRange that
 	// is expected to be immediately addressable
-	Merge(ctx context.Context, ns StorageNamespace, left, right, base MetaRangeID, committer string, message string, metadata Metadata) (MetaRangeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (MetaRangeID, error)
 
 	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -976,8 +976,7 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if err != nil {
 			return "", err
 		}
-
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, fromCommit.MetaRangeID, toCommit.MetaRangeID, baseCommit.MetaRangeID, committer, message, metadata)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
 			return "", err
 		}
