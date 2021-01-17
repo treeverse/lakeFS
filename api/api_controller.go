@@ -896,7 +896,16 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
 
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
 		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -906,7 +915,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			Checksum:        entry.Checksum,
 			Mtime:           entry.CreationDate.Unix(),
 			Path:            params.Path,
-			PhysicalAddress: entry.PhysicalAddress,
+			PhysicalAddress: qk.Format(),
 			PathType:        models.ObjectStatsPathTypeObject,
 			SizeBytes:       entry.Size,
 		}
@@ -1139,13 +1148,23 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 				WithPayload(responseError("error while listing objects: %s", err))
 		}
 
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
 		objList := make([]*models.ObjectStats, len(res))
 		var lastID string
 		for i, entry := range res {
+			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+			if err != nil {
+				return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
 					Path:            entry.Path,
-					PhysicalAddress: entry.PhysicalAddress,
+					PhysicalAddress: qk.Format(),
 					PathType:        models.ObjectStatsPathTypeCommonPrefix,
 				}
 			} else {
@@ -1157,7 +1176,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					Checksum:        entry.Checksum,
 					Mtime:           mtime,
 					Path:            entry.Path,
-					PhysicalAddress: entry.PhysicalAddress,
+					PhysicalAddress: qk.Format(),
 					PathType:        models.ObjectStatsPathTypeObject,
 					SizeBytes:       entry.Size,
 				}
@@ -1244,11 +1263,17 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
 			Checksum:        blob.Checksum,
 			Mtime:           writeTime.Unix(),
 			Path:            params.Path,
-			PhysicalAddress: blob.PhysicalAddress,
+			PhysicalAddress: qk.Format(),
 			PathType:        models.ObjectStatsPathTypeObject,
 			SizeBytes:       blob.Size,
 		})
