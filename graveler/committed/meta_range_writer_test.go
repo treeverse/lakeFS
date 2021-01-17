@@ -31,7 +31,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockWriter := mock.NewMockRangeWriter(ctrl)
-	mockWriter.EXPECT().AddMetadata("type", "ranges")
+	mockWriter.EXPECT().AddMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
 	// Never attempt to split files.
 	mockWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
 	writeResult := committed.WriteResult{
@@ -48,7 +48,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 	mockMetaWriter := mock.NewMockRangeWriter(ctrl)
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
 	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any()).Return(mockMetaWriter, nil)
-	mockMetaWriter.EXPECT().AddMetadata("type", "metaranges")
+	mockMetaWriter.EXPECT().AddMetadata(committed.MetadataTypeKey, committed.MetadataMetarangesType)
 	mockMetaWriter.EXPECT().WriteRecord(gomock.Any()).AnyTimes()
 	mockMetaWriter.EXPECT().GetApproximateSize().Return(uint64(1234)).AnyTimes()
 	metaWriteResult := committed.WriteResult{
@@ -144,8 +144,8 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	mockWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
 	mockMetaWriter.EXPECT().GetApproximateSize().Return(uint64(0)).AnyTimes()
 
-	mockWriter.EXPECT().AddMetadata("type", "ranges")
-	mockMetaWriter.EXPECT().AddMetadata("type", "metaranges")
+	mockWriter.EXPECT().AddMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
+	mockMetaWriter.EXPECT().AddMetadata(committed.MetadataTypeKey, committed.MetadataMetarangesType)
 
 	// write two records on MetaRange and one for Range
 	mockWriter.EXPECT().WriteRecord(gomock.Any())
