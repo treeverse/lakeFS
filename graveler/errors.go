@@ -3,11 +3,13 @@ package graveler
 import (
 	"errors"
 	"fmt"
+
+	"github.com/treeverse/lakefs/db"
 )
 
 // Graveler errors
 var (
-	ErrNotFound                = errors.New("not found")
+	ErrNotFound                = wrapError(db.ErrNotFound, "not found")
 	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
 	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
@@ -28,3 +30,23 @@ var (
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 	ErrLockNotAcquired         = errors.New("lock not acquired")
 )
+
+// wrappedError is an error for wrapping another error while ignoring its message.
+type wrappedError struct {
+	err error
+	msg string
+}
+
+func (w *wrappedError) Error() string {
+	return w.msg
+}
+
+func (w *wrappedError) Unwrap() error {
+	return w.err
+}
+
+// wrapError returns an error wrapping err with message msg, ignoring the error message from
+// err.
+func wrapError(err error, msg string) error {
+	return &wrappedError{err: err, msg: msg}
+}
