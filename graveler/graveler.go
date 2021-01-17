@@ -963,7 +963,6 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if err != nil {
 			return "", err
 		}
-
 		fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
 		if err != nil {
 			return "", err
@@ -978,7 +977,7 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		}
 		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("merge in CommitManager: %w", err)
 		}
 		commit := Commit{
 			Committer:    committer,
@@ -988,7 +987,18 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     metadata,
 		}
-		return g.RefManager.AddCommit(ctx, repositoryID, commit)
+		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+		if err != nil {
+			return "", fmt.Errorf("add commit: %w", err)
+		}
+		err = g.RefManager.SetBranch(ctx, repositoryID, to, Branch{
+			CommitID:     commitID,
+			StagingToken: newStagingToken(repositoryID, to),
+		})
+		if err != nil {
+			return "", fmt.Errorf("set branch commit %s: %w", to, err)
+		}
+		return commitID, nil
 	})
 	if err != nil {
 		return "", err
