@@ -117,11 +117,11 @@ var sstCatTemplate = `{{ .Table | table }}`
 var sstCmd = &cobra.Command{
 	Use:    "cat-sst <sst-file>",
 	Short:  "Explore lakeFS .sst files",
-	Args:   cobra.ExactArgs(1),
 	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
-		iter, props, err := getIterFromFile(args[0])
+		filePath, _ := cmd.Flags().GetString("file")
+		iter, props, err := getIterFromFile(filePath)
 		if err != nil {
 			DieErr(err)
 		}
@@ -149,6 +149,9 @@ var sstCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(sstCmd)
 	sstCmd.Flags().Int("amount", -1, "how many records to return, or -1 for all records")
+	sstCmd.Flags().String("file", "", "path to an sstable file, or \"-\" for stdin")
+	_ = sstCmd.MarkFlagRequired("file")
+
+	rootCmd.AddCommand(sstCmd)
 }
