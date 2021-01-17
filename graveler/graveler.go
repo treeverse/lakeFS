@@ -994,7 +994,7 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 			Committer:    committer,
 			Message:      message,
 			MetaRangeID:  metaRangeID,
-			CreationDate: time.Time{},
+			CreationDate: time.Now(),
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     metadata,
 		}
