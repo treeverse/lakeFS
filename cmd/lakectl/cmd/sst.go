@@ -135,18 +135,19 @@ var sstCmd = &cobra.Command{
 
 		// get props
 		typ, ok := props[committed.MetadataTypeKey]
-		if !ok || (typ != committed.MetadataRangesType && typ != committed.MetadataMetarangesType) {
-			panic("could not determine sst file type")
+		if !ok {
+			DieFmt("could not determine sstable file type")
 		}
 
 		var table *Table
-		if typ == committed.MetadataMetarangesType {
+		switch typ {
+		case committed.MetadataMetarangesType:
 			table, err = formatMetaRangeSSTable(iter, amount)
-		} else {
-			// otherwise, a normal range
+		case committed.MetadataRangesType:
 			table, err = formatRangeSSTable(iter, amount)
+		default:
+			DieFmt("unknown sstable file type: %s", typ)
 		}
-
 		if err != nil {
 			DieErr(err)
 		}
