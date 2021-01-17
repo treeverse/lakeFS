@@ -13,29 +13,43 @@ import (
 	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
+func isSeekable(f io.Seeker) bool {
+	_, err := f.Seek(0, io.SeekStart)
+	return err == nil // a little naive, but probably good enough for its purpose
+}
+
+func readStdin() (pebblesst.ReadableFile, error) {
+	// test if stdin is seekable
+	if isSeekable(os.Stdin) {
+		return os.Stdin, nil
+	}
+	// not seekable - read it into a temp file
+	fh, err := ioutil.TempFile("", "cat-sst-*")
+	if err != nil {
+		return nil, fmt.Errorf("error creating tempfile: %w", err)
+	}
+	_, err = io.Copy(fh, os.Stdin)
+	if err != nil {
+		return nil, fmt.Errorf("error copying from stdin to tempfile: %w", err)
+	}
+	err = os.Remove(fh.Name())
+	if err != nil {
+		return nil, fmt.Errorf("could not unlink temp file %s: %w", fh.Name(), err)
+	}
+	return fh, nil
+}
+
 func getIterFromFile(filePath string) (committed.ValueIterator, map[string]string, error) {
 	var file pebblesst.ReadableFile
 	var err error
 	// read from stdin (file has to be seekable/stat-able so we have this weird wrapper
 	if filePath == "-" {
-		fh, err := ioutil.TempFile("", "cat-sst-*")
-		if err != nil {
-			return nil, nil, fmt.Errorf("error creating tempfile: %w", err)
-		}
-		_, err = io.Copy(fh, os.Stdin)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error copying from stdin to tempfile: %w", err)
-		}
-		err = os.Remove(fh.Name())
-		if err != nil {
-			return nil, nil, fmt.Errorf("could not unlink temp file %s: %w", fh.Name(), err)
-		}
-		file = fh
+		file, err = readStdin()
 	} else {
 		file, err = os.Open(filePath)
-		if err != nil {
-			return nil, nil, err
-		}
+	}
+	if err != nil {
+		return nil, nil, err
 	}
 	// read file descriptor
 	reader, err := pebblesst.NewReader(file, pebblesst.ReaderOptions{})
