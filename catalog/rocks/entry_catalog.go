@@ -353,6 +353,9 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+	if message == "" {
+		message = fmt.Sprintf("Merge '%s' into '%s'", from, to)
+	}
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"from", from, ValidateRef},
