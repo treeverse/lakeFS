@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/parade"
 
 	"github.com/treeverse/lakefs/export"
@@ -475,9 +476,9 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
 		switch {
-		case errors.Is(err, catalog.ErrBranchNotFound):
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
-		case errors.Is(err, catalog.ErrRepositoryNotFound):
+		case errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound):
 			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -655,9 +656,9 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
 
 		switch {
-		case errors.Is(err, catalog.ErrBranchNotFound):
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return branches.NewGetBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
-		case errors.Is(err, catalog.ErrRepositoryNotFound):
+		case errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound):
 			return branches.NewGetBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -706,9 +707,9 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		cataloger := deps.Cataloger
 		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
 		switch {
-		case errors.Is(err, catalog.ErrBranchNotFound):
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return branches.NewDeleteBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
-		case errors.Is(err, catalog.ErrRepositoryNotFound):
+		case errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound):
 			return branches.NewDeleteBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -849,6 +850,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 			Limit: limit,
 			After: after,
 		})
+		// TODO(ariels): check if yoni added something for here!
 		if errors.Is(err, catalog.ErrFeatureNotSupported) {
 			return refs.NewDiffRefsDefault(http.StatusNotImplemented).WithPayload(responseError(err.Error()))
 		}
@@ -2208,7 +2210,7 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 		deps.LogAction("get_continuous_export")
 
 		config, err := deps.Cataloger.GetExportConfigurationForBranch(params.Repository, params.Branch)
-		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
+		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrBranchNotFound) {
 			return exportop.NewGetContinuousExportNotFound().
 				WithPayload(responseErrorFrom(err))
 		}
@@ -2293,7 +2295,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 			IsContinuous:           params.Config.IsContinuous,
 		}
 		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
-		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
+		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrBranchNotFound) {
 			return exportop.NewSetContinuousExportNotFound().
 				WithPayload(responseErrorFrom(err))
 		}
