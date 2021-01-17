@@ -14,7 +14,7 @@ import (
 )
 
 func isSeekable(f io.Seeker) bool {
-	_, err := f.Seek(0, io.SeekStart)
+	_, err := f.Seek(0, io.SeekCurrent)
 	return err == nil // a little naive, but probably good enough for its purpose
 }
 
