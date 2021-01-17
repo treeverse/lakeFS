@@ -254,7 +254,7 @@ type VersionController interface {
 	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// Revert create a commit that reverts all changes made in the commit referenced by ref
-	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error)
+	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, committer string, message string, metadata Metadata) (CommitID, error)
 
 	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
 	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error)
@@ -953,7 +953,7 @@ func (g *graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, b
 	return err
 }
 
-func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (CommitID, error) {
+func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, committer string, message string, metadata Metadata) (CommitID, error) {
 	commitID, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		commitRecord, err := g.getCommitRecordFromRef(ctx, repositoryID, ref)
 		if err != nil {
@@ -983,12 +983,7 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return nil, fmt.Errorf("get repo %s: %w", repositoryID, err)
 		}
-		diffIt, err := g.CommittedManager.Diff(ctx, repo.StorageNamespace, commitRecord.MetaRangeID, parentCommit.MetaRangeID)
-		if err != nil {
-			return nil, fmt.Errorf("diff for revert: %w", err)
-		}
-
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, , toCommit.MetaRangeID, commitRecord.MetaRangeID, committer, message, metadata)
+		metaRangeID, err := MetaRangeID(""), nil // TODO call merge from committed mgr
 		if err != nil {
 			return "", err
 		}
@@ -997,7 +992,7 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			Message:      message,
 			MetaRangeID:  metaRangeID,
 			CreationDate: time.Time{},
-			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
+			Parents:      []CommitID{},
 			Metadata:     metadata,
 		}
 		return g.RefManager.AddCommit(ctx, repositoryID, commit)
