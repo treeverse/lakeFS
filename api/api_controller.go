@@ -1163,9 +1163,8 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
-					Path:            entry.Path,
-					PhysicalAddress: qk.Format(),
-					PathType:        models.ObjectStatsPathTypeCommonPrefix,
+					Path:     entry.Path,
+					PathType: models.ObjectStatsPathTypeCommonPrefix,
 				}
 			} else {
 				var mtime int64
