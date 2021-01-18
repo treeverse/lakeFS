@@ -76,9 +76,11 @@ func (dw *DiskWriter) WriteRecord(record committed.Record) error {
 
 	// updating stats
 	if dw.count == 0 {
-		dw.first = record.Key
+		dw.first = make(committed.Key, len(record.Key))
+		copy(dw.first, record.Key)
 	}
-	dw.last = record.Key
+	dw.last = make(committed.Key, len(record.Key))
+	copy(dw.last, record.Key)
 	dw.count++
 
 	if err := dw.writeHashWithLen(record.Key); err != nil {
