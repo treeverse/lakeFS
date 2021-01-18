@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/block/mem"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/pyramid/params"
 )
 
@@ -97,6 +98,7 @@ func TestStartup(t *testing.T) {
 		FSName:              fsName,
 		DiskAllocProportion: 1.0,
 		SharedParams: params.SharedParams{
+			Logger:             logging.Default(),
 			Adapter:            mem.New(),
 			BlockStoragePrefix: blockStoragePrefix,
 			Local: params.LocalDiskParams{
