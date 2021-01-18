@@ -896,18 +896,28 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
 
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
 		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		// serialize entry
 		obj := &models.ObjectStats{
-			Checksum:  entry.Checksum,
-			Mtime:     entry.CreationDate.Unix(),
-			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeObject,
-			SizeBytes: entry.Size,
+			Checksum:        entry.Checksum,
+			Mtime:           entry.CreationDate.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: qk.Format(),
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       entry.Size,
 		}
 
 		if entry.Expired {
@@ -1138,9 +1148,19 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 				WithPayload(responseError("error while listing objects: %s", err))
 		}
 
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
 		objList := make([]*models.ObjectStats, len(res))
 		var lastID string
 		for i, entry := range res {
+			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+			if err != nil {
+				return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
 					Path:     entry.Path,
@@ -1152,11 +1172,12 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					mtime = entry.CreationDate.Unix()
 				}
 				objList[i] = &models.ObjectStats{
-					Checksum:  entry.Checksum,
-					Mtime:     mtime,
-					Path:      entry.Path,
-					PathType:  models.ObjectStatsPathTypeObject,
-					SizeBytes: entry.Size,
+					Checksum:        entry.Checksum,
+					Mtime:           mtime,
+					Path:            entry.Path,
+					PhysicalAddress: qk.Format(),
+					PathType:        models.ObjectStatsPathTypeObject,
+					SizeBytes:       entry.Size,
 				}
 			}
 			lastID = entry.Path
@@ -1213,7 +1234,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 		byteSize := file.Header.Size
 
-		// read the content
+		// write the content
 		blob, err := upload.WriteBlob(deps.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -1241,12 +1262,19 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  blob.Checksum,
-			Mtime:     writeTime.Unix(),
-			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeObject,
-			SizeBytes: blob.Size,
+			Checksum:        blob.Checksum,
+			Mtime:           writeTime.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: qk.Format(),
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       blob.Size,
 		})
 	})
 }

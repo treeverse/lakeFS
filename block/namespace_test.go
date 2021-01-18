@@ -95,3 +95,48 @@ func TestResolveNamespace(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatQualifiedKey(t *testing.T) {
+	cases := []struct {
+		Name         string
+		QualifiedKey block.QualifiedKey
+		Expected     string
+	}{
+		{
+			Name: "simple_path",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeGS,
+				StorageNamespace: "some-bucket",
+				Key:              "path",
+			},
+			Expected: "gs://some-bucket/path",
+		},
+		{
+			Name: "path_with_prefix",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket/",
+				Key:              "/path/to/file",
+			},
+			Expected: "s3://some-bucket/path/to/file",
+		},
+		{
+			Name: "bucket_with_prefix",
+			QualifiedKey: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "some-bucket/prefix/",
+				Key:              "/path/to/file",
+			},
+			Expected: "s3://some-bucket/prefix/path/to/file",
+		},
+	}
+
+	for _, cas := range cases {
+		t.Run(cas.Name, func(t *testing.T) {
+			formatted := cas.QualifiedKey.Format()
+			if formatted != cas.Expected {
+				t.Fatalf("expected %v got %v", cas.Expected, formatted)
+			}
+		})
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -30,6 +31,24 @@ type QualifiedPrefix struct {
 	StorageType      StorageType
 	StorageNamespace string
 	Prefix           string
+}
+
+func (qk QualifiedKey) Format() string {
+	scheme := ""
+	switch qk.StorageType {
+	case StorageTypeMem:
+		scheme = "mem"
+	case StorageTypeLocal:
+		scheme = "local"
+	case StorageTypeGS:
+		scheme = "gs"
+	case StorageTypeS3:
+		scheme = "s3"
+	default:
+		panic("unknown storage type")
+	}
+
+	return fmt.Sprintf("%s://%s", scheme, path.Join(qk.StorageNamespace, qk.Key))
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
