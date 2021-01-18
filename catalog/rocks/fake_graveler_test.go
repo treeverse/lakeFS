@@ -177,6 +177,13 @@ func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ gra
 	return g.DiffIteratorFactory(), nil
 }
 
+func (g *FakeGraveler) Compare(ctx context.Context, repositoryID graveler.RepositoryID, from, to graveler.Ref) (graveler.DiffIterator, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.DiffIteratorFactory(), nil
+}
+
 func (g *FakeGraveler) CommitExistingMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.MetaRangeID, _ string, _ string, _ graveler.Metadata) (graveler.CommitID, error) {
 	panic("implement me")
 }
@@ -230,15 +237,15 @@ func (m *FakeValueIterator) Err() error {
 func (m *FakeValueIterator) Close() {}
 
 type FakeDiffIterator struct {
-	Data  []*graveler.Diff
+	Data  []graveler.Diff
 	Index int
 }
 
-func NewFakeDiffIterator(data []*graveler.Diff) *FakeDiffIterator {
+func NewFakeDiffIterator(data []graveler.Diff) *FakeDiffIterator {
 	return &FakeDiffIterator{Data: data, Index: -1}
 }
 
-func NewFakeDiffIteratorFactory(data []*graveler.Diff) func() graveler.DiffIterator {
+func NewFakeDiffIteratorFactory(data []graveler.Diff) func() graveler.DiffIterator {
 	return func() graveler.DiffIterator {
 		return NewFakeDiffIterator(data)
 	}
@@ -256,7 +263,7 @@ func (m *FakeDiffIterator) SeekGE(_ graveler.Key) {
 	panic("implement me")
 }
 
-func (m *FakeDiffIterator) Value() *graveler.Diff {
+func (m *FakeDiffIterator) Value() graveler.Diff {
 	return m.Data[m.Index]
 }
 

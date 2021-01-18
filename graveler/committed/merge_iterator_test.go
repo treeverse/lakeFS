@@ -21,12 +21,7 @@ const (
 )
 
 func testMergeNewDiff(typ graveler.DiffType, key string, newIdentity string, oldIdentity string) graveler.Diff {
-	return graveler.Diff{
-		Type:         typ,
-		Key:          graveler.Key(key),
-		Value:        &graveler.Value{Identity: []byte(newIdentity)},
-		LeftIdentity: []byte(oldIdentity),
-	}
+	return graveler.NewDiffResult(typ, graveler.Key(key), &graveler.Value{Identity: []byte(newIdentity)}, []byte(oldIdentity))
 }
 
 func TestMerge(t *testing.T) {

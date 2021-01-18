@@ -93,7 +93,7 @@ func (h *Handler) generateTasks(startData StartData, config catalog.ExportConfig
 			diffs, hasMore, err = getDiffFromBase(context.Background(), startData.Repo, startData.ToCommitRef, after, limit, h.cataloger)
 		} else {
 			// TODO(guys) change this to work with diff iterator once it is available outside of cataloger
-			diffs, hasMore, err = h.cataloger.Diff(context.Background(), startData.Repo, startData.ToCommitRef, startData.FromCommitRef, catalog.DiffParams{
+			diffs, hasMore, err = h.cataloger.Compare(context.Background(), startData.Repo, startData.ToCommitRef, startData.FromCommitRef, catalog.DiffParams{
 				Limit:            limit,
 				After:            after,
 				AdditionalFields: []string{"physical_address"},

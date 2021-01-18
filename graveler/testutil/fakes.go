@@ -66,6 +66,13 @@ func (c *CommittedFake) Diff(context.Context, graveler.StorageNamespace, gravele
 	return c.DiffIterator, nil
 }
 
+func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, graveler.MetaRangeID, graveler.MetaRangeID, graveler.MetaRangeID) (graveler.DiffIterator, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	return c.DiffIterator, nil
+}
+
 func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
@@ -281,16 +288,16 @@ func (r *diffIter) Next() bool {
 
 func (r *diffIter) SeekGE(id graveler.Key) {
 	i := sort.Search(len(r.records), func(i int) bool {
-		return bytes.Compare(r.records[i].Key, id) >= 0
+		return bytes.Compare(r.records[i].Key(), id) >= 0
 	})
 	r.current = i - 1
 }
 
-func (r *diffIter) Value() *graveler.Diff {
+func (r *diffIter) Value() graveler.Diff {
 	if r.current < 0 || r.current >= len(r.records) {
 		return nil
 	}
-	return &r.records[r.current]
+	return r.records[r.current]
 }
 
 func (r *diffIter) Err() error {

@@ -133,3 +133,15 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 	}
 	return *newID, err
 }
+
+func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNamespace, theirs, ours, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
+	diffIt, err := c.Diff(ctx, ns, theirs, ours)
+	if err != nil {
+		return nil, fmt.Errorf("diff: %w", err)
+	}
+	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
+	if err != nil {
+		return nil, fmt.Errorf("get base iterator: %w", err)
+	}
+	return NewCompareIterator(diffIt, baseIt), nil
+}

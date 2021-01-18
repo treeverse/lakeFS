@@ -158,15 +158,41 @@ type TagRecord struct {
 }
 
 // Diff represents a change in value based on key
-type Diff struct {
-	Type         DiffType
-	Key          Key
-	Value        *Value
-	LeftIdentity []byte // the Identity of the value on the left side of the diff
+type Diff interface {
+	Type() DiffType
+	Key() Key
+	Value() *Value
+	LeftIdentity() []byte // the Identity of the value on the left side of the diff
+}
+
+type DiffResult struct {
+	typ          DiffType
+	key          Key
+	value        *Value
+	leftIdentity []byte // the Identity of the value on the left side of the diff
+}
+
+func NewDiffResult(typ DiffType, key Key, value *Value, leftIdentity []byte) *DiffResult {
+	return &DiffResult{typ: typ, key: key, value: value, leftIdentity: leftIdentity}
+}
+
+func (dr *DiffResult) Type() DiffType {
+	return dr.typ
+}
+
+func (dr *DiffResult) Key() Key {
+	return dr.key
+}
+
+func (dr *DiffResult) Value() *Value {
+	return dr.value
+}
+
+func (dr *DiffResult) LeftIdentity() []byte {
+	return dr.leftIdentity
 }
 
 // Interfaces
-
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -262,8 +288,13 @@ type VersionController interface {
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
 
-	// Diff returns the changes between 'left' and 'right' ref, starting from the 'from' key
+	// Diff returns the changes between 'left' and 'right' ref.
+	// This is similar to a two-dot (left..right) diff in git.
 	Diff(ctx context.Context, repositoryID RepositoryID, left, right Ref) (DiffIterator, error)
+
+	// Compare returns the difference between the commit where 'to' was last synced into 'from', and the most recent commit of `from`.
+	// This is similar to a three-dot (from...to) diff in git.
+	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
 }
 
 type Graveler interface {
@@ -307,7 +338,7 @@ type ValueIterator interface {
 type DiffIterator interface {
 	Next() bool
 	SeekGE(id Key)
-	Value() *Diff
+	Value() Diff
 	Err() error
 	Close()
 }
@@ -411,11 +442,16 @@ type CommittedManager interface {
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
 
 	// Diff receives two metaRanges and returns a DiffIterator describing all differences between them.
+	// This is similar to a two-dot diff in git (left..right)
 	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
 
-	// Merge receives two metaRanges and a 3rd merge base metaRange used to resolve the change type
-	// it applies that changes from ours to theirs, resulting in a new metaRange that
-	// is expected to be immediately addressable
+	// Compare returns the difference between 'theirs' and 'ours', relative to a merge base 'base'.
+	// This is similar to a three-dot diff in git.
+	Compare(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (DiffIterator, error)
+
+	// Merge applies that changes from ours to theirs, relative to a merge base 'base'.
+	// This is similar to a git merge operation.
+	// The resulting tree is expected to be immediately addressable.
 	Merge(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (MetaRangeID, error)
 
 	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
@@ -980,15 +1016,7 @@ func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if !empty {
 			return "", ErrDirtyBranch
 		}
-		fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
-		if err != nil {
-			return "", err
-		}
-		toCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, Ref(to))
-		if err != nil {
-			return "", err
-		}
-		baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, fromCommit.CommitID, toCommit.CommitID)
+		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, Ref(to))
 		if err != nil {
 			return "", err
 		}
@@ -1076,4 +1104,32 @@ func (g *graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	}
 
 	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
+}
+
+func (g *graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+}
+
+func (g *graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+	fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
+	}
+	toCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, to)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("get commit by branch %s: %w", to, err)
+	}
+	baseCommit, err := g.RefManager.FindMergeBase(ctx, repositoryID, fromCommit.CommitID, toCommit.CommitID)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("find merge base: %w", err)
+	}
+	return fromCommit, toCommit, baseCommit, nil
 }
