@@ -77,7 +77,7 @@ type InstanceParams struct {
 
 // AllocatedBytes returns the maximum bytes an instance of TierFS is allowed to use.
 func (ip InstanceParams) AllocatedBytes() int64 {
-	return int64(ip.DiskAllocProportion / 100 * float64(ip.Local.TotalAllocatedBytes))
+	return int64(ip.DiskAllocProportion * float64(ip.Local.TotalAllocatedBytes))
 }
 
 func (p ExtParams) WithLogger(logger logging.Logger) ExtParams {
