@@ -37,12 +37,12 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 		if err := tx.Select(&branchesNameAndCommit, query, repoID, prefixCond, after, limit+1); err != nil {
 			return nil, err
 		}
-		branches := make([]*catalog.Branch, 0, len(branchesNameAndCommit))
-		for _, nc := range branchesNameAndCommit {
-			branches = append(branches, &catalog.Branch{
+		branches := make([]*catalog.Branch, len(branchesNameAndCommit))
+		for i, nc := range branchesNameAndCommit {
+			branches[i] = &catalog.Branch{
 				Name:      nc.Name,
 				Reference: MakeReference(nc.Name, CommitID(nc.CommitID)),
-			})
+			}
 		}
 		return branches, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
