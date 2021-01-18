@@ -99,7 +99,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
                     params.set('branch', ref.id);
                     params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
                 } else {
-                    params.set('commit', ref.id);
+                    params.set('commit', ref.id.slice(0, 16));
                     params.delete('branch'); // if we explicitly selected a commit, remove an existing branch if any
                 }
 

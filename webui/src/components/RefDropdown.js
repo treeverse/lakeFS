@@ -116,7 +116,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
                                     selectRef({id: commit.id, type: 'commit'});
                                 }}>{getMessage(commit)} </Button>
                             <div className="actions">
-                                <Badge variant="light">{commit.id}</Badge>
+                                <Badge variant="light">{commit.id.slice(0, 16)}</Badge>
                             </div>
                         </li>
                     ))}
