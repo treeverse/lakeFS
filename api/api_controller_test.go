@@ -751,21 +751,22 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://some-bucket", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("get object stats", func(t *testing.T) {
+		entry := catalog.Entry{
+			Path:            "foo/bar",
+			PhysicalAddress: "this_is_bars_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+			Metadata:        nil,
+		}
 		testutil.Must(t,
-			deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-				Path:            "foo/bar",
-				PhysicalAddress: "this_is_bars_address",
-				CreationDate:    time.Now(),
-				Size:            666,
-				Checksum:        "this_is_a_checksum",
-				Metadata:        nil,
-			}, catalog.CreateEntryParams{}))
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -778,11 +779,14 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("did not expect error for stat, got %s", err)
 		}
-		if resp.Payload.Path != "foo/bar" {
+		if resp.Payload.Path != entry.Path {
 			t.Fatalf("expected to get back our path, got %s", resp.Payload.Path)
 		}
-		if resp.Payload.SizeBytes != 666 {
+		if resp.Payload.SizeBytes != entry.Size {
 			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
+		}
+		if resp.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
+			t.Fatalf("expected correct PhysicalAddress, got %s", resp.Payload.PhysicalAddress)
 		}
 
 		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
@@ -797,16 +801,17 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	})
 
 	t.Run("get expired object stats", func(t *testing.T) {
+		entry := catalog.Entry{
+			Path:            "foo/expired",
+			PhysicalAddress: "this_address_is_expired",
+			CreationDate:    time.Now(),
+			Size:            999999,
+			Checksum:        "eeee",
+			Metadata:        nil,
+			Expired:         true,
+		}
 		testutil.Must(t,
-			deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-				Path:            "foo/expired",
-				PhysicalAddress: "this_address_is_expired",
-				CreationDate:    time.Now(),
-				Size:            999999,
-				Checksum:        "eeee",
-				Metadata:        nil,
-				Expired:         true,
-			}, catalog.CreateEntryParams{}))
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -820,12 +825,16 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected StatObjectGone error but got %#v (response %v)", err, resp)
 		}
-		if gone.Payload.Path != "foo/expired" {
+		if gone.Payload.Path != entry.Path {
 			t.Fatalf("expected to get back our path, got %s", gone.Payload.Path)
 		}
-		if gone.Payload.SizeBytes != 999999 {
+		if gone.Payload.SizeBytes != entry.Size {
 			t.Fatalf("expected correct size, got %d", gone.Payload.SizeBytes)
 		}
+		if gone.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
+			t.Fatalf("expected correct PhysicalAddress, got %s", gone.Payload.PhysicalAddress)
+		}
+
 	})
 }
 
@@ -840,7 +849,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	testutil.Must(t, err)
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
@@ -1045,7 +1054,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1145,7 +1154,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://some-bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}

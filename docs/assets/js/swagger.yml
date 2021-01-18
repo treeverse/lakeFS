@@ -106,6 +106,8 @@ definitions:
     properties:
       path:
         type: string
+      physical_address:
+        type: string
       checksum:
         type: string
       mtime:
