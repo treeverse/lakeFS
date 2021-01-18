@@ -475,6 +475,12 @@ func (id Ref) String() string {
 	return string(id)
 }
 
+func (id Key) Copy() Key {
+	keyCopy := make(Key, len(id))
+	copy(keyCopy, id)
+	return keyCopy
+}
+
 func (id Key) String() string {
 	return string(id)
 }
