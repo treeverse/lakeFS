@@ -901,12 +901,37 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		commit.Parents = CommitParents{parentCommitID}
 	}
 
+	// check if commit already exists.
+	commitID := CommitID(ident.ContentAddress(commit))
+	_, err = g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err == nil {
+		// commit already exists
+		return commitID, nil
+	} else if !errors.Is(err, ErrCommitNotFound) {
+		return "", fmt.Errorf("getting commit %s: %w", commitID, err)
+	}
+
 	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 	if err != nil {
 		return "", fmt.Errorf("add commit: %w", err)
 	}
 
 	return newCommit, nil
+}
+
+func (g *graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
+	stIt, err := g.StagingManager.List(ctx, branch.StagingToken)
+	if err != nil {
+		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
+	}
+
+	defer stIt.Close()
+
+	if stIt.Next() {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (g *graveler) Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error {

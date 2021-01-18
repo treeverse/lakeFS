@@ -10,6 +10,7 @@ import (
 // prefixMergeIterator takes inventory iterator and commit iterator and merges them.
 // If an entry's prefix is in `prefixes`, it would be taken from invIt.
 // No entry from committedIt would be returned if its prefix is in prefixes.
+// The prefixes behaviour guarantees that the two iterators are distinct.
 type prefixMergeIterator struct {
 	invIt       rocks.EntryIterator
 	committedIt rocks.EntryIterator
@@ -17,6 +18,8 @@ type prefixMergeIterator struct {
 	err      error
 	bothDone bool
 }
+
+var ErrNotSeekable = errors.New("iterator isn't seekable")
 
 func newPrefixMergeIterator(iterator rocks.EntryIterator, it rocks.EntryListingIterator, prefixes []string) rocks.EntryIterator {
 	return &prefixMergeIterator{
@@ -43,8 +46,8 @@ func (pmi *prefixMergeIterator) Next() bool {
 	case pmi.committedIt.Value() == nil:
 		return pmi.advanceIt(pmi.invIt)
 
-		// from now on - both iterator has values,
-		// so we'll always return true
+	// from now on - both iterators have values,
+	// so we'll always return true
 	case strings.Compare(pmi.committedIt.Value().Path.String(), pmi.invIt.Value().Path.String()) < 0:
 		_ = pmi.advanceIt(pmi.committedIt)
 		return true
@@ -60,8 +63,6 @@ func (pmi *prefixMergeIterator) advanceIt(it rocks.EntryIterator) bool {
 	pmi.err = it.Err()
 	return hasNext
 }
-
-var ErrNotSeekable = errors.New("iterator isn't seekable")
 
 func (pmi *prefixMergeIterator) SeekGE(_ rocks.Path) {
 	pmi.err = ErrNotSeekable
@@ -95,7 +96,14 @@ func (pmi *prefixMergeIterator) Err() error {
 
 func (pmi *prefixMergeIterator) Close() {
 	pmi.invIt.Close()
-	pmi.err = pmi.invIt.Err()
+	if pmi.err != nil {
+		pmi.err = pmi.invIt.Err()
+	}
+
+	pmi.committedIt.Close()
+	if pmi.err != nil {
+		pmi.err = pmi.committedIt.Err()
+	}
 }
 
 type ignorePrefixIterator struct {
@@ -110,8 +118,6 @@ func newIgnorePrefixIterator(it rocks.EntryListingIterator, prefixes []string) r
 	return &ignorePrefixIterator{
 		it:       it,
 		prefixes: prefixes,
-		err:      nil,
-		value:    nil,
 	}
 }
 
