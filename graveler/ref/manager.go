@@ -214,6 +214,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits
 					WHERE repository_id = $1 AND id >= $2
+					ORDER BY id
 					LIMIT 2`,
 			repositoryID, prefix)
 		if errors.Is(err, db.ErrNotFound) {
