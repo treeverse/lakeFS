@@ -751,7 +751,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://some-bucket", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -785,7 +785,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		if resp.Payload.SizeBytes != entry.Size {
 			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
 		}
-		if resp.Payload.PhysicalAddress != entry.PhysicalAddress {
+		if resp.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", resp.Payload.PhysicalAddress)
 		}
 
@@ -831,7 +831,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		if gone.Payload.SizeBytes != entry.Size {
 			t.Fatalf("expected correct size, got %d", gone.Payload.SizeBytes)
 		}
-		if gone.Payload.PhysicalAddress != entry.PhysicalAddress {
+		if gone.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", gone.Payload.PhysicalAddress)
 		}
 
@@ -849,7 +849,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	testutil.Must(t, err)
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
@@ -1054,7 +1054,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1154,7 +1154,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://some-bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
