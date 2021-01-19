@@ -2,6 +2,7 @@ package ref
 
 import (
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -28,30 +29,23 @@ func NewRepositoryIterator(ctx context.Context, db db.Database, fetchSize int) *
 }
 
 func (ri *RepositoryIterator) Next() bool {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
-	}
 	if ri.err != nil {
 		return false
 	}
 
-	ri.fetch()
+	ri.maybeFetch()
 
 	// stage a value and increment offset
 	if len(ri.buf) == 0 {
 		return false
 	}
 	ri.value = ri.buf[0]
+	ri.buf = ri.buf[1:]
 	ri.offset = string(ri.value.RepositoryID)
-	if len(ri.buf) > 1 {
-		ri.buf = ri.buf[1:]
-	} else {
-		ri.buf = ri.buf[:0]
-	}
 	return true
 }
 
-func (ri *RepositoryIterator) fetch() {
+func (ri *RepositoryIterator) maybeFetch() {
 	if ri.state == iteratorStateDone {
 		return
 	}
@@ -81,8 +75,8 @@ func (ri *RepositoryIterator) fetch() {
 }
 
 func (ri *RepositoryIterator) SeekGE(id graveler.RepositoryID) {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
+	if errors.Is(ri.err, ErrIteratorClosed) {
+		return
 	}
 	ri.offset = string(id)
 	ri.buf = ri.buf[:0]
@@ -92,9 +86,6 @@ func (ri *RepositoryIterator) SeekGE(id graveler.RepositoryID) {
 }
 
 func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
-	}
 	if ri.err != nil {
 		return nil
 	}
@@ -102,12 +93,10 @@ func (ri *RepositoryIterator) Value() *graveler.RepositoryRecord {
 }
 
 func (ri *RepositoryIterator) Err() error {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
-	}
 	return ri.err
 }
 
 func (ri *RepositoryIterator) Close() {
-	ri.state = iteratorStateClosed
+	ri.err = ErrIteratorClosed
+	ri.buf = nil
 }

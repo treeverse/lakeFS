@@ -249,10 +249,10 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	return &catalogEntry, nil
 }
 
-func entryFromCatalogEntry(entry catalog.Entry) *Entry {
+func EntryFromCatalogEntry(entry catalog.Entry) *Entry {
 	return &Entry{
 		Address:      entry.PhysicalAddress,
-		Metadata:     map[string]string(entry.Metadata),
+		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
@@ -262,7 +262,7 @@ func entryFromCatalogEntry(entry catalog.Entry) *Entry {
 func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, _ catalog.CreateEntryParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ent := entryFromCatalogEntry(entry)
+	ent := EntryFromCatalogEntry(entry)
 	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent)
 }
 
@@ -270,7 +270,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	for _, entry := range entries {
-		ent := entryFromCatalogEntry(entry)
+		ent := EntryFromCatalogEntry(entry)
 		if err := c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent); err != nil {
 			return err
 		}

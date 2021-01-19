@@ -11,12 +11,11 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/pyramid/params"
-
-	"github.com/google/uuid"
 )
 
 // TierFS is a filesystem where written files are never edited.
