@@ -68,16 +68,16 @@ func (w *CommitWalker) Err() error {
 	return w.err
 }
 
-func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, repositoryID graveler.RepositoryID, left, right graveler.CommitID) (*graveler.Commit, error) {
+func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, left, right graveler.CommitID) (*graveler.Commit, error) {
 	discoveredSet := make(map[string]struct{})
 	iterLeft := NewCommitWalker(ctx, getter, repositoryID, left)
 	iterRight := NewCommitWalker(ctx, getter, repositoryID, right)
 	for {
-		commit, err := findLowestCommonAncestorNextIter(discoveredSet, iterLeft)
+		commit, err := findLowestCommonAncestorNextIter(addressProvider, discoveredSet, iterLeft)
 		if commit != nil || err != nil {
 			return commit, err
 		}
-		commit, err = findLowestCommonAncestorNextIter(discoveredSet, iterRight)
+		commit, err = findLowestCommonAncestorNextIter(addressProvider, discoveredSet, iterRight)
 		if commit != nil || err != nil {
 			return commit, err
 		}
@@ -88,10 +88,10 @@ func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, reposito
 	return nil, nil
 }
 
-func findLowestCommonAncestorNextIter(discoveredSet map[string]struct{}, iter *CommitWalker) (*graveler.Commit, error) {
+func findLowestCommonAncestorNextIter(addressProvider ident.AddressProvider, discoveredSet map[string]struct{}, iter *CommitWalker) (*graveler.Commit, error) {
 	if iter.Next() {
 		commit := iter.Value()
-		addr := ident.ContentAddress(commit)
+		addr := addressProvider.ContentAddress(commit)
 		if _, wasDiscovered := discoveredSet[addr]; wasDiscovered {
 			return commit, nil
 		}

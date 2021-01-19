@@ -9,6 +9,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/ref"
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -293,7 +294,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	resolve := func(base graveler.CommitID, mod string, expected graveler.CommitID) {
 		t.Helper()
 		reference := string(base) + mod
-		resolved, err := ref.ResolveRef(context.Background(), r, "repo1", graveler.Ref(reference))
+		resolved, err := ref.ResolveRef(context.Background(), r, ident.NewHexAddressProvider(), "repo1", graveler.Ref(reference))
 		//resolved, err := r.RevParse(context.Background(), "repo1", graveler.Ref(ref))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)

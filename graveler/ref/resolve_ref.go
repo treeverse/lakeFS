@@ -21,7 +21,7 @@ type reference struct {
 	commitID *graveler.CommitID
 }
 
-type revResolverFunc func(context.Context, Store, graveler.RepositoryID, string) (graveler.Reference, error)
+type revResolverFunc func(context.Context, Store, ident.AddressProvider, graveler.RepositoryID, string) (graveler.Reference, error)
 
 func (r reference) Type() graveler.ReferenceType {
 	return r.typ
@@ -36,10 +36,10 @@ func (r reference) CommitID() graveler.CommitID {
 }
 
 // revResolve return the first resolve of 'rev' - by hash, branch or tag
-func revResolve(ctx context.Context, store Store, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
+func revResolve(ctx context.Context, store Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
 	resolvers := []revResolverFunc{revResolveAHash, revResolveBranch, revResolveTag}
 	for _, resolveHelper := range resolvers {
-		r, err := resolveHelper(ctx, store, repositoryID, rev)
+		r, err := resolveHelper(ctx, store, addressProvider, repositoryID, rev)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +50,7 @@ func revResolve(ctx context.Context, store Store, repositoryID graveler.Reposito
 	return nil, graveler.ErrNotFound
 }
 
-func ResolveRef(ctx context.Context, store Store, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
+func ResolveRef(ctx context.Context, store Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
 	// first we need to parse-rev to get a list references
 	// valid revs: branch, tag, commit ID, commit ID prefix (as long as unambiguous)
 	// valid modifiers: ~N
@@ -59,7 +59,7 @@ func ResolveRef(ctx context.Context, store Store, repositoryID graveler.Reposito
 		return nil, err
 	}
 
-	rr, err := revResolve(ctx, store, repositoryID, parsed.BaseRev)
+	rr, err := revResolve(ctx, store, addressProvider, repositoryID, parsed.BaseRev)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func ResolveRef(ctx context.Context, store Store, repositoryID graveler.Reposito
 	}, nil
 }
 
-func revResolveAHash(ctx context.Context, store Store, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
+func revResolveAHash(ctx context.Context, store Store, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
 	if !isAHash(rev) {
 		return nil, nil
 	}
@@ -122,14 +122,14 @@ func revResolveAHash(ctx context.Context, store Store, repositoryID graveler.Rep
 	if err != nil {
 		return nil, err
 	}
-	commitID := graveler.CommitID(ident.ContentAddress(commit))
+	commitID := graveler.CommitID(addressProvider.ContentAddress(commit))
 	return &reference{
 		typ:      graveler.ReferenceTypeCommit,
 		commitID: &commitID,
 	}, nil
 }
 
-func revResolveBranch(ctx context.Context, store Store, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
+func revResolveBranch(ctx context.Context, store Store, _ ident.AddressProvider, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
 	branch, err := store.GetBranch(ctx, repositoryID, graveler.BranchID(rev))
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil, nil
@@ -144,7 +144,7 @@ func revResolveBranch(ctx context.Context, store Store, repositoryID graveler.Re
 	}, nil
 }
 
-func revResolveTag(ctx context.Context, store Store, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
+func revResolveTag(ctx context.Context, store Store, _ ident.AddressProvider, repositoryID graveler.RepositoryID, rev string) (graveler.Reference, error) {
 	commitID, err := store.GetTag(ctx, repositoryID, graveler.TagID(rev))
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil, nil
