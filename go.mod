@@ -17,7 +17,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dgraph-io/ristretto v0.0.4-0.20201207174236-c72a155bcf05
+	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
 	github.com/georgysavva/scany v0.2.7
