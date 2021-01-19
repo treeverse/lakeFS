@@ -94,7 +94,8 @@ func (tfs *TierFS) handleExistingFiles() error {
 			return nil
 		}
 
-		tfs.storeLocalFile(params.RelativePath(rPath), info.Size(), eviction)
+		rPath := strings.TrimPrefix(p, tfs.fsLocalBaseDir)
+		tfs.storeLocalFile(params.RelativePath(rPath), info.Size())
 		return nil
 	}); err != nil {
 		return fmt.Errorf("walking the fs dir: %w", err)
