@@ -239,15 +239,19 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 	}
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
-		// Ideally, the cache will accept this newly fetched file.  If it was still
-		// rejected, the rejection callback has already been called and has deleted
-		// the file.  fh still holds an open file descriptor to this file that we can
-		// return; When file is closed, the file will be removed.
 		tfs.logger.WithFields(logging.Fields{
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"full_path": fileRef.fullPath,
-		}).Debug("stored file immediately rejected from cache (continue)")
+		}).Info("stored file immediately rejected from cache (delete but continue)")
+
+		// A rare occurrence, (currently) happens when Ristretto cache is not set up
+		// to perform any caching.  So be less strict: prefer to serve the file and
+		// delete it from the cache. It will be removed from disk when the last
+		// surviving file descriptor -- returned from this function -- is closed.
+		if err := os.Remove(fileRef.fullPath); err != nil {
+			return nil, err
+		}
 	}
 	return &ROFile{
 		File:     fh,
@@ -361,6 +365,18 @@ func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64) {
 			"path": rPath,
 			"size": size,
 		}).Warn("existing file immediately rejected from cache on startup (safe if cache size changed; continue)")
+
+		// A rare occurrence, (currently) happens when Ristretto cache is not set up
+		// to perform any caching.  So be less strict: prefer to serve the file and
+		// delete it from the cache. It will be removed from disk when the last
+		// surviving file descriptor -- returned from this function -- is closed.
+		if err := os.Remove(string(rPath)); err != nil {
+			tfs.logger.WithFields(logging.Fields{
+				"path": rPath,
+				"size": size,
+			}).Error("failed to delete immediately-rejected existing file from cache on startup")
+			return
+		}
 	}
 }
 
