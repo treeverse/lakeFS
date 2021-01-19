@@ -187,7 +187,7 @@ type RefsFake struct {
 	CommitErr           error
 	AddedCommit         AddedCommitData
 	CommitID            graveler.CommitID
-	Commit              *graveler.Commit
+	Commits             map[graveler.CommitID]*graveler.Commit
 }
 
 func (m *RefsFake) RevParse(context.Context, graveler.RepositoryID, graveler.Ref) (graveler.Reference, error) {
@@ -246,8 +246,12 @@ func (m *RefsFake) ListTags(context.Context, graveler.RepositoryID) (graveler.Ta
 	return m.ListTagsRes, nil
 }
 
-func (m *RefsFake) GetCommit(context.Context, graveler.RepositoryID, graveler.CommitID) (*graveler.Commit, error) {
-	return m.Commit, nil
+func (m *RefsFake) GetCommit(_ context.Context, _ graveler.RepositoryID, id graveler.CommitID) (*graveler.Commit, error) {
+	if val, ok := m.Commits[id]; ok {
+		return val, nil
+	}
+
+	return nil, graveler.ErrCommitNotFound
 }
 
 func (m *RefsFake) AddCommit(_ context.Context, _ graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {

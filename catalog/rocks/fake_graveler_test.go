@@ -177,7 +177,7 @@ func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ gra
 	return g.DiffIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) Compare(ctx context.Context, repositoryID graveler.RepositoryID, from, to graveler.Ref) (graveler.DiffIterator, error) {
+func (g *FakeGraveler) Compare(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}
@@ -356,3 +356,6 @@ func (m *FakeBranchIterator) Err() error {
 }
 
 func (m *FakeBranchIterator) Close() {}
+
+
+
