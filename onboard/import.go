@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog/rocks"
+
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
@@ -36,6 +40,7 @@ type Config struct {
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
 	Rocks              bool
+	EntryCatalog       *rocks.EntryCatalog
 }
 
 type Stats struct {
@@ -58,11 +63,12 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		repository:         config.Repository,
 		inventoryGenerator: config.InventoryGenerator,
 		logger:             logger,
-		CatalogActions:     config.CatalogActions,
 	}
-	if res.CatalogActions == nil {
-		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
+
+	if config.CatalogActions == nil {
+		res.CatalogActions = buildRepoActions(config, logger)
 	}
+
 	previousCommit, err := res.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
@@ -78,6 +84,15 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		return nil, err
 	}
 	return res, nil
+}
+
+// ugly workaround until mvcc is fully deprecated
+func buildRepoActions(c *Config, logger logging.Logger) RepoActions {
+	if c.Rocks {
+		NewRocksCatalogRepoActions(c.EntryCatalog, graveler.RepositoryID(c.Repository), c.CommitUsername, logger)
+	}
+
+	return NewCatalogActions(c.Cataloger, c.Repository, c.CommitUsername, logger)
 }
 
 func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (Iterator, error) {

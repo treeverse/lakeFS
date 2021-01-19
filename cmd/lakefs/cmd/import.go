@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/treeverse/lakefs/catalog/rocks"
+
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
@@ -131,6 +133,15 @@ var importCmd = &cobra.Command{
 			Cataloger:          cataloger,
 			KeyPrefixes:        prefixes,
 		}
+
+		if cfg.GetCatalogerType() == "rocks" {
+			importConfig.EntryCatalog, err = rocks.NewEntryCatalog(cfg, dbPool)
+			if err != nil {
+				fmt.Printf("Failed to build entry catalog: %s\n", err)
+				os.Exit(1)
+			}
+		}
+
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
 		if err != nil {
 			fmt.Printf("Import failed: %s\n", err)
