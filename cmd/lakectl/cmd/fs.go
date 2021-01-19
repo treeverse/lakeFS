@@ -20,7 +20,8 @@ const fsStatTemplate = `Path: {{.Path | yellow }}
 Modified Time: {{.Mtime|date}}
 Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
-Checksum: {{.Checksum}}
+Physical Address: {{ .PhysicalAddress }}
+Checksum: {{ .Checksum }}
 `
 
 const fsRecursiveTemplate = `Files: {{.Count}}
@@ -33,7 +34,7 @@ var fsStatCmd = &cobra.Command{
 	Short: "view object metadata",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
