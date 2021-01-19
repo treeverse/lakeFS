@@ -35,7 +35,7 @@ func caddr(commit *graveler.Commit) graveler.CommitID {
 	if commit == nil {
 		return ""
 	}
-	return graveler.CommitID(ident.ContentAddress(commit))
+	return graveler.CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
 }
 
 func TestFindLowestCommonAncestor(t *testing.T) {
@@ -140,7 +140,7 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
 			base, err := ref.FindLowestCommonAncestor(
-				context.Background(), getter, "", caddr(getter.kv[cas.Left]), caddr(getter.kv[cas.Right]))
+				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Left]), caddr(getter.kv[cas.Right]))
 			if err != nil {
 				t.Fatal(err)
 			}
