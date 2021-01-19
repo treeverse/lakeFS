@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/block/mem"
 	"github.com/treeverse/lakefs/logging"
@@ -73,8 +74,12 @@ func TestStartup(t *testing.T) {
 	// cleanup
 	baseDir := path.Join(os.TempDir(), fsName)
 	defer func() {
+		if t.Failed() {
+			// Leave behind the evidence.
+			return
+		}
 		if err := os.RemoveAll(baseDir); err != nil {
-			t.Fatal("Remove all filed under", baseDir, err)
+			t.Fatal("Remove all files under", baseDir, err)
 		}
 	}()
 
@@ -112,16 +117,18 @@ func TestStartup(t *testing.T) {
 	}
 
 	dir, err := os.Open(workspacePath)
-	require.Nil(t, dir)
-	require.True(t, os.IsNotExist(err))
+	assert.Nil(t, dir, "expected to fail to open %s", workspacePath)
+	// os.IsNotExist does not look as hard to errors.Is; for errors returned directly from
+	// package os this does not matter.
+	assert.Error(t, err, os.ErrNotExist, "expected %s not to exist", workspacePath)
 
 	f, err := localFS.Open(ctx, namespace, filename)
 	defer func() { _ = f.Close() }()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	data, err := ioutil.ReadAll(f)
-	require.NoError(t, err)
-	require.Equal(t, content, data)
+	assert.NoError(t, err)
+	assert.Equal(t, content, data)
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
