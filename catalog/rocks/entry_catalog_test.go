@@ -14,7 +14,7 @@ import (
 
 func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 	gravelerMock := &FakeGraveler{Err: graveler.ErrNotFound}
-	cat := EntryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo", "ref", "path1")
 	if !errors.Is(err, graveler.ErrNotFound) {
@@ -28,7 +28,7 @@ func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 	entry := &Entry{Address: "addr1"}
 	gravelerMock := &FakeGraveler{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
-	cat := EntryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo1", "master", "file1")
 	testutil.MustDo(t, "get entry", err)
@@ -39,7 +39,7 @@ func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 
 func TestEntryCatalog_SetEntry(t *testing.T) {
 	gravelerMock := &FakeGraveler{KeyValue: make(map[string]*graveler.Value)}
-	cat := EntryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	var (
 		addr           = "addr1"
@@ -75,7 +75,7 @@ func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 	gravelerMock := &FakeGraveler{
 		ListIteratorFactory: NewFakeValueIteratorFactory(listingData),
 	}
-	cat := EntryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	entries, err := cat.ListEntries(ctx, "repo", "ref", "", "")
 	testutil.MustDo(t, "list entries", err)
@@ -108,7 +108,7 @@ func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
 	gravelerMock := &FakeGraveler{
 		ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
 	}
-	cat := EntryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 
 	t.Run("root", func(t *testing.T) {
@@ -162,7 +162,7 @@ func TestEntryCatalog_Diff(t *testing.T) {
 	gravelerMock := &FakeGraveler{
 		DiffIteratorFactory: NewFakeDiffIteratorFactory(diffData),
 	}
-	cat := EntryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	diffs, err := cat.Diff(ctx, "repo", "left", "right")
 	testutil.MustDo(t, "diff", err)
