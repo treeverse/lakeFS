@@ -252,7 +252,7 @@ type VersionController interface {
 	// Reset throws all staged data starting with the given prefix on the repository / branch
 	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// Revert create a commit that reverts all changes made in the commit referenced by ref
+	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, committer string, message string, metadata Metadata) (CommitID, error)
 
 	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
