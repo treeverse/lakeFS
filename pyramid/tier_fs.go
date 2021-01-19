@@ -66,7 +66,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 	}
 
 	tfs.eviction = c.Eviction
-	if err := tfs.handleExistingFiles(tfs.eviction); err != nil {
+	if err := tfs.handleExistingFiles(); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 
@@ -78,16 +78,15 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 // 1. Adds stored files to the eviction control
 // 2. Remove workspace directories and all its content if it
 //	  exist under the namespace dir.
-func (tfs *TierFS) handleExistingFiles(eviction params.Eviction) error {
+func (tfs *TierFS) handleExistingFiles() error {
 	if err := filepath.Walk(tfs.fsLocalBaseDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		rPath := strings.TrimPrefix(p, tfs.fsLocalBaseDir)
 		if info.IsDir() {
 			if info.Name() == workspaceDir {
 				// skipping workspaces and saving them for later delete
-				if err := os.RemoveAll(rPath); err != nil {
+				if err := os.RemoveAll(p); err != nil {
 					return fmt.Errorf("removing dir: %w", err)
 				}
 				return filepath.SkipDir
@@ -353,8 +352,8 @@ type localFileRef struct {
 	fsRelativePath params.RelativePath
 }
 
-func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64, eviction params.Eviction) {
-	if !eviction.Store(rPath, size) {
+func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64) {
+	if !tfs.eviction.Store(rPath, size) {
 		// Rejected from cache, so deleted.  This is safe, but can only happen when
 		// the cache size was lowered -- so warn.
 		tfs.logger.WithFields(logging.Fields{
