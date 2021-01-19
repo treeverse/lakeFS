@@ -61,11 +61,16 @@ func (iter *Iterator) Err() error {
 }
 
 func (iter *Iterator) Close() {
+	if iter.it == nil {
+		return
+	}
 	err := iter.it.Close()
 	iter.updateOnNilErr(err)
 
 	err = iter.derefer()
 	iter.updateOnNilErr(err)
+
+	iter.it = nil
 }
 
 func (iter *Iterator) updateOnNilErr(err error) {
