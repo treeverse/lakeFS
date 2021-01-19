@@ -11,11 +11,11 @@ type RelativePath string
 // Eviction abstracts eviction control.
 type Eviction interface {
 	// Touch indicates the eviction that the file has been used now
-	Touch(rPath RelativePath)
+	Touch(path RelativePath)
 
 	// Store orders the eviction to Store the path.
 	// returns true iff the eviction accepted the path.
-	Store(rPath RelativePath, filesize int64) bool
+	Store(path RelativePath, filesize int64) bool
 }
 
 // LocalDiskParams is pyramid.FS params that are identical for all file-systems
