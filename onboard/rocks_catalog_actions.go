@@ -65,7 +65,7 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 		return nil, ErrWrongIterator
 	}
 
-	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, graveler.Ref(c.commitID), "", catalog.DefaultPathDelimiter)
+	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, graveler.Ref(c.commitID), "", "")
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}

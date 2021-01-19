@@ -5,6 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/treeverse/lakefs/catalog/rocks/testutils"
+
+	"github.com/treeverse/lakefs/catalog/rocks"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/block"
@@ -30,9 +34,19 @@ func TestFullCycleSuccess(t *testing.T) {
 	rangeManager := mock.NewMockmetaRangeManager(ctrl)
 
 	mri := metaRangeID
+	rangeManager.EXPECT().
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(parentCommitID)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			{
+				Path:  "some/path",
+				Entry: &rocks.Entry{},
+			},
+		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(parentCommitID), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
 		Times(1).Return(commitID, nil)
+	rangeManager.EXPECT().UpdateBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), graveler.Ref(parentCommitID)).Times(1).Return(nil, nil)
 
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
 
@@ -66,6 +80,15 @@ func TestApplyImportWriteFailure(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockmetaRangeManager(ctrl)
 
+	rangeManager.EXPECT().
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(parentCommitID)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			{
+				Path:  "some/path",
+				Entry: &rocks.Entry{},
+			},
+		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
 
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
@@ -94,8 +117,17 @@ func TestCommitFailed(t *testing.T) {
 	rangeManager := mock.NewMockmetaRangeManager(ctrl)
 
 	mri := metaRangeID
+	rangeManager.EXPECT().
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(parentCommitID)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			{
+				Path:  "some/path",
+				Entry: &rocks.Entry{},
+			},
+		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(parentCommitID), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
 		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
 
 	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
