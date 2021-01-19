@@ -61,7 +61,7 @@ type RepositoryClient interface {
 	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repository string) error
 
-	ListBranches(ctx context.Context, repository string, from string, amount int) ([]string, *models.Pagination, error)
+	ListBranches(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
 	GetBranch(ctx context.Context, repository, branchID string) (string, error)
 	CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (string, error)
 	DeleteBranch(ctx context.Context, repository, branchID string) error
@@ -419,7 +419,7 @@ func (c *client) GetRepository(ctx context.Context, repository string) (*models.
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListBranches(ctx context.Context, repository string, after string, amount int) ([]string, *models.Pagination, error) {
+func (c *client) ListBranches(ctx context.Context, repository string, after string, amount int) ([]*models.Ref, *models.Pagination, error) {
 	resp, err := c.remote.Branches.ListBranches(&branches.ListBranchesParams{
 		After:      swag.String(after),
 		Amount:     swag.Int64(int64(amount)),

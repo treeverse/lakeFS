@@ -534,11 +534,11 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		const expectedReference = "master2"
 		retReference := results[0]
-		if retReference != expectedReference {
+		const expectedID = "master2"
+		if swag.StringValue(retReference.ID) != expectedID {
 			t.Fatalf("expected '%s' as the first result for the second page, got '%s' instead",
-				expectedReference, retReference)
+				expectedID, swag.StringValue(retReference.ID))
 		}
 	})
 

@@ -186,8 +186,8 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 			break
 		}
 		branch := &catalog.Branch{
-			Repository: repository,
-			Name:       v.BranchID.String(),
+			Name:      v.BranchID.String(),
+			Reference: v.CommitID.String(),
 		}
 		branches = append(branches, branch)
 		if len(branches) >= limit+1 {

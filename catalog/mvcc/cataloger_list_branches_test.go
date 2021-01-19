@@ -2,9 +2,10 @@ package mvcc
 
 import (
 	"context"
-	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -38,6 +39,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		name         string
 		args         args
 		wantBranches []string
+		wantRefs     []string
 		wantMore     bool
 		wantErr      bool
 	}{
@@ -45,6 +47,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name:         "all",
 			args:         args{repository: "repo1", prefix: "", limit: -1, after: ""},
 			wantBranches: []string{"b1", "b2", "b3", catalog.DefaultImportBranchName, "master", "z1", "z2", "z3"},
+			wantRefs:     []string{"~3WaKeL", "~3Waf8F", "~3WazcA", "~3BJEPkwHYMdLDpaBrwnpTPmfarYET3yz", "~KJ8Wd1Rs96Z", "~48A2Qf", "~48AMta", "~48AhNV"},
 			wantMore:     false,
 			wantErr:      false,
 		},
@@ -52,6 +55,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name:         "z prefix",
 			args:         args{repository: "repo1", prefix: "z", limit: -1, after: ""},
 			wantBranches: []string{"z1", "z2", "z3"},
+			wantRefs:     []string{"~48A2Qf", "~48AMta", "~48AhNV"},
 			wantMore:     false,
 			wantErr:      false,
 		},
@@ -59,6 +63,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name:         "first 3",
 			args:         args{repository: "repo1", prefix: "", limit: 3, after: ""},
 			wantBranches: []string{"b1", "b2", "b3"},
+			wantRefs:     []string{"~3WaKeL", "~3Waf8F", "~3WazcA"},
 			wantMore:     true,
 			wantErr:      false,
 		},
@@ -66,6 +71,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name:         "after master",
 			args:         args{repository: "repo1", prefix: "", limit: 3, after: "master"},
 			wantBranches: []string{"z1", "z2", "z3"},
+			wantRefs:     []string{"~48A2Qf", "~48AMta", "~48AhNV"},
 			wantMore:     false,
 			wantErr:      false,
 		},
@@ -91,14 +97,16 @@ func TestCataloger_ListBranches(t *testing.T) {
 				t.Fatalf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			var gotBranches []string
+			var gotRefs []string
 			for i := range got {
-				if got[i].Repository != tt.args.repository {
-					t.Fatalf("ListBranches() got repository=%s, expected %s", got[i].Repository, tt.args.repository)
-				}
 				gotBranches = append(gotBranches, got[i].Name)
+				gotRefs = append(gotRefs, got[i].Reference)
 			}
-			if !reflect.DeepEqual(tt.wantBranches, gotBranches) {
-				t.Errorf("ListBranches() got = %v, want %v", gotBranches, tt.wantBranches)
+			if diff := deep.Equal(tt.wantBranches, gotBranches); diff != nil {
+				t.Error("ListBranches() names found diff:", diff)
+			}
+			if diff := deep.Equal(tt.wantRefs, gotRefs); diff != nil {
+				t.Error("ListBranches() refs found diff:", diff)
 			}
 			if gotMore != tt.wantMore {
 				t.Errorf("ListBranches() wantedMore = %v, want %v", gotMore, tt.wantMore)
