@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/treeverse/lakefs/ident"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/db"
@@ -21,13 +23,19 @@ var (
 func testRefManager(t testing.TB) *ref.Manager {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewPGRefManager(conn)
+	return ref.NewPGRefManager(conn, ident.NewHexAddressProvider())
 }
 
 func testRefManagerWithDB(t testing.TB) (*ref.Manager, db.Database) {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return ref.NewPGRefManager(conn), conn
+	return ref.NewPGRefManager(conn, ident.NewHexAddressProvider()), conn
+}
+
+func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) *ref.Manager {
+	t.Helper()
+	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
+	return ref.NewPGRefManager(conn, addressProvider)
 }
 
 func TestMain(m *testing.M) {

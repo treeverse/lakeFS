@@ -3,7 +3,6 @@ package ref
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -14,11 +13,12 @@ import (
 const IteratorPrefetchSize = 1000
 
 type Manager struct {
-	db db.Database
+	db              db.Database
+	addressProvider ident.AddressProvider
 }
 
-func NewPGRefManager(db db.Database) *Manager {
-	return &Manager{db}
+func NewPGRefManager(db db.Database, addressProvider ident.AddressProvider) *Manager {
+	return &Manager{db: db, addressProvider: addressProvider}
 }
 
 func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
@@ -86,7 +86,7 @@ func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.Re
 }
 
 func (m *Manager) RevParse(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
-	return ResolveRef(ctx, m, repositoryID, ref)
+	return ResolveRef(ctx, m, m.addressProvider, repositoryID, ref)
 }
 
 func (m *Manager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
@@ -213,8 +213,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 		err := tx.Select(&records, `
 					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits
-					WHERE repository_id = $1 AND id >= $2
-					ORDER BY id
+					WHERE repository_id = $1 AND id LIKE $2 || '%'
 					LIMIT 2`,
 			repositoryID, prefix)
 		if errors.Is(err, db.ErrNotFound) {
@@ -223,19 +222,13 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 		if err != nil {
 			return nil, err
 		}
-		startWith := make([]*graveler.Commit, 0)
-		for _, c := range records {
-			if strings.HasPrefix(c.CommitID, string(prefix)) {
-				startWith = append(startWith, c.toGravelerCommit())
-			}
-		}
-		if len(startWith) == 0 {
+		if len(records) == 0 {
 			return "", graveler.ErrNotFound
 		}
-		if len(startWith) > 1 {
+		if len(records) > 1 {
 			return "", graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
 		}
-		return startWith[0], nil
+		return records[0].toGravelerCommit(), nil
 	}, db.ReadOnly(), db.WithContext(ctx))
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrCommitNotFound
@@ -268,6 +261,7 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 }
 
 func (m *Manager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+	commitID := m.addressProvider.ContentAddress(commit)
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// convert parents to slice of strings
 		var parents []string
@@ -281,14 +275,14 @@ func (m *Manager) AddCommit(ctx context.Context, repositoryID graveler.Repositor
 				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT DO NOTHING`,
-			repositoryID, ident.ContentAddress(commit), commit.Committer, commit.Message,
+			repositoryID, commitID, commit.Committer, commit.Message,
 			commit.CreationDate, parents, commit.MetaRangeID, commit.Metadata)
 		return nil, err
 	}, db.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
-	return graveler.CommitID(ident.ContentAddress(commit)), err
+	return graveler.CommitID(commitID), err
 }
 
 func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
@@ -296,7 +290,7 @@ func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.Repos
 	if len(commitIDs) != allowedCommitsToCompare {
 		return nil, graveler.ErrInvalidMergeBase
 	}
-	return FindLowestCommonAncestor(ctx, m, repositoryID, commitIDs[0], commitIDs[1])
+	return FindLowestCommonAncestor(ctx, m, m.addressProvider, repositoryID, commitIDs[0], commitIDs[1])
 }
 
 func (m *Manager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {

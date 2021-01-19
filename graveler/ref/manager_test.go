@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -591,5 +592,82 @@ func TestManager_LogGraph(t *testing.T) {
 	}
 	if diff := deep.Equal(commitsAfterSeek, expectedAfterSeek); diff != nil {
 		t.Fatal("Found diff between expected commits (after seek):", diff)
+	}
+}
+
+type fakeAddressProvider struct {
+	identities []string
+	idx        int
+}
+
+func (f *fakeAddressProvider) ContentAddress(_ ident.Identifiable) string {
+	res := f.identities[f.idx]
+	fmt.Println(f.idx)
+	f.idx++
+	if f.idx == len(f.identities) {
+		f.idx = 0
+	}
+	return res
+}
+
+func TestManager_GetCommitByPrefix(t *testing.T) {
+	commitIDs := []string{"c1234", "d1", "b1", "c1245", "a1"}
+	r := testRefManagerWithAddressProvider(t, &fakeAddressProvider{identities: commitIDs})
+	ctx := context.Background()
+	err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "master",
+	}, graveler.Branch{})
+	testutil.MustDo(t, "Create repository", err)
+	for _, commitID := range commitIDs {
+		c := graveler.Commit{Committer: "user1",
+			Message:      fmt.Sprintf("id_%s", commitID),
+			MetaRangeID:  "deadbeef123",
+			CreationDate: time.Now(),
+			Parents:      graveler.CommitParents{"deadbeef1"},
+			Metadata:     graveler.Metadata{"foo": "bar"},
+		}
+		_, err := r.AddCommit(ctx, "repo1", c)
+		testutil.MustDo(t, "add commit", err)
+		if err != nil {
+			t.Fatalf("unexpected error on adding commit: %v", err)
+		}
+	}
+	tests := []struct {
+		Prefix                string
+		ExpectedCommitMessage string
+		ExpectedErr           error
+	}{
+		{
+			Prefix:                "a",
+			ExpectedCommitMessage: "id_a1",
+		},
+		{
+			Prefix:                "c123",
+			ExpectedCommitMessage: "id_c1234",
+		},
+		{
+			Prefix:      "c1",
+			ExpectedErr: graveler.ErrCommitNotFound,
+		},
+		{
+			Prefix:      "e",
+			ExpectedErr: graveler.ErrCommitNotFound,
+		},
+	}
+	for _, tst := range tests {
+		t.Run(tst.Prefix, func(t *testing.T) {
+			c, err := r.GetCommitByPrefix(ctx, "repo1", graveler.CommitID(tst.Prefix))
+			if !errors.Is(err, tst.ExpectedErr) {
+				t.Fatalf("expected error %v, got=%v", tst.ExpectedErr, err)
+			}
+			if tst.ExpectedErr != nil {
+				return
+			}
+			if c.Message != tst.ExpectedCommitMessage {
+				t.Fatalf("got commit different than expected. expected=%s, got=%s", tst.ExpectedCommitMessage, string(c.Identity()))
+			}
+		})
 	}
 }

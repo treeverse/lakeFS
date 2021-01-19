@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/sstable"
 	"github.com/treeverse/lakefs/graveler/staging"
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/pyramid"
 	"github.com/treeverse/lakefs/pyramid/params"
 )
@@ -123,7 +124,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
 	stagingManager := staging.NewManager(db)
-	refManager := ref.NewPGRefManager(db)
+	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(db)
 	return &EntryCatalog{
 		store: graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager),
