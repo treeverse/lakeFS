@@ -43,7 +43,7 @@ var branchListCmd = &cobra.Command{
 
 		rows := make([][]interface{}, len(response))
 		for i, row := range response {
-			rows[i] = []interface{}{row}
+			rows[i] = []interface{}{swag.StringValue(row.ID), swag.StringValue(row.CommitID)}
 		}
 
 		ctx := struct {
@@ -51,7 +51,7 @@ var branchListCmd = &cobra.Command{
 			Pagination  *Pagination
 		}{
 			BranchTable: &Table{
-				Headers: []interface{}{"Branch"},
+				Headers: []interface{}{"Branch", "Commit ID"},
 				Rows:    rows,
 			},
 		}

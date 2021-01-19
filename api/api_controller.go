@@ -618,10 +618,13 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 				WithPayload(responseError("could not list branches: %s", err))
 		}
 
-		branchList := make([]string, len(res))
+		branchList := make([]*models.Ref, len(res))
 		var lastID string
 		for i, branch := range res {
-			branchList[i] = branch.Name
+			branchList[i] = &models.Ref{
+				CommitID: swag.String(branch.Reference),
+				ID:       swag.String(branch.Name),
+			}
 			lastID = branch.Name
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
@@ -2300,7 +2303,7 @@ func (c *Controller) ExportRepairHandler() exportop.RepairHandler {
 		return exportop.NewRepairCreated()
 	})
 }
-func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandlerFunc {
+func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandler {
 	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
