@@ -12,7 +12,17 @@ type Identifiable interface {
 	Identity() []byte
 }
 
-func ContentAddress(entity Identifiable) string {
+type AddressProvider interface {
+	ContentAddress(entity Identifiable) string
+}
+
+type HexAddressProvider struct{}
+
+func NewHexAddressProvider() *HexAddressProvider {
+	return &HexAddressProvider{}
+}
+
+func (*HexAddressProvider) ContentAddress(entity Identifiable) string {
 	return hex.EncodeToString(entity.Identity())
 }
 

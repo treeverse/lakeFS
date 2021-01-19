@@ -24,6 +24,12 @@ type GeneralMetaRangeWriter struct {
 	ranges           []Range
 }
 
+const (
+	MetadataTypeKey        = "type"
+	MetadataRangesType     = "ranges"
+	MetadataMetarangesType = "metaranges"
+)
+
 var (
 	ErrUnsortedKeys = errors.New("keys should be written in ascending order")
 	ErrNilValue     = errors.New("record value should not be nil")
@@ -55,6 +61,7 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 		if err != nil {
 			return fmt.Errorf("get range writer: %w", err)
 		}
+		w.rangeWriter.AddMetadata(MetadataTypeKey, MetadataRangesType)
 	}
 
 	v, err := MarshalValue(record.Value)
@@ -65,8 +72,7 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 	if err != nil {
 		return fmt.Errorf("write record to range: %w", err)
 	}
-	w.lastKey = Key(record.Key)
-
+	w.lastKey = Key(record.Key.Copy())
 	if w.shouldBreakAtKey(record.Key) {
 		return w.closeCurrentRange()
 	}
@@ -109,7 +115,8 @@ func (w *GeneralMetaRangeWriter) WriteRange(rng Range) error {
 	if err := w.closeCurrentRange(); err != nil {
 		return err
 	}
-	w.lastKey = rng.MaxKey
+	w.lastKey = make(Key, len(rng.MaxKey))
+	copy(w.lastKey, rng.MaxKey)
 	w.ranges = append(w.ranges, rng)
 	return nil
 }
@@ -153,6 +160,7 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
 	}
+	metaRangeWriter.AddMetadata(MetadataTypeKey, MetadataMetarangesType)
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
 			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting metarange writer: %w", err)

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/parade"
 
 	"github.com/treeverse/lakefs/export"
@@ -475,9 +476,9 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
 		switch {
-		case errors.Is(err, catalog.ErrBranchNotFound):
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
-		case errors.Is(err, catalog.ErrRepositoryNotFound):
+		case errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound):
 			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -617,10 +618,13 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 				WithPayload(responseError("could not list branches: %s", err))
 		}
 
-		branchList := make([]string, len(res))
+		branchList := make([]*models.Ref, len(res))
 		var lastID string
 		for i, branch := range res {
-			branchList[i] = branch.Name
+			branchList[i] = &models.Ref{
+				CommitID: swag.String(branch.Reference),
+				ID:       swag.String(branch.Name),
+			}
 			lastID = branch.Name
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
@@ -655,9 +659,9 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
 
 		switch {
-		case errors.Is(err, catalog.ErrBranchNotFound):
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return branches.NewGetBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
-		case errors.Is(err, catalog.ErrRepositoryNotFound):
+		case errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound):
 			return branches.NewGetBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -706,9 +710,9 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		cataloger := deps.Cataloger
 		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
 		switch {
-		case errors.Is(err, catalog.ErrBranchNotFound):
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return branches.NewDeleteBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
-		case errors.Is(err, catalog.ErrRepositoryNotFound):
+		case errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound):
 			return branches.NewDeleteBranchNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
 		case err != nil:
 			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -895,18 +899,28 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
 
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
 		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		// serialize entry
 		obj := &models.ObjectStats{
-			Checksum:  entry.Checksum,
-			Mtime:     entry.CreationDate.Unix(),
-			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeObject,
-			SizeBytes: entry.Size,
+			Checksum:        entry.Checksum,
+			Mtime:           entry.CreationDate.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: qk.Format(),
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       entry.Size,
 		}
 
 		if entry.Expired {
@@ -1137,9 +1151,19 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 				WithPayload(responseError("error while listing objects: %s", err))
 		}
 
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
+		if err != nil {
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
 		objList := make([]*models.ObjectStats, len(res))
 		var lastID string
 		for i, entry := range res {
+			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+			if err != nil {
+				return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
 					Path:     entry.Path,
@@ -1151,11 +1175,12 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					mtime = entry.CreationDate.Unix()
 				}
 				objList[i] = &models.ObjectStats{
-					Checksum:  entry.Checksum,
-					Mtime:     mtime,
-					Path:      entry.Path,
-					PathType:  models.ObjectStatsPathTypeObject,
-					SizeBytes: entry.Size,
+					Checksum:        entry.Checksum,
+					Mtime:           mtime,
+					Path:            entry.Path,
+					PhysicalAddress: qk.Format(),
+					PathType:        models.ObjectStatsPathTypeObject,
+					SizeBytes:       entry.Size,
 				}
 			}
 			lastID = entry.Path
@@ -1212,7 +1237,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 		byteSize := file.Header.Size
 
-		// read the content
+		// write the content
 		blob, err := upload.WriteBlob(deps.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -1240,12 +1265,19 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  blob.Checksum,
-			Mtime:     writeTime.Unix(),
-			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeObject,
-			SizeBytes: blob.Size,
+			Checksum:        blob.Checksum,
+			Mtime:           writeTime.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: qk.Format(),
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       blob.Size,
 		})
 	})
 }
@@ -2208,7 +2240,7 @@ func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousEx
 		deps.LogAction("get_continuous_export")
 
 		config, err := deps.Cataloger.GetExportConfigurationForBranch(params.Repository, params.Branch)
-		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
+		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrBranchNotFound) {
 			return exportop.NewGetContinuousExportNotFound().
 				WithPayload(responseErrorFrom(err))
 		}
@@ -2271,7 +2303,7 @@ func (c *Controller) ExportRepairHandler() exportop.RepairHandler {
 		return exportop.NewRepairCreated()
 	})
 }
-func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandlerFunc {
+func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandler {
 	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
@@ -2293,7 +2325,7 @@ func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousEx
 			IsContinuous:           params.Config.IsContinuous,
 		}
 		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
-		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) {
+		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrBranchNotFound) {
 			return exportop.NewSetContinuousExportNotFound().
 				WithPayload(responseErrorFrom(err))
 		}

@@ -11,11 +11,11 @@ type RelativePath string
 // Eviction abstracts eviction control.
 type Eviction interface {
 	// Touch indicates the eviction that the file has been used now
-	Touch(rPath RelativePath)
+	Touch(path RelativePath)
 
 	// Store orders the eviction to Store the path.
 	// returns true iff the eviction accepted the path.
-	Store(rPath RelativePath, filesize int64) bool
+	Store(path RelativePath, filesize int64) bool
 }
 
 // LocalDiskParams is pyramid.FS params that are identical for all file-systems
@@ -77,7 +77,7 @@ type InstanceParams struct {
 
 // AllocatedBytes returns the maximum bytes an instance of TierFS is allowed to use.
 func (ip InstanceParams) AllocatedBytes() int64 {
-	return int64(ip.DiskAllocProportion / 100 * float64(ip.Local.TotalAllocatedBytes))
+	return int64(ip.DiskAllocProportion * float64(ip.Local.TotalAllocatedBytes))
 }
 
 func (p ExtParams) WithLogger(logger logging.Logger) ExtParams {

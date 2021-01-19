@@ -48,7 +48,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
 	}
 
-	tierFS := &TierFS{
+	tfs := &TierFS{
 		adapter:        c.Adapter,
 		fsName:         c.FSName,
 		logger:         c.Logger,
@@ -59,18 +59,18 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 	}
 	if c.Eviction == nil {
 		var err error
-		c.Eviction, err = newRistrettoEviction(c.AllocatedBytes(), tierFS.removeFromLocal)
+		c.Eviction, err = newRistrettoEviction(c.AllocatedBytes(), tfs.removeFromLocal)
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}
 	}
 
-	tierFS.eviction = c.Eviction
-	if err := handleExistingFiles(tierFS.eviction, fsLocalBaseDir); err != nil {
+	tfs.eviction = c.Eviction
+	if err := tfs.handleExistingFiles(); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
 
-	return tierFS, nil
+	return tfs, nil
 }
 
 // handleExistingFiles should only be called during init of the TierFS.
@@ -78,15 +78,15 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 // 1. Adds stored files to the eviction control
 // 2. Remove workspace directories and all its content if it
 //	  exist under the namespace dir.
-func handleExistingFiles(eviction params.Eviction, fsLocalBaseDir string) error {
-	if err := filepath.Walk(fsLocalBaseDir, func(rPath string, info os.FileInfo, err error) error {
+func (tfs *TierFS) handleExistingFiles() error {
+	if err := filepath.Walk(tfs.fsLocalBaseDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			if info.Name() == workspaceDir {
 				// skipping workspaces and saving them for later delete
-				if err := os.RemoveAll(rPath); err != nil {
+				if err := os.RemoveAll(p); err != nil {
 					return fmt.Errorf("removing dir: %w", err)
 				}
 				return filepath.SkipDir
@@ -94,9 +94,8 @@ func handleExistingFiles(eviction params.Eviction, fsLocalBaseDir string) error 
 			return nil
 		}
 
-		if err := storeLocalFile(rPath, info.Size(), eviction); err != nil {
-			return err
-		}
+		rPath := strings.TrimPrefix(p, tfs.fsLocalBaseDir)
+		tfs.storeLocalFile(params.RelativePath(rPath), info.Size())
 		return nil
 	}); err != nil {
 		return fmt.Errorf("walking the fs dir: %w", err)
@@ -114,19 +113,27 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 
 func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
+	tfs.logger.WithField("path", p).Trace("remove from local")
 	if err := os.Remove(p); err != nil {
 		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
 		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval")
 		return
 	}
 
-	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(p)); err != nil {
+	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
 		tfs.logger.WithError(err).Error("Failed deleting empty dir")
 		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
 	}
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
+	tfs.logger.WithFields(logging.Fields{
+		"namespace":     namespace,
+		"original_path": originalPath,
+		"ns_path":       nsPath,
+		"filename":      filename,
+	}).Trace("store")
+
 	f, err := os.Open(originalPath)
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", originalPath, err)
@@ -198,6 +205,11 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
+		tfs.logger.WithFields(logging.Fields{
+			"namespace": namespace,
+			"ns_path":   nsPath,
+			"filename":  filename,
+		}).Trace("opened locally")
 		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
 		return tfs.openFile(fileRef, fh)
 	}
@@ -227,10 +239,16 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 	}
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
-		// This is where we get less strict.
-		// Ideally, newly fetched file will never be rejected by the cache.
-		// But if it did, we prefer to serve the file and delete it.
-		// When the user will close the file, the file will be deleted from the disk too.
+		tfs.logger.WithFields(logging.Fields{
+			"namespace": fileRef.namespace,
+			"file":      fileRef.filename,
+			"full_path": fileRef.fullPath,
+		}).Info("stored file immediately rejected from cache (delete but continue)")
+
+		// A rare occurrence, (currently) happens when Ristretto cache is not set up
+		// to perform any caching.  So be less strict: prefer to serve the file and
+		// delete it from the cache. It will be removed from disk when the last
+		// surviving file descriptor -- returned from this function -- is closed.
 		if err := os.Remove(fileRef.fullPath); err != nil {
 			return nil, err
 		}
@@ -246,11 +264,20 @@ func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) 
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
 func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.File, error) {
+	tfs.logger.WithFields(logging.Fields{
+		"namespace": fileRef.namespace,
+		"file":      fileRef.filename,
+		"fullpath":  fileRef.fullPath,
+	}).Trace("try to lock for open")
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
 		if err == nil {
-			// file exists after all
+			tfs.logger.WithFields(logging.Fields{
+				"namespace": fileRef.namespace,
+				"file":      fileRef.filename,
+				"fullpath":  fileRef.fullPath,
+			}).Trace("got lock; file exists after all")
 			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
 			return nil, nil
 		}
@@ -258,7 +285,11 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 			return nil, fmt.Errorf("stat file: %w", err)
 		}
 
-		// get the file from the block storage
+		tfs.logger.WithFields(logging.Fields{
+			"namespace": fileRef.namespace,
+			"file":      fileRef.filename,
+			"fullpath":  fileRef.fullPath,
+		}).Trace("get file from block storage")
 		reader, err := tfs.adapter.WithContext(ctx).Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
@@ -283,6 +314,12 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}
 
 		// copy from temp path to actual path
+		tfs.logger.WithFields(logging.Fields{
+			"namespace":    fileRef.namespace,
+			"file":         fileRef.filename,
+			"tmp_fullpath": tmpFullPath,
+			"fullpath":     fileRef.fullPath,
+		}).Trace("rename downloaded file")
 		if err = tfs.syncDir.renameFile(tmpFullPath, fileRef.fullPath); err != nil {
 			return nil, fmt.Errorf("rename temp file: %w", err)
 		}
@@ -300,17 +337,6 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 	}
 
 	return fh, nil
-}
-
-func storeLocalFile(rPath string, size int64, eviction params.Eviction) error {
-	relativePath := params.RelativePath(rPath)
-	if !eviction.Store(relativePath, size) {
-		err := os.Remove(rPath)
-		if err != nil {
-			return fmt.Errorf("removing file: %w", err)
-		}
-	}
-	return nil
 }
 
 func validateFilename(filename string) error {
@@ -331,13 +357,36 @@ type localFileRef struct {
 	fsRelativePath params.RelativePath
 }
 
+func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64) {
+	if !tfs.eviction.Store(rPath, size) {
+		// Rejected from cache, so deleted.  This is safe, but can only happen when
+		// the cache size was lowered -- so warn.
+		tfs.logger.WithFields(logging.Fields{
+			"path": rPath,
+			"size": size,
+		}).Warn("existing file immediately rejected from cache on startup (safe if cache size changed; continue)")
+
+		// A rare occurrence, (currently) happens when Ristretto cache is not set up
+		// to perform any caching.  So be less strict: prefer to serve the file and
+		// delete it from the cache. It will be removed from disk when the last
+		// surviving file descriptor -- returned from this function -- is closed.
+		if err := os.Remove(string(rPath)); err != nil {
+			tfs.logger.WithFields(logging.Fields{
+				"path": rPath,
+				"size": size,
+			}).Error("failed to delete immediately-rejected existing file from cache on startup")
+			return
+		}
+	}
+}
+
 func (tfs *TierFS) newLocalFileRef(namespace, nsPath, filename string) localFileRef {
-	relative := path.Join(nsPath, filename)
+	rPath := path.Join(nsPath, filename)
 	return localFileRef{
 		namespace:      namespace,
 		filename:       filename,
-		fsRelativePath: params.RelativePath(relative),
-		fullPath:       path.Join(tfs.fsLocalBaseDir, relative),
+		fsRelativePath: params.RelativePath(rPath),
+		fullPath:       path.Join(tfs.fsLocalBaseDir, rPath),
 	}
 }
 

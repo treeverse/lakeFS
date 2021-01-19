@@ -46,8 +46,8 @@ type MergeResult struct {
 }
 
 type Branch struct {
-	Repository string `db:"repository"`
-	Name       string `db:"name"`
+	Name      string `db:"name"`
+	Reference string
 }
 
 func (j Metadata) Value() (driver.Value, error) {

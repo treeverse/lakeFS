@@ -92,7 +92,7 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
 	contentReader := runtime.NamedReader("content", strings.NewReader(objContent))
@@ -102,9 +102,13 @@ func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPa
 			WithBranch(branch).
 			WithPath(objPath).
 			WithContent(contentReader), nil)
+	return stats.Payload.Checksum, objContent, err
+}
 
+func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath)
 	require.NoError(t, err, "failed to upload file")
-	return stats.Payload.Checksum, objContent
+	return checksum, content
 }
 
 func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []*models.ObjectStats {

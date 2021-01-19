@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/sstable"
 	"github.com/treeverse/lakefs/graveler/staging"
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/pyramid"
 	"github.com/treeverse/lakefs/pyramid/params"
 )
@@ -123,15 +124,15 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
 	stagingManager := staging.NewManager(db)
-	refManager := ref.NewPGRefManager(db)
+	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(db)
 	return &EntryCatalog{
 		store: graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager),
 	}, nil
 }
 
-func (e *EntryCatalog) CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
-	return e.store.CommitExistingMetaRange(ctx, repositoryID, branchID, metaRangeID, committer, message, metadata)
+func (e *EntryCatalog) CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, parentCommitID graveler.CommitID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+	return e.store.CommitExistingMetaRange(ctx, repositoryID, parentCommitID, metaRangeID, committer, message, metadata)
 }
 
 func (e *EntryCatalog) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
@@ -353,6 +354,9 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 }
 
 func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+	if message == "" {
+		message = fmt.Sprintf("Merge '%s' into '%s'", from, to)
+	}
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"from", from, ValidateRef},

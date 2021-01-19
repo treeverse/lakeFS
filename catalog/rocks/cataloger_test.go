@@ -175,9 +175,9 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "all",
 			args: args{limit: -1},
 			want: []*catalog.Branch{
-				{Repository: "repo", Name: "branch1"},
-				{Repository: "repo", Name: "branch2"},
-				{Repository: "repo", Name: "branch3"},
+				{Name: "branch1", Reference: "commit1"},
+				{Name: "branch2", Reference: "commit2"},
+				{Name: "branch3", Reference: "commit3"},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -186,7 +186,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "first",
 			args: args{limit: 1},
 			want: []*catalog.Branch{
-				{Repository: "repo", Name: "branch1"},
+				{Name: "branch1", Reference: "commit1"},
 			},
 			wantHasMore: true,
 			wantErr:     false,
@@ -195,7 +195,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "second",
 			args: args{limit: 1, after: "branch1"},
 			want: []*catalog.Branch{
-				{Repository: "repo", Name: "branch2"},
+				{Name: "branch2", Reference: "commit2"},
 			},
 			wantHasMore: true,
 			wantErr:     false,
@@ -204,8 +204,8 @@ func TestCataloger_ListBranches(t *testing.T) {
 			name: "last2",
 			args: args{limit: 10, after: "branch1"},
 			want: []*catalog.Branch{
-				{Repository: "repo", Name: "branch2"},
-				{Repository: "repo", Name: "branch3"},
+				{Name: "branch2", Reference: "commit2"},
+				{Name: "branch3", Reference: "commit3"},
 			},
 			wantHasMore: false,
 			wantErr:     false,

@@ -106,6 +106,8 @@ definitions:
     properties:
       path:
         type: string
+      physical_address:
+        type: string
       checksum:
         type: string
       mtime:
@@ -123,6 +125,17 @@ definitions:
     properties:
       storage_class:
         x-nullable: true
+        type: string
+
+  ref:
+    type: object
+    required:
+      - id
+      - commit_id
+    properties:
+      id:
+        type: string
+      commit_id:
         type: string
 
   diff:
@@ -1341,7 +1354,7 @@ paths:
               results:
                 type: array
                 items:
-                  type: string
+                  $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         default:
