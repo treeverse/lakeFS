@@ -234,9 +234,8 @@ type VersionController interface {
 	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
 
 	// CommitExistingMetaRange creates a commit in the branch from the given pre-existing tree.
-	// Returns ErrDirtyBranch if the branch has uncommitted changes.
-	// Returns ErrTreeNotFound if the referenced treeID doesn't exist.
-	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error)
+	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
+	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, parentCommit CommitID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
@@ -870,47 +869,54 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 	return StagingToken(v)
 }
 
-func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-		if err != nil {
-			return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
-		}
-		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-		if err != nil {
-			return "", fmt.Errorf("get branch %s: %w", branchID, err)
-		}
-		if empty, err := g.stagingEmpty(ctx, branch); err != nil {
-			return "", err
-		} else if !empty {
-			return "", ErrDirtyBranch
-		}
-
-		ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, metaRangeID)
-		if err != nil {
-			return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
-		}
-		if !ok {
-			return "", ErrMetaRangeNotFound
-		}
-
-		newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
-			Committer:    committer,
-			Message:      message,
-			MetaRangeID:  metaRangeID,
-			CreationDate: time.Now(),
-			Parents:      CommitParents{branch.CommitID},
-			Metadata:     metadata,
-		})
-		if err != nil {
-			return "", fmt.Errorf("add commit: %w", err)
-		}
-		return newCommit, nil
-	})
+func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, parentCommitID CommitID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
 	}
-	return res.(CommitID), nil
+
+	if parentCommitID != "" {
+		_, err = g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+		if err != nil {
+			return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
+		}
+	}
+
+	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
+	}
+	if !ok {
+		return "", ErrMetaRangeNotFound
+	}
+
+	commit := Commit{
+		Committer:    committer,
+		Message:      message,
+		MetaRangeID:  metaRangeID,
+		CreationDate: time.Now(),
+		Metadata:     metadata,
+	}
+	if parentCommitID != "" {
+		commit.Parents = CommitParents{parentCommitID}
+	}
+
+	// check if commit already exists.
+	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
+	_, err = g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err == nil {
+		// commit already exists
+		return commitID, nil
+	} else if !errors.Is(err, ErrCommitNotFound) {
+		return "", fmt.Errorf("getting commit %s: %w", commitID, err)
+	}
+
+	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	if err != nil {
+		return "", fmt.Errorf("add commit: %w", err)
+	}
+
+	return newCommit, nil
 }
 
 func (g *graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, error) {
@@ -918,11 +924,13 @@ func (g *graveler) stagingEmpty(ctx context.Context, branch *Branch) (bool, erro
 	if err != nil {
 		return false, fmt.Errorf("staging list (token %s): %w", branch.StagingToken, err)
 	}
+
 	defer stIt.Close()
 
 	if stIt.Next() {
 		return false, nil
 	}
+
 	return true, nil
 }
 
