@@ -155,7 +155,7 @@ func (g *FakeGraveler) ResetPrefix(ctx context.Context, repositoryID graveler.Re
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error) {
+func (g *FakeGraveler) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref, _, _ string, _ graveler.Metadata) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
