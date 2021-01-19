@@ -22,7 +22,9 @@ func TestMergeIterator(t *testing.T) {
 			Name: "Simple prefix",
 			InvIt: testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
 				{Path: "a/b/c"},
-				{Path: "a/d/c"},
+				{Path: "a/c/d"},
+				{Path: "b/c/d"},
+				{Path: "d/c"},
 			}),
 			CommittedIt: rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator(
 				[]*rocks.EntryRecord{
@@ -32,10 +34,10 @@ func TestMergeIterator(t *testing.T) {
 					{Path: "b/c/d"},
 				}), "", ""),
 			Prefixes: []string{"a/"},
-			Results:  []string{"a/b/c", "a/d/c", "b/c/d"},
+			Results:  []string{"a/b/c", "a/c/d", "b/c/d"},
 		},
 		{
-			Name: "Empty prefix - All inventory",
+			Name: "No prefixes - All inventory",
 			InvIt: testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
 				{Path: "a/b/c"},
 				{Path: "e/f/s/a"},
@@ -45,7 +47,7 @@ func TestMergeIterator(t *testing.T) {
 					{Path: "some/other/prefix"},
 					{Path: "some/other/prefix/c"},
 					{Path: "some/other/prefix/e"},
-				}), "", "/"),
+				}), "", ""),
 			Prefixes: []string{},
 			Results:  []string{"a/b/c", "e/f/s/a"},
 		},

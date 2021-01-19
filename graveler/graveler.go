@@ -902,7 +902,7 @@ func (g *graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 	}
 
 	// check if commit already exists.
-	commitID := CommitID(ident.ContentAddress(commit))
+	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
 	_, err = g.RefManager.GetCommit(ctx, repositoryID, commitID)
 	if err == nil {
 		// commit already exists

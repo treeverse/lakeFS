@@ -15,9 +15,9 @@ type prefixMergeIterator struct {
 	invIt       rocks.EntryIterator
 	committedIt rocks.EntryIterator
 
-	err      error
-	bothDone bool
-	started  bool
+	err         error
+	bothDone    bool
+	initialized bool
 }
 
 var ErrNotSeekable = errors.New("iterator isn't seekable")
@@ -29,11 +29,10 @@ func newPrefixMergeIterator(invIt rocks.EntryIterator, committedIt rocks.EntryLi
 	}
 
 	return &prefixMergeIterator{
-		invIt:       invIt,
-		committedIt: newIgnorePrefixIterator(committedIt, prefixes),
-		err:         nil,
+		invIt:       newPrefixIterator(invIt, prefixes, true),
+		committedIt: newPrefixIterator(&listToEntryIterator{EntryListingIterator: committedIt}, prefixes, false),
 		bothDone:    false,
-		started:     false,
+		initialized: false,
 	}
 }
 
@@ -41,8 +40,8 @@ func (pmi *prefixMergeIterator) Next() bool {
 	if pmi.err != nil {
 		return false
 	}
-	if !pmi.started {
-		pmi.started = true
+	if !pmi.initialized {
+		pmi.initialized = true
 		invHasMore := pmi.advanceIt(pmi.invIt)
 		committedHasMore := pmi.advanceIt(pmi.committedIt)
 		return invHasMore || committedHasMore
@@ -119,32 +118,34 @@ func (pmi *prefixMergeIterator) Close() {
 	}
 }
 
-type ignorePrefixIterator struct {
-	it       rocks.EntryListingIterator
+type prefixIterator struct {
+	it       rocks.EntryIterator
 	prefixes []string
 
-	err   error
-	value *rocks.EntryRecord
+	err           error
+	value         *rocks.EntryRecord
+	allowPrefixes bool
 }
 
-func newIgnorePrefixIterator(it rocks.EntryListingIterator, prefixes []string) rocks.EntryIterator {
-	return &ignorePrefixIterator{
-		it:       it,
-		prefixes: prefixes,
+func newPrefixIterator(it rocks.EntryIterator, prefixes []string, allowPrefixes bool) rocks.EntryIterator {
+	return &prefixIterator{
+		it:            it,
+		prefixes:      prefixes,
+		allowPrefixes: allowPrefixes,
 	}
 }
 
-func (ipi *ignorePrefixIterator) Next() bool {
-	if ipi.err != nil {
+func (pi *prefixIterator) Next() bool {
+	if pi.err != nil {
 		return false
 	}
 
-	for ipi.it.Next() {
+	for pi.it.Next() {
 		// iterate until finding the matching an entry
 		// that doesn't start with one of the prefixes.
-		val := ipi.it.Value()
-		if !ipi.startsWithPrefix(val) {
-			ipi.value = &rocks.EntryRecord{
+		val := pi.it.Value()
+		if pi.include(val) {
+			pi.value = &rocks.EntryRecord{
 				Path:  val.Path,
 				Entry: val.Entry,
 			}
@@ -153,38 +154,54 @@ func (ipi *ignorePrefixIterator) Next() bool {
 	}
 
 	// reached the end of the iterator
-	ipi.err = ipi.it.Err()
-	ipi.value = nil
+	pi.err = pi.it.Err()
+	pi.value = nil
 	return false
 }
 
-func (ipi *ignorePrefixIterator) startsWithPrefix(val *rocks.EntryListing) bool {
-	for _, p := range ipi.prefixes {
+func (pi *prefixIterator) include(val *rocks.EntryRecord) bool {
+	for _, p := range pi.prefixes {
 		if strings.HasPrefix(val.Path.String(), p) {
-			return true
+			return pi.allowPrefixes
 		}
 	}
 
-	return false
+	return !pi.allowPrefixes
 }
 
-func (ipi *ignorePrefixIterator) SeekGE(_ rocks.Path) {
-	ipi.err = ErrNotSeekable
+func (pi *prefixIterator) SeekGE(_ rocks.Path) {
+	pi.err = ErrNotSeekable
 }
 
-func (ipi *ignorePrefixIterator) Value() *rocks.EntryRecord {
-	if ipi.err != nil {
+func (pi *prefixIterator) Value() *rocks.EntryRecord {
+	if pi.err != nil {
 		return nil
 	}
 
-	return ipi.value
+	return pi.value
 }
 
-func (ipi *ignorePrefixIterator) Err() error {
-	return ipi.err
+func (pi *prefixIterator) Err() error {
+	return pi.err
 }
 
-func (ipi *ignorePrefixIterator) Close() {
-	ipi.it.Close()
-	ipi.err = ipi.it.Err()
+func (pi *prefixIterator) Close() {
+	pi.it.Close()
+	pi.err = pi.it.Err()
+}
+
+type listToEntryIterator struct {
+	rocks.EntryListingIterator
+}
+
+func (iter *listToEntryIterator) Value() *rocks.EntryRecord {
+	val := iter.EntryListingIterator.Value()
+	if val == nil {
+		return nil
+	}
+
+	return &rocks.EntryRecord{
+		Path:  val.Path,
+		Entry: val.Entry,
+	}
 }
