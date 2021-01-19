@@ -17,22 +17,35 @@ type prefixMergeIterator struct {
 
 	err      error
 	bothDone bool
+	started  bool
 }
 
 var ErrNotSeekable = errors.New("iterator isn't seekable")
 
-func newPrefixMergeIterator(iterator rocks.EntryIterator, it rocks.EntryListingIterator, prefixes []string) rocks.EntryIterator {
+func newPrefixMergeIterator(invIt rocks.EntryIterator, committedIt rocks.EntryListingIterator, prefixes []string) rocks.EntryIterator {
+	if len(prefixes) == 0 {
+		// If there isn't a filter, take everything from the inventory
+		return invIt
+	}
+
 	return &prefixMergeIterator{
-		invIt:       iterator,
-		committedIt: newIgnorePrefixIterator(it, prefixes),
+		invIt:       invIt,
+		committedIt: newIgnorePrefixIterator(committedIt, prefixes),
 		err:         nil,
 		bothDone:    false,
+		started:     false,
 	}
 }
 
 func (pmi *prefixMergeIterator) Next() bool {
 	if pmi.err != nil {
 		return false
+	}
+	if !pmi.started {
+		pmi.started = true
+		invHasMore := pmi.advanceIt(pmi.invIt)
+		committedHasMore := pmi.advanceIt(pmi.committedIt)
+		return invHasMore || committedHasMore
 	}
 
 	switch {
@@ -141,6 +154,7 @@ func (ipi *ignorePrefixIterator) Next() bool {
 
 	// reached the end of the iterator
 	ipi.err = ipi.it.Err()
+	ipi.value = nil
 	return false
 }
 
