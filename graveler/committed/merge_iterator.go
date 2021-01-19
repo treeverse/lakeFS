@@ -37,7 +37,7 @@ func (d *mergeIterator) Next() bool {
 	default:
 		d.val = &graveler.ValueRecord{
 			Key:   d.compareIterator.Value().Key().Copy(),
-			Value: d.compareIterator.Value().Value().Copy(),
+			Value: d.compareIterator.Value().Value(),
 		}
 		return true
 	}
