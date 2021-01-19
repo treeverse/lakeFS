@@ -22,8 +22,10 @@ type RocksCatalogRepoActions struct {
 
 	metaRanger         metaRangeManager
 	createdMetaRangeID *graveler.MetaRangeID
-	progress           *cmdutils.Progress
-	commit             *cmdutils.Progress
+	commitID           graveler.CommitID
+
+	progress *cmdutils.Progress
+	commit   *cmdutils.Progress
 }
 
 func (c *RocksCatalogRepoActions) Progress() []*cmdutils.Progress {
@@ -33,7 +35,9 @@ func (c *RocksCatalogRepoActions) Progress() []*cmdutils.Progress {
 // metaRangeManager is a facet for EntryCatalog for rocks import commands
 type metaRangeManager interface {
 	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it rocks.EntryIterator) (*graveler.MetaRangeID, error)
-	CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error)
+	CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, parentCommitID graveler.CommitID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error)
+	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter rocks.Path) (rocks.EntryListingIterator, error)
+	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 }
 
 func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler.RepositoryID, committer string, logger logging.Logger) *RocksCatalogRepoActions {
@@ -42,15 +46,18 @@ func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler
 		repoID:     repository,
 		committer:  committer,
 		logger:     logger,
-		progress:   cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
-		commit:     cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
+
+		progress: cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
+		commit:   cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
 	}
 }
 
 var ErrWrongIterator = errors.New("rocksCatalogRepoActions can only accept InventoryIterator")
 
-func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ bool) (*Stats, error) {
+func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, commitID graveler.CommitID, prefixes []string, _ bool) (*Stats, error) {
 	c.logger.Trace("start apply import")
+	c.commitID = commitID
+
 	c.progress.Activate()
 
 	invIt, ok := it.(*InventoryIterator)
@@ -58,8 +65,12 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 		return nil, ErrWrongIterator
 	}
 
-	var err error
-	c.createdMetaRangeID, err = c.metaRanger.WriteMetaRange(ctx, c.repoID, NewValueToEntryIterator(invIt, c.progress))
+	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, graveler.Ref(c.commitID), "", "")
+	if err != nil {
+		return nil, fmt.Errorf("listing commit: %w", err)
+	}
+
+	c.createdMetaRangeID, err = c.metaRanger.WriteMetaRange(ctx, c.repoID, newPrefixMergeIterator(NewValueToEntryIterator(invIt, c.progress), listIt, prefixes))
 	if err != nil {
 		return nil, fmt.Errorf("write meta range: %w", err)
 	}
@@ -84,9 +95,14 @@ func (c *RocksCatalogRepoActions) Commit(ctx context.Context, commitMsg string, 
 	if c.createdMetaRangeID == nil {
 		return "", ErrNoMetaRange
 	}
-	commitID, err := c.metaRanger.CommitExistingMetaRange(ctx, c.repoID, catalog.DefaultImportBranchName, *c.createdMetaRangeID, c.committer, commitMsg, graveler.Metadata(metadata))
+	commitID, err := c.metaRanger.CommitExistingMetaRange(ctx, c.repoID, c.commitID, *c.createdMetaRangeID, c.committer, commitMsg, graveler.Metadata(metadata))
 	if err != nil {
 		return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
+	}
+
+	_, err = c.metaRanger.UpdateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, graveler.Ref(c.commitID))
+	if err != nil {
+		return "", fmt.Errorf("updating branch: %w", err)
 	}
 
 	return string(commitID), nil
