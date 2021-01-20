@@ -28,6 +28,7 @@ type Migrate struct {
 	lastCommit graveler.CommitID
 	branches   map[graveler.BranchID]graveler.CommitID
 	tags       map[graveler.TagID]graveler.CommitID
+	reporter   Reporter
 }
 
 type commitRecord struct {
@@ -43,6 +44,12 @@ type commitRecord struct {
 	MergeSourceBranch     *int64
 	MergeSourceBranchName string
 	MergeSourceCommit     *int64
+}
+
+type Reporter interface {
+	BeginRepository(repository string)
+	BeginCommit(ref, message, committer, branch string)
+	EndRepository(err error)
 }
 
 const (
@@ -61,6 +68,7 @@ func NewMigrate(db db.Database, entryCatalog *rocks.EntryCatalog, mvccCataloger 
 		entryCatalog:  entryCatalog,
 		mvccCataloger: mvccCataloger,
 		log:           logging.Default(),
+		reporter:      &nullReporter{},
 	}, nil
 }
 
@@ -94,11 +102,13 @@ func (m *Migrate) Run() error {
 			"storage_namespace": repo.StorageNamespace,
 			"default_branch":    repo.DefaultBranch,
 		}).Info("Start repository migrate")
+		m.reporter.BeginRepository(repo.Name)
 		_, err := m.migrateRepository(ctx, repo)
 		if err != nil {
 			m.log.WithError(err).WithField("repository", repo.Name).Error("Migrate repository")
 			merr = multierror.Append(merr, err)
 		}
+		m.reporter.EndRepository(err)
 	}
 
 	if err = m.postMigrate(); err != nil {
@@ -202,6 +212,7 @@ func (m *Migrate) getOrCreateTargetRepository(ctx context.Context, repository *c
 // migrateCommit migrate single commit from MVCC based repository to EntryCatalog format
 func (m *Migrate) migrateCommit(ctx context.Context, repo *graveler.RepositoryRecord, commit commitRecord) error {
 	mvccRef := mvcc.MakeReference(commit.BranchName, mvcc.CommitID(commit.CommitID))
+	m.reporter.BeginCommit(mvccRef, commit.Message, commit.Committer, commit.BranchName)
 
 	// lookup tag, skip commit if we already tagged this commit
 	tagID := graveler.TagID(mvccRef)
@@ -295,7 +306,7 @@ func (m *Migrate) migrateCommits(ctx context.Context, repo *graveler.RepositoryR
 			return fmt.Errorf("scan commit record: %w", err)
 		}
 		m.log.WithFields(logging.Fields{
-			"repository":    string(repo.RepositoryID),
+			"repository":    repo.RepositoryID.String(),
 			"commit_id":     commit.CommitID,
 			"branch_name":   commit.BranchName,
 			"committer":     commit.Committer,
@@ -350,8 +361,20 @@ func (m *Migrate) postMigrate() error {
 	return err
 }
 
+func (m *Migrate) SetReporter(r Reporter) {
+	m.reporter = r
+}
+
 func (c *commitRecord) Scan(rows pgx.Row) error {
 	return rows.Scan(&c.BranchID, &c.BranchName, &c.CommitID,
 		&c.PreviousCommitID, &c.Committer, &c.Message, &c.CreationDate, &c.Metadata,
 		&c.MergeSourceBranch, &c.MergeSourceBranchName, &c.MergeSourceCommit, &c.MergeType)
 }
+
+type nullReporter struct{}
+
+func (n *nullReporter) BeginRepository(string) {}
+
+func (n *nullReporter) BeginCommit(string, string, string, string) {}
+
+func (n *nullReporter) EndRepository(error) {}

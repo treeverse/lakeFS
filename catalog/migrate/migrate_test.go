@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"hash/maphash"
+	"hash/fnv"
 	"os"
 	"strconv"
 	"testing"
@@ -40,12 +40,20 @@ func TestMigrate(t *testing.T) {
 	ctx := context.Background()
 	_, err := mvccCataloger.CreateRepository(ctx, "repo1", "mem://", "main")
 	testutil.Must(t, err)
+	// create two commits with new files
 	testCreateEntry(t, ctx, mvccCataloger, "repo1", "main", "file1")
 	testCreateEntry(t, ctx, mvccCataloger, "repo1", "main", "file2")
 	testCommit(t, ctx, mvccCataloger, "repo1", "main", "first on main")
 	testCreateEntry(t, ctx, mvccCataloger, "repo1", "main", "file0")
 	testCreateEntry(t, ctx, mvccCataloger, "repo1", "main", "file3")
 	testCommit(t, ctx, mvccCataloger, "repo1", "main", "second on main")
+	// create a branch b1 with new files
+	testCreateBranch(t, ctx, mvccCataloger, "repo1", "b1", "main")
+	testCreateEntry(t, ctx, mvccCataloger, "repo1", "b1", "file11")
+	testCreateEntry(t, ctx, mvccCataloger, "repo1", "b1", "file22")
+	testCommit(t, ctx, mvccCataloger, "repo1", "b1", "first on b1")
+	// merge changes from b1 back to main
+	testMerge(t, ctx, mvccCataloger, "repo1", "b1", "main", "Merge b1 to main first")
 
 	// migrate information
 	migrateTool, err := NewMigrate(conn, entryCatalog, mvccCataloger)
@@ -79,8 +87,10 @@ func TestMigrate(t *testing.T) {
 		commitMessages = append(commitMessages, commit.Message)
 	}
 	testutil.Must(t, logIt.Err())
-
 	expectedCommits := []string{
+		"Merge b1 to main first",
+		"first on b1",
+		"Branch 'b1' created, source 'main'",
 		"second on main",
 		"first on main",
 		"Repository created",
@@ -90,27 +100,54 @@ func TestMigrate(t *testing.T) {
 	if diff := deep.Equal(commitMessages, expectedCommits); diff != nil {
 		t.Fatal("Log diff found:", diff)
 	}
+
+	// verify branches
+	mainBranch, err := entryCatalog.GetBranch(ctx, "repo1", "main")
+	testutil.MustDo(t, "get main branch", err)
+	b1Branch, err := entryCatalog.GetBranch(ctx, "repo1", "main")
+	testutil.MustDo(t, "get b1 branch", err)
+	// verify each branch content
+	for i := 0; i < 4; i++ {
+		name := "file" + strconv.Itoa(i)
+
+		// get entry and check address
+		ent, err := entryCatalog.GetEntry(ctx, "repo1", mainBranch.CommitID.Ref(), rocks.Path(name))
+		testutil.MustDo(t, "get entry "+name, err)
+		h := calcPathHash("repo1", "main", name)
+		if ent.Address != h {
+			t.Errorf("GetEntry main branch, file %s address %s, expected %s", name, ent.Address, h)
+		}
+
+		// same should be visible from 'b1' branch
+		ent, err = entryCatalog.GetEntry(ctx, "repo1", b1Branch.CommitID.Ref(), rocks.Path(name))
+		testutil.MustDo(t, "get entry "+name, err)
+		if ent.Address != h {
+			t.Errorf("GetEntry b1 branch, file %s address %s, expected %s", name, ent.Address, h)
+		}
+	}
+	for _, i := range []int{11, 22} {
+		name := "file" + strconv.Itoa(i)
+
+		// get entry and check address
+		ent, err := entryCatalog.GetEntry(ctx, "repo1", b1Branch.CommitID.Ref(), rocks.Path(name))
+		testutil.MustDo(t, "get entry "+name, err)
+		h := calcPathHash("repo1", "b1", name)
+		if ent.Address != h {
+			t.Errorf("GetEntry b1 branch, file %s address %s, expected %s", name, ent.Address, h)
+		}
+	}
 }
 
-func newDefaultInstanceParams(name string) *params.InstanceParams {
-	const totalAllocatedBytes = 15 * 1024 * 1024
-	const pebbleSSTableCacheSizeBytes = 8 * 1024 * 1024
-	baseDir := os.TempDir()
-	return &params.InstanceParams{
-		SharedParams: params.SharedParams{
-			Logger: logging.Default(),
-			Local: params.LocalDiskParams{
-				TotalAllocatedBytes: totalAllocatedBytes,
-				BaseDir:             baseDir,
-			},
-			Adapter:                     mem.New(),
-			BlockStoragePrefix:          "",
-			Eviction:                    nil,
-			PebbleSSTableCacheSizeBytes: pebbleSSTableCacheSizeBytes,
-		},
-		FSName:              name,
-		DiskAllocProportion: 1.0,
-	}
+func testMerge(t *testing.T, ctx context.Context, cataloger catalog.Cataloger, repo string, sourceBranch string, targetBranch string, msg string) {
+	t.Helper()
+	_, err := cataloger.Merge(ctx, repo, sourceBranch, targetBranch, "tester", msg, nil)
+	testutil.MustDo(t, "merge", err)
+}
+
+func testCreateBranch(t testing.TB, ctx context.Context, cataloger catalog.Cataloger, repo string, branch string, parent string) {
+	t.Helper()
+	_, err := cataloger.CreateBranch(ctx, repo, branch, parent)
+	testutil.MustDo(t, "create branch", err)
 }
 
 func newEntryCatalogInMem(conn db.Database) (*rocks.EntryCatalog, error) {
@@ -157,6 +194,7 @@ func newEntryCatalogInMem(conn db.Database) (*rocks.EntryCatalog, error) {
 }
 
 func testSetupServices(t testing.TB) (db.Database, catalog.Cataloger, *rocks.EntryCatalog) {
+	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	mvccCataloger := mvcc.NewCataloger(conn)
 	entryCataloger, err := newEntryCatalogInMem(conn)
@@ -165,17 +203,15 @@ func testSetupServices(t testing.TB) (db.Database, catalog.Cataloger, *rocks.Ent
 }
 
 func testCommit(t *testing.T, ctx context.Context, cataloger catalog.Cataloger, repo string, branch string, msg string) catalog.CommitLog {
+	t.Helper()
 	commit, err := cataloger.Commit(ctx, repo, branch, msg, "tester", nil)
 	testutil.MustDo(t, "commit", err)
 	return *commit
 }
 
 func testCreateEntry(t testing.TB, ctx context.Context, cataloger catalog.Cataloger, repo, branch, path string) {
-	var h maphash.Hash
-	_, _ = h.Write([]byte(repo))
-	_, _ = h.Write([]byte(branch))
-	_, _ = h.Write([]byte(path))
-	sum := h.Sum64()
+	t.Helper()
+	sum := calcPathSum(repo, branch, path)
 	pathHash := strconv.FormatUint(sum, 16)
 
 	err := cataloger.CreateEntry(ctx, repo, branch, catalog.Entry{
@@ -186,4 +222,38 @@ func testCreateEntry(t testing.TB, ctx context.Context, cataloger catalog.Catalo
 		Checksum:        pathHash,
 	}, catalog.CreateEntryParams{})
 	testutil.MustDo(t, "create entry", err)
+}
+
+func calcPathSum(repo string, branch string, path string) uint64 {
+	h := fnv.New64()
+	_, _ = h.Write([]byte(repo))
+	_, _ = h.Write([]byte(branch))
+	_, _ = h.Write([]byte(path))
+	sum := h.Sum64()
+	return sum
+}
+func calcPathHash(repo string, branch string, path string) string {
+	sum := calcPathSum(repo, branch, path)
+	return strconv.FormatUint(sum, 16)
+}
+
+func newDefaultInstanceParams(name string) *params.InstanceParams {
+	const totalAllocatedBytes = 15 * 1024 * 1024
+	const pebbleSSTableCacheSizeBytes = 8 * 1024 * 1024
+	baseDir := os.TempDir()
+	return &params.InstanceParams{
+		SharedParams: params.SharedParams{
+			Logger: logging.Default(),
+			Local: params.LocalDiskParams{
+				TotalAllocatedBytes: totalAllocatedBytes,
+				BaseDir:             baseDir,
+			},
+			Adapter:                     mem.New(),
+			BlockStoragePrefix:          "",
+			Eviction:                    nil,
+			PebbleSSTableCacheSizeBytes: pebbleSSTableCacheSizeBytes,
+		},
+		FSName:              name,
+		DiskAllocProportion: 1.0,
+	}
 }
