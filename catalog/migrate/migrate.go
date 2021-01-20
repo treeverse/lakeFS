@@ -48,7 +48,6 @@ type commitRecord struct {
 const (
 	migrateFetchSize = 1000
 
-	initialCommitter     = "migrate"
 	initialCommitMessage = "Create empty new branch for migrate"
 )
 
@@ -179,21 +178,16 @@ func (m *Migrate) getOrCreateTargetRepository(ctx context.Context, repository *c
 		}
 
 		commit := graveler.Commit{
-			Committer:    initialCommitter,
+			Committer:    catalog.DefaultCommitter,
 			Message:      initialCommitMessage,
 			MetaRangeID:  *metaRangeID,
-			CreationDate: time.Now(),
+			CreationDate: repository.CreationDate.Add(-time.Second), // make sure the commit will be first
 			Parents:      make(graveler.CommitParents, 0),
 			Metadata:     make(graveler.Metadata),
 		}
 		commitID, err := m.entryCatalog.AddCommitNoLock(ctx, repoID, commit)
 		if err != nil {
 			return nil, fmt.Errorf("initial commit (%s): %w", repoID, err)
-		}
-
-		_, err = m.entryCatalog.UpdateBranch(ctx, repoID, branchID, commitID.Ref())
-		if err != nil {
-			return nil, fmt.Errorf("update branch commit (%s): %w", repoID, err)
 		}
 		m.lastCommit = commitID
 	}
