@@ -391,7 +391,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
 	}
-	catalogCommitLog.CreationDate = commit.CreationDate
+	catalogCommitLog.CreationDate = commit.CreationDate.UTC()
 	return catalogCommitLog, nil
 }
 
