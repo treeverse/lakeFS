@@ -52,10 +52,7 @@ type logrusEntryWrapper struct {
 }
 
 func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
-	return addFromContext(
-		&logrusEntryWrapper{l.e.WithContext(ctx)},
-		ctx,
-	)
+	return &logrusEntryWrapper{l.e.WithContext(ctx)}
 }
 
 func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
@@ -154,17 +151,14 @@ func Default() Logger {
 	}
 }
 
-func addFromContext(log Logger, ctx context.Context) Logger {
-	fields := ctx.Value(LogFieldsContextKey)
-	if fields == nil {
-		return log
-	}
-	loggerFields := fields.(Fields)
-	return log.WithFields(loggerFields)
-}
-
 func FromContext(ctx context.Context) Logger {
-	return addFromContext(Default(), ctx)
+	log := Default()
+	fields := ctx.Value(LogFieldsContextKey)
+	if fields != nil {
+		loggerFields := fields.(Fields)
+		return log.WithFields(loggerFields)
+	}
+	return log
 }
 
 func AddFields(ctx context.Context, fields Fields) context.Context {

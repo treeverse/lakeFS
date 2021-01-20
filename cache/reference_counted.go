@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"hash/maphash"
@@ -21,7 +20,7 @@ type Derefer func() error
 // not a Cache.
 type CacheWithDisposal interface {
 	Name() string
-	GetOrSet(ctx context.Context, k interface{}, setFn SetFn) (v interface{}, disposer Derefer, err error)
+	GetOrSet(k interface{}, setFn SetFn) (v interface{}, disposer Derefer, err error)
 }
 
 type ParamsWithDisposal struct {
@@ -58,7 +57,7 @@ func (s *shardedCacheWithDisposal) Name() string {
 	return s.name
 }
 
-func (s *shardedCacheWithDisposal) GetOrSet(ctx context.Context, k interface{}, setFn SetFn) (interface{}, Derefer, error) {
+func (s *shardedCacheWithDisposal) GetOrSet(k interface{}, setFn SetFn) (interface{}, Derefer, error) {
 	hash := maphash.Hash{}
 	hash.SetSeed(s.Seed)
 	// (Explicitly ignore return value from hash.WriteString: its godoc says "it always
@@ -66,7 +65,7 @@ func (s *shardedCacheWithDisposal) GetOrSet(ctx context.Context, k interface{}, 
 	// io.StringWriter."
 	_, _ = hash.WriteString(fmt.Sprintf("%+#v", k))
 	hashVal := hash.Sum64() % uint64(len(s.Shards))
-	return s.Shards[hashVal].GetOrSet(ctx, k, setFn)
+	return s.Shards[hashVal].GetOrSet(k, setFn)
 }
 
 // SingleThreadedCacheWithDisposal is a CacheWithDisposal that uses a single critical section
@@ -128,7 +127,7 @@ func NewSingleThreadedCacheWithDisposal(p ParamsWithDisposal) *SingleThreadedCac
 	return ret
 }
 
-func (c *SingleThreadedCacheWithDisposal) GetOrSet(ctx context.Context, k interface{}, setFn SetFn) (interface{}, Derefer, error) {
+func (c *SingleThreadedCacheWithDisposal) GetOrSet(k interface{}, setFn SetFn) (interface{}, Derefer, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	var entry *cacheEntry
