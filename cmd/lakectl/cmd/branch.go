@@ -135,7 +135,7 @@ var branchRevertCmd = &cobra.Command{
 		clt := getClient()
 		confirmation, err := confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s?", commitRef))
 		if err != nil || !confirmation {
-			Die("Reset aborted", 1)
+			Die("Revert aborted", 1)
 			return
 		}
 		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, commitRef)
