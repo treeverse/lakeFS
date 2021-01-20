@@ -10,11 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/parade"
-
-	"github.com/treeverse/lakefs/export"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
@@ -40,8 +35,11 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
+	"github.com/treeverse/lakefs/export"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"

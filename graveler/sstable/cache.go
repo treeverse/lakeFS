@@ -142,6 +142,11 @@ func (n *noCache) GetOrOpen(ctx context.Context, namespace string, id committed.
 	return reader, reader.Close, nil
 }
 
-func (n *noCache) Exists(context.Context, string, committed.ID) (bool, error) {
-	return false, nil
+func (n *noCache) Exists(ctx context.Context, namespace string, id committed.ID) (bool, error) {
+	item, err := n.opener(ctx, namespace, string(id))
+	if err != nil {
+		return false, err
+	}
+	reader := item.GetSSTable()
+	return true, reader.Close()
 }

@@ -93,7 +93,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
-					store: gravelerMock,
+					Store: gravelerMock,
 				},
 			}
 			// test method
@@ -134,7 +134,7 @@ func TestCataloger_BranchExists(t *testing.T) {
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
-					store: gravelerMock,
+					Store: gravelerMock,
 				},
 			}
 			// test method
@@ -225,7 +225,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
-					store: gravelerMock,
+					Store: gravelerMock,
 				},
 			}
 			// test method
@@ -348,7 +348,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			}
 			c := &cataloger{
 				EntryCatalog: &EntryCatalog{
-					store: gravelerMock,
+					Store: gravelerMock,
 				},
 			}
 			// test method

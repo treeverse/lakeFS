@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/ident"
 )
 
-// IteratorPrefetchSize is the amount of records to fetch from PG
+// IteratorPrefetchSize is the amount of records to maybeFetch from PG
 const IteratorPrefetchSize = 1000
 
 type Manager struct {

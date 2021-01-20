@@ -188,6 +188,10 @@ func (g *FakeGraveler) CommitExistingMetaRange(_ context.Context, _ graveler.Rep
 	panic("implement me")
 }
 
+func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ graveler.RepositoryID, _ graveler.Commit) (graveler.CommitID, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) WriteMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
