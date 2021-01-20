@@ -71,6 +71,12 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			haveSource = source.Next()
 		}
 	}
+	if err := source.Err(); err != nil {
+		return err
+	}
+	if err := diffs.Err(); err != nil {
+		return err
+	}
 	for haveSource {
 		sourceValue, sourceRange := source.Value()
 		if sourceValue == nil {
@@ -94,6 +100,9 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			haveSource = source.Next()
 		}
 	}
+	if err := source.Err(); err != nil {
+		return err
+	}
 	for haveDiffs {
 		diffValue := diffs.Value()
 		haveDiffs = diffs.Next()
@@ -112,5 +121,5 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			return fmt.Errorf("write added record: %w", err)
 		}
 	}
-	return nil
+	return diffs.Err()
 }
