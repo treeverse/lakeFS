@@ -172,7 +172,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.BranchesGetBranchHandler = c.GetBranchHandler()
 	api.BranchesCreateBranchHandler = c.CreateBranchHandler()
 	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
-	api.BranchesRevertBranchHandler = c.RevertBranchHandler()
+	api.BranchesResetBranchHandler = c.ResetBranchHandler()
 
 	api.CommitsCommitHandler = c.CommitHandler()
 	api.CommitsGetCommitHandler = c.GetCommitHandler()
@@ -1306,8 +1306,8 @@ func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 	})
 }
 
-func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
-	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
+func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
+	return branches.ResetBranchHandlerFunc(func(params branches.ResetBranchParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RevertBranchAction,
@@ -1315,33 +1315,33 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 			},
 		})
 		if err != nil {
-			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
+			return branches.NewResetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("revert_branch")
 		cataloger := deps.Cataloger
 
 		ctx := c.Context()
-		switch swag.StringValue(params.Revert.Type) {
-		case models.RevertCreationTypeCommit:
-			err = cataloger.RollbackCommit(ctx, params.Repository, params.Branch, params.Revert.Commit)
-		case models.RevertCreationTypeCommonPrefix:
-			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
-		case models.RevertCreationTypeReset:
+		switch swag.StringValue(params.Reset.Type) {
+		case models.ResetCreationTypeCommit:
+			err = cataloger.RollbackCommit(ctx, params.Repository, params.Branch, params.Reset.Commit)
+		case models.ResetCreationTypeCommonPrefix:
+			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Reset.Path)
+		case models.ResetCreationTypeReset:
 			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)
-		case models.RevertCreationTypeObject:
-			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Revert.Path)
+		case models.ResetCreationTypeObject:
+			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Reset.Path)
 		default:
-			return branches.NewRevertBranchNotFound().
+			return branches.NewResetBranchNotFound().
 				WithPayload(responseError("revert type not found"))
 		}
 		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewRevertBranchNotFound().WithPayload(responseErrorFrom(err))
+			return branches.NewResetBranchNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
-			return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return branches.NewResetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return branches.NewRevertBranchNoContent()
+		return branches.NewResetBranchNoContent()
 	})
 }
 

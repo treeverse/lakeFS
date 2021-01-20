@@ -150,7 +150,7 @@ definitions:
         type: string
         enum: [ common_prefix, object ]
 
-  revert_creation:
+  reset_creation:
     type: object
     required:
       - type
@@ -1511,17 +1511,17 @@ paths:
     put:
       tags:
         - branches
-      operationId: revertBranch
-      summary: revert branch
+      operationId: resetBranch
+      summary: reset branch
       parameters:
         - in: body
-          name: revert
-          description: "revert parameters"
+          name: reset
+          description: "reset parameters"
           schema:
-            $ref: "#/definitions/revert_creation"
+            $ref: "#/definitions/reset_creation"
       responses:
         204:
-          description: reverted
+          description: reset successful
         401:
           $ref: "#/responses/Unauthorized"
         404:
