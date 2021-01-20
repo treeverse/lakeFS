@@ -19,13 +19,17 @@ type compareValueIterator struct {
 }
 
 // NewMergeIterator accepts an iterator describing a diff from theirs to ours.
-// It returns a ValueIterator with the changes to perform on theirs, in order to merge ours into it,
+// It returns a graveler.ValueIterator with the changes to perform on theirs, in order to merge ours into it,
 // relative to base as the merge base.
-// The iterator will return ErrConflictFound when it reaches a conflict.
+// When reaching a conflict, the iterator will enter an error state with the graveler.ErrConflictFound error.
 func NewMergeIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) *compareValueIterator {
 	return &compareValueIterator{compareIterator: &compareIterator{diffIt: diffTheirsToOurs, base: base, errorOnConflict: true}}
 }
 
+// NewMergeIterator accepts an iterator describing a diff from theirs to ours.
+// It returns a graveler.DiffIterator with the changes to perform on theirs, in order to merge ours into it,
+// relative to base as the merge base.
+// When reaching a conflict, the returned Diff will be of type graveler.DiffTypeConflict.
 func NewCompareIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) *compareIterator {
 	return &compareIterator{diffIt: diffTheirsToOurs, base: base, errorOnConflict: false}
 }
