@@ -18,7 +18,7 @@ func TestGraveler_List(t *testing.T) {
 	branchLocker := ref.NewBranchLocker(conn)
 	tests := []struct {
 		name        string
-		r           graveler.Graveler
+		r           *graveler.Graveler
 		expectedErr error
 		expected    []*graveler.ValueRecord
 	}{
@@ -75,7 +75,7 @@ func TestGraveler_Get(t *testing.T) {
 	errTest := errors.New("some kind of err")
 	tests := []struct {
 		name                string
-		r                   graveler.Graveler
+		r                   *graveler.Graveler
 		expectedValueResult graveler.Value
 		expectedErr         error
 	}{
@@ -155,7 +155,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 	branchLocker := ref.NewBranchLocker(conn)
 	tests := []struct {
 		name            string
-		r               graveler.Graveler
+		r               *graveler.Graveler
 		amount          int
 		expectedErr     error
 		expectedHasMore bool
