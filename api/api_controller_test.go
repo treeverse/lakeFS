@@ -3,23 +3,21 @@ package api_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/treeverse/lakefs/api/gen/client/refs"
+	"github.com/treeverse/lakefs/api/gen/client/setup"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
@@ -1363,7 +1361,7 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 
 func TestHandler_ConfigHandlers(t *testing.T) {
 	const BlockstoreType = "s3"
-	clt, _ := NewClient(t, "")
+	clt, _ := NewClient(t, BlockstoreType)
 
 	// create user
 	creds := createDefaultAdminUser(clt, t)
@@ -1476,17 +1474,13 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 }
 
 func Test_setupLakeFSHandler(t *testing.T) {
-	clt, _ := NewClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(clt, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
 	name := "admin"
 	cases := []struct {
-		name               string
-		user               models.Setup
-		expectedStatusCode int
+		name string
+		user models.Setup
+		// Currently only test failure with SetupLakeFSDefault, further testing is by
+		// HTTP status code
+		errorDefaultCode int
 	}{
 		{name: "simple", user: models.Setup{Username: &name}},
 		{
@@ -1505,7 +1499,7 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				Username: &name,
 				Key:      &models.SetupKey{SecretAccessKey: swag.String("cetec astronomy")},
 			},
-			expectedStatusCode: 422,
+			errorDefaultCode: 422,
 		},
 		{
 			name: "emptySecretKey", user: models.Setup{
@@ -1514,65 +1508,52 @@ func Test_setupLakeFSHandler(t *testing.T) {
 					AccessKeyID: swag.String("IKEAsneakers"),
 				},
 			},
-			expectedStatusCode: 422,
+			errorDefaultCode: 422,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			// get handler with DB without applying the DDL
-			handler, _ := getHandler(t, "", testutil.WithGetDBApplyDDL(false))
-
-			srv := httptest.NewServer(handler)
-			defer srv.Close()
-
-			req, err := json.Marshal(c.user)
-			if err != nil {
-				t.Fatal("JSON marshal request", err)
-			}
-
-			reqURI := srv.URL + client.DefaultBasePath + "/setup_lakefs"
-			const contentType = "application/json"
+			clt, _ := NewClient(t, "", testutil.WithGetDBApplyDDL(false))
 			t.Run("fresh start", func(t *testing.T) {
 				// request to setup
-				res := mustSetup(t, reqURI, contentType, req)
-				defer func() {
-					_ = res.Body.Close()
-				}()
 
-				expectedStatusCode := http.StatusOK
-				if c.expectedStatusCode != 0 {
-					expectedStatusCode = c.expectedStatusCode
-				}
-				if res.StatusCode != expectedStatusCode {
-					t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
-				}
-				if res.StatusCode != http.StatusOK {
+				// create user
+				res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
+
+				if c.errorDefaultCode != 0 {
+					defaultErr, ok := err.(*setup.SetupLakeFSDefault)
+					if !ok {
+						t.Errorf("got %s instead of default error", err)
+					}
+					if defaultErr.Code() != c.errorDefaultCode {
+						t.Errorf("got default error with code %d, expected %d", defaultErr.Code(), c.errorDefaultCode)
+					}
 					return
 				}
-
-				// read response
-				var credKeys *models.CredentialsWithSecret
-
-				err = json.NewDecoder(res.Body).Decode(&credKeys)
 				if err != nil {
-					t.Fatal("Decode response", err)
+					t.Fatal("setup lakeFS:", err)
 				}
 
-				if len(credKeys.AccessKeyID) == 0 {
+				creds := res.Payload
+				bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+				if len(creds.AccessKeyID) == 0 {
 					t.Fatal("Credential key id is missing")
 				}
 
 				if c.user.Key != nil {
-					if *c.user.Key.AccessKeyID != credKeys.AccessKeyID {
-						t.Errorf("got access key ID %s != %s", credKeys.AccessKeyID, *c.user.Key.AccessKeyID)
+					if *c.user.Key.AccessKeyID != creds.AccessKeyID {
+						t.Errorf("got access key ID %s != %s", creds.AccessKeyID, *c.user.Key.AccessKeyID)
 					}
-					if *c.user.Key.SecretAccessKey != credKeys.AccessSecretKey {
-						t.Errorf("got secret key %s != %s", credKeys.AccessSecretKey, *c.user.Key.SecretAccessKey)
+					if *c.user.Key.SecretAccessKey != creds.AccessSecretKey {
+						t.Errorf("got secret key %s != %s", creds.AccessSecretKey, *c.user.Key.SecretAccessKey)
 					}
 				}
+
 				foundCreds, err := clt.Auth.GetCredentials(
 					auth.NewGetCredentialsParamsWithTimeout(timeout).
-						WithAccessKeyID(credKeys.AccessKeyID),
+						WithAccessKeyID(creds.AccessKeyID).
+						WithUserID(*c.user.Username),
 					bauth)
 				if err != nil {
 					t.Fatal("Get API credentials key id for created access key", err)
@@ -1580,23 +1561,18 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				if foundCreds == nil {
 					t.Fatal("Get API credentials secret key for created access key")
 				}
-				if foundCreds.Payload.AccessKeyID != credKeys.AccessKeyID {
-					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.Payload.AccessKeyID, credKeys.AccessKeyID)
+				if foundCreds.Payload.AccessKeyID != creds.AccessKeyID {
+					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.Payload.AccessKeyID, creds.AccessKeyID)
 				}
 			})
 
-			if c.expectedStatusCode == 0 {
+			if c.errorDefaultCode == 0 {
 				// now we ask again - should get status conflict
 				t.Run("existing setup", func(t *testing.T) {
 					// request to setup
-					res := mustSetup(t, reqURI, contentType, req)
-					defer func() {
-						_ = res.Body.Close()
-					}()
-
-					const expectedStatusCode = http.StatusConflict
-					if res.StatusCode != expectedStatusCode {
-						t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+					res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
+					if !strings.Contains(err.Error(), "setupLakeFSConflict") {
+						t.Errorf("repeated setup got %+v, %s instead of \"setupLakeFSConflict\"", res, err)
 					}
 				})
 			}
