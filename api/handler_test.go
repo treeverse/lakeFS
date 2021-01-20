@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -11,10 +12,13 @@ import (
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
+	"github.com/go-openapi/swag"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/api/gen/client/setup"
+	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
@@ -55,19 +59,19 @@ func TestMain(m *testing.M) {
 
 type dependencies struct {
 	blocks    block.Adapter
-	auth      auth.Service
 	cataloger catalog.Cataloger
 }
 
-func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
-	user := &authmodel.User{
-		CreatedAt: time.Now(),
-		Username:  "admin",
-	}
-
-	creds, err := auth.SetupAdminUser(authService, &authmodel.SuperuserConfiguration{User: *user})
+func createDefaultAdminUser(clt *client.Lakefs, t *testing.T) *authmodel.Credential {
+	params := setup.NewSetupLakeFSParamsWithTimeout(10 * time.Second).
+		WithUser(&models.Setup{Username: swag.String("admin")})
+	res, err := clt.Setup.SetupLakeFS(params)
 	testutil.Must(t, err)
-	return creds
+	return &authmodel.Credential{
+		IssuedDate:      time.Unix(res.Payload.CreationDate, 0),
+		AccessKeyID:     res.Payload.AccessKeyID,
+		AccessSecretKey: res.Payload.AccessSecretKey,
+	}
 }
 
 type mockCollector struct{}
@@ -114,13 +118,29 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		dedupCleaner,
 		logging.Default(),
 	)
-	handler = http.TimeoutHandler(handler, 30*time.Second, "test timeout is 30 seconds")
 
 	return handler, &dependencies{
 		blocks:    blockAdapter,
-		auth:      authService,
 		cataloger: cataloger,
 	}
+}
+
+func getClient(t *testing.T, s *httptest.Server) *client.Lakefs {
+	u, err := url.Parse(s.URL)
+	if err != nil {
+		t.Fatal("parse httptest.Server url:", err)
+	}
+	return client.NewHTTPClientWithConfig(
+		nil,
+		client.DefaultTransportConfig().WithHost(u.Host).WithSchemes([]string{u.Scheme}),
+	)
+}
+
+func NewClient(t *testing.T, blockstoreType string, opts ...testutil.GetDBOption) (*client.Lakefs, *dependencies) {
+	handler, deps := getHandler(t, blockstoreType, opts...)
+	server := httptest.NewServer(http.TimeoutHandler(handler, 1000*time.Second, `{"error": "timeout"}`))
+	t.Cleanup(server.Close)
+	return getClient(t, server), deps
 }
 
 type roundTripper struct {
@@ -146,30 +166,27 @@ func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, err
 }
 
 func TestServer_BasicAuth(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, _ := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
+	creds := createDefaultAdminUser(clt, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("valid Auth", func(t *testing.T) {
-		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParamsWithTimeout(timeout), bauth)
 		if err != nil {
-			t.Fatalf("did not expect error when passing valid credentials")
+			t.Fatalf("unexpected error \"%s\" when passing valid credentials", err)
 		}
 	})
 
 	t.Run("invalid Auth secret", func(t *testing.T) {
-		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyID, "foobarbaz"))
+		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), httptransport.BasicAuth(creds.AccessKeyID, "foobarbaz"))
 		if err == nil {
 			t.Fatalf("expect error when passing invalid credentials")
 		}
 		errMsg, ok := err.(*repositories.ListRepositoriesUnauthorized)
 		if !ok {
-			t.Fatal("expected default error answer")
+			t.Fatalf("got %s not default error answer", err)
 		}
 
 		if !strings.EqualFold(errMsg.GetPayload().Message, "error authenticating request") {
