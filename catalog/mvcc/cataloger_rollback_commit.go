@@ -8,6 +8,10 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
+func (c *cataloger) Revert(_ context.Context, _, _, _ string) error {
+	return catalog.ErrFeatureNotSupported
+}
+
 func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch, reference string) error {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},

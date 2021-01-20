@@ -1533,6 +1533,44 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/branches/{branch}/revert:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - branches
+      operationId: revert
+      summary: revert
+      parameters:
+        - in: body
+          name: revert
+          schema:
+            type: object
+            properties:
+              ref:
+                type: string
+                description: the commit to revert, given by a ref
+      responses:
+        204:
+          description: revert successful
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: resource not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
     parameters:
       - in: path

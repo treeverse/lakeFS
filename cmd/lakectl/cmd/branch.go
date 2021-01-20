@@ -11,6 +11,8 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
+const branchRevertCmdArgs = 2
+
 // branchCmd represents the branch command
 var branchCmd = &cobra.Command{
 	Use:   "branch",
@@ -119,6 +121,30 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
+// lakectl branch revert lakefs://myrepo@master commitId
+var branchRevertCmd = &cobra.Command{
+	Use:   "revert <branch uri> <commit ref to revert>",
+	Short: "given a commit, record a new commit with to reverse the effect of this commit",
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(branchRevertCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := uri.Must(uri.Parse(args[0]))
+		commitRef := args[1]
+		clt := getClient()
+		confirmation, err := confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s?", commitRef))
+		if err != nil || !confirmation {
+			Die("Reset aborted", 1)
+			return
+		}
+		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, commitRef)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
 // lakectl branch reset lakefs://myrepo@master --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
 	Use:   "reset <branch uri> [flags]",
@@ -179,7 +205,7 @@ var branchResetCmd = &cobra.Command{
 
 		confirmation, err := confirm(cmd.Flags(), confirmationMsg)
 		if err != nil || !confirmation {
-			Die("Revert aborted", 1)
+			Die("Reset aborted", 1)
 			return
 		}
 		err = clt.ResetBranch(context.Background(), u.Repository, u.Ref, &reset)
@@ -215,6 +241,7 @@ func init() {
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
 	branchCmd.AddCommand(branchResetCmd)
+	branchCmd.AddCommand(branchRevertCmd)
 
 	branchListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")

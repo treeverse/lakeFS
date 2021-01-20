@@ -66,6 +66,7 @@ type RepositoryClient interface {
 	CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (string, error)
 	DeleteBranch(ctx context.Context, repository, branchID string) error
 	ResetBranch(ctx context.Context, repository, branchID string, resetProps *models.ResetCreation) error
+	RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error
 
 	Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repository, commitID string) (*models.Commit, error)
@@ -485,6 +486,18 @@ func (c *client) ResetBranch(ctx context.Context, repository, branchID string, r
 	_, err := c.remote.Branches.ResetBranch(&branches.ResetBranchParams{
 		Branch:     branchID,
 		Reset:      resetProps,
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	return err
+}
+
+func (c *client) RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error {
+	_, err := c.remote.Branches.Revert(&branches.RevertParams{
+		Branch: branchID,
+		Revert: branches.RevertBody{
+			Ref: commitRef,
+		},
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)

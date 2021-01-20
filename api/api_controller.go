@@ -173,6 +173,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.BranchesCreateBranchHandler = c.CreateBranchHandler()
 	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
 	api.BranchesResetBranchHandler = c.ResetBranchHandler()
+	api.BranchesRevertHandler = c.RevertHandler()
 
 	api.CommitsCommitHandler = c.CommitHandler()
 	api.CommitsGetCommitHandler = c.GetCommitHandler()
@@ -1306,6 +1307,29 @@ func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 	})
 }
 
+func (c *Controller) RevertHandler() branches.RevertHandler {
+	return branches.RevertHandlerFunc(func(params branches.RevertParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.RevertBranchAction,
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
+			},
+		})
+		if err != nil {
+			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("revert_branch")
+		err = deps.Cataloger.Revert(c.Context(), params.Repository, params.Branch, params.Revert.Ref)
+		if errors.Is(err, db.ErrNotFound) {
+			return branches.NewRevertNotFound().WithPayload(responseErrorFrom(err))
+		}
+		if err != nil {
+			return branches.NewRevertDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		return branches.NewRevertNoContent()
+	})
+}
+
 func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 	return branches.ResetBranchHandlerFunc(func(params branches.ResetBranchParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
@@ -1319,7 +1343,6 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 		}
 		deps.LogAction("reset_branch")
 		cataloger := deps.Cataloger
-
 		ctx := c.Context()
 		switch swag.StringValue(params.Reset.Type) {
 		case models.ResetCreationTypeCommit:
