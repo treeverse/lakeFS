@@ -95,6 +95,20 @@ Global Flags:
       --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
+##### `lakectl branch revert`
+````text
+Records a new commit on the branch with the reverse effect of the given commit.
+Usage:
+  lakectl branch revert [branch uri] [commit ref]
+
+Flags:
+  -h, --help            help for reset
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+````
+
 ##### `lakectl branch reset`
 ````text
 reset changes - There are four different ways to reset changes:
