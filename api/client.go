@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/treeverse/lakefs/api/gen/client/export"
 
@@ -113,10 +115,10 @@ func (c *client) GetCurrentUser(ctx context.Context) (*models.User, error) {
 }
 
 func (c *client) GetUser(ctx context.Context, userID string) (*models.User, error) {
-	resp, err := c.remote.Auth.GetUser(&auth.GetUserParams{
+	resp, err := c.remote.Auth.GetUser((&auth.GetUserParams{
 		UserID:  userID,
 		Context: ctx,
-	}, c.auth)
+	}).WithContext(ctx), c.auth)
 	if err != nil {
 		return nil, err
 	}
@@ -739,8 +741,10 @@ func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error)
 	if len(parsedURL.Path) == 0 {
 		parsedURL.Path = path.Join(parsedURL.Path, genclient.DefaultBasePath)
 	}
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	transport := httptransport.NewWithClient(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme}, httpClient)
 	return &client{
-		remote: genclient.New(httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme}), strfmt.Default),
+		remote: genclient.New(transport, strfmt.Default),
 		auth:   httptransport.BasicAuth(accessKeyID, secretAccessKey),
 	}, nil
 }

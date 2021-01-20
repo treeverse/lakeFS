@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -141,6 +142,9 @@ func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, err
 	clt := httptransport.NewWithClient("", "/api/v1", []string{"http"}, &http.Client{
 		Transport: &roundTripper{r.Handler},
 	})
+	if _, ok := op.Context.Deadline(); !ok {
+		op.Context, _ = context.WithTimeout(op.Context, 30*time.Second)
+	}
 	return clt.Submit(op)
 }
 
