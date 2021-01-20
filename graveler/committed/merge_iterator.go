@@ -16,7 +16,6 @@ type compareIterator struct {
 
 type compareValueIterator struct {
 	*compareIterator
-	val *graveler.ValueRecord
 }
 
 // NewMergeIterator accepts an iterator describing a diff from theirs to ours.
