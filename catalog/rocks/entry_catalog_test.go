@@ -154,10 +154,10 @@ func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
 
 func TestEntryCatalog_Diff(t *testing.T) {
 	entriesData := []*Entry{{Address: "addr2", Size: 2}, nil, nil}
-	diffData := []graveler.Diff{
-		graveler.NewDiffResult(graveler.DiffTypeAdded, graveler.Key("file1"), MustEntryToValue(entriesData[0]), nil),
-		graveler.NewDiffResult(graveler.DiffTypeRemoved, graveler.Key("file2"), MustEntryToValue(entriesData[1]), nil),
-		graveler.NewDiffResult(graveler.DiffTypeChanged, graveler.Key("file3"), MustEntryToValue(entriesData[2]), nil),
+	diffData := []*graveler.Diff{
+		{Type: graveler.DiffTypeAdded, Key: graveler.Key("file1"), Value: MustEntryToValue(entriesData[0])},
+		{Type: graveler.DiffTypeRemoved, Key: graveler.Key("file2"), Value: MustEntryToValue(entriesData[1])},
+		{Type: graveler.DiffTypeChanged, Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
 	gravelerMock := &FakeGraveler{
 		DiffIteratorFactory: NewFakeDiffIteratorFactory(diffData),
@@ -172,11 +172,11 @@ func TestEntryCatalog_Diff(t *testing.T) {
 	for i = 0; diffs.Next(); i++ {
 		v := diffs.Value()
 		data := diffData[i]
-		if v.Path.String() != data.Key().String() {
-			t.Errorf("Diff() at %d path %s, expected %s", i, v.Path, data.Key())
+		if v.Path.String() != data.Key.String() {
+			t.Errorf("Diff() at %d path %s, expected %s", i, v.Path, data.Key)
 		}
-		if v.Type != data.Type() {
-			t.Errorf("Diff() at %d type %v, expected %v", i, v.Type, data.Type())
+		if v.Type != data.Type {
+			t.Errorf("Diff() at %d type %v, expected %v", i, v.Type, data.Type)
 		}
 		if diff := deep.Equal(entriesData[i], v.Entry); diff != nil {
 			t.Errorf("Diff() at %d found diff %s", i, diff)

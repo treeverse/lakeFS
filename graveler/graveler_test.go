@@ -177,9 +177,11 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
 			amount: 10,
-			expectedDiff: testutil.NewDiffIter([]graveler.Diff{
-				graveler.NewDiffResult(graveler.DiffTypeAdded, graveler.Key("foo/one"), &graveler.Value{}, nil),
-			}),
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
+				Key:   graveler.Key("foo/one"),
+				Type:  graveler.DiffTypeAdded,
+				Value: &graveler.Value{},
+			}}),
 		},
 		{
 			name: "changed one",
@@ -188,9 +190,11 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
 			amount: 10,
-			expectedDiff: testutil.NewDiffIter([]graveler.Diff{
-				graveler.NewDiffResult(graveler.DiffTypeChanged, graveler.Key("foo/one"), &graveler.Value{}, nil),
-			}),
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
+				Key:   graveler.Key("foo/one"),
+				Type:  graveler.DiffTypeChanged,
+				Value: &graveler.Value{},
+			}}),
 		},
 		{
 			name: "removed one",
@@ -199,9 +203,10 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
 			amount: 10,
-			expectedDiff: testutil.NewDiffIter([]graveler.Diff{
-				graveler.NewDiffResult(graveler.DiffTypeRemoved, graveler.Key("foo/one"), nil, nil),
-			}),
+			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
+				Key:  graveler.Key("foo/one"),
+				Type: graveler.DiffTypeRemoved,
+			}}),
 		},
 	}
 

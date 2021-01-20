@@ -292,16 +292,16 @@ func (r *diffIter) Next() bool {
 
 func (r *diffIter) SeekGE(id graveler.Key) {
 	i := sort.Search(len(r.records), func(i int) bool {
-		return bytes.Compare(r.records[i].Key(), id) >= 0
+		return bytes.Compare(r.records[i].Key, id) >= 0
 	})
 	r.current = i - 1
 }
 
-func (r *diffIter) Value() graveler.Diff {
+func (r *diffIter) Value() *graveler.Diff {
 	if r.current < 0 || r.current >= len(r.records) {
 		return nil
 	}
-	return r.records[r.current]
+	return &r.records[r.current]
 }
 
 func (r *diffIter) Err() error {

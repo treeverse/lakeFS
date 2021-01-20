@@ -192,10 +192,10 @@ func TestDiff(t *testing.T) {
 			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
 			it := committed.NewDiffIterator(fakeLeft, fakeRight)
 			defer it.Close()
-			var diffs []graveler.Diff
+			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
 			for it.Next() {
-				actualDiffKeys = append(actualDiffKeys, string(it.Value().Key()))
+				actualDiffKeys = append(actualDiffKeys, string(it.Value().Key))
 				diffs = append(diffs, it.Value())
 			}
 			if it.Err() != nil {
@@ -205,11 +205,11 @@ func TestDiff(t *testing.T) {
 				t.Fatalf("keys in diff different than expected. diff=%s", diff)
 			}
 			for i, d := range diffs {
-				if d.Type() != tst.expectedDiffTypes[i] {
-					t.Fatalf("unexpected key in diff index %d. expected=%s, got=%s", i, tst.expectedDiffKeys[i], string(d.Key()))
+				if d.Type != tst.expectedDiffTypes[i] {
+					t.Fatalf("unexpected key in diff index %d. expected=%s, got=%s", i, tst.expectedDiffKeys[i], string(d.Key))
 				}
-				if string(d.Value().Identity) != tst.expectedDiffIdentities[i] {
-					t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value().Identity))
+				if string(d.Value.Identity) != tst.expectedDiffIdentities[i] {
+					t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", i, tst.expectedDiffIdentities[i], string(d.Value.Identity))
 				}
 			}
 			if diff := deep.Equal(tst.expectedLeftReadsByRange, fakeLeft.ReadsByRange()); diff != nil {
@@ -274,10 +274,10 @@ func TestDiffSeek(t *testing.T) {
 		keys := make([]string, 0)
 		for it.Next() {
 			current := it.Value()
-			key := current.Key().String()
-			identity := string(current.Value().Identity)
-			if current.Type() != diffTypeByKey[key] {
-				t.Fatalf("unexpected diff type in index %d. expected=%d, got=%d", len(keys), diffTypeByKey[key], current.Type())
+			key := current.Key.String()
+			identity := string(current.Value.Identity)
+			if current.Type != diffTypeByKey[key] {
+				t.Fatalf("unexpected diff type in index %d. expected=%d, got=%d", len(keys), diffTypeByKey[key], current.Type)
 			}
 			if identity != diffIdentityByKey[key] {
 				t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", len(keys), diffIdentityByKey[key], identity)

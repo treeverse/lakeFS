@@ -12,7 +12,7 @@ type uncommittedDiffIterator struct {
 	list             ValueIterator
 	storageNamespace StorageNamespace
 	metaRangeID      MetaRangeID
-	value            Diff
+	value            *Diff
 	err              error
 	ctx              context.Context
 }
@@ -75,7 +75,11 @@ func (d *uncommittedDiffIterator) Next() bool {
 		d.err = err
 		return false
 	}
-	d.value = NewDiffResult(diffType, val.Key, val.Value, nil)
+	d.value = &Diff{
+		Type:  diffType,
+		Key:   val.Key,
+		Value: val.Value,
+	}
 	return true
 }
 
@@ -85,7 +89,7 @@ func (d *uncommittedDiffIterator) SeekGE(id Key) {
 	d.list.SeekGE(id)
 }
 
-func (d *uncommittedDiffIterator) Value() Diff {
+func (d *uncommittedDiffIterator) Value() *Diff {
 	return d.value
 }
 

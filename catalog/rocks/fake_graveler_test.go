@@ -241,15 +241,15 @@ func (m *FakeValueIterator) Err() error {
 func (m *FakeValueIterator) Close() {}
 
 type FakeDiffIterator struct {
-	Data  []graveler.Diff
+	Data  []*graveler.Diff
 	Index int
 }
 
-func NewFakeDiffIterator(data []graveler.Diff) *FakeDiffIterator {
+func NewFakeDiffIterator(data []*graveler.Diff) *FakeDiffIterator {
 	return &FakeDiffIterator{Data: data, Index: -1}
 }
 
-func NewFakeDiffIteratorFactory(data []graveler.Diff) func() graveler.DiffIterator {
+func NewFakeDiffIteratorFactory(data []*graveler.Diff) func() graveler.DiffIterator {
 	return func() graveler.DiffIterator {
 		return NewFakeDiffIterator(data)
 	}
@@ -267,7 +267,7 @@ func (m *FakeDiffIterator) SeekGE(_ graveler.Key) {
 	panic("implement me")
 }
 
-func (m *FakeDiffIterator) Value() graveler.Diff {
+func (m *FakeDiffIterator) Value() *graveler.Diff {
 	return m.Data[m.Index]
 }
 

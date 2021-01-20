@@ -27,8 +27,8 @@ func (e *entryDiffIterator) Next() bool {
 
 	// convert diff value if found to entry
 	var entry *Entry
-	if v.Value() != nil {
-		entry, e.err = ValueToEntry(v.Value())
+	if v.Value != nil {
+		entry, e.err = ValueToEntry(v.Value)
 		if e.err != nil {
 			e.value = nil
 			return false
@@ -36,8 +36,8 @@ func (e *entryDiffIterator) Next() bool {
 	}
 	// return entry diff
 	e.value = &EntryDiff{
-		Type:  v.Type(),
-		Path:  Path(v.Key()),
+		Type:  v.Type,
+		Path:  Path(v.Key),
 		Entry: entry,
 	}
 	return true

@@ -17,7 +17,7 @@ type diffIterator struct {
 	right       Iterator
 	leftValue   iteratorValue
 	rightValue  iteratorValue
-	currentDiff graveler.Diff
+	currentDiff *graveler.Diff
 	err         error
 	state       diffIteratorState
 }
@@ -135,7 +135,7 @@ func (d *diffIterator) Next() bool {
 			d.rightValue.rng, d.rightValue.err = diffIteratorNextRange(d.right)
 		case diffItCompareResultSameKeys:
 			// same keys on different ranges
-			d.currentDiff = graveler.NewDiffResult(graveler.DiffTypeChanged, d.rightValue.record.Key.Copy(), d.rightValue.record.Value, d.leftValue.record.Identity)
+			d.currentDiff = &graveler.Diff{Type: graveler.DiffTypeChanged, Key: d.rightValue.record.Key.Copy(), Value: d.rightValue.record.Value, LeftIdentity: d.leftValue.record.Identity}
 			d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextValue(d.left)
 			d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextValue(d.right)
 			return true
@@ -148,12 +148,12 @@ func (d *diffIterator) Next() bool {
 			d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextValue(d.right)
 		case diffItCompareResultLeftBeforeRight:
 			// nothing on right, or left before right
-			d.currentDiff = graveler.NewDiffResult(graveler.DiffTypeRemoved, d.leftValue.record.Key.Copy(), d.leftValue.record.Value, d.leftValue.record.Identity)
+			d.currentDiff = &graveler.Diff{Type: graveler.DiffTypeRemoved, Key: d.leftValue.record.Key.Copy(), Value: d.leftValue.record.Value, LeftIdentity: d.leftValue.record.Identity}
 			d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextValue(d.left)
 			return true
 		case diffItCompareResultRightBeforeLeft:
 			// nothing on left, or right before left
-			d.currentDiff = graveler.NewDiffResult(graveler.DiffTypeAdded, d.rightValue.record.Key.Copy(), d.rightValue.record.Value, nil)
+			d.currentDiff = &graveler.Diff{Type: graveler.DiffTypeAdded, Key: d.rightValue.record.Key.Copy(), Value: d.rightValue.record.Value}
 			d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextValue(d.right)
 			return true
 		}
@@ -170,7 +170,7 @@ func (d *diffIterator) SeekGE(id graveler.Key) {
 	d.state = diffIteratorStatePreInit
 }
 
-func (d *diffIterator) Value() graveler.Diff {
+func (d *diffIterator) Value() *graveler.Diff {
 	return d.currentDiff
 }
 

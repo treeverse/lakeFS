@@ -167,38 +167,20 @@ type TagRecord struct {
 }
 
 // Diff represents a change in value based on key
-type Diff interface {
-	Type() DiffType
-	Key() Key
-	Value() *Value
-	LeftIdentity() []byte // the Identity of the value on the left side of the diff
+type Diff struct {
+	Type         DiffType
+	Key          Key
+	Value        *Value
+	LeftIdentity []byte // the Identity of the value on the left side of the diff
 }
 
-type DiffResult struct {
-	typ          DiffType
-	key          Key
-	value        *Value
-	leftIdentity []byte // the Identity of the value on the left side of the diff
-}
-
-func NewDiffResult(typ DiffType, key Key, value *Value, leftIdentity []byte) *DiffResult {
-	return &DiffResult{typ: typ, key: key, value: value, leftIdentity: leftIdentity}
-}
-
-func (dr *DiffResult) Type() DiffType {
-	return dr.typ
-}
-
-func (dr *DiffResult) Key() Key {
-	return dr.key
-}
-
-func (dr *DiffResult) Value() *Value {
-	return dr.value
-}
-
-func (dr *DiffResult) LeftIdentity() []byte {
-	return dr.leftIdentity
+func (d *Diff) Copy() *Diff {
+	return &Diff{
+		Type:         d.Type,
+		Key:          d.Key.Copy(),
+		Value:        d.Value,
+		LeftIdentity: append([]byte(nil), d.LeftIdentity...),
+	}
 }
 
 // Interfaces
@@ -350,7 +332,7 @@ type ValueIterator interface {
 type DiffIterator interface {
 	Next() bool
 	SeekGE(id Key)
-	Value() Diff
+	Value() *Diff
 	Err() error
 	Close()
 }

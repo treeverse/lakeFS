@@ -102,10 +102,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		return "", fmt.Errorf("get base iterator: %w", err)
 	}
 	defer baseIt.Close()
-	patchIterator, err := NewMergeIterator(diffIt, baseIt)
-	if err != nil {
-		return "", fmt.Errorf("get merge iterator: %w", err)
-	}
+	patchIterator := NewMergeIterator(diffIt, baseIt)
 	defer patchIterator.Close()
 	return c.Apply(ctx, ns, theirs, patchIterator)
 }
