@@ -167,6 +167,7 @@ func setDefaults() {
 	viper.SetDefault(CommittedPermanentStorageMinRangeSizeKey, DefaultCommittedPermanentMinRangeSizeBytes)
 	viper.SetDefault(CommittedPermanentStorageMaxRangeSizeKey, DefaultCommittedPermanentMaxRangeSizeBytes)
 	viper.SetDefault(CommittedPermanentStorageRangeRaggednessKey, DefaultCommittedPermanentRangeRaggednessEntries)
+	viper.SetDefault(CommittedPebbleSSTableCacheSizeBytesKey, DefaultCommittedPebbleSSTableCacheSizeBytes)
 
 	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)

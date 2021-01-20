@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/ident"
 )
 
-// IteratorPrefetchSize is the amount of records to fetch from PG
+// IteratorPrefetchSize is the amount of records to maybeFetch from PG
 const IteratorPrefetchSize = 1000
 
 type Manager struct {
@@ -276,7 +276,7 @@ func (m *Manager) AddCommit(ctx context.Context, repositoryID graveler.Repositor
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT DO NOTHING`,
 			repositoryID, commitID, commit.Committer, commit.Message,
-			commit.CreationDate, parents, commit.MetaRangeID, commit.Metadata)
+			commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata)
 		return nil, err
 	}, db.WithContext(ctx))
 	if err != nil {

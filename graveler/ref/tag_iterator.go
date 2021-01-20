@@ -2,6 +2,7 @@ package ref
 
 import (
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -35,30 +36,23 @@ func NewTagIterator(ctx context.Context, db db.Database, repositoryID graveler.R
 }
 
 func (ri *TagIterator) Next() bool {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
-	}
 	if ri.err != nil {
 		return false
 	}
 
-	ri.fetch()
+	ri.maybeFetch()
 
 	// stage a value and increment offset
 	if len(ri.buf) == 0 {
 		return false
 	}
 	ri.value = ri.buf[0]
+	ri.buf = ri.buf[1:]
 	ri.offset = string(ri.value.TagID)
-	if len(ri.buf) > 1 {
-		ri.buf = ri.buf[1:]
-	} else {
-		ri.buf = ri.buf[:0]
-	}
 	return true
 }
 
-func (ri *TagIterator) fetch() {
+func (ri *TagIterator) maybeFetch() {
 	if ri.state == iteratorStateDone {
 		return
 	}
@@ -98,8 +92,8 @@ func (ri *TagIterator) fetch() {
 }
 
 func (ri *TagIterator) SeekGE(id graveler.TagID) {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
+	if errors.Is(ri.err, ErrIteratorClosed) {
+		return
 	}
 	ri.offset = string(id)
 	ri.buf = ri.buf[:0]
@@ -109,9 +103,6 @@ func (ri *TagIterator) SeekGE(id graveler.TagID) {
 }
 
 func (ri *TagIterator) Value() *graveler.TagRecord {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
-	}
 	if ri.err != nil {
 		return nil
 	}
@@ -119,12 +110,10 @@ func (ri *TagIterator) Value() *graveler.TagRecord {
 }
 
 func (ri *TagIterator) Err() error {
-	if ri.state == iteratorStateClosed {
-		panic(ErrIteratorClosed)
-	}
 	return ri.err
 }
 
 func (ri *TagIterator) Close() {
-	ri.state = iteratorStateClosed
+	ri.err = ErrIteratorClosed
+	ri.buf = nil
 }

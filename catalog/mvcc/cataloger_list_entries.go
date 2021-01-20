@@ -56,29 +56,33 @@ func (c *cataloger) listEntries(ctx context.Context, repository string, ref *Ref
 		if err != nil {
 			return nil, err
 		}
-
-		likePath := db.Prefix(prefix)
-		lineage, err := getLineage(tx, branchID, ref.CommitID)
-		if err != nil {
-			return nil, fmt.Errorf("get lineage: %w", err)
-		}
-		entriesSQL, args, err := psql.
-			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
-			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
-			// Listing also shows expired objects!
-			Where(sq.And{sq.Like{"path": likePath}, sq.Eq{"is_deleted": false}, sq.Gt{"path": after}}).
-			OrderBy("path").
-			Limit(uint64(limit) + 1).
-			ToSql()
-		if err != nil {
-			return nil, fmt.Errorf("build sql: %w", err)
-		}
-		var entries []*catalog.Entry
-		if err := tx.Select(&entries, entriesSQL, args...); err != nil {
-			return nil, err
-		}
-		return entries, nil
+		return ListEntriesTx(tx, branchID, ref.CommitID, prefix, after, limit)
 	}, c.txOpts(ctx, db.ReadOnly())...)
+}
+
+// ListEntriesTx list entries part of transaction, the func is exposed for migration
+func ListEntriesTx(tx db.Tx, branchID int64, commitID CommitID, prefix string, after string, limit int) ([]*catalog.Entry, error) {
+	likePath := db.Prefix(prefix)
+	lineage, err := getLineage(tx, branchID, commitID)
+	if err != nil {
+		return nil, fmt.Errorf("get lineage: %w", err)
+	}
+	entriesSQL, args, err := psql.
+		Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+		FromSelect(sqEntriesLineage(branchID, commitID, lineage), "entries").
+		// Listing also shows expired objects!
+		Where(sq.And{sq.Like{"path": likePath}, sq.Eq{"is_deleted": false}, sq.Gt{"path": after}}).
+		OrderBy("path").
+		Limit(uint64(limit) + 1).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build sql: %w", err)
+	}
+	entries := make([]*catalog.Entry, 0)
+	if err := tx.Select(&entries, entriesSQL, args...); err != nil {
+		return nil, err
+	}
+	return entries, nil
 }
 
 func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, ref *Ref, prefix string, after string, delimiter string, limit int) (interface{}, error) {
