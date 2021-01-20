@@ -1521,12 +1521,13 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
 
 				if c.errorDefaultCode != 0 {
-					defaultErr, ok := err.(*setup.SetupLakeFSDefault)
-					if !ok {
+					var defaultErr *setup.SetupLakeFSDefault
+					if errors.As(err, &defaultErr) {
+						if defaultErr.Code() != c.errorDefaultCode {
+							t.Errorf("got default error with code %d, expected %d", defaultErr.Code(), c.errorDefaultCode)
+						}
+					} else {
 						t.Errorf("got %s instead of default error", err)
-					}
-					if defaultErr.Code() != c.errorDefaultCode {
-						t.Errorf("got default error with code %d, expected %d", defaultErr.Code(), c.errorDefaultCode)
 					}
 					return
 				}
@@ -1571,8 +1572,9 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				t.Run("existing setup", func(t *testing.T) {
 					// request to setup
 					res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
-					if !strings.Contains(err.Error(), "setupLakeFSConflict") {
-						t.Errorf("repeated setup got %+v, %s instead of \"setupLakeFSConflict\"", res, err)
+					var fsConflict *setup.SetupLakeFSConflict
+					if !errors.As(err, &fsConflict) {
+						t.Errorf("repeated setup got %+v, %v instead of \"setupLakeFSConflict\"", res, err)
 					}
 				})
 			}
