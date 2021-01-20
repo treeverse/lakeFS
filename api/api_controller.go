@@ -120,6 +120,13 @@ func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter 
 	return c
 }
 
+func (c *Controller) Context() context.Context {
+	if c.deps.ctx != nil {
+		return c.deps.ctx
+	}
+	return context.Background()
+}
+
 // Configure attaches our API operations to a generated swagger API stub
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (c *Controller) Configure(api *operations.LakefsAPI) {
@@ -305,7 +312,7 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		repos, hasMore, err := deps.Cataloger.ListRepositories(deps.ctx, amount, after)
+		repos, hasMore, err := deps.Cataloger.ListRepositories(c.Context(), amount, after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error listing repositories: %s", err))
@@ -365,7 +372,7 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_repo")
-		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -397,7 +404,7 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_commit")
-		commit, err := deps.Cataloger.GetCommit(deps.ctx, params.Repository, params.CommitID)
+		commit, err := deps.Cataloger.GetCommit(c.Context(), params.Repository, params.CommitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
@@ -433,7 +440,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 		}
 		committer := userModel.Username
 		commitMessage := swag.StringValue(params.Commit.Message)
-		commit, err := deps.Cataloger.Commit(deps.ctx, params.Repository,
+		commit, err := deps.Cataloger.Commit(c.Context(), params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -465,7 +472,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, hasMore, err := cataloger.ListCommits(deps.ctx, params.Repository, params.Branch, after, amount)
+		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
 		switch {
 		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
@@ -545,7 +552,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
-		repo, err := deps.Cataloger.CreateRepository(deps.ctx,
+		repo, err := deps.Cataloger.CreateRepository(c.Context(),
 			swag.StringValue(params.Repository.Name),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
@@ -575,7 +582,7 @@ func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHand
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("delete_repo")
-		err = deps.Cataloger.DeleteRepository(deps.ctx, params.Repository)
+		err = deps.Cataloger.DeleteRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().WithPayload(responseError("repository not found"))
 		}
@@ -603,7 +610,7 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		res, hasMore, err := cataloger.ListBranches(deps.ctx, params.Repository, "", amount, after)
+		res, hasMore, err := cataloger.ListBranches(c.Context(), params.Repository, "", amount, after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches: %s", err))
@@ -647,7 +654,7 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_branch")
-		reference, err := deps.Cataloger.GetBranchReference(deps.ctx, params.Repository, params.Branch)
+		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
 
 		switch {
 		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
@@ -678,7 +685,7 @@ func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 		deps.LogAction("create_branch")
 		cataloger := deps.Cataloger
 		sourceRef := swag.StringValue(params.Branch.Source)
-		commitLog, err := cataloger.CreateBranch(deps.ctx, repository, branch, sourceRef)
+		commitLog, err := cataloger.CreateBranch(c.Context(), repository, branch, sourceRef)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -699,7 +706,7 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 		deps.LogAction("delete_branch")
 		cataloger := deps.Cataloger
-		err = cataloger.DeleteBranch(deps.ctx, params.Repository, params.Branch)
+		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
 		switch {
 		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return branches.NewDeleteBranchNotFound().WithPayload(responseError("branch '%s' not found.", params.Branch))
@@ -735,7 +742,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message = params.Merge.Message
 			metadata = params.Merge.Metadata
 		}
-		res, err := deps.Cataloger.Merge(deps.ctx,
+		res, err := deps.Cataloger.Merge(c.Context(),
 			params.Repository, params.SourceRef, params.DestinationRef,
 			userModel.Username,
 			message,
@@ -799,7 +806,7 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		cataloger := deps.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
-		diff, hasMore, err := cataloger.DiffUncommitted(deps.ctx, params.Repository, params.Branch, limit, after)
+		diff, hasMore, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch, limit, after)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -840,7 +847,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		cataloger := deps.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
-		diff, hasMore, err := cataloger.Diff(deps.ctx, params.Repository, params.LeftRef, params.RightRef, catalog.DiffParams{
+		diff, hasMore, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef, catalog.DiffParams{
 			Limit: limit,
 			After: after,
 		})
@@ -886,7 +893,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		deps.LogAction("stat_object")
 		cataloger := deps.Cataloger
 
-		entry, err := cataloger.GetEntry(deps.ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -894,7 +901,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -936,7 +943,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -944,7 +951,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		entry, err := cataloger.GetEntry(deps.ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -980,7 +987,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -989,7 +996,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(deps.ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -1033,7 +1040,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -1048,7 +1055,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 		hasMore := true
 		for hasMore {
 			entries, hasMore, err = cataloger.ListEntries(
-				deps.ctx,
+				c.Context(),
 				params.Repository,
 				params.Branch,
 				swag.StringValue(params.Location),
@@ -1127,7 +1134,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 
 		delimiter := catalog.DefaultPathDelimiter
 		res, hasMore, err := cataloger.ListEntries(
-			deps.ctx,
+			c.Context(),
 			params.Repository,
 			params.Ref,
 			swag.StringValue(params.Prefix),
@@ -1142,7 +1149,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 				WithPayload(responseError("error while listing objects: %s", err))
 		}
 
-		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1206,7 +1213,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		deps.LogAction("put_object")
 		cataloger := deps.Cataloger
 
-		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("repository not found"))
 		}
@@ -1214,7 +1221,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		// check if branch exists - it is still a possibility, but we don't want to upload large object when the branch was not there in the first place
-		branchExists, err := cataloger.BranchExists(deps.ctx, params.Repository, params.Branch)
+		branchExists, err := cataloger.BranchExists(c.Context(), params.Repository, params.Branch)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1243,7 +1250,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:            blob.Size,
 			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry,
+		err = cataloger.CreateEntry(c.Context(), repo.Name, params.Branch, entry,
 			catalog.CreateEntryParams{
 				Dedup: catalog.DedupParams{
 					ID:               blob.DedupID,
@@ -1287,7 +1294,7 @@ func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		deps.LogAction("delete_object")
 		cataloger := deps.Cataloger
 
-		err = cataloger.DeleteEntry(deps.ctx, params.Repository, params.Branch, params.Path)
+		err = cataloger.DeleteEntry(c.Context(), params.Repository, params.Branch, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -1313,7 +1320,7 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 		deps.LogAction("revert_branch")
 		cataloger := deps.Cataloger
 
-		ctx := deps.ctx
+		ctx := c.Context()
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCommit:
 			err = cataloger.RollbackCommit(ctx, params.Repository, params.Branch, params.Revert.Commit)
