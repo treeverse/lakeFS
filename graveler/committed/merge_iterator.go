@@ -110,6 +110,9 @@ func (d *mergeIterator) SeekGE(id graveler.Key) {
 }
 
 func (d *mergeIterator) Value() *graveler.ValueRecord {
+	if d.err != nil {
+		return nil
+	}
 	return d.val
 }
 
