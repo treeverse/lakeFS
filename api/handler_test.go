@@ -114,6 +114,7 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		dedupCleaner,
 		logging.Default(),
 	)
+	handler = http.TimeoutHandler(handler, 30*time.Second, "test timeout is 30 seconds")
 
 	return handler, &dependencies{
 		blocks:    blockAdapter,
