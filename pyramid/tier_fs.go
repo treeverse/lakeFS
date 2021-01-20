@@ -72,12 +72,6 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 	return tfs, nil
 }
 
-// log returns a logger with added fields from ctx.
-func (tfs *TierFS) log(ctx context.Context) logging.Logger {
-	// TODO(ariels): Does this add the fields?  (Uses a different logrus path...)
-	return tfs.logger.WithContext(ctx)
-}
-
 // handleExistingFiles should only be called during init of the TierFS.
 // It does 2 things:
 // 1. Adds stored files to the eviction control
@@ -132,7 +126,7 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
-	tfs.log(ctx).WithFields(logging.Fields{
+	tfs.logger.WithFields(logging.Fields{
 		"namespace":     namespace,
 		"original_path": originalPath,
 		"ns_path":       nsPath,
@@ -210,13 +204,13 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
-		tfs.log(ctx).WithFields(logging.Fields{
+		tfs.logger.WithFields(logging.Fields{
 			"namespace": namespace,
 			"ns_path":   nsPath,
 			"filename":  filename,
 		}).Trace("opened locally")
 		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
-		return tfs.openFile(ctx, fileRef, fh)
+		return tfs.openFile(fileRef, fh)
 	}
 	if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("open file: %w", err)
@@ -228,7 +222,7 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 		return nil, err
 	}
 
-	return tfs.openFile(ctx, fileRef, fh)
+	return tfs.openFile(fileRef, fh)
 }
 
 func (tfs *TierFS) Exists(ctx context.Context, namespace, filename string) (bool, error) {
@@ -237,14 +231,14 @@ func (tfs *TierFS) Exists(ctx context.Context, namespace, filename string) (bool
 }
 
 // openFile converts an os.File to pyramid.ROFile and updates the eviction control.
-func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.File) (*ROFile, error) {
+func (tfs *TierFS) openFile(fileRef localFileRef, fh *os.File) (*ROFile, error) {
 	stat, err := fh.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
-		tfs.log(ctx).WithFields(logging.Fields{
+		tfs.logger.WithFields(logging.Fields{
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"full_path": fileRef.fullPath,
@@ -269,8 +263,7 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
 func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.File, error) {
-	log := tfs.log(ctx)
-	log.WithFields(logging.Fields{
+	tfs.logger.WithFields(logging.Fields{
 		"namespace": fileRef.namespace,
 		"file":      fileRef.filename,
 		"fullpath":  fileRef.fullPath,
@@ -279,7 +272,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
 		if err == nil {
-			log.WithFields(logging.Fields{
+			tfs.logger.WithFields(logging.Fields{
 				"namespace": fileRef.namespace,
 				"file":      fileRef.filename,
 				"fullpath":  fileRef.fullPath,
@@ -291,7 +284,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 			return nil, fmt.Errorf("stat file: %w", err)
 		}
 
-		log.WithFields(logging.Fields{
+		tfs.logger.WithFields(logging.Fields{
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"fullpath":  fileRef.fullPath,
@@ -320,7 +313,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}
 
 		// copy from temp path to actual path
-		log.WithFields(logging.Fields{
+		tfs.logger.WithFields(logging.Fields{
 			"namespace":    fileRef.namespace,
 			"file":         fileRef.filename,
 			"tmp_fullpath": tmpFullPath,

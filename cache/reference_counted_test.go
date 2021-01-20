@@ -1,7 +1,6 @@
 package cache_test
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -23,7 +22,6 @@ func TestCacheWithDisposal(t *testing.T) {
 		disposed int32
 		live     int32
 	}
-	ctx := context.Background()
 	var elements [size]*record
 	ch := make(chan error, parallelism*2)
 	allErrs := make(chan []error)
@@ -62,7 +60,6 @@ func TestCacheWithDisposal(t *testing.T) {
 			for j := 0; j < repeats; j++ {
 				k := j % size
 				v, release, err := c.GetOrSet(
-					ctx,
 					k, func() (interface{}, error) {
 						e := &record{
 							key:      k,
