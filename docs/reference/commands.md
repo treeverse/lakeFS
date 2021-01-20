@@ -95,22 +95,21 @@ Global Flags:
       --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
-##### `lakectl branch revert`
+##### `lakectl branch reset`
 ````text
-revert changes - there are four different ways to revert changes:
-  1. revert to previous commit, set HEAD of branch to given commit - revert lakefs://myrepo@master --commit commitId
-  2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master
-  3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master --prefix path
-  4. revert uncommitted changes for specific object - revert lakefs://myrepo@master --object path
-
+reset changes - There are four different ways to reset changes:
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit commitId
+  2. reset all uncommitted changes - reset lakefs://myrepo@master 
+  3. reset uncommitted changes under specific path -	reset lakefs://myrepo@master --prefix path
+  4. reset uncommitted changes for specific object - reset lakefs://myrepo@master --object path
 Usage:
-  lakectl branch revert [branch uri] [flags]
+  lakectl branch reset [branch uri] [flags]
 
 Flags:
-      --commit string   commit ID to revert branch to
-  -h, --help            help for revert
-      --object string   path to object to be reverted
-      --tree string     path to tree to be reverted
+      --commit string   commit ID to reset branch to
+  -h, --help            help for reset
+      --object string   path to object to be reset
+      --tree string     path to tree to be reset
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)

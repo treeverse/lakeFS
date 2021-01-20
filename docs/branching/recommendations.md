@@ -24,11 +24,11 @@ Creating a branch provides you an isolated environment with a snapshot of your r
 No worries, no data duplication is done, it’s all metadata management behind the scenes.
 Let’s look at 3 examples of a development environment and their branching models.
 
-### Example 1: Upgrading Spark and using Revert action
+### Example 1: Upgrading Spark and using Reset action
 
 You installed the latest version of Apache Spark. As a first step you’ll test your Spark jobs to see that the upgrade doesn't have any undesired side effects.
 
-For this purpose, you may create a branch (testing-spark-3.0) which will only be used to test the Spark upgrade, and discarded later. Jobs may run smoothly (the theoretical possibility exists!), or they may fail halfway through, leaving you with some intermediate partitions, data and metadata. In this case, you can simply *revert* the branch to its original state, without worrying about the intermediate results of your last experiment, and perform another (hopefully successful) test in an isolated branch. Revert actions are atomic and immediate, so no manual cleanup is required.
+For this purpose, you may create a branch (testing-spark-3.0) which will only be used to test the Spark upgrade, and discarded later. Jobs may run smoothly (the theoretical possibility exists!), or they may fail halfway through, leaving you with some intermediate partitions, data and metadata. In this case, you can simply *reset* the branch to its original state, without worrying about the intermediate results of your last experiment, and perform another (hopefully successful) test in an isolated branch. Reset actions are atomic and immediate, so no manual cleanup is required.
 
 Once testing is completed, and you have achieved the desired result, you can delete this experimental branch, and all data not used on any other branch will be deleted with it.
 
@@ -44,11 +44,11 @@ _Creating a testing branch:_
    # created branch 'testing-spark-3.0', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
 
-_Reverting changes to a branch:_
+_Resetting changes to a branch:_
 
    ```shell
-   lakectl branch revert lakefs://example-repo@testing-spark-3.0
-   # are you sure you want to revert all uncommitted changes?: y█
+   lakectl branch reset lakefs://example-repo@testing-spark-3.0
+   # are you sure you want to reset all uncommitted changes?: y█
    ```
 
 ### Example 2: Compare - Which option is better?
@@ -80,7 +80,7 @@ _Reading from and comparing branches using Spark:_
 
 You upgraded spark and deployed changes in production. A few days or weeks later, you identify a data quality issue, a performance degradation, or an increase to your infra costs. Something that requires investigation and fixing (aka, a bug).
 
-lakeFS allows you to open a branch of your lake from the specific merge/commit that introduced the changes to production. Using the metadata saved on the merge/commit  you can reproduce all aspects of the environment, then reproduce the issue on the branch and debug it. Meanwhile,  you can revert the master to a previous point in time, or keep it as is, depending on the use case
+lakeFS allows you to open a branch of your lake from the specific merge/commit that introduced the changes to production. Using the metadata saved on the merge/commit  you can reproduce all aspects of the environment, then reproduce the issue on the branch and debug it. Meanwhile,  you can reset the master to a previous point in time, or keep it as is, depending on the use case
 
 <img src="../assets/img/branching_3.png" alt="branching_3" width="500px"/>
 
@@ -142,7 +142,7 @@ You can run quality tests for each merge (as presented in Example 1). Alas, test
 _Rolling back a branch to a previous commit using the CLI_
 
    ```shell
-   lakectl branch revert lakefs://example-repo@stream-1 --commit ~79RU9aUsQ9GLnU
+   lakectl branch reset lakefs://example-repo@stream-1 --commit ~79RU9aUsQ9GLnU
    ```
 
 ### Example 3: Cross collection consistency

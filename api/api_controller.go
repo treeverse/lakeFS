@@ -1317,7 +1317,7 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 		if err != nil {
 			return branches.NewResetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		deps.LogAction("revert_branch")
+		deps.LogAction("reset_branch")
 		cataloger := deps.Cataloger
 
 		ctx := c.Context()
@@ -1332,7 +1332,7 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Reset.Path)
 		default:
 			return branches.NewResetBranchNotFound().
-				WithPayload(responseError("revert type not found"))
+				WithPayload(responseError("reset type not found"))
 		}
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewResetBranchNotFound().WithPayload(responseErrorFrom(err))
