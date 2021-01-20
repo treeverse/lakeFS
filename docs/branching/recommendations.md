@@ -80,7 +80,7 @@ _Reading from and comparing branches using Spark:_
 
 You upgraded spark and deployed changes in production. A few days or weeks later, you identify a data quality issue, a performance degradation, or an increase to your infra costs. Something that requires investigation and fixing (aka, a bug).
 
-lakeFS allows you to open a branch of your lake from the specific merge/commit that introduced the changes to production. Using the metadata saved on the merge/commit  you can reproduce all aspects of the environment, then reproduce the issue on the branch and debug it. Meanwhile,  you can reset the master to a previous point in time, or keep it as is, depending on the use case
+lakeFS allows you to open a branch of your lake from the specific merge/commit that introduced the changes to production. Using the metadata saved on the merge/commit  you can reproduce all aspects of the environment, then reproduce the issue on the branch and debug it. Meanwhile,  you can revert the master to a previous point in time, or keep it as is, depending on the use case
 
 <img src="../assets/img/branching_3.png" alt="branching_3" width="500px"/>
 
