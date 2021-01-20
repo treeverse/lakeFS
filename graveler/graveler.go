@@ -1028,12 +1028,15 @@ func (g *graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			CommitID:     commitID,
 			StagingToken: branch.StagingToken,
 		})
-		return commitID, err
+		if err != nil {
+			return "", fmt.Errorf("set branch: %w", err)
+		}
+		return commitID, nil
 	})
 	if err != nil {
 		return "", err
 	}
-	return commitID.(CommitID), err
+	return commitID.(CommitID), nil
 }
 
 func (g *graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
