@@ -127,6 +127,17 @@ definitions:
         x-nullable: true
         type: string
 
+  ref:
+    type: object
+    required:
+      - id
+      - commit_id
+    properties:
+      id:
+        type: string
+      commit_id:
+        type: string
+
   diff:
     type: object
     properties:
@@ -1343,7 +1354,7 @@ paths:
               results:
                 type: array
                 items:
-                  type: string
+                  $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         default:
