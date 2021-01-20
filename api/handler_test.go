@@ -1,16 +1,15 @@
 package api_test
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
 	"github.com/ory/dockertest/v3"
@@ -37,6 +36,7 @@ import (
 
 const (
 	DefaultUserID = "example_user"
+	ServerTimeout = 30 * time.Second
 )
 
 var (
@@ -138,31 +138,9 @@ func getClient(t *testing.T, s *httptest.Server) *client.Lakefs {
 
 func NewClient(t *testing.T, blockstoreType string, opts ...testutil.GetDBOption) (*client.Lakefs, *dependencies) {
 	handler, deps := getHandler(t, blockstoreType, opts...)
-	server := httptest.NewServer(http.TimeoutHandler(handler, 1000*time.Second, `{"error": "timeout"}`))
+	server := httptest.NewServer(http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`))
 	t.Cleanup(server.Close)
 	return getClient(t, server), deps
-}
-
-type roundTripper struct {
-	Handler http.Handler
-}
-
-func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	recorder := httptest.NewRecorder()
-	r.Handler.ServeHTTP(recorder, req)
-	response := recorder.Result()
-	return response, nil
-}
-
-type handlerTransport struct {
-	Handler http.Handler
-}
-
-func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, error) {
-	clt := httptransport.NewWithClient("", "/api/v1", []string{"http"}, &http.Client{
-		Transport: &roundTripper{r.Handler},
-	})
-	return clt.Submit(op)
 }
 
 func TestServer_BasicAuth(t *testing.T) {
@@ -181,16 +159,9 @@ func TestServer_BasicAuth(t *testing.T) {
 
 	t.Run("invalid Auth secret", func(t *testing.T) {
 		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), httptransport.BasicAuth(creds.AccessKeyID, "foobarbaz"))
-		if err == nil {
-			t.Fatalf("expect error when passing invalid credentials")
-		}
-		errMsg, ok := err.(*repositories.ListRepositoriesUnauthorized)
-		if !ok {
-			t.Fatalf("got %s not default error answer", err)
-		}
-
-		if !strings.EqualFold(errMsg.GetPayload().Message, "error authenticating request") {
-			t.Fatalf("expected authentication error, got error: %s", errMsg.GetPayload().Message)
+		var unauthErr *repositories.ListRepositoriesUnauthorized
+		if !errors.As(err, &unauthErr) {
+			t.Fatalf("got %s not unauthorized error", err)
 		}
 	})
 }
