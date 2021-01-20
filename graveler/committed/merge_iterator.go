@@ -94,6 +94,7 @@ func (d *mergeIterator) Next() bool {
 				}
 				// changed on theirs, removed on ours
 				d.err = graveler.ErrConflictFound
+				return false
 			}
 			// added on theirs, but not on ours - continue
 		}
