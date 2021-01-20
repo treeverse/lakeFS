@@ -26,6 +26,8 @@ type RocksCatalogRepoActions struct {
 
 	progress *cmdutils.Progress
 	commit   *cmdutils.Progress
+	prefixes []string
+	ref      graveler.Ref
 }
 
 func (c *RocksCatalogRepoActions) Progress() []*cmdutils.Progress {
@@ -46,17 +48,17 @@ func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler
 		repoID:     repository,
 		committer:  committer,
 		logger:     logger,
-
-		progress: cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
-		commit:   cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
+		progress:   cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
+		commit:     cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
+		ref:        "master", // TODO(Guys): change this to initial commit and it needs to be passed param
 	}
 }
 
 var ErrWrongIterator = errors.New("rocksCatalogRepoActions can only accept InventoryIterator")
 
-func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, commitID graveler.CommitID, prefixes []string, _ bool) (*Stats, error) {
+// TODO(Guys): set commitID and prefixes from outside
+func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ bool) (*Stats, error) {
 	c.logger.Trace("start apply import")
-	c.commitID = commitID
 
 	c.progress.Activate()
 
@@ -65,12 +67,12 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 		return nil, ErrWrongIterator
 	}
 
-	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, graveler.Ref(c.commitID), "", "")
+	listIt, err := c.metaRanger.ListEntries(ctx, c.repoID, c.ref, "", "")
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}
 
-	c.createdMetaRangeID, err = c.metaRanger.WriteMetaRange(ctx, c.repoID, newPrefixMergeIterator(NewValueToEntryIterator(invIt, c.progress), listIt, prefixes))
+	c.createdMetaRangeID, err = c.metaRanger.WriteMetaRange(ctx, c.repoID, newPrefixMergeIterator(NewValueToEntryIterator(invIt, c.progress), listIt, c.prefixes))
 	if err != nil {
 		return nil, fmt.Errorf("write meta range: %w", err)
 	}
@@ -81,7 +83,7 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 	}, nil
 }
 
-func (c *RocksCatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
+func (c *RocksCatalogRepoActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
 	// always build the metarange from scratch
 	return nil, nil
 }
@@ -100,7 +102,7 @@ func (c *RocksCatalogRepoActions) Commit(ctx context.Context, commitMsg string, 
 		return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
 	}
 
-	_, err = c.metaRanger.UpdateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, graveler.Ref(c.commitID))
+	_, err = c.metaRanger.UpdateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, graveler.Ref(commitID))
 	if err != nil {
 		return "", fmt.Errorf("updating branch: %w", err)
 	}

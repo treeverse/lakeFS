@@ -136,6 +136,7 @@ var importCmd = &cobra.Command{
 
 		if cfg.GetCatalogerType() == "rocks" {
 			importConfig.EntryCatalog, err = rocks.NewEntryCatalog(cfg, dbPool)
+			importConfig.Rocks = true
 			if err != nil {
 				fmt.Printf("Failed to build entry catalog: %s\n", err)
 				os.Exit(1)
