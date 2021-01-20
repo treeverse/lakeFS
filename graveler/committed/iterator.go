@@ -67,6 +67,9 @@ func (rvi *iterator) NextRange() bool {
 }
 
 func (rvi *iterator) Next() bool {
+	if rvi.err != nil {
+		return false
+	}
 	if !rvi.started {
 		rvi.started = true
 		return rvi.NextRange()
