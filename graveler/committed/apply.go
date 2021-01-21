@@ -19,11 +19,13 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			if bytes.Compare(sourceRange.MaxKey, diffValue.Key) < 0 {
 				// Source at start of range which we do not need to scan --
 				// write and skip that entire range.
-				logger.WithFields(logging.Fields{
-					"from": string(sourceRange.MinKey),
-					"to":   string(sourceRange.MaxKey),
-					"ID":   sourceRange.ID,
-				}).Trace("copy entire source range")
+				if logger.IsTracing() {
+					logger.WithFields(logging.Fields{
+						"from": string(sourceRange.MinKey),
+						"to":   string(sourceRange.MaxKey),
+						"ID":   sourceRange.ID,
+					}).Trace("copy entire source range")
+				}
 
 				if err := writer.WriteRange(*sourceRange); err != nil {
 					return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
@@ -38,21 +40,25 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 		c := bytes.Compare(sourceValue.Key, diffValue.Key)
 		if c < 0 {
 			// select record from source
-			logger.WithFields(logging.Fields{
-				"key": string(sourceValue.Key),
-				"ID":  string(sourceValue.Identity),
-			}).Trace("write key from source")
+			if logger.IsTracing() {
+				logger.WithFields(logging.Fields{
+					"key": string(sourceValue.Key),
+					"ID":  string(sourceValue.Identity),
+				}).Trace("write key from source")
+			}
 			if err := writer.WriteRecord(*sourceValue); err != nil {
 				return fmt.Errorf("write source record: %w", err)
 			}
 		} else {
 			// select record from diffs, possibly (c==0) overwriting source
 			if !diffValue.IsTombstone() {
-				logger.WithFields(logging.Fields{
-					"key":       string(diffValue.Key),
-					"ID":        string(diffValue.Identity),
-					"tombstone": diffValue.IsTombstone(),
-				}).Trace("write key from diffs")
+				if logger.IsTracing() {
+					logger.WithFields(logging.Fields{
+						"key":       string(diffValue.Key),
+						"ID":        string(diffValue.Identity),
+						"tombstone": diffValue.IsTombstone(),
+					}).Trace("write key from diffs")
+				}
 				if err := writer.WriteRecord(*diffValue); err != nil {
 					return fmt.Errorf("write added record: %w", err)
 				}
@@ -80,20 +86,24 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 	for haveSource {
 		sourceValue, sourceRange := source.Value()
 		if sourceValue == nil {
-			logger.WithFields(logging.Fields{
-				"from": string(sourceRange.MinKey),
-				"to":   string(sourceRange.MaxKey),
-				"ID":   sourceRange.ID,
-			}).Trace("copy entire source range at end")
+			if logger.IsTracing() {
+				logger.WithFields(logging.Fields{
+					"from": string(sourceRange.MinKey),
+					"to":   string(sourceRange.MaxKey),
+					"ID":   sourceRange.ID,
+				}).Trace("copy entire source range at end")
+			}
 			if err := writer.WriteRange(*sourceRange); err != nil {
 				return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 			}
 			haveSource = source.NextRange()
 		} else {
-			logger.WithFields(logging.Fields{
-				"key": string(sourceValue.Key),
-				"ID":  string(sourceValue.Identity),
-			}).Trace("write key from source at end")
+			if logger.IsTracing() {
+				logger.WithFields(logging.Fields{
+					"key": string(sourceValue.Key),
+					"ID":  string(sourceValue.Identity),
+				}).Trace("write key from source at end")
+			}
 			if err := writer.WriteRecord(*sourceValue); err != nil {
 				return fmt.Errorf("write source record: %w", err)
 			}
@@ -112,11 +122,13 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			logger.WithField("id", string(diffValue.Identity)).Warn("[I] unmatched delete")
 			continue
 		}
-		logger.WithFields(logging.Fields{
-			"key":       string(diffValue.Key),
-			"ID":        string(diffValue.Identity),
-			"tombstone": diffValue.IsTombstone(),
-		}).Trace("write key from diffs at end")
+		if logger.IsTracing() {
+			logger.WithFields(logging.Fields{
+				"key":       string(diffValue.Key),
+				"ID":        string(diffValue.Identity),
+				"tombstone": diffValue.IsTombstone(),
+			}).Trace("write key from diffs at end")
+		}
 		if err := writer.WriteRecord(*diffValue); err != nil {
 			return fmt.Errorf("write added record: %w", err)
 		}
