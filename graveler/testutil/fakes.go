@@ -195,7 +195,8 @@ func (m *RefsFake) RevParse(context.Context, graveler.RepositoryID, graveler.Ref
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
 	}
-	return NewFakeReference(m.RefType, branch, ""), nil
+
+	return NewFakeReference(m.RefType, branch, m.CommitID), nil
 }
 
 func (m *RefsFake) GetRepository(context.Context, graveler.RepositoryID) (*graveler.Repository, error) {
