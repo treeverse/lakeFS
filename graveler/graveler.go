@@ -1137,7 +1137,7 @@ func (g *Graveler) Diff(ctx context.Context, repositoryID RepositoryID, left, ri
 	return g.CommittedManager.Diff(ctx, repo.StorageNamespace, leftCommit.MetaRangeID, rightCommit.MetaRangeID)
 }
 
-func (g *graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
+func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -1149,7 +1149,7 @@ func (g *graveler) Compare(ctx context.Context, repositoryID RepositoryID, from,
 	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
-func (g *graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
 	fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
