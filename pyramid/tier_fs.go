@@ -118,7 +118,9 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 
 func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
-	tfs.logger.WithField("path", p).Trace("remove from local")
+	if tfs.logger.IsTracing() {
+		tfs.logger.WithField("path", p).Trace("remove from local")
+	}
 	if err := os.Remove(p); err != nil {
 		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
 		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval")
@@ -132,12 +134,14 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
-	tfs.log(ctx).WithFields(logging.Fields{
-		"namespace":     namespace,
-		"original_path": originalPath,
-		"ns_path":       nsPath,
-		"filename":      filename,
-	}).Trace("store")
+	if tfs.logger.IsTracing() {
+		tfs.log(ctx).WithFields(logging.Fields{
+			"namespace":     namespace,
+			"original_path": originalPath,
+			"ns_path":       nsPath,
+			"filename":      filename,
+		}).Trace("store")
+	}
 
 	f, err := os.Open(originalPath)
 	if err != nil {
@@ -210,11 +214,13 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
-		tfs.log(ctx).WithFields(logging.Fields{
-			"namespace": namespace,
-			"ns_path":   nsPath,
-			"filename":  filename,
-		}).Trace("opened locally")
+		if tfs.logger.IsTracing() {
+			tfs.log(ctx).WithFields(logging.Fields{
+				"namespace": namespace,
+				"ns_path":   nsPath,
+				"filename":  filename,
+			}).Trace("opened locally")
+		}
 		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
 		return tfs.openFile(ctx, fileRef, fh)
 	}
@@ -270,20 +276,24 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 // It returns a file handle to the local file.
 func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.File, error) {
 	log := tfs.log(ctx)
-	log.WithFields(logging.Fields{
-		"namespace": fileRef.namespace,
-		"file":      fileRef.filename,
-		"fullpath":  fileRef.fullPath,
-	}).Trace("try to lock for open")
+	if tfs.logger.IsTracing() {
+		log.WithFields(logging.Fields{
+			"namespace": fileRef.namespace,
+			"file":      fileRef.filename,
+			"fullpath":  fileRef.fullPath,
+		}).Trace("try to lock for open")
+	}
 	_, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
 		if err == nil {
-			log.WithFields(logging.Fields{
-				"namespace": fileRef.namespace,
-				"file":      fileRef.filename,
-				"fullpath":  fileRef.fullPath,
-			}).Trace("got lock; file exists after all")
+			if log.IsTracing() {
+				log.WithFields(logging.Fields{
+					"namespace": fileRef.namespace,
+					"file":      fileRef.filename,
+					"fullpath":  fileRef.fullPath,
+				}).Trace("got lock; file exists after all")
+			}
 			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
 			return nil, nil
 		}
@@ -291,11 +301,13 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 			return nil, fmt.Errorf("stat file: %w", err)
 		}
 
-		log.WithFields(logging.Fields{
-			"namespace": fileRef.namespace,
-			"file":      fileRef.filename,
-			"fullpath":  fileRef.fullPath,
-		}).Trace("get file from block storage")
+		if log.IsTracing() {
+			log.WithFields(logging.Fields{
+				"namespace": fileRef.namespace,
+				"file":      fileRef.filename,
+				"fullpath":  fileRef.fullPath,
+			}).Trace("get file from block storage")
+		}
 		reader, err := tfs.adapter.WithContext(ctx).Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
@@ -320,12 +332,14 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}
 
 		// copy from temp path to actual path
-		log.WithFields(logging.Fields{
-			"namespace":    fileRef.namespace,
-			"file":         fileRef.filename,
-			"tmp_fullpath": tmpFullPath,
-			"fullpath":     fileRef.fullPath,
-		}).Trace("rename downloaded file")
+		if log.IsTracing() {
+			log.WithFields(logging.Fields{
+				"namespace":    fileRef.namespace,
+				"file":         fileRef.filename,
+				"tmp_fullpath": tmpFullPath,
+				"fullpath":     fileRef.fullPath,
+			}).Trace("rename downloaded file")
+		}
 		if err = tfs.syncDir.renameFile(tmpFullPath, fileRef.fullPath); err != nil {
 			return nil, fmt.Errorf("rename temp file: %w", err)
 		}
