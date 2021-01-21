@@ -90,7 +90,7 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 // ugly workaround until mvcc is fully deprecated
 func buildRepoActions(c *Config, logger logging.Logger) RepoActions {
 	if c.Rocks {
-		return NewRocksCatalogRepoActions(c.EntryCatalog, graveler.RepositoryID(c.Repository), c.CommitUsername, logger)
+		return NewRocksCatalogRepoActions(c.EntryCatalog, graveler.RepositoryID(c.Repository), c.CommitUsername, logger, c.KeyPrefixes)
 	}
 
 	return NewCatalogActions(c.Cataloger, c.Repository, c.CommitUsername, logger)

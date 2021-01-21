@@ -42,15 +42,16 @@ type metaRangeManager interface {
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 }
 
-func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler.RepositoryID, committer string, logger logging.Logger) *RocksCatalogRepoActions {
+func NewRocksCatalogRepoActions(metaRanger metaRangeManager, repository graveler.RepositoryID, committer string, logger logging.Logger, prefixes []string) *RocksCatalogRepoActions {
 	return &RocksCatalogRepoActions{
 		metaRanger: metaRanger,
 		repoID:     repository,
 		committer:  committer,
 		logger:     logger,
+		prefixes:   prefixes,
 		progress:   cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
 		commit:     cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
-		ref:        "master", // TODO(Guys): change this to initial commit and it needs to be passed param
+		ref:        catalog.DefaultImportBranchName, // TODO(itai): change this to any chosen commit by the user to support plumbing
 	}
 }
 
