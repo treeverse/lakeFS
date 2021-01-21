@@ -1162,5 +1162,8 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID Reposito
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("find merge base: %w", err)
 	}
+	if baseCommit == nil {
+		return nil, nil, nil, ErrNoMergeBase
+	}
 	return fromCommit, toCommit, baseCommit, nil
 }

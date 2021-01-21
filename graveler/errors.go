@@ -13,6 +13,7 @@ var (
 	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
 	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
+	ErrNoMergeBase             = errors.New("no merge base")
 	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace: %w", ErrInvalidValue)
 	ErrInvalidRepositoryID     = fmt.Errorf("repository id: %w", ErrInvalidValue)
 	ErrInvalidBranchID         = fmt.Errorf("branch id: %w", ErrInvalidValue)
