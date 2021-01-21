@@ -38,10 +38,10 @@ const (
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
 	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
 	DefaultCommittedLocalCacheDir                   = "~/lakefs/local_tier"
-	DefaultCommittedMetaRangeReaderCacheSize        = 20
-	DefaultCommittedMetaRangeReaderNumShards        = 6
-	DefaultCommittedRangeReaderCacheSize            = 100
-	DefaultCommittedRangeReaderNumShards            = 12
+	DefaultCommittedMetaRangeReaderCacheSize        = 50
+	DefaultCommittedMetaRangeReaderNumShards        = 10
+	DefaultCommittedRangeReaderCacheSize            = 500
+	DefaultCommittedRangeReaderNumShards            = 30
 	DefaultCommittedPebbleSSTableCacheSizeBytes     = 200_000_000
 	DefaultCommittedBlockStoragePrefix              = "_lakefs"
 	DefaultCommittedPermanentMinRangeSizeBytes      = 0
