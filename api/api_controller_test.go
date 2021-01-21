@@ -1543,18 +1543,18 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				}
 
 				if c.user.Key != nil {
-					if *c.user.Key.AccessKeyID != creds.AccessKeyID {
-						t.Errorf("got access key ID %s != %s", creds.AccessKeyID, *c.user.Key.AccessKeyID)
+					if accessKeyID := swag.StringValue(c.user.Key.AccessKeyID); accessKeyID != creds.AccessKeyID {
+						t.Errorf("got access key ID %s != %s", creds.AccessKeyID, accessKeyID)
 					}
-					if *c.user.Key.SecretAccessKey != creds.AccessSecretKey {
-						t.Errorf("got secret key %s != %s", creds.AccessSecretKey, *c.user.Key.SecretAccessKey)
+					if secretAccessKey := swag.StringValue(c.user.Key.SecretAccessKey); secretAccessKey != creds.AccessSecretKey {
+						t.Errorf("got secret key %s != %s", creds.AccessSecretKey, secretAccessKey)
 					}
 				}
 
 				foundCreds, err := clt.Auth.GetCredentials(
 					auth.NewGetCredentialsParamsWithTimeout(timeout).
 						WithAccessKeyID(creds.AccessKeyID).
-						WithUserID(*c.user.Username),
+						WithUserID(swag.StringValue(c.user.Username)),
 					bauth)
 				if err != nil {
 					t.Fatal("Get API credentials key id for created access key", err)
