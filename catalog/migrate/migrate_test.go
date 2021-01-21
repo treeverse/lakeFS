@@ -60,7 +60,7 @@ func TestMigrate(t *testing.T) {
 		t.Fatal("Failed to create migrate:", err)
 	}
 
-	err = migrateTool.Run()
+	err = migrateTool.Run(ctx)
 	if err != nil {
 		t.Fatal("Failed to migrate", err)
 	}

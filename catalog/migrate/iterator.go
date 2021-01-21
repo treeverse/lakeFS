@@ -3,74 +3,69 @@ package migrate
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/treeverse/lakefs/catalog"
+	"github.com/jackc/pgx/v4"
 	"github.com/treeverse/lakefs/catalog/mvcc"
 	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/db"
-)
-
-type iteratorState int
-
-const (
-	iteratorStateInit iteratorState = iota
-	iteratorStateQuerying
-	iteratorStateDone
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Iterator struct {
-	state     iteratorState
-	ctx       context.Context
-	db        db.Database
-	branchID  int64
-	commitID  int64
-	buf       []*rocks.EntryRecord
-	err       error
-	offset    string
-	fetchSize int
-	value     *rocks.EntryRecord
+	rows  pgx.Rows
+	value *rocks.EntryRecord
+	err   error
 }
 
-var ErrIteratorClosed = errors.New("iterator closed")
+var ErrNotSeekable = errors.New("iterator isn't seekable")
 
 // NewIterator returns an iterator over an mvcc branch/commit, giving entries as EntryCatalog.
-func NewIterator(ctx context.Context, db db.Database, branchID int64, commitID int64, fetchSize int) *Iterator {
-	return &Iterator{
-		ctx:       ctx,
-		db:        db,
-		branchID:  branchID,
-		commitID:  commitID,
-		buf:       make([]*rocks.EntryRecord, 0, fetchSize),
-		fetchSize: fetchSize,
+func NewIterator(ctx context.Context, db db.Database, branchID int64, commitID int64) (*Iterator, error) {
+	db = db.WithContext(ctx)
+	// query for list entries
+	query, args, err := mvcc.ListEntriesQuery(db, branchID, mvcc.CommitID(commitID), "", "", -1)
+	if err != nil {
+		return nil, err
 	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &Iterator{
+		rows: rows,
+	}, nil
 }
 
 func (it *Iterator) Next() bool {
+	if !it.rows.Next() {
+		it.err = it.Err()
+		it.value = nil
+		return false
+	}
+
+	var ent rocks.Entry
+	var entPath string
+	var entTS time.Time
+	it.err = it.rows.Scan(&entPath, &ent.Address, &entTS, &ent.Size, &ent.ETag, &ent.Metadata)
 	if it.err != nil {
+		it.value = nil
 		return false
 	}
-
-	it.maybeFetch()
-
-	// stage a value and increment offset
-	if len(it.buf) == 0 {
-		return false
+	ent.LastModified = timestamppb.New(entTS)
+	it.value = &rocks.EntryRecord{
+		Path:  rocks.Path(entPath),
+		Entry: &ent,
 	}
-	it.value = it.buf[0]
-	it.buf = it.buf[1:]
-	it.offset = string(it.value.Path)
 	return true
 }
 
-func (it *Iterator) SeekGE(id rocks.Path) {
-	if errors.Is(it.err, ErrIteratorClosed) {
+func (it *Iterator) SeekGE(rocks.Path) {
+	if it.err != nil {
 		return
 	}
-	it.state = iteratorStateInit
-	it.offset = id.String()
-	it.buf = it.buf[:0]
-	it.value = nil
-	it.err = nil
+	it.rows.Close()
+	it.err = ErrNotSeekable
 }
 
 func (it *Iterator) Value() *rocks.EntryRecord {
@@ -81,46 +76,16 @@ func (it *Iterator) Value() *rocks.EntryRecord {
 }
 
 func (it *Iterator) Err() error {
-	return it.err
+	return it.rows.Err()
 }
 
 func (it *Iterator) Close() {
-	it.buf = nil
-	it.state = iteratorStateDone
-	it.err = ErrIteratorClosed
-}
-
-func (it *Iterator) maybeFetch() {
-	if it.state == iteratorStateDone {
+	if it.rows == nil {
 		return
 	}
-	if len(it.buf) > 0 {
-		return
-	}
-	if it.state == iteratorStateInit {
-		it.state = iteratorStateQuerying
-	}
-
-	var res interface{}
-	res, it.err = it.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return mvcc.ListEntriesTx(tx, it.branchID, mvcc.CommitID(it.commitID), "", it.offset, it.fetchSize)
-	}, db.WithContext(it.ctx), db.ReadOnly())
-	if it.err != nil {
-		return
-	}
-	entries := res.([]*catalog.Entry)
-	for _, entry := range entries {
-		rec := &rocks.EntryRecord{
-			Path:  rocks.Path(entry.Path),
-			Entry: rocks.EntryFromCatalogEntry(*entry),
-		}
-		it.buf = append(it.buf, rec)
-	}
-	if len(it.buf) < it.fetchSize {
-		it.state = iteratorStateDone
-	} else if len(it.buf) > 0 {
-		it.offset = it.buf[len(it.buf)-1].Path.String()
-	}
+	it.rows.Close()
+	it.rows = nil
+	it.value = nil
 }
 
 type emptyIterator struct{}
@@ -140,8 +105,7 @@ func (e *emptyIterator) Err() error {
 	return nil
 }
 
-func (e *emptyIterator) Close() {
-}
+func (e *emptyIterator) Close() {}
 
 func newEmptyIterator() rocks.EntryIterator {
 	return &emptyIterator{}

@@ -1,15 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
-	"github.com/treeverse/lakefs/catalog/mvcc"
-	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog/migrate"
+	"github.com/treeverse/lakefs/catalog/mvcc"
+	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -54,7 +54,8 @@ var migrateDBCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = migrateTool.Run()
+		ctx := context.Background()
+		err = migrateTool.Run(ctx)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
