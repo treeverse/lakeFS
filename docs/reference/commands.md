@@ -101,6 +101,8 @@ Records a new commit on the branch with the reverse effect of the given commit.
 Usage:
   lakectl branch revert [branch uri] [commit ref]
 
+Example:
+  lakectl branch revert lakefs://example-repo@example-feature a1b2c3d4  # revert commit a1b2c3d4 from branch 'example-feature'
 Flags:
   -h, --help            help for reset
 
@@ -112,7 +114,7 @@ Global Flags:
 ##### `lakectl branch reset`
 ````text
 reset changes - There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit commitId
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit [commit ref]
   2. reset all uncommitted changes - reset lakefs://myrepo@master 
   3. reset uncommitted changes under specific path -	reset lakefs://myrepo@master --prefix path
   4. reset uncommitted changes for specific object - reset lakefs://myrepo@master --object path
@@ -120,7 +122,7 @@ Usage:
   lakectl branch reset [branch uri] [flags]
 
 Flags:
-      --commit string   commit ID to reset branch to
+      --commit string   commit ref to reset branch to
   -h, --help            help for reset
       --object string   path to object to be reset
       --tree string     path to tree to be reset

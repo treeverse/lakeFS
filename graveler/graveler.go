@@ -1056,15 +1056,15 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		var parentMetaRangeID MetaRangeID
 		if len(commitRecord.Parents) > 0 {
-			parentCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, Ref(commitRecord.Parents[0]))
+			parentCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, commitRecord.Parents[0].Ref())
 			if err != nil {
 				return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[0], err)
 			}
 			parentMetaRangeID = parentCommit.MetaRangeID
 		}
-		branchCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, Ref(branchID))
+		branchCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, branch.CommitID.Ref())
 		if err != nil {
-			return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[0], err)
+			return "", fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
 		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
@@ -1075,7 +1075,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			Committer:    committer,
 			Message:      message,
 			MetaRangeID:  metaRangeID,
-			CreationDate: time.Time{},
+			CreationDate: time.Now(),
 			Parents:      []CommitID{branch.CommitID},
 			Metadata:     metadata,
 		}

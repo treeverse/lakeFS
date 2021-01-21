@@ -483,24 +483,20 @@ func (c *client) DeleteBranch(ctx context.Context, repository, branchID string) 
 }
 
 func (c *client) ResetBranch(ctx context.Context, repository, branchID string, resetProps *models.ResetCreation) error {
-	_, err := c.remote.Branches.ResetBranch(&branches.ResetBranchParams{
-		Branch:     branchID,
-		Reset:      resetProps,
-		Repository: repository,
-		Context:    ctx,
-	}, c.auth)
+	_, err := c.remote.Branches.ResetBranch(branches.NewResetBranchParams().
+		WithBranch(branchID).
+		WithRepository(repository).
+		WithContext(ctx).
+		WithReset(resetProps), c.auth)
 	return err
 }
 
 func (c *client) RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error {
-	_, err := c.remote.Branches.Revert(&branches.RevertParams{
-		Branch: branchID,
-		Revert: branches.RevertBody{
-			Ref: commitRef,
-		},
-		Repository: repository,
-		Context:    ctx,
-	}, c.auth)
+	_, err := c.remote.Branches.Revert(branches.NewRevertParams().
+		WithBranch(branchID).
+		WithRepository(repository).
+		WithContext(ctx).
+		WithRevert(branches.RevertBody{Ref: commitRef}), c.auth)
 	return err
 }
 

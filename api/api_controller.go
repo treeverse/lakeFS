@@ -1319,8 +1319,13 @@ func (c *Controller) RevertHandler() branches.RevertHandler {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("revert_branch")
-		err = deps.Cataloger.Revert(deps.ctx, params.Repository, params.Branch, params.Revert.Ref)
-		if errors.Is(err, db.ErrNotFound) {
+		userModel, err := c.deps.Auth.GetUser(user.ID)
+		if err != nil {
+			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		committer := userModel.Username
+		err = deps.Cataloger.Revert(deps.ctx, params.Repository, params.Branch, params.Revert.Ref, committer)
+		if errors.Is(err, graveler.ErrNotFound) {
 			return branches.NewRevertNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {

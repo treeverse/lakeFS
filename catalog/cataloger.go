@@ -122,7 +122,7 @@ type Cataloger interface {
 	// RollbackCommit sets the branch to point at the given commit, losing all later commits.
 	RollbackCommit(ctx context.Context, repository, branch string, reference string) error
 	// Revert creates a reverse patch to the commit given as 'reference', and applies it as a new commit on the given branch.
-	Revert(ctx context.Context, repository, branch string, reference string) error
+	Revert(ctx context.Context, repository, branch string, reference string, committer string) error
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
