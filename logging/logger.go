@@ -45,6 +45,7 @@ type Logger interface {
 	Errorf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 	Panicf(format string, args ...interface{})
+	IsTracing() bool
 }
 
 type logrusEntryWrapper struct {
@@ -132,6 +133,10 @@ func (l *logrusEntryWrapper) Fatalf(format string, args ...interface{}) {
 
 func (l *logrusEntryWrapper) Panicf(format string, args ...interface{}) {
 	l.e.Panicf(format, args...)
+}
+
+func (l *logrusEntryWrapper) IsTracing() bool {
+	return l.e.Level < logrus.TraceLevel
 }
 
 type logrusCallerFormatter struct {
