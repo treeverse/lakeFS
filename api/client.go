@@ -457,7 +457,7 @@ func (c *client) GetBranch(ctx context.Context, repository, branchID string) (st
 	if err != nil {
 		return "", err
 	}
-	return resp.GetPayload(), nil
+	return swag.StringValue(resp.GetPayload().CommitID), nil
 }
 
 func (c *client) CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (string, error) {
