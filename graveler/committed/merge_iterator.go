@@ -135,6 +135,7 @@ func (d *compareIterator) Err() error {
 
 func (d *compareIterator) Close() {
 	d.diffIt.Close()
+	d.base.Close()
 }
 
 func (c *compareValueIterator) Value() *graveler.ValueRecord {
