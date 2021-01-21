@@ -569,7 +569,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 			t.Fatalf("unexpected error getting branch: %s", err)
 		}
 		reference := resp.GetPayload()
-		if reference == "" {
+		if reference == nil || reference.CommitID == nil || *reference.CommitID == "" {
 			t.Fatalf("Got no reference for branch '%s'", testBranch)
 		}
 	})
