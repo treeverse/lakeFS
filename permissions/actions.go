@@ -20,6 +20,7 @@ const (
 	WriteObjectAction      = "fs:WriteObject"
 	DeleteObjectAction     = "fs:DeleteObject"
 	ListObjectsAction      = "fs:ListObjects"
+	DeleteObjectsAction    = "fs:DeleteObjects"
 	CreateCommitAction     = "fs:CreateCommit"
 	ReadCommitAction       = "fs:ReadCommit"
 	CreateBranchAction     = "fs:CreateBranch"
