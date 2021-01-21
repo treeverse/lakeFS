@@ -31,7 +31,7 @@ func Logged(r pgx.Rows, start time.Time, l logging.Logger) *LoggedRows {
 
 func (lr *LoggedRows) logDuration() {
 	if !lr.Closed {
-		lr.l.WithField("duration", time.Since(lr.Start)).Info("rows done")
+		lr.l.WithField("duration", time.Since(lr.Start)).Debug("rows done")
 		lr.Closed = true
 	}
 }
