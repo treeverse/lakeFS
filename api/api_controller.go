@@ -765,7 +765,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 
 func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
 	if res == nil {
-		return nil
+		return &models.MergeResult{}
 	}
 	var summary models.MergeResultSummary
 	for k, v := range res.Summary {
@@ -843,7 +843,12 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		cataloger := deps.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
-		diff, hasMore, err := cataloger.Diff(deps.ctx, params.Repository, params.LeftRef, params.RightRef, catalog.DiffParams{
+		var diffFunc func(ctx context.Context, repository, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error)
+		diffFunc = cataloger.Compare // default diff type is three-dot
+		if swag.StringValue(params.Type) == string(models.DiffTypeTwoDot) {
+			diffFunc = cataloger.Diff
+		}
+		diff, hasMore, err := diffFunc(deps.ctx, params.Repository, params.LeftRef, params.RightRef, catalog.DiffParams{
 			Limit: limit,
 			After: after,
 		})

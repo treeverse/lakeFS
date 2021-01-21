@@ -125,6 +125,7 @@ type Cataloger interface {
 	Revert(ctx context.Context, repository, branch string, reference string) error
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
+	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 
 	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)

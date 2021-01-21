@@ -6,22 +6,35 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
-type mergeIterator struct {
-	diffIt graveler.DiffIterator
-	val    *graveler.ValueRecord
-	base   Iterator
-	err    error
+type compareIterator struct {
+	errorOnConflict bool
+	diffIt          graveler.DiffIterator
+	val             *graveler.Diff
+	base            Iterator
+	err             error
+}
+
+type compareValueIterator struct {
+	*compareIterator
 }
 
 // NewMergeIterator accepts an iterator describing a diff from theirs to ours.
-// It returns a ValueIterator with the changes to perform on theirs, in order to merge ours into it,
+// It returns a graveler.ValueIterator with the changes to perform on theirs, in order to merge ours into it,
 // relative to base as the merge base.
-// The iterator will return ErrConflictFound when it reaches a conflict.
-func NewMergeIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) (*mergeIterator, error) {
-	return &mergeIterator{diffIt: diffTheirsToOurs, base: base}, nil
+// When reaching a conflict, the iterator will enter an error state with the graveler.ErrConflictFound error.
+func NewMergeIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) *compareValueIterator {
+	return &compareValueIterator{compareIterator: &compareIterator{diffIt: diffTheirsToOurs, base: base, errorOnConflict: true}}
 }
 
-func (d *mergeIterator) valueFromBase(key graveler.Key) (*graveler.ValueRecord, error) {
+// NewMergeIterator accepts an iterator describing a diff from theirs to ours.
+// It returns a graveler.DiffIterator with the changes to perform on theirs, in order to merge ours into it,
+// relative to base as the merge base.
+// When reaching a conflict, the returned Diff will be of type graveler.DiffTypeConflict.
+func NewCompareIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) *compareIterator {
+	return &compareIterator{diffIt: diffTheirsToOurs, base: base, errorOnConflict: false}
+}
+
+func (d *compareIterator) valueFromBase(key graveler.Key) (*graveler.ValueRecord, error) {
 	d.base.SeekGE(key)
 	var val *graveler.ValueRecord
 	for d.base.Next() && val == nil {
@@ -36,7 +49,17 @@ func (d *mergeIterator) valueFromBase(key graveler.Key) (*graveler.ValueRecord, 
 	return val, nil
 }
 
-func (d *mergeIterator) Next() bool {
+func (d *compareIterator) handleConflict() bool {
+	if d.errorOnConflict {
+		d.err = graveler.ErrConflictFound
+		return false
+	}
+	d.val = d.diffIt.Value().Copy()
+	d.val.Type = graveler.DiffTypeConflict
+	return true
+}
+
+func (d *compareIterator) Next() bool {
 	for d.diffIt.Next() {
 		val := d.diffIt.Value()
 		key := val.Key
@@ -51,23 +74,18 @@ func (d *mergeIterator) Next() bool {
 			// exists on ours, but not on theirs
 			if baseVal == nil {
 				// added only on ours
-				d.val = &graveler.ValueRecord{
-					Key:   d.diffIt.Value().Key,
-					Value: d.diffIt.Value().Value,
-				}
+				d.val = d.diffIt.Value().Copy()
 				return true
 			}
 			if !bytes.Equal(baseVal.Identity, val.Value.Identity) {
 				// removed on theirs, but changed on ours
-				d.err = graveler.ErrConflictFound
-				return false
+				return d.handleConflict()
 			}
 			continue
 		case graveler.DiffTypeChanged:
 			if baseVal == nil {
 				// added on theirs and ours, with different identities
-				d.err = graveler.ErrConflictFound
-				return false
+				return d.handleConflict()
 			}
 			if bytes.Equal(baseVal.Identity, val.Value.Identity) {
 				// changed on theirs, but not on ours
@@ -75,26 +93,21 @@ func (d *mergeIterator) Next() bool {
 			}
 			if !bytes.Equal(baseVal.Identity, val.LeftIdentity) {
 				// changed on theirs and ours, to different identities
-				d.err = graveler.ErrConflictFound
-				return false
+				return d.handleConflict()
 			}
 			// changed only on ours
-			d.val = &graveler.ValueRecord{
-				Key:   d.diffIt.Value().Key,
-				Value: d.diffIt.Value().Value,
-			}
+			d.val = d.diffIt.Value().Copy()
 			return true
 		case graveler.DiffTypeRemoved:
 			// exists on theirs, but not on ours
 			if baseVal != nil {
 				if bytes.Equal(baseVal.Identity, val.LeftIdentity) {
 					// removed on ours, not changed on theirs
-					d.val = &graveler.ValueRecord{Key: d.diffIt.Value().Key}
+					d.val = d.diffIt.Value().Copy()
 					return true
 				}
 				// changed on theirs, removed on ours
-				d.err = graveler.ErrConflictFound
-				return false
+				return d.handleConflict()
 			}
 			// added on theirs, but not on ours - continue
 		}
@@ -103,23 +116,37 @@ func (d *mergeIterator) Next() bool {
 	return false
 }
 
-func (d *mergeIterator) SeekGE(id graveler.Key) {
+func (d *compareIterator) SeekGE(id graveler.Key) {
 	d.val = nil
 	d.err = nil
 	d.diffIt.SeekGE(id)
 }
 
-func (d *mergeIterator) Value() *graveler.ValueRecord {
+func (d *compareIterator) Value() *graveler.Diff {
 	if d.err != nil {
 		return nil
 	}
 	return d.val
 }
 
-func (d *mergeIterator) Err() error {
+func (d *compareIterator) Err() error {
 	return d.err
 }
 
-func (d *mergeIterator) Close() {
+func (d *compareIterator) Close() {
 	d.diffIt.Close()
+}
+
+func (c *compareValueIterator) Value() *graveler.ValueRecord {
+	value := c.compareIterator.Value()
+	if value == nil {
+		return nil
+	}
+	res := &graveler.ValueRecord{
+		Key: value.Key,
+	}
+	if value.Type != graveler.DiffTypeRemoved {
+		res.Value = value.Value
+	}
+	return res
 }

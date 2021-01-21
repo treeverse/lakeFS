@@ -373,7 +373,7 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//
 	//if differences[0].Type != catalog.DifferenceTypeChanged || differences[0].Path != "master-file" {

@@ -415,6 +415,21 @@ func (e *EntryCatalog) Diff(ctx context.Context, repositoryID graveler.Repositor
 	return NewEntryDiffIterator(iter), nil
 }
 
+func (e *EntryCatalog) Compare(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.Ref) (EntryDiffIterator, error) {
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"from", from, ValidateRef},
+		{"to", to, ValidateRef},
+	}); err != nil {
+		return nil, err
+	}
+	iter, err := e.Store.Compare(ctx, repositoryID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return NewEntryDiffIterator(iter), nil
+}
+
 func (e *EntryCatalog) GetEntry(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, path Path) (*Entry, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
