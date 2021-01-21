@@ -1483,7 +1483,8 @@ paths:
         200:
           description: branch
           schema:
-            type: string
+            type: object
+            $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         404:
