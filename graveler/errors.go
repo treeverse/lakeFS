@@ -19,6 +19,7 @@ var (
 	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
 	ErrCommitNotFound          = fmt.Errorf("commit %w", ErrNotFound)
+	ErrCreateBranchNoCommit    = fmt.Errorf("can't create a branch without commit")
 	ErrRepositoryNotFound      = fmt.Errorf("repository %w", ErrNotFound)
 	ErrBranchNotFound          = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound             = fmt.Errorf("tag %w", ErrNotFound)
