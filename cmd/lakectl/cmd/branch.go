@@ -124,7 +124,7 @@ var branchDeleteCmd = &cobra.Command{
 // lakectl branch revert lakefs://myrepo@master commitId
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert <branch uri> <commit ref to revert>",
-	Short: "given a commit, record a new commit with to reverse the effect of this commit",
+	Short: "given a commit, record a new commit to reverse the effect of this commit",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(branchRevertCmdArgs),
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
