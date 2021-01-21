@@ -1314,7 +1314,7 @@ func (c *Controller) RevertHandler() branches.RevertHandler {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("revert_branch")
-		err = deps.Cataloger.Revert(c.Context(), params.Repository, params.Branch, params.Revert.Ref)
+		err = deps.Cataloger.Revert(deps.ctx, params.Repository, params.Branch, params.Revert.Ref)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewRevertNotFound().WithPayload(responseErrorFrom(err))
 		}
