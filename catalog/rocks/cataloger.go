@@ -425,6 +425,10 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
+	if branchCommitID == "" {
+		// return empty log if there is no commit on branch yet
+		return make([]*catalog.CommitLog, 0), false, nil
+	}
 	it, err := c.EntryCatalog.Log(ctx, repositoryID, branchCommitID)
 	if err != nil {
 		return nil, false, err
