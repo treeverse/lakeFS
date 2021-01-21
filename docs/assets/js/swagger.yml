@@ -127,6 +127,17 @@ definitions:
         x-nullable: true
         type: string
 
+  ref:
+    type: object
+    required:
+      - id
+      - commit_id
+    properties:
+      id:
+        type: string
+      commit_id:
+        type: string
+
   diff:
     type: object
     properties:
@@ -139,6 +150,10 @@ definitions:
         type: string
         enum: [ common_prefix, object ]
 
+  diff_type: &DIFF_TYPE
+    type: string
+    enum: [two_dot, three_dot]
+    default: three_dot
   revert_creation:
     type: object
     required:
@@ -1343,7 +1358,7 @@ paths:
               results:
                 type: array
                 items:
-                  type: string
+                  $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -1642,6 +1657,10 @@ paths:
         name: amount
         type: integer
         default: 100
+      - in: query
+        name: type
+        type: string
+        <<: *DIFF_TYPE
     get:
       tags:
         - refs
@@ -2169,4 +2188,3 @@ paths:
             $ref: "#/definitions/config"
         401:
           $ref: "#/responses/Unauthorized"
-

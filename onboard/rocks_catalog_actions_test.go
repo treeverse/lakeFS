@@ -20,12 +20,11 @@ import (
 )
 
 const (
-	repoID         = graveler.RepositoryID("some-repo-id")
-	metaRangeID    = graveler.MetaRangeID("some-mr-id")
-	commitID       = graveler.CommitID("some-commit-id")
-	parentCommitID = graveler.CommitID("some-parent-commit-id")
-	committer      = "john-doe"
-	msg            = "awesome-import-commit"
+	repoID      = graveler.RepositoryID("some-repo-id")
+	metaRangeID = graveler.MetaRangeID("some-mr-id")
+	commitID    = graveler.CommitID("some-commit-id")
+	committer   = "john-doe"
+	msg         = "awesome-import-commit"
 )
 
 func TestFullCycleSuccess(t *testing.T) {
@@ -35,7 +34,7 @@ func TestFullCycleSuccess(t *testing.T) {
 
 	mri := metaRangeID
 	rangeManager.EXPECT().
-		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(parentCommitID)), gomock.Any(), gomock.Any()).
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
 		Times(1).
 		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
 			{
@@ -44,14 +43,14 @@ func TestFullCycleSuccess(t *testing.T) {
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(parentCommitID), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(catalog.DefaultImportBranchName), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
 		Times(1).Return(commitID, nil)
-	rangeManager.EXPECT().UpdateBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), graveler.Ref(parentCommitID)).Times(1).Return(nil, nil)
+	rangeManager.EXPECT().UpdateBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), graveler.Ref(catalog.DefaultImportBranchName)).Times(1).Return(nil, nil)
 
-	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
+	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
 
 	validIt := getValidIt()
-	stats, err := rocks.ApplyImport(context.Background(), validIt, parentCommitID, nil, false)
+	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 
@@ -67,9 +66,9 @@ func TestApplyImportWrongIt(t *testing.T) {
 
 	innerIt := getValidInnerIt()
 	diffIt := onboard.NewDiffIterator(innerIt, innerIt)
-	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
+	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
 
-	stats, err := rocks.ApplyImport(context.Background(), diffIt, parentCommitID, nil, false)
+	stats, err := rocks.ApplyImport(context.Background(), diffIt, false)
 	require.Error(t, err)
 	require.IsType(t, onboard.ErrWrongIterator, err)
 	require.Nil(t, stats)
@@ -81,7 +80,7 @@ func TestApplyImportWriteFailure(t *testing.T) {
 	rangeManager := mock.NewMockmetaRangeManager(ctrl)
 
 	rangeManager.EXPECT().
-		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(parentCommitID)), gomock.Any(), gomock.Any()).
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
 		Times(1).
 		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
 			{
@@ -91,10 +90,10 @@ func TestApplyImportWriteFailure(t *testing.T) {
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
 
-	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
+	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
 
 	validIt := getValidIt()
-	stats, err := rocks.ApplyImport(context.Background(), validIt, parentCommitID, nil, false)
+	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
 	require.Error(t, err)
 	require.Nil(t, stats)
 }
@@ -104,7 +103,7 @@ func TestCommitBeforeApply(t *testing.T) {
 	defer ctrl.Finish()
 	rangeManager := mock.NewMockmetaRangeManager(ctrl)
 
-	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
+	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
 	retCommitID, err := rocks.Commit(context.Background(), msg, nil)
 	require.Error(t, err)
 	require.Equal(t, "", retCommitID)
@@ -118,7 +117,7 @@ func TestCommitFailed(t *testing.T) {
 
 	mri := metaRangeID
 	rangeManager.EXPECT().
-		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(parentCommitID)), gomock.Any(), gomock.Any()).
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
 		Times(1).
 		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
 			{
@@ -127,13 +126,13 @@ func TestCommitFailed(t *testing.T) {
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(parentCommitID), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(catalog.DefaultImportBranchName), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
 		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
 
-	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default())
+	rocks := onboard.NewRocksCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
 	validIt := getValidIt()
 
-	stats, err := rocks.ApplyImport(context.Background(), validIt, parentCommitID, nil, false)
+	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 
