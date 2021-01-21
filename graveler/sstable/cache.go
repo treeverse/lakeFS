@@ -111,7 +111,7 @@ type namespaceID struct {
 }
 
 func (c *lruCache) GetOrOpen(ctx context.Context, namespace string, id committed.ID) (*sstable.Reader, Derefer, error) {
-	e, derefer, err := c.c.GetOrSet(namespaceID{namespace, id}, func() (interface{}, error) {
+	e, derefer, err := c.c.GetOrSet(ctx, namespaceID{namespace, id}, func() (interface{}, error) {
 		r, err := c.open(ctx, namespace, string(id))
 		if err != nil {
 			return nil, fmt.Errorf("open SSTable %s after fetch from next tier: %w", id, err)
