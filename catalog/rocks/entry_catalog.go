@@ -111,11 +111,11 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
-	metaRangeCache := sstable.NewCache(*cfg.GetCommittedRangeSSTableCacheParams(),
-		metaRangeFS,
-		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
-	rangeCache := sstable.NewCache(*cfg.GetCommittedMetaRangeSSTableCacheParams(),
+	rangeCache := sstable.NewCache(*cfg.GetCommittedRangeSSTableCacheParams(),
 		rangeFS,
+		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
+	metaRangeCache := sstable.NewCache(*cfg.GetCommittedMetaRangeSSTableCacheParams(),
+		metaRangeFS,
 		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
