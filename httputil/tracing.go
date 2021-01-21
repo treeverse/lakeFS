@@ -132,14 +132,16 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, next h
 
 		next.ServeHTTP(responseWriter, r) // handle the request
 
-		logging.FromContext(r.Context()).WithFields(logging.Fields{
-			"took":             time.Since(startTime),
-			"status_code":      responseWriter.StatusCode,
-			"sent_bytes":       responseWriter.ResponseSize,
-			"request_body":     requestBodyTracer.bodyRecorder.Buffer,
-			"request_headers":  r.Header,
-			"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
-			"response_headers": responseWriter.Header(),
-		}).Trace("HTTP call ended")
+		if logging.Default().IsTracing() {
+			logging.FromContext(r.Context()).WithFields(logging.Fields{
+				"took":             time.Since(startTime),
+				"status_code":      responseWriter.StatusCode,
+				"sent_bytes":       responseWriter.ResponseSize,
+				"request_body":     requestBodyTracer.bodyRecorder.Buffer,
+				"request_headers":  r.Header,
+				"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
+				"response_headers": responseWriter.Header(),
+			}).Trace("HTTP call ended")
+		}
 	})
 }
