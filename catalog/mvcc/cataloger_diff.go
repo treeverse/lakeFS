@@ -11,7 +11,11 @@ import (
 
 const DiffMaxLimit = 1000
 
-func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
+func (c *cataloger) Diff(_ context.Context, _ string, _ string, _ string, _ catalog.DiffParams) (catalog.Differences, bool, error) {
+	return nil, false, catalog.ErrFeatureNotSupported
+}
+
+func (c *cataloger) Compare(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "leftReference", IsValid: ValidateReference(leftReference)},

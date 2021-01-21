@@ -66,6 +66,13 @@ func (c *CommittedFake) Diff(context.Context, graveler.StorageNamespace, gravele
 	return c.DiffIterator, nil
 }
 
+func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, graveler.MetaRangeID, graveler.MetaRangeID, graveler.MetaRangeID) (graveler.DiffIterator, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	return c.DiffIterator, nil
+}
+
 func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err

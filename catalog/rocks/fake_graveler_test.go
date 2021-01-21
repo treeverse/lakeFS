@@ -177,6 +177,13 @@ func (g *FakeGraveler) Diff(_ context.Context, _ graveler.RepositoryID, _, _ gra
 	return g.DiffIteratorFactory(), nil
 }
 
+func (g *FakeGraveler) Compare(_ context.Context, _ graveler.RepositoryID, _, _ graveler.Ref) (graveler.DiffIterator, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.DiffIteratorFactory(), nil
+}
+
 func (g *FakeGraveler) CommitExistingMetaRange(_ context.Context, _ graveler.RepositoryID, _ graveler.CommitID, _ graveler.MetaRangeID, _, _ string, _ graveler.Metadata) (graveler.CommitID, error) {
 	panic("implement me")
 }
