@@ -47,7 +47,7 @@ var migrateDBCmd = &cobra.Command{
 			fmt.Println("Failed to create a new migrate:", err)
 			os.Exit(1)
 		}
-
+		migrateTool.SetReporter(&migrateReporter{})
 		repoExpr, _ := cmd.Flags().GetString("repository")
 		if err := migrateTool.FilterRepository(repoExpr); err != nil {
 			fmt.Println("Failed to setup repository filter:", err)
@@ -56,12 +56,27 @@ var migrateDBCmd = &cobra.Command{
 
 		err = migrateTool.Run()
 		if err != nil {
-			fmt.Println("Migration failed")
 			fmt.Println(err)
 			os.Exit(1)
 		}
 		fmt.Println("Migrate completed")
 	},
+}
+
+type migrateReporter struct{}
+
+func (m *migrateReporter) BeginRepository(repository string) {
+	fmt.Println("Migrate repository:", repository)
+}
+
+func (m *migrateReporter) BeginCommit(ref, message, committer, branch string) {
+	fmt.Printf("  Commit: %s (%s) [%s] <%s>\n", message, ref, committer, branch)
+}
+
+func (m *migrateReporter) EndRepository(err error) {
+	if err != nil {
+		fmt.Println("Failed to migrate repository:", err)
+	}
 }
 
 //nolint:gochecknoinits
