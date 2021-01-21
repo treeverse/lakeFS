@@ -764,7 +764,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 
 func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
 	if res == nil {
-		return nil
+		return &models.MergeResult{}
 	}
 	var summary models.MergeResultSummary
 	for k, v := range res.Summary {
