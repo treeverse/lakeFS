@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	diffCmdMinArgs = 1
-	diffCmdMaxArgs = 2
-	diffPageSize   = 100
+	diffCmdMinArgs  = 1
+	diffCmdMaxArgs  = 2
+	minDiffPageSize = 50
+	maxDiffPageSize = 100000
 )
 
 var diffCmd = &cobra.Command{
@@ -48,10 +49,23 @@ var diffCmd = &cobra.Command{
 	},
 }
 
+type pageSize int
+
+func (p *pageSize) Value() int { return int(*p) }
+
+func (p *pageSize) Next() int {
+	*p *= 2
+	if *p > maxDiffPageSize {
+		*p = maxDiffPageSize
+	}
+	return p.Value()
+}
+
 func printDiffBranch(client api.Client, repository string, branch string) {
 	var after string
+	pageSize := pageSize(minDiffPageSize)
 	for {
-		diff, pagination, err := client.DiffBranch(context.Background(), repository, branch, after, diffPageSize)
+		diff, pagination, err := client.DiffBranch(context.Background(), repository, branch, after, pageSize.Value())
 		if err != nil {
 			DieErr(err)
 		}
@@ -62,14 +76,16 @@ func printDiffBranch(client api.Client, repository string, branch string) {
 			break
 		}
 		after = pagination.NextOffset
+		pageSize.Next()
 	}
 }
 
 func printDiffRefs(client api.Client, repository string, leftRef string, rightRef string) {
 	var after string
+	pageSize := pageSize(minDiffPageSize)
 	for {
 		diff, pagination, err := client.DiffRefs(context.Background(), repository, leftRef, rightRef,
-			after, diffPageSize)
+			after, pageSize.Value())
 		if err != nil {
 			DieErr(err)
 		}
@@ -80,6 +96,7 @@ func printDiffRefs(client api.Client, repository string, leftRef string, rightRe
 			break
 		}
 		after = pagination.NextOffset
+		pageSize.Next()
 	}
 }
 
