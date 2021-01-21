@@ -391,7 +391,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
 	}
-	catalogCommitLog.CreationDate = commit.CreationDate
+	catalogCommitLog.CreationDate = commit.CreationDate.UTC()
 	return catalogCommitLog, nil
 }
 
@@ -424,6 +424,10 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	branchCommitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(branch))
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
+	}
+	if branchCommitID == "" {
+		// return empty log if there is no commit on branch yet
+		return make([]*catalog.CommitLog, 0), false, nil
 	}
 	it, err := c.EntryCatalog.Log(ctx, repositoryID, branchCommitID)
 	if err != nil {

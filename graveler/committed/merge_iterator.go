@@ -34,16 +34,19 @@ func NewCompareIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) *
 	return &compareIterator{diffIt: diffTheirsToOurs, base: base, errorOnConflict: false}
 }
 
-func (d *compareIterator) valueFromBase(key graveler.Key) *graveler.ValueRecord {
+func (d *compareIterator) valueFromBase(key graveler.Key) (*graveler.ValueRecord, error) {
 	d.base.SeekGE(key)
 	var val *graveler.ValueRecord
 	for d.base.Next() && val == nil {
 		val, _ = d.base.Value()
 	}
-	if val == nil || !bytes.Equal(val.Key, key) {
-		return nil
+	if err := d.base.Err(); err != nil {
+		return nil, err
 	}
-	return val
+	if val == nil || !bytes.Equal(val.Key, key) {
+		return nil, nil
+	}
+	return val, nil
 }
 
 func (d *compareIterator) handleConflict() bool {
@@ -61,7 +64,11 @@ func (d *compareIterator) Next() bool {
 		val := d.diffIt.Value()
 		key := val.Key
 		typ := val.Type
-		baseVal := d.valueFromBase(key)
+		baseVal, err := d.valueFromBase(key)
+		if err != nil {
+			d.err = err
+			return false
+		}
 		switch typ {
 		case graveler.DiffTypeAdded:
 			// exists on ours, but not on theirs
@@ -105,6 +112,7 @@ func (d *compareIterator) Next() bool {
 			// added on theirs, but not on ours - continue
 		}
 	}
+	d.err = d.diffIt.Err()
 	return false
 }
 
@@ -115,6 +123,9 @@ func (d *compareIterator) SeekGE(id graveler.Key) {
 }
 
 func (d *compareIterator) Value() *graveler.Diff {
+	if d.err != nil {
+		return nil
+	}
 	return d.val
 }
 

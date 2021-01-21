@@ -72,8 +72,13 @@ func (id Path) String() string {
 	return string(id)
 }
 
+type Store interface {
+	graveler.KeyValueStore
+	graveler.VersionController
+}
+
 type EntryCatalog struct {
-	Store graveler.Graveler
+	Store Store
 }
 
 const (

@@ -748,19 +748,21 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message,
 			metadata)
 
-		switch err {
-		case nil:
+		switch {
+		case err == nil:
 			payload := newMergeResultFromCatalog(res)
 			return refs.NewMergeIntoBranchOK().WithPayload(payload)
-		case catalog.ErrUnsupportedRelation:
+		case errors.Is(err, catalog.ErrUnsupportedRelation):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
-		case catalog.ErrBranchNotFound:
+		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
-		case catalog.ErrConflictFound:
+		case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
 			payload := newMergeResultFromCatalog(res)
 			return refs.NewMergeIntoBranchConflict().WithPayload(payload)
-		case catalog.ErrNoDifferenceWasFound:
+		case errors.Is(err, catalog.ErrNoDifferenceWasFound):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("no difference was found"))
+		case errors.Is(err, graveler.ErrLockNotAcquired):
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branch is currently locked, try again later"))
 		default:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 		}
