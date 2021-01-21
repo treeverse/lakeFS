@@ -658,7 +658,10 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return branches.NewGetBranchOK().WithPayload(reference)
+		return branches.NewGetBranchOK().WithPayload(&models.Ref{
+			CommitID: swag.String(reference),
+			ID:       swag.String(params.Branch),
+		})
 	})
 }
 
