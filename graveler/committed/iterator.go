@@ -12,8 +12,8 @@ type iterator struct {
 	started   bool
 	manager   RangeManager
 	rangesIt  ValueIterator
-	rng       *Range // Decoded value at which rangeIt point
-	it        graveler.ValueIterator
+	rng       *Range                 // Decoded value at which rangeIt point
+	it        graveler.ValueIterator // nil at start of range
 	err       error
 	namespace Namespace
 }
@@ -27,11 +27,23 @@ func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace,
 	}
 }
 
+// loadIt loads rvi.it to start iterating over a new range.  It returns false and sets rvi.err
+// if it fails to open the new range.
+func (rvi *iterator) loadIt() bool {
+	it, err := rvi.manager.NewRangeIterator(rvi.ctx, rvi.namespace, rvi.rng.ID)
+	if err != nil {
+		rvi.err = fmt.Errorf("open range %s: %w", rvi.rng.ID, err)
+		return false
+	}
+	rvi.it = NewUnmarshalIterator(it)
+	return true
+}
+
 func (rvi *iterator) NextRange() bool {
 	if rvi.it != nil {
 		rvi.it.Close()
-		rvi.it = nil
 	}
+	rvi.it = nil
 	rvi.rng = nil
 	if !rvi.rangesIt.Next() {
 		return false
@@ -56,13 +68,6 @@ func (rvi *iterator) NextRange() bool {
 	rng.ID = ID(gv.Identity)
 	rvi.rng = &rng
 
-	it, err := rvi.manager.NewRangeIterator(rvi.ctx, rvi.namespace, rvi.rng.ID)
-	if err != nil {
-		rvi.err = fmt.Errorf("open range %s: %w", rvi.rng.ID, err)
-		return false
-	}
-	rvi.it = NewUnmarshalIterator(it)
-
 	return true
 }
 
@@ -85,6 +90,11 @@ func (rvi *iterator) Next() bool {
 	if rvi.rng == nil {
 		return rvi.NextRange()
 	}
+
+	if !rvi.loadIt() {
+		return false
+	}
+
 	if rvi.it.Next() {
 		return true
 	}
@@ -129,6 +139,9 @@ func (rvi *iterator) SeekGE(key graveler.Key) {
 		return // Reached end.
 	}
 	rvi.started = true // "Started": rangesIt is valid.
+	if !rvi.loadIt() {
+		return
+	}
 	rvi.it.SeekGE(key)
 	// Ready to call Next to see values.
 	rvi.err = rvi.it.Err()
