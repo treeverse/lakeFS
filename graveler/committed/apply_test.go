@@ -25,7 +25,7 @@ func TestApplyAdd(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := testutil.NewFakeIterator()
+	source := testutil.NewFakeIterator(t)
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c")).
@@ -53,7 +53,7 @@ func TestApplyReplace(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := testutil.NewFakeIterator()
+	source := testutil.NewFakeIterator(t)
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -81,7 +81,7 @@ func TestApplyDelete(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := testutil.NewFakeIterator()
+	source := testutil.NewFakeIterator(t)
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -107,7 +107,7 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	defer ctrl.Finish()
 
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	source := testutil.NewFakeIterator()
+	source := testutil.NewFakeIterator(t)
 	source.
 		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
@@ -137,7 +137,7 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz")}
 	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
 	range4 := &committed.Range{ID: "four", MaxKey: committed.Key("hz")}
-	source := testutil.NewFakeIterator()
+	source := testutil.NewFakeIterator(t)
 	source.
 		AddRange(range1).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).

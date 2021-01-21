@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"testing"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
@@ -411,9 +412,24 @@ func (m *referenceFake) CommitID() graveler.CommitID {
 type RV struct {
 	R *committed.Range
 	V *graveler.ValueRecord
+	// If set, caller must call NextRange() (not Next()) after this record.
+	NextRange bool
+}
+
+func (r *RV) String() string {
+	b := &bytes.Buffer{}
+	fmt.Fprintf(b, "range %+v", r.R)
+	if r.V != nil {
+		fmt.Fprintf(b, " value %+v", r.V)
+	}
+	if r.NextRange {
+		fmt.Fprint(b, " (Next() forbidden)")
+	}
+	return b.String()
 }
 
 type FakeIterator struct {
+	t            testing.TB
 	RV           []RV
 	idx          int
 	rangeIdx     int
@@ -422,9 +438,9 @@ type FakeIterator struct {
 	readsByRange []int
 }
 
-func NewFakeIterator() *FakeIterator {
+func NewFakeIterator(t testing.TB) *FakeIterator {
 	// Start with an empty record so the first `Next()` can skip it.
-	return &FakeIterator{RV: make([]RV, 1), idx: 0, rangeIdx: -1}
+	return &FakeIterator{t: t, RV: make([]RV, 1), idx: 0, rangeIdx: -1}
 }
 
 // ReadsByRange returns the number of Next operations performed inside each range
@@ -452,6 +468,12 @@ func (i *FakeIterator) AddRange(p *committed.Range) *FakeIterator {
 	return i
 }
 
+func (i *FakeIterator) AddSkippedRange(p *committed.Range) *FakeIterator {
+	i.RV = append(i.RV, RV{R: p, NextRange: true})
+	i.readsByRange = append(i.readsByRange, 0)
+	return i
+}
+
 func (i *FakeIterator) AddValueRecords(vs ...*graveler.ValueRecord) *FakeIterator {
 	if len(i.RV) == 0 {
 		panic(fmt.Sprintf("cannot add ValueRecords %+v with no range", vs))
@@ -469,6 +491,10 @@ func (i *FakeIterator) Next() bool {
 	}
 	if len(i.RV) <= i.idx+1 {
 		return false
+	}
+	if i.RV[i.idx].NextRange {
+		i.t.Helper()
+		i.t.Fatalf("must skip %s at index %d", i.RV[i.idx].String(), i.idx)
 	}
 	i.idx++
 	if i.RV[i.idx].V == nil {
@@ -500,6 +526,7 @@ func (i *FakeIterator) Value() (*graveler.ValueRecord, *committed.Range) {
 }
 
 func (i *FakeIterator) SeekGE(id graveler.Key) {
+	i.t.Helper()
 	i.idx = 0
 	i.rangeIdx = -1
 	for {

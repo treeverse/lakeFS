@@ -120,7 +120,7 @@ func TestMerge(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			diffIt := testutil.NewDiffIter(tst.diffs)
 			defer diffIt.Close()
-			base := makeBaseIterator(tst.baseKeys)
+			base := makeBaseIterator(t, tst.baseKeys)
 			it, err := committed.NewMergeIterator(diffIt, base)
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
@@ -170,7 +170,7 @@ func TestMergeSeek(t *testing.T) {
 	}
 	diffIt := testutil.NewDiffIter(diffs)
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
-	base := makeBaseIterator(baseKeys)
+	base := makeBaseIterator(t, baseKeys)
 	it, err := committed.NewMergeIterator(diffIt, base)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
@@ -265,8 +265,8 @@ func TestMergeSeek(t *testing.T) {
 	}
 }
 
-func makeBaseIterator(keys []string) *testutil.FakeIterator {
-	base := testutil.NewFakeIterator()
+func makeBaseIterator(t testing.TB, keys []string) *testutil.FakeIterator {
+	base := testutil.NewFakeIterator(t)
 	if len(keys) == 0 {
 		return base
 	}
