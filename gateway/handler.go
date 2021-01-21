@@ -247,6 +247,15 @@ func authorize(w http.ResponseWriter, req *http.Request, authService simulator.G
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	username := ctx.Value(ContextKeyUser).(*model.User).Username
 	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
+
+	if len(perms) == 0 {
+		// Either no permissions are required, or they will be checked later.
+		return &operations.AuthorizedOperation{
+			Operation: o,
+			Principal: username,
+		}
+	}
+
 	authResp, err := authService.Authorize(&auth.AuthorizationRequest{
 		Username:            username,
 		RequiredPermissions: perms,
