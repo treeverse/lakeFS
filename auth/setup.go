@@ -77,7 +77,6 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 						permissions.ReadCommitAction,
 						permissions.ListBranchesAction,
 						permissions.ListObjectsAction,
-						permissions.DeleteObjectsAction,
 						permissions.ReadObjectAction,
 						permissions.WriteObjectAction,
 						permissions.DeleteObjectAction,

@@ -6,21 +6,17 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-
 	"github.com/stretchr/testify/assert"
 )
 
-const numOfObjects = 10
-
 func TestDeleteObjects(t *testing.T) {
 	ctx, _, repo := setupTest(t)
+	const numOfObjects = 10
 
-	files := make([]string, 0, numOfObjects)
 	identifiers := make([]*s3.ObjectIdentifier, 0, numOfObjects)
 
 	for i := 1; i <= numOfObjects; i++ {
 		file := strconv.Itoa(i) + ".txt"
-		files = append(files, file)
 		identifiers = append(identifiers, &s3.ObjectIdentifier{
 			Key: aws.String(masterBranch + "/" + file),
 		})

@@ -15,13 +15,8 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, repoID string) ([]permissions.Permission, error) {
-	return []permissions.Permission{
-		{
-			Action:   permissions.DeleteObjectsAction,
-			Resource: permissions.RepoArn(repoID),
-		},
-	}, nil
+func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) ([]permissions.Permission, error) {
+	return nil, nil
 }
 
 func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
