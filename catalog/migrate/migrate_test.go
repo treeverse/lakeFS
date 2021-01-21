@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"fmt"
 	"hash/fnv"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -150,13 +149,14 @@ func testCreateBranch(t testing.TB, ctx context.Context, cataloger catalog.Catal
 	testutil.MustDo(t, "create branch", err)
 }
 
-func newEntryCatalogInMem(conn db.Database) (*rocks.EntryCatalog, error) {
-	metaRangeFS, err := pyramid.NewFS(newDefaultInstanceParams("meta-range"))
+func NewEntryCatalogForTesting(t testing.TB, conn db.Database) (*rocks.EntryCatalog, error) {
+	t.Helper()
+	metaRangeFS, err := pyramid.NewFS(newDefaultInstanceParams(t, "meta-range"))
 	if err != nil {
 		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
 	}
 
-	rangeFS, err := pyramid.NewFS(newDefaultInstanceParams("rage"))
+	rangeFS, err := pyramid.NewFS(newDefaultInstanceParams(t, "rage"))
 	if err != nil {
 		return nil, fmt.Errorf("create tiered FS for committed range: %w", err)
 	}
@@ -197,7 +197,7 @@ func testSetupServices(t testing.TB) (db.Database, catalog.Cataloger, *rocks.Ent
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	mvccCataloger := mvcc.NewCataloger(conn)
-	entryCataloger, err := newEntryCatalogInMem(conn)
+	entryCataloger, err := NewEntryCatalogForTesting(t, conn)
 	testutil.MustDo(t, "new entry catalog", err)
 	return conn, mvccCataloger, entryCataloger
 }
@@ -237,10 +237,11 @@ func calcPathHash(repo string, branch string, path string) string {
 	return strconv.FormatUint(sum, 16)
 }
 
-func newDefaultInstanceParams(name string) *params.InstanceParams {
+func newDefaultInstanceParams(t testing.TB, name string) *params.InstanceParams {
+	t.Helper()
 	const totalAllocatedBytes = 15 * 1024 * 1024
 	const pebbleSSTableCacheSizeBytes = 8 * 1024 * 1024
-	baseDir := os.TempDir()
+	baseDir := t.TempDir()
 	return &params.InstanceParams{
 		SharedParams: params.SharedParams{
 			Logger: logging.Default(),
