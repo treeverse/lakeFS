@@ -53,7 +53,7 @@ type Reporter interface {
 }
 
 const (
-	migrateFetchSize = 1000
+	migrateFetchSize = 10000
 
 	initialCommitMessage = "Create empty new branch for migrate"
 )
