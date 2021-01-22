@@ -243,7 +243,8 @@ func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := graveler.NewGraveler(branchLocker, nil,
 		nil,
 		&testutil.RefsFake{
-			Err: graveler.ErrNotFound,
+			Err:      graveler.ErrNotFound,
+			CommitID: "8888888798e3aeface8e62d1c7072a965314b4",
 		},
 	)
 	_, err := gravel.CreateBranch(context.Background(), "", "", "")
