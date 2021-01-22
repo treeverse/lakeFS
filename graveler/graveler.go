@@ -600,7 +600,9 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 	if err != nil {
 		return nil, err
 	}
-
+	if reference.CommitID() == "" {
+		return nil, ErrCreateBranchNoCommit
+	}
 	newBranch := Branch{
 		CommitID:     reference.CommitID(),
 		StagingToken: generateStagingToken(repositoryID, branchID),
