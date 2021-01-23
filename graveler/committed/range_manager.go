@@ -15,6 +15,13 @@ type Namespace string
 
 // Key and Value types for to be stored in any Range of the MetaRange
 type Key []byte
+
+func (k Key) Copy() Key {
+	c := make([]byte, len(k))
+	copy(c, k)
+	return c
+}
+
 type Value []byte
 type Record struct {
 	Key   Key
