@@ -12,12 +12,13 @@ import (
 
 const commitsTemplate = `
 {{ range $val := .Commits }}
-ID: {{ $val.ID|yellow }}{{if $val.Committer }}
-Author: {{ $val.Committer }}{{end}}
-Date: {{ $val.CreationDate|date }}
-	{{ if gt ($val.Parents|len) 1 -}}
-Merge: {{ $val.Parents|join ", "|bold }}
-	{{ end }}
+ID:           {{ $val.ID|yellow }}{{if $val.Committer }}
+Author:       {{ $val.Committer }}{{end}}
+Date:         {{ $val.CreationDate|date }}
+Metarange ID: {{ $val.MetarangeID }}
+{{ if gt ($val.Parents|len) 1 -}}
+Merge:        {{ $val.Parents|join ", "|bold }}
+{{ end }}
 	{{ $val.Message }}
 	
 	{{ range $key, $value := $val.Metadata }}
