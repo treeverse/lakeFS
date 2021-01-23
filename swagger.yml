@@ -183,7 +183,7 @@ definitions:
       creation_date:
         type: integer
         format: int64
-      metarange_id:
+      meta_range_id:
         type: string
       metadata:
         type: object

@@ -411,7 +411,7 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 			Message:      commit.Message,
 			Metadata:     commit.Metadata,
 			Parents:      commit.Parents,
-			MetarangeID:  commit.MetaRangeID,
+			MetaRangeID:  commit.MetaRangeID,
 		})
 	})
 }
@@ -485,7 +485,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 				ID:           commit.Reference,
 				Message:      commit.Message,
 				Metadata:     commit.Metadata,
-				MetarangeID:  commit.MetaRangeID,
+				MetaRangeID:  commit.MetaRangeID,
 				Parents:      commit.Parents,
 			}
 			lastID = commit.Reference
