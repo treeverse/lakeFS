@@ -182,6 +182,8 @@ definitions:
       creation_date:
         type: integer
         format: int64
+      meta_range_id:
+        type: string
       metadata:
         type: object
         additionalProperties:
