@@ -34,7 +34,6 @@ func (c *ChanOnlyOne) Compute(k interface{}, fn func() (interface{}, error)) (in
 	} else {
 		actualStop.value, actualStop.err = fn()
 		close(actualStop.ch)
-		c.m.Delete(k)
 	}
 	return actualStop.value, actualStop.err
 }
