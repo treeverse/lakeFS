@@ -37,6 +37,7 @@ type CommitLog struct {
 	Message      string    `db:"message"`
 	CreationDate time.Time `db:"creation_date"`
 	Metadata     Metadata  `db:"metadata"`
+	MetaRangeID  string    `db:"meta_range_id"`
 	Parents      []string
 }
 

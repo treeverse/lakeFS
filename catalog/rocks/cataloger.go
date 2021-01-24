@@ -411,6 +411,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 		Committer:    commit.Committer,
 		Message:      commit.Message,
 		CreationDate: commit.CreationDate,
+		MetaRangeID:  string(commit.MetaRangeID),
 		Metadata:     catalog.Metadata(commit.Metadata),
 	}
 	for _, parent := range commit.Parents {
@@ -459,6 +460,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 			Message:      v.Message,
 			CreationDate: v.CreationDate,
 			Metadata:     map[string]string(v.Metadata),
+			MetaRangeID:  string(v.MetaRangeID),
 			Parents:      make([]string, 0, len(v.Parents)),
 		}
 		for _, parent := range v.Parents {

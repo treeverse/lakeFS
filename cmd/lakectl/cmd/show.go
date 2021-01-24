@@ -45,11 +45,14 @@ var showCmd = &cobra.Command{
 			if err != nil {
 				DieErr(err)
 			}
+			showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 			commits := struct {
-				Commits    []*models.Commit
-				Pagination *Pagination
+				Commits         []*models.Commit
+				Pagination      *Pagination
+				ShowMetaRangeID bool
 			}{
-				Commits: []*models.Commit{commit},
+				Commits:         []*models.Commit{commit},
+				ShowMetaRangeID: showMetaRangeID,
 			}
 			Write(commitsTemplate, commits)
 		}
@@ -60,5 +63,6 @@ var showCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(showCmd)
 
-	showCmd.Flags().String("commit", "c", "commit id to show")
+	showCmd.Flags().String("commit", "", "commit ID to show")
+	showCmd.Flags().Bool("show-meta-range-id", false, "when showing commits, also show meta range ID")
 }
