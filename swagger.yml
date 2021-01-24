@@ -149,12 +149,11 @@ definitions:
       path_type:
         type: string
         enum: [ common_prefix, object ]
-
   diff_type: &DIFF_TYPE
     type: string
     enum: [two_dot, three_dot]
     default: three_dot
-  revert_creation:
+  reset_creation:
     type: object
     required:
       - type
@@ -1516,17 +1515,55 @@ paths:
     put:
       tags:
         - branches
-      operationId: revertBranch
-      summary: revert branch
+      operationId: resetBranch
+      summary: reset branch
+      parameters:
+        - in: body
+          name: reset
+          description: "reset parameters"
+          schema:
+            $ref: "#/definitions/reset_creation"
+      responses:
+        204:
+          description: reset successful
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: resource not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/revert:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - branches
+      operationId: revert
+      summary: revert
       parameters:
         - in: body
           name: revert
-          description: "revert parameters"
           schema:
-            $ref: "#/definitions/revert_creation"
+            type: object
+            properties:
+              ref:
+                type: string
+                description: the commit to revert, given by a ref
       responses:
         204:
-          description: reverted
+          description: revert successful
         401:
           $ref: "#/responses/Unauthorized"
         404:
