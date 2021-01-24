@@ -1,6 +1,7 @@
 package cache_test
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -90,44 +91,50 @@ func TestOnlyOne_ComputeConcurrentlyOnce(t *testing.T) {
 }
 
 func TestOnlyOne_ComputeConcurrentlyOnceKeyedByStruct(t *testing.T) {
-	c := cache.NewChanOnlyOne()
-
 	type Key struct {
 		a, b int
 	}
 	const (
 		size        = 3
-		repeats     = 50
+		repeats     = 5
 		parallelism = 9
 	)
 
 	for i := 0; i < repeats; i++ {
-		var wg sync.WaitGroup
-		wg.Add(size * size)
-		ch := make(chan struct{})
-		numExec := int32(0)
-		for j := 0; j < parallelism; j++ {
-			go func() {
-				<-ch
-				for k := 0; k < size; k++ {
-					for l := 0; l < size; l++ {
-						v, err := c.Compute(Key{k, l}, func() (interface{}, error) {
-							atomic.AddInt32(&numExec, 1)
-							return Key{k + 1, l + 1}, nil
-						})
-						if err != nil {
-							t.Error(err)
-							continue
-						}
-						got := v.(Key)
-						expected := Key{a: k + 1, b: l + 1}
-						if got != expected {
-							t.Errorf("got %v instead of [%d %d]", got, k+1, l+1)
+		c := cache.NewChanOnlyOne()
+		t.Run(fmt.Sprintf("%03d", i), func(t *testing.T) {
+			var wg sync.WaitGroup
+			ch := make(chan struct{})
+			numExec := int32(0)
+			wg.Add(parallelism)
+			for j := 0; j < parallelism; j++ {
+				go func() {
+					<-ch
+					for k := 0; k < size; k++ {
+						for l := 0; l < size; l++ {
+							v, err := c.Compute(Key{k, l}, func() (interface{}, error) {
+								atomic.AddInt32(&numExec, 1)
+								return Key{k + 1, l + 1}, nil
+							})
+							if err != nil {
+								t.Error(err)
+								continue
+							}
+							got := v.(Key)
+							expected := Key{a: k + 1, b: l + 1}
+							if got != expected {
+								t.Errorf("got %v instead of [%d %d]", got, k+1, l+1)
+							}
 						}
 					}
-				}
-			}()
-		}
-		close(ch)
+					wg.Done()
+				}()
+			}
+			close(ch)
+			wg.Wait()
+			if numExec != size*size {
+				t.Errorf("Computed callback %d times not %d", numExec, size*size)
+			}
+		})
 	}
 }
