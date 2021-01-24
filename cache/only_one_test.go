@@ -109,6 +109,7 @@ func TestOnlyOne_ComputeConcurrentlyOnceKeyedByStruct(t *testing.T) {
 			wg.Add(parallelism)
 			for j := 0; j < parallelism; j++ {
 				go func() {
+					defer wg.Done()
 					<-ch
 					for k := 0; k < size; k++ {
 						for l := 0; l < size; l++ {
@@ -127,7 +128,6 @@ func TestOnlyOne_ComputeConcurrentlyOnceKeyedByStruct(t *testing.T) {
 							}
 						}
 					}
-					wg.Done()
 				}()
 			}
 			close(ch)
