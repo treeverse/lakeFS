@@ -552,6 +552,12 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 	rightBranchID := graveler.BranchID(rightBranch)
 	meta := graveler.Metadata(metadata)
 	commitID, err := c.EntryCatalog.Merge(ctx, repositoryID, leftRef, rightBranchID, committer, message, meta)
+	if errors.Is(err, graveler.ErrConflictFound) {
+		// for compatibility with old cataloger
+		return &catalog.MergeResult{
+			Summary: map[catalog.DifferenceType]int{catalog.DifferenceTypeConflict: 1},
+		}, err
+	}
 	if err != nil {
 		return nil, err
 	}
