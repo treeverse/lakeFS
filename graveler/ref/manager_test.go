@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/stretchr/testify/assert"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/testutil"
@@ -608,6 +609,39 @@ func (f *fakeAddressProvider) ContentAddress(_ ident.Identifiable) string {
 		f.idx = 0
 	}
 	return res
+}
+
+func TestConsistentCommitIdentity(t *testing.T) {
+	hex := ident.NewHexAddressProvider()
+
+	commit := graveler.Commit{
+		Committer:    "some-committer",
+		Message:      "I just committed",
+		MetaRangeID:  "123456789987654321",
+		CreationDate: time.Date(2021, time.January, 24, 15, 10, 11, 1564956600, time.UTC),
+		Parents: graveler.CommitParents{
+			graveler.CommitID("132456987153687sdfsdf"),
+			graveler.CommitID("1324569csfvdkjhcsdkjc"),
+		},
+		Metadata: map[string]string{
+			"sdkafjnb":       "1234",
+			"sdkjvcnbkjndsc": "asnjkdl",
+		},
+	}
+
+	// Should NOT be changed (unless you really know what you're doing):
+	// If this is failing and you're tempted to change this value,
+	// then you probably introducing a breaking change to commit's identity.
+	// All previous references to commits (if not migrated) may be lost.
+	const expected = "f1a106bbeb12d3eb54418d6000f4507501d289d0d0879dcce6f4d31425587df1"
+
+	// Running many times to check that it's actually consistent (see issue #1291)
+	const iterations = 10000
+
+	for i := 0; i < iterations; i++ {
+		res := hex.ContentAddress(commit)
+		assert.Equalf(t, expected, res, "iteration %d content mismatch", i+1)
+	}
 }
 
 func TestManager_GetCommitByPrefix(t *testing.T) {
