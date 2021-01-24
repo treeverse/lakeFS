@@ -11,11 +11,11 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/testutil"
-	tu "github.com/treeverse/lakefs/testutil"
+	lfstestutil "github.com/treeverse/lakefs/testutil"
 )
 
 func TestBranchLock(t *testing.T) {
-	conn, _ := tu.GetDB(t, databaseURI)
+	conn, _ := lfstestutil.GetDB(t, databaseURI)
 	bl := ref.NewBranchLocker(conn)
 
 	t.Run("multiple_writers", func(t *testing.T) {
