@@ -361,7 +361,7 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
-		{"ref", branchID.Ref(), ValidateRef},
+		{"ref", ref, ValidateRef},
 		{"committer", committer, ValidateRequiredString},
 		{"message", message, ValidateRequiredString},
 	}); err != nil {
