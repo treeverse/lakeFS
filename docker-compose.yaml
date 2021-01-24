@@ -20,6 +20,9 @@ services:
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs.io:8000
       - LAKEFS_STATS_ENABLED
       - LAKEFS_LOGGING_LEVEL
+      - LAKEFS_CATALOGER_TYPE
+      - LAKEFS_COMMITTED_LOCAL_CACHE_DIR
+
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"
