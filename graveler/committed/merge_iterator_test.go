@@ -223,8 +223,8 @@ func TestMergeSeek(t *testing.T) {
 			conflictExpectedIdx: nil,
 		},
 	}
-	for i, tst := range tests {
-		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+	for _, tst := range tests {
+		t.Run(fmt.Sprintf("seek to %s", tst.seekTo), func(t *testing.T) {
 			it.SeekGE([]byte(tst.seekTo))
 			if it.Value() != nil {
 				t.Fatalf("value expected to be nil after SeekGE. got=%v", it.Value())
@@ -454,8 +454,8 @@ func TestCompareSeek(t *testing.T) {
 			expectedIdentities: nil,
 		},
 	}
-	for i, tst := range tests {
-		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+	for _, tst := range tests {
+		t.Run(fmt.Sprintf("seek to %s", tst.seekTo), func(t *testing.T) {
 			it.SeekGE([]byte(tst.seekTo))
 			if it.Value() != nil {
 				t.Fatalf("value expected to be nil after SeekGE. got=%v", it.Value())
