@@ -149,18 +149,18 @@ const BranchesPage = connect(
                             <div className="clearfix">
                                 <div className="float-left">
                                     <h6>
-                                        <Link to={`/repositories/${repo.id}/tree?branch=${branch}`}>{branch}</Link>
+                                        <Link to={`/repositories/${repo.id}/tree?branch=${branch.id}`}>{branch.id}</Link>
                                         {' '}
-                                        {(repo.default_branch === branch) ? (<Badge variant="info">Default</Badge> ) : (<span/>)}
+                                        {(repo.default_branch === branch.id) ? (<Badge variant="info">Default</Badge>) : (<span/>)}
                                     </h6>
                                 </div>
                                 <div className="float-right">
                                     <ButtonGroup className="branch-actions">
-                                        {(repo.default_branch !== branch) ? 
+                                        {(repo.default_branch !== branch.id) ?
                                         (<OverlayTrigger placement="bottom" overlay={<Tooltip>delete the branch</Tooltip>}>
                                             <Button variant={buttonVariant} 
                                                 onClick={() =>{
-                                                    setSelectedBranch(branch);
+                                                    setSelectedBranch(branch.id);
                                                     handleShow();
                                                     }
                                             }>
@@ -168,17 +168,17 @@ const BranchesPage = connect(
                                             </Button> 
                                         </OverlayTrigger>) : 
                                         (<span/>)}
-                                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
-                                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
-                                        <ClipboardButton variant={buttonVariant} text={branch} tooltip="copy ID to clipboard"/>
+                                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
+                                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
+                                        <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
                                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects</Tooltip>}>
-                                            <Button href={`/repositories/${repo.id}/tree?branch=${branch}`} variant={buttonVariant}>
+                                            <Button href={`/repositories/${repo.id}/tree?branch=${branch.id}`} variant={buttonVariant}>
                                                 <BrowserIcon/>
                                             </Button>
                                         </OverlayTrigger>
                                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at last commit</Tooltip>}>
-                                            <Button href={`/repositories/${repo.id}/tree?commit=${branch}`} variant={buttonVariant}>
-                                                {branch}
+                                            <Button href={`/repositories/${repo.id}/tree?commit=${branch.commit_id}`} variant={buttonVariant}>
+                                                {branch.commit_id.substr(0, 16)}
                                             </Button>
                                         </OverlayTrigger>
                                     </ButtonGroup>

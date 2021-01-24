@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -24,6 +25,30 @@ type QualifiedKey struct {
 	StorageType      StorageType
 	StorageNamespace string
 	Key              string
+}
+
+type QualifiedPrefix struct {
+	StorageType      StorageType
+	StorageNamespace string
+	Prefix           string
+}
+
+func (qk QualifiedKey) Format() string {
+	scheme := ""
+	switch qk.StorageType {
+	case StorageTypeMem:
+		scheme = "mem"
+	case StorageTypeLocal:
+		scheme = "local"
+	case StorageTypeGS:
+		scheme = "gs"
+	case StorageTypeS3:
+		scheme = "s3"
+	default:
+		panic("unknown storage type")
+	}
+
+	return fmt.Sprintf("%s://%s", scheme, path.Join(qk.StorageNamespace, qk.Key))
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
@@ -57,6 +82,20 @@ func formatPathWithNamespace(namespacePath, keyPath string) string {
 func IsResolvableKey(key string) bool {
 	_, err := url.ParseRequestURI(key)
 	return err != nil
+}
+
+func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, error) {
+	// behaviour for key and prefix is the same
+	key, err := ResolveNamespace(defaultNamespace, prefix)
+	if err != nil {
+		return QualifiedPrefix{}, fmt.Errorf("resolving namespace: %w", err)
+	}
+
+	return QualifiedPrefix{
+		StorageType:      key.StorageType,
+		StorageNamespace: key.StorageNamespace,
+		Prefix:           key.Key,
+	}, nil
 }
 
 func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {

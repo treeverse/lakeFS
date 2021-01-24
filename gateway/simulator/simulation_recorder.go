@@ -54,7 +54,8 @@ func (r *recordingBodyReader) Close() error {
 
 // RECORDING
 
-var uniquenessCounter int32 // persistent request counter during run. used only below,
+var uniquenessCounter int32  // persistent request counter during run. used only below,
+const counterLogMax = 100000 // The counterLogMax request will zero the logged count
 
 func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain string) http.Handler {
 	logger := logging.Default()
@@ -81,7 +82,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 				createConfFile(r, authService, region, bareDomain, recordingDir)
 			}
 			timeStr := time.Now().Format("15-04-05")
-			nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
+			nameBase := timeStr + fmt.Sprintf("-%05d", uniqueCount%counterLogMax)
 			respWriter := new(ResponseWriter)
 			respWriter.OriginalWriter = w
 			respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, nameBase+ResponseExtension))

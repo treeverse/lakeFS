@@ -14,7 +14,7 @@ import (
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/treeverse/lakefs/api/gen/models"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 var isTerminal = true
@@ -33,7 +33,7 @@ const resourceListTemplate = `{{.Table | table -}}
 //nolint:gochecknoinits
 func init() {
 	// disable colors if we're not attached to interactive TTY
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) || os.Getenv(LakectlInteractive) == LakectlInteractiveDisable || noColorRequested {
+	if !term.IsTerminal(int(os.Stdout.Fd())) || os.Getenv(LakectlInteractive) == LakectlInteractiveDisable || noColorRequested {
 		DisableColors()
 	}
 }

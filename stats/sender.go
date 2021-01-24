@@ -94,18 +94,22 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 type dummySender struct{}
 
 func (s *dummySender) SendEvent(_ context.Context, installationID, processID string, metrics []Metric) error {
-	logging.Default().WithFields(logging.Fields{
-		"installation_id": installationID,
-		"process_id":      processID,
-		"metrics":         spew.Sdump(metrics),
-	}).Trace("dummy sender received metrics")
+	if logging.Default().IsTracing() {
+		logging.Default().WithFields(logging.Fields{
+			"installation_id": installationID,
+			"process_id":      processID,
+			"metrics":         spew.Sdump(metrics),
+		}).Trace("dummy sender received metrics")
+	}
 	return nil
 }
 
 func (s *dummySender) UpdateMetadata(ctx context.Context, m Metadata) error {
-	logging.Default().WithFields(logging.Fields{
-		"metadata": spew.Sdump(m),
-	}).Trace("dummy sender received metadata")
+	if logging.Default().IsTracing() {
+		logging.Default().WithFields(logging.Fields{
+			"metadata": spew.Sdump(m),
+		}).Trace("dummy sender received metadata")
+	}
 	return nil
 }
 

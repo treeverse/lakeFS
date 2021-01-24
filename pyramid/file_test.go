@@ -1,6 +1,9 @@
 package pyramid
 
 import (
+	"github.com/treeverse/lakefs/pyramid/params"
+
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,21 +15,27 @@ import (
 )
 
 func TestPyramidWriteFile(t *testing.T) {
+	ctx := context.Background()
 	filename := uuid.New().String()
 
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
-		panic(err)
+		t.Fatal("Failed to create temp file", err)
 	}
 
 	filepath := fh.Name()
 	defer os.Remove(filepath)
 
 	storeCalled := false
+	abortCalled := false
 	sut := WRFile{
 		File: fh,
-		store: func(string) error {
+		store: func(context.Context, string) error {
 			storeCalled = true
+			return nil
+		},
+		abort: func(context.Context) error {
+			abortCalled = true
 			return nil
 		},
 	}
@@ -41,16 +50,20 @@ func TestPyramidWriteFile(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, sut.Close())
-	require.NoError(t, sut.Store(filename))
+	require.NoError(t, sut.Store(ctx, filename))
 
 	require.True(t, storeCalled)
+
+	require.Error(t, sut.Abort(ctx))
+	require.False(t, abortCalled)
 }
 
 func TestWriteValidate(t *testing.T) {
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := ioutil.TempFile("", filename)
 	if err != nil {
-		panic(err)
+		t.Fatal("Failed to create temp file", err)
 	}
 
 	filepath := fh.Name()
@@ -60,7 +73,7 @@ func TestWriteValidate(t *testing.T) {
 
 	sut := WRFile{
 		File: fh,
-		store: func(string) error {
+		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
 		},
@@ -72,12 +85,84 @@ func TestWriteValidate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, sut.Close())
-	require.Error(t, sut.Store("workspace"+string(os.PathSeparator)))
+	require.Error(t, sut.Store(ctx, "workspace"+string(os.PathSeparator)))
 	require.False(t, storeCalled)
 
 	require.Error(t, sut.Close())
-	require.NoError(t, sut.Store("validfilename"))
-	require.Error(t, sut.Store("validfilename"))
+}
+
+func TestMultipleWriteCalls(t *testing.T) {
+	ctx := context.Background()
+	filename := uuid.New().String()
+	fh, err := ioutil.TempFile("", filename)
+	if err != nil {
+		t.Fatal("Failed to create temp file", err)
+	}
+
+	filepath := fh.Name()
+	defer os.Remove(filepath)
+
+	storeCalled := false
+
+	sut := WRFile{
+		File: fh,
+		store: func(context.Context, string) error {
+			storeCalled = true
+			return nil
+		},
+	}
+
+	content := "some content to write to file"
+	n, err := sut.Write([]byte(content))
+	require.Equal(t, len(content), n)
+	require.NoError(t, err)
+
+	require.NoError(t, sut.Close())
+	require.NoError(t, sut.Store(ctx, "validfilename"))
+	require.True(t, storeCalled)
+
+	require.Error(t, sut.Store(ctx, "validfilename"))
+}
+
+func TestAbort(t *testing.T) {
+	ctx := context.Background()
+	filename := uuid.New().String()
+	fh, err := ioutil.TempFile("", filename)
+	if err != nil {
+		t.Fatal("Failed to create temp file", err)
+	}
+
+	filepath := fh.Name()
+	defer os.Remove(filepath)
+
+	storeCalled := false
+	abortCalled := false
+
+	sut := WRFile{
+		File: fh,
+		store: func(context.Context, string) error {
+			storeCalled = true
+			return nil
+		},
+		abort: func(context.Context) error {
+			abortCalled = true
+			return nil
+		},
+	}
+
+	content := "some content to write to file"
+	n, err := sut.Write([]byte(content))
+	require.Equal(t, len(content), n)
+	require.NoError(t, err)
+
+	require.NoError(t, sut.Close())
+	require.False(t, abortCalled)
+	require.NoError(t, sut.Abort(ctx))
+	require.False(t, storeCalled)
+	require.True(t, abortCalled)
+
+	require.Error(t, sut.Store(ctx, "validfilename"))
+	require.False(t, storeCalled)
 }
 
 func TestPyramidReadFile(t *testing.T) {
@@ -85,7 +170,7 @@ func TestPyramidReadFile(t *testing.T) {
 	filepath := path.Join("/tmp", filename)
 	content := "some content to write to file"
 	if err := ioutil.WriteFile(filepath, []byte(content), os.ModePerm); err != nil {
-		panic(err)
+		t.Fatalf("Failed to write file %s: %s", filepath, err)
 	}
 	defer os.Remove(filepath)
 
@@ -93,13 +178,13 @@ func TestPyramidReadFile(t *testing.T) {
 
 	fh, err := os.Open(filepath)
 	if err != nil {
-		panic(err)
+		t.Fatalf("Failed to open file %s: %s", filepath, err)
 	}
 
 	sut := ROFile{
 		File:     fh,
 		eviction: mockEv,
-		rPath:    relativePath(filename),
+		rPath:    params.RelativePath(filename),
 	}
 
 	_, err = sut.Stat()
@@ -112,23 +197,23 @@ func TestPyramidReadFile(t *testing.T) {
 	require.Equal(t, content, string(bytes))
 	require.NoError(t, sut.Close())
 
-	require.Equal(t, 2, mockEv.touchedTimes[relativePath(filename)])
+	require.Equal(t, 2, mockEv.touchedTimes[params.RelativePath(filename)])
 }
 
 type mockEviction struct {
-	touchedTimes map[relativePath]int
+	touchedTimes map[params.RelativePath]int
 }
 
 func newMockEviction() *mockEviction {
 	return &mockEviction{
-		touchedTimes: map[relativePath]int{},
+		touchedTimes: map[params.RelativePath]int{},
 	}
 }
 
-func (me *mockEviction) touch(rPath relativePath) {
+func (me *mockEviction) Touch(rPath params.RelativePath) {
 	me.touchedTimes[rPath]++
 }
 
-func (me *mockEviction) store(_ relativePath, _ int64) bool {
+func (me *mockEviction) Store(_ params.RelativePath, _ int64) bool {
 	return false
 }

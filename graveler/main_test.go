@@ -8,8 +8,6 @@ import (
 
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -17,18 +15,6 @@ var (
 	pool        *dockertest.Pool
 	databaseURI string
 )
-
-func testRefManager(t testing.TB) graveler.RefManager {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return graveler.NewPGRefManager(conn)
-}
-
-func testRefManagerWithDB(t testing.TB) (graveler.RefManager, db.Database) {
-	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI, testutil.WithGetDBApplyDDL(true))
-	return graveler.NewPGRefManager(conn), conn
-}
 
 func TestMain(m *testing.M) {
 	flag.Parse()

@@ -12,8 +12,27 @@ type Identifiable interface {
 	Identity() []byte
 }
 
-func ContentAddress(entity Identifiable) string {
+type AddressProvider interface {
+	ContentAddress(entity Identifiable) string
+}
+
+type HexAddressProvider struct{}
+
+func NewHexAddressProvider() *HexAddressProvider {
+	return &HexAddressProvider{}
+}
+
+func (*HexAddressProvider) ContentAddress(entity Identifiable) string {
 	return hex.EncodeToString(entity.Identity())
+}
+
+// IsContentAddress check if addr is valid content address or partial content address
+func IsContentAddress(addr string) bool {
+	if len(addr) == 0 || len(addr) > sha256.Size*2 {
+		return false
+	}
+	_, err := hex.DecodeString(addr)
+	return err == nil
 }
 
 type AddressType uint8

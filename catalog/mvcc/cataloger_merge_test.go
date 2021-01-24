@@ -77,12 +77,12 @@ func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// merge again - nothing should happen
-	res, err = c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
+	_, err = c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	if err != catalog.ErrNoDifferenceWasFound {
 		t.Fatal("Merge() expected ErrNoDifferenceWasFound, got:", err)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeChanged, Path: "/file2"},
@@ -166,7 +166,7 @@ func TestCataloger_Merge_FromParentNoChangesInParent(t *testing.T) {
 	//if len(commitLog.Parents) != 2 {
 	//	t.Fatal("merge commit log should have two parents")
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if len(differences) != 0 {
 	//	t.Errorf("Merge differences len=%d, expected 0", len(differences))
@@ -234,7 +234,7 @@ func TestCataloger_Merge_FromParentChangesInBoth(t *testing.T) {
 	}
 
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file1"},
@@ -316,7 +316,7 @@ func TestCataloger_Merge_FromParentThreeBranches(t *testing.T) {
 	}
 
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file1"},
@@ -421,7 +421,7 @@ func TestCataloger_Merge_FromChildChangesOnChild(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file1"},
@@ -489,7 +489,7 @@ func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeChanged, Path: "/file2"},
@@ -528,7 +528,7 @@ func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, "master", "tester", -1, "")
+	//differences, _, err := c.Compare(ctx, repository, "master", "tester", -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeChanged, Path: "/file2"},
@@ -591,7 +591,7 @@ func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeAdded, Path: "/file0"},
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -626,7 +626,7 @@ func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	//expectedDifferences = catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file0"},
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -671,7 +671,7 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeAdded, Path: "/file0"},
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -703,7 +703,7 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	//expectedDifferences := catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeModified, Path: "/file0"},
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -761,7 +761,7 @@ func TestCataloger_Merge_FromChildDelModifyGrandparentFiles(t *testing.T) {
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file0"},
 	//	Difference{Type: catalog.DifferenceTypeChanged, Path: "/file1"},
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -808,7 +808,7 @@ func TestCataloger_Merge_FromChildConflicts(t *testing.T) {
 	//if len(commitLog.Parents) != 2 {
 	//	t.Fatal("merge commit log should have two parents")
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -880,7 +880,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//	Difference{Type: catalog.DifferenceTypeChanged, Path: "/file2"},
 	//	Difference{Type: catalog.DifferenceTypeAdded, Path: "/file555"},
 	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -940,7 +940,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//expectedDifferences = catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeAdded, Path: "/file0"},
 	//}
-	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err = c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -959,7 +959,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err = c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if len(differences) != 0 {
 	//	t.Errorf("unexpected Merge differences = %s", spew.Sdump(differences))
@@ -991,7 +991,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//expectedDifferences = catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file0"},
 	//}
-	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err = c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -1054,7 +1054,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//expectedDifferences = catalog.Differences{
 	//	Difference{Type: catalog.DifferenceTypeRemoved, Path: "/file111"},
 	//}
-	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err = c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//if !differences.Equal(expectedDifferences) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
@@ -1087,6 +1087,7 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	// create and commit the same file, different content, on 'master', merge to 'b1' and check that we get the file on 'b1'
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master2")
 	_, err = c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit on master", err)
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge changes from master to b1", nil)
 	testutil.MustDo(t, "merge master to b1", err)
 	ent, err := c.GetEntry(ctx, repository, "b1", "fileX", catalog.GetEntryParams{})
@@ -1097,7 +1098,7 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	}
 }
 
-func TestCataloger_MergeWithoutDiff(t *testing.T) {
+func TestCataloger_MergeWithoutCompare(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed

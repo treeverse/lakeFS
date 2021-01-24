@@ -22,16 +22,10 @@ import (
 	"github.com/ory/dockertest/v3"
 )
 
-const (
-	dbContainerTimeoutSeconds = 10 * 60 // 10 min
-	dbName                    = "parade_db"
-)
-
 var (
 	pool        *dockertest.Pool
 	databaseURI string
 
-	postgresUrl = flag.String("postgres-url", "", "Postgres connection string.  If unset, run a Postgres in a Docker container.")
 	parallelism = flag.Int("parallelism", 16, "Number of concurrent client worker goroutines.")
 	bulk        = flag.Int("bulk", 2_000, "Number of tasks to acquire at once in each client goroutine.")
 	taskFactor  = flag.Int("task-factor", 20_000, "Scale benchmark N by this many tasks")

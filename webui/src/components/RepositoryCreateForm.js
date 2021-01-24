@@ -18,7 +18,6 @@ export const RepositoryCreateForm = connect(
   }, {getConfig})(({ error, onSubmit, onCancel, create, config, getConfig, sm = 6 }) => {
     const fieldNameOffset = 3;
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
-    const storageNamespaceValidityRegex = /^(s3|gs|mem|local|transient):\/.*$/;
 
     const [formValid, setFormValid] = useState(false);
     const [repoValid, setRepoValid] = useState(true);
@@ -51,6 +50,7 @@ export const RepositoryCreateForm = connect(
     }, [getConfig]);
 
     const blockstoreType = config.payload ? config.payload['blockstore.type'] : DEFAULT_BLOCKSTORE_TYPE;
+    const storageNamespaceValidityRegex = new RegExp(`^(${blockstoreType}):/.*$`);
     const storageNamespaceExample = `e.g. ${blockstoreType}://example-bucket/`;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {

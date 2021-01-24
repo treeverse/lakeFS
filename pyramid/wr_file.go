@@ -1,6 +1,7 @@
 package pyramid
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -11,31 +12,52 @@ type WRFile struct {
 	*os.File
 
 	persisted bool
-	store     func(string) error
+	store     func(context.Context, string) error
+	abort     func(context.Context) error
+	aborted   bool
 }
 
-var (
-	errAlreadyPersisted = fmt.Errorf("file is already persisted")
-)
-
 // Store copies the closed file to all tiers of the pyramid.
-func (f *WRFile) Store(filename string) error {
+func (f *WRFile) Store(ctx context.Context, filename string) error {
+	if f.aborted {
+		return errFileAborted
+	}
+	if f.persisted {
+		return errFilePersisted
+	}
+	f.persisted = true
+
 	if err := validateFilename(filename); err != nil {
 		return err
 	}
 
+	if err := f.idempotentClose(); err != nil {
+		return err
+	}
+
+	return f.store(ctx, filename)
+}
+
+// Abort delete the file and cleans all traces of it.
+// If file was already stored, returns an error.
+func (f *WRFile) Abort(ctx context.Context) error {
+	if f.persisted {
+		return errFilePersisted
+	}
+	f.aborted = true
+
+	if err := f.idempotentClose(); err != nil {
+		return err
+	}
+
+	return f.abort(ctx)
+}
+
+// idempotentClose is like Close(), but doesn't fail when the file is already closed.
+func (f *WRFile) idempotentClose() error {
 	err := f.File.Close()
 	if err != nil && !errors.Is(err, os.ErrClosed) {
 		return fmt.Errorf("closing file: %w", err)
 	}
-
-	if f.persisted {
-		return errAlreadyPersisted
-	}
-
-	err = f.store(filename)
-	if err == nil {
-		f.persisted = true
-	}
-	return err
+	return nil
 }

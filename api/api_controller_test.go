@@ -3,23 +3,21 @@ package api_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/treeverse/lakefs/api/gen/client/refs"
+	"github.com/treeverse/lakefs/api/gen/client/setup"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
@@ -37,19 +35,20 @@ import (
 	"github.com/treeverse/lakefs/upload"
 )
 
+const timeout = 10 * time.Second
+
 func TestHandler_ListRepositoriesHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
+	creds := createDefaultAdminUser(clt, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("list no repos", func(t *testing.T) {
-		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
-			httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		resp, err := clt.Repositories.ListRepositories(
+			repositories.NewListRepositoriesParamsWithTimeout(timeout),
+			bauth,
+		)
 
 		if err != nil {
 			t.Fatal(err)
@@ -73,8 +72,10 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 		_, err = deps.cataloger.CreateRepository(ctx, "foo3", "s3://foo1", "master")
 		testutil.Must(t, err)
 
-		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
-			httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		resp, err := clt.Repositories.ListRepositories(
+			repositories.NewListRepositoriesParamsWithTimeout(timeout),
+			bauth,
+		)
 
 		if err != nil {
 			t.Fatal(err)
@@ -90,9 +91,11 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 	t.Run("paginate repos", func(t *testing.T) {
 		// write some repos
-		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
-			Amount: swag.Int64(2),
-		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		resp, err := clt.Repositories.ListRepositories(
+			repositories.NewListRepositoriesParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(2)),
+			bauth,
+		)
 
 		if err != nil {
 			t.Fatal(err)
@@ -112,10 +115,11 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 	t.Run("paginate repos after", func(t *testing.T) {
 		// write some repos
-		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
-			Amount: swag.Int64(2),
-			After:  swag.String("foo2"),
-		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		resp, err := clt.Repositories.ListRepositories(
+			repositories.NewListRepositoriesParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(2)).WithAfter(swag.String("foo2")),
+			bauth,
+		)
 
 		if err != nil {
 			t.Fatal(err)
@@ -140,19 +144,18 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 }
 
 func TestHandler_GetRepoHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
+	creds := createDefaultAdminUser(clt, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("get missing repo", func(t *testing.T) {
-		_, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
-			Repository: "foo1",
-		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		_, err := clt.Repositories.GetRepository(
+			repositories.NewGetRepositoryParamsWithTimeout(timeout).
+				WithRepository("foo1"),
+			bauth,
+		)
 
 		if err == nil {
 			t.Fatalf("expected err calling missing repo")
@@ -168,9 +171,10 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 		_, err := deps.cataloger.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName)
 		testutil.Must(t, err)
 
-		resp, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
-			Repository: "foo1",
-		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		resp, err := clt.Repositories.GetRepository(
+			repositories.NewGetRepositoryParamsWithTimeout(timeout).
+				WithRepository("foo1"),
+			bauth)
 
 		if err != nil {
 			t.Fatalf("unexpected err calling get repo, %v", err)
@@ -184,15 +188,11 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 }
 
 func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	ctx := context.Background()
 	t.Run("get missing branch", func(t *testing.T) {
@@ -226,10 +226,11 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 				t.Fatalf("failed to commit '%s': %s", p, err)
 			}
 		}
-		resp, err := clt.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
-			Branch:     "master",
-			Repository: "repo2",
-		}, bauth)
+		resp, err := clt.Commits.GetBranchCommitLog(
+			commits.NewGetBranchCommitLogParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithRepository("repo2"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
@@ -242,21 +243,18 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 }
 
 func TestHandler_GetCommitHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
-
 	t.Run("get missing commit", func(t *testing.T) {
-		_, err := clt.Commits.GetCommit(&commits.GetCommitParams{
-			CommitID:   "b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa",
-			Repository: "foo1",
-		}, bauth)
+		_, err := clt.Commits.GetCommit(
+			commits.NewGetCommitParamsWithTimeout(timeout).
+				WithCommitID("b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa").
+				WithRepository("foo1"),
+			bauth)
 		if err == nil {
 			t.Fatalf("expected err calling missing commit")
 		}
@@ -283,10 +281,11 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 		if reference1 != commit1.Reference {
 			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
 		}
-		resp, err := clt.Commits.GetCommit(&commits.GetCommitParams{
-			CommitID:   commit1.Reference,
-			Repository: "foo1",
-		}, bauth)
+		resp, err := clt.Commits.GetCommit(
+			commits.NewGetCommitParamsWithTimeout(timeout).
+				WithCommitID(commit1.Reference).
+				WithRepository("foo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected err calling commit: %s", err)
 		}
@@ -300,24 +299,22 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 }
 
 func TestHandler_CommitHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		_, err := clt.Commits.Commit(&commits.CommitParams{
-			Branch: "master",
-			Commit: &models.CommitCreation{
-				Message:  swag.String("some message"),
-				Metadata: nil,
-			},
-			Repository: "foo1",
-		}, bauth)
+		_, err := clt.Commits.Commit(
+			commits.NewCommitParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithCommit(&models.CommitCreation{
+					Message:  swag.String("some message"),
+					Metadata: nil,
+				}).
+				WithRepository("foo1"),
+			bauth)
 
 		if err == nil {
 			t.Fatalf("expected err calling missing repo for commit")
@@ -336,14 +333,15 @@ func TestHandler_CommitHandler(t *testing.T) {
 			catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil},
 			catalog.CreateEntryParams{},
 		))
-		_, err = clt.Commits.Commit(&commits.CommitParams{
-			Branch: "master",
-			Commit: &models.CommitCreation{
-				Message:  swag.String("some message"),
-				Metadata: nil,
-			},
-			Repository: "foo1",
-		}, bauth)
+		_, err = clt.Commits.Commit(
+			commits.NewCommitParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithCommit(&models.CommitCreation{
+					Message:  swag.String("some message"),
+					Metadata: nil,
+				}).
+				WithRepository("foo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error on commit: %s", err)
 		}
@@ -351,24 +349,21 @@ func TestHandler_CommitHandler(t *testing.T) {
 }
 
 func TestHandler_CreateRepositoryHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
-
 	t.Run("create repo success", func(t *testing.T) {
-		resp, err := clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
-			Repository: &models.RepositoryCreation{
-				StorageNamespace: swag.String("s3://foo-bucket/"),
-				Name:             swag.String("my-new-repo"),
-				DefaultBranch:    "master",
-			},
-		}, bauth)
+		resp, err := clt.Repositories.CreateRepository(
+			repositories.NewCreateRepositoryParamsWithTimeout(timeout).
+				WithRepository(&models.RepositoryCreation{
+					StorageNamespace: swag.String("s3://foo-bucket/"),
+					Name:             swag.String("my-new-repo"),
+					DefaultBranch:    "master",
+				}),
+			bauth)
 
 		if err != nil {
 			t.Fatalf("unexpected error creating valid repo: %s", err)
@@ -385,13 +380,14 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
-			Repository: &models.RepositoryCreation{
-				StorageNamespace: swag.String("s3://foo-bucket/"),
-				Name:             swag.String("repo2"),
-				DefaultBranch:    "master",
-			},
-		}, bauth)
+		_, err = clt.Repositories.CreateRepository(
+			repositories.NewCreateRepositoryParamsWithTimeout(timeout).
+				WithRepository(&models.RepositoryCreation{
+					StorageNamespace: swag.String("s3://foo-bucket/"),
+					Name:             swag.String("repo2"),
+					DefaultBranch:    "master",
+				}),
+			bauth)
 
 		if err == nil {
 			t.Fatalf("expected error creating duplicate repo")
@@ -400,24 +396,21 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteRepositoryHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	ctx := context.Background()
 	t.Run("delete repo success", func(t *testing.T) {
 		_, err := deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master")
 		testutil.Must(t, err)
 
-		_, err = clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-			Repository: "my-new-repo",
-		}, bauth)
+		_, err = clt.Repositories.DeleteRepository(
+			repositories.NewDeleteRepositoryParamsWithTimeout(timeout).
+				WithRepository("my-new-repo"),
+			bauth)
 
 		if err != nil {
 			t.Fatalf("unexpected error deleting repo: %s", err)
@@ -430,9 +423,10 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
-		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-			Repository: "my-other-repo",
-		}, bauth)
+		_, err := clt.Repositories.DeleteRepository(
+			repositories.NewDeleteRepositoryParamsWithTimeout(timeout).
+				WithRepository("my-other-repo"),
+			bauth)
 
 		if err == nil {
 			t.Fatalf("expected error deleting repo that doesnt exist")
@@ -448,9 +442,10 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 		testutil.Must(t, err)
 		_, err = deps.cataloger.CreateRepository(ctx, "rr2", "s3://foo1", "master")
 		testutil.Must(t, err)
-		_, err = clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-			Repository: "rr1",
-		}, bauth)
+		_, err = clt.Repositories.DeleteRepository(
+			repositories.NewDeleteRepositoryParamsWithTimeout(timeout).
+				WithRepository("rr1"),
+			bauth)
 
 		if err != nil {
 			t.Fatalf("unexpected error deleting repo: %s", err)
@@ -472,15 +467,11 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_ListBranchesHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	// setup repository
 
@@ -488,10 +479,11 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
-		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:     swag.Int64(-1),
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Branches.ListBranches(
+			branches.NewListBranchesParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(-1)).
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error listing branches: %s", err)
 		}
@@ -511,10 +503,11 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 			_, err := deps.cataloger.CreateBranch(ctx, "repo2", branchName, "master")
 			testutil.MustDo(t, "create branch "+branchName, err)
 		}
-		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:     swag.Int64(2),
-			Repository: "repo2",
-		}, bauth)
+		resp, err := clt.Branches.ListBranches(
+			branches.NewListBranchesParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(2)).
+				WithRepository("repo2"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -522,11 +515,12 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 			t.Fatalf("expected 2 branches to return, got %d", len(resp.GetPayload().Results))
 		}
 
-		resp, err = clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:     swag.Int64(2),
-			After:      swag.String("master1"),
-			Repository: "repo2",
-		}, bauth)
+		resp, err = clt.Branches.ListBranches(
+			branches.NewListBranchesParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(2)).
+				WithAfter(swag.String("master1")).
+				WithRepository("repo2"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -534,19 +528,20 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		const expectedReference = "master2"
 		retReference := results[0]
-		if retReference != expectedReference {
+		const expectedID = "master2"
+		if swag.StringValue(retReference.ID) != expectedID {
 			t.Fatalf("expected '%s' as the first result for the second page, got '%s' instead",
-				expectedReference, retReference)
+				expectedID, swag.StringValue(retReference.ID))
 		}
 	})
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {
-		_, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:     swag.Int64(2),
-			Repository: "repoX",
-		}, bauth)
+		_, err := clt.Branches.ListBranches(
+			branches.NewListBranchesParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(2)).
+				WithRepository("repoX"),
+			bauth)
 		if err == nil {
 			t.Fatal("expected error calling list branches on repo that doesnt exist")
 		}
@@ -554,49 +549,48 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 }
 
 func TestHandler_GetBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("get default branch", func(t *testing.T) {
 		ctx := context.Background()
 		const testBranch = "master"
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
 		testutil.Must(t, err)
-		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
-			Branch:     testBranch,
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Branches.GetBranch(
+			branches.NewGetBranchParamsWithTimeout(timeout).
+				WithBranch(testBranch).
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error getting branch: %s", err)
 		}
 		reference := resp.GetPayload()
-		if reference == "" {
+		if reference == nil || reference.CommitID == nil || *reference.CommitID == "" {
 			t.Fatalf("Got no reference for branch '%s'", testBranch)
 		}
 	})
 
 	t.Run("get missing branch", func(t *testing.T) {
-		_, err := clt.Branches.GetBranch(&branches.GetBranchParams{
-			Branch:     "master333",
-			Repository: "repo1",
-		}, bauth)
+		_, err := clt.Branches.GetBranch(
+			branches.NewGetBranchParamsWithTimeout(timeout).
+				WithBranch("master333").
+				WithRepository("repo1"),
+			bauth)
 		if err == nil {
 			t.Fatal("expected error getting branch that doesnt exist")
 		}
 	})
 
 	t.Run("get branch for missing repo", func(t *testing.T) {
-		_, err := clt.Branches.GetBranch(&branches.GetBranchParams{
-			Branch:     "master",
-			Repository: "repo3",
-		}, bauth)
+		_, err := clt.Branches.GetBranch(
+			branches.NewGetBranchParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithRepository("repo3"),
+			bauth)
 		if err == nil {
 			t.Fatal("expected error getting branch for repo that doesnt exist")
 		}
@@ -604,28 +598,25 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 }
 
 func TestHandler_CreateBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("create branch and diff refs success", func(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
 		const newBranchName = "master2"
-		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.BranchCreation{
-				Name:   swag.String(newBranchName),
-				Source: swag.String("master"),
-			},
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Branches.CreateBranch(
+			branches.NewCreateBranchParamsWithTimeout(timeout).
+				WithBranch(&models.BranchCreation{
+					Name:   swag.String(newBranchName),
+					Source: swag.String("master"),
+				}).
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error creating branch: %s", err)
 		}
@@ -636,23 +627,25 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		path := "some/path"
 		buf := new(bytes.Buffer)
 		buf.WriteString("hello world!")
-		_, err = clt.Objects.UploadObject(&objects.UploadObjectParams{
-			Branch:     newBranchName,
-			Content:    runtime.NamedReader("content", buf),
-			Path:       path,
-			Repository: "repo1",
-		}, bauth)
+		_, err = clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch(newBranchName).
+				WithContent(runtime.NamedReader("content", buf)).
+				WithPath(path).
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error uploading object: %s", err)
 		}
 		if _, err := deps.cataloger.Commit(ctx, "repo1", "master2", "commit 1", "some_user", nil); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
-		resp2, err := clt.Refs.DiffRefs(&refs.DiffRefsParams{
-			LeftRef:    newBranchName,
-			RightRef:   "master",
-			Repository: "repo1",
-		}, bauth)
+		resp2, err := clt.Refs.DiffRefs(
+			refs.NewDiffRefsParamsWithTimeout(timeout).
+				WithLeftRef(newBranchName).
+				WithRightRef("master").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error diffing refs: %s", err)
 		}
@@ -666,26 +659,28 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	})
 
 	t.Run("create branch missing commit", func(t *testing.T) {
-		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.BranchCreation{
-				Source: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
-				Name:   swag.String("master3"),
-			},
-			Repository: "repo1",
-		}, bauth)
+		_, err := clt.Branches.CreateBranch(
+			branches.NewCreateBranchParamsWithTimeout(timeout).
+				WithBranch(&models.BranchCreation{
+					Source: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
+					Name:   swag.String("master3"),
+				}).
+				WithRepository("repo1"),
+			bauth)
 		if err == nil {
 			t.Fatal("expected error creating branch with a commit that doesnt exist")
 		}
 	})
 
 	t.Run("create branch missing repo", func(t *testing.T) {
-		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.BranchCreation{
-				Source: swag.String("master"),
-				Name:   swag.String("master8"),
-			},
-			Repository: "repo5",
-		}, bauth)
+		_, err := clt.Branches.CreateBranch(
+			branches.NewCreateBranchParamsWithTimeout(timeout).
+				WithBranch(&models.BranchCreation{
+					Source: swag.String("master"),
+					Name:   swag.String("master8"),
+				}).
+				WithRepository("repo5"),
+			bauth)
 		if err == nil {
 			t.Fatal("expected error creating branch with a repo that doesnt exist")
 		}
@@ -693,15 +688,11 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("delete branch success", func(t *testing.T) {
 		ctx := context.Background()
@@ -712,10 +703,11 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
-			Branch:     "master2",
-			Repository: "my-new-repo",
-		}, bauth)
+		_, err = clt.Branches.DeleteBranch(
+			branches.NewDeleteBranchParamsWithTimeout(timeout).
+				WithBranch("master2").
+				WithRepository("my-new-repo"),
+			bauth)
 
 		if err != nil {
 			t.Fatalf("unexpected error deleting branch: %s", err)
@@ -728,10 +720,11 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
-		_, err := clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
-			Branch:     "master5",
-			Repository: "my-new-repo",
-		}, bauth)
+		_, err := clt.Branches.DeleteBranch(
+			branches.NewDeleteBranchParamsWithTimeout(timeout).
+				WithBranch("master5").
+				WithRepository("my-new-repo"),
+			bauth)
 
 		if err == nil {
 			t.Fatalf("expected error deleting branch that doesnt exist")
@@ -740,56 +733,58 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
-
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://some-bucket", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("get object stats", func(t *testing.T) {
+		entry := catalog.Entry{
+			Path:            "foo/bar",
+			PhysicalAddress: "this_is_bars_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+			Metadata:        nil,
+		}
 		testutil.Must(t,
-			deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-				Path:            "foo/bar",
-				PhysicalAddress: "this_is_bars_address",
-				CreationDate:    time.Now(),
-				Size:            666,
-				Checksum:        "this_is_a_checksum",
-				Metadata:        nil,
-			}, catalog.CreateEntryParams{}))
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:        "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Objects.StatObject(
+			objects.NewStatObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 
 		if err != nil {
 			t.Fatalf("did not expect error for stat, got %s", err)
 		}
-		if resp.Payload.Path != "foo/bar" {
+		if resp.Payload.Path != entry.Path {
 			t.Fatalf("expected to get back our path, got %s", resp.Payload.Path)
 		}
-		if resp.Payload.SizeBytes != 666 {
+		if resp.Payload.SizeBytes != entry.Size {
 			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
 		}
+		if resp.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
+			t.Fatalf("expected correct PhysicalAddress, got %s", resp.Payload.PhysicalAddress)
+		}
 
-		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:        "master:HEAD",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		_, err = clt.Objects.StatObject(
+			objects.NewStatObjectParamsWithTimeout(timeout).
+				WithRef("master:HEAD").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 
 		if _, ok := err.(*objects.StatObjectNotFound); !ok {
 			t.Fatalf("did expect object not found for stat, got %v", err)
@@ -797,50 +792,53 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	})
 
 	t.Run("get expired object stats", func(t *testing.T) {
+		entry := catalog.Entry{
+			Path:            "foo/expired",
+			PhysicalAddress: "this_address_is_expired",
+			CreationDate:    time.Now(),
+			Size:            999999,
+			Checksum:        "eeee",
+			Metadata:        nil,
+			Expired:         true,
+		}
 		testutil.Must(t,
-			deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-				Path:            "foo/expired",
-				PhysicalAddress: "this_address_is_expired",
-				CreationDate:    time.Now(),
-				Size:            999999,
-				Checksum:        "eeee",
-				Metadata:        nil,
-				Expired:         true,
-			}, catalog.CreateEntryParams{}))
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:        "master",
-			Path:       "foo/expired",
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Objects.StatObject(
+			objects.NewStatObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/expired").
+				WithRepository("repo1"),
+			bauth)
 
 		gone, ok := err.(*objects.StatObjectGone)
 		if !ok {
 			t.Fatalf("expected StatObjectGone error but got %#v (response %v)", err, resp)
 		}
-		if gone.Payload.Path != "foo/expired" {
+		if gone.Payload.Path != entry.Path {
 			t.Fatalf("expected to get back our path, got %s", gone.Payload.Path)
 		}
-		if gone.Payload.SizeBytes != 999999 {
+		if gone.Payload.SizeBytes != entry.Size {
 			t.Fatalf("expected correct size, got %d", gone.Payload.SizeBytes)
 		}
+		if gone.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
+			t.Fatalf("expected correct PhysicalAddress, got %s", gone.Payload.PhysicalAddress)
+		}
+
 	})
 }
 
 func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
-	basicAuth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	creds := createDefaultAdminUser(clt, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	testutil.Must(t, err)
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
@@ -877,11 +875,12 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		}, catalog.CreateEntryParams{}))
 
 	t.Run("get object list", func(t *testing.T) {
-		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
-			Ref:        "master",
-			Repository: "repo1",
-			Prefix:     swag.String("foo/"),
-		}, basicAuth)
+		resp, err := clt.Objects.ListObjects(
+			objects.NewListObjectsParamsWithTimeout(timeout).
+				WithRef("master").
+				WithRepository("repo1").
+				WithPrefix(swag.String("foo/")),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -890,11 +889,12 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			t.Fatalf("expected 4 entries, got back %d", len(resp.Payload.Results))
 		}
 
-		resp, err = clt.Objects.ListObjects(&objects.ListObjectsParams{
-			Ref:        "master:HEAD",
-			Repository: "repo1",
-			Prefix:     swag.String("/"),
-		}, basicAuth)
+		resp, err = clt.Objects.ListObjects(
+			objects.NewListObjectsParamsWithTimeout(timeout).
+				WithRef("master:HEAD").
+				WithRepository("repo1").
+				WithPrefix(swag.String("/")),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -904,12 +904,13 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	})
 
 	t.Run("get object list paginated", func(t *testing.T) {
-		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
-			Amount:     swag.Int64(2),
-			Ref:        "master",
-			Repository: "repo1",
-			Prefix:     swag.String("foo/"),
-		}, basicAuth)
+		resp, err := clt.Objects.ListObjects(
+			objects.NewListObjectsParamsWithTimeout(timeout).
+				WithAmount(swag.Int64(2)).
+				WithRef("master").
+				WithRepository("repo1").
+				WithPrefix(swag.String("foo/")),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -928,16 +929,14 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
-	ctx := context.Background()
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
+	ctx := context.Background()
+
 	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
 		t.Fatal(err)
@@ -974,11 +973,12 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
-		resp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:        "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth, buf)
+		resp, err := clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth, buf)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -995,22 +995,24 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 			t.Fatalf("got unexpected body: '%s'", body)
 		}
 
-		_, err = clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:        "master:HEAD",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth, buf)
+		_, err = clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master:HEAD").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth, buf)
 		if _, ok := err.(*objects.GetObjectNotFound); !ok {
 			t.Fatalf("expected object not found error, got %v", err)
 		}
 	})
 
 	t.Run("get properties", func(t *testing.T) {
-		properties, err := clt.Objects.GetUnderlyingProperties(&objects.GetUnderlyingPropertiesParams{
-			Ref:        "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		properties, err := clt.Objects.GetUnderlyingProperties(
+			objects.NewGetUnderlyingPropertiesParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatalf("expected to get underlying properties, got %v", err)
 		}
@@ -1021,11 +1023,12 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	t.Run("expired", func(t *testing.T) {
 		buf := new(bytes.Buffer)
-		_, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:        "master",
-			Path:       "foo/expired",
-			Repository: "repo1",
-		}, bauth, buf)
+		_, err := clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/expired").
+				WithRepository("repo1"),
+			bauth, buf)
 		if err == nil {
 			t.Errorf("expected an error, got none\n\t%s", buf.String())
 		} else if !strings.Contains(err.Error(), "resource expired") {
@@ -1035,17 +1038,14 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1053,12 +1053,13 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	t.Run("upload object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		buf.WriteString("hello world this is my awesome content")
-		resp, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			Branch:     "master",
-			Content:    runtime.NamedReader("content", buf),
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithContent(runtime.NamedReader("content", buf)).
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1069,11 +1070,12 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 
 		// download it
 		rbuf := new(bytes.Buffer)
-		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:        "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth, rbuf)
+		rresp, err := clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth, rbuf)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1089,12 +1091,13 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	t.Run("upload object missing branch", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		buf.WriteString("hello world this is my awesome content")
-		_, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			Branch:     "masterX",
-			Content:    runtime.NamedReader("content", buf),
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		_, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("masterX").
+				WithContent(runtime.NamedReader("content", buf)).
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
 			t.Fatal("Missing branch should return not found")
 		}
@@ -1103,22 +1106,24 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	t.Run("upload objects dedup", func(t *testing.T) {
 		t.Skip("api implements async dedup - consider removing the test code")
 		const content = "They do not love that do not show their love"
-		resp1, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			Branch:     "master",
-			Content:    runtime.NamedReader("content", strings.NewReader(content)),
-			Path:       "dd/bar1",
-			Repository: "repo1",
-		}, bauth)
+		resp1, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithContent(runtime.NamedReader("content", strings.NewReader(content))).
+				WithPath("dd/bar1").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		resp2, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			Branch:     "master",
-			Content:    runtime.NamedReader("content", strings.NewReader(content)),
-			Path:       "dd/bar2",
-			Repository: "repo1",
-		}, bauth)
+		resp2, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithContent(runtime.NamedReader("content", strings.NewReader(content))).
+				WithPath("dd/bar2").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1135,17 +1140,14 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://some-bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1153,12 +1155,13 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 	t.Run("delete object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		buf.WriteString("hello world this is my awesome content")
-		resp, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			Branch:     "master",
-			Content:    runtime.NamedReader("content", buf),
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithContent(runtime.NamedReader("content", buf)).
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1169,11 +1172,12 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// download it
 		rbuf := new(bytes.Buffer)
-		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:        "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth, rbuf)
+		rresp, err := clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth, rbuf)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1186,21 +1190,23 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete it
-		_, err = clt.Objects.DeleteObject(&objects.DeleteObjectParams{
-			Branch:     "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		_, err = clt.Objects.DeleteObject(
+			objects.NewDeleteObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// get it
-		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:        "master",
-			Path:       "foo/bar",
-			Repository: "repo1",
-		}, bauth)
+		_, err = clt.Objects.StatObject(
+			objects.NewStatObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
 		if err == nil {
 			t.Fatalf("expected file to be gone now")
 		}
@@ -1208,95 +1214,87 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, _ := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
-
 	t.Run("valid_policy", func(t *testing.T) {
-		ctx := context.Background()
-		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
-			Policy: &models.Policy{
-				CreationDate: time.Now().Unix(),
-				ID:           swag.String("ValidPolicyID"),
-				Statement: []*models.Statement{
-					{
-						Action:   []string{"fs:ReadObject"},
-						Effect:   swag.String("allow"),
-						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+		_, err := clt.Auth.CreatePolicy(
+			auth.NewCreatePolicyParamsWithTimeout(timeout).
+				WithPolicy(&models.Policy{
+					CreationDate: time.Now().Unix(),
+					ID:           swag.String("ValidPolicyID"),
+					Statement: []*models.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Effect:   swag.String("allow"),
+							Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+						},
 					},
-				},
-			},
-			Context: ctx,
-		}, bauth)
+				}),
+			bauth)
 		if err != nil {
 			t.Fatalf("unexpected error creating valid policy: %v", err)
 		}
 	})
 
 	t.Run("invalid_policy_action", func(t *testing.T) {
-		ctx := context.Background()
-		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
-			Policy: &models.Policy{
-				CreationDate: time.Now().Unix(),
-				ID:           swag.String("ValidPolicyID"),
-				Statement: []*models.Statement{
-					{
-						Action:   []string{"fsx:ReadObject"},
-						Effect:   swag.String("allow"),
-						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+		_, err := clt.Auth.CreatePolicy(
+			auth.NewCreatePolicyParamsWithTimeout(timeout).
+				WithPolicy(&models.Policy{
+					CreationDate: time.Now().Unix(),
+					ID:           swag.String("ValidPolicyID"),
+					Statement: []*models.Statement{
+						{
+							Action:   []string{"fsx:ReadObject"},
+							Effect:   swag.String("allow"),
+							Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+						},
 					},
-				},
-			},
-			Context: ctx,
-		}, bauth)
+				}),
+			bauth)
 		if err == nil {
 			t.Fatalf("expected error creating invalid policy: action")
 		}
 	})
 
 	t.Run("invalid_policy_effect", func(t *testing.T) {
-		ctx := context.Background()
-		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
-			Policy: &models.Policy{
-				CreationDate: time.Now().Unix(),
-				ID:           swag.String("ValidPolicyID"),
-				Statement: []*models.Statement{
-					{
-						Action:   []string{"fs:ReadObject"},
-						Effect:   swag.String("Allow"),
-						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+		_, err := clt.Auth.CreatePolicy(
+			auth.NewCreatePolicyParamsWithTimeout(timeout).
+				WithPolicy(&models.Policy{
+					CreationDate: time.Now().Unix(),
+					ID:           swag.String("ValidPolicyID"),
+					Statement: []*models.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Effect:   swag.String("Allow"),
+							Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+						},
 					},
-				},
-			},
-			Context: ctx,
-		}, bauth)
+				}),
+			bauth)
 		if err == nil {
 			t.Fatalf("expected error creating invalid policy: effect")
 		}
 	})
 
 	t.Run("invalid_policy_arn", func(t *testing.T) {
-		ctx := context.Background()
-		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
-			Policy: &models.Policy{
-				CreationDate: time.Now().Unix(),
-				ID:           swag.String("ValidPolicyID"),
-				Statement: []*models.Statement{
-					{
-						Action:   []string{"fs:ReadObject"},
-						Effect:   swag.String("Allow"),
-						Resource: swag.String("arn:lakefs:fs:repository/foo/object/*"),
+		_, err := clt.Auth.CreatePolicy(
+			auth.NewCreatePolicyParamsWithTimeout(timeout).
+				WithPolicy(&models.Policy{
+					CreationDate: time.Now().Unix(),
+					ID:           swag.String("ValidPolicyID"),
+					Statement: []*models.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Effect:   swag.String("Allow"),
+							Resource: swag.String("arn:lakefs:fs:repository/foo/object/*"),
+						},
 					},
-				},
-			},
-			Context: ctx,
-		}, bauth)
+				}),
+			bauth)
 		if err == nil {
 			t.Fatalf("expected error creating invalid policy: arn")
 		}
@@ -1305,15 +1303,12 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 }
 
 func TestHandler_RetentionPolicyHandlers(t *testing.T) {
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
 	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
 	if err != nil {
@@ -1339,17 +1334,19 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 	// TODO(ariels): Verify initial state before any retention policy is set
 
 	t.Run("Initialize a retention policy", func(t *testing.T) {
-		_, err := clt.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
-			Repository: "repo1",
-			Policy:     &policy1,
-		}, bauth)
+		_, err := clt.Retention.UpdateRetentionPolicy(
+			retention.NewUpdateRetentionPolicyParamsWithTimeout(timeout).
+				WithRepository("repo1").
+				WithPolicy(&policy1),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		resp, err := clt.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
-			Repository: "repo1",
-		}, bauth)
+		resp, err := clt.Retention.GetRetentionPolicy(
+			retention.NewGetRetentionPolicyParamsWithTimeout(timeout).
+				WithRepository("repo1"),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1364,18 +1361,16 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 
 func TestHandler_ConfigHandlers(t *testing.T) {
 	const BlockstoreType = "s3"
-	handler, deps := getHandler(t, BlockstoreType)
+	clt, _ := NewClient(t, BlockstoreType)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
-
 	t.Run("Get config (currently only block store type)", func(t *testing.T) {
-		resp, err := clt.Config.GetConfig(&config.GetConfigParams{}, bauth)
+		resp, err := clt.Config.GetConfig(
+			config.NewGetConfigParamsWithTimeout(timeout),
+			bauth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1394,13 +1389,11 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 		branch        = "main"
 		anotherBranch = "notMain"
 	)
-	handler, deps := getHandler(t, "")
+	clt, deps := NewClient(t, "")
 
-	creds := createDefaultAdminUser(deps.auth, t)
+	// create user
+	creds := createDefaultAdminUser(clt, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	ctx := context.Background()
 	_, err := deps.cataloger.CreateRepository(ctx, repo, "s3://foo1", branch)
@@ -1412,21 +1405,23 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 		LastKeysInPrefixRegexp: []string{"^_success$", ".*/_success$"},
 	}
 
-	res, err := clt.Export.SetContinuousExport(&export.SetContinuousExportParams{
-		Repository: repo,
-		Branch:     branch,
-		Config:     &config,
-	}, bauth)
+	res, err := clt.Export.SetContinuousExport(
+		export.NewSetContinuousExportParamsWithTimeout(timeout).
+			WithRepository(repo).
+			WithBranch(branch).
+			WithConfig(&config),
+		bauth)
 	testutil.MustDo(t, "initial continuous export configuration", err)
 	if res == nil {
 		t.Fatalf("initial continuous export configuration: expected OK but got nil")
 	}
 
 	t.Run("get missing branch configuration", func(t *testing.T) {
-		res, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
-			Repository: repo,
-			Branch:     anotherBranch,
-		}, bauth)
+		res, err := clt.Export.GetContinuousExport(
+			export.NewGetContinuousExportParamsWithTimeout(timeout).
+				WithRepository(repo).
+				WithBranch(anotherBranch),
+			bauth)
 		if err == nil || res != nil {
 			t.Fatalf("expected get to return an error but got result %v, error nil", res)
 		}
@@ -1436,10 +1431,11 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 	})
 
 	t.Run("get configured branch", func(t *testing.T) {
-		got, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
-			Repository: repo,
-			Branch:     branch,
-		}, bauth)
+		got, err := clt.Export.GetContinuousExport(
+			export.NewGetContinuousExportParamsWithTimeout(timeout).
+				WithRepository(repo).
+				WithBranch(branch),
+			bauth)
 		if err != nil {
 			t.Fatalf("expected get to return result but got %s", err)
 		}
@@ -1454,18 +1450,20 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 			ExportStatusPath:       strfmt.URI("s3://better-bucket/report"),
 			LastKeysInPrefixRegexp: nil,
 		}
-		_, err := clt.Export.SetContinuousExport(&export.SetContinuousExportParams{
-			Repository: repo,
-			Branch:     branch,
-			Config:     &newConfig,
-		}, bauth)
+		_, err := clt.Export.SetContinuousExport(
+			export.NewSetContinuousExportParamsWithTimeout(timeout).
+				WithRepository(repo).
+				WithBranch(branch).
+				WithConfig(&newConfig),
+			bauth)
 		if err != nil {
 			t.Errorf("failed to overwrite continuous export configuration: %s", err)
 		}
-		got, err := clt.Export.GetContinuousExport(&export.GetContinuousExportParams{
-			Repository: repo,
-			Branch:     branch,
-		}, bauth)
+		got, err := clt.Export.GetContinuousExport(
+			export.NewGetContinuousExportParamsWithTimeout(timeout).
+				WithRepository(repo).
+				WithBranch(branch),
+			bauth)
 		if err != nil {
 			t.Fatalf("expected get to return result but got %s", err)
 		}
@@ -1478,9 +1476,11 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 func Test_setupLakeFSHandler(t *testing.T) {
 	name := "admin"
 	cases := []struct {
-		name               string
-		user               models.Setup
-		expectedStatusCode int
+		name string
+		user models.Setup
+		// Currently only test failure with SetupLakeFSDefault, further testing is by
+		// HTTP status code
+		errorDefaultCode int
 	}{
 		{name: "simple", user: models.Setup{Username: &name}},
 		{
@@ -1499,7 +1499,7 @@ func Test_setupLakeFSHandler(t *testing.T) {
 				Username: &name,
 				Key:      &models.SetupKey{SecretAccessKey: swag.String("cetec astronomy")},
 			},
-			expectedStatusCode: 422,
+			errorDefaultCode: 422,
 		},
 		{
 			name: "emptySecretKey", user: models.Setup{
@@ -1508,86 +1508,73 @@ func Test_setupLakeFSHandler(t *testing.T) {
 					AccessKeyID: swag.String("IKEAsneakers"),
 				},
 			},
-			expectedStatusCode: 422,
+			errorDefaultCode: 422,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			// get handler with DB without applying the DDL
-			handler, deps := getHandler(t, "", testutil.WithGetDBApplyDDL(false))
-
-			srv := httptest.NewServer(handler)
-			defer srv.Close()
-
-			req, err := json.Marshal(c.user)
-			if err != nil {
-				t.Fatal("JSON marshal request", err)
-			}
-
-			reqURI := srv.URL + client.DefaultBasePath + "/setup_lakefs"
-			const contentType = "application/json"
+			clt, _ := NewClient(t, "", testutil.WithGetDBApplyDDL(false))
 			t.Run("fresh start", func(t *testing.T) {
 				// request to setup
-				res := mustSetup(t, reqURI, contentType, req)
-				defer func() {
-					_ = res.Body.Close()
-				}()
 
-				expectedStatusCode := http.StatusOK
-				if c.expectedStatusCode != 0 {
-					expectedStatusCode = c.expectedStatusCode
-				}
-				if res.StatusCode != expectedStatusCode {
-					t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
-				}
-				if res.StatusCode != http.StatusOK {
+				// create user
+				res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
+
+				if c.errorDefaultCode != 0 {
+					var defaultErr *setup.SetupLakeFSDefault
+					if errors.As(err, &defaultErr) {
+						if defaultErr.Code() != c.errorDefaultCode {
+							t.Errorf("got default error with code %d, expected %d", defaultErr.Code(), c.errorDefaultCode)
+						}
+					} else {
+						t.Errorf("got %s instead of default error", err)
+					}
 					return
 				}
-
-				// read response
-				var credKeys *models.CredentialsWithSecret
-
-				err = json.NewDecoder(res.Body).Decode(&credKeys)
 				if err != nil {
-					t.Fatal("Decode response", err)
+					t.Fatal("setup lakeFS:", err)
 				}
 
-				if len(credKeys.AccessKeyID) == 0 {
+				creds := res.Payload
+				bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+				if len(creds.AccessKeyID) == 0 {
 					t.Fatal("Credential key id is missing")
 				}
 
 				if c.user.Key != nil {
-					if *c.user.Key.AccessKeyID != credKeys.AccessKeyID {
-						t.Errorf("got access key ID %s != %s", credKeys.AccessKeyID, *c.user.Key.AccessKeyID)
+					if accessKeyID := swag.StringValue(c.user.Key.AccessKeyID); accessKeyID != creds.AccessKeyID {
+						t.Errorf("got access key ID %s != %s", creds.AccessKeyID, accessKeyID)
 					}
-					if *c.user.Key.SecretAccessKey != credKeys.AccessSecretKey {
-						t.Errorf("got secret key %s != %s", credKeys.AccessSecretKey, *c.user.Key.SecretAccessKey)
+					if secretAccessKey := swag.StringValue(c.user.Key.SecretAccessKey); secretAccessKey != creds.AccessSecretKey {
+						t.Errorf("got secret key %s != %s", creds.AccessSecretKey, secretAccessKey)
 					}
 				}
-				foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyID)
+
+				foundCreds, err := clt.Auth.GetCredentials(
+					auth.NewGetCredentialsParamsWithTimeout(timeout).
+						WithAccessKeyID(creds.AccessKeyID).
+						WithUserID(swag.StringValue(c.user.Username)),
+					bauth)
 				if err != nil {
 					t.Fatal("Get API credentials key id for created access key", err)
 				}
 				if foundCreds == nil {
 					t.Fatal("Get API credentials secret key for created access key")
 				}
-				if foundCreds.AccessSecretKey != credKeys.AccessSecretKey {
-					t.Fatalf("Access secret key '%s', expected '%s'", foundCreds.AccessSecretKey, credKeys.AccessSecretKey)
+				if foundCreds.Payload.AccessKeyID != creds.AccessKeyID {
+					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.Payload.AccessKeyID, creds.AccessKeyID)
 				}
 			})
 
-			if c.expectedStatusCode == 0 {
+			if c.errorDefaultCode == 0 {
 				// now we ask again - should get status conflict
 				t.Run("existing setup", func(t *testing.T) {
 					// request to setup
-					res := mustSetup(t, reqURI, contentType, req)
-					defer func() {
-						_ = res.Body.Close()
-					}()
-
-					const expectedStatusCode = http.StatusConflict
-					if res.StatusCode != expectedStatusCode {
-						t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+					res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
+					var fsConflict *setup.SetupLakeFSConflict
+					if !errors.As(err, &fsConflict) {
+						t.Errorf("repeated setup got %+v, %v instead of \"setupLakeFSConflict\"", res, err)
 					}
 				})
 			}

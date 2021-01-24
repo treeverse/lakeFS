@@ -1,6 +1,7 @@
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
+PROTOC=$(or $(shell which protoc), $(error "Missing protobuf compilter - no protoc on PATH"))
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 export PATH:= $(PATH):$(GOBINPATH)
@@ -14,6 +15,7 @@ GOTEST=$(GOCMD) test
 GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
+PROTOC=protoc
 
 GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
 
@@ -40,7 +42,8 @@ export REVISION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME)
+	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
+	    graveler/committed/mock graveler/sstable/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -65,22 +68,32 @@ docs-serve: ### Serve local docs
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 
-$(GOBINPATH)/swagger:
-	go get github.com/go-swagger/go-swagger/cmd/swagger
+go-mod-download: ## Download module dependencies
+	$(GOCMD) mod download
 
-gen-api: $(GOBINPATH)/swagger del-gen-api ## Run the go-swagger code generator
-	$(GOGENERATE) ./api/...
+go-install: go-mod-download ## Install dependencies
+	$(GOCMD) install github.com/go-swagger/go-swagger/cmd/swagger
+	$(GOCMD) install github.com/golang/mock/mockgen
+	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+	$(GOCMD) install github.com/rakyll/statik
+	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
+
+
+gen-api: go-install del-gen-api ## Run the go-swagger code generator
+	$(GOGENERATE) ./api
 
 del-gen-api:
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
 
 .PHONY: gen-mockgen
-gen-mockgen: $(GOBINPATH)/mockgen ## Run the generator for inline commands
-	$(GOGENERATE) ./graveler/committed/...
+gen-mockgen: go-install ## Run the generator for inline commands
+	$(GOGENERATE) ./graveler/sstable
+	$(GOGENERATE) ./graveler/committed
+	$(GOGENERATE) ./pyramid
+	$(GOGENERATE) ./onboard
 
-
-validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
+validate-swagger: go-install ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
@@ -88,13 +101,7 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
-$(GOBINPATH)/golangci-lint:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint
-
-$(GOBINPATH)/mockgen:
-	go get github.com/golang/mock/mockgen
-
-lint: $(GOBINPATH)/golangci-lint  ## Lint code
+lint: go-install  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
 nessie: ## run nessie (system testing)
@@ -119,7 +126,7 @@ gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
 	$(GOFMT) -e -s -w .
 
-fmt-validator:  ## Validate go format
+validate-fmt:  ## Validate go format
 	@echo checking gofmt...
 	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o \( -path ./statik \) -prune -o \( -path ./api/gen \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
@@ -130,7 +137,12 @@ fmt-validator:  ## Validate go format
 		echo Your code formatting is according to gofmt standards; \
 	fi
 
-checks-validator: lint fmt-validator validate-swagger ## Run all validation/linting steps
+.PHONY: validate-proto
+validate-proto: proto  ## build proto and check if diff found
+	git diff --quiet -- catalog/rocks/catalog.pb.go
+	git diff --quiet -- graveler/committed/committed.pb.go
+
+checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -139,16 +151,17 @@ $(UI_DIR)/node_modules:
 ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
-$(GOBINPATH)/statik: 
-	go get github.com/rakyll/statik
-
-ui-bundle: ui-build $(GOBINPATH)/statik  ## Bundle static built UI app
+ui-bundle: ui-build go-install ## Bundle static built UI app
 	$(GOBINPATH)/statik -ns webui -m -f -src=$(UI_BUILD_DIR)
 
 gen-ui: ui-bundle
 
-gen-ddl: $(GOBINPATH)/statik  ## Embed data migration files into the resulting binary
+gen-ddl: go-install ## Embed data migration files into the resulting binary
 	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
+
+proto: ## Build proto (Protocol Buffers) files
+	$(PROTOC) --proto_path=catalog/rocks --go_out=catalog/rocks --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=graveler/committed --go_out=graveler/committed --go_opt=paths=source_relative committed.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

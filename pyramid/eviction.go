@@ -4,21 +4,13 @@ import (
 	"fmt"
 
 	"github.com/dgraph-io/ristretto"
+	"github.com/treeverse/lakefs/pyramid/params"
 )
 
-// eviction is an abstraction of the eviction control for easy testing
-type eviction interface {
-	// touch indicates the eviction that the file has been used now
-	touch(rPath relativePath)
-
-	// store orders the eviction to store the path.
-	// returns true iff the eviction accepted the path.
-	store(rPath relativePath, filesize int64) bool
-}
-
+// nolint: unused
 type ristrettoEviction struct {
 	cache         *ristretto.Cache
-	evictCallback func(rPath relativePath, cost int64)
+	evictCallback func(rPath params.RelativePath, cost int64)
 }
 
 const (
@@ -29,7 +21,8 @@ const (
 	bufferItems = 64
 )
 
-func newRistrettoEviction(capacity int64, evict func(rPath relativePath, cost int64)) (eviction, error) {
+// nolint: unused,deadcode
+func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, cost int64)) (params.Eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 
 	cache, err := ristretto.NewCache(&ristretto.Config{
@@ -47,17 +40,19 @@ func newRistrettoEviction(capacity int64, evict func(rPath relativePath, cost in
 	return re, nil
 }
 
-func (re *ristrettoEviction) touch(rPath relativePath) {
+func (re *ristrettoEviction) Touch(rPath params.RelativePath) {
 	// update last access time, value is meaningless
 	re.cache.Get(string(rPath))
 }
 
-func (re *ristrettoEviction) store(rPath relativePath, filesize int64) bool {
+func (re *ristrettoEviction) Store(rPath params.RelativePath, filesize int64) bool {
 	// setting the path as the value since only the key hash is returned
 	// to the onEvict callback
 	return re.cache.Set(string(rPath), rPath, filesize)
 }
 
 func (re *ristrettoEviction) onEvict(item *ristretto.Item) {
-	re.evictCallback(item.Value.(relativePath), item.Cost)
+	if item.Value != nil {
+		re.evictCallback(item.Value.(params.RelativePath), item.Cost)
+	}
 }

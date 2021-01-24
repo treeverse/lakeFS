@@ -12,7 +12,7 @@ We're excited to hear from you!
 
 ### Get in touch with the lakeFS team
 
-Join our public slack [channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw). We’re extremely responsive and you can expect a fast reply.
+Join our public slack [channel](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw). We’re extremely responsive and you can expect a fast reply.
 
 ### Contribute
 
@@ -20,7 +20,7 @@ Whether it’s a bug report, new feature, correction, or additional documentatio
 
 ### Ask a question
 
-If you have any questions or need technical support, feel free to message us in the [slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) #help channel. 
+If you have any questions or need technical support, feel free to message us in the [slack](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) #help channel. 
 
 
 

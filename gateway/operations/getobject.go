@@ -28,43 +28,43 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 	}, nil
 }
 
-func (controller *GetObject) Handle(o *PathOperation) {
+func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("get_object")
-	query := o.Request.URL.Query()
+	query := req.URL.Query()
 	if _, exists := query["versioning"]; exists {
-		o.EncodeResponse(serde.VersioningConfiguration{}, http.StatusOK)
+		o.EncodeResponse(w, req, serde.VersioningConfiguration{}, http.StatusOK)
 		return
 	}
 
 	if _, exists := query["tagging"]; exists {
-		o.EncodeResponse(serde.Tagging{}, http.StatusOK)
+		o.EncodeResponse(w, req, serde.Tagging{}, http.StatusOK)
 		return
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+	entry, err := o.Cataloger.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
-	o.Log().
+	o.Log(req).
 		WithField("took", metaTook).
 		WithError(err).
 		Debug("metadata operation to retrieve object done")
 
 	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if errors.Is(err, catalog.ErrExpired) {
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 	}
 	if err != nil {
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
-	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
-	o.SetHeader("ETag", httputil.ETag(entry.Checksum))
-	o.SetHeader("Accept-Ranges", "bytes")
+	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
+	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
+	o.SetHeader(w, "Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// range query
@@ -73,11 +73,11 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	var rng ghttp.Range
 	rng.StartOffset = -1
 	// range query
-	rangeSpec := o.Request.Header.Get("Range")
+	rangeSpec := req.Header.Get("Range")
 	if len(rangeSpec) > 0 {
 		rng, err = ghttp.ParseRange(rangeSpec, entry.Size)
 		if err != nil {
-			o.Log().WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
+			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}
 	}
 	if rangeSpec == "" || err != nil {
@@ -89,21 +89,21 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	defer func() {
 		_ = data.Close()
 	}()
-	o.SetHeader("Content-Length", fmt.Sprintf("%d", expected))
+	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", expected))
 	if rng.StartOffset != -1 {
-		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	}
 	// Delete the default content-type header so http.Server will detect it from contents
 	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
-	o.DeleteHeader("Content-Type")
-	_, err = io.Copy(o.ResponseWriter, data)
+	o.DeleteHeader(w, "Content-Type")
+	_, err = io.Copy(w, data)
 	if err != nil {
-		o.Log().WithError(err).Error("could not write response body for object")
+		o.Log(req).WithError(err).Error("could not write response body for object")
 	}
 }

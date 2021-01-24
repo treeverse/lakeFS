@@ -26,7 +26,7 @@ func TestCataloger_DiffEmpty(t *testing.T) {
 	}
 	commitChanges(10, "Changes on master", "master")
 
-	res, hasMore, err := c.Diff(ctx, repository, "master", "master", catalog.DiffParams{Limit: 10})
+	res, hasMore, err := c.Compare(ctx, repository, "master", "master", catalog.DiffParams{Limit: 10})
 	testutil.MustDo(t, "Diff", err)
 	if len(res) != 0 {
 		t.Errorf("Diff: got %+v but expected nothing", res)
@@ -36,7 +36,7 @@ func TestCataloger_DiffEmpty(t *testing.T) {
 	}
 }
 
-func TestCataloger_Diff(t *testing.T) {
+func TestCataloger_Compare(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -64,13 +64,13 @@ func TestCataloger_Diff(t *testing.T) {
 	var after string
 	var differences catalog.Differences
 	for {
-		res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", catalog.DiffParams{
+		res, hasMore, err := c.Compare(ctx, repository, "branch1", "master", catalog.DiffParams{
 			Limit: limit,
 			After: after,
 		})
 		testutil.MustDo(t, "list diff changes", err)
 		if len(res) > limit {
-			t.Fatalf("Diff() result length=%d, expected no more than %d", len(res), limit)
+			t.Fatalf("Compare() result length=%d, expected no more than %d", len(res), limit)
 		}
 		differences = append(differences, res...)
 		if !hasMore {
@@ -111,13 +111,13 @@ func TestCataloger_Diff(t *testing.T) {
 	}
 
 	// check the case of 0 amount
-	res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", catalog.DiffParams{Limit: 0})
+	res, hasMore, err := c.Compare(ctx, repository, "branch1", "master", catalog.DiffParams{Limit: 0})
 	testutil.MustDo(t, "list diff changes with 0 limit", err)
 	if !hasMore {
-		t.Error("Diff() limit 0 hasMore should be true")
+		t.Error("Compare() limit 0 hasMore should be true")
 	}
 	if len(res) != 0 {
-		t.Errorf("Diff() limit 0 len results is %d, expected none", len(res))
+		t.Errorf("Compare() limit 0 len results is %d, expected none", len(res))
 	}
 }
 
@@ -153,7 +153,7 @@ func TestCataloger_Diff_FromChild(t *testing.T) {
 	testutil.MustDo(t, "commit changes", err)
 
 	// diff changes between "branch1" and "master" (from child)
-	res, more, err := c.Diff(ctx, repository, "branch1", catalog.DefaultBranchName, catalog.DiffParams{Limit: -1})
+	res, more, err := c.Compare(ctx, repository, "branch1", catalog.DefaultBranchName, catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes between branch1 and master", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -197,7 +197,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	testutil.MustDo(t, "commit branch changes", err)
 
 	// diff changes between second and first commit
-	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, catalog.DiffParams{Limit: -1})
+	res, more, err := c.Compare(ctx, repository, secondCommit.Reference, firstCommit.Reference, catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from second and first commits", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -212,7 +212,7 @@ func TestCataloger_Diff_SameBranch(t *testing.T) {
 	}
 
 	// diff changes between first and second commit
-	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, catalog.DiffParams{Limit: -1})
+	res, more, err = c.Compare(ctx, repository, firstCommit.Reference, secondCommit.Reference, catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from first and second commits", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -261,7 +261,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	testutil.MustDo(t, "merge more changes from master to branch1", err)
 
 	// diff changes between second and first commit
-	res, more, err := c.Diff(ctx, repository, secondCommit.Reference, firstCommit.Reference, catalog.DiffParams{Limit: -1})
+	res, more, err := c.Compare(ctx, repository, secondCommit.Reference, firstCommit.Reference, catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from second and first commits", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -276,7 +276,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	}
 
 	// diff changes between first and second commit
-	res, more, err = c.Diff(ctx, repository, firstCommit.Reference, secondCommit.Reference, catalog.DiffParams{Limit: -1})
+	res, more, err = c.Compare(ctx, repository, firstCommit.Reference, secondCommit.Reference, catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from first and second commits", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -294,7 +294,7 @@ func TestCataloger_Diff_SameBranchDiffMergedChanges(t *testing.T) {
 	rewriteCommit, err := c.Commit(ctx, repository, "branch1", "rewrite file2", "tester", nil)
 	testutil.MustDo(t, "rewrite file2", err)
 
-	res, more, err = c.Diff(ctx, repository, rewriteCommit.Reference, secondCommit.Reference, catalog.DiffParams{Limit: -1})
+	res, more, err = c.Compare(ctx, repository, rewriteCommit.Reference, secondCommit.Reference, catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from rewrite and second commits", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -366,7 +366,7 @@ func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//differences, _, err := c.Compare(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
 	//expectedDifferences := catalog.Differences{
 	//	catalog.Difference{Type: catalog.DifferenceTypeChanged, Path: "/file2"},
@@ -442,7 +442,7 @@ func TestCataloger_Diff_FromParentThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "commit branch changes", err)
 
 	// diff changes between master and branch0
-	res, more, err := c.Diff(ctx, repository, "master", "branch0", catalog.DiffParams{Limit: -1})
+	res, more, err := c.Compare(ctx, repository, "master", "branch0", catalog.DiffParams{Limit: -1})
 	testutil.MustDo(t, "Diff changes from master to branch0", err)
 	if more {
 		t.Fatal("Diff has more than expected differences")
@@ -477,14 +477,14 @@ func TestCataloger_Diff_AdditionalFields(t *testing.T) {
 	_, err := c.Commit(ctx, repository, "master", "checking changes on master", "tester", nil)
 	testutil.Must(t, err)
 
-	res, hasMore, err := c.Diff(ctx, repository, "master", "branch1", catalog.DiffParams{Limit: numOfEntries})
+	res, hasMore, err := c.Compare(ctx, repository, "master", "branch1", catalog.DiffParams{Limit: numOfEntries})
 	testutil.MustDo(t, "diff changes", err)
 	if hasMore {
-		t.Fatal("Diff() hasMore should be false")
+		t.Fatal("Compare() hasMore should be false")
 	}
 	expectedLen := 3
 	if len(res) != expectedLen {
-		t.Fatalf("Diff() len of result %d, expected %d", len(res), expectedLen)
+		t.Fatalf("Compare() len of result %d, expected %d", len(res), expectedLen)
 	}
 	for _, d := range res {
 		if d.PhysicalAddress != "" {
@@ -492,16 +492,16 @@ func TestCataloger_Diff_AdditionalFields(t *testing.T) {
 		}
 	}
 
-	res, hasMore, err = c.Diff(ctx, repository, "master", "branch1", catalog.DiffParams{
+	res, hasMore, err = c.Compare(ctx, repository, "master", "branch1", catalog.DiffParams{
 		Limit:            numOfEntries,
 		AdditionalFields: []string{catalog.DBEntryFieldPhysicalAddress, catalog.DBEntryFieldChecksum},
 	})
 	testutil.MustDo(t, "diff changes", err)
 	if hasMore {
-		t.Fatal("Diff() hasMore should be false")
+		t.Fatal("Compare() hasMore should be false")
 	}
 	if len(res) != expectedLen {
-		t.Fatalf("Diff() len of result %d, expected %d", len(res), expectedLen)
+		t.Fatalf("Compare() len of result %d, expected %d", len(res), expectedLen)
 	}
 	for _, d := range res {
 		if d.PhysicalAddress == "" {

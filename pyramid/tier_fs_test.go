@@ -1,92 +1,59 @@
 package pyramid
 
 import (
-	"io"
+	"bytes"
+	"context"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
-	"github.com/streadway/handy/atomic"
-
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/thanhpk/randstr"
-
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/mem"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pyramid/params"
 )
 
-var (
-	fs FS
+const (
+	blockStoragePrefix = "prefix"
+	allocatedDiskBytes = 4 * 1024 * 1024
 )
-
-const blockStoragePrefix = "prefix"
-const allocatedDiskBytes = 4 * 1024 * 1024
-
-func TestMain(m *testing.M) {
-	fsName := uuid.New().String()
-
-	// cleanup
-	defer func() {
-		if err := os.RemoveAll(path.Join(os.TempDir(), fsName)); err != nil {
-			panic(err)
-		}
-	}()
-
-	// starting adapter with closed channel so all Gets pass
-	adapter := &memAdapter{Adapter: mem.New(), wait: make(chan struct{})}
-	close(adapter.wait)
-
-	var err error
-	fs, err = NewFS(&Config{
-		fsName:               fsName,
-		adaptor:              adapter,
-		logger:               logging.Dummy(),
-		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         os.TempDir(),
-		allocatedDiskBytes:   allocatedDiskBytes,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	code := m.Run()
-
-	os.Exit(code)
-}
 
 func TestSimpleWriteRead(t *testing.T) {
+	ctx := context.Background()
 	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
 
-	content := "hello world!"
-	writeToFile(t, namespace, filename, content)
-	checkContent(t, namespace, filename, content)
+	content := []byte("hello world!")
+	writeToFile(t, ctx, namespace, filename, content)
+	checkContent(t, ctx, namespace, filename, content)
 }
 
 func TestReadFailDuringWrite(t *testing.T) {
+	ctx := context.Background()
 	namespace := uuid.New().String()
 	filename := "file1"
-	f, err := fs.Create(namespace)
+	f, err := fs.Create(ctx, namespace)
 	require.NoError(t, err)
 
-	content := "some content"
-	n, err := f.Write([]byte(content))
+	content := []byte("some content")
+	n, err := f.Write(content)
 	require.NoError(t, err)
 	require.Equal(t, len(content), n)
 
-	readF, err := fs.Open(namespace, filename)
+	readF, err := fs.Open(ctx, namespace, filename)
 	require.Nil(t, readF)
 	require.Error(t, err)
-
 	require.NoError(t, f.Close())
-	require.NoError(t, f.Store(filename))
-	checkContent(t, namespace, filename, content)
+	require.NoError(t, f.Store(ctx, filename))
+	checkContent(t, ctx, namespace, filename, content)
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
@@ -100,72 +67,88 @@ func TestEvictionMultipleNamespaces(t *testing.T) {
 }
 
 func TestStartup(t *testing.T) {
+	ctx := context.Background()
 	fsName := uuid.New().String()
 	namespace := uuid.New().String()
 
 	// cleanup
+	baseDir := path.Join(os.TempDir(), fsName)
 	defer func() {
-		if err := os.RemoveAll(path.Join(os.TempDir(), fsName)); err != nil {
-			panic(err)
+		if t.Failed() {
+			// Leave behind the evidence.
+			return
+		}
+		if err := os.RemoveAll(baseDir); err != nil {
+			t.Fatal("Remove all files under", baseDir, err)
 		}
 	}()
 
-	namespacePath := path.Join(os.TempDir(), fsName, namespace)
+	namespacePath := path.Join(baseDir, namespace)
 	workspacePath := path.Join(namespacePath, workspaceDir)
 	if err := os.MkdirAll(workspacePath, os.ModePerm); err != nil {
-		panic(err)
+		t.Fatal("make dir under", workspacePath, err)
 	}
 
 	filename := "ThisShouldStay"
-	content := "This Should Stay - I'm telling You!!!!"
-	if err := ioutil.WriteFile(path.Join(namespacePath, filename), []byte(content), os.ModePerm); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile(path.Join(workspacePath, "ThisShouldNotStay"), []byte("ThisShouldNotStay"), os.ModePerm); err != nil {
-		panic(err)
+	content := []byte("This Should Stay - I'm telling You!!!!")
+	if err := ioutil.WriteFile(path.Join(namespacePath, filename), content, os.ModePerm); err != nil {
+		t.Fatal("write file", filename, err)
 	}
 
-	localFS, err := NewFS(&Config{
-		fsName:               fsName,
-		adaptor:              mem.New(),
-		fsBlockStoragePrefix: blockStoragePrefix,
-		localBaseDir:         os.TempDir(),
-		allocatedDiskBytes:   allocatedDiskBytes,
+	if err := ioutil.WriteFile(path.Join(workspacePath, "ThisShouldNotStay"), []byte("ThisShouldNotStay"), os.ModePerm); err != nil {
+		t.Fatal("write file", err)
+	}
+
+	localFS, err := NewFS(&params.InstanceParams{
+		FSName:              fsName,
+		DiskAllocProportion: 1.0,
+		SharedParams: params.SharedParams{
+			Logger:             logging.Default(),
+			Adapter:            mem.New(),
+			BlockStoragePrefix: blockStoragePrefix,
+			Local: params.LocalDiskParams{
+				BaseDir:             os.TempDir(),
+				TotalAllocatedBytes: allocatedDiskBytes,
+			},
+		},
 	})
 	if err != nil {
-		panic(err)
+		t.Fatal("NewFS", err)
 	}
 
 	dir, err := os.Open(workspacePath)
-	require.Nil(t, dir)
-	require.True(t, os.IsNotExist(err))
+	assert.Nil(t, dir, "expected to fail to open %s", workspacePath)
+	// os.IsNotExist does not look as hard to errors.Is; for errors returned directly from
+	// package os this does not matter.
+	assert.Error(t, err, os.ErrNotExist, "expected %s not to exist", workspacePath)
 
-	f, err := localFS.Open(namespace, filename)
-	defer f.Close()
-	require.NoError(t, err)
+	f, err := localFS.Open(ctx, namespace, filename)
+	defer func() { _ = f.Close() }()
+	assert.NoError(t, err)
 
-	bytes, err := ioutil.ReadAll(f)
-	require.NoError(t, err)
-	require.Equal(t, content, string(bytes))
+	data, err := ioutil.ReadAll(f)
+	assert.NoError(t, err)
+	assert.Equal(t, content, data)
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
+	ctx := context.Background()
 	// making sure to fill the cache
 	fileBytes := 512 * 1024
 	numFiles := 5 * allocatedDiskBytes / fileBytes
 	// write
+	content := make([]byte, fileBytes)
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
-
-		content := randstr.String(fileBytes, "abcdefghijklmnopqrstuvwxyz")
-		writeToFile(t, namespaces[i%len(namespaces)], filename, content)
+		rand.Read(content)
+		writeToFile(t, ctx, namespaces[i%len(namespaces)], filename, content)
 	}
 
 	// read
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
 
-		f, err := fs.Open(namespaces[i%len(namespaces)], filename)
+		f, err := fs.Open(ctx, namespaces[i%len(namespaces)], filename)
 		require.NoError(t, err)
 
 		_, err = ioutil.ReadAll(f)
@@ -174,77 +157,81 @@ func testEviction(t *testing.T, namespaces ...string) {
 	}
 }
 
-func TestInvalidArgs(t *testing.T) {
-	f, err := fs.Create("not/a/valid/namespace")
-	require.Nil(t, f)
-	require.Error(t, err)
-}
-
 func TestMultipleConcurrentReads(t *testing.T) {
-	t.Skip("bug #1080 - https://github.com/treeverse/lakeFS/issues/1080")
+	ctx := context.Background()
+	var baseDir string
+	fs, baseDir = createFSWithEviction(&mockEv{})
+
+	defer func() { _ = os.RemoveAll(baseDir) }()
 
 	// write a single file to lookup later
 	namespace := uuid.New().String()
 	filename := "1/2/file1.txt"
-	content := "hello world!"
-	writeToFile(t, namespace, filename, content)
+	content := []byte("hello world!")
+	writeToFile(t, ctx, namespace, filename, content)
 
-	// fill the cache so the file is evicted
-	testEviction(t, namespace)
-	adapter := fs.(*TierFS).adaptor.(*memAdapter)
-	readsSoFar := adapter.gets.Get()
-
+	// remove the file
+	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, filename) {
+			return os.Remove(path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
 	// try to read that file - only a single access to block storage is expected
-	concurrencyLevel := 50
+	const concurrencyLevel = 50
 	adapter.wait = make(chan struct{})
 	var wg sync.WaitGroup
+	wg.Add(concurrencyLevel)
 	for i := 0; i < concurrencyLevel; i++ {
-		wg.Add(1)
 		go func() {
-			checkContent(t, namespace, filename, content)
-			wg.Done()
+			defer wg.Done()
+			checkContent(t, ctx, namespace, filename, content)
 		}()
 	}
 
 	close(adapter.wait)
 	wg.Wait()
 
-	require.Equal(t, readsSoFar+1, adapter.gets.Get())
+	require.Equal(t, int64(1), adapter.GetCount())
 }
 
-func writeToFile(t *testing.T, namespace, filename, content string) {
-	f, err := fs.Create(namespace)
+func writeToFile(t *testing.T, ctx context.Context, namespace, filename string, content []byte) {
+	t.Helper()
+	f, err := fs.Create(ctx, namespace)
 	require.NoError(t, err)
 
-	n, err := f.Write([]byte(content))
+	n, err := f.Write(content)
 	require.NoError(t, err)
 	require.Equal(t, len(content), n)
 
 	require.NoError(t, f.Close())
-	require.NoError(t, f.Store(filename))
+	require.NoError(t, f.Store(ctx, filename))
 }
 
-func checkContent(t *testing.T, namespace string, filename string, content string) {
-	f, err := fs.Open(namespace, filename)
-	require.NoError(t, err)
+func checkContent(t *testing.T, ctx context.Context, namespace string, filename string, content []byte) {
+	t.Helper()
+	f, err := fs.Open(ctx, namespace, filename)
+	if err != nil {
+		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
+		return
+	}
 	defer f.Close()
 
-	bytes, err := ioutil.ReadAll(f)
-	require.NoError(t, err)
-	if content != string(bytes) {
-		require.Equal(t, content, string(bytes))
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Errorf("Failed to read all namespace:%s filename:%s - %s", namespace, filename, err)
+		return
+	}
+	if !bytes.Equal(content, data) {
+		t.Errorf("Content mismatch reading namespace:%s filename:%s", namespace, filename)
 	}
 }
 
-// simple mem adapter that count gets and let you wait
-type memAdapter struct {
-	gets atomic.Int
-	wait chan struct{}
-	*mem.Adapter
-}
+type mockEv struct{}
 
-func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, error) {
-	a.gets.Add(1)
-	<-a.wait
-	return a.Adapter.Get(obj, size)
+func (*mockEv) Touch(params.RelativePath) {}
+
+func (*mockEv) Store(params.RelativePath, int64) bool {
+	return true
 }

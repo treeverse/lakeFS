@@ -4,15 +4,17 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 	gravelerMock := &FakeGraveler{Err: graveler.ErrNotFound}
-	cat := entryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo", "ref", "path1")
 	if !errors.Is(err, graveler.ErrNotFound) {
@@ -26,7 +28,7 @@ func TestEntryCatalog_GetEntry_NotFound(t *testing.T) {
 func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 	entry := &Entry{Address: "addr1"}
 	gravelerMock := &FakeGraveler{KeyValue: map[string]*graveler.Value{"repo1/master/file1": MustEntryToValue(entry)}}
-	cat := entryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	got, err := cat.GetEntry(ctx, "repo1", "master", "file1")
 	testutil.MustDo(t, "get entry", err)
@@ -37,9 +39,22 @@ func TestEntryCatalog_GetEntry_Found(t *testing.T) {
 
 func TestEntryCatalog_SetEntry(t *testing.T) {
 	gravelerMock := &FakeGraveler{KeyValue: make(map[string]*graveler.Value)}
-	cat := entryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
-	entry := &Entry{Address: "addr1"}
+	var (
+		addr           = "addr1"
+		now            = time.Now()
+		size     int64 = 1234
+		tag            = "quick brown fox"
+		metadata       = map[string]string{"one": "1", "two": "2"}
+	)
+	entry := &Entry{
+		Address:      addr,
+		LastModified: timestamppb.New(now),
+		Size:         size,
+		ETag:         tag,
+		Metadata:     metadata,
+	}
 	err := cat.SetEntry(ctx, "repo", "ref", "path1", entry)
 	testutil.MustDo(t, "set entry", err)
 	// verify that mock got the right entry
@@ -58,9 +73,9 @@ func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 		{Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
 	gravelerMock := &FakeGraveler{
-		ListIterator: NewFakeValueIterator(listingData),
+		ListIteratorFactory: NewFakeValueIteratorFactory(listingData),
 	}
-	cat := entryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 	entries, err := cat.ListEntries(ctx, "repo", "ref", "", "")
 	testutil.MustDo(t, "list entries", err)
@@ -84,18 +99,16 @@ func TestEntryCatalog_ListEntries_NoDelimiter(t *testing.T) {
 
 func TestEntryCatalog_ListEntries_WithDelimiter(t *testing.T) {
 	// prepare data
-	var entriesData []*Entry
 	var gravelerData []*graveler.ValueRecord
 	for _, name := range []string{"file1", "folder/file1", "folder/file2", "zzz"} {
 		entry := &Entry{Address: name}
-		entriesData = append(entriesData, entry)
 		record := &graveler.ValueRecord{Value: MustEntryToValue(entry), Key: graveler.Key(name)}
 		gravelerData = append(gravelerData, record)
 	}
 	gravelerMock := &FakeGraveler{
-		ListIterator: NewFakeValueIterator(gravelerData),
+		ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
 	}
-	cat := entryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
 
 	t.Run("root", func(t *testing.T) {
@@ -147,11 +160,11 @@ func TestEntryCatalog_Diff(t *testing.T) {
 		{Type: graveler.DiffTypeChanged, Key: graveler.Key("file3"), Value: MustEntryToValue(entriesData[2])},
 	}
 	gravelerMock := &FakeGraveler{
-		DiffIterator: NewFakeDiffIterator(diffData),
+		DiffIteratorFactory: NewFakeDiffIteratorFactory(diffData),
 	}
-	cat := entryCatalog{store: gravelerMock}
+	cat := EntryCatalog{Store: gravelerMock}
 	ctx := context.Background()
-	diffs, err := cat.Diff(ctx, "repo", "left", "right", "")
+	diffs, err := cat.Diff(ctx, "repo", "left", "right")
 	testutil.MustDo(t, "diff", err)
 	defer diffs.Close()
 

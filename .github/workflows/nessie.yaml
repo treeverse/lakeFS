@@ -39,6 +39,27 @@ jobs:
           go-version: 1.15.2
         id: go
 
+      # No way to share code between workflows :-( If you change this, find and change the
+      # same code wherever "Find Go module and build caches" appears!
+      - name: Find Go module and build caches
+        run: |
+          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
+          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
+          cat $GITHUB_ENV
+      - name: Cache Go modules and builds
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ${{ env.GOMODCACHE }}
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys:
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
       - name: Generate code
         run: |
           make gen
@@ -78,6 +99,11 @@ jobs:
     name: Run latest lakeFS app
     needs: deploy-image
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        cataloger:
+          - mvcc
+          - rocks
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -107,6 +133,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -116,7 +143,7 @@ jobs:
         run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie S3
         env:
-          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: go test -v ./nessie --system-tests
@@ -125,7 +152,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
-            FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
+            FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
@@ -138,12 +165,13 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
             cd nessie/ops
-            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
+            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}/dump.gz
       - name: Run lakeFS S3 to use with local API key
         env:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -155,13 +183,14 @@ jobs:
           docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie S3 with local API key
         env:
-          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
-        run: go test -v ./nessie --system-tests --use-local-credentials
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
+        run: go test -v ./nessie --system-tests --use-local-credentials --coverprofile=nessie-cover.out --cover
       - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -174,9 +203,14 @@ jobs:
             docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie GS
         env:
-          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}
+          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
         run: go test -v ./nessie --system-tests
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Publish coverage
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./nessie-cover.out
+          fail_ci_if_error: false

@@ -43,8 +43,16 @@ func (a *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, op
 	return nil
 }
 
+func (a *mockAdapter) Exists(block.ObjectPointer) (bool, error) {
+	return false, nil
+}
+
 func (a *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	return nil, nil
+}
+
+func (a *mockAdapter) Walk(_ block.WalkOpts, _ block.WalkFunc) error {
+	return nil
 }
 
 func (a *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
@@ -62,20 +70,20 @@ func (a *mockAdapter) Copy(_, _ block.ObjectPointer) error {
 	return errors.New("copy method not implemented in mock adapter")
 }
 func (a *mockAdapter) CreateMultiPartUpload(_ block.ObjectPointer, r *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
-	panic("try to create multipart in mock adaptor")
+	panic("try to create multipart in mock adapter")
 }
 
 func (a *mockAdapter) UploadPart(_ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
-	panic("try to upload part in mock adaptor")
+	panic("try to upload part in mock adapter")
 }
 
 func (a *mockAdapter) AbortMultiPartUpload(_ block.ObjectPointer, uploadID string) error {
-	panic("try to abort multipart in mock adaptor")
+	panic("try to abort multipart in mock adapter")
 
 }
 
 func (a *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
-	panic("try to complete multipart in mock adaptor")
+	panic("try to complete multipart in mock adapter")
 }
 
 func (a *mockAdapter) ValidateConfiguration(_ string) error {

@@ -448,8 +448,8 @@ class Branches {
                 }
             }
         }
-        const results = response.results.filter(branch => branch.indexOf(from) === 0);
-        if (self) results.unshift(from);
+        const results = response.results.filter(branch => branch.id.indexOf(from) === 0);
+        if (self) results.unshift(self);
         const hasMore = response.pagination.has_more;
 
         return {

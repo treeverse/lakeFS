@@ -2,15 +2,17 @@ package pyramid
 
 import (
 	"os"
+
+	"github.com/treeverse/lakefs/pyramid/params"
 )
 
-// ROFile is pyramid wrapper for os.file that implements io.ReadCloser
+// ROFile is pyramid wrapper for os.File that implements io.ReadCloser
 // with hooks for updating evictions.
 type ROFile struct {
 	*os.File
-	eviction eviction
+	eviction params.Eviction
 
-	rPath relativePath
+	rPath params.RelativePath
 }
 
 func (f *ROFile) Write(p []byte) (n int, err error) {
@@ -22,16 +24,16 @@ func (f *ROFile) Sync() error {
 }
 
 func (f *ROFile) Read(p []byte) (n int, err error) {
-	f.eviction.touch(f.rPath)
+	f.eviction.Touch(f.rPath)
 	return f.File.Read(p)
 }
 
 func (f *ROFile) ReadAt(p []byte, off int64) (n int, err error) {
-	f.eviction.touch(f.rPath)
+	f.eviction.Touch(f.rPath)
 	return f.File.ReadAt(p, off)
 }
 
 func (f *ROFile) Stat() (os.FileInfo, error) {
-	f.eviction.touch(f.rPath)
+	f.eviction.Touch(f.rPath)
 	return f.File.Stat()
 }

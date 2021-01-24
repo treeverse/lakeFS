@@ -3,14 +3,18 @@
 </p>
 
 <p align="center">
-	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" alt="License">
-		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++" alt="Go">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" alt="Node">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" /></a>
-	<a href="https://artifacthub.io/packages/search?repo=lakefs" alt="Artifact HUB">
-		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" /></a>
+	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
+		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" alt="Go tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" >
+		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANessie">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Nessie/badge.svg" alt="nessie integration tests status" /></a>
+	<a href="https://artifacthub.io/packages/search?repo=lakefs">
+		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
+	<a href="CODE_OF_CONDUCT.md">
+		<img src="https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg" alt="code of conduct"></a>
 </p>
 
 
@@ -90,7 +94,7 @@ For more detailed information on how to set up lakeFS, please visit [the documen
 
 Stay up to date and get lakeFS support via:
 
-- [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) (to get help from our team and other users).
+- [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) (to get help from our team and other users).
 - [Twitter](https://twitter.com/lakeFS) (follow for updates and news)
 - [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
 - [Contact us](https://lakefs.io/contact-us/) (for anything)

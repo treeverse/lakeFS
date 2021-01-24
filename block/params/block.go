@@ -6,6 +6,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 )
 
+// AdapterConfig configures a block adapter.
+type AdapterConfig interface {
+	GetBlockstoreType() string
+	GetBlockAdapterLocalParams() (Local, error)
+	GetBlockAdapterS3Params() (S3, error)
+	GetBlockAdapterGSParams() (GS, error)
+}
+
 type Mem struct{}
 
 type Local struct {
