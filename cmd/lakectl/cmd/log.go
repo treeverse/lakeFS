@@ -15,7 +15,8 @@ const commitsTemplate = `
 ID:            {{ $val.ID|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
-Meta Range ID: {{ $val.MetaRangeID }}
+{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeID }}
+{{ end -}}
 {{ if gt ($val.Parents|len) 1 -}}
 Merge:         {{ $val.Parents|join ", "|bold }}
 {{ end }}
@@ -45,14 +46,17 @@ var logCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
 		commits, pagination, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Ref, after, amount)
 		ctx := struct {
-			Commits    []*models.Commit
-			Pagination *Pagination
+			Commits         []*models.Commit
+			Pagination      *Pagination
+			ShowMetaRangeID bool
 		}{
-			Commits: commits,
+			Commits:         commits,
+			ShowMetaRangeID: showMetaRangeID,
 		}
 		if pagination != nil && swag.BoolValue(pagination.HasMore) {
 			ctx.Pagination = &Pagination{
@@ -73,4 +77,5 @@ func init() {
 	rootCmd.AddCommand(logCmd)
 	logCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }
