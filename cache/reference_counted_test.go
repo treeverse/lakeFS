@@ -2,7 +2,6 @@ package cache_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -32,16 +31,6 @@ func TestCacheWithDisposal(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var elements = make([]*record, tc.size)
-			ch := make(chan error, tc.parallelism*2)
-			allErrs := make(chan []error, tc.parallelism*2)
-			go func() {
-				errs := make([]error, 0)
-				for err := range ch {
-					errs = append(errs, err)
-				}
-				allErrs <- errs
-				close(allErrs)
-			}()
 			p := cache.ParamsWithDisposal{
 				Name:   t.Name(),
 				Logger: logging.Default().WithField("testing", true),
@@ -50,10 +39,10 @@ func TestCacheWithDisposal(t *testing.T) {
 				OnDispose: func(v interface{}) error {
 					element := v.(*record)
 					if n := atomic.AddInt32(&element.disposed, 1); n != 1 {
-						ch <- fmt.Errorf("%d disposals of %+v", n, *element)
+						t.Errorf("%d disposals of %+v", n, *element)
 					}
 					if l := atomic.CompareAndSwapInt32(&element.live, 1, 0); !l {
-						ch <- fmt.Errorf("disposal of already-dead %+v", *element)
+						t.Errorf("disposal of already-dead %+v", *element)
 					}
 					return nil
 				},
@@ -84,14 +73,14 @@ func TestCacheWithDisposal(t *testing.T) {
 								return e, nil
 							})
 						if err != nil {
-							ch <- err
+							t.Error(err)
 						}
 						e := v.(*record)
 						if e.key != k {
-							ch <- fmt.Errorf("got %v not %d", v, k)
+							t.Errorf("got %v not %d", v, k)
 						}
 						if e.live == 0 {
-							ch <- fmt.Errorf("got dead element %+v at %d", v, k)
+							t.Errorf("got dead element %+v at %d", v, k)
 						}
 						if (j*tc.repeats+i)%113 == 17 {
 							time.Sleep(17 * time.Millisecond)
@@ -102,11 +91,6 @@ func TestCacheWithDisposal(t *testing.T) {
 				}(i)
 			}
 			wg.Wait()
-			close(ch)
-			errs := <-allErrs
-			for _, err := range errs {
-				t.Error(err)
-			}
 		})
 	}
 }
