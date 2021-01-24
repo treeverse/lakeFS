@@ -845,8 +845,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		cataloger := deps.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
-		var diffFunc func(ctx context.Context, repository, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error)
-		diffFunc = cataloger.Compare // default diff type is three-dot
+		diffFunc := cataloger.Compare // default diff type is three-dot
 		if swag.StringValue(params.Type) == string(models.DiffTypeTwoDot) {
 			diffFunc = cataloger.Diff
 		}
