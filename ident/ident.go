@@ -97,6 +97,7 @@ func (b *AddressWriter) MarshalStringMap(v map[string]string) *AddressWriter {
 	i := 0
 	for k := range v {
 		keys[i] = k
+		i++
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
