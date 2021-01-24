@@ -480,12 +480,17 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	return commits, hasMore, nil
 }
 
-func (c *cataloger) RollbackCommit(ctx context.Context, repository string, branch string, reference string) error {
+func (c *cataloger) Revert(ctx context.Context, repository string, branch string, reference string, committer string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(reference)
-	_, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref)
+	_, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, committer, fmt.Sprintf("Revert %s", reference), nil)
 	return err
+}
+
+func (c *cataloger) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
+	c.log.Debug("rollback to commit is not supported in rocks implementation")
+	return catalog.ErrFeatureNotSupported
 }
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {

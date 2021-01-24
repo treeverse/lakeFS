@@ -357,14 +357,17 @@ func (e *EntryCatalog) ResetPrefix(ctx context.Context, repositoryID graveler.Re
 	return e.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (graveler.CommitID, error) {
+func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
+		{"ref", branchID, ValidateRef},
+		{"committer", committer, ValidateRequiredString},
+		{"message", message, ValidateRequiredString},
 	}); err != nil {
 		return "", err
 	}
-	return e.Store.Revert(ctx, repositoryID, branchID, ref)
+	return e.Store.Revert(ctx, repositoryID, branchID, ref, committer, message, metadata)
 }
 
 func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
