@@ -1123,7 +1123,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		}
 		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
-			return "", fmt.Errorf("merge in CommitManager: %w", err)
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge in CommitManager: %w", err)
+			}
+			return "", err
 		}
 		commit := Commit{
 			Committer:    committer,
