@@ -82,6 +82,7 @@ type SingleThreadedCacheWithDisposal struct {
 // safe for concurrent use.
 type cacheEntry struct {
 	refs  int32
+	key   interface{}
 	value interface{}
 }
 
@@ -117,7 +118,9 @@ func NewSingleThreadedCacheWithDisposal(p ParamsWithDisposal) *SingleThreadedCac
 	onEvict := func(k interface{}, v interface{}) {
 		entry := v.(*cacheEntry)
 		err := entry.release(ret)
-		p.Logger.WithField("key", k).WithError(err).Error("[internal] failed to release during eviction")
+		if err != nil {
+			p.Logger.WithField("key", k).WithError(err).Error("[internal] failed to release during eviction")
+		}
 	}
 	ret.p = &p
 	var err error
@@ -140,7 +143,9 @@ func (c *SingleThreadedCacheWithDisposal) GetOrSet(ctx context.Context, k interf
 		if err != nil {
 			return nil, nil, err
 		}
-		entry = &cacheEntry{refs: 1, value: v}
+		// one ref from the cache, one from the returned handle.
+		entry = &cacheEntry{refs: 2, key: k, value: v}
+		c.lru.Add(k, entry)
 	}
 	return entry.value, func() error {
 		return entry.release(c)

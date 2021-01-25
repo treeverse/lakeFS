@@ -66,7 +66,7 @@ func TestCacheGet(t *testing.T) {
 	nids := []namespaceID{{"foo", "a"}, {"bar", "a"}, {"foo", "b-dontclose"}}
 	fo := NewFakeOpener(t, nids)
 	c := sstable.NewCacheWithOpener(
-		lru.ParamsWithDisposal{Name: t.Name(), Size: 50, Shards: 3},
+		lru.ParamsWithDisposal{Name: t.Name(), Size: 3, Shards: 3},
 		fo.Open,
 		fo.Exists,
 	)
@@ -82,6 +82,13 @@ func TestCacheGet(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+		}
+	}
+	// Flush everything by putting "lots" of elements in (enough to flush all the shards).
+	for i := 0; i < 100; i++ {
+		_, _, err := c.GetOrOpen(ctx, "flush", committed.ID(fmt.Sprintf("flush:%d", i)))
+		if err != nil {
+			t.Error(err)
 		}
 	}
 
