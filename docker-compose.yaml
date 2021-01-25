@@ -33,6 +33,7 @@ services:
       - LAKEFS_COMMITTED_PERMANENT_MIN_RANGE_SIZE_BYTES
       - LAKEFS_COMMITTED_PERMANENT_MAX_RANGE_SIZE_BYTES
       - LAKEFS_COMMITTED_PERMANENT_RANGE_RAGGEDNESS_ENTRIES
+      - LAKEFS_COMMITTED_BLOCK_STORAGE_PREFIX
 
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
