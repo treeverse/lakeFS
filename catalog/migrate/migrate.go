@@ -53,8 +53,6 @@ type Reporter interface {
 }
 
 const (
-	migrateFetchSize = 10000
-
 	initialCommitMessage = "Create empty new branch for migrate"
 )
 
@@ -85,8 +83,7 @@ func (m *Migrate) FilterRepository(expr string) error {
 	return nil
 }
 
-func (m *Migrate) Run() error {
-	ctx := context.Background()
+func (m *Migrate) Run(ctx context.Context) error {
 	repos, err := m.listRepositories(ctx)
 	if err != nil {
 		return fmt.Errorf("list repositories: %w", err)
@@ -238,7 +235,11 @@ func (m *Migrate) migrateCommit(ctx context.Context, repo *graveler.RepositoryRe
 	}
 
 	// iterator for mvcc entries, write meta range
-	it := NewIterator(ctx, m.db, commit.BranchID, commit.CommitID, migrateFetchSize)
+	it, err := NewIterator(ctx, m.db, commit.BranchID, commit.CommitID)
+	if err != nil {
+		return fmt.Errorf("migrate iterator: %w", err)
+	}
+
 	// scan entries
 	metaRangeID, err := m.entryCatalog.WriteMetaRange(ctx, repo.RepositoryID, it)
 	if err != nil {
