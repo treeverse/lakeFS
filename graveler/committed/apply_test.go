@@ -45,7 +45,7 @@ func TestApplyAdd(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{}))
 }
 
 func TestApplyReplace(t *testing.T) {
@@ -73,7 +73,7 @@ func TestApplyReplace(t *testing.T) {
 	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{}))
 }
 
 func TestApplyDelete(t *testing.T) {
@@ -99,7 +99,7 @@ func TestApplyDelete(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
 	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{}))
 }
 
 func TestApplyCopiesLeftoverDiffs(t *testing.T) {
@@ -127,7 +127,7 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{}))
 }
 
 func TestApplyCopiesLeftoverSources(t *testing.T) {
@@ -158,5 +158,25 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
 	writer.EXPECT().WriteRange(gomock.Eq(*range4))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{}))
+}
+
+func TestApplyNoChangesFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz")}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	source := testutil.NewFakeIterator()
+	source.
+		AddRange(range1).
+		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
+		AddRange(range2)
+
+	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{})
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRange(gomock.Any()).AnyTimes()
+
+	assert.Error(t, committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{}), graveler.ErrNoChanges)
 }
