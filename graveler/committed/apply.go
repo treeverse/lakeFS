@@ -12,6 +12,7 @@ import (
 func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator) error {
 	logger := logging.FromContext(ctx)
 	haveSource, haveDiffs := source.Next(), diffs.Next()
+	changed := false
 	for haveSource && haveDiffs {
 		sourceValue, sourceRange := source.Value()
 		diffValue := diffs.Value()
@@ -59,6 +60,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 						"tombstone": diffValue.IsTombstone(),
 					}).Trace("write key from diffs")
 				}
+				changed = true
 				if err := writer.WriteRecord(*diffValue); err != nil {
 					return fmt.Errorf("write added record: %w", err)
 				}
@@ -114,6 +116,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 		return err
 	}
 	for haveDiffs {
+		changed = true
 		diffValue := diffs.Value()
 		haveDiffs = diffs.Next()
 		if diffValue.IsTombstone() {
@@ -132,6 +135,9 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 		if err := writer.WriteRecord(*diffValue); err != nil {
 			return fmt.Errorf("write added record: %w", err)
 		}
+	}
+	if !changed {
+		return graveler.ErrNoChanges
 	}
 	return diffs.Err()
 }

@@ -3,6 +3,7 @@ package committed
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/logging"
@@ -122,7 +123,10 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 	defer metaRangeIterator.Close()
 	err = Apply(ctx, mwWriter, metaRangeIterator, diffs)
 	if err != nil {
-		return "", fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
+		if !errors.Is(err, graveler.ErrUserVisible) {
+			err = fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)
+		}
+		return "", err
 	}
 	newID, err := mwWriter.Close()
 	if newID == nil {

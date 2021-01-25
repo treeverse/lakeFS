@@ -856,7 +856,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		metaRangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
 		if err != nil {
-			return "", fmt.Errorf("apply: %w", err)
+			return "", fmt.Errorf("commit: %w", err)
 		}
 
 		// fill and add commit
