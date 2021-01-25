@@ -1,12 +1,11 @@
 ---
 layout: default
-title: Importing data from S3
+title: Importing data from S3 (MVCC)
 description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
 parent: Reference
-nav_order: 8
+nav_exclude: true
 has_children: false
 ---
-This page describes importing from versions >= v0.24.0. For ealier versions, see [mvcc import](import-mvcc.md)
 
 # Importing data from S3
 {: .no_toc }
@@ -32,8 +31,8 @@ Unfortunately, copying data is not always feasible for the following reasons:
 To solve this we offer an import tool that does not copy any data, allowing for a more gradual onboarding process.
 
 The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
-In case the repository is empty, the imported metadata will be committed directly to the main branch. In all other cases, it will be committed to a special branch, called `import-from-inventory`.
-You should not make any changes or commit anything to branch `import-from-inventory`: it will be operated on only by lakeFS.
+The imported metadata will be reflected in lakeFS under a special branch, called `import-from-inventory`.
+You should not make any changes or commit anything to this branch: it will be operated on only by lakeFS.
 After importing, you will be able to merge this branch into your main branch.
 
 The imported data is not copied to the repository’s dedicated bucket.
@@ -68,11 +67,11 @@ After the import is finished, a summary will be printed along with suggestions f
 ```
 Added or changed objects: 565000
 Deleted objects: 0
-Commit ref: cf349ded0a0e65e20bd3b25ea8d9b656c2870b7f1f32f60eb1d90ca5873b6c03
+Commit ref: ~AcT47Svc1Q3MqayUwSqETVW9JRerMzAq6
 
 Import to branch import-from-inventory finished successfully.
 To list imported objects, run:
-	$ lakectl fs ls lakefs://example-repo@cf349ded0a0e65e20bd3b25ea8d9b656c2870b7f1f32f60eb1d90ca5873b6c03/
+	$ lakectl fs ls lakefs://example-repo@~AcT47Svc1Q3MqayUwSqETVW9JRerMzAq6/
 To merge the changes to your main branch, run:
 	$ lakectl merge lakefs://example-repo@import-from-inventory lakefs://goo@master
 ```
@@ -102,8 +101,7 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 Once you switch to using the lakeFS S3-compatible endpoint in all places, you can stop making changes to your original bucket.
 However, if your operation still requires that you work on the original bucket,
 you can repeat using the import API with up-to-date inventories every day, until you complete the onboarding process.
-You can specify only the prefixes that require import. lakeFS will merge those prefixes with the previous imported inventory.
-For example, a prefixes-file that contains only the prefix `new/data/`. The new commit to `import-from-inventory` branch will include all objects from the HEAD of that branch, except for objects with prefix `new/data/` that is imported from the inventory. 
+The changes will be added as new commits to the `import-from-inventory` branch, which you can in turn merge into your main branch.
 
 ### Limitations
 
