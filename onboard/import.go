@@ -9,7 +9,9 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/cmdutils"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -36,6 +38,7 @@ type Config struct {
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
 	Rocks              bool
+	EntryCatalog       *rocks.EntryCatalog
 }
 
 type Stats struct {
@@ -58,17 +61,20 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		repository:         config.Repository,
 		inventoryGenerator: config.InventoryGenerator,
 		logger:             logger,
+		rocks:              config.Rocks,
 		CatalogActions:     config.CatalogActions,
 	}
+
 	if res.CatalogActions == nil {
-		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
+		res.CatalogActions = buildRepoActions(config, logger)
 	}
+
 	previousCommit, err := res.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
 	}
 	res.previousCommit = previousCommit
-	shouldSort := res.previousCommit != nil
+	shouldSort := res.previousCommit != nil || res.rocks
 	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, shouldSort, config.KeyPrefixes)
 	res.prefixes = config.KeyPrefixes
 	if !res.validatePrefixes() {
@@ -78,6 +84,15 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		return nil, err
 	}
 	return res, nil
+}
+
+// ugly workaround until mvcc is fully deprecated
+func buildRepoActions(c *Config, logger logging.Logger) RepoActions {
+	if c.Rocks {
+		return NewRocksCatalogRepoActions(c.EntryCatalog, graveler.RepositoryID(c.Repository), c.CommitUsername, logger, c.KeyPrefixes)
+	}
+
+	return NewCatalogActions(c.Cataloger, c.Repository, c.CommitUsername, logger)
 }
 
 func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (Iterator, error) {
