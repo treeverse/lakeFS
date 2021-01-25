@@ -7,9 +7,8 @@ import (
 	"hash"
 	"strconv"
 
-	"github.com/treeverse/lakefs/ident"
-
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/ident"
 
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/pyramid"
