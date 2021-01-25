@@ -51,11 +51,11 @@ type AddressWriter struct {
 }
 
 func NewAddressWriter() *AddressWriter {
-	return &AddressWriter{sha256.New()}
+	return &AddressWriter{Hash: sha256.New()}
 }
 
 func WriterFromHash(h hash.Hash) *AddressWriter {
-	return &AddressWriter{h}
+	return &AddressWriter{Hash: h}
 }
 
 func (b *AddressWriter) marshalType(addressType AddressType) {
