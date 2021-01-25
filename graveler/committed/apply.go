@@ -57,6 +57,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			}
 		} else {
 			// select record from diffs, possibly (c==0) overwriting source
+			changed = true
 			if !diffValue.IsTombstone() {
 				if logger.IsTracing() {
 					logger.WithFields(logging.Fields{
@@ -65,7 +66,6 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 						"tombstone": diffValue.IsTombstone(),
 					}).Trace("write key from diffs")
 				}
-				changed = true
 				if err := writer.WriteRecord(*diffValue); err != nil {
 					return fmt.Errorf("write added record: %w", err)
 				}
