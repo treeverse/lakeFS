@@ -46,53 +46,43 @@ const (
 	AddressTypeEmbeddedIdentifiable
 )
 
-type AddressWriter struct {
-	hash.Hash
+// linter is angry because h can be an io.Writer, but we explicitly want a Hash here.
+//nolint:interfacer
+func marshalType(h hash.Hash, addressType AddressType) {
+	_, _ = h.Write([]byte{byte(addressType)})
 }
 
-func NewAddressWriter() *AddressWriter {
-	return &AddressWriter{sha256.New()}
+func MarshalBytes(h hash.Hash, v []byte) {
+	marshalType(h, AddressTypeBytes)
+	MarshalInt64(h, int64(len(v)))
+	_, _ = h.Write(v)
 }
 
-func (b *AddressWriter) marshalType(addressType AddressType) {
-	_, _ = b.Write([]byte{byte(addressType)})
+func MarshalString(h hash.Hash, v string) {
+	marshalType(h, AddressTypeString)
+	MarshalInt64(h, int64(len(v)))
+	_, _ = h.Write([]byte(v))
 }
 
-func (b *AddressWriter) MarshalBytes(v []byte) *AddressWriter {
-	b.marshalType(AddressTypeBytes)
-	b.MarshalInt64(int64(len(v)))
-	_, _ = b.Write(v)
-	return b
-}
-
-func (b *AddressWriter) MarshalString(v string) *AddressWriter {
-	b.marshalType(AddressTypeString)
-	b.MarshalInt64(int64(len(v)))
-	_, _ = b.Write([]byte(v))
-	return b
-}
-
-func (b *AddressWriter) MarshalInt64(v int64) *AddressWriter {
-	b.marshalType(AddressTypeInt64)
-	_, _ = b.Write([]byte{8})
+func MarshalInt64(h hash.Hash, v int64) {
+	marshalType(h, AddressTypeInt64)
+	_, _ = h.Write([]byte{8})
 	bytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(bytes, uint64(v))
-	_, _ = b.Write(bytes)
-	return b
+	_, _ = h.Write(bytes)
 }
 
-func (b *AddressWriter) MarshalStringSlice(v []string) *AddressWriter {
-	b.marshalType(AddressTypeStringSlice)
-	b.MarshalInt64(int64(len(v)))
+func MarshalStringSlice(h hash.Hash, v []string) {
+	marshalType(h, AddressTypeStringSlice)
+	MarshalInt64(h, int64(len(v)))
 	for _, item := range v {
-		b.MarshalString(item)
+		MarshalString(h, item)
 	}
-	return b
 }
 
-func (b *AddressWriter) MarshalStringMap(v map[string]string) *AddressWriter {
-	b.marshalType(AddressTypeStringMap)
-	b.MarshalInt64(int64(len(v)))
+func MarshalStringMap(h hash.Hash, v map[string]string) {
+	marshalType(h, AddressTypeStringMap)
+	MarshalInt64(h, int64(len(v)))
 	keys := make([]string, len(v))
 	i := 0
 	for k := range v {
@@ -101,15 +91,51 @@ func (b *AddressWriter) MarshalStringMap(v map[string]string) *AddressWriter {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		b.MarshalString(k)
-		b.MarshalString(v[k])
+		MarshalString(h, k)
+		MarshalString(h, v[k])
 	}
+}
+
+func MarshalIdentifiable(h hash.Hash, v Identifiable) {
+	marshalType(h, AddressTypeEmbeddedIdentifiable)
+	MarshalBytes(h, v.Identity())
+}
+
+type AddressWriter struct {
+	hash.Hash
+}
+
+func NewAddressWriter() *AddressWriter {
+	return &AddressWriter{Hash: sha256.New()}
+}
+
+func (b *AddressWriter) MarshalBytes(v []byte) *AddressWriter {
+	MarshalBytes(b, v)
+	return b
+}
+
+func (b *AddressWriter) MarshalString(v string) *AddressWriter {
+	MarshalString(b, v)
+	return b
+}
+
+func (b *AddressWriter) MarshalInt64(v int64) *AddressWriter {
+	MarshalInt64(b, v)
+	return b
+}
+
+func (b *AddressWriter) MarshalStringSlice(v []string) *AddressWriter {
+	MarshalStringSlice(b, v)
+	return b
+}
+
+func (b *AddressWriter) MarshalStringMap(v map[string]string) *AddressWriter {
+	MarshalStringMap(b, v)
 	return b
 }
 
 func (b *AddressWriter) MarshalIdentifiable(v Identifiable) *AddressWriter {
-	b.marshalType(AddressTypeEmbeddedIdentifiable)
-	b.MarshalBytes(v.Identity())
+	MarshalIdentifiable(b, v)
 	return b
 }
 

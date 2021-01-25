@@ -193,7 +193,7 @@ func TestGetWriterRangeID(t *testing.T) {
 		result, err := writer.Close()
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		expectedID := committed.ID("573176aa7fc6f9123e509c560b8a4d7d3384d85c9a74f72890c0276a70f7bf67")
+		expectedID := committed.ID("1f60902cb44890618d61597673a62e44cf526f5991d9db687141218985fe60b8")
 		require.Equal(t, expectedID, result.RangeID, "Range ID should be kept the same based on the content")
 	}
 }
