@@ -121,11 +121,13 @@ func (c *lruCache) GetOrOpen(ctx context.Context, namespace string, id committed
 		}
 		return r, nil
 	})
-	logging.FromContext(ctx).WithFields(logging.Fields{
-		"opened":    opened,
-		"namespace": namespace,
-		"id":        id,
-	}).Trace("GetOrOpen")
+	if logging.Default().IsTracing() {
+		logging.FromContext(ctx).WithFields(logging.Fields{
+			"opened":    opened,
+			"namespace": namespace,
+			"id":        id,
+		}).Trace("GetOrOpen")
+	}
 	if err != nil {
 		return nil, nil, err
 	}
