@@ -121,7 +121,7 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 		return "", fmt.Errorf("get metarange ns=%s id=%s: %w", ns, rangeID, err)
 	}
 	defer metaRangeIterator.Close()
-	err = Apply(ctx, mwWriter, metaRangeIterator, diffs)
+	err = Apply(ctx, mwWriter, metaRangeIterator, diffs, &ApplyOptions{AllowEmpty: true})
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("apply ns=%s id=%s: %w", ns, rangeID, err)

@@ -9,7 +9,12 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator) error {
+type ApplyOptions struct {
+	// Set to allow commits that change nothing (otherwise ErrNoChanges)
+	AllowEmpty bool
+}
+
+func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator, opts *ApplyOptions) error {
 	logger := logging.FromContext(ctx)
 	haveSource, haveDiffs := source.Next(), diffs.Next()
 	changed := false
@@ -136,7 +141,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			return fmt.Errorf("write added record: %w", err)
 		}
 	}
-	if !changed {
+	if !opts.AllowEmpty && !changed {
 		return graveler.ErrNoChanges
 	}
 	return diffs.Err()
