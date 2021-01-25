@@ -124,12 +124,12 @@ func (dw *DiskWriter) Abort() error {
 }
 
 func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
-	tableHash := dw.hash.Sum(nil)
-	sstableID := hex.EncodeToString(tableHash)
-
 	// Before closing, we write all user supplied metadata keys and values to the hash
 	// This is done to avoid collisions, especially on empty sstables that might hash to the same value otherwise.
 	ident.WriterFromHash(dw.hash).MarshalStringMap(dw.props)
+
+	tableHash := dw.hash.Sum(nil)
+	sstableID := hex.EncodeToString(tableHash)
 
 	// Prepare metadata properties for Close to write.  The map was already set in the
 	// sstable.Writer constructor and cannot be changed, but we can replace its values
