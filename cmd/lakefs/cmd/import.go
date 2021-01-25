@@ -126,6 +126,16 @@ var importCmd = &cobra.Command{
 			}
 			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
 		}
+
+		var entryCataloger *rocks.EntryCatalog
+		if isRocks {
+			entryCataloger, err = rocks.NewEntryCatalog(cfg, dbPool)
+			if err != nil {
+				fmt.Printf("Failed to build entry catalog: %s\n", err)
+				os.Exit(1)
+			}
+		}
+
 		importConfig := &onboard.Config{
 			CommitUsername:     CommitterName,
 			InventoryURL:       manifestURL,
@@ -133,15 +143,8 @@ var importCmd = &cobra.Command{
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 			KeyPrefixes:        prefixes,
-		}
-
-		if isRocks {
-			importConfig.EntryCatalog, err = rocks.NewEntryCatalog(cfg, dbPool)
-			importConfig.Rocks = true
-			if err != nil {
-				fmt.Printf("Failed to build entry catalog: %s\n", err)
-				os.Exit(1)
-			}
+			Rocks:              isRocks,
+			EntryCatalog:       entryCataloger,
 		}
 
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)

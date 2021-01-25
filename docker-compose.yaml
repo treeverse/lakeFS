@@ -8,7 +8,7 @@ version: '3'
 services:
   lakefs:
     build: .
-    ports:
+    ports: 
       - "8000:8000"
     depends_on:
       - "postgres"
@@ -34,6 +34,7 @@ services:
       - LAKEFS_COMMITTED_PERMANENT_MAX_RANGE_SIZE_BYTES
       - LAKEFS_COMMITTED_PERMANENT_RANGE_RAGGEDNESS_ENTRIES
       - LAKEFS_COMMITTED_BLOCK_STORAGE_PREFIX
+
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"

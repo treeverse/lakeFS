@@ -27,7 +27,7 @@ type RocksCatalogRepoActions struct {
 	progress *cmdutils.Progress
 	commit   *cmdutils.Progress
 	prefixes []string
-	ref      graveler.Ref
+	ref      graveler.BranchID
 }
 
 func (c *RocksCatalogRepoActions) Progress() []*cmdutils.Progress {
@@ -44,9 +44,9 @@ type entryCataloger interface {
 	CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 }
 
-func NewRocksCatalogRepoActions(metaRanger entryCataloger, repository graveler.RepositoryID, committer string, logger logging.Logger, prefixes []string) *RocksCatalogRepoActions {
+func NewRocksCatalogRepoActions(eCataloger entryCataloger, repository graveler.RepositoryID, committer string, logger logging.Logger, prefixes []string) *RocksCatalogRepoActions {
 	return &RocksCatalogRepoActions{
-		entryCataloger: metaRanger,
+		entryCataloger: eCataloger,
 		repoID:         repository,
 		committer:      committer,
 		logger:         logger,
@@ -69,7 +69,8 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 		return nil, ErrWrongIterator
 	}
 
-	listIt, err := c.entryCataloger.ListEntries(ctx, c.repoID, c.ref, "", "")
+	// if repo is empty, it's an empty iterator
+	listIt, err := c.entryCataloger.ListEntries(ctx, c.repoID, graveler.Ref(c.ref), "", "")
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}
@@ -88,8 +89,13 @@ func (c *RocksCatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, 
 func (c *RocksCatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
 	branch, err := c.entryCataloger.GetBranch(ctx, c.repoID, catalog.DefaultImportBranchName)
 	if errors.Is(err, graveler.ErrBranchNotFound) {
-		// first import, let's create the branch with an empty commit
-		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, "master")
+		// first import, let's create the branch
+		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, catalog.DefaultBranchName)
+		if errors.Is(err, graveler.ErrCreateBranchNoCommit) {
+			// no commits in repo, merge to master
+			c.ref = catalog.DefaultBranchName
+			return nil, nil
+		}
 		if err != nil {
 			return nil, fmt.Errorf("creating default branch %s: %w", catalog.DefaultImportBranchName, err)
 		}
@@ -115,7 +121,7 @@ func (c *RocksCatalogRepoActions) Commit(ctx context.Context, commitMsg string, 
 		return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
 	}
 
-	_, err = c.entryCataloger.UpdateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, graveler.Ref(commitID))
+	_, err = c.entryCataloger.UpdateBranch(ctx, c.repoID, c.ref, graveler.Ref(commitID))
 	if err != nil {
 		return "", fmt.Errorf("updating branch: %w", err)
 	}

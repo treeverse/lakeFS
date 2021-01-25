@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
-
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/cmdutils"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -64,9 +62,10 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		inventoryGenerator: config.InventoryGenerator,
 		logger:             logger,
 		rocks:              config.Rocks,
+		CatalogActions:     config.CatalogActions,
 	}
 
-	if config.CatalogActions == nil {
+	if res.CatalogActions == nil {
 		res.CatalogActions = buildRepoActions(config, logger)
 	}
 
