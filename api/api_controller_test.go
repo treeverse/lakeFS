@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -1580,12 +1579,4 @@ func Test_setupLakeFSHandler(t *testing.T) {
 			}
 		})
 	}
-}
-
-func mustSetup(t *testing.T, reqURI string, contentType string, req []byte) *http.Response {
-	res, err := http.Post(reqURI, contentType, bytes.NewReader(req))
-	if err != nil {
-		t.Fatal("Post setup request to server", err)
-	}
-	return res
 }

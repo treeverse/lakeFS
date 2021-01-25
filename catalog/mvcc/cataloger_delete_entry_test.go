@@ -158,18 +158,25 @@ func TestCataloger_DeleteEntryAndCheckItRemainsInCommits(t *testing.T) {
 	testutil.Must(t, err)
 
 	list, _, err := c.ListEntries(ctx, repository, nextCommit.Reference, "", "", "", 1000)
+	testutil.Must(t, err)
 	if len(list) != 0 {
 		t.Fatal("list entries returned deleted object")
 	}
+
 	list, _, err = c.ListEntries(ctx, repository, prevCommit.Reference, "", "", "", 1000)
+	testutil.Must(t, err)
 	if len(list) != 1 {
 		t.Fatal("list entries by commitID did not return deleted object from next commit")
 	}
+
 	list, _, err = c.ListEntries(ctx, repository, nextCommit.Reference, "", "", "/", 1000)
+	testutil.Must(t, err)
 	if len(list) != 0 {
 		t.Fatal("list entries by prefix returned deleted object")
 	}
+
 	list, _, err = c.ListEntries(ctx, repository, prevCommit.Reference, "", "", "/", 1000)
+	testutil.Must(t, err)
 	if len(list) != 1 {
 		t.Fatal("list entries by prefix on commitID did not return deleted object from next commit")
 	}
