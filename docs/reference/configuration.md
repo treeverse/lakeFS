@@ -74,7 +74,7 @@ This reference uses `.` to denote the nesting of values.
   not possible.
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
-  + `committed.local_cache.size_bytes` (`int` : 1 GiB) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
+  + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
   + `committed.local_cache.dir` (`string`, `~/lakefs/local_tier`) - directory to store local cache.
   +	`committed.local_cache.range_proportion` (`float` : `0.9`) - proportion of local cache to
 	use for storing ranges (leaves of committed metadata storage).
@@ -89,12 +89,12 @@ This reference uses `.` to denote the nesting of values.
   + `committed.local_cache.metarange.num_shards` (`int` : `10`) - sharding factor for open
     SSTable readers for metaranges.  Should be at least
     `sqrt(committed.local_cache.metarange.open_readers)`.
-+ `committed.block_storage_prefix` (`string` : `_lakefs`) - Prefix in block storage repo
-  storage for metadata files.
++ `committed.block_storage_prefix` (`string` : `_lakefs`) - Prefix for metadata file storage
+  in each repository's storage namespace
 + `committed.permanent.min_range_size_bytes` (`int` : `0`) - Smallest allowable range in
   metadata.  Increase to somewhat reduce random access time on committed metadata, at the cost
   of increased committed metadata storage cost.
-+ `committed.permanent.max_range_size_bytes` (`int` : 20 MiB) - Largest allowable range in
++ `committed.permanent.max_range_size_bytes` (`int` : `20971520`) - Largest allowable range in
   metadata.  Should be close to the size at which fetching from remote storage becomes linear.
 + `committed.permanent.range_raggedness_entries` (`int` : `50_000`) - Average number of object
   pointers to store in each range (subject to `min_range_size_bytes` and
