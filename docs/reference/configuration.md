@@ -69,6 +69,38 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.retention.report_s3_prefix_url` - Base S3 URL to use
   for writing batch tagging completion reports.  Must be writable by
   `blockstore.s3.retention.role_arn`.
+* `cataloger.type` (one of `rocks` or `mvcc`, default `rocks`) - whether to use `mvcc` or
+  `rocks` cataloger.  Changing from `mvcc` to `rocks` requires migration.  Changing back is
+  not possible.
+* `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
+  permanent storage:
+  + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
+  + `committed.local_cache.dir` (`string`, `~/lakefs/local_tier`) - directory to store local cache.
+  +	`committed.local_cache.range_proportion` (`float` : `0.9`) - proportion of local cache to
+	use for storing ranges (leaves of committed metadata storage).
+  + `committed.local_cache.range.open_readers` (`int` : `500`) - maximal number of unused open
+    SSTable readers to keep for ranges.
+  + `committed.local_cache.range.num_shards` (`int` : `30`) - sharding factor for open SSTable
+    readers for ranges.  Should be at least `sqrt(committed.local_cache.range.open_readers)`.
+  + `committed.local_cache.metarange_proportion` (`float` : `0.1`) - proportion of local cache
+	to use for storing metaranges (roots of committed metadata storage).
+  + `committed.local_cache.metarange.open_readers` (`int` : `50`) - maximal number of unused open
+    SSTable readers to keep for metaranges.
+  + `committed.local_cache.metarange.num_shards` (`int` : `10`) - sharding factor for open
+    SSTable readers for metaranges.  Should be at least
+    `sqrt(committed.local_cache.metarange.open_readers)`.
++ `committed.block_storage_prefix` (`string` : `_lakefs`) - Prefix for metadata file storage
+  in each repository's storage namespace
++ `committed.permanent.min_range_size_bytes` (`int` : `0`) - Smallest allowable range in
+  metadata.  Increase to somewhat reduce random access time on committed metadata, at the cost
+  of increased committed metadata storage cost.
++ `committed.permanent.max_range_size_bytes` (`int` : `20971520`) - Largest allowable range in
+  metadata.  Should be close to the size at which fetching from remote storage becomes linear.
++ `committed.permanent.range_raggedness_entries` (`int` : `50_000`) - Average number of object
+  pointers to store in each range (subject to `min_range_size_bytes` and
+  `max_range_size_bytes`).
++ `committed.sstable.memory.cache_size_bytes` (`int` : `200_000_000`) - maximal size of
+  in-memory cache used for each SSTable reader.
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
