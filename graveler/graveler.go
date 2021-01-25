@@ -856,7 +856,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		metaRangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
 		if err != nil {
-			return "", fmt.Errorf("apply: %w", err)
+			return "", fmt.Errorf("commit: %w", err)
 		}
 
 		// fill and add commit
@@ -1071,7 +1071,10 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
 		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
 		if err != nil {
-			return "", fmt.Errorf("merge: %w", err)
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge: %w", err)
+			}
+			return "", err
 		}
 		commit := Commit{
 			Committer:    committer,
@@ -1123,7 +1126,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		}
 		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
-			return "", fmt.Errorf("merge in CommitManager: %w", err)
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge in CommitManager: %w", err)
+			}
+			return "", err
 		}
 		commit := Commit{
 			Committer:    committer,

@@ -9,6 +9,11 @@ import (
 
 // Graveler errors
 var (
+	// Base error for "user-visible" errors, which should not be wrapped with internal
+	// debug info.
+	ErrUserVisible = errors.New("")
+
+	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
 	ErrNotFound                = wrapError(db.ErrNotFound, "not found")
 	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
@@ -25,6 +30,7 @@ var (
 	ErrBranchNotFound          = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound             = fmt.Errorf("tag %w", ErrNotFound)
 	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
+	ErrNoChanges               = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound           = errors.New("conflict found")
 	ErrBranchExists            = errors.New("branch already exists")
 	ErrTagAlreadyExists        = errors.New("tag already exists")

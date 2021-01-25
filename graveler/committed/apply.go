@@ -9,9 +9,81 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator) error {
+type ApplyOptions struct {
+	// Set to allow commits that change nothing (otherwise ErrNoChanges)
+	AllowEmpty bool
+}
+
+// applyFromSource applies all changes from source to writer.
+func applyFromSource(logger logging.Logger, writer MetaRangeWriter, source Iterator) error {
+	for {
+		sourceValue, sourceRange := source.Value()
+		if sourceValue == nil {
+			if logger.IsTracing() {
+				logger.WithFields(logging.Fields{
+					"from": string(sourceRange.MinKey),
+					"to":   string(sourceRange.MaxKey),
+					"ID":   sourceRange.ID,
+				}).Trace("copy entire source range at end")
+			}
+			if err := writer.WriteRange(*sourceRange); err != nil {
+				return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
+			}
+			if !source.NextRange() {
+				break
+			}
+		} else {
+			if logger.IsTracing() {
+				logger.WithFields(logging.Fields{
+					"key": string(sourceValue.Key),
+					"ID":  string(sourceValue.Identity),
+				}).Trace("write key from source at end")
+			}
+			if err := writer.WriteRecord(*sourceValue); err != nil {
+				return fmt.Errorf("write source record: %w", err)
+			}
+			if !source.Next() {
+				break
+			}
+		}
+	}
+	return source.Err()
+}
+
+// applyFromDiffs applies all changes from diffs to writer and returns true if it made any
+// changes.
+func applyFromDiffs(logger logging.Logger, writer MetaRangeWriter, diffs graveler.ValueIterator) (bool, error) {
+	changed := false
+	for {
+		changed = true
+		diffValue, haveDiffs := diffs.Value(), diffs.Next()
+		if diffValue.IsTombstone() {
+			// internal error but no data lost: deletion requested of a
+			// file that was not there.
+			logger.WithField("id", string(diffValue.Identity)).Warn("[I] unmatched delete")
+			continue
+		}
+		if logger.IsTracing() {
+			logger.WithFields(logging.Fields{
+				"key":       string(diffValue.Key),
+				"ID":        string(diffValue.Identity),
+				"tombstone": diffValue.IsTombstone(),
+			}).Trace("write key from diffs at end")
+		}
+		if err := writer.WriteRecord(*diffValue); err != nil {
+			return false, fmt.Errorf("write added record: %w", err)
+		}
+		if !haveDiffs {
+			break
+		}
+	}
+	return changed, nil
+}
+
+func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator, opts *ApplyOptions) error {
 	logger := logging.FromContext(ctx)
 	haveSource, haveDiffs := source.Next(), diffs.Next()
+	changed := false
 	for haveSource && haveDiffs {
 		sourceValue, sourceRange := source.Value()
 		diffValue := diffs.Value()
@@ -51,6 +123,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			}
 		} else {
 			// select record from diffs, possibly (c==0) overwriting source
+			changed = true
 			if !diffValue.IsTombstone() {
 				if logger.IsTracing() {
 					logger.WithFields(logging.Fields{
@@ -83,55 +156,22 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 	if err := diffs.Err(); err != nil {
 		return err
 	}
-	for haveSource {
-		sourceValue, sourceRange := source.Value()
-		if sourceValue == nil {
-			if logger.IsTracing() {
-				logger.WithFields(logging.Fields{
-					"from": string(sourceRange.MinKey),
-					"to":   string(sourceRange.MaxKey),
-					"ID":   sourceRange.ID,
-				}).Trace("copy entire source range at end")
-			}
-			if err := writer.WriteRange(*sourceRange); err != nil {
-				return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
-			}
-			haveSource = source.NextRange()
-		} else {
-			if logger.IsTracing() {
-				logger.WithFields(logging.Fields{
-					"key": string(sourceValue.Key),
-					"ID":  string(sourceValue.Identity),
-				}).Trace("write key from source at end")
-			}
-			if err := writer.WriteRecord(*sourceValue); err != nil {
-				return fmt.Errorf("write source record: %w", err)
-			}
-			haveSource = source.Next()
+	if haveSource {
+		if err := applyFromSource(logger, writer, source); err != nil {
+			return err
 		}
 	}
-	if err := source.Err(); err != nil {
-		return err
+
+	if haveDiffs {
+		diffsChanged, err := applyFromDiffs(logger, writer, diffs)
+		if err != nil {
+			return err
+		}
+		changed = changed || diffsChanged
 	}
-	for haveDiffs {
-		diffValue := diffs.Value()
-		haveDiffs = diffs.Next()
-		if diffValue.IsTombstone() {
-			// internal error but no data lost: deletion requested of a
-			// file that was not there.
-			logger.WithField("id", string(diffValue.Identity)).Warn("[I] unmatched delete")
-			continue
-		}
-		if logger.IsTracing() {
-			logger.WithFields(logging.Fields{
-				"key":       string(diffValue.Key),
-				"ID":        string(diffValue.Identity),
-				"tombstone": diffValue.IsTombstone(),
-			}).Trace("write key from diffs at end")
-		}
-		if err := writer.WriteRecord(*diffValue); err != nil {
-			return fmt.Errorf("write added record: %w", err)
-		}
+
+	if !opts.AllowEmpty && !changed {
+		return graveler.ErrNoChanges
 	}
 	return diffs.Err()
 }

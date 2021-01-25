@@ -758,7 +758,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		case errors.Is(err, catalog.ErrConflictFound) || errors.Is(err, graveler.ErrConflictFound):
 			payload := newMergeResultFromCatalog(res)
 			return refs.NewMergeIntoBranchConflict().WithPayload(payload)
-		case errors.Is(err, catalog.ErrNoDifferenceWasFound):
+		case errors.Is(err, catalog.ErrNoDifferenceWasFound) || errors.Is(err, graveler.ErrNoChanges):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("no difference was found"))
 		case errors.Is(err, graveler.ErrLockNotAcquired):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branch is currently locked, try again later"))
