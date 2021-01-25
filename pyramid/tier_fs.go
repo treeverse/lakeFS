@@ -54,7 +54,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		fsLocalBaseDir: fsLocalBaseDir,
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanOnlyOne(),
-		remotePrefix:   path.Join(c.BlockStoragePrefix, c.FSName),
+		remotePrefix:   c.BlockStoragePrefix,
 	}
 	if c.Eviction == nil {
 		var err error
