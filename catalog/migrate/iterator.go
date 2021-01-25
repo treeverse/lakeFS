@@ -38,8 +38,12 @@ func NewIterator(ctx context.Context, db db.Database, branchID int64, commitID i
 }
 
 func (it *Iterator) Next() bool {
+	if it.err != nil {
+		return false
+	}
+
 	if !it.rows.Next() {
-		it.err = it.Err()
+		it.err = it.rows.Err()
 		it.value = nil
 		return false
 	}
@@ -65,6 +69,7 @@ func (it *Iterator) SeekGE(rocks.Path) {
 		return
 	}
 	it.rows.Close()
+	it.rows = nil
 	it.err = ErrNotSeekable
 }
 
@@ -76,7 +81,7 @@ func (it *Iterator) Value() *rocks.EntryRecord {
 }
 
 func (it *Iterator) Err() error {
-	return it.rows.Err()
+	return it.err
 }
 
 func (it *Iterator) Close() {
