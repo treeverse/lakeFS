@@ -29,6 +29,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	retentionop "github.com/treeverse/lakefs/api/gen/restapi/operations/retention"
 	setupop "github.com/treeverse/lakefs/api/gen/restapi/operations/setup"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/tags"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
@@ -167,6 +168,11 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
 	api.BranchesResetBranchHandler = c.ResetBranchHandler()
 	api.BranchesRevertHandler = c.RevertHandler()
+
+	api.TagsListTagsHandler = c.ListTagsHandler()
+	api.TagsGetTagHandler = c.GetTagHandler()
+	api.TagsCreateTagHandler = c.CreateTagHandler()
+	api.TagsDeleteTagHandler = c.DeleteTagHandler()
 
 	api.CommitsCommitHandler = c.CommitHandler()
 	api.CommitsGetCommitHandler = c.GetCommitHandler()
@@ -716,6 +722,132 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 
 		return branches.NewDeleteBranchNoContent()
+	})
+}
+
+func (c *Controller) ListTagsHandler() tags.ListTagsHandler {
+	return tags.ListTagsHandlerFunc(func(params tags.ListTagsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ListTagsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return tags.NewListTagsUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("list_tags")
+		cataloger := deps.Cataloger
+
+		after, amount := getPaginationParams(params.After, params.Amount)
+
+		res, hasMore, err := cataloger.ListTags(deps.ctx, params.Repository, amount, after)
+		if err != nil {
+			return tags.NewListTagsDefault(http.StatusInternalServerError).
+				WithPayload(responseError("could not list tags: %s", err))
+		}
+
+		tagList := make([]*models.Ref, len(res))
+		var lastID string
+		for i, tag := range res {
+			tagList[i] = &models.Ref{
+				CommitID: swag.String(tag.CommitID),
+				ID:       swag.String(tag.ID),
+			}
+			lastID = tag.ID
+		}
+		returnValue := tags.NewListTagsOK().WithPayload(&tags.ListTagsOKBody{
+			Pagination: &models.Pagination{
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(tagList))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
+			Results: tagList,
+		})
+		if hasMore {
+			returnValue.Payload.Pagination.NextOffset = lastID
+		}
+		return returnValue
+	})
+}
+
+func (c *Controller) GetTagHandler() tags.GetTagHandler {
+	return tags.GetTagHandlerFunc(func(params tags.GetTagParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadTagAction,
+				Resource: permissions.TagArn(params.Repository, params.Tag),
+			},
+		})
+		if err != nil {
+			return tags.NewGetTagUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("get_tag")
+		reference, err := deps.Cataloger.GetTag(deps.ctx, params.Repository, params.Tag)
+
+		switch {
+		case errors.Is(err, graveler.ErrTagNotFound):
+			return tags.NewGetTagNotFound().WithPayload(responseError("tag '%s' not found.", params.Tag))
+		case errors.Is(err, graveler.ErrRepositoryNotFound):
+			return tags.NewGetTagNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
+			return tags.NewGetTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		return tags.NewGetTagOK().WithPayload(&models.Ref{
+			CommitID: swag.String(reference),
+			ID:       swag.String(params.Tag),
+		})
+	})
+}
+
+func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
+	return tags.CreateTagHandlerFunc(func(params tags.CreateTagParams, user *models.User) middleware.Responder {
+		repository := params.Repository
+		tagID := swag.StringValue(params.Tag.ID)
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateTagAction,
+				Resource: permissions.TagArn(repository, tagID),
+			},
+		})
+		if err != nil {
+			return tags.NewCreateTagUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("create_tag")
+		cataloger := deps.Cataloger
+		commitRef := swag.StringValue(params.Tag.CommitID)
+		err = cataloger.CreateTag(deps.ctx, repository, tagID, commitRef)
+		if err != nil {
+			return tags.NewCreateTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		return tags.NewCreateTagCreated()
+	})
+}
+
+func (c *Controller) DeleteTagHandler() tags.DeleteTagHandler {
+	return tags.DeleteTagHandlerFunc(func(params tags.DeleteTagParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.DeleteTagAction,
+				Resource: permissions.TagArn(params.Repository, params.Tag),
+			},
+		})
+		if err != nil {
+			return tags.NewDeleteTagUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("delete_tag")
+		cataloger := deps.Cataloger
+		err = cataloger.DeleteTag(deps.ctx, params.Repository, params.Tag)
+		switch {
+		case errors.Is(err, graveler.ErrTagNotFound):
+			return tags.NewDeleteTagNotFound().WithPayload(responseError("tag '%s' not found.", params.Tag))
+		case errors.Is(err, graveler.ErrRepositoryNotFound):
+			return tags.NewDeleteTagNotFound().WithPayload(responseError("repository '%s' not found.", params.Repository))
+		case err != nil:
+			return tags.NewDeleteTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		return tags.NewDeleteTagNoContent()
 	})
 }
 

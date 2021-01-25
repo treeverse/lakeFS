@@ -1328,6 +1328,118 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/tags:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    get:
+      tags:
+        - tags
+      operationId: listTags
+      summary: list tags
+      parameters:
+        - in: query
+          name: after
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: tag list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - tags
+      operationId: createTag
+      summary: create tag
+      parameters:
+        - in: body
+          name: tag
+          schema:
+            $ref: "#/definitions/ref"
+      responses:
+        201:
+          description: tag created successfully
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/tags/{tag}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: tag
+        required: true
+        type: string
+    get:
+      tags:
+        - tags
+      operationId: getTag
+      summary: get tag
+      responses:
+        200:
+          description: tag
+          schema:
+            type: object
+            $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: tag not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - tags
+      operationId: deleteTag
+      summary: delete tag
+      responses:
+        204:
+          description: tag deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repository}/branches:
     parameters:
       - in: path

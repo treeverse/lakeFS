@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/treeverse/lakefs/api/gen/client/export"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -16,11 +14,13 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/metadata"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/client/retention"
+	"github.com/treeverse/lakefs/api/gen/client/tags"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -67,6 +67,11 @@ type RepositoryClient interface {
 	DeleteBranch(ctx context.Context, repository, branchID string) error
 	ResetBranch(ctx context.Context, repository, branchID string, resetProps *models.ResetCreation) error
 	RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error
+
+	ListTags(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
+	GetTag(ctx context.Context, repository, tagID string) (string, error)
+	CreateTag(ctx context.Context, repository string, tag *models.Ref) error
+	DeleteTag(ctx context.Context, repository, tagID string) error
 
 	Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repository, commitID string) (*models.Commit, error)
@@ -639,6 +644,49 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string, after st
 	}
 	payload := diff.GetPayload()
 	return payload.Results, payload.Pagination, nil
+}
+
+func (c *client) ListTags(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error) {
+	resp, err := c.remote.Tags.ListTags(
+		tags.NewListTagsParamsWithContext(ctx).
+			WithRepository(repository).
+			WithAfter(swag.String(from)).
+			WithAmount(swag.Int64(int64(amount))),
+		c.auth)
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
+}
+
+func (c *client) GetTag(ctx context.Context, repository, tagID string) (string, error) {
+	resp, err := c.remote.Tags.GetTag(
+		tags.NewGetTagParamsWithContext(ctx).
+			WithRepository(repository).
+			WithTag(tagID),
+		c.auth)
+	if err != nil {
+		return "", err
+	}
+	return swag.StringValue(resp.GetPayload().CommitID), nil
+}
+
+func (c *client) CreateTag(ctx context.Context, repository string, tag *models.Ref) error {
+	_, err := c.remote.Tags.CreateTag(
+		tags.NewCreateTagParamsWithContext(ctx).
+			WithRepository(repository).
+			WithTag(tag),
+		c.auth)
+	return err
+}
+
+func (c *client) DeleteTag(ctx context.Context, repository, tagID string) error {
+	_, err := c.remote.Tags.DeleteTag(
+		tags.NewDeleteTagParamsWithContext(ctx).
+			WithRepository(repository).
+			WithTag(tagID),
+		c.auth)
+	return err
 }
 
 func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (string, error) {

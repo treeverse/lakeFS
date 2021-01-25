@@ -84,6 +84,11 @@ type Cataloger interface {
 	GetBranchReference(ctx context.Context, repository, branch string) (string, error)
 	ResetBranch(ctx context.Context, repository, branch string) error
 
+	CreateTag(ctx context.Context, repository, tagID string, ref string) error
+	DeleteTag(ctx context.Context, repository, tagID string) error
+	ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error)
+	GetTag(ctx context.Context, repository, tagID string) (string, error)
+
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error)

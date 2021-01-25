@@ -51,6 +51,11 @@ type Branch struct {
 	Reference string
 }
 
+type Tag struct {
+	ID       string
+	CommitID string
+}
+
 func (j Metadata) Value() (driver.Value, error) {
 	if j == nil {
 		return json.Marshal(struct{}{})

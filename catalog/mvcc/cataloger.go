@@ -275,3 +275,19 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 func (c *cataloger) Hooks() *catalog.CatalogerHooks {
 	return &c.hooks
 }
+
+func (c *cataloger) CreateTag(context.Context, string, string, string) error {
+	return catalog.ErrFeatureNotSupported
+}
+
+func (c *cataloger) DeleteTag(context.Context, string, string) error {
+	return catalog.ErrFeatureNotSupported
+}
+
+func (c *cataloger) ListTags(context.Context, string, int, string) ([]*catalog.Tag, bool, error) {
+	return nil, false, catalog.ErrFeatureNotSupported
+}
+
+func (c *cataloger) GetTag(context.Context, string, string) (string, error) {
+	return "", catalog.ErrFeatureNotSupported
+}

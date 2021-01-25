@@ -24,6 +24,7 @@ type cataloger struct {
 const (
 	ListRepositoriesLimitMax = 1000
 	ListBranchesLimitMax     = 1000
+	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
 )
@@ -233,6 +234,69 @@ func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch s
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	return c.EntryCatalog.Reset(ctx, repositoryID, branchID)
+}
+
+func (c *cataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) error {
+	repositoryID := graveler.RepositoryID(repository)
+	tag := graveler.TagID(tagID)
+	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(ref))
+	if err != nil {
+		return err
+	}
+	return c.EntryCatalog.CreateTag(ctx, repositoryID, tag, commitID)
+}
+
+func (c *cataloger) DeleteTag(ctx context.Context, repository string, tagID string) error {
+	repositoryID := graveler.RepositoryID(repository)
+	tag := graveler.TagID(tagID)
+	return c.EntryCatalog.DeleteTag(ctx, repositoryID, tag)
+}
+
+func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*catalog.Tag, bool, error) {
+	if limit < 0 || limit > ListTagsLimitMax {
+		limit = ListTagsLimitMax
+	}
+	repositoryID := graveler.RepositoryID(repository)
+	from := graveler.TagID(after)
+	it, err := c.EntryCatalog.ListTags(ctx, repositoryID, from)
+	if err != nil {
+		return nil, false, err
+	}
+	it.SeekGE(graveler.TagID(after))
+
+	var tags []*catalog.Tag
+	for it.Next() {
+		v := it.Value()
+		tagID := string(v.TagID)
+		branch := &catalog.Tag{
+			ID:       tagID,
+			CommitID: v.CommitID.String(),
+		}
+		tags = append(tags, branch)
+		if len(tags) >= limit+1 {
+			break
+		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, false, err
+	}
+	// return results (optional trimmed) and hasMore
+	hasMore := false
+	if len(tags) >= limit {
+		hasMore = true
+		tags = tags[:limit]
+	}
+	return tags, hasMore, nil
+}
+
+func (c *cataloger) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	tag := graveler.TagID(tagID)
+	commit, err := c.EntryCatalog.GetTag(ctx, repositoryID, tag)
+	if err != nil {
+		return "", err
+	}
+	return commit.String(), nil
 }
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
