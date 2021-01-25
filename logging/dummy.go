@@ -84,6 +84,10 @@ func (d DummyLogger) Panicf(format string, args ...interface{}) {
 
 }
 
+func (d DummyLogger) IsTracing() bool {
+	return true
+}
+
 func Dummy() Logger {
 	return DummyLogger{}
 }

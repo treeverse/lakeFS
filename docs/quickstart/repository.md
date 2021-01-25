@@ -12,7 +12,7 @@ has_children: false
 
 Once you have a running lakeFS instance, we'll need to set up an initial admin user in order to log in to the UI and make our first steps in lakeFS! In this guide, we're going to run an initial setup and then create a new [repository](../branching/model.md#repositories).
 
-Once we have a repository created, we can start [copying and modifying objects](./aws_cli.md), [commit](../reference/commands.md#lakectl-commit) and [revert](../reference/commands.md#lakectl-branch-revert) changes - and even communicate with this repository from [Spark](../using/spark.md), [Presto](../using/presto.md) or other S3-compatible tools using our [S3 Gateway API](../architecture.md#s3-gateway).
+Once we have a repository created, we can start [copying and modifying objects](./aws_cli.md), [commit](../reference/commands.md#lakectl-commit) and [reset](../reference/commands.md#lakectl-branch-reset) changes - and even communicate with this repository from [Spark](../using/spark.md), [Presto](../using/presto.md) or other S3-compatible tools using our [S3 Gateway API](../architecture.md#s3-gateway).
 
 1. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 

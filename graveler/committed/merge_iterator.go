@@ -26,7 +26,7 @@ func NewMergeIterator(diffTheirsToOurs graveler.DiffIterator, base Iterator) *co
 	return &compareValueIterator{compareIterator: &compareIterator{diffIt: diffTheirsToOurs, base: base, errorOnConflict: true}}
 }
 
-// NewMergeIterator accepts an iterator describing a diff from theirs to ours.
+// NewCompareIterator accepts an iterator describing a diff from theirs to ours.
 // It returns a graveler.DiffIterator with the changes to perform on theirs, in order to merge ours into it,
 // relative to base as the merge base.
 // When reaching a conflict, the returned Diff will be of type graveler.DiffTypeConflict.
@@ -135,6 +135,7 @@ func (d *compareIterator) Err() error {
 
 func (d *compareIterator) Close() {
 	d.diffIt.Close()
+	d.base.Close()
 }
 
 func (c *compareValueIterator) Value() *graveler.ValueRecord {

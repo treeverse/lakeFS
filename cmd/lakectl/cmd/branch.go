@@ -11,6 +11,8 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
+const branchRevertCmdArgs = 2
+
 // branchCmd represents the branch command
 var branchCmd = &cobra.Command{
 	Use:   "branch",
@@ -119,15 +121,38 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
-// lakectl branch revert lakefs://myrepo@master --commit commitId --prefix path --object path
+// lakectl branch revert lakefs://myrepo@master commitId
 var branchRevertCmd = &cobra.Command{
-	Use:   "revert <branch uri> [flags]",
-	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path",
-	Long: `revert changes.  There are four different ways to revert changes:
-  1. revert to previous commit, set HEAD of branch to given commit - revert lakefs://myrepo@master --commit commitId
-  2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master 
-  3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master --prefix path
-  4. revert uncommitted changes for specific object - revert lakefs://myrepo@master --object path`,
+	Use:   "revert <branch uri> <commit ref to revert>",
+	Short: "given a commit, record a new commit to reverse the effect of this commit",
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(branchRevertCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := uri.Must(uri.Parse(args[0]))
+		commitRef := args[1]
+		clt := getClient()
+		confirmation, err := confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s?", commitRef))
+		if err != nil || !confirmation {
+			Die("Revert aborted", 1)
+		}
+		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, commitRef)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
+// lakectl branch reset lakefs://myrepo@master --commit commitId --prefix path --object path
+var branchResetCmd = &cobra.Command{
+	Use:   "reset <branch uri> [flags]",
+	Short: "reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
+	Long: `reset changes.  There are four different ways to reset changes:
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit commitId
+  2. reset all uncommitted changes - reset lakefs://myrepo@master 
+  3. reset uncommitted changes under specific path -	reset lakefs://myrepo@master --prefix path
+  4. reset uncommitted changes for specific object - reset lakefs://myrepo@master --object path`,
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
@@ -149,40 +174,40 @@ var branchRevertCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		var revert models.RevertCreation
+		var reset models.ResetCreation
 		var confirmationMsg string
 		switch {
 		case len(commitID) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s", commitID)
-			revert = models.RevertCreation{
+			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes to commit: %s", commitID)
+			reset = models.ResetCreation{
 				Commit: commitID,
-				Type:   swag.String(models.RevertCreationTypeCommit),
+				Type:   swag.String(models.ResetCreationTypeCommit),
 			}
 		case len(prefix) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit", prefix)
-			revert = models.RevertCreation{
+			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes from path: %s to last commit", prefix)
+			reset = models.ResetCreation{
 				Path: prefix,
-				Type: swag.String(models.RevertCreationTypeCommonPrefix),
+				Type: swag.String(models.ResetCreationTypeCommonPrefix),
 			}
 		case len(object) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit", object)
-			revert = models.RevertCreation{
+			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes for object: %s to last commit", object)
+			reset = models.ResetCreation{
 				Path: object,
-				Type: swag.String(models.RevertCreationTypeObject),
+				Type: swag.String(models.ResetCreationTypeObject),
 			}
 		default:
-			confirmationMsg = "Are you sure you want to revert all uncommitted changes"
-			revert = models.RevertCreation{
-				Type: swag.String(models.RevertCreationTypeReset),
+			confirmationMsg = "Are you sure you want to reset all uncommitted changes"
+			reset = models.ResetCreation{
+				Type: swag.String(models.ResetCreationTypeReset),
 			}
 		}
 
 		confirmation, err := confirm(cmd.Flags(), confirmationMsg)
 		if err != nil || !confirmation {
-			Die("Revert aborted", 1)
+			Die("Reset aborted", 1)
 			return
 		}
-		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, &revert)
+		err = clt.ResetBranch(context.Background(), u.Repository, u.Ref, &reset)
 		if err != nil {
 			DieErr(err)
 		}
@@ -214,6 +239,7 @@ func init() {
 	branchCmd.AddCommand(branchDeleteCmd)
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
+	branchCmd.AddCommand(branchResetCmd)
 	branchCmd.AddCommand(branchRevertCmd)
 
 	branchListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
@@ -222,7 +248,7 @@ func init() {
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
 
-	branchRevertCmd.Flags().String("commit", "", "commit ID to revert branch to")
-	branchRevertCmd.Flags().String("prefix", "", "prefix of the objects to be reverted")
-	branchRevertCmd.Flags().String("object", "", "path to object to be reverted")
+	branchResetCmd.Flags().String("commit", "", "commit ID to reset branch to")
+	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
+	branchResetCmd.Flags().String("object", "", "path to object to be reset")
 }

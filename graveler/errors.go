@@ -13,12 +13,14 @@ var (
 	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
 	ErrInvalidMergeBase        = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
+	ErrNoMergeBase             = errors.New("no merge base")
 	ErrInvalidStorageNamespace = fmt.Errorf("storage namespace: %w", ErrInvalidValue)
 	ErrInvalidRepositoryID     = fmt.Errorf("repository id: %w", ErrInvalidValue)
 	ErrInvalidBranchID         = fmt.Errorf("branch id: %w", ErrInvalidValue)
 	ErrInvalidRef              = fmt.Errorf("ref: %w", ErrInvalidValue)
 	ErrInvalidCommitID         = fmt.Errorf("commit id: %w", ErrInvalidValue)
 	ErrCommitNotFound          = fmt.Errorf("commit %w", ErrNotFound)
+	ErrCreateBranchNoCommit    = fmt.Errorf("can't create a branch without commit")
 	ErrRepositoryNotFound      = fmt.Errorf("repository %w", ErrNotFound)
 	ErrBranchNotFound          = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound             = fmt.Errorf("tag %w", ErrNotFound)
@@ -29,6 +31,7 @@ var (
 	ErrDirtyBranch             = errors.New("can't apply meta-range on dirty branch")
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 	ErrLockNotAcquired         = errors.New("lock not acquired")
+	ErrRevertMergeCommit       = errors.New("revert merge commit unsupported")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

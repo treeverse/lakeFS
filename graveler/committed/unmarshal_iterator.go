@@ -34,7 +34,7 @@ func (r *UnmarshalIterator) Next() bool {
 		}
 	}
 	r.value = &graveler.ValueRecord{
-		Key:   graveler.Key(val.Key),
+		Key:   graveler.Key(val.Key.Copy()),
 		Value: v,
 	}
 	return true

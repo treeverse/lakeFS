@@ -85,7 +85,7 @@ func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger
 				"download_from_bucket": bucket,
 				"download_from_key":    key,
 				"download_to":          f.Name(),
-			}).Trace("error when downloading orc file")
+			}).Debug("error when downloading orc file")
 		return nil, err
 	}
 	logger.Debugf("finished downloading %s to local file %s", key, f.Name())
