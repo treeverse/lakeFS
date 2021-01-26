@@ -102,7 +102,6 @@ jobs:
     strategy:
       matrix:
         cataloger:
-          - mvcc
           - rocks
     steps:
       - name: Check-out code
