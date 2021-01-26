@@ -44,7 +44,7 @@ func parsePath(t testing.TB, path string) (string, string) {
 }
 
 func TestExport(t *testing.T) {
-	t.Skip("Skip Export testing")
+	t.Skip("Skip export testing")
 	if viper.GetString("aws_access_key_id") == "" {
 		t.Skip("test export only on s3")
 	}
