@@ -17,6 +17,7 @@ services:
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
+      - LAKEFS_CATALOGER_TYPE
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"
