@@ -72,6 +72,10 @@ func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.Re
 		if err != nil {
 			return nil, err
 		}
+		_, err = tx.Exec(`DELETE FROM graveler_tags WHERE repository_id = $1`, repositoryID)
+		if err != nil {
+			return nil, err
+		}
 		_, err = tx.Exec(`DELETE FROM graveler_commits WHERE repository_id = $1`, repositoryID)
 		if err != nil {
 			return nil, err
