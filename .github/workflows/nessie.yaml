@@ -185,6 +185,7 @@ jobs:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
         run: go test -v ./nessie --system-tests --use-local-credentials --coverprofile=nessie-cover.out --cover
       - name: Run lakeFS GS
+        if: false
         env:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
@@ -201,6 +202,7 @@ jobs:
             docker-compose -f nessie/ops/docker-compose.yaml down -v
             docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie GS
+        if: false
         env:
           NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
         run: go test -v ./nessie --system-tests
