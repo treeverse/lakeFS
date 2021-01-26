@@ -70,6 +70,7 @@ If you can't provide such access, lakeFS can be configured to use an AWS key-pai
 | `service.type`                              | Kubernetes service type                                                                                    | ClusterIP   |
 | `service.port`                              | Kubernetes service external port                                                                           | 80          |
 | `extraEnvVarsSecret`                        | Name of a Kubernetes secret containing extra environment variables                                                    |             |
+| `committedLocalCacheVolume` | A volume definition to be mounted by lakeFS and used for caching committed metadata. See [here](https://kubernetes.io/docs/concepts/storage/volumes/#volume-types) for a list of supported volume types. The default values.yaml file shows an example of how to use this parameter. |
 
 ## Docker
 To deploy using Docker, create a yaml configuration file.
