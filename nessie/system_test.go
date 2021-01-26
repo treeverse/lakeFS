@@ -3,17 +3,17 @@ package nessie
 import (
 	"context"
 	"fmt"
-	"github.com/go-openapi/strfmt"
-	"github.com/treeverse/lakefs/api/gen/client/export"
 	"strings"
 	"testing"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
+	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -112,6 +112,7 @@ func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPa
 }
 
 func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []*models.ObjectStats {
+	t.Helper()
 	const amount = 5
 	var entries []*models.ObjectStats
 	var after string
