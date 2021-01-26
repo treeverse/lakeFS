@@ -610,8 +610,8 @@ func TestGraveler_Delete(t *testing.T) {
 					Err: graveler.ErrNotFound,
 				},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{},
-					Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
+					Branch:  &graveler.Branch{CommitID: "c1"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}}},
 			},
 			args: args{
 				key: []byte("key"),
@@ -632,8 +632,8 @@ func TestGraveler_Delete(t *testing.T) {
 					Value: &graveler.Value{},
 				},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{},
-					Commits: map[graveler.CommitID]*graveler.Commit{"": {}},
+					Branch:  &graveler.Branch{CommitID: "c1"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
 				},
 			},
 			args: args{
@@ -655,15 +655,15 @@ func TestGraveler_Delete(t *testing.T) {
 					Value: nil,
 				},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{},
-					Commits: map[graveler.CommitID]*graveler.Commit{"": {}},
+					Branch:  &graveler.Branch{CommitID: "c1"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
 				},
 			},
 			args:        args{},
 			expectedErr: graveler.ErrNotFound,
 		},
 		{
-			name: "exists only in staging",
+			name: "exists only in staging - commits",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
 					Err: graveler.ErrNotFound,
@@ -672,8 +672,26 @@ func TestGraveler_Delete(t *testing.T) {
 					Value: &graveler.Value{},
 				},
 				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CommitID: "c1"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedRemovedKey: []byte("key"),
+			expectedErr:        nil,
+		},
+		{
+			name: "exists only in staging - no commits",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{},
+				StagingManager: &testutil.StagingFake{
+					Value: &graveler.Value{},
+				},
+				RefManager: &testutil.RefsFake{
 					Branch:  &graveler.Branch{},
-					Commits: map[graveler.CommitID]*graveler.Commit{"": {}},
+					Commits: map[graveler.CommitID]*graveler.Commit{},
 				},
 			},
 			args: args{
