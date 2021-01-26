@@ -98,8 +98,32 @@ func createSStableIterator(t *testing.T, keys, vals []string) pebblesst.Iterator
 	return iter
 }
 
+// wrapReadableFile wraps os.File to count how many times it has been closed.
+type wrapReadableFile struct {
+	*os.File
+	NumClosed int
+}
+
+func (f *wrapReadableFile) ReadAt(p []byte, off int64) (n int, err error) {
+	return f.File.ReadAt(p, off)
+}
+
+func (f *wrapReadableFile) Close() error {
+	f.NumClosed++
+	return f.File.Close()
+}
+
+func (f *wrapReadableFile) Stat() (os.FileInfo, error) {
+	return f.File.Stat()
+}
+
+type fakeReader struct {
+	*pebblesst.Reader
+	GetNumClosed func() int
+}
+
 // createSStableReader creates the table from keys, vals passed to it
-func createSStableReader(t *testing.T, keys []string, vals []string) *pebblesst.Reader {
+func createSStableReader(t *testing.T, keys []string, vals []string) fakeReader {
 	f, err := ioutil.TempFile(os.TempDir(), "test file")
 	require.NoError(t, err)
 	w := pebblesst.NewWriter(f, pebblesst.WriterOptions{
@@ -117,11 +141,14 @@ func createSStableReader(t *testing.T, keys []string, vals []string) *pebblesst.
 
 	readF, err := os.Open(f.Name())
 	require.NoError(t, err)
-	ssReader, err := pebblesst.NewReader(readF, pebblesst.ReaderOptions{Cache: cache})
+	wf := &wrapReadableFile{readF, 0}
+	ssReader, err := pebblesst.NewReader(wf, pebblesst.ReaderOptions{Cache: cache})
 	require.NoError(t, err)
-
 	t.Cleanup(func() {
-		ssReader.Close()
+		if wf.NumClosed == 0 {
+			ssReader.Close()
+		}
 	})
-	return ssReader
+
+	return fakeReader{ssReader, func() int { return wf.NumClosed }}
 }

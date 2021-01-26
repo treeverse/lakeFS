@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/cockroachdb/pebble"
-	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -111,12 +110,9 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
-	rangeCache := sstable.NewCache(*cfg.GetCommittedRangeSSTableCacheParams(),
-		rangeFS,
-		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
-	metaRangeCache := sstable.NewCache(*cfg.GetCommittedMetaRangeSSTableCacheParams(),
-		metaRangeFS,
-		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
+
+	rangeCache := pebble.NewCache(int64(cfg.GetCommittedRangeSSTableCacheParams().Size))
+	metaRangeCache := pebble.NewCache(int64(cfg.GetCommittedMetaRangeSSTableCacheParams().Size))
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, hashAlg)
