@@ -89,7 +89,7 @@ var runCmd = &cobra.Command{
 		if cfg.GetCatalogerType() == "" {
 			migrationRequired := catalogmigrate.CheckMigrationRequired(dbPool)
 			if migrationRequired {
-				logger.Fatal("Migration of old data is required! (lakefs migrate db)")
+				logger.Fatal(migrateRequiredMsg)
 			}
 		}
 
@@ -191,6 +191,20 @@ var runCmd = &cobra.Command{
 		<-bufferedCollector.Done()
 	},
 }
+
+const migrateRequiredMsg = `Data migration is required.
+Starting version 0.30.0, lakeFS handles your committed metadata in a new way,
+which is more robust and has better performance.
+To move your existing data, you will need to run the following upgrade command:
+
+  $ lakefs migrate db
+
+If you want to start over, discarding your existing data, you need to explicitly state this in your lakeFS configuration file.
+To do so, add the following to your configuration:
+
+cataloger:
+  type: rocks
+`
 
 const runBanner = `
 
