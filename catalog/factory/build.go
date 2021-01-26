@@ -13,8 +13,8 @@ func BuildCataloger(db db.Database, c *config.Config) (catalog.Cataloger, error)
 		return mvcc.NewCataloger(db, mvcc.WithCacheEnabled(false)), nil
 	}
 	catType := c.GetCatalogerType()
-	if catType == "rocks" {
-		return rocks.NewCataloger(db, c)
+	if catType == "mvcc" {
+		return mvcc.NewCataloger(db, mvcc.WithParams(c.GetMvccCatalogerCatalogParams())), nil
 	}
-	return mvcc.NewCataloger(db, mvcc.WithParams(c.GetMvccCatalogerCatalogParams())), nil
+	return rocks.NewCataloger(db, c)
 }

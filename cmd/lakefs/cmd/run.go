@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	catalogmigrate "github.com/treeverse/lakefs/catalog/migrate"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
@@ -83,6 +84,16 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
 
+		//  Migrate old MVCC - if cataloger type is not set,
+		//  warn the user in case migrate didn't run and there are MVCC repositories
+		if cfg.GetCatalogerType() == "" {
+			migrationRequired := catalogmigrate.CheckMigrationRequired(dbPool)
+			if migrationRequired {
+				logger.Fatal("Data migration is required")
+				fmt.Println(migrateRequiredMsg)
+			}
+		}
+
 		// init authentication
 		authService := auth.NewDBAuthService(
 			dbPool,
@@ -92,8 +103,10 @@ var runCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(logger, cfg, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
@@ -179,6 +192,25 @@ var runCmd = &cobra.Command{
 		<-bufferedCollector.Done()
 	},
 }
+
+const migrateRequiredMsg = `Data migration is required - https://docs.lakefs.io/deploying/upgrade.html.
+Starting version 0.30.0, lakeFS handles your committed metadata in a new way,
+which is more robust and has better performance.
+To move your existing data, you will need to run the following upgrade command:
+
+  $ lakefs migrate db
+
+If you want to start over, discarding your existing data, you need to explicitly state this in your lakeFS configuration file.
+To do so, add the following to your configuration:
+
+cataloger:
+  type: rocks
+
+And run:
+
+  $ lakefs migrate up
+
+`
 
 const runBanner = `
 
