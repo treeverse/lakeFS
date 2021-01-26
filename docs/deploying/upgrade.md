@@ -12,6 +12,24 @@ has_children: false
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version, if you're using the binary).
 There are cases where the database will require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases) you are upgrading to requires that.
 
+
+## From before 0.30.0
+
+Starting version 0.30.0, lakeFS handles your committed metadata in a new way, which is more robust and has better performance.
+To move your existing data, you will need to run the following upgrade command with the updated lakefs binary:
+
+```shell
+lakefs migrate db
+```
+
+If you want to start over, discarding your existing data, you need to explicitly state this in your lakeFS configuration file.
+To do so, add the following to your configuration:
+
+```yaml
+cataloger:
+  type: rocks
+```
+
 # Migrating
 
 In case a migration is required, first stop the running lakeFS service.
