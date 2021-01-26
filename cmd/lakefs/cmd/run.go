@@ -192,7 +192,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-const migrateRequiredMsg = `Data migration is required.
+const migrateRequiredMsg = `Data migration is required - https://docs.lakefs.io/deploying/upgrade.html.
 Starting version 0.30.0, lakeFS handles your committed metadata in a new way,
 which is more robust and has better performance.
 To move your existing data, you will need to run the following upgrade command:
@@ -204,6 +204,7 @@ To do so, add the following to your configuration:
 
 cataloger:
   type: rocks
+
 `
 
 const runBanner = `
