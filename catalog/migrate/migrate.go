@@ -54,6 +54,8 @@ type Reporter interface {
 
 const (
 	initialCommitMessage = "Create empty new branch for migrate"
+
+	migrateTimestampKeyName = "migrate_timestamp"
 )
 
 func (m *Migrate) Close() error {
@@ -353,8 +355,18 @@ func (m *Migrate) selectRepoCommits(ctx context.Context, repo *graveler.Reposito
 }
 
 func (m *Migrate) postMigrate() error {
+	m.log.Info("update db migrate timestamp")
+	migrateTimestamp := time.Now().UTC().Format(time.RFC3339)
+	_, err := m.db.Exec(`INSERT INTO auth_installation_metadata(key_name, key_value)
+			VALUES ($1,$2)
+			ON CONFLICT (key_name) DO UPDATE SET key_value=EXCLUDED.key_value`,
+		migrateTimestampKeyName, migrateTimestamp)
+	if err != nil {
+		return err
+	}
+
 	m.log.Info("start analyze db")
-	_, err := m.db.Exec(`
+	_, err = m.db.Exec(`
 		analyze graveler_staging_kv;
 		analyze graveler_commits;
 		analyze graveler_tags;
@@ -365,7 +377,6 @@ func (m *Migrate) postMigrate() error {
 func (m *Migrate) SetReporter(r Reporter) {
 	m.reporter = r
 }
-
 func (c *commitRecord) Scan(rows pgx.Row) error {
 	return rows.Scan(&c.BranchID, &c.BranchName, &c.CommitID,
 		&c.PreviousCommitID, &c.Committer, &c.Message, &c.CreationDate, &c.Metadata,
@@ -379,3 +390,25 @@ func (n *nullReporter) BeginRepository(string) {}
 func (n *nullReporter) BeginCommit(string, string, string, string) {}
 
 func (n *nullReporter) EndRepository(error) {}
+
+func CheckMigrationRequired(conn db.Database) bool {
+	// check if we already run migration
+	res, err := conn.Transact(func(tx db.Tx) (interface{}, error) {
+		var migrationRun bool
+		err := tx.GetPrimitive(&migrationRun, `SELECT EXISTS(SELECT 1 FROM auth_installation_metadata WHERE key_name=$1)`, migrateTimestampKeyName)
+		if err != nil || migrationRun {
+			return false, err
+		}
+		// check if we have catalog repositories
+		var repoCount int
+		err = tx.GetPrimitive(&repoCount, `SELECT COUNT(*) FROM catalog_repositories`)
+		if err != nil {
+			return false, err
+		}
+		return repoCount > 0, nil
+	}, db.ReadOnly())
+	if err != nil {
+		return false
+	}
+	return res.(bool)
+}

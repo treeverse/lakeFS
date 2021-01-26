@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -20,13 +19,10 @@ var migrateDBCmd = &cobra.Command{
 	Long:  `Migrate database content from MVCC model to the current format`,
 	Run: func(cmd *cobra.Command, args []string) {
 		dbParams := cfg.GetDatabaseParams()
-		err := db.ValidateSchemaUpToDate(dbParams)
-		if errors.Is(err, db.ErrSchemaNotCompatible) {
-			fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
-			os.Exit(1)
-		}
+
+		err := db.MigrateUp(dbParams)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
 		}
 
