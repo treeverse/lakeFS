@@ -31,7 +31,6 @@ type Adapter struct {
 }
 
 var (
-	ErrPathNotValid          = errors.New("path provided is not a valid directory")
 	ErrPathNotWritable       = errors.New("path provided is not writable")
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
@@ -53,12 +52,9 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 
 func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	path = filepath.Clean(path)
-	stt, err := os.Stat(path)
+	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return nil, err
-	}
-	if !stt.IsDir() {
-		return nil, ErrPathNotValid
 	}
 	if !isDirectoryWritable(path) {
 		return nil, ErrPathNotWritable
