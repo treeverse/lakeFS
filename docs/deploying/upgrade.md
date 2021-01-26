@@ -30,7 +30,15 @@ Note that an older version of lakeFS cannot run on a migrated database.
 # Migrating from lakeFS < 0.30.0
 
 Starting version 0.30.0, lakeFS handles your committed metadata in a [new way](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){: target="_blank" }, which is more robust and has better performance.
-To move your existing data, you will need to run the following upgrade command with the updated lakefs binary:
+To move your existing data, you will need to run the following upgrade commands.
+
+Verify lakeFS version >= 0.30.0:
+
+```shell
+lakefs --version
+```
+
+Migrate data from previous format:
 
 ```shell
 lakefs migrate db
