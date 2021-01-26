@@ -29,7 +29,7 @@ import (
 
 const (
 	DefaultBlockStoreType                    = "local"
-	DefaultBlockStoreLocalPath               = "~/lakefs/data"
+	DefaultBlockStoreLocalPath               = "~/data/lakefs/block"
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
@@ -37,7 +37,7 @@ const (
 	DefaultCommittedLocalCacheRangePercent          = 0.9
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
 	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir                   = "~/lakefs/local_tier"
+	DefaultCommittedLocalCacheDir                   = "~/data/lakefs/cache"
 	DefaultCommittedMetaRangeReaderCacheSize        = 50
 	DefaultCommittedMetaRangeReaderNumShards        = 10
 	DefaultCommittedRangeReaderCacheSize            = 500
