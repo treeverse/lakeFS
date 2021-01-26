@@ -205,6 +205,10 @@ To do so, add the following to your configuration:
 cataloger:
   type: rocks
 
+And run:
+
+  $ lakefs migrate up
+
 `
 
 const runBanner = `
