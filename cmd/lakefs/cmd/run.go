@@ -89,7 +89,8 @@ var runCmd = &cobra.Command{
 		if cfg.GetCatalogerType() == "" {
 			migrationRequired := catalogmigrate.CheckMigrationRequired(dbPool)
 			if migrationRequired {
-				logger.Fatal(migrateRequiredMsg)
+				logger.Fatal("Data migration is required")
+				fmt.Println(migrateRequiredMsg)
 			}
 		}
 
