@@ -111,11 +111,8 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	rangeCache := pebble.NewCache(int64(cfg.GetCommittedRangeSSTableCacheParams().Size))
-	metaRangeCache := pebble.NewCache(int64(cfg.GetCommittedMetaRangeSSTableCacheParams().Size))
-
-	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, hashAlg)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, hashAlg)
+	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 	sstableMetaRangeManager := committed.NewMetaRangeManager(
 		*cfg.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges

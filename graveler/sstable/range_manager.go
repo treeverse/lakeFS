@@ -23,7 +23,9 @@ type RangeManager struct {
 }
 
 func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
-	cache.Ref()
+	if cache != nil { // nil cache allowed (size=0), see sstable.ReaderOptions
+		cache.Ref()
+	}
 	opts := sstable.ReaderOptions{Cache: cache}
 	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
 		return newReader(ctx, fs, ns, id, opts)
