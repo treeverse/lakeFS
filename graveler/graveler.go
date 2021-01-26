@@ -767,13 +767,19 @@ func (g *Graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return nil, err
 		}
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
-		if err != nil {
-			return nil, err
+
+		// mark err as not found and lookup the branch's commit
+		err = ErrNotFound
+		if branch.CommitID != "" {
+			var commit *Commit
+			commit, err = g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			if err != nil {
+				return nil, err
+			}
+			// check key in committed - do we need tombstone?
+			_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 		}
 
-		// check key in committed - do we need tombstone?
-		_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 		if errors.Is(err, ErrNotFound) {
 			// no need for tombstone - drop key from stage
 			return nil, g.StagingManager.DropKey(ctx, branch.StagingToken, key)
