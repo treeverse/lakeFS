@@ -203,6 +203,11 @@ const runBanner = `
 
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
+	_, _ = fmt.Fprintf(w, "Version %s\n", config.Version)
+	catalogerType := cfg.GetCatalogerType()
+	if len(catalogerType) > 0 {
+		_, _ = fmt.Fprintf(w, "Cataloger %s\n", catalogerType)
+	}
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
