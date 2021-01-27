@@ -7,21 +7,50 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/pyramid"
 )
 
+type NewSSTableReaderFn func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)
+
 type RangeManager struct {
-	cache Cache
-	fs    pyramid.FS
-	// TODO(ariels): Replace with loggers constructed from context.
-	logger logging.Logger
-	hash   crypto.Hash
+	newReader NewSSTableReaderFn
+	fs        pyramid.FS
+	hash      crypto.Hash
 }
 
-func NewPebbleSSTableRangeManager(cache Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
-	return &RangeManager{cache: cache, logger: logging.Default(), fs: fs, hash: hash}
+func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+	if cache != nil { // nil cache allowed (size=0), see sstable.ReaderOptions
+		cache.Ref()
+	}
+	opts := sstable.ReaderOptions{Cache: cache}
+	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
+		return newReader(ctx, fs, ns, id, opts)
+	}
+	return NewPebbleSSTableRangeManagerWithNewReader(newReader, fs, hash)
+}
+
+func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
+	file, err := fs.Open(ctx, string(ns), string(id))
+	if err != nil {
+		return nil, fmt.Errorf("open sstable file %s %s: %w", ns, id, err)
+	}
+	r, err := sstable.NewReader(file, opts)
+	if err != nil {
+		return nil, fmt.Errorf("open sstable reader %s %s: %w", ns, id, err)
+	}
+	return r, nil
+}
+
+func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+	return &RangeManager{
+		fs:        fs,
+		hash:      hash,
+		newReader: newReader,
+	}
 }
 
 var (
@@ -32,21 +61,22 @@ var (
 )
 
 func (m *RangeManager) Exists(ctx context.Context, ns committed.Namespace, id committed.ID) (bool, error) {
-	return m.cache.Exists(ctx, string(ns), id)
+	return m.fs.Exists(ctx, string(ns), string(id))
 }
 
 func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, derefer, err := m.cache.GetOrOpen(ctx, string(ns), id)
+	reader, err := m.newReader(ctx, ns, id)
 	if err != nil {
 		return nil, err
 	}
-	defer m.execAndLog(derefer, "Failed to dereference reader")
+	defer m.execAndLog(ctx, reader.Close, "close reader")
 
+	// TODO(ariels): reader.NewIter(lookup, lookup)?
 	it, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
-	defer m.execAndLog(it.Close, "Failed to close iterator")
+	defer m.execAndLog(ctx, it.Close, "close iterator")
 
 	// Ranges are keyed by MaxKey, seek to the range that might contain key.
 	key, value := it.SeekGE(lookup)
@@ -66,27 +96,26 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 // GetEntry returns the entry matching the path in the SSTable referenced by the id.
 // If path not found, (nil, ErrPathNotFound) is returned.
 func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, derefer, err := m.cache.GetOrOpen(ctx, string(ns), id)
+	reader, err := m.newReader(ctx, ns, id)
 	if err != nil {
 		return nil, err
 	}
-	defer m.execAndLog(derefer, "Failed to dereference reader")
+	defer m.execAndLog(ctx, reader.Close, "close reader")
 
 	it, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
-	defer m.execAndLog(it.Close, "Failed to close iterator")
+	defer m.execAndLog(ctx, it.Close, "close iterator")
 
 	// actual reading
 	key, value := it.SeekGE(lookup)
 	if key == nil {
-		// checking if an error occurred or key simply not found
 		if it.Error() != nil {
-			return nil, fmt.Errorf("reading key from sstable id %s: %w", id, it.Error())
+			return nil, fmt.Errorf("read key from sstable id %s: %w", id, it.Error())
 		}
 
-		// lookup path is bigger than the last path in the SSTable
+		// lookup path is after the last path in the SSTable
 		return nil, ErrKeyNotFound
 	}
 
@@ -103,20 +132,20 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
 func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
-	reader, derefer, err := m.cache.GetOrOpen(ctx, string(ns), tid)
+	reader, err := m.newReader(ctx, ns, tid)
 	if err != nil {
 		return nil, err
 	}
 
 	iter, err := reader.NewIter(nil, nil)
 	if err != nil {
-		if e := derefer(); e != nil {
-			m.logger.WithError(e).Errorf("Failed de-referencing sstable %s", tid)
+		if e := reader.Close(); e != nil {
+			logging.FromContext(ctx).WithError(e).Errorf("Failed de-referencing sstable %s", tid)
 		}
 		return nil, fmt.Errorf("creating sstable iterator: %w", err)
 	}
 
-	return NewIterator(iter, derefer), nil
+	return NewIterator(iter, reader.Close), nil
 }
 
 // GetWriter returns a new SSTable writer instance
@@ -124,8 +153,8 @@ func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace) (c
 	return NewDiskWriter(ctx, m.fs, ns, m.hash.New())
 }
 
-func (m *RangeManager) execAndLog(f func() error, msg string) {
+func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg string) {
 	if err := f(); err != nil {
-		m.logger.WithError(err).Error(msg)
+		logging.FromContext(ctx).WithError(err).Error(msg)
 	}
 }

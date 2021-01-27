@@ -14,9 +14,7 @@ import (
 	"github.com/go-test/deep"
 
 	"github.com/cockroachdb/pebble"
-	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/block/mem"
-	lru "github.com/treeverse/lakefs/cache"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/catalog/mvcc"
 	"github.com/treeverse/lakefs/catalog/rocks"
@@ -165,16 +163,8 @@ func NewEntryCatalogForTesting(t testing.TB, conn db.Database) (*rocks.EntryCata
 	pebbleSSTableCache := pebble.NewCache(cacheSize)
 	defer pebbleSSTableCache.Unref()
 
-	metaRangeCache := sstable.NewCache(lru.ParamsWithDisposal{},
-		metaRangeFS,
-		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
-
-	rangeCache := sstable.NewCache(lru.ParamsWithDisposal{},
-		rangeFS,
-		pebblesst.ReaderOptions{Cache: pebbleSSTableCache})
-
-	sstableManager := sstable.NewPebbleSSTableRangeManager(rangeCache, rangeFS, crypto.SHA256)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(metaRangeCache, metaRangeFS, crypto.SHA256)
+	sstableManager := sstable.NewPebbleSSTableRangeManager(nil, rangeFS, crypto.SHA256)
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(nil, metaRangeFS, crypto.SHA256)
 	sstableMetaRangeManager := committed.NewMetaRangeManager(committed.Params{
 		MinRangeSizeBytes:          10240,
 		MaxRangeSizeBytes:          10240,
