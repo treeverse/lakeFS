@@ -190,10 +190,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
-func (c *Config) GetCatalogerType() string {
-	return viper.GetString("cataloger.type")
-}
-
 type AwsS3RetentionConfig struct {
 	RoleArn           string
 	ManifestBaseURL   *url.URL
