@@ -525,7 +525,11 @@ class Refs {
     async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
         let response;
-        response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
+        if (leftRef === rightRef) {
+            response = await apiRequest(`/repositories/${repoId}/branches/${leftRef}/diff?${query}`);
+        } else {
+            response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
+        }
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
