@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/config"
+
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
 	"github.com/ory/dockertest/v3"
@@ -29,7 +31,6 @@ import (
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -88,15 +89,21 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 	if blockstoreType == "" {
 		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	}
+	if blockstoreType == "" {
+		blockstoreType = "mem"
+	}
 	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalogfactory.BuildCataloger(conn, nil)
+	cfg := config.NewConfig()
+	cfg.Override(func(configurator config.Configurator) {
+		configurator.SetDefault(config.BlockstoreTypeKey, "mem")
+	})
+	cataloger, err := catalogfactory.BuildCataloger(conn, cfg)
 	testutil.MustDo(t, "build cataloger", err)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
 	meta := auth.NewDBMetadataManager("dev", conn)
-	retentionService := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
@@ -112,7 +119,6 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		authService,
 		meta,
 		&mockCollector{},
-		retentionService,
 		migrator,
 		nil,
 		dedupCleaner,

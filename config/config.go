@@ -19,7 +19,6 @@ import (
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block/factory"
 	blockparams "github.com/treeverse/lakefs/block/params"
-	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/logging"
@@ -167,6 +166,21 @@ func setDefaults() {
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 }
 
+type Configurator interface {
+	SetDefault(key string, value interface{})
+}
+
+type viperConfigurator struct {
+}
+
+func (v viperConfigurator) SetDefault(key string, value interface{}) {
+	viper.SetDefault(key, value)
+}
+
+func (c *Config) Override(fn func(Configurator)) {
+	fn(viperConfigurator{})
+}
+
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
 		ConnectionString:      viper.GetString("database.connection_string"),
@@ -178,27 +192,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 
 func (c *Config) GetCatalogerType() string {
 	return viper.GetString("cataloger.type")
-}
-
-func (c *Config) GetMvccCatalogerCatalogParams() catalogparams.Catalog {
-	return catalogparams.Catalog{
-		BatchRead: catalogparams.BatchRead{
-			EntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),
-			ScanTimeout:   viper.GetDuration("cataloger.batch_read.scan_timeout"),
-			Delay:         viper.GetDuration("cataloger.batch_read.batch_delay"),
-			EntriesAtOnce: viper.GetInt("cataloger.batch_read.entries_read_at_once"),
-			Readers:       viper.GetInt("cataloger.batch_read.readers"),
-		},
-		BatchWrite: catalogparams.BatchWrite{
-			EntriesInsertSize: viper.GetInt("cataloger.batch_write.insert_size"),
-		},
-		Cache: catalogparams.Cache{
-			Enabled: viper.GetBool("cataloger.cache.enabled"),
-			Size:    viper.GetInt("cataloger.cache.size"),
-			Expiry:  viper.GetDuration("cataloger.cache.expiry"),
-			Jitter:  viper.GetDuration("cataloger.cache.jitter"),
-		},
-	}
 }
 
 type AwsS3RetentionConfig struct {

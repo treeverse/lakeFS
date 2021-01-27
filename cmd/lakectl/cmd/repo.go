@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -16,7 +14,6 @@ import (
 const (
 	DefaultBranch     = "master"
 	repoCreateCmdArgs = 2
-	setPolicyCmdArgs  = 2
 )
 
 // repoCmd represents the repo command
@@ -129,66 +126,12 @@ var repoDeleteCmd = &cobra.Command{
 	},
 }
 
-var retentionCmd = &cobra.Command{
-	Use:    "retention [sub-command]",
-	Short:  "manage repository retention policies",
-	Hidden: true,
-}
-
-var getPolicyCmd = &cobra.Command{
-	Use:   "get <repository uri>",
-	Short: "show retention policy",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
-	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
-		client := getClient()
-		response, err := client.GetRetentionPolicy(context.Background(), u.Repository)
-		if err != nil {
-			DieErr(err)
-		}
-		out, err := json.MarshalIndent(response, "", "  ")
-		if err != nil {
-			DieFmt("Could not JSON-encode response: %v", err)
-		}
-		fmt.Printf("%s\n", string(out))
-	},
-}
-
-var setPolicyCmd = &cobra.Command{
-	Use:   "set <repository uri> </path/to/policy.json | ->",
-	Short: "set retention policy",
-	Long:  "set retention policy from file, or stdin if \"-\" specified",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(setPolicyCmdArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
-	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
-
-		var policy models.RetentionPolicy
-		ParseDocument(&policy, args[1], "retention policy")
-
-		client := getClient()
-		err := client.UpdateRetentionPolicy(context.Background(), u.Repository, &policy)
-		if err != nil {
-			DieErr(err)
-		}
-	},
-}
-
 //nolint:gochecknoinits
 func init() {
-	retentionCmd.AddCommand(setPolicyCmd)
-	retentionCmd.AddCommand(getPolicyCmd)
-
 	rootCmd.AddCommand(repoCmd)
 	repoCmd.AddCommand(repoListCmd)
 	repoCmd.AddCommand(repoCreateCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
-	repoCmd.AddCommand(retentionCmd)
 
 	repoListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")

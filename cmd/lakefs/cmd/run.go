@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
-	catalogmigrate "github.com/treeverse/lakefs/catalog/migrate"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
@@ -32,7 +31,6 @@ import (
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
-	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 )
 
@@ -69,7 +67,6 @@ var runCmd = &cobra.Command{
 		defer dbPool.Close()
 
 		registerPrometheusCollector(dbPool)
-		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
 		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
@@ -82,16 +79,6 @@ var runCmd = &cobra.Command{
 		blockStore, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
-		}
-
-		//  Migrate old MVCC - if cataloger type is not set,
-		//  warn the user in case migrate didn't run and there are MVCC repositories
-		if cfg.GetCatalogerType() == "" {
-			migrationRequired := catalogmigrate.CheckMigrationRequired(dbPool)
-			if migrationRequired {
-				logger.Fatal("Data migration is required")
-				fmt.Println(migrateRequiredMsg)
-			}
 		}
 
 		// init authentication
@@ -135,7 +122,6 @@ var runCmd = &cobra.Command{
 			authService,
 			authMetadataManager,
 			bufferedCollector,
-			retention,
 			migrator,
 			paradeDB,
 			dedupCleaner,
@@ -192,25 +178,6 @@ var runCmd = &cobra.Command{
 		<-bufferedCollector.Done()
 	},
 }
-
-const migrateRequiredMsg = `Data migration is required - https://docs.lakefs.io/deploying/upgrade.html.
-Starting version 0.30.0, lakeFS handles your committed metadata in a new way,
-which is more robust and has better performance.
-To move your existing data, you will need to run the following upgrade command:
-
-  $ lakefs migrate db
-
-If you want to start over, discarding your existing data, you need to explicitly state this in your lakeFS configuration file.
-To do so, add the following to your configuration:
-
-cataloger:
-  type: rocks
-
-And run:
-
-  $ lakefs migrate up
-
-`
 
 const runBanner = `
 
