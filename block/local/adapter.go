@@ -28,6 +28,7 @@ type Adapter struct {
 	path               string
 	ctx                context.Context
 	uploadIDTranslator block.UploadIDTranslator
+	removeEmptyDir     bool
 }
 
 var (
@@ -41,12 +42,19 @@ func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 		path:               l.path,
 		ctx:                ctx,
 		uploadIDTranslator: l.uploadIDTranslator,
+		removeEmptyDir:     l.removeEmptyDir,
 	}
 }
 
 func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.uploadIDTranslator = t
+	}
+}
+
+func WithRemoveEmptyDir(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.removeEmptyDir = b
 	}
 }
 
@@ -127,7 +135,27 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 		return err
 	}
 	p = filepath.Clean(p)
-	return os.Remove(p)
+	err = os.Remove(p)
+	if err != nil {
+		return err
+	}
+	if l.removeEmptyDir {
+		dir := filepath.Dir(p)
+		removeEmptyDir(dir)
+	}
+	return nil
+}
+
+func removeEmptyDir(dir string) {
+	d, err := os.Open(dir)
+	if err != nil {
+		return
+	}
+	_, err = d.Readdir(1)
+	_ = d.Close()
+	if err == io.EOF {
+		_ = os.Remove(dir)
+	}
 }
 
 func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {

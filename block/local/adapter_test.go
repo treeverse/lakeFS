@@ -1,19 +1,20 @@
 package local_test
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func makeAdapter(t *testing.T) (*local.Adapter, func()) {
+func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()
 	dir, err := ioutil.TempDir("", "testing-local-adapter-*")
 	testutil.MustDo(t, "TempDir", err)
@@ -21,11 +22,13 @@ func makeAdapter(t *testing.T) (*local.Adapter, func()) {
 	a, err := local.NewAdapter(dir)
 	testutil.MustDo(t, "NewAdapter", err)
 
-	return a, func() {
-		if _, ok := os.LookupEnv("GOTEST_KEEP_LOCAL"); !ok {
-			testutil.MustDo(t, "RemoveAll (cleanup)", os.RemoveAll(dir))
+	t.Cleanup(func() {
+		if _, ok := os.LookupEnv("GOTEST_KEEP_LOCAL"); ok {
+			return
 		}
-	}
+		_ = os.RemoveAll(dir)
+	})
+	return a
 }
 
 func makePointer(path string) block.ObjectPointer {
@@ -33,8 +36,7 @@ func makePointer(path string) block.ObjectPointer {
 }
 
 func TestLocalPutExistsGet(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	cases := []struct {
 		name string
@@ -66,8 +68,7 @@ func TestLocalPutExistsGet(t *testing.T) {
 }
 
 func TestLocalNotExists(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	cases := []string{"missing", "nested/down", "nested/quite/deeply/and/missing"}
 	for _, c := range cases {
@@ -82,8 +83,7 @@ func TestLocalNotExists(t *testing.T) {
 }
 
 func TestLocalMultipartUpload(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	cases := []struct {
 		name     string
@@ -125,8 +125,7 @@ func TestLocalMultipartUpload(t *testing.T) {
 }
 
 func TestLocalCopy(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	contents := "foo bar baz quux"
 
@@ -140,4 +139,21 @@ func TestLocalCopy(t *testing.T) {
 	if string(got) != contents {
 		t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))
 	}
+}
+
+func TestRemove(t *testing.T) {
+	a := makeAdapter(t)
+	const contents = "foo bar baz quux"
+
+	obj1 := makePointer("README")
+	err := a.Put(obj1, 0, strings.NewReader(contents), block.PutOpts{})
+	testutil.MustDo(t, "Put", err)
+	err = a.Remove(obj1)
+	testutil.MustDo(t, "Remove", err)
+
+	obj2 := makePointer("src/tools.go")
+	err = a.Put(obj2, 0, strings.NewReader(contents), block.PutOpts{})
+	testutil.MustDo(t, "Put", err)
+	err = a.Remove(obj2)
+	testutil.MustDo(t, "Remove", err)
 }
