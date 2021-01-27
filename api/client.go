@@ -70,7 +70,7 @@ type RepositoryClient interface {
 
 	ListTags(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
 	GetTag(ctx context.Context, repository, tagID string) (string, error)
-	CreateTag(ctx context.Context, repository string, tag *models.Ref) (string, error)
+	CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error)
 	DeleteTag(ctx context.Context, repository, tagID string) error
 
 	Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error)
@@ -671,11 +671,14 @@ func (c *client) GetTag(ctx context.Context, repository, tagID string) (string, 
 	return swag.StringValue(resp.GetPayload().CommitID), nil
 }
 
-func (c *client) CreateTag(ctx context.Context, repository string, tag *models.Ref) (string, error) {
+func (c *client) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
 	resp, err := c.remote.Tags.CreateTag(
 		tags.NewCreateTagParamsWithContext(ctx).
 			WithRepository(repository).
-			WithTag(tag),
+			WithTag(&models.TagCreation{
+				ID:  swag.String(tagID),
+				Ref: swag.String(ref),
+			}),
 		c.auth)
 	if err != nil {
 		return "", err

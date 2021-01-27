@@ -816,8 +816,8 @@ func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
 		}
 		deps.LogAction("create_tag")
 		cataloger := deps.Cataloger
-		commitRef := swag.StringValue(params.Tag.CommitID)
-		commitID, err := cataloger.CreateTag(deps.ctx, repository, tagID, commitRef)
+		tagRef := swag.StringValue(params.Tag.Ref)
+		commitID, err := cataloger.CreateTag(deps.ctx, repository, tagID, tagRef)
 		if err != nil {
 			return tags.NewCreateTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

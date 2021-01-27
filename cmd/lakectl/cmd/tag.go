@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
@@ -81,10 +80,7 @@ var tagCreateCmd = &cobra.Command{
 		client := getClient()
 		commitRef := args[1]
 		ctx := context.Background()
-		commitID, err := client.CreateTag(ctx, tagURI.Repository, &models.Ref{
-			ID:       swag.String(tagURI.Ref),
-			CommitID: swag.String(commitRef),
-		})
+		commitID, err := client.CreateTag(ctx, tagURI.Repository, tagURI.Ref, commitRef)
 		if err != nil {
 			DieErr(err)
 		}

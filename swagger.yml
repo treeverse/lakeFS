@@ -222,6 +222,17 @@ definitions:
       source:
         type: string
 
+  tag_creation:
+    type: object
+    required:
+      - id
+      - ref
+    properties:
+      id:
+        type: string
+      ref:
+        type: string
+
   error:
     type: object
     properties:
@@ -1375,7 +1386,7 @@ paths:
         - in: body
           name: tag
           schema:
-            $ref: "#/definitions/ref"
+            $ref: "#/definitions/tag_creation"
       responses:
         201:
           description: tag
