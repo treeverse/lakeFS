@@ -79,7 +79,7 @@ type RepositoryClient interface {
 	DeleteObject(ctx context.Context, repository, branchID, path string) error
 
 	DiffRefs(ctx context.Context, repository, leftRef, rightRef string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
-	Merge(ctx context.Context, repository, leftRef, rightRef string) (*models.MergeResult, error)
+	Merge(ctx context.Context, repository, destinationRef, sourceRef string) (*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
@@ -608,10 +608,10 @@ func (c *client) DiffRefs(ctx context.Context, repository, leftRef, rightRef, af
 	return payload.Results, payload.Pagination, nil
 }
 
-func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string) (*models.MergeResult, error) {
+func (c *client) Merge(ctx context.Context, repository, destinationRef, sourceRef string) (*models.MergeResult, error) {
 	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
-		DestinationRef: leftRef,
-		SourceRef:      rightRef,
+		DestinationRef: destinationRef,
+		SourceRef:      sourceRef,
 		Repository:     repository,
 		Context:        ctx,
 	}, c.auth)

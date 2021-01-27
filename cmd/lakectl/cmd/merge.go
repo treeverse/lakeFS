@@ -18,7 +18,7 @@ const (
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
-	Use:   "merge <source ref> <destination ref>",
+	Use:   "merge <destination ref> <source ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: cmdutils.ValidationChain(
@@ -28,14 +28,14 @@ var mergeCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		rightRefURI := uri.Must(uri.Parse(args[0]))
-		leftRefURI := uri.Must(uri.Parse(args[1]))
+		destinationRef := uri.Must(uri.Parse(args[0]))
+		sourceRef := uri.Must(uri.Parse(args[1]))
 
-		if leftRefURI.Repository != rightRefURI.Repository {
+		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
 
-		result, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+		result, err := client.Merge(context.Background(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
 		if errors.Is(err, catalog.ErrConflictFound) {
 			DieFmt("%d conflict(s) found\n", result.Summary.Conflict)
 		}
