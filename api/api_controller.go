@@ -817,11 +817,14 @@ func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
 		deps.LogAction("create_tag")
 		cataloger := deps.Cataloger
 		commitRef := swag.StringValue(params.Tag.CommitID)
-		err = cataloger.CreateTag(deps.ctx, repository, tagID, commitRef)
+		commitID, err := cataloger.CreateTag(deps.ctx, repository, tagID, commitRef)
 		if err != nil {
 			return tags.NewCreateTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		return tags.NewCreateTagCreated()
+		return tags.NewCreateTagCreated().WithPayload(&models.Ref{
+			CommitID: swag.String(commitID),
+			ID:       swag.String(tagID),
+		})
 	})
 }
 

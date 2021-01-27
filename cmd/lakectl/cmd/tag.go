@@ -70,7 +70,7 @@ var tagListCmd = &cobra.Command{
 }
 
 var tagCreateCmd = &cobra.Command{
-	Use:   "create <ref uri> <tag id>",
+	Use:   "create <ref uri> <commit ref>",
 	Short: "create a new tag in a repository",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(tagCreateRequiredArgs),
@@ -79,16 +79,16 @@ var tagCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		tag := args[1]
+		commitRef := args[1]
 		ctx := context.Background()
-		err := client.CreateTag(ctx, u.Repository, &models.Ref{
+		commitID, err := client.CreateTag(ctx, u.Repository, &models.Ref{
 			ID:       swag.String(u.Ref),
-			CommitID: swag.String(tag),
+			CommitID: swag.String(commitRef),
 		})
 		if err != nil {
 			DieErr(err)
 		}
-		Fmt("created tag '%s'\n", u.Ref)
+		Fmt("Created tag '%s' (%s)\n", u.Ref, commitID)
 	},
 }
 

@@ -1378,7 +1378,10 @@ paths:
             $ref: "#/definitions/ref"
       responses:
         201:
-          description: tag created successfully
+          description: tag
+          schema:
+            type: object
+            $ref: "#/definitions/ref"
         400:
           description: validation error
           schema:

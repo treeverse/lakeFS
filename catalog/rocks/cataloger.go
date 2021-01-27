@@ -200,7 +200,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}
 	// return results (optional trimmed) and hasMore
 	hasMore := false
-	if len(branches) >= limit {
+	if len(branches) > limit {
 		hasMore = true
 		branches = branches[:limit]
 	}
@@ -236,14 +236,18 @@ func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch s
 	return c.EntryCatalog.Reset(ctx, repositoryID, branchID)
 }
 
-func (c *cataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) error {
+func (c *cataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
 	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(ref))
 	if err != nil {
-		return err
+		return "", err
 	}
-	return c.EntryCatalog.CreateTag(ctx, repositoryID, tag, commitID)
+	err = c.EntryCatalog.CreateTag(ctx, repositoryID, tag, commitID)
+	if err != nil {
+		return "", err
+	}
+	return commitID.String(), nil
 }
 
 func (c *cataloger) DeleteTag(ctx context.Context, repository string, tagID string) error {
@@ -257,19 +261,21 @@ func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, 
 		limit = ListTagsLimitMax
 	}
 	repositoryID := graveler.RepositoryID(repository)
-	from := graveler.TagID(after)
-	it, err := c.EntryCatalog.ListTags(ctx, repositoryID, from)
+	it, err := c.EntryCatalog.ListTags(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
-	it.SeekGE(graveler.TagID(after))
+	afterTagID := graveler.TagID(after)
+	it.SeekGE(afterTagID)
 
 	var tags []*catalog.Tag
 	for it.Next() {
 		v := it.Value()
-		tagID := string(v.TagID)
+		if v.TagID == afterTagID {
+			continue
+		}
 		branch := &catalog.Tag{
-			ID:       tagID,
+			ID:       string(v.TagID),
 			CommitID: v.CommitID.String(),
 		}
 		tags = append(tags, branch)
@@ -282,7 +288,7 @@ func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, 
 	}
 	// return results (optional trimmed) and hasMore
 	hasMore := false
-	if len(tags) >= limit {
+	if len(tags) > limit {
 		hasMore = true
 		tags = tags[:limit]
 	}

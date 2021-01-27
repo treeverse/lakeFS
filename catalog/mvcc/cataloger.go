@@ -276,8 +276,8 @@ func (c *cataloger) Hooks() *catalog.CatalogerHooks {
 	return &c.hooks
 }
 
-func (c *cataloger) CreateTag(context.Context, string, string, string) error {
-	return catalog.ErrFeatureNotSupported
+func (c *cataloger) CreateTag(context.Context, string, string, string) (string, error) {
+	return "", catalog.ErrFeatureNotSupported
 }
 
 func (c *cataloger) DeleteTag(context.Context, string, string) error {
