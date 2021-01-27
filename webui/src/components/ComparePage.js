@@ -144,7 +144,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
 
 const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, resetMerge, mergeResults }) => {
     const refreshData = useCallback(() => {
-        if (compareRef) {
+        if (compareRef && (compareRef.id !== refId.id)) {
             diff(repo.id, compareRef.id, refId.id);
         }
     }, [repo.id, refId.id, diff, compareRef]);
