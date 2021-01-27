@@ -2,7 +2,6 @@ package onboard_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"sort"
 	"strings"
@@ -37,26 +36,19 @@ type objectActions struct {
 }
 
 type mockCatalogActions struct {
-	previousCommitInventory string
-	previousCommitPrefixes  []string
-	objectActions           objectActions
-	lastCommitMetadata      catalog.Metadata
+	objectActions      objectActions
+	lastCommitMetadata catalog.Metadata
 }
 
 type mockInventoryGenerator struct {
-	newInventoryURL      string
-	previousInventoryURL string
-	newInventory         []string
-	previousInventory    []string
-	sourceBucket         string
+	inventoryURL string
+	inventory    []string
+	sourceBucket string
 }
 
 func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
-	if inventoryURL == m.newInventoryURL {
-		return &mockInventory{keys: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
-	}
-	if inventoryURL == m.previousInventoryURL {
-		return &mockInventory{keys: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
+	if inventoryURL == m.inventoryURL {
+		return &mockInventory{keys: m.inventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort, prefixes: prefixes}, nil
 	}
 	return nil, errors.New("failed to create inventory")
 }
@@ -91,7 +83,6 @@ func (m *mockInventory) rows() []block.InventoryObject {
 func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.Stats, error) {
 	stats := onboard.Stats{
 		AddedOrChanged: len(m.objectActions.Added),
-		Deleted:        len(m.objectActions.Deleted),
 	}
 	for it.Next() {
 		diffObj := it.Get()
@@ -99,7 +90,6 @@ func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator,
 			if !dryRun {
 				m.objectActions.Deleted = append(m.objectActions.Deleted, diffObj.Obj.Key)
 			}
-			stats.Deleted += 1
 		} else {
 			if !dryRun {
 				m.objectActions.Added = append(m.objectActions.Added, diffObj.Obj.Key)
@@ -110,16 +100,8 @@ func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator,
 	return &stats, nil
 }
 
-func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
-	if m.previousCommitInventory == "" {
-		return nil, nil
-	}
-	metadata := catalog.Metadata{"inventory_url": m.previousCommitInventory}
-	if len(m.previousCommitPrefixes) > 0 {
-		prefixesSerialized, _ := json.Marshal(m.previousCommitPrefixes)
-		metadata["key_prefixes"] = string(prefixesSerialized)
-	}
-	return &catalog.CommitLog{Metadata: metadata}, nil
+func (m *mockCatalogActions) InitBranch(_ context.Context) error {
+	return nil
 }
 
 func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (string, error) {
