@@ -77,18 +77,18 @@ var tagCreateCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		tagURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
 		commitRef := args[1]
 		ctx := context.Background()
-		commitID, err := client.CreateTag(ctx, u.Repository, &models.Ref{
-			ID:       swag.String(u.Ref),
+		commitID, err := client.CreateTag(ctx, tagURI.Repository, &models.Ref{
+			ID:       swag.String(tagURI.Ref),
 			CommitID: swag.String(commitRef),
 		})
 		if err != nil {
 			DieErr(err)
 		}
-		Fmt("Created tag '%s' (%s)\n", u.Ref, commitID)
+		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
 	},
 }
 
