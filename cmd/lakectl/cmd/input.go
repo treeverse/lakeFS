@@ -17,11 +17,8 @@ func AssignAutoConfirmFlag(flags *pflag.FlagSet) {
 
 func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
 	yes, err := flags.GetBool(AutoConfirmFlagName)
-	if err != nil {
-		// no auto confirm flag
-		yes = false
-	}
-	if yes {
+	if err == nil && yes {
+		// got auto confirm flag
 		return true, nil
 	}
 	prm := promptui.Prompt{
