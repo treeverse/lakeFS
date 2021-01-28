@@ -6,13 +6,10 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"net/url"
-	"path"
 	"strconv"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 )
@@ -79,18 +76,6 @@ func (c *BlockCollector) rangesStats(ctx context.Context, writer *zip.Writer) []
 	}
 
 	for _, repo := range repos {
-		parsedRepo, err := url.ParseRequestURI(repo.StorageNamespace)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("parsing request URI: %w", err))
-			continue
-		}
-		bucket := parsedRepo.Host
-		err = c.adapter.ValidateConfiguration(bucket)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("validating configuration: %w", err))
-			continue
-		}
-
 		count := 0
 		counter := func(id string) error {
 			count++
@@ -99,24 +84,12 @@ func (c *BlockCollector) rangesStats(ctx context.Context, writer *zip.Writer) []
 
 		if err := c.adapter.Walk(block.WalkOpts{
 			StorageNamespace: repo.StorageNamespace,
-			Prefix:           path.Join(tierFSParams.BlockStoragePrefix, rocks.MetaRangeFSName),
+			Prefix:           tierFSParams.BlockStoragePrefix,
 		}, counter); err != nil {
-			errs = append(errs, fmt.Errorf("listing meta-ranges: %w", err))
+			errs = append(errs, fmt.Errorf("listing ranges and meta-ranges: %w", err))
 		}
-		if err := csvWriter.Write([]string{repo.Name, "meta-range", strconv.Itoa(count)}); err != nil {
-			errs = append(errs, fmt.Errorf("writing meta-ranges for repo (%s): %w", repo.Name, err))
-		}
-
-		count = 0
-		if err := c.adapter.Walk(block.WalkOpts{
-			StorageNamespace: repo.StorageNamespace,
-			Prefix:           path.Join(tierFSParams.BlockStoragePrefix, rocks.RangeFSName),
-		}, counter); err != nil {
-			errs = append(errs, fmt.Errorf("listing ranges: %w", err))
-		}
-
 		if err := csvWriter.Write([]string{repo.Name, "range", strconv.Itoa(count)}); err != nil {
-			errs = append(errs, fmt.Errorf("writing ranges for repo (%s): %w", repo.Name, err))
+			errs = append(errs, fmt.Errorf("writing meta-ranges for repo (%s): %w", repo.Name, err))
 		}
 	}
 
