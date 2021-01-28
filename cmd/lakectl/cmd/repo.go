@@ -117,7 +117,7 @@ var repoDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
+		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
@@ -194,4 +194,6 @@ func init() {
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
+
+	AssignAutoConfirmFlag(repoDeleteCmd.Flags())
 }

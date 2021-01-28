@@ -71,7 +71,6 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	var expected int64
 	var data io.ReadCloser
 	var rng ghttp.Range
-	rng.StartOffset = -1
 	// range query
 	rangeSpec := req.Header.Get("Range")
 	if len(rangeSpec) > 0 {
@@ -87,6 +86,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
 		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	}
 	if err != nil {
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -96,9 +96,6 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = data.Close()
 	}()
 	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", expected))
-	if rng.StartOffset != -1 {
-		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
-	}
 	// Delete the default content-type header so http.Server will detect it from contents
 	// TODO(ariels): After/if we add content-type support to adapter, use *that*.
 	o.DeleteHeader(w, "Content-Type")

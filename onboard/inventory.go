@@ -122,7 +122,6 @@ func CreateCommitMetadata(inv block.Inventory, stats Stats, prefixes []string) c
 		"inventory_url":            inv.InventoryURL(),
 		"source":                   inv.SourceName(),
 		"added_or_changed_objects": strconv.Itoa(stats.AddedOrChanged),
-		"deleted_objects":          strconv.Itoa(stats.Deleted),
 	}
 	if len(prefixes) > 0 {
 		prefixesSerialized, _ := json.Marshal(prefixes)

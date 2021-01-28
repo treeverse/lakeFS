@@ -237,19 +237,15 @@ func (e *EntryCatalog) DeleteTag(ctx context.Context, repositoryID graveler.Repo
 	return e.Store.DeleteTag(ctx, repositoryID, tagID)
 }
 
-func (e *EntryCatalog) ListTags(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.TagID) (graveler.TagIterator, error) {
+func (e *EntryCatalog) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"from", from, ValidateTagIDOptional},
 	}); err != nil {
 		return nil, err
 	}
 	it, err := e.Store.ListTags(ctx, repositoryID)
 	if err != nil {
 		return nil, err
-	}
-	if from != "" {
-		it.SeekGE(from)
 	}
 	return it, nil
 }

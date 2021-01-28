@@ -24,7 +24,7 @@ var branchCmd = &cobra.Command{
 	Long:  `Create delete and list branches within a lakeFS repository`,
 }
 
-var branchListTemplate = `{{.BranchTable | table -}}
+const branchListTemplate = `{{.BranchTable | table -}}
 {{.Pagination | paginate }}
 `
 
@@ -111,7 +111,7 @@ var branchDeleteCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete branch")
+		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
 		if err != nil || !confirmation {
 			Die("Delete branch aborted", 1)
 		}
@@ -141,7 +141,7 @@ var branchRevertCmd = &cobra.Command{
 		if hasParentNumber && parentNumber <= 0 {
 			Die("parent number must be non-negative, if specified", 1)
 		}
-		confirmation, err := confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s", commitRef))
+		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commit %s", commitRef))
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
@@ -210,7 +210,7 @@ var branchResetCmd = &cobra.Command{
 			}
 		}
 
-		confirmation, err := confirm(cmd.Flags(), confirmationMsg)
+		confirmation, err := Confirm(cmd.Flags(), confirmationMsg)
 		if err != nil || !confirmation {
 			Die("Reset aborted", 1)
 			return
@@ -261,4 +261,8 @@ func init() {
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")
 
 	branchRevertCmd.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.")
+
+	AssignAutoConfirmFlag(branchResetCmd.Flags())
+	AssignAutoConfirmFlag(branchRevertCmd.Flags())
+	AssignAutoConfirmFlag(branchDeleteCmd.Flags())
 }
