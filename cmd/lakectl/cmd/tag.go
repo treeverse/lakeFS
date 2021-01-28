@@ -69,7 +69,7 @@ var tagListCmd = &cobra.Command{
 }
 
 var tagCreateCmd = &cobra.Command{
-	Use:   "create <ref uri> <commit ref>",
+	Use:   "create <tag uri> <commit ref>",
 	Short: "create a new tag in a repository",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(tagCreateRequiredArgs),

@@ -365,8 +365,6 @@ func (m *FakeBranchIterator) Err() error {
 
 func (m *FakeBranchIterator) Close() {}
 
-/// BARAK
-
 type FakeTagIterator struct {
 	Data  []*graveler.TagRecord
 	Index int
