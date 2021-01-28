@@ -37,12 +37,13 @@ var mergeCmd = &cobra.Command{
 
 		result, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		if errors.Is(err, catalog.ErrConflictFound) {
-			DieFmt("%d conflict(s) found\n", result.Summary.Conflict)
+			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
+			return
 		}
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Merged %s\n", result.Reference)
+		_, _ = fmt.Printf("new: %d modified: %d removed: %d\n", result.Summary.Added, result.Summary.Changed, result.Summary.Removed)
 	},
 }
 
