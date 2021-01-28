@@ -20,6 +20,8 @@ type Params struct {
 	// the expected number of records after MinRangeSizeBytes at which to split the range
 	// -- ranges are split at the first key with hash divisible by this raggedness.
 	RangeSizeEntriesRaggedness float64
+	// MaxUploaders is the maximal number of uploaders to use in a single metarange writer.
+	MaxUploaders int
 }
 
 type metaRangeManager struct {

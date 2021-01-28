@@ -40,7 +40,7 @@ func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManag
 		ctx:              ctx,
 		rangeManager:     rangeManager,
 		metaRangeManager: metaRangeManager,
-		batchWriteCloser: NewBatchCloser(),
+		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
 		params:           params,
 		namespace:        namespace,
 	}
@@ -79,7 +79,12 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 	return nil
 }
 
+var ErrNeedBatchClosers = errors.New("need at least 1 batch uploaded")
+
 func (w *GeneralMetaRangeWriter) closeCurrentRange() error {
+	if w.params.MaxUploaders < 1 {
+		return fmt.Errorf("only %d async closers: %w", w.params.MaxUploaders, ErrNeedBatchClosers)
+	}
 	if w.rangeWriter == nil {
 		return nil
 	}
