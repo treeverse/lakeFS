@@ -38,6 +38,7 @@ const (
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
 	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
 	DefaultCommittedLocalCacheDir                   = "~/data/lakefs/cache"
+	DefaultCommittedLocalCacheNumUploaders          = 10
 	DefaultCommittedMetaRangeReaderCacheSize        = 50
 	DefaultCommittedMetaRangeReaderNumShards        = 10
 	DefaultCommittedRangeReaderCacheSize            = 500
@@ -112,6 +113,7 @@ const (
 
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
+	CommittedLocalCacheNumUploadersKey          = "committed.local_cache.max_uploaders_per_writer"
 	CommittedLocalCacheRangeProportion          = "committed.local_cache.range_proportion"
 	CommittedRangeReaderCacheSize               = "committed.local_cache.range.open_readers"
 	CommittedRangeReaderCacheNumShards          = "committed.local_cache.range.num_shards"
@@ -156,6 +158,7 @@ func setDefaults() {
 
 	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
 	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
+	viper.SetDefault(CommittedLocalCacheNumUploadersKey, DefaultCommittedLocalCacheNumUploaders)
 	viper.SetDefault(CommittedRangeReaderCacheSize, DefaultCommittedRangeReaderCacheSize)
 	viper.SetDefault(CommittedRangeReaderCacheNumShards, DefaultCommittedRangeReaderNumShards)
 	viper.SetDefault(CommittedLocalCacheRangeProportion, DefaultCommittedLocalCacheRangePercent)
@@ -426,6 +429,7 @@ func (c *Config) GetCommittedParams() *committed.Params {
 		MinRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMinRangeSizeKey),
 		MaxRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMaxRangeSizeKey),
 		RangeSizeEntriesRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
+		MaxUploaders:               viper.GetInt(CommittedLocalCacheNumUploadersKey),
 	}
 }
 
