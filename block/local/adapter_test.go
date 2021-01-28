@@ -4,13 +4,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/testutil"
@@ -159,6 +159,7 @@ func dumpPathTree(t testing.TB, root string) []string {
 	if err != nil {
 		t.Fatalf("walking on '%s': %s", root, err)
 	}
+	sort.Strings(tree)
 	return tree
 }
 
