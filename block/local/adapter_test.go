@@ -3,8 +3,11 @@ package local_test
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/go-test/deep"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -150,9 +153,45 @@ func TestRemove(t *testing.T) {
 	err = a.Remove(obj1)
 	testutil.MustDo(t, "Remove", err)
 
+	root := a.Path()
+	tree1 := dumpPathTree(t, root)
+	if diff := deep.Equal(tree1, []string{""}); diff != nil {
+		t.Fatalf("Found diff after remove: %s", diff)
+	}
+
 	obj2 := makePointer("src/tools.go")
 	err = a.Put(obj2, 0, strings.NewReader(contents), block.PutOpts{})
 	testutil.MustDo(t, "Put", err)
 	err = a.Remove(obj2)
 	testutil.MustDo(t, "Remove", err)
+	tree2 := dumpPathTree(t, root)
+	if diff := deep.Equal(tree2, []string{""}); diff != nil {
+		t.Fatalf("Found diff after remove: %s", diff)
+	}
+
+	obj3 := makePointer("a/b/c/d.txt")
+	err = a.Put(obj3, 0, strings.NewReader(contents), block.PutOpts{})
+	testutil.MustDo(t, "Put", err)
+	err = a.Remove(obj3)
+	testutil.MustDo(t, "Remove", err)
+	tree3 := dumpPathTree(t, root)
+	if diff := deep.Equal(tree3, []string{""}); diff != nil {
+		t.Fatalf("Found diff after remove: %s", diff)
+	}
+}
+
+func dumpPathTree(t testing.TB, root string) []string {
+	tree := make([]string, 0)
+	err := filepath.Walk(root, func(path string, _ os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		p := strings.TrimPrefix(path, root)
+		tree = append(tree, p)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking on '%s': %s", root, err)
+	}
+	return tree
 }

@@ -113,6 +113,10 @@ func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, erro
 	return f(path)
 }
 
+func (l *Adapter) Path() string {
+	return l.path
+}
+
 func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
 	p, err := l.getPath(obj)
 	if err != nil {
@@ -142,9 +146,22 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 	}
 	if l.removeEmptyDir {
 		dir := filepath.Dir(p)
-		_ = os.Remove(dir)
+		removeEmptyDirUntil(dir, l.path)
 	}
 	return nil
+}
+
+func removeEmptyDirUntil(dir string, stopAt string) {
+	for {
+		err := os.Remove(dir)
+		if err != nil {
+			break
+		}
+		dir = filepath.Dir(dir)
+		if dir == "/" || strings.HasPrefix(stopAt, dir) {
+			break
+		}
+	}
 }
 
 func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
