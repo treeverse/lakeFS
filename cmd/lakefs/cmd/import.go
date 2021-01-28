@@ -207,6 +207,8 @@ func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName st
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
 	}
+
+	// import branch is created on the fly
 	return repo, nil
 }
 
