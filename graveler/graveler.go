@@ -979,6 +979,10 @@ func (g *Graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		if err != nil {
 			return nil, err
 		}
+		_, err = g.updateBranch(ctx, repositoryID, branchID, Ref(newCommit))
+		if err != nil {
+			return nil, err
+		}
 		return newCommit, nil
 	})
 	if err != nil {
