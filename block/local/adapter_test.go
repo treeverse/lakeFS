@@ -145,54 +145,8 @@ func TestLocalCopy(t *testing.T) {
 	}
 }
 
-func TestRemove(t *testing.T) {
-	a := makeAdapter(t)
-	const contents = "foo bar baz quux"
-
-	obj := makePointer("README")
-	err := a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
-	testutil.MustDo(t, "Put", err)
-	err = a.Remove(obj)
-	testutil.MustDo(t, "Remove", err)
-	root := a.Path()
-	tree := dumpPathTree(t, root)
-	if diff := deep.Equal(tree, []string{""}); diff != nil {
-		t.Fatalf("Found diff after remove: %s", diff)
-	}
-
-	obj = makePointer("src/tools.go")
-	err = a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
-	testutil.MustDo(t, "Put", err)
-	err = a.Remove(obj)
-	testutil.MustDo(t, "Remove", err)
-	tree = dumpPathTree(t, root)
-	if diff := deep.Equal(tree, []string{""}); diff != nil {
-		t.Fatalf("Found diff after remove: %s", diff)
-	}
-
-	obj = makePointer("a/b/c/d.txt")
-	err = a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
-	testutil.MustDo(t, "Put", err)
-	err = a.Remove(obj)
-	testutil.MustDo(t, "Remove", err)
-	tree = dumpPathTree(t, root)
-	if diff := deep.Equal(tree, []string{""}); diff != nil {
-		t.Fatalf("Found diff after remove: %s", diff)
-	}
-
-	obj = makePointer("a/b/c/d.txt")
-	err = a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
-	testutil.MustDo(t, "Put", err)
-	testutil.MustDo(t, "PutAnother", a.Put(makePointer("a/b/another.txt"), 0, strings.NewReader(contents), block.PutOpts{}))
-	err = a.Remove(obj)
-	testutil.MustDo(t, "Remove", err)
-	tree = dumpPathTree(t, root)
-	if diff := deep.Equal(tree, []string{"", "/test", "/test/a", "/test/a/b", "/test/a/b/another.txt"}); diff != nil {
-		t.Fatalf("Found diff after remove: %s", diff)
-	}
-}
-
 func dumpPathTree(t testing.TB, root string) []string {
+	t.Helper()
 	tree := make([]string, 0)
 	err := filepath.Walk(root, func(path string, _ os.FileInfo, err error) error {
 		if err != nil {
@@ -206,4 +160,63 @@ func dumpPathTree(t testing.TB, root string) []string {
 		t.Fatalf("walking on '%s': %s", root, err)
 	}
 	return tree
+}
+
+func TestAdapter_Remove(t *testing.T) {
+	const content = "Content used for testing"
+	tests := []struct {
+		name              string
+		additionalObjects []string
+		path              string
+		wantErr           bool
+		wantTree          []string
+	}{
+		{
+			name:     "single",
+			path:     "README",
+			wantErr:  false,
+			wantTree: []string{""},
+		},
+
+		{
+			name:     "under folder",
+			path:     "src/tools.go",
+			wantErr:  false,
+			wantTree: []string{""},
+		},
+		{
+			name:     "under multiple folders",
+			path:     "a/b/c/d.txt",
+			wantErr:  false,
+			wantTree: []string{""},
+		},
+		{
+			name:              "file in the way",
+			path:              "a/b/c/d.txt",
+			additionalObjects: []string{"a/b/blocker.txt"},
+			wantErr:           false,
+			wantTree:          []string{"", "/test", "/test/a", "/test/a/b", "/test/a/b/blocker.txt"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup env
+			adp := makeAdapter(t)
+			envObjects := append(tt.additionalObjects, tt.path)
+			for _, o := range envObjects {
+				obj := makePointer(o)
+				testutil.MustDo(t, "Put", adp.Put(obj, 0, strings.NewReader(content), block.PutOpts{}))
+			}
+			// test Remove with remove empty folders
+			obj := makePointer(tt.path)
+			if err := adp.Remove(obj); (err != nil) != tt.wantErr {
+				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			tree := dumpPathTree(t, adp.Path())
+			if diff := deep.Equal(tt.wantTree, tree); diff != nil {
+				t.Errorf("Remove() tree diff = %s", diff)
+			}
+		})
+	}
 }
