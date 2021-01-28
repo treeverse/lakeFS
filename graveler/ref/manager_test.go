@@ -123,10 +123,9 @@ func TestManager_DeleteRepository(t *testing.T) {
 		}
 	})
 
-	t.Run("repo_does_not_exists", func(t *testing.T) {
-		// delete repo always returns success even if the repo doesn't exist
+	t.Run("repo_does_not_exist", func(t *testing.T) {
 		err := r.DeleteRepository(context.Background(), "example-repo11111")
-		if err != nil {
+		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

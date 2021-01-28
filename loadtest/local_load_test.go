@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -20,7 +22,6 @@ import (
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -57,11 +58,13 @@ func TestLocalLoad(t *testing.T) {
 	}
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
+	if blockstoreType == "" {
+		blockstoreType = "mem"
+	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalogfactory.BuildCataloger(conn, nil)
+	cataloger, err := catalogfactory.BuildCataloger(conn, config.NewConfig())
 	testutil.MustDo(t, "build cataloger", err)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
-	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
@@ -77,7 +80,6 @@ func TestLocalLoad(t *testing.T) {
 		authService,
 		meta,
 		&mockCollector{},
-		retentionService,
 		migrator,
 		nil,
 		dedupCleaner,

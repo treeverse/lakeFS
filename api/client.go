@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/api/gen/client/retention"
 	"github.com/treeverse/lakefs/api/gen/client/tags"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
@@ -88,8 +87,6 @@ type RepositoryClient interface {
 
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
-	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
-	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
 
 	SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error
@@ -706,26 +703,6 @@ func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (stri
 		return "", err
 	}
 	return resp.GetPayload(), nil
-}
-
-func (c *client) GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error) {
-	policy, err := c.remote.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
-		Repository: repository,
-		Context:    ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return policy.GetPayload(), nil
-}
-
-func (c *client) UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error {
-	_, err := c.remote.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
-		Repository: repository,
-		Policy:     policy,
-		Context:    ctx,
-	}, c.auth)
-	return err
 }
 
 func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*models.ObjectStats, error) {
