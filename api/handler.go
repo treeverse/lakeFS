@@ -91,7 +91,6 @@ func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
 			}
-
 			return s.authService.SecretStore().SharedSecret(), nil
 		})
 		if err != nil {
@@ -101,9 +100,17 @@ func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 		if !ok || !token.Valid {
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := s.authService.GetUser(claims.Subject)
+		cred, err := s.authService.GetCredentials(claims.Subject)
 		if err != nil {
-			logger.WithField("subject", claims.Subject).Warn("could not find user for token")
+			logger.WithField("subject", claims.Subject).Warn("could not find credentials for token")
+			return nil, ErrAuthenticationFailed
+		}
+		userData, err := s.authService.GetUserByID(cred.UserID)
+		if err != nil {
+			logger.WithFields(logging.Fields{
+				"user_id": cred.UserID,
+				"subject": claims.Subject,
+			}).Warn("could not find user id by credentials")
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{

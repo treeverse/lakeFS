@@ -57,14 +57,15 @@ func UIHandler(authService auth.Service) http.Handler {
 			return
 		}
 
-		// check login
+		// load credentials by access key
 		credentials, err := authService.GetCredentials(login.AccessKeyID)
 		if err != nil || credentials.AccessSecretKey != login.AccessSecretKey {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		// get user
-		user, err := authService.GetUserByID(credentials.UserID)
+
+		// verify user associated with credentials exists
+		_, err = authService.GetUserByID(credentials.UserID)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -75,7 +76,7 @@ func UIHandler(authService auth.Service) http.Handler {
 		claims := &jwt.StandardClaims{
 			IssuedAt:  loginTime.Unix(),
 			ExpiresAt: expires.Unix(),
-			Subject:   user.Username,
+			Subject:   login.AccessKeyID,
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -103,6 +104,7 @@ func UIHandler(authService auth.Service) http.Handler {
 			Value:    "",
 			Path:     "/",
 			HttpOnly: true,
+			Expires:  time.Unix(0, 0),
 			SameSite: http.SameSiteStrictMode,
 		})
 	})
