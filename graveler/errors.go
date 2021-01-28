@@ -38,7 +38,7 @@ var (
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 	ErrLockNotAcquired         = errors.New("lock not acquired")
 	ErrRevertMergeNoParent     = errors.New("must specify 1-based parent number for reverting merge commit")
-	ErrRevertParentOutOfRange  = errors.New("given commit does not have parent number")
+	ErrRevertParentOutOfRange  = errors.New("given commit does not have the given parent number")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

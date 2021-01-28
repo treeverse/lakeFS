@@ -1328,7 +1328,6 @@ func (c *Controller) RevertHandler() branches.RevertHandler {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		committer := userModel.Username
-
 		err = deps.Cataloger.Revert(deps.ctx, params.Repository, params.Branch, catalog.RevertParams{
 			Reference:    params.Revert.Ref,
 			Committer:    committer,
