@@ -183,6 +183,17 @@ func TestCataloger_ListBranches(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name: "exact",
+			args: args{limit: 3},
+			want: []*catalog.Branch{
+				{Name: "branch1", Reference: "commit1"},
+				{Name: "branch2", Reference: "commit2"},
+				{Name: "branch3", Reference: "commit3"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
 			name: "first",
 			args: args{limit: 1},
 			want: []*catalog.Branch{
@@ -239,6 +250,105 @@ func TestCataloger_ListBranches(t *testing.T) {
 			}
 			if hasMore != tt.wantHasMore {
 				t.Errorf("ListBranches() hasMore = %t, want %t", hasMore, tt.wantHasMore)
+			}
+		})
+	}
+}
+
+func TestCataloger_ListTags(t *testing.T) {
+	gravelerData := []*graveler.TagRecord{
+		{TagID: "t1", CommitID: "c1"},
+		{TagID: "t2", CommitID: "c2"},
+		{TagID: "t3", CommitID: "c3"},
+	}
+	type args struct {
+		limit int
+		after string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        []*catalog.Tag
+		wantHasMore bool
+		wantErr     bool
+	}{
+		{
+			name: "all",
+			args: args{limit: -1},
+			want: []*catalog.Tag{
+				{ID: "t1", CommitID: "c1"},
+				{ID: "t2", CommitID: "c2"},
+				{ID: "t3", CommitID: "c3"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name: "exact",
+			args: args{limit: 3},
+			want: []*catalog.Tag{
+				{ID: "t1", CommitID: "c1"},
+				{ID: "t2", CommitID: "c2"},
+				{ID: "t3", CommitID: "c3"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name: "first",
+			args: args{limit: 1},
+			want: []*catalog.Tag{
+				{ID: "t1", CommitID: "c1"},
+			},
+			wantHasMore: true,
+			wantErr:     false,
+		},
+		{
+			name: "second",
+			args: args{limit: 1, after: "t1"},
+			want: []*catalog.Tag{
+				{ID: "t2", CommitID: "c2"},
+			},
+			wantHasMore: true,
+			wantErr:     false,
+		},
+		{
+			name: "last2",
+			args: args{limit: 10, after: "t1"},
+			want: []*catalog.Tag{
+				{ID: "t2", CommitID: "c2"},
+				{ID: "t3", CommitID: "c3"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name:        "not found",
+			args:        args{limit: 10, after: "zzz"},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gravelerMock := &FakeGraveler{
+				TagIteratorFactory: NewFakeTagIteratorFactory(gravelerData),
+			}
+			c := &cataloger{
+				EntryCatalog: &EntryCatalog{
+					Store: gravelerMock,
+				},
+			}
+			ctx := context.Background()
+			got, hasMore, err := c.ListTags(ctx, "repo", tt.args.limit, tt.args.after)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListTags() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Error("ListTags() found diff", diff)
+			}
+			if hasMore != tt.wantHasMore {
+				t.Errorf("ListTags() hasMore = %t, want %t", hasMore, tt.wantHasMore)
 			}
 		})
 	}

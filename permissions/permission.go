@@ -24,6 +24,10 @@ func BranchArn(repoID, branchID string) string {
 	return fSArnPrefix + "repository/" + repoID + "/branch/" + branchID
 }
 
+func TagArn(repoID, tagID string) string {
+	return fSArnPrefix + "repository/" + repoID + "/tag/" + tagID
+}
+
 func UserArn(userID string) string {
 	return authArnPrefix + "user/" + userID
 }

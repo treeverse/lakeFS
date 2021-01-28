@@ -19,7 +19,6 @@ var (
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if !testing.Verbose() {
-		// keep the log level calm
 		logrus.SetLevel(logrus.PanicLevel)
 	}
 

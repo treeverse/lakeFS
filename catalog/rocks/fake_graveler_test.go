@@ -15,6 +15,7 @@ type FakeGraveler struct {
 	DiffIteratorFactory       func() graveler.DiffIterator
 	RepositoryIteratorFactory func() graveler.RepositoryIterator
 	BranchIteratorFactory     func() graveler.BranchIterator
+	TagIteratorFactory        func() graveler.TagIterator
 }
 
 func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
@@ -113,7 +114,10 @@ func (g *FakeGraveler) DeleteTag(ctx context.Context, repositoryID graveler.Repo
 }
 
 func (g *FakeGraveler) ListTags(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.TagIterator, error) {
-	panic("implement me")
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	return g.TagIteratorFactory(), nil
 }
 
 func (g *FakeGraveler) Log(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (graveler.CommitIterator, error) {
@@ -343,8 +347,8 @@ func (m *FakeBranchIterator) Next() bool {
 
 func (m *FakeBranchIterator) SeekGE(id graveler.BranchID) {
 	m.Index = len(m.Data)
-	for i, repo := range m.Data {
-		if repo.BranchID >= id {
+	for i, item := range m.Data {
+		if item.BranchID >= id {
 			m.Index = i - 1
 			return
 		}
@@ -360,3 +364,44 @@ func (m *FakeBranchIterator) Err() error {
 }
 
 func (m *FakeBranchIterator) Close() {}
+
+type FakeTagIterator struct {
+	Data  []*graveler.TagRecord
+	Index int
+}
+
+func NewFakeTagIterator(data []*graveler.TagRecord) *FakeTagIterator {
+	return &FakeTagIterator{Data: data, Index: -1}
+}
+
+func NewFakeTagIteratorFactory(data []*graveler.TagRecord) func() graveler.TagIterator {
+	return func() graveler.TagIterator { return NewFakeTagIterator(data) }
+}
+
+func (m *FakeTagIterator) Next() bool {
+	if m.Index >= len(m.Data) {
+		return false
+	}
+	m.Index++
+	return m.Index < len(m.Data)
+}
+
+func (m *FakeTagIterator) SeekGE(id graveler.TagID) {
+	m.Index = len(m.Data)
+	for i, item := range m.Data {
+		if item.TagID >= id {
+			m.Index = i - 1
+			return
+		}
+	}
+}
+
+func (m *FakeTagIterator) Value() *graveler.TagRecord {
+	return m.Data[m.Index]
+}
+
+func (m *FakeTagIterator) Err() error {
+	return nil
+}
+
+func (m *FakeTagIterator) Close() {}
