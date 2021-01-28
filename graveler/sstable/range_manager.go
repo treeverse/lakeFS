@@ -6,6 +6,7 @@ import (
 	"crypto"
 	"errors"
 	"fmt"
+	"runtime"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/sstable"
@@ -30,7 +31,21 @@ func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypt
 	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
 		return newReader(ctx, fs, ns, id, opts)
 	}
-	return NewPebbleSSTableRangeManagerWithNewReader(newReader, fs, hash)
+	ret := NewPebbleSSTableRangeManagerWithNewReader(newReader, fs, hash)
+	// pebble cache enforces morality at finalization time.  This is always broken -- gc
+	// need not ever run, and might not (cannot) run in dependency order if there is any
+	// loop.  In a language with so-called "explicit" resource management there would be
+	// no need for explicit Ref and Unref operations on the cache, which would side-step
+	// the issue.  Do the best that we can here, by unreffing the cache at finalization.
+	// But note that this *can* crash if we _ever_ manage to introduce a link from cache
+	// back to this RangeManager or any object holding it.  (Note that when running with
+	// the race detector pebble switches off this check.  This shows that the concept of
+	// enforcing correctness in a finalizer is fairly broken.  Finalizers are not a good
+	// language feature to replace destructors.
+	//
+	// Sample reference: https://crawshaw.io/blog/tragedy-of-finalizers
+	runtime.SetFinalizer(ret, func(interface{}) { cache.Unref() })
+	return ret
 }
 
 func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
