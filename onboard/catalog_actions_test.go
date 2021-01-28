@@ -2,162 +2,158 @@ package onboard_test
 
 import (
 	"context"
-	"sync"
-	"sync/atomic"
+	"errors"
 	"testing"
-	"time"
 
-	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/catalog/rocks/testutils"
+
+	"github.com/treeverse/lakefs/catalog/rocks"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
+	"github.com/treeverse/lakefs/onboard/mock"
 )
 
-type mockCataloger struct {
-	catalog.Cataloger
+const (
+	repoID      = graveler.RepositoryID("some-repo-id")
+	metaRangeID = graveler.MetaRangeID("some-mr-id")
+	commitID    = graveler.CommitID("some-commit-id")
+	committer   = "john-doe"
+	msg         = "awesome-import-commit"
+)
+
+func TestFullCycleSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rangeManager := mock.NewMockentryCataloger(ctrl)
+
+	mri := metaRangeID
+	rangeManager.EXPECT().
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			{
+				Path:  "some/path",
+				Entry: &rocks.Entry{},
+			},
+		}), "", ""), nil)
+	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.CommitID("")), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+		Times(1).Return(commitID, nil)
+	rangeManager.EXPECT().UpdateBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), graveler.Ref(commitID)).Times(1).Return(nil, nil)
+
+	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
+
+	validIt := getValidIt()
+	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
+	require.NoError(t, err)
+	require.NotNil(t, stats)
+
+	retCommitID, err := rocks.Commit(context.Background(), msg, nil)
+	require.NoError(t, err)
+	require.Equal(t, string(commitID), retCommitID)
 }
 
-var catalogCallData = struct {
-	addedEntries   map[string]catalog.Entry
-	deletedEntries map[string]bool
-	callLog        map[string]*int32
-	mux            sync.Mutex
-}{}
+func TestApplyImportWrongIt(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rangeManager := mock.NewMockentryCataloger(ctrl)
 
-func (m mockCataloger) CreateEntries(_ context.Context, _, _ string, entries []catalog.Entry) error {
-	catalogCallData.mux.Lock()
-	defer catalogCallData.mux.Unlock()
-	for _, e := range entries {
-		catalogCallData.addedEntries[e.Path] = e
-	}
-	atomic.AddInt32(catalogCallData.callLog["CreateEntries"], 1)
-	return nil
+	innerIt := getValidInnerIt()
+	diffIt := onboard.NewDiffIterator(innerIt, innerIt)
+	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
+
+	stats, err := rocks.ApplyImport(context.Background(), diffIt, false)
+	require.Error(t, err)
+	require.IsType(t, onboard.ErrWrongIterator, err)
+	require.Nil(t, stats)
 }
 
-func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) error {
-	catalogCallData.mux.Lock()
-	defer catalogCallData.mux.Unlock()
-	catalogCallData.deletedEntries[path] = true
-	atomic.AddInt32(catalogCallData.callLog["DeleteEntry"], 1)
-	return nil
+func TestApplyImportWriteFailure(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rangeManager := mock.NewMockentryCataloger(ctrl)
+
+	rangeManager.EXPECT().
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			{
+				Path:  "some/path",
+				Entry: &rocks.Entry{},
+			},
+		}), "", ""), nil)
+	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
+
+	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
+
+	validIt := getValidIt()
+	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
+	require.Error(t, err)
+	require.Nil(t, stats)
 }
 
-func TestCreateAndDeleteRows(t *testing.T) {
-	catalogActions := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", logging.Default())
-	catalogActions.WriteBatchSize = 5
-	testdata := []struct {
-		AddedRows           []string
-		DeletedRows         []string
-		ExpectedAddCalls    int32
-		ExpectedDeleteCalls int32
-	}{
-		{
-			AddedRows:           []string{"a1", "b2", "c3"},
-			DeletedRows:         []string{},
-			ExpectedAddCalls:    1,
-			ExpectedDeleteCalls: 0,
-		},
-		{
-			AddedRows:           []string{"a1", "b2", "c3"},
-			DeletedRows:         []string{"d1", "e2"},
-			ExpectedAddCalls:    1,
-			ExpectedDeleteCalls: 2,
-		},
-		{
-			AddedRows:           []string{"a1", "b2", "c3", "d4", "e5"},
-			DeletedRows:         []string{"f1", "g2"},
-			ExpectedAddCalls:    1,
-			ExpectedDeleteCalls: 2,
-		},
-		{
-			AddedRows:           []string{"a1", "b2", "c3", "d4", "e5", "f6"},
-			DeletedRows:         []string{"g1", "h2"},
-			ExpectedAddCalls:    2,
-			ExpectedDeleteCalls: 2,
-		},
-		{
-			AddedRows:           []string{"a1", "b2", "c3", "d4", "e5", "f6"},
-			DeletedRows:         []string{},
-			ExpectedAddCalls:    2,
-			ExpectedDeleteCalls: 0,
-		},
-		{
-			AddedRows:           []string{"a1", "b2", "c3", "d4", "e5", "f6", "g7", "h8", "i9", "j0"},
-			DeletedRows:         []string{},
-			ExpectedAddCalls:    2,
-			ExpectedDeleteCalls: 0,
-		},
-		{
-			AddedRows:           []string{},
-			DeletedRows:         []string{"a1", "b2"},
-			ExpectedAddCalls:    0,
-			ExpectedDeleteCalls: 2,
-		},
-	}
-	for _, dryRun := range []bool{true, false} {
-		for _, test := range testdata {
-			catalogCallData.addedEntries = make(map[string]catalog.Entry)
-			catalogCallData.deletedEntries = make(map[string]bool)
-			catalogCallData.callLog = make(map[string]*int32)
-			catalogCallData.callLog["DeleteEntry"] = swag.Int32(0)
-			catalogCallData.callLog["CreateEntries"] = swag.Int32(0)
-			now := time.Now()
-			lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour)}
-			leftInv := &mockInventory{
-				keys:         test.DeletedRows,
-				lastModified: lastModified,
-			}
-			rightInv := &mockInventory{
-				keys:         test.AddedRows,
-				lastModified: lastModified,
-			}
-			stats, err := catalogActions.ApplyImport(context.Background(),
-				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), dryRun)
-			if err != nil {
-				t.Fatalf("failed to create/delete objects: %v", err)
-			}
-			expectedAddCalls := test.ExpectedAddCalls
-			expectedDeleteCalls := test.ExpectedDeleteCalls
-			if dryRun {
-				expectedAddCalls = 0
-				expectedDeleteCalls = 0
-			}
-			if *catalogCallData.callLog["CreateEntries"] != expectedAddCalls {
-				t.Fatalf("unexpected number of CreateEntries calls. expected=%d, got=%d", expectedAddCalls, *catalogCallData.callLog["CreateEntries"])
-			}
-			if *catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
-				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, *catalogCallData.callLog["DeleteEntry"])
-			}
-			if stats.AddedOrChanged != len(test.AddedRows) {
-				t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), stats.AddedOrChanged)
-			}
-			if stats.Deleted != len(test.DeletedRows) {
-				t.Fatalf("unexpected number of deleted entries in returned stats. expected=%d, got=%d", len(test.DeletedRows), stats.Deleted)
-			}
-			if dryRun {
-				continue
-			}
-			if len(catalogCallData.addedEntries) != len(test.AddedRows) {
-				t.Fatalf("unexpected number of added entries. expected=%d, got=%d", len(test.AddedRows), len(catalogCallData.addedEntries))
-			}
-			for i, path := range test.AddedRows {
-				expectedLastModified := lastModified[i%len(lastModified)].Truncate(time.Second)
-				if e, ok := catalogCallData.addedEntries[path]; ok {
-					if e.CreationDate.Truncate(time.Second) != expectedLastModified {
-						t.Fatalf("entry added with unexpected creation-date. expected=%v, got=%v", expectedLastModified, e.CreationDate.Truncate(time.Second))
-					}
-				} else {
-					t.Fatalf("expected entry not added: %s", path)
-				}
-			}
-			if len(catalogCallData.deletedEntries) != len(test.DeletedRows) {
-				t.Fatalf("unexpected number of deleted entries. expected=%d, got=%d", len(test.DeletedRows), len(catalogCallData.deletedEntries))
-			}
-			for _, path := range test.DeletedRows {
-				if _, ok := catalogCallData.deletedEntries[path]; !ok {
-					t.Fatalf("expected entry not deleted: %s", path)
-				}
-			}
-		}
-	}
+func TestCommitBeforeApply(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rangeManager := mock.NewMockentryCataloger(ctrl)
+
+	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
+	retCommitID, err := rocks.Commit(context.Background(), msg, nil)
+	require.Error(t, err)
+	require.Equal(t, "", retCommitID)
+	require.Equal(t, onboard.ErrNoMetaRange, err)
+}
+
+func TestCommitFailed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rangeManager := mock.NewMockentryCataloger(ctrl)
+
+	mri := metaRangeID
+	rangeManager.EXPECT().
+		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			{
+				Path:  "some/path",
+				Entry: &rocks.Entry{},
+			},
+		}), "", ""), nil)
+	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.CommitID("")), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
+
+	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
+	validIt := getValidIt()
+
+	stats, err := rocks.ApplyImport(context.Background(), validIt, false)
+	require.NoError(t, err)
+	require.NotNil(t, stats)
+
+	retCommitID, err := rocks.Commit(context.Background(), msg, nil)
+	require.Error(t, err)
+	require.Equal(t, "", retCommitID)
+}
+
+func getValidIt() *onboard.InventoryIterator {
+	return onboard.NewInventoryIterator(getValidInnerIt())
+}
+
+func getValidInnerIt() block.InventoryIterator {
+	return &mockInventoryIterator{
+		rows: []block.InventoryObject{
+			{
+				Bucket:          "bucket-1",
+				Key:             "key-1",
+				Size:            1024,
+				Checksum:        "checksum-1",
+				PhysicalAddress: "/some/path/to/object",
+			},
+		}}
 }
