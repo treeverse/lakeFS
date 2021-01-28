@@ -96,7 +96,7 @@ var tagDeleteCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete tag")
+		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete tag")
 		if err != nil || !confirmation {
 			Die("Delete tag aborted", 1)
 		}
