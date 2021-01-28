@@ -108,8 +108,8 @@ const (
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
 	CommittedLocalCacheNumUploadersKey          = "committed.local_cache.max_uploaders_per_writer"
-	CommittedLocalCacheRangeProportion          = "committed.local_cache.range_proportion"
-	CommittedLocalCacheMetaRangeProportion      = "committed.local_cache.metarange_proportion"
+	CommittedLocalCacheRangeProportionKey       = "committed.local_cache.range_proportion"
+	CommittedLocalCacheMetaRangeProportionKey   = "committed.local_cache.metarange_proportion"
 	CommittedBlockStoragePrefixKey              = "committed.block_storage_prefix"
 	CommittedPermanentStorageMinRangeSizeKey    = "committed.permanent.min_range_size_bytes"
 	CommittedPermanentStorageMaxRangeSizeKey    = "committed.permanent.max_range_size_bytes"
@@ -149,8 +149,8 @@ func setDefaults() {
 	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
 	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
 	viper.SetDefault(CommittedLocalCacheNumUploadersKey, DefaultCommittedLocalCacheNumUploaders)
-	viper.SetDefault(CommittedLocalCacheRangeProportion, DefaultCommittedLocalCacheRangePercent)
-	viper.SetDefault(CommittedLocalCacheMetaRangeProportion, DefaultCommittedLocalCacheMetaRangePercent)
+	viper.SetDefault(CommittedLocalCacheRangeProportionKey, DefaultCommittedLocalCacheRangePercent)
+	viper.SetDefault(CommittedLocalCacheMetaRangeProportionKey, DefaultCommittedLocalCacheMetaRangePercent)
 
 	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
 	viper.SetDefault(CommittedPermanentStorageMinRangeSizeKey, DefaultCommittedPermanentMinRangeSizeBytes)
@@ -371,8 +371,8 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
-	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportion)
-	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportion)
+	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportionKey)
+	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportionKey)
 
 	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
 		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)

@@ -30,12 +30,17 @@ type metaRangeManager struct {
 	rangeManager RangeManager // For ranges
 }
 
-func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager) MetaRangeManager {
+var ErrNeedBatchClosers = errors.New("need at least 1 batch uploaded")
+
+func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager) (MetaRangeManager, error) {
+	if params.MaxUploaders < 1 {
+		return nil, fmt.Errorf("only %d async closers: %w", params.MaxUploaders, ErrNeedBatchClosers)
+	}
 	return &metaRangeManager{
 		params:       params,
 		metaManager:  metaManager,
 		rangeManager: rangeManager,
-	}
+	}, nil
 }
 
 func (m *metaRangeManager) Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
