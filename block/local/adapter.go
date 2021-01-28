@@ -71,6 +71,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 		path:               path,
 		ctx:                context.Background(),
 		uploadIDTranslator: &block.NoOpTranslator{},
+		removeEmptyDir:     true,
 	}
 	for _, opt := range opts {
 		opt(adapter)
@@ -141,21 +142,9 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 	}
 	if l.removeEmptyDir {
 		dir := filepath.Dir(p)
-		removeEmptyDir(dir)
-	}
-	return nil
-}
-
-func removeEmptyDir(dir string) {
-	d, err := os.Open(dir)
-	if err != nil {
-		return
-	}
-	_, err = d.Readdir(1)
-	_ = d.Close()
-	if err == io.EOF {
 		_ = os.Remove(dir)
 	}
+	return nil
 }
 
 func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
