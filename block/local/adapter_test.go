@@ -16,6 +16,8 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
+const testStorageNamespace = "local://test"
+
 func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()
 	dir, err := ioutil.TempDir("", "testing-local-adapter-*")
@@ -34,7 +36,7 @@ func makeAdapter(t *testing.T) *local.Adapter {
 }
 
 func makePointer(path string) block.ObjectPointer {
-	return block.ObjectPointer{Identifier: path, StorageNamespace: "local://test/"}
+	return block.ObjectPointer{Identifier: path, StorageNamespace: testStorageNamespace}
 }
 
 func TestLocalPutExistsGet(t *testing.T) {
@@ -147,35 +149,45 @@ func TestRemove(t *testing.T) {
 	a := makeAdapter(t)
 	const contents = "foo bar baz quux"
 
-	obj1 := makePointer("README")
-	err := a.Put(obj1, 0, strings.NewReader(contents), block.PutOpts{})
+	obj := makePointer("README")
+	err := a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
 	testutil.MustDo(t, "Put", err)
-	err = a.Remove(obj1)
+	err = a.Remove(obj)
 	testutil.MustDo(t, "Remove", err)
-
 	root := a.Path()
-	tree1 := dumpPathTree(t, root)
-	if diff := deep.Equal(tree1, []string{""}); diff != nil {
+	tree := dumpPathTree(t, root)
+	if diff := deep.Equal(tree, []string{""}); diff != nil {
 		t.Fatalf("Found diff after remove: %s", diff)
 	}
 
-	obj2 := makePointer("src/tools.go")
-	err = a.Put(obj2, 0, strings.NewReader(contents), block.PutOpts{})
+	obj = makePointer("src/tools.go")
+	err = a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
 	testutil.MustDo(t, "Put", err)
-	err = a.Remove(obj2)
+	err = a.Remove(obj)
 	testutil.MustDo(t, "Remove", err)
-	tree2 := dumpPathTree(t, root)
-	if diff := deep.Equal(tree2, []string{""}); diff != nil {
+	tree = dumpPathTree(t, root)
+	if diff := deep.Equal(tree, []string{""}); diff != nil {
 		t.Fatalf("Found diff after remove: %s", diff)
 	}
 
-	obj3 := makePointer("a/b/c/d.txt")
-	err = a.Put(obj3, 0, strings.NewReader(contents), block.PutOpts{})
+	obj = makePointer("a/b/c/d.txt")
+	err = a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
 	testutil.MustDo(t, "Put", err)
-	err = a.Remove(obj3)
+	err = a.Remove(obj)
 	testutil.MustDo(t, "Remove", err)
-	tree3 := dumpPathTree(t, root)
-	if diff := deep.Equal(tree3, []string{""}); diff != nil {
+	tree = dumpPathTree(t, root)
+	if diff := deep.Equal(tree, []string{""}); diff != nil {
+		t.Fatalf("Found diff after remove: %s", diff)
+	}
+
+	obj = makePointer("a/b/c/d.txt")
+	err = a.Put(obj, 0, strings.NewReader(contents), block.PutOpts{})
+	testutil.MustDo(t, "Put", err)
+	testutil.MustDo(t, "PutAnother", a.Put(makePointer("a/b/another.txt"), 0, strings.NewReader(contents), block.PutOpts{}))
+	err = a.Remove(obj)
+	testutil.MustDo(t, "Remove", err)
+	tree = dumpPathTree(t, root)
+	if diff := deep.Equal(tree, []string{"", "/test", "/test/a", "/test/a/b", "/test/a/b/another.txt"}); diff != nil {
 		t.Fatalf("Found diff after remove: %s", diff)
 	}
 }
