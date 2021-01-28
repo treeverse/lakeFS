@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Revert(_ context.Context, _, _, _, _ string) error {
+func (c *cataloger) Revert(_ context.Context, _, _ string, _ catalog.RevertParams) error {
 	c.log.Debug("revert specific commit is unsupported in mvcc implementation")
 	return catalog.ErrFeatureNotSupported
 }

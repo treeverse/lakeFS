@@ -420,7 +420,11 @@ func TestGraveler_Commit(t *testing.T) {
 			values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
 			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
 
-			got, err := g.Commit(context.Background(), "", "", tt.args.committer, tt.args.message, tt.args.metadata)
+			got, err := g.Commit(context.Background(), "", "", graveler.CommitParams{
+				Committer: tt.args.committer,
+				Message:   tt.args.message,
+				Metadata:  tt.args.metadata,
+			})
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}
@@ -551,7 +555,11 @@ func TestGraveler_CommitExistingRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedParentCommitID, expectedRangeID, tt.args.committer, tt.args.message, tt.args.metadata)
+			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedParentCommitID, expectedRangeID, graveler.CommitParams{
+				Committer: tt.args.committer,
+				Message:   tt.args.message,
+				Metadata:  tt.args.metadata,
+			})
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}
