@@ -522,6 +522,10 @@ func (id CommitID) Ref() Ref {
 	return Ref(id)
 }
 
+func (id TagID) String() string {
+	return string(id)
+}
+
 type Graveler struct {
 	CommittedManager CommittedManager
 	StagingManager   StagingManager

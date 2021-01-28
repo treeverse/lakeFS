@@ -20,7 +20,7 @@ var branchCmd = &cobra.Command{
 	Long:  `Create delete and list branches within a lakeFS repository`,
 }
 
-var branchListTemplate = `{{.BranchTable | table -}}
+const branchListTemplate = `{{.BranchTable | table -}}
 {{.Pagination | paginate }}
 `
 
