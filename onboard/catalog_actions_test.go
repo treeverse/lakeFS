@@ -43,7 +43,7 @@ func TestFullCycleSuccess(t *testing.T) {
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.CommitID("")), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any(), gomock.Eq(graveler.CommitID("")), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
 		Times(1).Return(commitID, nil)
 	rangeManager.EXPECT().UpdateBranch(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.BranchID(catalog.DefaultImportBranchName)), graveler.Ref(commitID)).Times(1).Return(nil, nil)
 
@@ -126,7 +126,7 @@ func TestCommitFailed(t *testing.T) {
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
-	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.CommitID("")), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
+	rangeManager.EXPECT().CommitExistingMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any(), gomock.Eq(graveler.CommitID("")), gomock.Eq(mri), gomock.Eq(committer), gomock.Eq(msg), gomock.Any()).
 		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
 
 	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)

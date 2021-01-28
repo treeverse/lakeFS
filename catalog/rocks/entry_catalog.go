@@ -132,8 +132,8 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	}, nil
 }
 
-func (e *EntryCatalog) CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, parentCommitID graveler.CommitID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
-	return e.Store.CommitExistingMetaRange(ctx, repositoryID, parentCommitID, metaRangeID, committer, message, metadata)
+func (e *EntryCatalog) CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, parentCommitID graveler.CommitID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+	return e.Store.CommitExistingMetaRange(ctx, repositoryID, branchID, parentCommitID, metaRangeID, committer, message, metadata)
 }
 
 func (e *EntryCatalog) AddCommitNoLock(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
