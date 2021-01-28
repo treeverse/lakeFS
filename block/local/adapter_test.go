@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/testutil"
