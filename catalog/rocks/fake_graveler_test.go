@@ -159,11 +159,11 @@ func (g *FakeGraveler) ResetPrefix(ctx context.Context, repositoryID graveler.Re
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Revert(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Ref, _, _ string, _ graveler.Metadata) (graveler.CommitID, error) {
+func (g *FakeGraveler) Revert(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID, _ graveler.Ref, _, _ string, _ graveler.Metadata) (graveler.CommitID, graveler.DiffSummary, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+func (g *FakeGraveler) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, graveler.DiffSummary, error) {
 	panic("implement me")
 }
 
