@@ -152,7 +152,7 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 }
 
 func removeEmptyDirUntil(dir string, stopAt string) {
-	for stopAt != "" && !strings.HasPrefix(stopAt, dir) {
+	for stopAt != "" && strings.HasPrefix(dir, stopAt) && dir != stopAt {
 		err := os.Remove(dir)
 		if err != nil {
 			break
