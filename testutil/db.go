@@ -37,10 +37,21 @@ const (
 	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
 )
 
-var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
-var addrDB = flag.String("db", "", "DB address to use")
+var (
+	keepDB  = flag.Bool("keep-db", false, "keep test DB instance running")
+	addrDB  = flag.String("db", "", "DB address to use")
+	reuseDB = flag.Bool("reuse-db", false, "re-use running DB Docker container")
+)
 
 func GetDBInstance(pool *dockertest.Pool) (string, func()) {
+	if *reuseDB {
+		resource, ok := pool.ContainerByName("postgres")
+		if !ok {
+			log.Fatalf("Cloud not find DB container")
+		}
+		uri := formatPostgresResourceURI(resource)
+		return uri, func() {}
+	}
 	if len(*addrDB) > 0 {
 		// use supplied DB connection for testing
 		if err := verifyDBConnectionString(*addrDB); err != nil {
@@ -66,8 +77,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	}
 
 	// format db uri
-	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable",
-		resource.GetPort("5432/tcp"))
+	uri := formatPostgresResourceURI(resource)
 
 	// wait for container to start and connect to db
 	if err = pool.Retry(func() error {
@@ -89,6 +99,27 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 
 	// return DB address and closer func
 	return uri, closer
+}
+
+func formatPostgresResourceURI(resource *dockertest.Resource) string {
+	params := map[string]string{
+		"POSTGRES_DB":       "lakefs_db",
+		"POSTGRES_USER":     "lakefs",
+		"POSTGRES_PASSWORD": "lakefs",
+		"POSTGRES_PORT":     resource.GetPort("5432/tcp"),
+	}
+	env := resource.Container.Config.Env
+	for _, entry := range env {
+		for key := range params {
+			if strings.HasPrefix(entry, key+"=") {
+				params[key] = entry[len(key)+1:]
+				break
+			}
+		}
+	}
+	uri := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable",
+		params["POSTGRES_USER"], params["POSTGRES_PASSWORD"], params["POSTGRES_PORT"], params["POSTGRES_DB"])
+	return uri
 }
 
 func verifyDBConnectionString(uri string) error {
