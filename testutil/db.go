@@ -38,16 +38,16 @@ const (
 )
 
 var (
-	keepDB  = flag.Bool("keep-db", false, "keep test DB instance running")
-	addrDB  = flag.String("db", "", "DB address to use")
-	reuseDB = flag.Bool("reuse-db", false, "re-use running DB Docker container")
+	keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
+	addrDB = flag.String("db", "", "DB address to use")
 )
 
 func GetDBInstance(pool *dockertest.Pool) (string, func()) {
-	if *reuseDB {
-		resource, ok := pool.ContainerByName("postgres")
+	containerName := os.Getenv("TESTUTIL_DB_CONTAINER")
+	if containerName != "" {
+		resource, ok := pool.ContainerByName(containerName)
 		if !ok {
-			log.Fatalf("Cloud not find DB container")
+			log.Fatalf("Cloud not find DB container (%s)", containerName)
 		}
 		uri := formatPostgresResourceURI(resource)
 		return uri, func() {}
