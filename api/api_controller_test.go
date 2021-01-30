@@ -9,9 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/api/gen/client/refs"
-	"github.com/treeverse/lakefs/api/gen/client/setup"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -23,7 +20,9 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/config"
 	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
+	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/api/gen/client/setup"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -33,7 +32,10 @@ import (
 	"github.com/treeverse/lakefs/upload"
 )
 
-const timeout = 10 * time.Second
+const (
+	timeout       = 10 * time.Second
+	DefaultUserID = "example_user"
+)
 
 func TestHandler_ListRepositoriesHandler(t *testing.T) {
 	clt, deps := NewClient(t, "")

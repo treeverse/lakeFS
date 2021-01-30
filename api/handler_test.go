@@ -2,7 +2,6 @@ package api_test
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,11 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/config"
-
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
-	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
@@ -27,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
@@ -35,28 +32,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-const (
-	DefaultUserID = "example_user"
-	ServerTimeout = 30 * time.Second
-)
-
-var (
-	pool        *dockertest.Pool
-	databaseURI string
-)
-
-func TestMain(m *testing.M) {
-	var err error
-	var closer func()
-	pool, err = dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to Docker: %s", err)
-	}
-	databaseURI, closer = testutil.GetDBInstance(pool)
-	code := m.Run()
-	closer() // cleanup
-	os.Exit(code)
-}
+const ServerTimeout = 30 * time.Second
 
 type dependencies struct {
 	blocks    block.Adapter
