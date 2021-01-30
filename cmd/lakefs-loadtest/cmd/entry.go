@@ -89,7 +89,6 @@ var entryCmd = &cobra.Command{
 			go func() {
 				defer wg.Done()
 				<-startingLine
-				createEntryParams := catalog.CreateEntryParams{}
 				for reqID := 0; reqID < requests; reqID++ {
 					id, err := nanoid.ID(createEntryPathLength)
 					if err != nil {
@@ -98,14 +97,12 @@ var entryCmd = &cobra.Command{
 					addr := strings.ReplaceAll(uuid.New().String(), "-", "")
 					entryPath := strings.ReplaceAll(id, "-", "") + wid
 					startTime := time.Now()
-					err = c.CreateEntry(ctx, u.Repository, u.Ref,
-						catalog.Entry{
-							Path:            entryPath,
-							CreationDate:    time.Now(),
-							Checksum:        addr,
-							PhysicalAddress: addr,
-						},
-						createEntryParams)
+					err = c.CreateEntry(ctx, u.Repository, u.Ref, catalog.Entry{
+						Path:            entryPath,
+						CreationDate:    time.Now(),
+						Checksum:        addr,
+						PhysicalAddress: addr,
+					})
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
 					}

@@ -23,7 +23,6 @@ import (
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/multiparts"
@@ -97,17 +96,13 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
-
 		// parade
 		paradeDB := parade.NewParadeDB(dbPool.Pool())
 		// export handler
 		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
 		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
 		defer func() {
-			// order is important - close cataloger channel before dedup
 			_ = cataloger.Close()
-			_ = dedupCleaner.Close()
 			exportActionManager.Close()
 		}()
 
@@ -116,7 +111,7 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-		apiHandler := api.NewHandler(
+		apiHandler := api.Serve(
 			cataloger,
 			blockStore,
 			authService,
@@ -124,7 +119,6 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			migrator,
 			paradeDB,
-			dedupCleaner,
 			logger.WithField("service", "api_gateway"),
 		)
 
@@ -145,7 +139,6 @@ var runCmd = &cobra.Command{
 			authService,
 			cfg.GetS3GatewayDomainName(),
 			bufferedCollector,
-			dedupCleaner,
 			s3FallbackURL,
 		)
 		ctx, cancelFn := context.WithCancel(context.Background())

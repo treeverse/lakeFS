@@ -34,7 +34,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/httputil"
@@ -62,7 +61,6 @@ type Dependencies struct {
 	BlockAdapter    block.Adapter
 	Stats           stats.Collector
 	Parade          parade.Parade
-	Dedup           *dedup.Cleaner
 	MetadataManager auth.MetadataManager
 	Migrator        db.Migrator
 	Collector       stats.Collector
@@ -77,7 +75,6 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
 		Stats:           d.Stats,
 		Parade:          d.Parade,
-		Dedup:           d.Dedup,
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
 		Collector:       d.Collector,
@@ -97,7 +94,7 @@ type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, parade parade.Parade, dedupCleaner *dedup.Cleaner, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, parade parade.Parade, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
 			ctx:             context.Background(),
@@ -106,7 +103,6 @@ func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter 
 			BlockAdapter:    blockAdapter,
 			Stats:           stats,
 			Parade:          parade,
-			Dedup:           dedupCleaner,
 			MetadataManager: metadataManager,
 			Migrator:        migrator,
 			Collector:       collector,
@@ -1382,13 +1378,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:            blob.Size,
 			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry,
-			catalog.CreateEntryParams{
-				Dedup: catalog.DedupParams{
-					ID:               blob.DedupID,
-					StorageNamespace: repo.StorageNamespace,
-				},
-			})
+		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseErrorFrom(err))
 		}

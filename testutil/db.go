@@ -177,7 +177,7 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByType(t *testing.T, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+func NewBlockAdapterByType(t testing.TB, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
 	switch blockstoreType {
 	case gs.BlockstoreType:
 		ctx := context.Background()

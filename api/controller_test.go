@@ -37,11 +37,11 @@ const (
 	DefaultUserID = "example_user"
 )
 
-func TestHandler_ListRepositoriesHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ListRepositoriesHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("list no repos", func(t *testing.T) {
@@ -143,11 +143,11 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_GetRepoHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_GetRepoHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("get missing repo", func(t *testing.T) {
@@ -187,11 +187,11 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -218,10 +218,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		for i := 0; i < commitsLen; i++ {
 			n := strconv.Itoa(i + 1)
 			p := "foo/bar" + n
-			testutil.MustDo(t, "create entry bar"+n, deps.cataloger.CreateEntry(ctx, "repo2", "master",
-				catalog.Entry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n},
-				catalog.CreateEntryParams{},
-			))
+			testutil.MustDo(t, "create entry bar"+n, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.Entry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n}))
 			if _, err := deps.cataloger.Commit(ctx, "repo2", "master", "commit"+n, "some_user", nil); err != nil {
 				t.Fatalf("failed to commit '%s': %s", p, err)
 			}
@@ -242,11 +239,11 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_GetCommitHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_GetCommitHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("get missing commit", func(t *testing.T) {
@@ -268,10 +265,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.Must(t, err)
-		testutil.MustDo(t, "create entry bar1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
-			catalog.Entry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"},
-			catalog.CreateEntryParams{},
-		))
+		testutil.MustDo(t, "create entry bar1", deps.cataloger.CreateEntry(ctx, "foo1", "master", catalog.Entry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.cataloger.Commit(ctx, "foo1", "master", "some message", DefaultUserID, nil)
 		testutil.Must(t, err)
 		reference1, err := deps.cataloger.GetBranchReference(ctx, "foo1", "master")
@@ -298,11 +292,11 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_CommitHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_CommitHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
@@ -329,10 +323,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.MustDo(t, "create repo foo1", err)
-		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
-			catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil},
-			catalog.CreateEntryParams{},
-		))
+		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master", catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		_, err = clt.Commits.Commit(
 			commits.NewCommitParamsWithTimeout(timeout).
 				WithBranch("master").
@@ -348,11 +339,11 @@ func TestHandler_CommitHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_CreateRepositoryHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_CreateRepositoryHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("create repo success", func(t *testing.T) {
@@ -395,11 +386,11 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_DeleteRepositoryHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_DeleteRepositoryHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -466,11 +457,11 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_ListBranchesHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ListBranchesHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup repository
@@ -500,7 +491,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// create first dummy commit on master so that we can create branches from it
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.Entry{Path: "a/b"}, catalog.CreateEntryParams{}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.Entry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "repo2", "master", "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -554,11 +545,11 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_GetBranchHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_GetBranchHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("get default branch", func(t *testing.T) {
@@ -566,7 +557,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 		const testBranch = "master"
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
 		// create first dummy commit on master so that we can create branches from it
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", testBranch, catalog.Entry{Path: "a/b"}, catalog.CreateEntryParams{}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", testBranch, catalog.Entry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "repo1", testBranch, "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -608,18 +599,18 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_CreateBranchHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_CreateBranchHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("create branch and diff refs success", func(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{Path: "a/b"}, catalog.CreateEntryParams{}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "repo1", "master", "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -702,18 +693,18 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_DeleteBranchHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_DeleteBranchHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("delete branch success", func(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master")
 		testutil.Must(t, err)
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "my-new-repo", "master", catalog.Entry{Path: "a/b"}, catalog.CreateEntryParams{}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "my-new-repo", "master", catalog.Entry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "my-new-repo", "master", "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -751,11 +742,11 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ObjectsStatObjectHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -774,7 +765,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			Metadata:        nil,
 		}
 		testutil.Must(t,
-			deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", entry))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -811,11 +802,11 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ObjectsListObjectsHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -828,7 +819,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "this_is_a_checksum",
-		}, catalog.CreateEntryParams{}))
+		}))
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 			Path:            "foo/quuux",
@@ -837,7 +828,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			Size:            9999999,
 			Checksum:        "quux_checksum",
 			Expired:         true,
-		}, catalog.CreateEntryParams{}))
+		}))
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 			Path:            "foo/baz",
@@ -845,7 +836,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "baz_checksum",
-		}, catalog.CreateEntryParams{}))
+		}))
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 			Path:            "foo/a_dir/baz",
@@ -853,7 +844,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "baz_checksum",
-		}, catalog.CreateEntryParams{}))
+		}))
 
 	t.Run("get object list", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(
@@ -897,11 +888,11 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ObjectsGetObjectHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -927,7 +918,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Checksum:        blob.Checksum,
 	}
 	testutil.Must(t,
-		deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", entry))
 
 	expired := catalog.Entry{
 		Path:            "foo/expired",
@@ -938,7 +929,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Expired:         true,
 	}
 	testutil.Must(t,
-		deps.cataloger.CreateEntry(ctx, "repo1", "master", expired, catalog.CreateEntryParams{}))
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", expired))
 
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
@@ -991,11 +982,11 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	})
 }
 
-func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ObjectsUploadObjectHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -1056,48 +1047,13 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
-
-	t.Run("upload objects dedup", func(t *testing.T) {
-		t.Skip("api implements async dedup - consider removing the test code")
-		const content = "They do not love that do not show their love"
-		resp1, err := clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithContent(runtime.NamedReader("content", strings.NewReader(content))).
-				WithPath("dd/bar1").
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		resp2, err := clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithContent(runtime.NamedReader("content", strings.NewReader(content))).
-				WithPath("dd/bar2").
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ent1, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp1.Payload.Path, catalog.GetEntryParams{})
-		testutil.MustDo(t, "get first entry", err)
-		ent2, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp2.Payload.Path, catalog.GetEntryParams{})
-		testutil.MustDo(t, "get second entry", err)
-		if ent1.PhysicalAddress != ent2.PhysicalAddress {
-			t.Fatalf("First entry address '%s' should match the second '%s' - check dedup",
-				ent1.PhysicalAddress, ent2.PhysicalAddress)
-		}
-	})
 }
 
-func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
-	clt, deps := NewClient(t, "")
+func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -1168,10 +1124,10 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
-	clt, _ := NewClient(t, "")
+	clt, _ := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("valid_policy", func(t *testing.T) {
@@ -1256,12 +1212,12 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 
 }
 
-func TestHandler_ConfigHandlers(t *testing.T) {
+func TestController_ConfigHandlers(t *testing.T) {
 	const BlockstoreType = "s3"
-	clt, _ := NewClient(t, BlockstoreType)
+	clt, _ := setupClient(t, BlockstoreType)
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	t.Run("Get config (currently only block store type)", func(t *testing.T) {
@@ -1280,17 +1236,17 @@ func TestHandler_ConfigHandlers(t *testing.T) {
 	})
 }
 
-func TestHandler_ContinuousExportHandlers(t *testing.T) {
-	t.SkipNow() // TODO(ozkatz): this test fails because continuos exports are broken on rocks
+func TestController_ContinuousExportHandlers(t *testing.T) {
+	t.SkipNow() // TODO(ozkatz): this test fails because continuous exports are broken on rocks
 	const (
 		repo          = "repo-for-continuous-export-test"
 		branch        = "main"
 		anotherBranch = "notMain"
 	)
-	clt, deps := NewClient(t, "")
+	clt, deps := setupClient(t, "")
 
 	// create user
-	creds := createDefaultAdminUser(clt, t)
+	creds := createDefaultAdminUser(t, clt)
 	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	ctx := context.Background()
@@ -1371,7 +1327,7 @@ func TestHandler_ContinuousExportHandlers(t *testing.T) {
 	})
 }
 
-func Test_setupLakeFSHandler(t *testing.T) {
+func TestController_SetupLakeFSHandler(t *testing.T) {
 	name := "admin"
 	cases := []struct {
 		name string
@@ -1411,13 +1367,9 @@ func Test_setupLakeFSHandler(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			clt, _ := NewClient(t, "", testutil.WithGetDBApplyDDL(false))
+			clt, _ := setupClient(t, "", testutil.WithGetDBApplyDDL(false))
 			t.Run("fresh start", func(t *testing.T) {
-				// request to setup
-
-				// create user
 				res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
-
 				if c.errorDefaultCode != 0 {
 					var defaultErr *setup.SetupLakeFSDefault
 					if errors.As(err, &defaultErr) {
