@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/block/mem"
-
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/client"
@@ -20,6 +18,7 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/mem"
 	"github.com/treeverse/lakefs/catalog"
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
