@@ -14,14 +14,14 @@ type ApplyOptions struct {
 	AllowEmpty bool
 }
 
-func add(d *graveler.DiffSummary, typ graveler.DiffType, n int) {
+func addIntoDiffSummary(d *graveler.DiffSummary, typ graveler.DiffType, n int) {
 	if d.Count != nil {
 		d.Count[typ] += n
 	}
 }
 
-func inc(d *graveler.DiffSummary, typ graveler.DiffType) {
-	add(d, typ, 1)
+func incrementDiffSummary(d *graveler.DiffSummary, typ graveler.DiffType) {
+	addIntoDiffSummary(d, typ, 1)
 }
 
 // ReferenceType represents the type of the reference
@@ -153,14 +153,14 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 				if c == 0 {
 					diffType = graveler.DiffTypeChanged
 				}
-				inc(&ret, diffType)
+				incrementDiffSummary(&ret, diffType)
 			case c > 0:
 				// internal error but no data lost: deletion requested of a
 				// file that was not there.
 				logger.WithField("id", string(diffValue.Identity)).Warn("[I] unmatched delete")
 			default:
 				// Delete: simply don't copy to output.
-				inc(&ret, graveler.DiffTypeRemoved)
+				incrementDiffSummary(&ret, graveler.DiffTypeRemoved)
 			}
 		}
 		if c >= 0 {
@@ -190,7 +190,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 			return ret, err
 		}
 		changed = changed || (numAdded > 0)
-		add(&ret, graveler.DiffTypeAdded, numAdded)
+		addIntoDiffSummary(&ret, graveler.DiffTypeAdded, numAdded)
 	}
 
 	if !opts.AllowEmpty && !changed {
