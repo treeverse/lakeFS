@@ -2,18 +2,15 @@ package nessie
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -40,41 +37,12 @@ func createRepositoryForTest(ctx context.Context, t *testing.T) string {
 	return name
 }
 
-func setExportPathForTest(ctx context.Context, t *testing.T, branch string) (string, string) {
-	name := strings.ToLower(t.Name())
-	storageNamespace := viper.GetString("storage_namespace")
-	exportPath := fmt.Sprintf("%s/%s_EXPORT", storageNamespace, name)
-	statusPath := fmt.Sprintf("%s/%s_EXPORT/_status", storageNamespace, name)
-	setExportPath(ctx, t, name, branch, exportPath, statusPath)
-	return exportPath, statusPath
-}
-
 func createRepositoryUnique(ctx context.Context, t *testing.T) string {
 	id := xid.New().String()
 	name := "repo-" + id
 	storage := viper.GetString("storage_namespace") + "/" + id
 	createRepository(ctx, t, name, storage)
 	return name
-}
-
-func setExportPath(ctx context.Context, t *testing.T, repo, branch, path, statusPath string) {
-	logger.WithFields(logging.Fields{
-		"repository":  repo,
-		"branch":      branch,
-		"export-path": path,
-		"status-path": statusPath,
-	}).Debug("Create Export Path for test")
-
-	config := models.ContinuousExportConfiguration{
-		ExportPath:             strfmt.URI(path),
-		ExportStatusPath:       strfmt.URI(statusPath),
-		LastKeysInPrefixRegexp: []string{"^_success$", ".*/_success$"},
-	}
-	_, err := client.Export.SetContinuousExport(export.NewSetContinuousExportParamsWithContext(ctx).
-		WithRepository(repo).
-		WithBranch(branch).
-		WithConfig(&config), nil)
-	require.NoErrorf(t, err, "failed to set export configuration repository '%s', path '%s'", repo, path)
 }
 
 func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
