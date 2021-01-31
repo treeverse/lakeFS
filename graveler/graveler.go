@@ -1117,10 +1117,10 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		return &CommitIDAndSummary{commitID, summary}, nil
 	})
-	c := res.(*CommitIDAndSummary)
 	if err != nil {
 		return "", DiffSummary{}, err
 	}
+	c := res.(*CommitIDAndSummary)
 	return c.ID, c.Summary, nil
 }
 
@@ -1171,10 +1171,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		}
 		return &CommitIDAndSummary{commitID, summary}, nil
 	})
-	c := res.(*CommitIDAndSummary)
 	if err != nil {
 		return "", DiffSummary{}, err
 	}
+	c := res.(*CommitIDAndSummary)
 	return c.ID, c.Summary, nil
 }
 
