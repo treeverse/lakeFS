@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/catalog/rocks"
@@ -34,7 +35,7 @@ type CatalogRepoActions struct {
 	progress *cmdutils.Progress
 	commit   *cmdutils.Progress
 	prefixes []string
-	ref      graveler.BranchID
+	branchID graveler.BranchID
 }
 
 func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
@@ -44,7 +45,7 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 // entryCataloger is a facet for EntryCatalog for rocks import commands
 type entryCataloger interface {
 	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it rocks.EntryIterator) (*graveler.MetaRangeID, error)
-	CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, parentCommitID graveler.CommitID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error)
+	AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
 	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter rocks.Path) (rocks.EntryListingIterator, error)
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
@@ -60,7 +61,7 @@ func NewCatalogRepoActions(eCataloger entryCataloger, repository graveler.Reposi
 		prefixes:       prefixes,
 		progress:       cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
 		commit:         cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
-		ref:            catalog.DefaultImportBranchName, // TODO(itai): change this to any chosen commit by the user to support plumbing
+		branchID:       catalog.DefaultImportBranchName, // TODO(itai): change this to any chosen commit by the user to support plumbing
 	}
 }
 
@@ -77,7 +78,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 	}
 
 	// if repo is empty, it's an empty iterator
-	listIt, err := c.entryCataloger.ListEntries(ctx, c.repoID, graveler.Ref(c.ref), "", "")
+	listIt, err := c.entryCataloger.ListEntries(ctx, c.repoID, graveler.Ref(c.branchID), "", "")
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}
@@ -100,7 +101,7 @@ func (c *CatalogRepoActions) InitBranch(ctx context.Context) error {
 		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, catalog.DefaultBranchName)
 		if errors.Is(err, graveler.ErrCreateBranchNoCommit) {
 			// no commits in repo, merge to master
-			c.ref = catalog.DefaultBranchName
+			c.branchID = catalog.DefaultBranchName
 			return nil
 		}
 		if err != nil {
@@ -123,15 +124,20 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	if c.createdMetaRangeID == nil {
 		return "", ErrNoMetaRange
 	}
-	commitID, err := c.entryCataloger.CommitExistingMetaRange(ctx, c.repoID, c.previousCommitID, *c.createdMetaRangeID, c.committer, commitMsg, graveler.Metadata(metadata))
+
+	commit := graveler.Commit{
+		Committer:    c.committer,
+		Message:      commitMsg,
+		MetaRangeID:  *c.createdMetaRangeID,
+		CreationDate: time.Now(),
+		Metadata:     graveler.Metadata(metadata),
+	}
+	if c.previousCommitID != "" {
+		commit.Parents = graveler.CommitParents{c.previousCommitID}
+	}
+	commitID, err := c.entryCataloger.AddCommitToBranchHead(ctx, c.repoID, c.branchID, commit)
 	if err != nil {
 		return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
 	}
-
-	_, err = c.entryCataloger.UpdateBranch(ctx, c.repoID, c.ref, graveler.Ref(commitID))
-	if err != nil {
-		return "", fmt.Errorf("updating branch: %w", err)
-	}
-
 	return string(commitID), nil
 }
