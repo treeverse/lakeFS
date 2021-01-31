@@ -16,7 +16,6 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/uri"
@@ -55,7 +54,7 @@ var entryCmd = &cobra.Command{
 		defer database.Close()
 
 		conf := config.NewConfig()
-		c, err := catalogfactory.BuildCataloger(database, conf)
+		c, err := catalog.NewCataloger(database, conf)
 		if err != nil {
 			fmt.Printf("Cannot create cataloger: %s\n", err)
 			os.Exit(1)

@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -64,7 +63,7 @@ var importCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(dbPool, cfg)
 		if err != nil {
 			fmt.Printf("Failed to create cataloger: %s\n", err)
 			os.Exit(1)

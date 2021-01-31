@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -17,10 +15,11 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -61,7 +60,7 @@ func TestLocalLoad(t *testing.T) {
 		blockstoreType = "mem"
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalogfactory.BuildCataloger(conn, config.NewConfig())
+	cataloger, err := catalog.NewCataloger(conn, config.NewConfig())
 	testutil.MustDo(t, "build cataloger", err)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	meta := auth.NewDBMetadataManager("dev", conn)
