@@ -96,7 +96,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
+		return nil, fmt.Errorf("create tiered FS for committed metaranges: %w", err)
 	}
 
 	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
@@ -105,7 +105,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
+		return nil, fmt.Errorf("create tiered FS for committed ranges: %w", err)
 	}
 
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
@@ -113,12 +113,15 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
-	sstableMetaRangeManager := committed.NewMetaRangeManager(
+	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 		*cfg.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,
 		sstableManager,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
 	stagingManager := staging.NewManager(db)
@@ -346,7 +349,7 @@ func (e *EntryCatalog) ResetPrefix(ctx context.Context, repositoryID graveler.Re
 	return e.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
@@ -355,12 +358,12 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 		{"message", commitParams.Message, ValidateRequiredString},
 		{"parentNumber", parentNumber, ValidateNonNegativeInt},
 	}); err != nil {
-		return "", err
+		return "", graveler.DiffSummary{}, err
 	}
 	return e.Store.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
 }
 
-func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
 	if commitParams.Message == "" {
 		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", from, to)
 	}
@@ -371,7 +374,7 @@ func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.Reposito
 		{"committer", commitParams.Committer, ValidateRequiredString},
 		{"message", commitParams.Message, ValidateRequiredString},
 	}); err != nil {
-		return "", err
+		return "", graveler.DiffSummary{}, err
 	}
 	return e.Store.Merge(ctx, repositoryID, from, to, commitParams)
 }

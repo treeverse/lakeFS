@@ -10,6 +10,7 @@ import (
 // WRFile pyramid wrapper for os.file that triggers pyramid hooks for file actions.
 type WRFile struct {
 	*os.File
+	cancelStore context.CancelFunc
 
 	persisted bool
 	store     func(context.Context, string) error
@@ -35,12 +36,21 @@ func (f *WRFile) Store(ctx context.Context, filename string) error {
 		return err
 	}
 
+	// keep the cancel function for the Store's context,
+	// so that the long operation is cancellable during a call to Abort.
+	ctx, f.cancelStore = context.WithCancel(ctx)
 	return f.store(ctx, filename)
 }
 
-// Abort delete the file and cleans all traces of it.
+// Abort deletes the file and cleans all traces of it.
 // If file was already stored, returns an error.
 func (f *WRFile) Abort(ctx context.Context) error {
+	if f.cancelStore != nil {
+		// canceling the ongoing store operation
+		defer f.cancelStore()
+		f.cancelStore = nil
+	}
+
 	if f.persisted {
 		return errFilePersisted
 	}

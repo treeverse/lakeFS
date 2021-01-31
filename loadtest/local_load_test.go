@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
@@ -18,10 +18,9 @@ import (
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/dedup"
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -44,13 +43,13 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-type mockCollector struct{}
+type nullCollector struct{}
 
-func (m *mockCollector) CollectMetadata(_ *stats.Metadata) {}
+func (m *nullCollector) CollectMetadata(_ *stats.Metadata) {}
 
-func (m *mockCollector) CollectEvent(_, _ string) {}
+func (m *nullCollector) CollectEvent(_, _ string) {}
 
-func (m *mockCollector) SetInstallationID(_ string) {}
+func (m *nullCollector) SetInstallationID(_ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
@@ -67,24 +66,20 @@ func TestLocalLoad(t *testing.T) {
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
-	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
-		// order is important - close cataloger channel before dedup
 		_ = cataloger.Close()
-		_ = dedupCleaner.Close()
 	})
 
-	handler := api.NewHandler(
-		cataloger,
-		blockAdapter,
-		authService,
-		meta,
-		&mockCollector{},
-		migrator,
-		nil,
-		dedupCleaner,
-		logging.Default(),
-	)
+	handler := api.Serve(api.Dependencies{
+		Cataloger:       cataloger,
+		Auth:            authService,
+		BlockAdapter:    blockAdapter,
+		Parade:          nil,
+		MetadataManager: meta,
+		Migrator:        migrator,
+		Collector:       &nullCollector{},
+		Logger:          logging.Default(),
+	})
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

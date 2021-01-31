@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"io"
-	"time"
 
 	"github.com/lib/pq"
 )
@@ -14,20 +13,6 @@ const (
 	DefaultImportBranchName = "import-from-inventory"
 	DefaultPathDelimiter    = "/"
 )
-
-type DedupReport struct {
-	Repository         string
-	StorageNamespace   string
-	DedupID            string
-	Entry              *Entry
-	NewPhysicalAddress string
-	Timestamp          time.Time
-}
-
-type DedupParams struct {
-	ID               string
-	StorageNamespace string
-}
 
 type DiffParams struct {
 	Limit            int
@@ -65,10 +50,6 @@ type GetEntryParams struct {
 	ReturnExpired bool
 }
 
-type CreateEntryParams struct {
-	Dedup DedupParams
-}
-
 type Cataloger interface {
 	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
@@ -98,33 +79,12 @@ type Cataloger interface {
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error)
-	CreateEntry(ctx context.Context, repository, branch string, entry Entry, params CreateEntryParams) error
+	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-
-	// QueryEntriesToExpire returns ExpiryRows iterating over all objects to expire on
-	// repositoryName according to policy.
-	QueryEntriesToExpire(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error)
-	// MarkEntriesExpired marks all entries identified by expire as expired.  It is a batch operation.
-	MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
-	// MarkObjectsForDeletion marks objects in catalog_object_dedup as "deleting" if all
-	// their entries are expired, and returns the new total number of objects marked (or an
-	// error).  These objects are not yet safe to delete: there could be a race between
-	// marking objects as expired deduping newly-uploaded objects.  See
-	// DeleteOrUnmarkObjectsForDeletion for that actual deletion.
-	MarkObjectsForDeletion(ctx context.Context, repositoryName string) (int64, error)
-	// DeleteOrUnmarkObjectsForDeletion scans objects in catalog_object_dedup for objects
-	// marked "deleting" and returns an iterator over physical addresses of those objects
-	// all of whose referring entries are still expired.  If called after MarkEntriesExpired
-	// and MarkObjectsForDeletion this is safe, because no further entries can refer to
-	// expired objects.  It also removes the "deleting" mark from those objects that have an
-	// entry _not_ marked as expiring and therefore were not on the returned rows.
-	DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (StringIterator, error)
-
-	DedupReportChannel() chan *DedupReport
 
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)

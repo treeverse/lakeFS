@@ -28,10 +28,12 @@ func TestPyramidWriteFile(t *testing.T) {
 
 	storeCalled := false
 	abortCalled := false
+	var storeCtx context.Context
 	sut := WRFile{
 		File: fh,
-		store: func(context.Context, string) error {
+		store: func(innerCtx context.Context, _ string) error {
 			storeCalled = true
+			storeCtx = innerCtx
 			return nil
 		},
 		abort: func(context.Context) error {
@@ -51,11 +53,14 @@ func TestPyramidWriteFile(t *testing.T) {
 
 	require.NoError(t, sut.Close())
 	require.NoError(t, sut.Store(ctx, filename))
+	require.NotNil(t, sut.cancelStore)
 
 	require.True(t, storeCalled)
 
 	require.Error(t, sut.Abort(ctx))
 	require.False(t, abortCalled)
+	require.Nil(t, sut.cancelStore)
+	require.Equal(t, storeCtx.Err(), context.Canceled)
 }
 
 func TestWriteValidate(t *testing.T) {
@@ -157,6 +162,7 @@ func TestAbort(t *testing.T) {
 
 	require.NoError(t, sut.Close())
 	require.False(t, abortCalled)
+
 	require.NoError(t, sut.Abort(ctx))
 	require.False(t, storeCalled)
 	require.True(t, abortCalled)
