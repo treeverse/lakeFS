@@ -45,12 +45,13 @@ func (rvi *iterator) NextRange() bool {
 	}
 	rvi.it = nil
 	rvi.rng = nil
-	if !rvi.rangesIt.Next() {
-		return false
-	}
-	rngRecord := rvi.rangesIt.Value()
-	if rngRecord == nil {
-		return rvi.NextRange()
+
+	var rngRecord *Record
+	for rngRecord == nil { // Skip this and any consecutive finished ranges.
+		if !rvi.rangesIt.Next() {
+			return false
+		}
+		rngRecord = rvi.rangesIt.Value()
 	}
 
 	gv, err := UnmarshalValue(rngRecord.Value)
