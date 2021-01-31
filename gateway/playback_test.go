@@ -20,7 +20,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
-	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
@@ -98,11 +97,11 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func (m *mockCollector) CollectMetadata(accountMetadata *stats.Metadata) {}
+func (m *mockCollector) CollectMetadata(*stats.Metadata) {}
 
-func (m *mockCollector) CollectEvent(class, action string) {}
+func (m *mockCollector) CollectEvent(string, string) {}
 
-func (m *mockCollector) SetInstallationID(_ string) {}
+func (m *mockCollector) SetInstallationID(string) {}
 
 func getBasicHandlerPlayback(t *testing.T) (http.Handler, *dependencies) {
 	authService := newGatewayAuthFromFile(t, simulator.PlaybackParams.RecordingDir)
@@ -123,11 +122,8 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
 
-	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
-		// order is important - close cataloger channel before dedup
 		_ = cataloger.Close()
-		_ = dedupCleaner.Close()
 	})
 
 	ctx := context.Background()
@@ -147,7 +143,6 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		authService,
 		authService.BareDomain,
 		&mockCollector{},
-		dedupCleaner,
 		nil,
 	)
 

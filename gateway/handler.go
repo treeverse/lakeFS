@@ -12,7 +12,6 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/dedup"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/operations"
@@ -59,7 +58,6 @@ type ServerContext struct {
 	blockStore        block.Adapter
 	authService       simulator.GatewayAuthService
 	stats             stats.Collector
-	dedupCleaner      *dedup.Cleaner
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
@@ -72,7 +70,6 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 		blockStore:        c.blockStore.WithContext(ctx),
 		authService:       c.authService,
 		stats:             c.stats,
-		dedupCleaner:      c.dedupCleaner,
 	}
 }
 
@@ -84,7 +81,6 @@ func NewHandler(
 	authService simulator.GatewayAuthService,
 	bareDomain string,
 	stats stats.Collector,
-	dedupCleaner *dedup.Cleaner,
 	fallbackURL *url.URL,
 ) http.Handler {
 	var fallbackHandler http.Handler
@@ -104,7 +100,6 @@ func NewHandler(
 		blockStore:        blockStore,
 		authService:       authService,
 		stats:             stats,
-		dedupCleaner:      dedupCleaner,
 	}
 
 	// setup routes
