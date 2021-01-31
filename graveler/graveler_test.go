@@ -526,7 +526,7 @@ func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 				metadata:     graveler.Metadata{},
 			},
 			want:        graveler.CommitID(""),
-			expectedErr: graveler.ErrConflictFound,
+			expectedErr: graveler.ErrCommitNotHeadBranch,
 		},
 		{
 			name: "meta range not found",
@@ -554,7 +554,7 @@ func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
 				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
 				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
-					Branch:    &graveler.Branch{CommitID: expectedCommitID},
+					Branch:    &graveler.Branch{CommitID: expectedParentCommitID},
 					CommitErr: graveler.ErrConflictFound,
 					Commits:   map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
 			},
