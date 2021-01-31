@@ -29,6 +29,8 @@ const (
 	ListEntriesLimitMax      = 10000
 )
 
+var ErrUnknownDiffType = errors.New("unknown graveler difference type")
+
 func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error) {
 	entryCatalog, err := NewEntryCatalog(cfg, db)
 	if err != nil {
@@ -642,14 +644,12 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 		return nil, err
 	}
 	count := make(map[catalog.DifferenceType]int)
-	if summary.Count != nil {
-		for k, v := range summary.Count {
-			kk, err := catalogDiffType(k)
-			if err != nil {
-				return nil, err
-			}
-			count[kk] = v
+	for k, v := range summary.Count {
+		kk, err := catalogDiffType(k)
+		if err != nil {
+			return nil, err
 		}
+		count[kk] = v
 	}
 	return &catalog.MergeResult{
 		Summary:   count,
@@ -702,8 +702,6 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 	}
 	return catEnt
 }
-
-var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
 func catalogDiffType(typ graveler.DiffType) (catalog.DifferenceType, error) {
 	switch typ {
