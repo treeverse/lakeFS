@@ -17,11 +17,11 @@ const (
 	mergeCmdMaxArgs = 2
 )
 
-var mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}".
+var mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".
 
-Added: {{.Summary.Added}}
-Changed: {{.Summary.Changed}}
-Removed: {{.Summary.Removed}}
+Added: {{.Result.Summary.Added}}
+Changed: {{.Result.Summary.Changed}}
+Removed: {{.Result.Summary.Removed}}
 
 `
 
@@ -58,11 +58,11 @@ var mergeCmd = &cobra.Command{
 		}
 
 		Write(mergeCreateTemplate, struct {
-			Merge   FromTo
-			Summary *models.MergeResultSummary
+			Merge  FromTo
+			Result *models.MergeResult
 		}{
 			FromTo{FromRef: leftRefURI.Ref, ToRef: rightRefURI.Ref},
-			result.Summary,
+			result,
 		})
 	},
 }
