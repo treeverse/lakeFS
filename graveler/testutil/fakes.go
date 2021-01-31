@@ -23,6 +23,7 @@ type CommittedFake struct {
 	DiffIterator  graveler.DiffIterator
 	Err           error
 	MetaRangeID   graveler.MetaRangeID
+	DiffSummary   graveler.DiffSummary
 	AppliedData   AppliedData
 }
 
@@ -73,20 +74,20 @@ func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, grav
 	return c.DiffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
-		return "", c.Err
+		return "", graveler.DiffSummary{}, c.Err
 	}
-	return c.MetaRangeID, nil
+	return c.MetaRangeID, c.DiffSummary, nil
 }
 
-func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID, values graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
-		return "", c.Err
+		return "", graveler.DiffSummary{}, c.Err
 	}
 	c.AppliedData.Values = values
 	c.AppliedData.MetaRangeID = metaRangeID
-	return c.MetaRangeID, nil
+	return c.MetaRangeID, c.DiffSummary, nil
 }
 
 func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {

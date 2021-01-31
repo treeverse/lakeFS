@@ -29,6 +29,8 @@ const (
 	ListEntriesLimitMax      = 10000
 )
 
+var ErrUnknownDiffType = errors.New("unknown graveler difference type")
+
 func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error) {
 	entryCatalog, err := NewEntryCatalog(cfg, db)
 	if err != nil {
@@ -556,7 +558,7 @@ func (c *cataloger) Revert(ctx context.Context, repository string, branch string
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(reference)
-	_, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, committer, fmt.Sprintf("Revert %s", reference), nil)
+	_, _, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, committer, fmt.Sprintf("Revert %s", reference), nil)
 	return err
 }
 
@@ -606,7 +608,10 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Diff
 		if v.Path == afterPath {
 			continue
 		}
-		diff := newDifferenceFromEntryDiff(v)
+		diff, err := newDifferenceFromEntryDiff(v)
+		if err != nil {
+			return nil, false, fmt.Errorf("[I] %w", err)
+		}
 		diffs = append(diffs, diff)
 		if len(diffs) >= limit+1 {
 			break
@@ -628,7 +633,7 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 	leftRef := graveler.Ref(leftBranch)
 	rightBranchID := graveler.BranchID(rightBranch)
 	meta := graveler.Metadata(metadata)
-	commitID, err := c.EntryCatalog.Merge(ctx, repositoryID, leftRef, rightBranchID, committer, message, meta)
+	commitID, summary, err := c.EntryCatalog.Merge(ctx, repositoryID, leftRef, rightBranchID, committer, message, meta)
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old cataloger
 		return &catalog.MergeResult{
@@ -638,9 +643,16 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 	if err != nil {
 		return nil, err
 	}
+	count := make(map[catalog.DifferenceType]int)
+	for k, v := range summary.Count {
+		kk, err := catalogDiffType(k)
+		if err != nil {
+			return nil, err
+		}
+		count[kk] = v
+	}
 	return &catalog.MergeResult{
-		// TODO(barak): require implementation by graveler's merge
-		Summary:   map[catalog.DifferenceType]int{},
+		Summary:   count,
 		Reference: commitID.String(),
 	}, nil
 }
@@ -691,18 +703,27 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 	return catEnt
 }
 
-func newDifferenceFromEntryDiff(v *EntryDiff) catalog.Difference {
-	var diff catalog.Difference
-	switch v.Type {
+func catalogDiffType(typ graveler.DiffType) (catalog.DifferenceType, error) {
+	switch typ {
 	case graveler.DiffTypeAdded:
-		diff.Type = catalog.DifferenceTypeAdded
+		return catalog.DifferenceTypeAdded, nil
 	case graveler.DiffTypeRemoved:
-		diff.Type = catalog.DifferenceTypeRemoved
+		return catalog.DifferenceTypeRemoved, nil
 	case graveler.DiffTypeChanged:
-		diff.Type = catalog.DifferenceTypeChanged
+		return catalog.DifferenceTypeChanged, nil
 	case graveler.DiffTypeConflict:
-		diff.Type = catalog.DifferenceTypeConflict
+		return catalog.DifferenceTypeConflict, nil
+	default:
+		return catalog.DifferenceTypeNone, fmt.Errorf("%d: %w", typ, ErrUnknownDiffType)
 	}
+}
+
+func newDifferenceFromEntryDiff(v *EntryDiff) (catalog.Difference, error) {
+	var (
+		diff catalog.Difference
+		err  error
+	)
 	diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
-	return diff
+	diff.Type, err = catalogDiffType(v.Type)
+	return diff, err
 }
