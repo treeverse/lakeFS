@@ -9,8 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
@@ -126,7 +124,7 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
 		}
 
-		entryCataloger, err := rocks.NewEntryCatalog(cfg, dbPool)
+		entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
 		if err != nil {
 			fmt.Printf("Failed to build entry catalog: %s\n", err)
 			os.Exit(1)

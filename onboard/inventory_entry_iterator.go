@@ -3,19 +3,19 @@ package onboard
 import (
 	"errors"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type inventoryEntryIterator struct {
 	it       *InventoryIterator
-	value    *rocks.EntryRecord
+	value    *catalog.EntryRecord
 	err      error
 	progress *cmdutils.Progress
 }
 
-func NewValueToEntryIterator(it *InventoryIterator, progress *cmdutils.Progress) rocks.EntryIterator {
+func NewValueToEntryIterator(it *InventoryIterator, progress *cmdutils.Progress) catalog.EntryIterator {
 	return &inventoryEntryIterator{
 		it:       it,
 		progress: progress,
@@ -37,9 +37,9 @@ func (e *inventoryEntryIterator) Next() bool {
 	}
 	v := e.it.Get()
 
-	e.value = &rocks.EntryRecord{
-		Path: rocks.Path(v.Obj.Key),
-		Entry: &rocks.Entry{
+	e.value = &catalog.EntryRecord{
+		Path: catalog.Path(v.Obj.Key),
+		Entry: &catalog.Entry{
 			Address: v.Obj.PhysicalAddress,
 			Size:    v.Obj.Size,
 			ETag:    v.Obj.Checksum,
@@ -54,12 +54,12 @@ func (e *inventoryEntryIterator) Next() bool {
 	return true
 }
 
-func (e *inventoryEntryIterator) SeekGE(_ rocks.Path) {
+func (e *inventoryEntryIterator) SeekGE(_ catalog.Path) {
 	e.value = nil
 	e.err = ErrIteratorNotSeekable
 }
 
-func (e *inventoryEntryIterator) Value() *rocks.EntryRecord {
+func (e *inventoryEntryIterator) Value() *catalog.EntryRecord {
 	return e.value
 }
 

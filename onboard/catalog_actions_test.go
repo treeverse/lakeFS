@@ -5,14 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog/rocks/testutils"
-
-	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/testutils"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
@@ -36,10 +33,10 @@ func TestFullCycleSuccess(t *testing.T) {
 	rangeManager.EXPECT().
 		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+		Return(catalog.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*catalog.EntryRecord{
 			{
 				Path:  "some/path",
-				Entry: &rocks.Entry{},
+				Entry: &catalog.Entry{},
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)
@@ -67,7 +64,6 @@ func TestApplyImportWrongIt(t *testing.T) {
 	innerIt := getValidInnerIt()
 	diffIt := onboard.NewDiffIterator(innerIt, innerIt)
 	rocks := onboard.NewCatalogRepoActions(rangeManager, repoID, committer, logging.Default(), nil)
-
 	stats, err := rocks.ApplyImport(context.Background(), diffIt, false)
 	require.Error(t, err)
 	require.IsType(t, onboard.ErrWrongIterator, err)
@@ -82,10 +78,10 @@ func TestApplyImportWriteFailure(t *testing.T) {
 	rangeManager.EXPECT().
 		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+		Return(catalog.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*catalog.EntryRecord{
 			{
 				Path:  "some/path",
-				Entry: &rocks.Entry{},
+				Entry: &catalog.Entry{},
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
@@ -119,10 +115,10 @@ func TestCommitFailed(t *testing.T) {
 	rangeManager.EXPECT().
 		ListEntries(gomock.Any(), gomock.Eq(repoID), gomock.Eq(graveler.Ref(catalog.DefaultImportBranchName)), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+		Return(catalog.NewEntryListingIterator(testutils.NewFakeEntryIterator([]*catalog.EntryRecord{
 			{
 				Path:  "some/path",
-				Entry: &rocks.Entry{},
+				Entry: &catalog.Entry{},
 			},
 		}), "", ""), nil)
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(&mri, nil)

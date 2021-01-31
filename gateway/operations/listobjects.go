@@ -58,7 +58,7 @@ func (controller *ListObjects) getMaxKeys(req *http.Request, _ *RepoOperation) i
 	return maxKeys
 }
 
-func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
+func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.DBEntry) ([]serde.CommonPrefixes, []serde.Contents, string) {
 	dirs := make([]serde.CommonPrefixes, 0)
 	files := make([]serde.Contents, 0)
 	var lastKey string
@@ -117,7 +117,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 		}
 	}
 
-	var results []*catalog.Entry
+	var results []*catalog.DBEntry
 	var hasMore bool
 	var ref string
 	// should we list branches?
@@ -247,7 +247,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 
 	maxKeys := controller.getMaxKeys(req, o)
 
-	var results []*catalog.Entry
+	var results []*catalog.DBEntry
 	hasMore := false
 
 	var ref string
@@ -327,7 +327,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 			maxKeys,
 		)
 		if errors.Is(err, db.ErrNotFound) {
-			results = make([]*catalog.Entry, 0) // no results found
+			results = make([]*catalog.DBEntry, 0) // no results found
 		} else if err != nil {
 			o.Log(req).WithError(err).WithFields(logging.Fields{
 				"branch": prefix.Ref,

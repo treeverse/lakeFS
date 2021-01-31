@@ -137,12 +137,12 @@ func getDiffFromBase(ctx context.Context, repo, ref, after string, limit int, ca
 	return entriesToDiff(entries), hasMore, nil
 }
 
-func entriesToDiff(entries []*catalog.Entry) []catalog.Difference {
+func entriesToDiff(entries []*catalog.DBEntry) []catalog.Difference {
 	res := make([]catalog.Difference, len(entries))
 	for i, entry := range entries {
 		res[i] = catalog.Difference{
-			Entry: *entry,
-			Type:  catalog.DifferenceTypeAdded,
+			DBEntry: *entry,
+			Type:    catalog.DifferenceTypeAdded,
 		}
 	}
 	return res

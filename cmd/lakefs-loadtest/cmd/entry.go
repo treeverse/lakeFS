@@ -97,7 +97,7 @@ var entryCmd = &cobra.Command{
 					addr := strings.ReplaceAll(uuid.New().String(), "-", "")
 					entryPath := strings.ReplaceAll(id, "-", "") + wid
 					startTime := time.Now()
-					err = c.CreateEntry(ctx, u.Repository, u.Ref, catalog.Entry{
+					err = c.CreateEntry(ctx, u.Repository, u.Ref, catalog.DBEntry{
 						Path:            entryPath,
 						CreationDate:    time.Now(),
 						Checksum:        addr,

@@ -1164,7 +1164,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 		var currentPath string
 		var currentAddresses []string
 		var after string
-		var entries []*catalog.Entry
+		var entries []*catalog.DBEntry
 		hasMore := true
 		for hasMore {
 			entries, hasMore, err = cataloger.ListEntries(
@@ -1356,7 +1356,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 
 		// write metadata
 		writeTime := time.Now()
-		entry := catalog.Entry{
+		entry := catalog.DBEntry{
 			Path:            params.Path,
 			PhysicalAddress: blob.PhysicalAddress,
 			CreationDate:    writeTime,

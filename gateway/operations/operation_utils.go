@@ -11,7 +11,7 @@ import (
 func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddress string, size int64) error {
 	// write metadata
 	writeTime := time.Now()
-	entry := catalog.Entry{
+	entry := catalog.DBEntry{
 		Path:            o.Path,
 		PhysicalAddress: physicalAddress,
 		Checksum:        checksum,

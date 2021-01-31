@@ -242,14 +242,14 @@ func toJSON(t testing.TB, v interface{}) *string {
 
 func TestTasksGenerator_Simple(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
-		Type:  catalog.DifferenceTypeAdded,
-		Entry: catalog.Entry{Path: "add1", PhysicalAddress: "add1"},
+		Type:    catalog.DifferenceTypeAdded,
+		DBEntry: catalog.DBEntry{Path: "add1", PhysicalAddress: "add1"},
 	}, {
-		Type:  catalog.DifferenceTypeChanged,
-		Entry: catalog.Entry{Path: "change1", PhysicalAddress: "change1"},
+		Type:    catalog.DifferenceTypeChanged,
+		DBEntry: catalog.DBEntry{Path: "change1", PhysicalAddress: "change1"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "remove1", PhysicalAddress: "remove1"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "remove1", PhysicalAddress: "remove1"},
 	}}
 	gen := export.NewTasksGenerator("simple", "testfs://prefix/", func(_ string) bool { return false }, nil, "testsrc://prefix/")
 	tasksWithIDs, err := gen.Add(catalogDiffs)
@@ -324,26 +324,26 @@ func TestTasksGenerator_Simple(t *testing.T) {
 
 func TestTasksGenerator_SuccessFiles(t *testing.T) {
 	catalogDiffs := catalog.Differences{{
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/1", PhysicalAddress: "remove1"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "a/success/1", PhysicalAddress: "remove1"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/plain/1", PhysicalAddress: "remove2"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "a/plain/1", PhysicalAddress: "remove2"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/sub/success/11", PhysicalAddress: "remove11"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "a/success/sub/success/11", PhysicalAddress: "remove11"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/sub/success/12", PhysicalAddress: "remove12"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "a/success/sub/success/12", PhysicalAddress: "remove12"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "b/success/1", PhysicalAddress: "remove3"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "b/success/1", PhysicalAddress: "remove3"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/success/2", PhysicalAddress: "remove4"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "a/success/2", PhysicalAddress: "remove4"},
 	}, {
-		Type:  catalog.DifferenceTypeRemoved,
-		Entry: catalog.Entry{Path: "a/plain/2", PhysicalAddress: "remove5"},
+		Type:    catalog.DifferenceTypeRemoved,
+		DBEntry: catalog.DBEntry{Path: "a/plain/2", PhysicalAddress: "remove5"},
 	}}
 	idGen := export.TaskIDGenerator("foo")
 	expectedDeps := []struct {

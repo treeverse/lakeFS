@@ -20,7 +20,7 @@ type Repository struct {
 	CreationDate     time.Time `db:"creation_date"`
 }
 
-type Entry struct {
+type DBEntry struct {
 	CommonLevel     bool
 	Path            string    `db:"path"`
 	PhysicalAddress string    `db:"physical_address"`
