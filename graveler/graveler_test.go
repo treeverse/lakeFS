@@ -454,7 +454,7 @@ func TestGraveler_Commit(t *testing.T) {
 	}
 }
 
-func TestGraveler_CommitExistingRange(t *testing.T) {
+func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	branchLocker := ref.NewBranchLocker(conn)
 	const (
@@ -574,7 +574,13 @@ func TestGraveler_CommitExistingRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedBranchID)
+			got, err := g.AddCommitToBranchHead(context.Background(), expectedRepositoryID, expectedBranchID, graveler.Commit{
+				Committer:   tt.args.committer,
+				Message:     tt.args.message,
+				MetaRangeID: expectedRangeID,
+				Parents:     graveler.CommitParents{expectedParentCommitID},
+				Metadata:    tt.args.metadata,
+			})
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}

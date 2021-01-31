@@ -45,7 +45,7 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 // entryCataloger is a facet for EntryCatalog for rocks import commands
 type entryCataloger interface {
 	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it rocks.EntryIterator) (*graveler.MetaRangeID, error)
-	CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
+	AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
 	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter rocks.Path) (rocks.EntryListingIterator, error)
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
@@ -135,7 +135,7 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	if c.previousCommitID != "" {
 		commit.Parents = graveler.CommitParents{c.previousCommitID}
 	}
-	commitID, err := c.entryCataloger.CommitExistingMetaRange(ctx, c.repoID, c.branchID, commit)
+	commitID, err := c.entryCataloger.AddCommitToBranchHead(ctx, c.repoID, c.branchID, commit)
 	if err != nil {
 		return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
 	}
