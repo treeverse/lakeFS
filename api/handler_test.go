@@ -59,8 +59,9 @@ func TestMain(m *testing.M) {
 }
 
 type dependencies struct {
-	blocks    block.Adapter
-	cataloger catalog.Cataloger
+	blocks      block.Adapter
+	cataloger   catalog.Cataloger
+	authService auth.Service
 }
 
 func createDefaultAdminUser(clt *client.Lakefs, t *testing.T) *authmodel.Credential {
@@ -126,8 +127,9 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 	)
 
 	return handler, &dependencies{
-		blocks:    blockAdapter,
-		cataloger: cataloger,
+		blocks:      blockAdapter,
+		cataloger:   cataloger,
+		authService: authService,
 	}
 }
 
@@ -167,6 +169,34 @@ func TestServer_BasicAuth(t *testing.T) {
 		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), httptransport.BasicAuth(creds.AccessKeyID, "foobarbaz"))
 		var unauthErr *repositories.ListRepositoriesUnauthorized
 		if !errors.As(err, &unauthErr) {
+			t.Fatalf("got %s not unauthorized error", err)
+		}
+	})
+}
+
+func TestServer_JwtTokenAuth(t *testing.T) {
+	clt, deps := NewClient(t, "")
+	creds := createDefaultAdminUser(clt, t)
+
+	t.Run("valid token", func(t *testing.T) {
+		now := time.Now()
+		exp := now.Add(10 * time.Minute)
+		token, err := api.CreateAuthToken(deps.authService, creds.AccessKeyID, now, exp)
+		testutil.MustDo(t, "create auth token", err)
+		authInfo := httptransport.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
+		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParamsWithTimeout(timeout), authInfo)
+		testutil.MustDo(t, "Request expected to work using a valid token", err)
+	})
+
+	t.Run("invalid token", func(t *testing.T) {
+		now := time.Now()
+		exp := now.Add(10 * time.Minute)
+		token, err := api.CreateAuthToken(deps.authService, "admin", now, exp)
+		testutil.MustDo(t, "create auth token", err)
+		authInfo := httptransport.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
+		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), authInfo)
+		var unauthorized *repositories.ListRepositoriesUnauthorized
+		if !errors.As(err, &unauthorized) {
 			t.Fatalf("got %s not unauthorized error", err)
 		}
 	})
