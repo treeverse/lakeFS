@@ -353,6 +353,7 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 		{"ref", ref, ValidateRef},
 		{"committer", commitParams.Committer, ValidateRequiredString},
 		{"message", commitParams.Message, ValidateRequiredString},
+		{"parentNumber", parentNumber, ValidatePositiveInt},
 	}); err != nil {
 		return "", err
 	}

@@ -1051,21 +1051,22 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, b
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
+	commitRecord, err := g.getCommitRecordFromRef(ctx, repositoryID, ref)
+	if err != nil {
+		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
+	}
+	if len(commitRecord.Parents) > 1 && parentNumber <= 0 {
+		// if commit has more than one parent, must explictly specify parent number
+		return "", ErrRevertMergeNoParent
+	}
+	if parentNumber > 0 {
+		// validate parent is in range:
+		if parentNumber > len(commitRecord.Parents) { // parent number is 1-based
+			return "", fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
+		}
+		parentNumber--
+	}
 	commitID, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		commitRecord, err := g.getCommitRecordFromRef(ctx, repositoryID, ref)
-		if err != nil {
-			return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
-		}
-
-		if len(commitRecord.Parents) > 1 && parentNumber <= 0 {
-			return "", ErrRevertMergeNoParent
-		}
-		if parentNumber > 0 {
-			if parentNumber > len(commitRecord.Parents) { // parent number is 1-based
-				return "", fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
-			}
-			parentNumber--
-		}
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return nil, fmt.Errorf("get repo %s: %w", repositoryID, err)

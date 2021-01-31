@@ -191,5 +191,16 @@ func ValidateRequiredString(v interface{}) error {
 	return nil
 }
 
+func ValidatePositiveInt(v interface{}) error {
+	i, ok := v.(int)
+	if !ok {
+		panic(ErrInvalidType)
+	}
+	if i <= 0 {
+		return ErrInvalidValue
+	}
+	return nil
+}
+
 var ValidatePathOptional = MakeValidateOptional(ValidatePath)
 var ValidateTagIDOptional = MakeValidateOptional(ValidateTagID)
