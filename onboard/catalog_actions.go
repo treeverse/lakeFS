@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/catalog/rocks"
@@ -44,7 +45,7 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 // entryCataloger is a facet for EntryCatalog for rocks import commands
 type entryCataloger interface {
 	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it rocks.EntryIterator) (*graveler.MetaRangeID, error)
-	CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, parentCommitID graveler.CommitID, metaRangeID graveler.MetaRangeID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error)
+	CommitExistingMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
 	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter rocks.Path) (rocks.EntryListingIterator, error)
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
@@ -123,7 +124,18 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	if c.createdMetaRangeID == nil {
 		return "", ErrNoMetaRange
 	}
-	commitID, err := c.entryCataloger.CommitExistingMetaRange(ctx, c.repoID, c.branchID, c.previousCommitID, *c.createdMetaRangeID, c.committer, commitMsg, graveler.Metadata(metadata))
+
+	commit := graveler.Commit{
+		Committer:    c.committer,
+		Message:      commitMsg,
+		MetaRangeID:  *c.createdMetaRangeID,
+		CreationDate: time.Now(),
+		Metadata:     graveler.Metadata(metadata),
+	}
+	if c.previousCommitID != "" {
+		commit.Parents = graveler.CommitParents{c.previousCommitID}
+	}
+	commitID, err := c.entryCataloger.CommitExistingMetaRange(ctx, c.repoID, c.branchID, commit)
 	if err != nil {
 		return "", fmt.Errorf("creating commit from existing metarange %s: %w", *c.createdMetaRangeID, err)
 	}

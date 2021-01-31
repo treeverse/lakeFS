@@ -574,7 +574,7 @@ func TestGraveler_CommitExistingRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
-			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedBranchID, expectedParentCommitID, expectedRangeID, tt.args.committer, tt.args.message, tt.args.metadata)
+			got, err := g.CommitExistingMetaRange(context.Background(), expectedRepositoryID, expectedBranchID)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}

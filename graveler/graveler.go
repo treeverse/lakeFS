@@ -257,7 +257,7 @@ type VersionController interface {
 	// CommitExistingMetaRange creates a commit in the branch from the given pre-existing tree.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
 	// Returns ErrConflictFound if the branch is no longer referencing to the parentCommit
-	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, parentCommit CommitID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error)
+	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error)
 
 	// AddCommitNoLock creates a commit and associates it with the repository without locking metadata for update.
 	// Returns ErrTreeNotFound if the referenced treeID doesn't exist.
@@ -626,7 +626,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 
 func (g *Graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		return g.updateBranch(ctx, repositoryID, branchID, ref)
+		return g.updateBranchNoLock(ctx, repositoryID, branchID, ref)
 	})
 	if err != nil {
 		return nil, err
@@ -634,7 +634,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, 
 	return res.(*Branch), nil
 }
 
-func (g *Graveler) updateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
+func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
 	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
@@ -925,12 +925,14 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 	return StagingToken(v)
 }
 
-func (g *Graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, parentCommitID CommitID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
+func (g *Graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
 		}
+
+		parentCommitID := commit.Parents[0]
 		if parentCommitID != "" {
 			_, err = g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
 			if err != nil {
@@ -943,25 +945,15 @@ func (g *Graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 			return nil, err
 		}
 		if branch.CommitID != parentCommitID {
-			return nil, ErrConflictFound
+			return nil, ErrCommitNotHEADBranch
 		}
-		ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, metaRangeID)
+		g.AddCommitNoLock(ctx, repositoryID, commit)
+		ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, commit.MetaRangeID)
 		if err != nil {
-			return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
+			return "", fmt.Errorf("checking for metarange %s: %w", commit.MetaRangeID, err)
 		}
 		if !ok {
 			return "", ErrMetaRangeNotFound
-		}
-
-		commit := Commit{
-			Committer:    committer,
-			Message:      message,
-			MetaRangeID:  metaRangeID,
-			CreationDate: time.Now(),
-			Metadata:     metadata,
-		}
-		if parentCommitID != "" {
-			commit.Parents = CommitParents{parentCommitID}
 		}
 
 		// check if commit already exists.
@@ -979,7 +971,7 @@ func (g *Graveler) CommitExistingMetaRange(ctx context.Context, repositoryID Rep
 		if err != nil {
 			return nil, err
 		}
-		_, err = g.updateBranch(ctx, repositoryID, branchID, Ref(newCommit))
+		_, err = g.updateBranchNoLock(ctx, repositoryID, branchID, Ref(newCommit))
 		if err != nil {
 			return nil, err
 		}
