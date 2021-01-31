@@ -25,7 +25,7 @@ func NewBranchLocker(db db.Database) *BranchLocker {
 func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
 	writerLockKey, _ := calculateBranchLockerKeys(repositoryID, branchID)
 	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// try lock committer key
+		// try to get a shared lock on the writer key
 		var locked bool
 		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock_shared($1)`, writerLockKey)
 		if err != nil {
