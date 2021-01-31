@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/auth"
-
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/permissions"
 )
 

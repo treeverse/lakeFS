@@ -15,10 +15,9 @@ import (
 )
 
 type cataloger struct {
-	EntryCatalog  *EntryCatalog
-	log           logging.Logger
-	dummyDedupeCh chan *catalog.DedupReport
-	hooks         catalog.CatalogerHooks
+	EntryCatalog *EntryCatalog
+	log          logging.Logger
+	hooks        catalog.CatalogerHooks
 }
 
 const (
@@ -37,10 +36,9 @@ func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error)
 		return nil, err
 	}
 	return &cataloger{
-		EntryCatalog:  entryCatalog,
-		log:           logging.Default(),
-		dummyDedupeCh: make(chan *catalog.DedupReport),
-		hooks:         catalog.CatalogerHooks{},
+		EntryCatalog: entryCatalog,
+		log:          logging.Default(),
+		hooks:        catalog.CatalogerHooks{},
 	}, nil
 }
 
@@ -331,7 +329,7 @@ func EntryFromCatalogEntry(entry catalog.Entry) *Entry {
 	}
 }
 
-func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, _ catalog.CreateEntryParams) error {
+func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
@@ -406,40 +404,6 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository string, branch 
 	branchID := graveler.BranchID(branch)
 	prefixPath := Path(prefix)
 	return c.EntryCatalog.ResetPrefix(ctx, repositoryID, branchID, prefixPath)
-}
-
-// QueryEntriesToExpire returns ExpiryRows iterating over all objects to expire on
-// repositoryName according to policy.
-func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName string, policy *catalog.Policy) (catalog.ExpiryRows, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-// MarkEntriesExpired marks all entries identified by expire as expired.  It is a batch operation.
-func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*catalog.ExpireResult) error {
-	panic("not implemented") // TODO: Implement
-}
-
-// MarkObjectsForDeletion marks objects in catalog_object_dedup as "deleting" if all
-// their entries are expired, and returns the new total number of objects marked (or an
-// error).  These objects are not yet safe to delete: there could be a race between
-// marking objects as expired deduping newly-uploaded objects.  See
-// DeleteOrUnmarkObjectsForDeletion for that actual deletion.
-func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName string) (int64, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-// DeleteOrUnmarkObjectsForDeletion scans objects in catalog_object_dedup for objects
-// marked "deleting" and returns an iterator over physical addresses of those objects
-// all of whose referring entries are still expired.  If called after MarkEntriesExpired
-// and MarkObjectsForDeletion this is safe, because no further entries can refer to
-// expired objects.  It also removes the "deleting" mark from those objects that have an
-// entry _not_ marked as expiring and therefore were not on the returned rows.
-func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (catalog.StringIterator, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) DedupReportChannel() chan *catalog.DedupReport {
-	return c.dummyDedupeCh
 }
 
 func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
@@ -683,7 +647,6 @@ func (c *cataloger) GetExportState(repo string, branch string) (catalog.ExportSt
 }
 
 func (c *cataloger) Close() error {
-	close(c.dummyDedupeCh)
 	return nil
 }
 
