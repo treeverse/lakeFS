@@ -6,83 +6,156 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/go-test/deep"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/committed/mock"
 )
+
+// FakeRangeWriter is a RangeWriter that is safe to use in goroutines.  (mock.RangeWriter is
+// NOT safe, it uses gomock which calls t.Fatal and friends!)
+type FakeRangeWriter struct {
+	err error
+
+	closed       bool
+	closeResult  closeResult
+	writeRecords []*committed.Record
+
+	storedType string
+}
+
+type closeResult struct {
+	result *committed.WriteResult
+	err    error
+}
+
+var (
+	ErrNotImplemented = errors.New("not implemented")
+	ErrAlreadyClosed  = errors.New("closed more than once")
+	ErrUnexpected     = errors.New("unexpected call")
+)
+
+func (f *FakeRangeWriter) Err() error {
+	return f.err
+}
+
+func (f *FakeRangeWriter) setErr(err error) error {
+	f.err = err
+	return err
+}
+
+func (f *FakeRangeWriter) ExpectWriteRecord(r committed.Record) {
+	f.writeRecords = append(f.writeRecords, &r)
+}
+
+func (f *FakeRangeWriter) ExpectAnyRecord() {
+	f.writeRecords = append(f.writeRecords, nil)
+}
+
+func (f *FakeRangeWriter) WriteRecord(r committed.Record) error {
+	if len(f.writeRecords) < 1 {
+		return f.setErr(fmt.Errorf("try to write %+v when expected nothing: %w", r, ErrUnexpected))
+	}
+	var n *committed.Record
+	n, f.writeRecords = f.writeRecords[0], f.writeRecords[1:]
+	if n == nil { // any
+		return nil
+	}
+	if diffs := deep.Equal(&r, n); diffs != nil {
+		return f.setErr(fmt.Errorf("try to write the wrong value %s: %w", diffs, ErrUnexpected))
+	}
+	return nil
+}
+
+func (f *FakeRangeWriter) AddMetadata(key, value string) {
+	if key == committed.MetadataTypeKey {
+		f.storedType = value
+	}
+}
+
+func (*FakeRangeWriter) GetApproximateSize() uint64 { return 0 }
+
+func (f *FakeRangeWriter) Close() (*committed.WriteResult, error) {
+	if f.closed {
+		f.err = ErrAlreadyClosed
+		return nil, ErrAlreadyClosed
+	}
+	return f.closeResult.result, f.closeResult.err
+}
+
+func (f *FakeRangeWriter) Abort() error { return nil }
+
+func NewFakeRangeWriter(result *committed.WriteResult, err error) *FakeRangeWriter {
+	return &FakeRangeWriter{
+		closeResult: closeResult{result, err},
+	}
+}
 
 func TestBatchCloserSuccess(t *testing.T) {
 	runSuccessScenario(t)
 }
 
 func TestBatchWriterFailed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	writerSuccess := mock.NewMockRangeWriter(ctrl)
-	writerSuccess.EXPECT().Close().Return(&committed.WriteResult{
-		RangeID: committed.ID(strconv.Itoa(1)),
-		First:   committed.Key("row_1"),
-		Last:    committed.Key("row_2"),
-		Count:   4321,
-	}, nil).Times(1)
-	writerFailure := mock.NewMockRangeWriter(ctrl)
+	writerSuccess := NewFakeRangeWriter(
+		&committed.WriteResult{
+			RangeID: committed.ID(strconv.Itoa(1)),
+			First:   committed.Key("row_1"),
+			Last:    committed.Key("row_2"),
+			Count:   4321,
+		}, nil)
 	expectedErr := errors.New("failure")
-	writerFailure.EXPECT().Close().Return(nil, expectedErr).Times(1)
+	writerFailure := NewFakeRangeWriter(nil, expectedErr)
 
-	sut := committed.NewBatchCloser()
-	require.NoError(t, sut.CloseWriterAsync(writerSuccess))
-	require.NoError(t, sut.CloseWriterAsync(writerFailure))
+	sut := committed.NewBatchCloser(10)
+	assert.NoError(t, sut.CloseWriterAsync(writerSuccess))
+	assert.NoError(t, sut.CloseWriterAsync(writerFailure))
 
 	res, err := sut.Wait()
-	require.Error(t, expectedErr, err)
-	require.Nil(t, res)
+	assert.Error(t, expectedErr, err)
+	assert.Nil(t, res)
+
+	assert.NoError(t, writerSuccess.Err())
+	assert.NoError(t, writerFailure.Err())
 }
 
 func TestBatchCloserMultipleWaitCalls(t *testing.T) {
-	sut, ctrl := runSuccessScenario(t)
-
-	writer := mock.NewMockRangeWriter(ctrl)
-	writer.EXPECT().Close().Return(&committed.WriteResult{
+	writer := NewFakeRangeWriter(&committed.WriteResult{
 		RangeID: committed.ID("last"),
 		First:   committed.Key("row_1"),
 		Last:    committed.Key("row_2"),
 		Count:   4321,
-	}, nil).Times(1)
+	}, nil)
 
-	require.Error(t, sut.CloseWriterAsync(writer), committed.ErrMultipleWaitCalls)
+	sut := runSuccessScenario(t)
+
+	assert.Error(t, sut.CloseWriterAsync(writer), committed.ErrMultipleWaitCalls)
 	res, err := sut.Wait()
 	require.Nil(t, res)
 	require.Error(t, err, committed.ErrMultipleWaitCalls)
 }
 
-func runSuccessScenario(t *testing.T) (*committed.BatchCloser, *gomock.Controller) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
+func runSuccessScenario(t *testing.T) *committed.BatchCloser {
 	const writersCount = 10
-	writers := make([]*mock.MockRangeWriter, writersCount)
+	writers := make([]*FakeRangeWriter, writersCount)
 	for i := 0; i < writersCount; i++ {
-		writers[i] = mock.NewMockRangeWriter(ctrl)
-		writers[i].EXPECT().Close().Return(&committed.WriteResult{
+		writers[i] = NewFakeRangeWriter(&committed.WriteResult{
 			RangeID: committed.ID(strconv.Itoa(i)),
 			First:   committed.Key(fmt.Sprintf("row_%d_1", i)),
 			Last:    committed.Key(fmt.Sprintf("row_%d_2", i)),
 			Count:   i,
-		}, nil).Times(1)
+		}, nil)
 	}
 
-	sut := committed.NewBatchCloser()
+	sut := committed.NewBatchCloser(writersCount)
 
 	for i := 0; i < writersCount; i++ {
-		require.NoError(t, sut.CloseWriterAsync(writers[i]))
+		assert.NoError(t, sut.CloseWriterAsync(writers[i]))
 	}
 
 	res, err := sut.Wait()
-	require.NoError(t, err)
-	require.NotNil(t, res)
-	require.Len(t, res, writersCount)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res, writersCount)
 
-	return sut, ctrl
+	return sut
 }

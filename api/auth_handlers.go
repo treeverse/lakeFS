@@ -24,16 +24,16 @@ func BasicAuthHandler(authService auth.Service) func(accessKey, secretKey string
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := authService.GetCredentials(accessKey)
 		if err != nil {
-			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
+			logger.WithError(err).WithField("access_key", accessKey).Debug("could not get access key for login")
 			return nil, ErrAuthenticationFailed
 		}
 		if secretKey != credentials.AccessSecretKey {
-			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
+			logger.WithField("access_key", accessKey).Debug("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
 		userData, err := authService.GetUserByID(credentials.UserID)
 		if err != nil {
-			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
+			logger.WithField("access_key", accessKey).Debug("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
@@ -62,9 +62,17 @@ func JwtTokenAuthHandler(authService auth.Service) func(string) (*models.User, e
 		if !ok || !token.Valid {
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := authService.GetUser(claims.Subject)
+		cred, err := authService.GetCredentials(claims.Subject)
 		if err != nil {
-			logger.WithField("subject", claims.Subject).Warn("could not find user for token")
+			logger.WithField("subject", claims.Subject).Debug("could not find credentials for token")
+			return nil, ErrAuthenticationFailed
+		}
+		userData, err := authService.GetUserByID(cred.UserID)
+		if err != nil {
+			logger.WithFields(logging.Fields{
+				"user_id": cred.UserID,
+				"subject": claims.Subject,
+			}).Debug("could not find user id by credentials")
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{

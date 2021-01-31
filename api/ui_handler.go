@@ -57,14 +57,15 @@ func UIHandler(authService auth.Service) http.Handler {
 			return
 		}
 
-		// check login
+		// load credentials by access key
 		credentials, err := authService.GetCredentials(login.AccessKeyID)
 		if err != nil || credentials.AccessSecretKey != login.AccessSecretKey {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		// get user
-		user, err := authService.GetUserByID(credentials.UserID)
+
+		// verify user associated with credentials exists
+		_, err = authService.GetUserByID(credentials.UserID)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -72,14 +73,7 @@ func UIHandler(authService auth.Service) http.Handler {
 
 		loginTime := time.Now()
 		expires := loginTime.Add(DefaultLoginExpiration)
-		claims := &jwt.StandardClaims{
-			IssuedAt:  loginTime.Unix(),
-			ExpiresAt: expires.Unix(),
-			Subject:   user.Username,
-		}
-
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, err := token.SignedString(authService.SecretStore().SharedSecret())
+		tokenString, err := CreateAuthToken(authService, login.AccessKeyID, loginTime, expires)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -103,11 +97,22 @@ func UIHandler(authService auth.Service) http.Handler {
 			Value:    "",
 			Path:     "/",
 			HttpOnly: true,
+			Expires:  time.Unix(0, 0),
 			SameSite: http.SameSiteStrictMode,
 		})
 	})
 	mux.Handle("/", NoCache(HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/")))
 	return mux
+}
+
+func CreateAuthToken(authService auth.Service, accessKeyID string, issuedAt, expiresAt time.Time) (string, error) {
+	claims := &jwt.StandardClaims{
+		Subject:   accessKeyID,
+		IssuedAt:  issuedAt.Unix(),
+		ExpiresAt: expiresAt.Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(authService.SecretStore().SharedSecret())
 }
 
 func HandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath string) http.Handler {
