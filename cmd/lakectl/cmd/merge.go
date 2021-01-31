@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
@@ -15,6 +16,18 @@ const (
 	mergeCmdMinArgs = 2
 	mergeCmdMaxArgs = 2
 )
+
+var mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}".
+
+Added: {{.Summary.Added}}
+Changed: {{.Summary.Changed}}
+Removed: {{.Summary.Removed}}
+
+`
+
+type FromTo struct {
+	FromRef, ToRef string
+}
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
@@ -43,7 +56,14 @@ var mergeCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		_, _ = fmt.Printf("new: %d modified: %d removed: %d\n", result.Summary.Added, result.Summary.Changed, result.Summary.Removed)
+
+		Write(mergeCreateTemplate, struct {
+			Merge   FromTo
+			Summary *models.MergeResultSummary
+		}{
+			FromTo{FromRef: leftRefURI.Ref, ToRef: rightRefURI.Ref},
+			result.Summary,
+		})
 	},
 }
 
