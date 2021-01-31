@@ -1066,7 +1066,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		return "", DiffSummary{}, fmt.Errorf("get commit from ref %s: %w", ref, err)
 	}
 	if len(commitRecord.Parents) > 1 && parentNumber <= 0 {
-		// if commit has more than one parent, must explictly specify parent number
+		// if commit has more than one parent, must explicitly specify parent number
 		return "", DiffSummary{}, ErrRevertMergeNoParent
 	}
 	if parentNumber > 0 {
