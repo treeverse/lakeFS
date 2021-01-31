@@ -191,12 +191,12 @@ func ValidateRequiredString(v interface{}) error {
 	return nil
 }
 
-func ValidatePositiveInt(v interface{}) error {
+func ValidateNonNegativeInt(v interface{}) error {
 	i, ok := v.(int)
 	if !ok {
 		panic(ErrInvalidType)
 	}
-	if i <= 0 {
+	if i < 0 {
 		return ErrInvalidValue
 	}
 	return nil
