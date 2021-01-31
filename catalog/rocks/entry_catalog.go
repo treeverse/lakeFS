@@ -96,7 +96,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
+		return nil, fmt.Errorf("create tiered FS for committed metaranges: %w", err)
 	}
 
 	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
@@ -105,7 +105,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create tiered FS for committed meta-range: %w", err)
+		return nil, fmt.Errorf("create tiered FS for committed ranges: %w", err)
 	}
 
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
@@ -113,12 +113,15 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
-	sstableMetaRangeManager := committed.NewMetaRangeManager(
+	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 		*cfg.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,
 		sstableManager,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
 	stagingManager := staging.NewManager(db)
