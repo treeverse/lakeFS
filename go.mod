@@ -57,7 +57,6 @@ require (
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mr-tron/base58 v1.2.0
 	github.com/ory/dockertest/v3 v3.6.3
 	github.com/prometheus/client_golang v1.9.0
 	github.com/rakyll/statik v0.1.7

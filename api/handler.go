@@ -24,7 +24,6 @@ import (
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/parade"
-	"github.com/treeverse/lakefs/retention"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
 	"gopkg.in/dgrijalva/jwt-go.v3"
@@ -47,7 +46,6 @@ type Handler struct {
 	blockStore      block.Adapter
 	authService     auth.Service
 	stats           stats.Collector
-	retention       retention.Service
 	parade          parade.Parade
 	migrator        db.Migrator
 	apiServer       *restapi.Server
@@ -61,7 +59,6 @@ func NewHandler(cataloger catalog.Cataloger,
 	authService auth.Service,
 	metadataManager auth.MetadataManager,
 	stats stats.Collector,
-	retention retention.Service,
 	migrator db.Migrator,
 	parade parade.Parade,
 	dedupCleaner *dedup.Cleaner,
@@ -74,7 +71,6 @@ func NewHandler(cataloger catalog.Cataloger,
 		authService:     authService,
 		metadataManager: metadataManager,
 		stats:           stats,
-		retention:       retention,
 		parade:          parade,
 		migrator:        migrator,
 		dedupCleaner:    dedupCleaner,
@@ -95,7 +91,6 @@ func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
 			}
-
 			return s.authService.SecretStore().SharedSecret(), nil
 		})
 		if err != nil {
@@ -105,9 +100,17 @@ func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 		if !ok || !token.Valid {
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := s.authService.GetUser(claims.Subject)
+		cred, err := s.authService.GetCredentials(claims.Subject)
 		if err != nil {
-			logger.WithField("subject", claims.Subject).Warn("could not find user for token")
+			logger.WithField("subject", claims.Subject).Warn("could not find credentials for token")
+			return nil, ErrAuthenticationFailed
+		}
+		userData, err := s.authService.GetUserByID(cred.UserID)
+		if err != nil {
+			logger.WithFields(logging.Fields{
+				"user_id": cred.UserID,
+				"subject": claims.Subject,
+			}).Warn("could not find user id by credentials")
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
@@ -170,7 +173,7 @@ func (s *Handler) buildAPI() {
 	api.BasicAuthAuth = s.BasicAuth()
 	api.JwtTokenAuth = s.JwtTokenAuth()
 	// bind our handlers to the server
-	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.parade, s.dedupCleaner, s.metadataManager, s.migrator, s.stats, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.parade, s.dedupCleaner, s.metadataManager, s.migrator, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

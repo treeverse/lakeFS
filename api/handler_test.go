@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/config"
+
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
 	"github.com/ory/dockertest/v3"
@@ -29,7 +31,6 @@ import (
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -58,8 +59,9 @@ func TestMain(m *testing.M) {
 }
 
 type dependencies struct {
-	blocks    block.Adapter
-	cataloger catalog.Cataloger
+	blocks      block.Adapter
+	cataloger   catalog.Cataloger
+	authService auth.Service
 }
 
 func createDefaultAdminUser(clt *client.Lakefs, t *testing.T) *authmodel.Credential {
@@ -88,15 +90,21 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 	if blockstoreType == "" {
 		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	}
+	if blockstoreType == "" {
+		blockstoreType = "mem"
+	}
 	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalogfactory.BuildCataloger(conn, nil)
+	cfg := config.NewConfig()
+	cfg.Override(func(configurator config.Configurator) {
+		configurator.SetDefault(config.BlockstoreTypeKey, "mem")
+	})
+	cataloger, err := catalogfactory.BuildCataloger(conn, cfg)
 	testutil.MustDo(t, "build cataloger", err)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
 	meta := auth.NewDBMetadataManager("dev", conn)
-	retentionService := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
@@ -112,7 +120,6 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 		authService,
 		meta,
 		&mockCollector{},
-		retentionService,
 		migrator,
 		nil,
 		dedupCleaner,
@@ -120,8 +127,9 @@ func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOptio
 	)
 
 	return handler, &dependencies{
-		blocks:    blockAdapter,
-		cataloger: cataloger,
+		blocks:      blockAdapter,
+		cataloger:   cataloger,
+		authService: authService,
 	}
 }
 
@@ -161,6 +169,34 @@ func TestServer_BasicAuth(t *testing.T) {
 		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), httptransport.BasicAuth(creds.AccessKeyID, "foobarbaz"))
 		var unauthErr *repositories.ListRepositoriesUnauthorized
 		if !errors.As(err, &unauthErr) {
+			t.Fatalf("got %s not unauthorized error", err)
+		}
+	})
+}
+
+func TestServer_JwtTokenAuth(t *testing.T) {
+	clt, deps := NewClient(t, "")
+	creds := createDefaultAdminUser(clt, t)
+
+	t.Run("valid token", func(t *testing.T) {
+		now := time.Now()
+		exp := now.Add(10 * time.Minute)
+		token, err := api.CreateAuthToken(deps.authService, creds.AccessKeyID, now, exp)
+		testutil.MustDo(t, "create auth token", err)
+		authInfo := httptransport.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
+		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParamsWithTimeout(timeout), authInfo)
+		testutil.MustDo(t, "Request expected to work using a valid token", err)
+	})
+
+	t.Run("invalid token", func(t *testing.T) {
+		now := time.Now()
+		exp := now.Add(10 * time.Minute)
+		token, err := api.CreateAuthToken(deps.authService, "admin", now, exp)
+		testutil.MustDo(t, "create auth token", err)
+		authInfo := httptransport.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
+		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), authInfo)
+		var unauthorized *repositories.ListRepositoriesUnauthorized
+		if !errors.As(err, &unauthorized) {
 			t.Fatalf("got %s not unauthorized error", err)
 		}
 	})

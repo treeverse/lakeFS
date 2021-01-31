@@ -1,19 +1,24 @@
 package local_test
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func makeAdapter(t *testing.T) (*local.Adapter, func()) {
+const testStorageNamespace = "local://test"
+
+func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()
 	dir, err := ioutil.TempDir("", "testing-local-adapter-*")
 	testutil.MustDo(t, "TempDir", err)
@@ -21,20 +26,21 @@ func makeAdapter(t *testing.T) (*local.Adapter, func()) {
 	a, err := local.NewAdapter(dir)
 	testutil.MustDo(t, "NewAdapter", err)
 
-	return a, func() {
-		if _, ok := os.LookupEnv("GOTEST_KEEP_LOCAL"); !ok {
-			testutil.MustDo(t, "RemoveAll (cleanup)", os.RemoveAll(dir))
+	t.Cleanup(func() {
+		if _, ok := os.LookupEnv("GOTEST_KEEP_LOCAL"); ok {
+			return
 		}
-	}
+		_ = os.RemoveAll(dir)
+	})
+	return a
 }
 
 func makePointer(path string) block.ObjectPointer {
-	return block.ObjectPointer{Identifier: path, StorageNamespace: "local://test/"}
+	return block.ObjectPointer{Identifier: path, StorageNamespace: testStorageNamespace}
 }
 
 func TestLocalPutExistsGet(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	cases := []struct {
 		name string
@@ -66,8 +72,7 @@ func TestLocalPutExistsGet(t *testing.T) {
 }
 
 func TestLocalNotExists(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	cases := []string{"missing", "nested/down", "nested/quite/deeply/and/missing"}
 	for _, c := range cases {
@@ -82,8 +87,7 @@ func TestLocalNotExists(t *testing.T) {
 }
 
 func TestLocalMultipartUpload(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	cases := []struct {
 		name     string
@@ -125,8 +129,7 @@ func TestLocalMultipartUpload(t *testing.T) {
 }
 
 func TestLocalCopy(t *testing.T) {
-	a, cleanup := makeAdapter(t)
-	defer cleanup()
+	a := makeAdapter(t)
 
 	contents := "foo bar baz quux"
 
@@ -139,5 +142,82 @@ func TestLocalCopy(t *testing.T) {
 	testutil.MustDo(t, "ReadAll", err)
 	if string(got) != contents {
 		t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))
+	}
+}
+
+func dumpPathTree(t testing.TB, root string) []string {
+	t.Helper()
+	tree := make([]string, 0)
+	err := filepath.Walk(root, func(path string, _ os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		p := strings.TrimPrefix(path, root)
+		tree = append(tree, p)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking on '%s': %s", root, err)
+	}
+	sort.Strings(tree)
+	return tree
+}
+
+func TestAdapter_Remove(t *testing.T) {
+	const content = "Content used for testing"
+	tests := []struct {
+		name              string
+		additionalObjects []string
+		path              string
+		wantErr           bool
+		wantTree          []string
+	}{
+		{
+			name:     "single",
+			path:     "README",
+			wantErr:  false,
+			wantTree: []string{""},
+		},
+
+		{
+			name:     "under folder",
+			path:     "src/tools.go",
+			wantErr:  false,
+			wantTree: []string{""},
+		},
+		{
+			name:     "under multiple folders",
+			path:     "a/b/c/d.txt",
+			wantErr:  false,
+			wantTree: []string{""},
+		},
+		{
+			name:              "file in the way",
+			path:              "a/b/c/d.txt",
+			additionalObjects: []string{"a/b/blocker.txt"},
+			wantErr:           false,
+			wantTree:          []string{"", "/test", "/test/a", "/test/a/b", "/test/a/b/blocker.txt"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup env
+			adp := makeAdapter(t)
+			envObjects := append(tt.additionalObjects, tt.path)
+			for _, o := range envObjects {
+				obj := makePointer(o)
+				testutil.MustDo(t, "Put", adp.Put(obj, 0, strings.NewReader(content), block.PutOpts{}))
+			}
+			// test Remove with remove empty folders
+			obj := makePointer(tt.path)
+			if err := adp.Remove(obj); (err != nil) != tt.wantErr {
+				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			tree := dumpPathTree(t, adp.Path())
+			if diff := deep.Equal(tt.wantTree, tree); diff != nil {
+				t.Errorf("Remove() tree diff = %s", diff)
+			}
+		})
 	}
 }
