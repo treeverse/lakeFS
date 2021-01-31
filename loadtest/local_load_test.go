@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -19,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -42,13 +43,13 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-type mockCollector struct{}
+type nullCollector struct{}
 
-func (m *mockCollector) CollectMetadata(_ *stats.Metadata) {}
+func (m *nullCollector) CollectMetadata(_ *stats.Metadata) {}
 
-func (m *mockCollector) CollectEvent(_, _ string) {}
+func (m *nullCollector) CollectEvent(_, _ string) {}
 
-func (m *mockCollector) SetInstallationID(_ string) {}
+func (m *nullCollector) SetInstallationID(_ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
@@ -69,16 +70,16 @@ func TestLocalLoad(t *testing.T) {
 		_ = cataloger.Close()
 	})
 
-	handler := api.Serve(
-		cataloger,
-		blockAdapter,
-		authService,
-		meta,
-		&mockCollector{},
-		migrator,
-		nil,
-		logging.Default(),
-	)
+	handler := api.Serve(api.Dependencies{
+		Cataloger:       cataloger,
+		Auth:            authService,
+		BlockAdapter:    blockAdapter,
+		Parade:          nil,
+		MetadataManager: meta,
+		Migrator:        migrator,
+		Collector:       &nullCollector{},
+		Logger:          logging.Default(),
+	})
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

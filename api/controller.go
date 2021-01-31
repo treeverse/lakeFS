@@ -59,12 +59,11 @@ type Dependencies struct {
 	Cataloger       catalog.Cataloger
 	Auth            auth.Service
 	BlockAdapter    block.Adapter
-	Stats           stats.Collector
 	Parade          parade.Parade
 	MetadataManager auth.MetadataManager
 	Migrator        db.Migrator
 	Collector       stats.Collector
-	logger          logging.Logger
+	Logger          logging.Logger
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -73,12 +72,11 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		Cataloger:       d.Cataloger,
 		Auth:            d.Auth,
 		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
-		Stats:           d.Stats,
 		Parade:          d.Parade,
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
 		Collector:       d.Collector,
-		logger:          d.logger.WithContext(ctx),
+		Logger:          d.Logger.WithContext(ctx),
 	}
 }
 
@@ -87,29 +85,16 @@ func (d *Dependencies) LogAction(action string) {
 		WithField("action", action).
 		WithField("message_type", "action").
 		Debug("performing API action")
-	d.Stats.CollectEvent("api_server", action)
+	d.Collector.CollectEvent("api_server", action)
 }
 
 type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, parade parade.Parade, metadataManager auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
-	c := &Controller{
-		deps: &Dependencies{
-			ctx:             context.Background(),
-			Cataloger:       cataloger,
-			Auth:            auth,
-			BlockAdapter:    blockAdapter,
-			Stats:           stats,
-			Parade:          parade,
-			MetadataManager: metadataManager,
-			Migrator:        migrator,
-			Collector:       collector,
-			logger:          logger,
-		},
-	}
-	return c
+func NewController(deps Dependencies) *Controller {
+	deps.ctx = context.Background()
+	return &Controller{deps: &deps}
 }
 
 // Configure attaches our API operations to a generated swagger API stub
@@ -263,7 +248,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 		metadata, err := c.deps.MetadataManager.Write()
 		if err != nil {
-			c.deps.logger.Error("failed to write metadata after setup")
+			c.deps.Logger.Error("failed to write metadata after setup")
 		} else {
 			c.deps.Collector.SetInstallationID(metadata[auth.InstallationIDKeyName])
 		}
@@ -535,7 +520,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 
 		err = ensureStorageNamespaceRW(deps.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
 		if err != nil {
-			c.deps.logger.
+			c.deps.Logger.
 				WithError(err).
 				WithField("storage_namespace", swag.StringValue(params.Repository.StorageNamespace)).
 				Warn("Could not access storage namespace")

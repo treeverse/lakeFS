@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/client"
@@ -24,7 +26,6 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -87,16 +88,16 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = cataloger.Close()
 	})
 
-	handler := api.Serve(
-		cataloger,
-		blockAdapter,
-		authService,
-		meta,
-		&nullCollector{},
-		migrator,
-		nil,
-		logging.Default(),
-	)
+	handler := api.Serve(api.Dependencies{
+		Cataloger:       cataloger,
+		Auth:            authService,
+		BlockAdapter:    blockAdapter,
+		Parade:          nil,
+		MetadataManager: meta,
+		Migrator:        migrator,
+		Collector:       &nullCollector{},
+		Logger:          logging.Default(),
+	})
 
 	return handler, &dependencies{
 		blocks:      blockAdapter,
