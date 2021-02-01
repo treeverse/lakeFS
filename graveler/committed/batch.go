@@ -16,7 +16,6 @@ type BatchCloser struct {
 	err     error
 
 	wg sync.WaitGroup
-
 	ch chan ResultCloser
 }
 
@@ -27,6 +26,7 @@ func NewBatchCloser(numClosers int) *BatchCloser {
 		ch: make(chan ResultCloser),
 	}
 
+	ret.wg.Add(numClosers)
 	for i := 0; i < numClosers; i++ {
 		go ret.handleClose()
 	}
@@ -51,7 +51,6 @@ func (bc *BatchCloser) CloseWriterAsync(w ResultCloser) error {
 		return bc.err
 	}
 
-	bc.wg.Add(1)
 	bc.mu.Unlock()
 	bc.ch <- w
 
@@ -62,10 +61,10 @@ func (bc *BatchCloser) handleClose() {
 	for w := range bc.ch {
 		bc.closeWriter(w)
 	}
+	bc.wg.Done()
 }
 
 func (bc *BatchCloser) closeWriter(w ResultCloser) {
-	defer bc.wg.Done()
 	res, err := w.Close()
 
 	// long operation is over, we can lock to have synchronized access to err and results
