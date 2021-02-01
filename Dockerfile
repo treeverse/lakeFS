@@ -48,7 +48,7 @@ RUN apk add netcat-openbsd
 WORKDIR /app
 COPY ./wait-for ./
 ENV PATH /app:$PATH
-COPY --from=build /build/lakefs /build/lakectl ./
+COPY --from=build /build/lakefs /build/lakefs.cover /build/lakectl ./
 
 EXPOSE 8000/tcp
 

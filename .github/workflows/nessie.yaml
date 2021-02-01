@@ -145,7 +145,7 @@ jobs:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: go test -v --system-tests
+        run: go test -v ./nessie --system-tests
       - name: Check files in S3 bucket
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
@@ -187,7 +187,7 @@ jobs:
       - name: Run Nessie S3 with local API key
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
-        run: go test -v --coverprofile=nessie-s3-local-cover.out --cover ./nessie --system-tests --use-local-credentials
+        run: go test -v ./nessie --system-tests --use-local-credentials
       - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -207,7 +207,7 @@ jobs:
       - name: Run Nessie GS
         env:
           NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
-        run: go test -v  --coverprofile=nessie-gs-cover.out --cover ./nessie --system-tests
+        run: go test -v ./nessie --system-tests
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
