@@ -20,7 +20,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
@@ -67,7 +67,7 @@ var runCmd = &cobra.Command{
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(dbPool, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
 		}

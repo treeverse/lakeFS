@@ -1,4 +1,4 @@
-package rocks
+package catalog
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -28,7 +27,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*catalog.Repository
+		want        []*Repository
 		wantHasMore bool
 		wantErr     bool
 	}{
@@ -38,7 +37,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 				limit: -1,
 				after: "",
 			},
-			want: []*catalog.Repository{
+			want: []*Repository{
 				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
@@ -52,7 +51,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 				limit: 1,
 				after: "",
 			},
-			want: []*catalog.Repository{
+			want: []*Repository{
 				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
 			},
 			wantHasMore: true,
@@ -64,7 +63,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 				limit: 1,
 				after: "repo1",
 			},
-			want: []*catalog.Repository{
+			want: []*Repository{
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 			},
 			wantHasMore: true,
@@ -76,7 +75,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 				limit: 10,
 				after: "repo1",
 			},
-			want: []*catalog.Repository{
+			want: []*Repository{
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
 			},
@@ -167,14 +166,14 @@ func TestCataloger_ListBranches(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*catalog.Branch
+		want        []*Branch
 		wantHasMore bool
 		wantErr     bool
 	}{
 		{
 			name: "all",
 			args: args{limit: -1},
-			want: []*catalog.Branch{
+			want: []*Branch{
 				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
@@ -185,7 +184,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{
 			name: "exact",
 			args: args{limit: 3},
-			want: []*catalog.Branch{
+			want: []*Branch{
 				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
@@ -196,7 +195,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{
 			name: "first",
 			args: args{limit: 1},
-			want: []*catalog.Branch{
+			want: []*Branch{
 				{Name: "branch1", Reference: "commit1"},
 			},
 			wantHasMore: true,
@@ -205,7 +204,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{
 			name: "second",
 			args: args{limit: 1, after: "branch1"},
-			want: []*catalog.Branch{
+			want: []*Branch{
 				{Name: "branch2", Reference: "commit2"},
 			},
 			wantHasMore: true,
@@ -214,7 +213,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 		{
 			name: "last2",
 			args: args{limit: 10, after: "branch1"},
-			want: []*catalog.Branch{
+			want: []*Branch{
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
 			},
@@ -268,14 +267,14 @@ func TestCataloger_ListTags(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*catalog.Tag
+		want        []*Tag
 		wantHasMore bool
 		wantErr     bool
 	}{
 		{
 			name: "all",
 			args: args{limit: -1},
-			want: []*catalog.Tag{
+			want: []*Tag{
 				{ID: "t1", CommitID: "c1"},
 				{ID: "t2", CommitID: "c2"},
 				{ID: "t3", CommitID: "c3"},
@@ -286,7 +285,7 @@ func TestCataloger_ListTags(t *testing.T) {
 		{
 			name: "exact",
 			args: args{limit: 3},
-			want: []*catalog.Tag{
+			want: []*Tag{
 				{ID: "t1", CommitID: "c1"},
 				{ID: "t2", CommitID: "c2"},
 				{ID: "t3", CommitID: "c3"},
@@ -297,7 +296,7 @@ func TestCataloger_ListTags(t *testing.T) {
 		{
 			name: "first",
 			args: args{limit: 1},
-			want: []*catalog.Tag{
+			want: []*Tag{
 				{ID: "t1", CommitID: "c1"},
 			},
 			wantHasMore: true,
@@ -306,7 +305,7 @@ func TestCataloger_ListTags(t *testing.T) {
 		{
 			name: "second",
 			args: args{limit: 1, after: "t1"},
-			want: []*catalog.Tag{
+			want: []*Tag{
 				{ID: "t2", CommitID: "c2"},
 			},
 			wantHasMore: true,
@@ -315,7 +314,7 @@ func TestCataloger_ListTags(t *testing.T) {
 		{
 			name: "last2",
 			args: args{limit: 10, after: "t1"},
-			want: []*catalog.Tag{
+			want: []*Tag{
 				{ID: "t2", CommitID: "c2"},
 				{ID: "t3", CommitID: "c3"},
 			},
@@ -373,14 +372,14 @@ func TestCataloger_ListEntries(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		want        []*catalog.Entry
+		want        []*DBEntry
 		wantHasMore bool
 		wantErr     bool
 	}{
 		{
 			name: "all no delimiter",
 			args: args{limit: -1},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01"},
 				{Path: "file2", PhysicalAddress: "file2", CreationDate: now, Size: 2, Checksum: "02"},
 				{Path: "file3", PhysicalAddress: "file3", CreationDate: now, Size: 3, Checksum: "03"},
@@ -393,7 +392,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "first no delimiter",
 			args: args{limit: 1},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01"},
 			},
 			wantHasMore: true,
@@ -402,7 +401,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "second no delimiter",
 			args: args{limit: 1, after: "file1"},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "file2", PhysicalAddress: "file2", CreationDate: now, Size: 2, Checksum: "02"},
 			},
 			wantHasMore: true,
@@ -411,7 +410,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "last two no delimiter",
 			args: args{limit: 10, after: "file3"},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "h/file1", PhysicalAddress: "h/file1", CreationDate: now, Size: 1, Checksum: "01"},
 				{Path: "h/file2", PhysicalAddress: "h/file2", CreationDate: now, Size: 2, Checksum: "02"},
 			},
@@ -422,7 +421,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "all with delimiter",
 			args: args{limit: -1, delimiter: "/"},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01"},
 				{Path: "file2", PhysicalAddress: "file2", CreationDate: now, Size: 2, Checksum: "02"},
 				{Path: "file3", PhysicalAddress: "file3", CreationDate: now, Size: 3, Checksum: "03"},
@@ -434,7 +433,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "first with delimiter",
 			args: args{limit: 1, delimiter: "/"},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "file1", PhysicalAddress: "file1", CreationDate: now, Size: 1, Checksum: "01"},
 			},
 			wantHasMore: true,
@@ -443,7 +442,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "last with delimiter",
 			args: args{limit: 1, after: "file3", delimiter: "/"},
-			want: []*catalog.Entry{
+			want: []*DBEntry{
 				{Path: "h/", CommonLevel: true},
 			},
 			wantHasMore: false,

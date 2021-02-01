@@ -1,4 +1,4 @@
-package rocks
+package catalog
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -17,7 +16,7 @@ import (
 type cataloger struct {
 	EntryCatalog *EntryCatalog
 	log          logging.Logger
-	hooks        catalog.CatalogerHooks
+	hooks        CatalogerHooks
 }
 
 const (
@@ -30,7 +29,7 @@ const (
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
-func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error) {
+func NewCataloger(db db.Database, cfg *config.Config) (Cataloger, error) {
 	entryCatalog, err := NewEntryCatalog(cfg, db)
 	if err != nil {
 		return nil, err
@@ -38,12 +37,12 @@ func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error)
 	return &cataloger{
 		EntryCatalog: entryCatalog,
 		log:          logging.Default(),
-		hooks:        catalog.CatalogerHooks{},
+		hooks:        CatalogerHooks{},
 	}, nil
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*catalog.Repository, error) {
+func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
@@ -51,7 +50,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 	if err != nil {
 		return nil, err
 	}
-	catalogRepo := &catalog.Repository{
+	catalogRepo := &Repository{
 		Name:             repositoryID.String(),
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
@@ -61,13 +60,13 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 }
 
 // GetRepository get repository information
-func (c *cataloger) GetRepository(ctx context.Context, repository string) (*catalog.Repository, error) {
+func (c *cataloger) GetRepository(ctx context.Context, repository string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	repo, err := c.EntryCatalog.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
-	catalogRepository := &catalog.Repository{
+	catalogRepository := &Repository{
 		Name:             repositoryID.String(),
 		StorageNamespace: repo.StorageNamespace.String(),
 		DefaultBranch:    repo.DefaultBranchID.String(),
@@ -84,7 +83,7 @@ func (c *cataloger) DeleteRepository(ctx context.Context, repository string) err
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
-func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*catalog.Repository, bool, error) {
+func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -100,13 +99,13 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 		it.SeekGE(afterRepositoryID)
 	}
 
-	var repos []*catalog.Repository
+	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
 		if record.RepositoryID == afterRepositoryID {
 			continue
 		}
-		repos = append(repos, &catalog.Repository{
+		repos = append(repos, &Repository{
 			Name:             record.RepositoryID.String(),
 			StorageNamespace: record.StorageNamespace.String(),
 			DefaultBranch:    record.DefaultBranchID.String(),
@@ -129,7 +128,7 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 	return repos, hasMore, nil
 }
 
-func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*catalog.CommitLog, error) {
+func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	sourceRef := graveler.Ref(sourceBranch)
@@ -141,11 +140,11 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch 
 	if err != nil {
 		return nil, err
 	}
-	catalogCommitLog := &catalog.CommitLog{
+	catalogCommitLog := &CommitLog{
 		Reference: newBranch.CommitID.String(),
 		Committer: commit.Committer,
 		Message:   commit.Message,
-		Metadata:  catalog.Metadata(commit.Metadata),
+		Metadata:  Metadata(commit.Metadata),
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
@@ -159,7 +158,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch 
 	return c.EntryCatalog.DeleteBranch(ctx, repositoryID, branchID)
 }
 
-func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*catalog.Branch, bool, error) {
+func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListBranchesLimitMax {
 		limit = ListBranchesLimitMax
@@ -175,7 +174,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	} else {
 		it.SeekGE(afterBranch)
 	}
-	var branches []*catalog.Branch
+	var branches []*Branch
 	for it.Next() {
 		v := it.Value()
 		if v.BranchID == afterBranch {
@@ -186,7 +185,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 		if !strings.HasPrefix(branchID, prefix) {
 			break
 		}
-		branch := &catalog.Branch{
+		branch := &Branch{
 			Name:      v.BranchID.String(),
 			Reference: v.CommitID.String(),
 		}
@@ -256,7 +255,7 @@ func (c *cataloger) DeleteTag(ctx context.Context, repository string, tagID stri
 	return c.EntryCatalog.DeleteTag(ctx, repositoryID, tag)
 }
 
-func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*catalog.Tag, bool, error) {
+func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
 	if limit < 0 || limit > ListTagsLimitMax {
 		limit = ListTagsLimitMax
 	}
@@ -268,13 +267,13 @@ func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, 
 	afterTagID := graveler.TagID(after)
 	it.SeekGE(afterTagID)
 
-	var tags []*catalog.Tag
+	var tags []*Tag
 	for it.Next() {
 		v := it.Value()
 		if v.TagID == afterTagID {
 			continue
 		}
-		branch := &catalog.Tag{
+		branch := &Tag{
 			ID:       string(v.TagID),
 			CommitID: v.CommitID.String(),
 		}
@@ -307,7 +306,7 @@ func (c *cataloger) GetTag(ctx context.Context, repository string, tagID string)
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
-func (c *cataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ catalog.GetEntryParams) (*catalog.Entry, error) {
+func (c *cataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	ref := graveler.Ref(reference)
 	p := Path(path)
@@ -319,7 +318,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, reference s
 	return &catalogEntry, nil
 }
 
-func EntryFromCatalogEntry(entry catalog.Entry) *Entry {
+func EntryFromCatalogEntry(entry DBEntry) *Entry {
 	return &Entry{
 		Address:      entry.PhysicalAddress,
 		Metadata:     entry.Metadata,
@@ -329,14 +328,14 @@ func EntryFromCatalogEntry(entry catalog.Entry) *Entry {
 	}
 }
 
-func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry) error {
+func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
 	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent)
 }
 
-func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []catalog.Entry) error {
+func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	for _, entry := range entries {
@@ -355,7 +354,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch s
 	return c.EntryCatalog.DeleteEntry(ctx, repositoryID, branchID, p)
 }
 
-func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*catalog.Entry, bool, error) {
+func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*DBEntry, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListEntriesLimitMax {
 		limit = ListEntriesLimitMax
@@ -368,7 +367,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, referenc
 		return nil, false, err
 	}
 	it.SeekGE(afterPath)
-	var entries []*catalog.Entry
+	var entries []*DBEntry
 	for it.Next() {
 		v := it.Value()
 		if v.Path == afterPath {
@@ -406,7 +405,7 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository string, branch 
 	return c.EntryCatalog.ResetPrefix(ctx, repositoryID, branchID, prefixPath)
 }
 
-func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
+func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	commitID, err := c.EntryCatalog.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
@@ -417,7 +416,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 	if err != nil {
 		return nil, err
 	}
-	catalogCommitLog := &catalog.CommitLog{
+	catalogCommitLog := &CommitLog{
 		Reference: commitID.String(),
 		Committer: committer,
 		Message:   message,
@@ -435,7 +434,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) GetCommit(ctx context.Context, repository string, reference string) (*catalog.CommitLog, error) {
+func (c *cataloger) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	ref := graveler.Ref(reference)
 	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, ref)
@@ -446,13 +445,13 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 	if err != nil {
 		return nil, err
 	}
-	catalogCommitLog := &catalog.CommitLog{
+	catalogCommitLog := &CommitLog{
 		Reference:    ref.String(),
 		Committer:    commit.Committer,
 		Message:      commit.Message,
 		CreationDate: commit.CreationDate,
 		MetaRangeID:  string(commit.MetaRangeID),
-		Metadata:     catalog.Metadata(commit.Metadata),
+		Metadata:     Metadata(commit.Metadata),
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
@@ -460,7 +459,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*catalog.CommitLog, bool, error) {
+func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchCommitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(branch))
 	if err != nil {
@@ -468,7 +467,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	}
 	if branchCommitID == "" {
 		// return empty log if there is no commit on branch yet
-		return make([]*catalog.CommitLog, 0), false, nil
+		return make([]*CommitLog, 0), false, nil
 	}
 	it, err := c.EntryCatalog.Log(ctx, repositoryID, branchCommitID)
 	if err != nil {
@@ -491,10 +490,10 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	}
 
 	// collect commits
-	var commits []*catalog.CommitLog
+	var commits []*CommitLog
 	for it.Next() {
 		v := it.Value()
-		commit := &catalog.CommitLog{
+		commit := &CommitLog{
 			Reference:    v.CommitID.String(),
 			Committer:    v.Committer,
 			Message:      v.Message,
@@ -522,7 +521,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	return commits, hasMore, nil
 }
 
-func (c *cataloger) Revert(ctx context.Context, repository string, branch string, params catalog.RevertParams) error {
+func (c *cataloger) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(params.Reference)
@@ -535,10 +534,10 @@ func (c *cataloger) Revert(ctx context.Context, repository string, branch string
 
 func (c *cataloger) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
 	c.log.Debug("rollback to commit is not supported in rocks implementation")
-	return catalog.ErrFeatureNotSupported
+	return ErrFeatureNotSupported
 }
 
-func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
+func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	it, err := c.EntryCatalog.Diff(ctx, graveler.RepositoryID(repository), graveler.Ref(leftReference), graveler.Ref(rightReference))
 	if err != nil {
 		return nil, false, err
@@ -547,7 +546,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftReference s
 	return listDiffHelper(it, params.Limit, params.After)
 }
 
-func (c *cataloger) Compare(ctx context.Context, repository, leftReference string, rightReference string, params catalog.DiffParams) (catalog.Differences, bool, error) {
+func (c *cataloger) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	it, err := c.EntryCatalog.Compare(ctx, graveler.RepositoryID(repository), graveler.Ref(leftReference), graveler.Ref(rightReference))
 	if err != nil {
 		return nil, false, err
@@ -556,7 +555,7 @@ func (c *cataloger) Compare(ctx context.Context, repository, leftReference strin
 	return listDiffHelper(it, params.Limit, params.After)
 }
 
-func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (catalog.Differences, bool, error) {
+func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
 	it, err := c.EntryCatalog.DiffUncommitted(ctx, graveler.RepositoryID(repository), graveler.BranchID(branch))
 	if err != nil {
 		return nil, false, err
@@ -565,7 +564,7 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, bran
 	return listDiffHelper(it, limit, after)
 }
 
-func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Differences, bool, error) {
+func listDiffHelper(it EntryDiffIterator, limit int, after string) (Differences, bool, error) {
 	if limit < 0 || limit > DiffLimitMax {
 		limit = DiffLimitMax
 	}
@@ -573,7 +572,7 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Diff
 	if afterPath != "" {
 		it.SeekGE(afterPath)
 	}
-	diffs := make(catalog.Differences, 0)
+	diffs := make(Differences, 0)
 	for it.Next() {
 		v := it.Value()
 		if v.Path == afterPath {
@@ -599,7 +598,7 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Diff
 	return diffs, hasMore, nil
 }
 
-func (c *cataloger) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata catalog.Metadata) (*catalog.MergeResult, error) {
+func (c *cataloger) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	dest := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
@@ -611,14 +610,14 @@ func (c *cataloger) Merge(ctx context.Context, repository string, destinationBra
 	})
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old cataloger
-		return &catalog.MergeResult{
-			Summary: map[catalog.DifferenceType]int{catalog.DifferenceTypeConflict: 1},
+		return &MergeResult{
+			Summary: map[DifferenceType]int{DifferenceTypeConflict: 1},
 		}, err
 	}
 	if err != nil {
 		return nil, err
 	}
-	count := make(map[catalog.DifferenceType]int)
+	count := make(map[DifferenceType]int)
 	for k, v := range summary.Count {
 		kk, err := catalogDiffType(k)
 		if err != nil {
@@ -626,13 +625,13 @@ func (c *cataloger) Merge(ctx context.Context, repository string, destinationBra
 		}
 		count[kk] = v
 	}
-	return &catalog.MergeResult{
+	return &MergeResult{
 		Summary:   count,
 		Reference: commitID.String(),
 	}, nil
 }
 
-func (c *cataloger) Hooks() *catalog.CatalogerHooks {
+func (c *cataloger) Hooks() *CatalogerHooks {
 	return &c.hooks
 }
 
@@ -640,8 +639,8 @@ func (c *cataloger) Close() error {
 	return nil
 }
 
-func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalog.Entry {
-	catEnt := catalog.Entry{
+func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
+	catEnt := DBEntry{
 		CommonLevel: commonPrefix,
 		Path:        path,
 	}
@@ -656,27 +655,27 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 	return catEnt
 }
 
-func catalogDiffType(typ graveler.DiffType) (catalog.DifferenceType, error) {
+func catalogDiffType(typ graveler.DiffType) (DifferenceType, error) {
 	switch typ {
 	case graveler.DiffTypeAdded:
-		return catalog.DifferenceTypeAdded, nil
+		return DifferenceTypeAdded, nil
 	case graveler.DiffTypeRemoved:
-		return catalog.DifferenceTypeRemoved, nil
+		return DifferenceTypeRemoved, nil
 	case graveler.DiffTypeChanged:
-		return catalog.DifferenceTypeChanged, nil
+		return DifferenceTypeChanged, nil
 	case graveler.DiffTypeConflict:
-		return catalog.DifferenceTypeConflict, nil
+		return DifferenceTypeConflict, nil
 	default:
-		return catalog.DifferenceTypeNone, fmt.Errorf("%d: %w", typ, ErrUnknownDiffType)
+		return DifferenceTypeNone, fmt.Errorf("%d: %w", typ, ErrUnknownDiffType)
 	}
 }
 
-func newDifferenceFromEntryDiff(v *EntryDiff) (catalog.Difference, error) {
+func newDifferenceFromEntryDiff(v *EntryDiff) (Difference, error) {
 	var (
-		diff catalog.Difference
+		diff Difference
 		err  error
 	)
-	diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
+	diff.DBEntry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
 	diff.Type, err = catalogDiffType(v.Type)
 	return diff, err
 }

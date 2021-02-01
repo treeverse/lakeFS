@@ -1,4 +1,4 @@
-package rocks
+package catalog
 
 import (
 	"errors"
@@ -22,7 +22,6 @@ var (
 
 var (
 	ErrInvalidType   = errors.New("invalid type")
-	ErrInvalidValue  = errors.New("invalid value")
 	ErrRequiredValue = errors.New("required value")
 )
 
