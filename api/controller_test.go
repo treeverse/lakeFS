@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"math"
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -618,7 +620,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 			}
 			after = payload.Pagination.NextOffset
 		}
-		expectedCalls := createTagLen/pageSize + 1
+		expectedCalls := int(math.Ceil(float64(createTagLen) / pageSize))
 		if calls != expectedCalls {
 			t.Fatalf("ListTags pagination calls=%d, expected=%d", calls, expectedCalls)
 		}
@@ -632,8 +634,11 @@ func TestController_ListTagsHandler(t *testing.T) {
 			tags.NewListTagsParamsWithTimeout(timeout).
 				WithRepository("repoX"),
 			bauth)
-		if err == nil {
+		var listTagsDefault *tags.ListTagsDefault
+		if !errors.As(err, &listTagsDefault) {
 			t.Fatal("expected error calling list tags on when repo doesnt exist")
+		} else if listTagsDefault.Code() != http.StatusInternalServerError {
+			t.Fatalf("expected error status code %d, expected %d", listTagsDefault.Code(), http.StatusInternalServerError)
 		}
 	})
 }
