@@ -92,8 +92,8 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffIterator(leftIt, rightIt), nil
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, theirs, ours, base graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	diffIt, err := c.Diff(ctx, ns, theirs, ours)
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+	diffIt, err := c.Diff(ctx, ns, destination, source)
 	if err != nil {
 		return "", graveler.DiffSummary{}, fmt.Errorf("diff: %w", err)
 	}
@@ -105,7 +105,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 	defer baseIt.Close()
 	patchIterator := NewMergeIterator(diffIt, baseIt)
 	defer patchIterator.Close()
-	return c.Apply(ctx, ns, theirs, patchIterator)
+	return c.Apply(ctx, ns, destination, patchIterator)
 }
 
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
@@ -135,8 +135,8 @@ func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespa
 	return *newID, summary, err
 }
 
-func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNamespace, theirs, ours, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
-	diffIt, err := c.Diff(ctx, ns, theirs, ours)
+func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
+	diffIt, err := c.Diff(ctx, ns, destination, source)
 	if err != nil {
 		return nil, fmt.Errorf("diff: %w", err)
 	}

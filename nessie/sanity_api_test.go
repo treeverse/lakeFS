@@ -145,7 +145,7 @@ func TestSanityAPI(t *testing.T) {
 	mergeResp, err := client.Refs.MergeIntoBranch(refs.NewMergeIntoBranchParamsWithContext(ctx).
 		WithRepository(repo).
 		WithSourceRef("branch1").
-		WithDestinationRef(masterBranch), nil)
+		WithDestinationBranch(masterBranch), nil)
 	require.NoError(t, err, "merge branch1 to master")
 	require.NotEmpty(t, mergeResp.Payload.Reference, "merge should return a commit reference")
 

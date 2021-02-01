@@ -354,20 +354,20 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 	return e.Store.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
 }
 
-func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
+func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
 	if commitParams.Message == "" {
-		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", from, to)
+		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", source, destination)
 	}
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
-		{"from", from, ValidateRef},
-		{"to", to, ValidateBranchID},
+		{"destination", destination, ValidateBranchID},
+		{"source", source, ValidateRef},
 		{"committer", commitParams.Committer, ValidateRequiredString},
 		{"message", commitParams.Message, ValidateRequiredString},
 	}); err != nil {
 		return "", graveler.DiffSummary{}, err
 	}
-	return e.Store.Merge(ctx, repositoryID, from, to, commitParams)
+	return e.Store.Merge(ctx, repositoryID, destination, source, commitParams)
 }
 
 func (e *EntryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (EntryDiffIterator, error) {
