@@ -61,7 +61,7 @@ var mergeCmd = &cobra.Command{
 			Merge  FromTo
 			Result *models.MergeResult
 		}{
-			FromTo{FromRef: leftRefURI.Ref, ToRef: rightRefURI.Ref},
+			FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
 			result,
 		})
 	},
