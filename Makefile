@@ -152,7 +152,7 @@ ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
 ui-bundle: ui-build go-install ## Bundle static built UI app
-	$(GOBINPATH)/statik -ns webui -m -f -src=$(UI_BUILD_DIR)
+	$(GOBINPATH)/statik -ns webui -f -src=$(UI_BUILD_DIR)
 
 gen-ui: ui-bundle
 

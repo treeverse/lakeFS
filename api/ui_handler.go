@@ -24,21 +24,6 @@ type loginData struct {
 	AccessSecretKey string `json:"secret_access_key"`
 }
 
-var noCacheHeaders = map[string]string{
-	"Expires":         time.Unix(0, 0).Format(time.RFC1123),
-	"Cache-Control":   "no-store",
-	"X-Accel-Expires": "0",
-}
-
-func NoCache(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for k, v := range noCacheHeaders {
-			w.Header().Set(k, v)
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
 func UIHandler(authService auth.Service) http.Handler {
 	mux := http.NewServeMux()
 
@@ -102,7 +87,7 @@ func UIHandler(authService auth.Service) http.Handler {
 	})
 
 	staticFiles, _ := fs.NewWithNamespace(statik.Webui)
-	mux.Handle("/", NoCache(HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/")))
+	mux.Handle("/", HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/"))
 	return mux
 }
 
