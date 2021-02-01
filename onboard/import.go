@@ -32,14 +32,16 @@ type Config struct {
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
 	EntryCatalog       *catalog.EntryCatalog
+
+	// BaseCommit is available only for import-plumbing command
+	BaseCommit graveler.CommitID
 }
 
 type Stats struct {
-	AddedOrChanged       int
-	DryRun               bool
-	PreviousInventoryURL string
-	CommitRef            string
-	PreviousImportDate   time.Time
+	AddedOrChanged     int
+	DryRun             bool
+	CommitRef          string
+	PreviousImportDate time.Time
 }
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
@@ -53,8 +55,8 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 		res.CatalogActions = NewCatalogRepoActions(config.EntryCatalog, graveler.RepositoryID(config.Repository), config.CommitUsername, logger, config.KeyPrefixes)
 	}
 
-	if err := res.CatalogActions.InitBranch(ctx); err != nil {
-		return nil, fmt.Errorf("failed to get previous commit: %w", err)
+	if err := res.CatalogActions.Init(ctx, config.BaseCommit); err != nil {
+		return nil, fmt.Errorf("init catalog actions: %w", err)
 	}
 
 	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, true, config.KeyPrefixes)

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -100,7 +102,7 @@ func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator,
 	return &stats, nil
 }
 
-func (m *mockCatalogActions) InitBranch(_ context.Context) error {
+func (m *mockCatalogActions) Init(_ context.Context, _ graveler.CommitID) error {
 	return nil
 }
 
