@@ -26,24 +26,22 @@ type loginData struct {
 
 var noCacheHeaders = map[string]string{
 	"Expires":         time.Unix(0, 0).Format(time.RFC1123),
-	"Cache-Control":   "no-cache, private, max-age=0",
-	"Pragma":          "no-cache",
+	"Cache-Control":   "no-store",
 	"X-Accel-Expires": "0",
 }
 
 func NoCache(h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range noCacheHeaders {
 			w.Header().Set(k, v)
 		}
 		h.ServeHTTP(w, r)
-	}
-	return http.HandlerFunc(fn)
+	})
 }
 
 func UIHandler(authService auth.Service) http.Handler {
 	mux := http.NewServeMux()
-	staticFiles, _ := fs.NewWithNamespace(statik.Webui)
+
 	mux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -87,6 +85,7 @@ func UIHandler(authService auth.Service) http.Handler {
 			SameSite: http.SameSiteStrictMode,
 		})
 	})
+
 	mux.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -101,6 +100,8 @@ func UIHandler(authService auth.Service) http.Handler {
 			SameSite: http.SameSiteStrictMode,
 		})
 	})
+
+	staticFiles, _ := fs.NewWithNamespace(statik.Webui)
 	mux.Handle("/", NoCache(HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/")))
 	return mux
 }
