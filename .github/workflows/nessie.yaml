@@ -86,13 +86,13 @@ jobs:
           ECR_REPOSITORY_LAKEFS: lakefs
         run: |
           set +e
-          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
+          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }}-cover)"
           if [ $? -eq 0 ]; then
             echo "Image exists"
           else
             echo "Image doesn't exist"
-            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}-cover --build-arg VERSION=${{ steps.version.outputs.tag }}-cover .
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}-cover
           fi
 
   run-system:
@@ -145,7 +145,7 @@ jobs:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: go test -v --coverprofile=nessie-s3-cover.out --cover ./nessie --system-tests
+        run: go test -v --system-tests
       - name: Check files in S3 bucket
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
@@ -157,6 +157,10 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Extract lakeFS coverage from container
+        run: |
+          docker cp lakefs:cov.out ./nessie-s3-cover.out
+        continue-on-error: true
       - name: Export DB
         if: ${{ always() }}
         env:
@@ -208,8 +212,12 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Extract lakeFS coverage from container
+        run: |
+          docker cp lakefs:cov.out ./nessie-gs-cover.out
+        continue-on-error: true
       - name: Publish coverage
         uses: codecov/codecov-action@v1
         with:
-          files: nessie-s3-cover.out,nessie-s3-local-cover.out,nessie-gs-cover.out
+          files: nessie-s3-cover.out,nessie-gs-cover.out
           fail_ci_if_error: false
