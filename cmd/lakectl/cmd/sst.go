@@ -176,7 +176,7 @@ var sstCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	sstCmd.Flags().Int("amount", -1, "how many records to return, or -1 for all records")
-	sstCmd.Flags().String("file", "", "path to an sstable file, or \"-\" for stdin")
+	sstCmd.Flags().StringP("file", "f", "", "path to an sstable file, or \"-\" for stdin")
 	_ = sstCmd.MarkFlagRequired("file")
 
 	rootCmd.AddCommand(sstCmd)

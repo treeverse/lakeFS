@@ -28,6 +28,10 @@ const (
 	RevertBranchAction     = "fs:RevertBranch"
 	ListBranchesAction     = "fs:ListBranches"
 	ExportConfigAction     = "fs:ExportConfig"
+	CreateTagAction        = "fs:CreateTag"
+	DeleteTagAction        = "fs:DeleteTag"
+	ReadTagAction          = "fs:ReadTag"
+	ListTagsAction         = "fs:ListTags"
 
 	RetentionReadPolicyAction  = "retention:GetPolicy"
 	RetentionWritePolicyAction = "retention:WritePolicy"

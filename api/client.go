@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/treeverse/lakefs/api/gen/client/export"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -20,7 +18,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/api/gen/client/retention"
+	"github.com/treeverse/lakefs/api/gen/client/tags"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -68,6 +66,11 @@ type RepositoryClient interface {
 	ResetBranch(ctx context.Context, repository, branchID string, resetProps *models.ResetCreation) error
 	RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error
 
+	ListTags(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
+	GetTag(ctx context.Context, repository, tagID string) (string, error)
+	CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error)
+	DeleteTag(ctx context.Context, repository, tagID string) error
+
 	Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repository, commitID string) (*models.Commit, error)
 	GetCommitLog(ctx context.Context, repository, branchID, after string, amount int) ([]*models.Commit, *models.Pagination, error)
@@ -83,14 +86,7 @@ type RepositoryClient interface {
 
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
-	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
-	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
-
-	SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error
-	GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error)
-	RunExport(ctx context.Context, repository, branchID string) (string, error)
-	RepairExport(ctx context.Context, repository, branchID string) error
 }
 
 type Client interface {
@@ -500,56 +496,6 @@ func (c *client) RevertBranch(ctx context.Context, repository, branchID string, 
 	return err
 }
 
-func (c *client) SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error {
-	_, err := c.remote.Export.SetContinuousExport(&export.SetContinuousExportParams{
-		Branch:     branchID,
-		Config:     config,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	return err
-}
-
-func (c *client) GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error) {
-	resp, err := c.remote.Export.GetContinuousExport(&export.GetContinuousExportParams{
-		Branch:     branchID,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return resp.GetPayload(), err
-}
-
-func (c *client) RunExport(ctx context.Context, repository, branchID string) (string, error) {
-	resp, err := c.remote.Export.Run(&export.RunParams{
-		Branch:     branchID,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	if err != nil {
-		return "", err
-	}
-	return resp.GetPayload(), nil
-}
-
-func (c *client) RepairExport(ctx context.Context, repository, branchID string) error {
-	_, err := c.remote.Export.Repair(&export.RepairParams{
-		Branch:     branchID,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *client) Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error) {
 	commit, err := c.remote.Commits.Commit(&commits.CommitParams{
 		Branch: branchID,
@@ -641,6 +587,55 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string, after st
 	return payload.Results, payload.Pagination, nil
 }
 
+func (c *client) ListTags(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error) {
+	resp, err := c.remote.Tags.ListTags(
+		tags.NewListTagsParamsWithContext(ctx).
+			WithRepository(repository).
+			WithAfter(swag.String(from)).
+			WithAmount(swag.Int64(int64(amount))),
+		c.auth)
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
+}
+
+func (c *client) GetTag(ctx context.Context, repository, tagID string) (string, error) {
+	resp, err := c.remote.Tags.GetTag(
+		tags.NewGetTagParamsWithContext(ctx).
+			WithRepository(repository).
+			WithTag(tagID),
+		c.auth)
+	if err != nil {
+		return "", err
+	}
+	return swag.StringValue(resp.GetPayload().CommitID), nil
+}
+
+func (c *client) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
+	resp, err := c.remote.Tags.CreateTag(
+		tags.NewCreateTagParamsWithContext(ctx).
+			WithRepository(repository).
+			WithTag(&models.TagCreation{
+				ID:  swag.String(tagID),
+				Ref: swag.String(ref),
+			}),
+		c.auth)
+	if err != nil {
+		return "", err
+	}
+	return swag.StringValue(resp.GetPayload().CommitID), nil
+}
+
+func (c *client) DeleteTag(ctx context.Context, repository, tagID string) error {
+	_, err := c.remote.Tags.DeleteTag(
+		tags.NewDeleteTagParamsWithContext(ctx).
+			WithRepository(repository).
+			WithTag(tagID),
+		c.auth)
+	return err
+}
+
 func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (string, error) {
 	resp, err := c.remote.Metadata.CreateSymlink(&metadata.CreateSymlinkParams{
 		Location:   swag.String(path),
@@ -652,26 +647,6 @@ func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (stri
 		return "", err
 	}
 	return resp.GetPayload(), nil
-}
-
-func (c *client) GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error) {
-	policy, err := c.remote.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
-		Repository: repository,
-		Context:    ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return policy.GetPayload(), nil
-}
-
-func (c *client) UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error {
-	_, err := c.remote.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
-		Repository: repository,
-		Policy:     policy,
-		Context:    ctx,
-	}, c.auth)
-	return err
 }
 
 func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*models.ObjectStats, error) {

@@ -68,7 +68,7 @@ func (controller *PutObject) HandleCopy(w http.ResponseWriter, req *http.Request
 	// TODO: move this logic into the Index impl.
 	ent.CreationDate = time.Now()
 	ent.Path = o.Path
-	err = o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent, catalog.CreateEntryParams{})
+	err = o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write copy destination")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -167,7 +167,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 
 	// write metadata
-	err = o.finishUpload(req, o.Repository.StorageNamespace, blob.Checksum, blob.PhysicalAddress, blob.Size)
+	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size)
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

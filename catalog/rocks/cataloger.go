@@ -15,18 +15,20 @@ import (
 )
 
 type cataloger struct {
-	EntryCatalog  *EntryCatalog
-	log           logging.Logger
-	dummyDedupeCh chan *catalog.DedupReport
-	hooks         catalog.CatalogerHooks
+	EntryCatalog *EntryCatalog
+	log          logging.Logger
+	hooks        catalog.CatalogerHooks
 }
 
 const (
 	ListRepositoriesLimitMax = 1000
 	ListBranchesLimitMax     = 1000
+	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
 )
+
+var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
 func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error) {
 	entryCatalog, err := NewEntryCatalog(cfg, db)
@@ -34,10 +36,9 @@ func NewCataloger(db db.Database, cfg *config.Config) (catalog.Cataloger, error)
 		return nil, err
 	}
 	return &cataloger{
-		EntryCatalog:  entryCatalog,
-		log:           logging.Default(),
-		dummyDedupeCh: make(chan *catalog.DedupReport),
-		hooks:         catalog.CatalogerHooks{},
+		EntryCatalog: entryCatalog,
+		log:          logging.Default(),
+		hooks:        catalog.CatalogerHooks{},
 	}, nil
 }
 
@@ -199,7 +200,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}
 	// return results (optional trimmed) and hasMore
 	hasMore := false
-	if len(branches) >= limit {
+	if len(branches) > limit {
 		hasMore = true
 		branches = branches[:limit]
 	}
@@ -235,6 +236,75 @@ func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch s
 	return c.EntryCatalog.Reset(ctx, repositoryID, branchID)
 }
 
+func (c *cataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	tag := graveler.TagID(tagID)
+	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(ref))
+	if err != nil {
+		return "", err
+	}
+	err = c.EntryCatalog.CreateTag(ctx, repositoryID, tag, commitID)
+	if err != nil {
+		return "", err
+	}
+	return commitID.String(), nil
+}
+
+func (c *cataloger) DeleteTag(ctx context.Context, repository string, tagID string) error {
+	repositoryID := graveler.RepositoryID(repository)
+	tag := graveler.TagID(tagID)
+	return c.EntryCatalog.DeleteTag(ctx, repositoryID, tag)
+}
+
+func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*catalog.Tag, bool, error) {
+	if limit < 0 || limit > ListTagsLimitMax {
+		limit = ListTagsLimitMax
+	}
+	repositoryID := graveler.RepositoryID(repository)
+	it, err := c.EntryCatalog.ListTags(ctx, repositoryID)
+	if err != nil {
+		return nil, false, err
+	}
+	afterTagID := graveler.TagID(after)
+	it.SeekGE(afterTagID)
+
+	var tags []*catalog.Tag
+	for it.Next() {
+		v := it.Value()
+		if v.TagID == afterTagID {
+			continue
+		}
+		branch := &catalog.Tag{
+			ID:       string(v.TagID),
+			CommitID: v.CommitID.String(),
+		}
+		tags = append(tags, branch)
+		if len(tags) >= limit+1 {
+			break
+		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, false, err
+	}
+	// return results (optional trimmed) and hasMore
+	hasMore := false
+	if len(tags) > limit {
+		hasMore = true
+		tags = tags[:limit]
+	}
+	return tags, hasMore, nil
+}
+
+func (c *cataloger) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	tag := graveler.TagID(tagID)
+	commit, err := c.EntryCatalog.GetTag(ctx, repositoryID, tag)
+	if err != nil {
+		return "", err
+	}
+	return commit.String(), nil
+}
+
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
 func (c *cataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ catalog.GetEntryParams) (*catalog.Entry, error) {
@@ -259,7 +329,7 @@ func EntryFromCatalogEntry(entry catalog.Entry) *Entry {
 	}
 }
 
-func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry, _ catalog.CreateEntryParams) error {
+func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry catalog.Entry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
@@ -334,40 +404,6 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository string, branch 
 	branchID := graveler.BranchID(branch)
 	prefixPath := Path(prefix)
 	return c.EntryCatalog.ResetPrefix(ctx, repositoryID, branchID, prefixPath)
-}
-
-// QueryEntriesToExpire returns ExpiryRows iterating over all objects to expire on
-// repositoryName according to policy.
-func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName string, policy *catalog.Policy) (catalog.ExpiryRows, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-// MarkEntriesExpired marks all entries identified by expire as expired.  It is a batch operation.
-func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*catalog.ExpireResult) error {
-	panic("not implemented") // TODO: Implement
-}
-
-// MarkObjectsForDeletion marks objects in catalog_object_dedup as "deleting" if all
-// their entries are expired, and returns the new total number of objects marked (or an
-// error).  These objects are not yet safe to delete: there could be a race between
-// marking objects as expired deduping newly-uploaded objects.  See
-// DeleteOrUnmarkObjectsForDeletion for that actual deletion.
-func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName string) (int64, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-// DeleteOrUnmarkObjectsForDeletion scans objects in catalog_object_dedup for objects
-// marked "deleting" and returns an iterator over physical addresses of those objects
-// all of whose referring entries are still expired.  If called after MarkEntriesExpired
-// and MarkObjectsForDeletion this is safe, because no further entries can refer to
-// expired objects.  It also removes the "deleting" mark from those objects that have an
-// entry _not_ marked as expiring and therefore were not on the returned rows.
-func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (catalog.StringIterator, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) DedupReportChannel() chan *catalog.DedupReport {
-	return c.dummyDedupeCh
 }
 
 func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
@@ -486,7 +522,7 @@ func (c *cataloger) Revert(ctx context.Context, repository string, branch string
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(reference)
-	_, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, committer, fmt.Sprintf("Revert %s", reference), nil)
+	_, _, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, committer, fmt.Sprintf("Revert %s", reference), nil)
 	return err
 }
 
@@ -536,7 +572,10 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (catalog.Diff
 		if v.Path == afterPath {
 			continue
 		}
-		diff := newDifferenceFromEntryDiff(v)
+		diff, err := newDifferenceFromEntryDiff(v)
+		if err != nil {
+			return nil, false, fmt.Errorf("[I] %w", err)
+		}
 		diffs = append(diffs, diff)
 		if len(diffs) >= limit+1 {
 			break
@@ -558,7 +597,7 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 	leftRef := graveler.Ref(leftBranch)
 	rightBranchID := graveler.BranchID(rightBranch)
 	meta := graveler.Metadata(metadata)
-	commitID, err := c.EntryCatalog.Merge(ctx, repositoryID, leftRef, rightBranchID, committer, message, meta)
+	commitID, summary, err := c.EntryCatalog.Merge(ctx, repositoryID, leftRef, rightBranchID, committer, message, meta)
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old cataloger
 		return &catalog.MergeResult{
@@ -568,9 +607,16 @@ func (c *cataloger) Merge(ctx context.Context, repository string, leftBranch str
 	if err != nil {
 		return nil, err
 	}
+	count := make(map[catalog.DifferenceType]int)
+	for k, v := range summary.Count {
+		kk, err := catalogDiffType(k)
+		if err != nil {
+			return nil, err
+		}
+		count[kk] = v
+	}
 	return &catalog.MergeResult{
-		// TODO(barak): require implementation by graveler's merge
-		Summary:   map[catalog.DifferenceType]int{},
+		Summary:   count,
 		Reference: commitID.String(),
 	}, nil
 }
@@ -579,29 +625,7 @@ func (c *cataloger) Hooks() *catalog.CatalogerHooks {
 	return &c.hooks
 }
 
-func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (catalog.ExportConfiguration, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) GetExportConfigurations() ([]catalog.ExportConfigurationForBranch, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) PutExportConfiguration(repository string, branch string, conf *catalog.ExportConfiguration) error {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) ExportStateSet(repo string, branch string, cb catalog.ExportStateCallback) error {
-	panic("not implemented") // TODO: Implement
-}
-
-// GetExportState returns the current Export state params
-func (c *cataloger) GetExportState(repo string, branch string) (catalog.ExportState, error) {
-	panic("not implemented") // TODO: Implement
-}
-
 func (c *cataloger) Close() error {
-	close(c.dummyDedupeCh)
 	return nil
 }
 
@@ -621,18 +645,27 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) catalo
 	return catEnt
 }
 
-func newDifferenceFromEntryDiff(v *EntryDiff) catalog.Difference {
-	var diff catalog.Difference
-	switch v.Type {
+func catalogDiffType(typ graveler.DiffType) (catalog.DifferenceType, error) {
+	switch typ {
 	case graveler.DiffTypeAdded:
-		diff.Type = catalog.DifferenceTypeAdded
+		return catalog.DifferenceTypeAdded, nil
 	case graveler.DiffTypeRemoved:
-		diff.Type = catalog.DifferenceTypeRemoved
+		return catalog.DifferenceTypeRemoved, nil
 	case graveler.DiffTypeChanged:
-		diff.Type = catalog.DifferenceTypeChanged
+		return catalog.DifferenceTypeChanged, nil
 	case graveler.DiffTypeConflict:
-		diff.Type = catalog.DifferenceTypeConflict
+		return catalog.DifferenceTypeConflict, nil
+	default:
+		return catalog.DifferenceTypeNone, fmt.Errorf("%d: %w", typ, ErrUnknownDiffType)
 	}
+}
+
+func newDifferenceFromEntryDiff(v *EntryDiff) (catalog.Difference, error) {
+	var (
+		diff catalog.Difference
+		err  error
+	)
 	diff.Entry = newCatalogEntryFromEntry(false, v.Path.String(), v.Entry)
-	return diff
+	diff.Type, err = catalogDiffType(v.Type)
+	return diff, err
 }

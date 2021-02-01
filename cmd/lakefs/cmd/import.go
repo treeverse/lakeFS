@@ -66,7 +66,6 @@ var importCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		isRocks := cfg.GetCatalogerType() == "rocks"
 		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
 		if err != nil {
 			fmt.Printf("Failed to create cataloger: %s\n", err)
@@ -91,7 +90,7 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		repo, err := getRepository(ctx, cataloger, repoName, dryRun, isRocks)
+		repo, err := getRepository(ctx, cataloger, repoName, dryRun)
 		if err != nil {
 			fmt.Println("Error", err)
 			if errors.Is(err, catalog.ErrBranchNotFound) {
@@ -127,13 +126,10 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
 		}
 
-		var entryCataloger *rocks.EntryCatalog
-		if isRocks {
-			entryCataloger, err = rocks.NewEntryCatalog(cfg, dbPool)
-			if err != nil {
-				fmt.Printf("Failed to build entry catalog: %s\n", err)
-				os.Exit(1)
-			}
+		entryCataloger, err := rocks.NewEntryCatalog(cfg, dbPool)
+		if err != nil {
+			fmt.Printf("Failed to build entry catalog: %s\n", err)
+			os.Exit(1)
 		}
 
 		importConfig := &onboard.Config{
@@ -143,7 +139,6 @@ var importCmd = &cobra.Command{
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 			KeyPrefixes:        prefixes,
-			Rocks:              isRocks,
 			EntryCatalog:       entryCataloger,
 		}
 
@@ -170,7 +165,6 @@ var importCmd = &cobra.Command{
 		}
 		fmt.Println()
 		fmt.Println(text.FgYellow.Sprint("Added or changed objects:"), stats.AddedOrChanged)
-		fmt.Println(text.FgYellow.Sprint("Deleted objects:"), stats.Deleted)
 		if stats.PreviousInventoryURL != "" {
 			fmt.Println(text.FgYellow.Sprint("Previously imported inventory:"), stats.PreviousInventoryURL)
 			fmt.Println(text.FgYellow.Sprint("Previous import date:"), stats.PreviousImportDate)
@@ -202,7 +196,7 @@ var importCmd = &cobra.Command{
 	},
 }
 
-func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string, dryRun, isRocks bool) (*catalog.Repository, error) {
+func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string, dryRun bool) (*catalog.Repository, error) {
 	if dryRun {
 		return &catalog.Repository{
 			Name:          repoName,
@@ -213,19 +207,8 @@ func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName st
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
 	}
-	if isRocks {
-		// import branch is created on the fly for Rocks implementation.
-		return repo, nil
-	}
 
-	// check we have import branch on this repo
-	importBranchExists, err := cataloger.BranchExists(ctx, repoName, catalog.DefaultImportBranchName)
-	if err != nil {
-		return nil, fmt.Errorf("read branch (%s) information from repository %s: %w", catalog.DefaultImportBranchName, repoName, err)
-	}
-	if !importBranchExists {
-		return nil, fmt.Errorf("import %w in repository: %s", catalog.ErrBranchNotFound, repoName)
-	}
+	// import branch is created on the fly
 	return repo, nil
 }
 

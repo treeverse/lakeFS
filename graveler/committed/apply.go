@@ -14,6 +14,18 @@ type ApplyOptions struct {
 	AllowEmpty bool
 }
 
+func addIntoDiffSummary(d *graveler.DiffSummary, typ graveler.DiffType, n int) {
+	if d.Count != nil {
+		d.Count[typ] += n
+	}
+}
+
+func incrementDiffSummary(d *graveler.DiffSummary, typ graveler.DiffType) {
+	addIntoDiffSummary(d, typ, 1)
+}
+
+// ReferenceType represents the type of the reference
+
 // applyFromSource applies all changes from source to writer.
 func applyFromSource(logger logging.Logger, writer MetaRangeWriter, source Iterator) error {
 	for {
@@ -50,12 +62,11 @@ func applyFromSource(logger logging.Logger, writer MetaRangeWriter, source Itera
 	return source.Err()
 }
 
-// applyFromDiffs applies all changes from diffs to writer and returns true if it made any
-// changes.
-func applyFromDiffs(logger logging.Logger, writer MetaRangeWriter, diffs graveler.ValueIterator) (bool, error) {
-	changed := false
+// applyFromDiffs applies all changes from diffs to writer and returns the number elements it
+// added.
+func applyFromDiffs(logger logging.Logger, writer MetaRangeWriter, diffs graveler.ValueIterator) (int, error) {
+	numAdded := 0
 	for {
-		changed = true
 		diffValue, haveDiffs := diffs.Value(), diffs.Next()
 		if diffValue.IsTombstone() {
 			// internal error but no data lost: deletion requested of a
@@ -71,17 +82,19 @@ func applyFromDiffs(logger logging.Logger, writer MetaRangeWriter, diffs gravele
 			}).Trace("write key from diffs at end")
 		}
 		if err := writer.WriteRecord(*diffValue); err != nil {
-			return false, fmt.Errorf("write added record: %w", err)
+			return 0, fmt.Errorf("write added record: %w", err)
 		}
+		numAdded++
 		if !haveDiffs {
 			break
 		}
 	}
-	return changed, nil
+	return numAdded, nil
 }
 
-func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator, opts *ApplyOptions) error {
+func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs graveler.ValueIterator, opts *ApplyOptions) (graveler.DiffSummary, error) {
 	logger := logging.FromContext(ctx)
+	ret := graveler.DiffSummary{Count: make(map[graveler.DiffType]int)}
 	haveSource, haveDiffs := source.Next(), diffs.Next()
 	changed := false
 	for haveSource && haveDiffs {
@@ -100,7 +113,7 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 				}
 
 				if err := writer.WriteRange(*sourceRange); err != nil {
-					return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
+					return ret, fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 				}
 				haveSource = source.NextRange()
 			} else {
@@ -119,12 +132,13 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 				}).Trace("write key from source")
 			}
 			if err := writer.WriteRecord(*sourceValue); err != nil {
-				return fmt.Errorf("write source record: %w", err)
+				return ret, fmt.Errorf("write source record: %w", err)
 			}
 		} else {
 			// select record from diffs, possibly (c==0) overwriting source
 			changed = true
-			if !diffValue.IsTombstone() {
+			switch {
+			case !diffValue.IsTombstone():
 				if logger.IsTracing() {
 					logger.WithFields(logging.Fields{
 						"key":       string(diffValue.Key),
@@ -133,12 +147,20 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 					}).Trace("write key from diffs")
 				}
 				if err := writer.WriteRecord(*diffValue); err != nil {
-					return fmt.Errorf("write added record: %w", err)
+					return ret, fmt.Errorf("write added record: %w", err)
 				}
-			} else if c > 0 {
+				diffType := graveler.DiffTypeAdded
+				if c == 0 {
+					diffType = graveler.DiffTypeChanged
+				}
+				incrementDiffSummary(&ret, diffType)
+			case c > 0:
 				// internal error but no data lost: deletion requested of a
 				// file that was not there.
 				logger.WithField("id", string(diffValue.Identity)).Warn("[I] unmatched delete")
+			default:
+				// Delete: simply don't copy to output.
+				incrementDiffSummary(&ret, graveler.DiffTypeRemoved)
 			}
 		}
 		if c >= 0 {
@@ -151,27 +173,28 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 		}
 	}
 	if err := source.Err(); err != nil {
-		return err
+		return ret, err
 	}
 	if err := diffs.Err(); err != nil {
-		return err
+		return ret, err
 	}
 	if haveSource {
 		if err := applyFromSource(logger, writer, source); err != nil {
-			return err
+			return ret, err
 		}
 	}
 
 	if haveDiffs {
-		diffsChanged, err := applyFromDiffs(logger, writer, diffs)
+		numAdded, err := applyFromDiffs(logger, writer, diffs)
 		if err != nil {
-			return err
+			return ret, err
 		}
-		changed = changed || diffsChanged
+		changed = changed || (numAdded > 0)
+		addIntoDiffSummary(&ret, graveler.DiffTypeAdded, numAdded)
 	}
 
 	if !opts.AllowEmpty && !changed {
-		return graveler.ErrNoChanges
+		return ret, graveler.ErrNoChanges
 	}
-	return diffs.Err()
+	return ret, diffs.Err()
 }

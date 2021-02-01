@@ -127,6 +127,17 @@ definitions:
         x-nullable: true
         type: string
 
+  ref:
+    type: object
+    required:
+      - id
+      - commit_id
+    properties:
+      id:
+        type: string
+      commit_id:
+        type: string
+
   diff:
     type: object
     properties:
@@ -138,8 +149,11 @@ definitions:
       path_type:
         type: string
         enum: [ common_prefix, object ]
-
-  revert_creation:
+  diff_type: &DIFF_TYPE
+    type: string
+    enum: [two_dot, three_dot]
+    default: three_dot
+  reset_creation:
     type: object
     required:
       - type
@@ -168,6 +182,8 @@ definitions:
       creation_date:
         type: integer
         format: int64
+      meta_range_id:
+        type: string
       metadata:
         type: object
         additionalProperties:
@@ -204,6 +220,17 @@ definitions:
       name:
         type: string
       source:
+        type: string
+
+  tag_creation:
+    type: object
+    required:
+      - id
+      - ref
+    properties:
+      id:
+        type: string
+      ref:
         type: string
 
   error:
@@ -361,68 +388,6 @@ definitions:
       isContinuous:
         type: boolean
         description: if true, export every commit or merge to branch
-
-  retention_policy:
-    type: object
-    required:
-      - rules
-    properties:
-      rules:
-        type: array
-        items:
-          $ref: "#/definitions/retention_policy_rule"
-      description:
-        type: string
-
-  retention_policy_with_creation_date:
-    allOf:
-      - $ref: "#/definitions/retention_policy"
-      - type: object
-        properties:
-          creation_date:
-            type: string
-            format: date-time
-        required:
-          - creation_date
-
-  retention_policy_rule:
-    type: object
-    required:
-      - status
-      - filter
-    properties:
-      status:
-        type: string
-        enum: [ enabled, disabled ]
-      filter:
-        type: object
-        properties:
-          prefix:
-            type: string
-      expiration:
-        type: object
-        minProperties: 1
-        properties:
-          all:
-            $ref: "#/definitions/time_period"
-          uncommitted:
-            $ref: "#/definitions/time_period"
-          noncurrent:
-            $ref: "#/definitions/time_period"
-
-  time_period:
-    type: object
-    description: |
-      a number of days, which can be broken up into a sum of weeks
-      and days
-    properties:
-      weeks:
-        type: integer
-        format: int32
-      days:
-        type: integer
-        format: int32
-    minProperties: 1
 
   config:
     type: object
@@ -1312,6 +1277,121 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/tags:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    get:
+      tags:
+        - tags
+      operationId: listTags
+      summary: list tags
+      parameters:
+        - in: query
+          name: after
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: tag list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - tags
+      operationId: createTag
+      summary: create tag
+      parameters:
+        - in: body
+          name: tag
+          schema:
+            $ref: "#/definitions/tag_creation"
+      responses:
+        201:
+          description: tag
+          schema:
+            type: object
+            $ref: "#/definitions/ref"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/tags/{tag}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: tag
+        required: true
+        type: string
+    get:
+      tags:
+        - tags
+      operationId: getTag
+      summary: get tag
+      responses:
+        200:
+          description: tag
+          schema:
+            type: object
+            $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: tag not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - tags
+      operationId: deleteTag
+      summary: delete tag
+      responses:
+        204:
+          description: tag deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repository}/branches:
     parameters:
       - in: path
@@ -1343,7 +1423,7 @@ paths:
               results:
                 type: array
                 items:
-                  type: string
+                  $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -1468,7 +1548,8 @@ paths:
         200:
           description: branch
           schema:
-            type: string
+            type: object
+            $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         404:
@@ -1500,17 +1581,55 @@ paths:
     put:
       tags:
         - branches
-      operationId: revertBranch
-      summary: revert branch
+      operationId: resetBranch
+      summary: reset branch
+      parameters:
+        - in: body
+          name: reset
+          description: "reset parameters"
+          schema:
+            $ref: "#/definitions/reset_creation"
+      responses:
+        204:
+          description: reset successful
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: resource not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/revert:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - branches
+      operationId: revert
+      summary: revert
       parameters:
         - in: body
           name: revert
-          description: "revert parameters"
           schema:
-            $ref: "#/definitions/revert_creation"
+            type: object
+            properties:
+              ref:
+                type: string
+                description: the commit to revert, given by a ref
       responses:
         204:
-          description: reverted
+          description: revert successful
         401:
           $ref: "#/responses/Unauthorized"
         404:
@@ -1642,6 +1761,10 @@ paths:
         name: amount
         type: integer
         default: 100
+      - in: query
+        name: type
+        type: string
+        <<: *DIFF_TYPE
     get:
       tags:
         - refs
@@ -2102,49 +2225,6 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/retention:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-    put:
-      tags:
-        - retention
-      operationId: updateRetentionPolicy
-      description: set retention policy for repository
-      parameters:
-        - in: body
-          name: policy
-          required: true
-          schema:
-            $ref: "#/definitions/retention_policy"
-      responses:
-        201:
-          description: policy attached successfully
-        401:
-          $ref: "#/responses/Unauthorized"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-    get:
-      operationId: getRetentionPolicy
-      tags:
-        - retention
-      description: get retention policy for repository
-      responses:
-        200:
-          description: retention policy
-          schema:
-            $ref: "#/definitions/retention_policy_with_creation_date"
-        401:
-          $ref: "#/responses/Unauthorized"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
   /healthcheck:
     get:
       operationId: healthCheck
@@ -2169,4 +2249,3 @@ paths:
             $ref: "#/definitions/config"
         401:
           $ref: "#/responses/Unauthorized"
-

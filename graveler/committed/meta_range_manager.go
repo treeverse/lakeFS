@@ -20,6 +20,8 @@ type Params struct {
 	// the expected number of records after MinRangeSizeBytes at which to split the range
 	// -- ranges are split at the first key with hash divisible by this raggedness.
 	RangeSizeEntriesRaggedness float64
+	// MaxUploaders is the maximal number of uploaders to use in a single metarange writer.
+	MaxUploaders int
 }
 
 type metaRangeManager struct {
@@ -28,12 +30,17 @@ type metaRangeManager struct {
 	rangeManager RangeManager // For ranges
 }
 
-func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager) MetaRangeManager {
+var ErrNeedBatchClosers = errors.New("need at least 1 batch uploaded")
+
+func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager) (MetaRangeManager, error) {
+	if params.MaxUploaders < 1 {
+		return nil, fmt.Errorf("only %d async closers: %w", params.MaxUploaders, ErrNeedBatchClosers)
+	}
 	return &metaRangeManager{
 		params:       params,
 		metaManager:  metaManager,
 		rangeManager: rangeManager,
-	}
+	}, nil
 }
 
 func (m *metaRangeManager) Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {

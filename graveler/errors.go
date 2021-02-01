@@ -32,11 +32,13 @@ var (
 	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
 	ErrNoChanges               = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound           = errors.New("conflict found")
+	ErrCommitNotHeadBranch     = errors.New("commit is not head of branch")
 	ErrBranchExists            = errors.New("branch already exists")
 	ErrTagAlreadyExists        = errors.New("tag already exists")
 	ErrDirtyBranch             = errors.New("can't apply meta-range on dirty branch")
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 	ErrLockNotAcquired         = errors.New("lock not acquired")
+	ErrAlreadyLocked           = wrapError(ErrLockNotAcquired, "already locked")
 	ErrRevertMergeCommit       = errors.New("revert merge commit unsupported")
 )
 

@@ -30,8 +30,12 @@ var diagnosticsCmd = &cobra.Command{
 		if err != nil {
 			log.Printf("Failed to create cataloger: %s", err)
 		}
+		pyrmaidParams, err := cfg.GetCommittedTierFSParams()
+		if err != nil {
+			log.Printf("Failed to get pyramid params: %s", err)
+		}
 
-		c := diagnostics.CreateCollector(dbPool, cataloger, cfg, adapter)
+		c := diagnostics.NewCollector(dbPool, cataloger, pyrmaidParams, adapter)
 
 		f, err := os.Create(output)
 		if err != nil {
