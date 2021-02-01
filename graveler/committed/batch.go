@@ -43,15 +43,16 @@ var (
 // If Wait() has already been called, returns an error.
 func (bc *BatchCloser) CloseWriterAsync(w ResultCloser) error {
 	bc.mu.Lock()
-	defer bc.mu.Unlock()
 
 	if bc.err != nil {
 		// Don't accept new writers if previous error occurred.
 		// In particular, if Wait has started then this is errMultipleWaitCalls.
+		bc.mu.Unlock()
 		return bc.err
 	}
 
 	bc.wg.Add(1)
+	bc.mu.Unlock()
 	bc.ch <- w
 
 	return nil
