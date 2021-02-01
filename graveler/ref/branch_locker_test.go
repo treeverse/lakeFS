@@ -116,6 +116,7 @@ func TestBranchLock(t *testing.T) {
 		// start two committers and wait until one of them will fail to know that the first one is blocked
 		var metadataUpdates int64
 		chDoneCommitter := make([]chan struct{}, 2)
+		chReleaseCommitter := make(chan struct{})
 		committersErr := make([]error, 2)
 		for i := 0; i < len(chDoneCommitter); i++ {
 			chDoneCommitter[i] = make(chan struct{})
@@ -123,6 +124,7 @@ func TestBranchLock(t *testing.T) {
 				ctx := context.Background()
 				_, committersErr[pos] = bl.MetadataUpdater(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
 					atomic.AddInt64(&metadataUpdates, 1)
+					<-chReleaseCommitter
 					return nil, nil
 				})
 				close(chDoneCommitter[pos])
@@ -159,6 +161,9 @@ func TestBranchLock(t *testing.T) {
 		// release the last writer and wait for it
 		close(chReleaseWriter)
 		<-chDoneWriter
+
+		// release that running committer
+		close(chReleaseCommitter)
 
 		// wait for the second committer
 		secondCommitterPos := (failedCommitterPos + 1) % 2
