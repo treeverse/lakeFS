@@ -1,4 +1,3 @@
-
 import {
     AUTH_LOGIN,
     AUTH_LOGOUT,
@@ -29,17 +28,8 @@ import {
 
 import * as async from "./async";
 
-
-
-const hydrateUser = () => {
-    if (window.localStorage['user'] !== undefined) {
-        return JSON.parse(window.localStorage['user']);
-    }
-    return null;
-};
-
 const initialState = {
-    user: hydrateUser(),
+    user: null,
     loginError: null,
     redirectTo: null,
     usersList: async.initialState,
@@ -107,8 +97,6 @@ const store = (state = initialState, action) => {
                 loginError: action.error,
             };
         case AUTH_LOGIN.success:
-            // also save to localstorage
-            window.localStorage['user'] = JSON.stringify({...action.payload.user, accessKeyId: action.payload.accessKeyId}, null, "");
             return {
                 ...state,
                 user: {...action.payload.user, accessKeyId: action.payload.accessKeyId},
@@ -116,7 +104,6 @@ const store = (state = initialState, action) => {
                 loginError: null,
             };
         case AUTH_LOGOUT.success:
-            window.localStorage.removeItem('user');
             return {
                 ...initialState,
                 user: null,
