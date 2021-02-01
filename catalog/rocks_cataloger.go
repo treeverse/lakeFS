@@ -521,7 +521,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	return commits, hasMore, nil
 }
 
-func (c *cataloger) Revert(ctx context.Context, repository string, branch string, params catalog.RevertParams) error {
+func (c *cataloger) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(params.Reference)
