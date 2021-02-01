@@ -354,7 +354,7 @@ func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.Reposit
 	return e.Store.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
 }
 
-func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, theirs graveler.BranchID, ours graveler.Ref, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
+func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, theirs graveler.BranchID, ours graveler.Ref, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
 	if commitParams.Message == "" {
 		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", ours, theirs)
 	}
