@@ -31,7 +31,7 @@ type FromTo struct {
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
-	Use:   "merge <destination ref> <source ref>",
+	Use:   "merge <source ref> <destination ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: cmdutils.ValidationChain(
@@ -41,8 +41,8 @@ var mergeCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		destinationRef := uri.Must(uri.Parse(args[0]))
-		sourceRef := uri.Must(uri.Parse(args[1]))
+		sourceRef := uri.Must(uri.Parse(args[0]))
+		destinationRef := uri.Must(uri.Parse(args[1]))
 
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
