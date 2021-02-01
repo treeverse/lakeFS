@@ -17,6 +17,12 @@ type DiffParams struct {
 	AdditionalFields []string // db fields names that will be load in additional to Path on Difference's Entry
 }
 
+type RevertParams struct {
+	Reference    string // the commit to revert
+	ParentNumber int    // if reverting a merge commit, the change will be reversed relative to this parent number (1-based).
+	Committer    string
+}
+
 type ExpireResult struct {
 	Repository        string
 	Branch            string
@@ -83,8 +89,8 @@ type Cataloger interface {
 
 	// RollbackCommit sets the branch to point at the given commit, losing all later commits.
 	RollbackCommit(ctx context.Context, repository, branch string, reference string) error
-	// Revert creates a reverse patch to the commit given as 'reference', and applies it as a new commit on the given branch.
-	Revert(ctx context.Context, repository, branch string, reference string, committer string) error
+	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
+	Revert(ctx context.Context, repository, branch string, params RevertParams) error
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)

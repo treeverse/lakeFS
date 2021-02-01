@@ -409,7 +409,11 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository string, branch 
 func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	commitID, err := c.EntryCatalog.Commit(ctx, repositoryID, branchID, committer, message, map[string]string(metadata))
+	commitID, err := c.EntryCatalog.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
+		Committer: committer,
+		Message:   message,
+		Metadata:  map[string]string(metadata),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -518,11 +522,14 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	return commits, hasMore, nil
 }
 
-func (c *cataloger) Revert(ctx context.Context, repository string, branch string, reference string, committer string) error {
+func (c *cataloger) Revert(ctx context.Context, repository string, branch string, params catalog.RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	ref := graveler.Ref(reference)
-	_, _, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, committer, fmt.Sprintf("Revert %s", reference), nil)
+	ref := graveler.Ref(params.Reference)
+	_, _, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, params.ParentNumber, graveler.CommitParams{
+		Committer: params.Committer,
+		Message:   fmt.Sprintf("Revert %s", params.Reference),
+	})
 	return err
 }
 
@@ -597,7 +604,11 @@ func (c *cataloger) Merge(ctx context.Context, repository string, theirs string,
 	theirsBranch := graveler.BranchID(theirs)
 	oursRef := graveler.Ref(ours)
 	meta := graveler.Metadata(metadata)
-	commitID, summary, err := c.EntryCatalog.Merge(ctx, repositoryID, theirsBranch, oursRef, committer, message, meta)
+	commitID, summary, err := c.EntryCatalog.Merge(ctx, repositoryID, theirsBranch, oursRef, graveler.CommitParams{
+		Committer: committer,
+		Message:   message,
+		Metadata:  meta,
+	})
 	if errors.Is(err, graveler.ErrConflictFound) {
 		// for compatibility with old cataloger
 		return &catalog.MergeResult{

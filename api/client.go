@@ -64,7 +64,7 @@ type RepositoryClient interface {
 	CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (string, error)
 	DeleteBranch(ctx context.Context, repository, branchID string) error
 	ResetBranch(ctx context.Context, repository, branchID string, resetProps *models.ResetCreation) error
-	RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error
+	RevertBranch(ctx context.Context, repository, branchID string, commitRef string, parentNumber int) error
 
 	ListTags(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
 	GetTag(ctx context.Context, repository, tagID string) (string, error)
@@ -487,12 +487,12 @@ func (c *client) ResetBranch(ctx context.Context, repository, branchID string, r
 	return err
 }
 
-func (c *client) RevertBranch(ctx context.Context, repository, branchID string, commitRef string) error {
+func (c *client) RevertBranch(ctx context.Context, repository, branchID string, commitRef string, parentNumber int) error {
 	_, err := c.remote.Branches.Revert(branches.NewRevertParams().
 		WithBranch(branchID).
 		WithRepository(repository).
 		WithContext(ctx).
-		WithRevert(branches.RevertBody{Ref: commitRef}), c.auth)
+		WithRevert(branches.RevertBody{Ref: commitRef, ParentNumber: int64(parentNumber)}), c.auth)
 	return err
 }
 
