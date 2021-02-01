@@ -624,27 +624,6 @@ func (c *cataloger) Hooks() *CatalogerHooks {
 	return &c.hooks
 }
 
-func (c *cataloger) GetExportConfigurationForBranch(repository string, branch string) (ExportConfiguration, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) GetExportConfigurations() ([]ExportConfigurationForBranch, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) PutExportConfiguration(repository string, branch string, conf *ExportConfiguration) error {
-	panic("not implemented") // TODO: Implement
-}
-
-func (c *cataloger) ExportStateSet(repo string, branch string, cb ExportStateCallback) error {
-	panic("not implemented") // TODO: Implement
-}
-
-// GetExportState returns the current Export state params
-func (c *cataloger) GetExportState(repo string, branch string) (ExportState, error) {
-	panic("not implemented") // TODO: Implement
-}
-
 func (c *cataloger) Close() error {
 	return nil
 }

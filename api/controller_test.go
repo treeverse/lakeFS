@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"math"
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -11,18 +13,17 @@ import (
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/config"
-	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/client/setup"
+	"github.com/treeverse/lakefs/api/gen/client/tags"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -541,6 +542,101 @@ func TestController_ListBranchesHandler(t *testing.T) {
 			bauth)
 		if err == nil {
 			t.Fatal("expected error calling list branches on repo that doesnt exist")
+		}
+	})
+}
+
+func TestController_ListTagsHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
+
+	// create user
+	creds := createDefaultAdminUser(t, clt)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	// setup test data
+	ctx := context.Background()
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "local://foo1", "master")
+	testutil.Must(t, err)
+	testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{Path: "obj1"}))
+	commitLog, err := deps.cataloger.Commit(ctx, "repo1", "master", "first commit", "test", nil)
+	testutil.Must(t, err)
+	const createTagLen = 7
+	var createdTags []*models.Ref
+	for i := 0; i < createTagLen; i++ {
+		tagID := swag.String("tag" + strconv.Itoa(i))
+		commitID := swag.String(commitLog.Reference)
+		_, err := clt.Tags.CreateTag(
+			tags.NewCreateTagParamsWithTimeout(timeout).
+				WithRepository("repo1").
+				WithTag(&models.TagCreation{
+					ID:  tagID,
+					Ref: commitID,
+				}),
+			bauth)
+		testutil.Must(t, err)
+		createdTags = append(createdTags, &models.Ref{
+			ID:       tagID,
+			CommitID: commitID,
+		})
+	}
+
+	t.Run("default", func(t *testing.T) {
+		resp, err := clt.Tags.ListTags(
+			tags.NewListTagsParamsWithTimeout(timeout).
+				WithRepository("repo1").
+				WithAmount(swag.Int64(-1)),
+			bauth)
+		testutil.MustDo(t, "list tags", err)
+		payload := resp.GetPayload()
+		tagsLen := len(payload.Results)
+		if tagsLen != createTagLen {
+			t.Fatalf("ListTags len=%d, expected %d", tagsLen, createTagLen)
+		}
+		if diff := deep.Equal(payload.Results, createdTags); diff != nil {
+			t.Fatal("ListTags results diff:", diff)
+		}
+	})
+
+	t.Run("pagination", func(t *testing.T) {
+		const pageSize = 2
+		var results []*models.Ref
+		var after string
+		var calls int
+		for {
+			calls++
+			resp, err := clt.Tags.ListTags(
+				tags.NewListTagsParamsWithTimeout(timeout).
+					WithRepository("repo1").
+					WithAmount(swag.Int64(pageSize)).
+					WithAfter(swag.String(after)),
+				bauth)
+			testutil.Must(t, err)
+			payload := resp.GetPayload()
+			results = append(results, payload.Results...)
+			if !swag.BoolValue(payload.Pagination.HasMore) {
+				break
+			}
+			after = payload.Pagination.NextOffset
+		}
+		expectedCalls := int(math.Ceil(float64(createTagLen) / pageSize))
+		if calls != expectedCalls {
+			t.Fatalf("ListTags pagination calls=%d, expected=%d", calls, expectedCalls)
+		}
+		if diff := deep.Equal(results, createdTags); diff != nil {
+			t.Fatal("ListTags results diff:", diff)
+		}
+	})
+
+	t.Run("no repository", func(t *testing.T) {
+		_, err := clt.Tags.ListTags(
+			tags.NewListTagsParamsWithTimeout(timeout).
+				WithRepository("repoX"),
+			bauth)
+		var listTagsDefault *tags.ListTagsDefault
+		if !errors.As(err, &listTagsDefault) {
+			t.Fatal("expected error calling list tags on when repo doesnt exist")
+		} else if listTagsDefault.Code() != http.StatusInternalServerError {
+			t.Fatalf("expected error status code %d, expected %d", listTagsDefault.Code(), http.StatusInternalServerError)
 		}
 	})
 }
@@ -1232,97 +1328,6 @@ func TestController_ConfigHandlers(t *testing.T) {
 
 		if got.BlockstoreType != BlockstoreType {
 			t.Errorf("expected to get %s, got %s", BlockstoreType, got.BlockstoreType)
-		}
-	})
-}
-
-func TestController_ContinuousExportHandlers(t *testing.T) {
-	t.SkipNow() // TODO(ozkatz): this test fails because continuous exports are broken on rocks
-	const (
-		repo          = "repo-for-continuous-export-test"
-		branch        = "main"
-		anotherBranch = "notMain"
-	)
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	ctx := context.Background()
-	_, err := deps.cataloger.CreateRepository(ctx, repo, "s3://foo1", branch)
-	testutil.MustDo(t, "create repository", err)
-
-	config := models.ContinuousExportConfiguration{
-		ExportPath:             strfmt.URI("s3://bucket/export"),
-		ExportStatusPath:       strfmt.URI("s3://bucket/report"),
-		LastKeysInPrefixRegexp: []string{"^_success$", ".*/_success$"},
-	}
-
-	res, err := clt.Export.SetContinuousExport(
-		export.NewSetContinuousExportParamsWithTimeout(timeout).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithConfig(&config),
-		bauth)
-	testutil.MustDo(t, "initial continuous export configuration", err)
-	if res == nil {
-		t.Fatalf("initial continuous export configuration: expected OK but got nil")
-	}
-
-	t.Run("get missing branch configuration", func(t *testing.T) {
-		res, err := clt.Export.GetContinuousExport(
-			export.NewGetContinuousExportParamsWithTimeout(timeout).
-				WithRepository(repo).
-				WithBranch(anotherBranch),
-			bauth)
-		if err == nil || res != nil {
-			t.Fatalf("expected get to return an error but got result %v, error nil", res)
-		}
-		if _, ok := err.(*export.GetContinuousExportNotFound); !ok {
-			t.Errorf("expected get to return not found but got %T %+v", err, err)
-		}
-	})
-
-	t.Run("get configured branch", func(t *testing.T) {
-		got, err := clt.Export.GetContinuousExport(
-			export.NewGetContinuousExportParamsWithTimeout(timeout).
-				WithRepository(repo).
-				WithBranch(branch),
-			bauth)
-		if err != nil {
-			t.Fatalf("expected get to return result but got %s", err)
-		}
-		if diffs := deep.Equal(config, *got.GetPayload()); diffs != nil {
-			t.Errorf("got different configuration: %s", diffs)
-		}
-	})
-
-	t.Run("overwrite configuration", func(t *testing.T) {
-		newConfig := models.ContinuousExportConfiguration{
-			ExportPath:             strfmt.URI("s3://better-bucket/export"),
-			ExportStatusPath:       strfmt.URI("s3://better-bucket/report"),
-			LastKeysInPrefixRegexp: nil,
-		}
-		_, err := clt.Export.SetContinuousExport(
-			export.NewSetContinuousExportParamsWithTimeout(timeout).
-				WithRepository(repo).
-				WithBranch(branch).
-				WithConfig(&newConfig),
-			bauth)
-		if err != nil {
-			t.Errorf("failed to overwrite continuous export configuration: %s", err)
-		}
-		got, err := clt.Export.GetContinuousExport(
-			export.NewGetContinuousExportParamsWithTimeout(timeout).
-				WithRepository(repo).
-				WithBranch(branch),
-			bauth)
-		if err != nil {
-			t.Fatalf("expected get to return result but got %s", err)
-		}
-		if diffs := deep.Equal(newConfig, *got.GetPayload()); diffs != nil {
-			t.Errorf("got different configuration: %s", diffs)
 		}
 	})
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
-	"github.com/treeverse/lakefs/api/gen/client/export"
 	"github.com/treeverse/lakefs/api/gen/client/metadata"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
@@ -88,11 +87,6 @@ type RepositoryClient interface {
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
-
-	SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error
-	GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error)
-	RunExport(ctx context.Context, repository, branchID string) (string, error)
-	RepairExport(ctx context.Context, repository, branchID string) error
 }
 
 type Client interface {
@@ -500,56 +494,6 @@ func (c *client) RevertBranch(ctx context.Context, repository, branchID string, 
 		WithContext(ctx).
 		WithRevert(branches.RevertBody{Ref: commitRef}), c.auth)
 	return err
-}
-
-func (c *client) SetContinuousExport(ctx context.Context, repository, branchID string, config *models.ContinuousExportConfiguration) error {
-	_, err := c.remote.Export.SetContinuousExport(&export.SetContinuousExportParams{
-		Branch:     branchID,
-		Config:     config,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	return err
-}
-
-func (c *client) GetContinuousExport(ctx context.Context, repository, branchID string) (*models.ContinuousExportConfiguration, error) {
-	resp, err := c.remote.Export.GetContinuousExport(&export.GetContinuousExportParams{
-		Branch:     branchID,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return resp.GetPayload(), err
-}
-
-func (c *client) RunExport(ctx context.Context, repository, branchID string) (string, error) {
-	resp, err := c.remote.Export.Run(&export.RunParams{
-		Branch:     branchID,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	if err != nil {
-		return "", err
-	}
-	return resp.GetPayload(), nil
-}
-
-func (c *client) RepairExport(ctx context.Context, repository, branchID string) error {
-	_, err := c.remote.Export.Repair(&export.RepairParams{
-		Branch:     branchID,
-		Repository: repository,
-		Context:    ctx,
-		HTTPClient: nil,
-	}, c.auth)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *client) Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error) {

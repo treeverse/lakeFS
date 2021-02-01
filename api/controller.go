@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
-	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
@@ -21,7 +20,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	configop "github.com/treeverse/lakefs/api/gen/restapi/operations/config"
-	exportop "github.com/treeverse/lakefs/api/gen/restapi/operations/export"
 	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
 	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -34,7 +32,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -167,10 +164,6 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
 
-	api.ExportGetContinuousExportHandler = c.ExportGetContinuousExportHandler()
-	api.ExportSetContinuousExportHandler = c.ExportSetContinuousExportHandler()
-	api.ExportRunHandler = c.ExportRunHandler()
-	api.ExportRepairHandler = c.ExportRepairHandler()
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
@@ -1135,6 +1128,24 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		// done
 		res.Payload = reader
 		return res
+	})
+}
+func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
+	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadConfigAction,
+				Resource: permissions.All,
+			},
+		})
+
+		if err != nil {
+			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		return configop.NewGetConfigOK().WithPayload(&models.Config{
+			BlockstoreType: deps.BlockAdapter.BlockstoreType(),
+		})
 	})
 }
 
@@ -2353,138 +2364,5 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 		}
 
 		return authop.NewDetachPolicyFromGroupNoContent()
-	})
-}
-
-func (c *Controller) ExportGetContinuousExportHandler() exportop.GetContinuousExportHandler {
-	return exportop.GetContinuousExportHandlerFunc(func(params exportop.GetContinuousExportParams, user *models.User) middleware.Responder {
-		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
-			{
-				Action:   permissions.ReadBranchAction,
-				Resource: permissions.BranchArn(params.Repository, params.Branch),
-			},
-		})
-		if err != nil {
-			return exportop.NewGetContinuousExportUnauthorized().
-				WithPayload(responseErrorFrom(err))
-		}
-
-		deps.LogAction("get_continuous_export")
-
-		config, err := deps.Cataloger.GetExportConfigurationForBranch(params.Repository, params.Branch)
-		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrBranchNotFound) {
-			return exportop.NewGetContinuousExportNotFound().
-				WithPayload(responseErrorFrom(err))
-		}
-		if err != nil {
-			return exportop.NewGetContinuousExportDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-
-		payload := models.ContinuousExportConfiguration{
-			ExportPath:             strfmt.URI(config.Path),
-			ExportStatusPath:       strfmt.URI(config.StatusPath),
-			LastKeysInPrefixRegexp: config.LastKeysInPrefixRegexp,
-			IsContinuous:           config.IsContinuous,
-		}
-		return exportop.NewGetContinuousExportOK().WithPayload(&payload)
-	})
-}
-
-func (c *Controller) ExportRunHandler() exportop.RunHandler {
-	return exportop.RunHandlerFunc(func(params exportop.RunParams, user *models.User) middleware.Responder {
-		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
-			{
-				Action:   permissions.CreateCommitAction,
-				Resource: permissions.BranchArn(params.Repository, params.Branch),
-			},
-		})
-		if err != nil {
-			return exportop.NewRunUnauthorized().
-				WithPayload(responseErrorFrom(err))
-		}
-		deps.LogAction("execute_single_export")
-		exportID, err := export.ExportBranchStart(deps.Parade, deps.Cataloger, params.Repository, params.Branch)
-		if err != nil {
-			return exportop.NewRunDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-		return exportop.NewRunCreated().WithPayload(exportID)
-	})
-}
-
-func (c *Controller) ExportRepairHandler() exportop.RepairHandler {
-	return exportop.RepairHandlerFunc(func(params exportop.RepairParams, user *models.User) middleware.Responder {
-		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
-			{
-				Action:   permissions.CreateCommitAction,
-				Resource: permissions.BranchArn(params.Repository, params.Branch),
-			},
-		})
-		if err != nil {
-			return exportop.NewRepairUnauthorized().
-				WithPayload(responseErrorFrom(err))
-		}
-		deps.LogAction("repair_export")
-
-		err = export.ExportBranchRepair(deps.Cataloger, params.Repository, params.Branch)
-		if err != nil {
-			return exportop.NewRepairDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-		return exportop.NewRepairCreated()
-	})
-}
-func (c *Controller) ExportSetContinuousExportHandler() exportop.SetContinuousExportHandler {
-	return exportop.SetContinuousExportHandlerFunc(func(params exportop.SetContinuousExportParams, user *models.User) middleware.Responder {
-		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
-			{
-				Action:   permissions.ExportConfigAction,
-				Resource: permissions.BranchArn(params.Repository, params.Branch),
-			},
-		})
-		if err != nil {
-			return exportop.NewSetContinuousExportUnauthorized().
-				WithPayload(responseErrorFrom(err))
-		}
-
-		deps.LogAction("set_continuous_export")
-
-		config := catalog.ExportConfiguration{
-			Path:                   params.Config.ExportPath.String(),
-			StatusPath:             params.Config.ExportStatusPath.String(),
-			LastKeysInPrefixRegexp: params.Config.LastKeysInPrefixRegexp,
-			IsContinuous:           params.Config.IsContinuous,
-		}
-		err = deps.Cataloger.PutExportConfiguration(params.Repository, params.Branch, &config)
-		if errors.Is(err, catalog.ErrRepositoryNotFound) || errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrRepositoryNotFound) || errors.Is(err, graveler.ErrBranchNotFound) {
-			return exportop.NewSetContinuousExportNotFound().
-				WithPayload(responseErrorFrom(err))
-		}
-		if err != nil {
-			return exportop.NewSetContinuousExportDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-
-		return exportop.NewSetContinuousExportCreated()
-	})
-}
-
-func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
-	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
-		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
-			{
-				Action:   permissions.ReadConfigAction,
-				Resource: permissions.All,
-			},
-		})
-
-		if err != nil {
-			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
-		}
-
-		return configop.NewGetConfigOK().WithPayload(&models.Config{
-			BlockstoreType: deps.BlockAdapter.BlockstoreType(),
-		})
 	})
 }
