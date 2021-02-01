@@ -557,7 +557,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	ctx := context.Background()
 	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "local://foo1", "master")
 	testutil.Must(t, err)
-	testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{Path: "obj1"}))
+	testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "obj1"}))
 	commitLog, err := deps.cataloger.Commit(ctx, "repo1", "master", "first commit", "test", nil)
 	testutil.Must(t, err)
 	const createTagLen = 7
