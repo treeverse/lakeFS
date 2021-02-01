@@ -139,7 +139,7 @@ validate-fmt:  ## Validate go format
 
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
-	git diff --quiet -- catalog/rocks/catalog.pb.go
+	git diff --quiet -- catalog/catalog.pb.go
 	git diff --quiet -- graveler/committed/committed.pb.go
 
 checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
