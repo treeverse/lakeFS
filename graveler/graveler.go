@@ -441,7 +441,7 @@ type CommittedManager interface {
 	// This is similar to a two-dot diff in git (left..right)
 	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
 
-	// Compare returns the difference between 'source' and 'destinationn', relative to a merge base 'base'.
+	// Compare returns the difference between 'source' and 'destination', relative to a merge base 'base'.
 	// This is similar to a three-dot diff in git.
 	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
 
