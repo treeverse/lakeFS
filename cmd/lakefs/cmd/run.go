@@ -23,7 +23,6 @@ import (
 	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
@@ -98,12 +97,8 @@ var runCmd = &cobra.Command{
 
 		// parade
 		paradeDB := parade.NewParadeDB(dbPool.Pool())
-		// export handler
-		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
-		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
 		defer func() {
 			_ = cataloger.Close()
-			exportActionManager.Close()
 		}()
 
 		// start API server

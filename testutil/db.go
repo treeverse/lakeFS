@@ -27,8 +27,6 @@ import (
 )
 
 const (
-	TimeFormat = "Jan 2 15:04:05 2006 -0700"
-
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
 	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
@@ -38,16 +36,30 @@ const (
 )
 
 var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
-var addrDB = flag.String("db", "", "DB address to use")
 
 func GetDBInstance(pool *dockertest.Pool) (string, func()) {
-	if len(*addrDB) > 0 {
+	// connect using docker container name
+	containerName := os.Getenv("PG_DB_CONTAINER")
+	if containerName != "" {
+		resource, ok := pool.ContainerByName(containerName)
+		if !ok {
+			log.Fatalf("Cloud not find DB container (%s)", containerName)
+		}
+		uri := formatPostgresResourceURI(resource)
+		return uri, func() {}
+	}
+
+	// connect using supply address
+	dbURI := os.Getenv("PG_TEST_URI")
+	if len(dbURI) > 0 {
 		// use supplied DB connection for testing
-		if err := verifyDBConnectionString(*addrDB); err != nil {
+		if err := verifyDBConnectionString(dbURI); err != nil {
 			log.Fatalf("could not connect to postgres: %s", err)
 		}
-		return *addrDB, func() {}
+		return dbURI, func() {}
 	}
+
+	// run new instance and connect
 	resource, err := pool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
@@ -66,8 +78,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	}
 
 	// format db uri
-	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable",
-		resource.GetPort("5432/tcp"))
+	uri := formatPostgresResourceURI(resource)
 
 	// wait for container to start and connect to db
 	if err = pool.Retry(func() error {
@@ -91,15 +102,39 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	return uri, closer
 }
 
+func formatPostgresResourceURI(resource *dockertest.Resource) string {
+	dbParams := map[string]string{
+		"POSTGRES_DB":       "lakefs_db",
+		"POSTGRES_USER":     "lakefs",
+		"POSTGRES_PASSWORD": "lakefs",
+		"POSTGRES_PORT":     resource.GetPort("5432/tcp"),
+	}
+	env := resource.Container.Config.Env
+	for _, entry := range env {
+		for key := range dbParams {
+			if strings.HasPrefix(entry, key+"=") {
+				dbParams[key] = entry[len(key)+1:]
+				break
+			}
+		}
+	}
+	uri := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable",
+		dbParams["POSTGRES_USER"],
+		dbParams["POSTGRES_PASSWORD"],
+		dbParams["POSTGRES_PORT"],
+		dbParams["POSTGRES_DB"],
+	)
+	return uri
+}
+
 func verifyDBConnectionString(uri string) error {
 	ctx := context.Background()
 	pool, err := pgxpool.Connect(ctx, uri)
 	if err != nil {
 		return err
 	}
-	err = db.Ping(ctx, pool)
-	pool.Close()
-	return err
+	defer pool.Close()
+	return db.Ping(ctx, pool)
 }
 
 type GetDBOptions struct {
