@@ -32,7 +32,7 @@ func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.Reposit
 			return nil, fmt.Errorf("%w (%d): %s", graveler.ErrLockNotAcquired, writerLockKey, err)
 		}
 		if !locked {
-			return nil, fmt.Errorf("%w (%d)", graveler.ErrLockNotAcquired, writerLockKey)
+			return nil, fmt.Errorf("%w (%d)", graveler.ErrAlreadyLocked, writerLockKey)
 		}
 		return lockedFn()
 	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
@@ -51,7 +51,7 @@ func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID gravele
 			return nil, fmt.Errorf("%w (%d): %s", graveler.ErrLockNotAcquired, committerLockKey, err)
 		}
 		if !locked {
-			return nil, fmt.Errorf("%w (%d)", graveler.ErrLockNotAcquired, writerLockKey)
+			return nil, fmt.Errorf("%w (%d)", graveler.ErrAlreadyLocked, writerLockKey)
 		}
 		// lock writer key
 		_, err = tx.Exec(`SELECT pg_advisory_xact_lock($1);`, writerLockKey)

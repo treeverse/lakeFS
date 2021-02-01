@@ -37,6 +37,7 @@ var (
 	ErrDirtyBranch             = errors.New("can't apply meta-range on dirty branch")
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 	ErrLockNotAcquired         = errors.New("lock not acquired")
+	ErrAlreadyLocked           = wrapError(ErrLockNotAcquired, "already locked")
 	ErrRevertMergeCommit       = errors.New("revert merge commit unsupported")
 )
 
