@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
@@ -44,9 +43,9 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 
 // entryCataloger is a facet for EntryCatalog for rocks import commands
 type entryCataloger interface {
-	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it rocks.EntryIterator) (*graveler.MetaRangeID, error)
+	WriteMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, it catalog.EntryIterator) (*graveler.MetaRangeID, error)
 	AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error)
-	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter rocks.Path) (rocks.EntryListingIterator, error)
+	ListEntries(ctx context.Context, repositoryID graveler.RepositoryID, ref graveler.Ref, prefix, delimiter catalog.Path) (catalog.EntryListingIterator, error)
 	UpdateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 	GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error)
 	CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)

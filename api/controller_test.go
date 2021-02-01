@@ -219,7 +219,7 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		for i := 0; i < commitsLen; i++ {
 			n := strconv.Itoa(i + 1)
 			p := "foo/bar" + n
-			testutil.MustDo(t, "create entry bar"+n, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.Entry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n}))
+			testutil.MustDo(t, "create entry bar"+n, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.DBEntry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n}))
 			if _, err := deps.cataloger.Commit(ctx, "repo2", "master", "commit"+n, "some_user", nil); err != nil {
 				t.Fatalf("failed to commit '%s': %s", p, err)
 			}
@@ -266,7 +266,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.Must(t, err)
-		testutil.MustDo(t, "create entry bar1", deps.cataloger.CreateEntry(ctx, "foo1", "master", catalog.Entry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+		testutil.MustDo(t, "create entry bar1", deps.cataloger.CreateEntry(ctx, "foo1", "master", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.cataloger.Commit(ctx, "foo1", "master", "some message", DefaultUserID, nil)
 		testutil.Must(t, err)
 		reference1, err := deps.cataloger.GetBranchReference(ctx, "foo1", "master")
@@ -324,7 +324,7 @@ func TestController_CommitHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.MustDo(t, "create repo foo1", err)
-		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master", catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		_, err = clt.Commits.Commit(
 			commits.NewCommitParamsWithTimeout(timeout).
 				WithBranch("master").
@@ -492,7 +492,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// create first dummy commit on master so that we can create branches from it
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.Entry{Path: "a/b"}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo2", "master", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "repo2", "master", "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -557,7 +557,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	ctx := context.Background()
 	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "local://foo1", "master")
 	testutil.Must(t, err)
-	testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{Path: "obj1"}))
+	testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "obj1"}))
 	commitLog, err := deps.cataloger.Commit(ctx, "repo1", "master", "first commit", "test", nil)
 	testutil.Must(t, err)
 	const createTagLen = 7
@@ -653,7 +653,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 		const testBranch = "master"
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
 		// create first dummy commit on master so that we can create branches from it
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", testBranch, catalog.Entry{Path: "a/b"}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "repo1", testBranch, "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -706,7 +706,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{Path: "a/b"}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "repo1", "master", "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -800,7 +800,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master")
 		testutil.Must(t, err)
-		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "my-new-repo", "master", catalog.Entry{Path: "a/b"}))
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "my-new-repo", "master", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.cataloger.Commit(ctx, "my-new-repo", "master", "first commit", "test", nil)
 		testutil.Must(t, err)
 
@@ -852,7 +852,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	}
 
 	t.Run("get object stats", func(t *testing.T) {
-		entry := catalog.Entry{
+		entry := catalog.DBEntry{
 			Path:            "foo/bar",
 			PhysicalAddress: "this_is_bars_address",
 			CreationDate:    time.Now(),
@@ -909,7 +909,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	testutil.Must(t, err)
 	testutil.Must(t,
-		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
 			Path:            "foo/bar",
 			PhysicalAddress: "this_is_bars_address",
 			CreationDate:    time.Now(),
@@ -917,7 +917,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			Checksum:        "this_is_a_checksum",
 		}))
 	testutil.Must(t,
-		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
 			Path:            "foo/quuux",
 			PhysicalAddress: "this_is_quuxs_address_expired",
 			CreationDate:    time.Now(),
@@ -926,7 +926,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			Expired:         true,
 		}))
 	testutil.Must(t,
-		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
 			Path:            "foo/baz",
 			PhysicalAddress: "this_is_bazs_address",
 			CreationDate:    time.Now(),
@@ -934,7 +934,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 			Checksum:        "baz_checksum",
 		}))
 	testutil.Must(t,
-		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
 			Path:            "foo/a_dir/baz",
 			PhysicalAddress: "this_is_bazs_address",
 			CreationDate:    time.Now(),
@@ -1006,7 +1006,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	entry := catalog.Entry{
+	entry := catalog.DBEntry{
 		Path:            "foo/bar",
 		PhysicalAddress: blob.PhysicalAddress,
 		CreationDate:    time.Now(),
@@ -1016,7 +1016,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	testutil.Must(t,
 		deps.cataloger.CreateEntry(ctx, "repo1", "master", entry))
 
-	expired := catalog.Entry{
+	expired := catalog.DBEntry{
 		Path:            "foo/expired",
 		PhysicalAddress: "an_expired_physical_address",
 		CreationDate:    time.Now(),

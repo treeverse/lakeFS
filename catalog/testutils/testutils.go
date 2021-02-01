@@ -1,14 +1,14 @@
 package testutils
 
-import "github.com/treeverse/lakefs/catalog/rocks"
+import "github.com/treeverse/lakefs/catalog"
 
 type FakeEntryIterator struct {
-	Entries []*rocks.EntryRecord
+	Entries []*catalog.EntryRecord
 	Error   error
 	index   int
 }
 
-func NewFakeEntryIterator(entries []*rocks.EntryRecord) *FakeEntryIterator {
+func NewFakeEntryIterator(entries []*catalog.EntryRecord) *FakeEntryIterator {
 	return &FakeEntryIterator{
 		Entries: entries,
 		index:   -1,
@@ -23,7 +23,7 @@ func (f *FakeEntryIterator) Next() bool {
 	return f.index < len(f.Entries)
 }
 
-func (f *FakeEntryIterator) SeekGE(id rocks.Path) {
+func (f *FakeEntryIterator) SeekGE(id catalog.Path) {
 	if f.Error != nil {
 		return
 	}
@@ -35,7 +35,7 @@ func (f *FakeEntryIterator) SeekGE(id rocks.Path) {
 	}
 }
 
-func (f *FakeEntryIterator) Value() *rocks.EntryRecord {
+func (f *FakeEntryIterator) Value() *catalog.EntryRecord {
 	if f.Error != nil || f.index < 0 || f.index >= len(f.Entries) {
 		return nil
 	}

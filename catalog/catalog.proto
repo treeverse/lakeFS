@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/treevese/lakefs/catalog/rocks";
+option go_package = "github.com/treevese/lakefs/catalog";
 
 import "google/protobuf/timestamp.proto";
 

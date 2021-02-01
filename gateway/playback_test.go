@@ -19,7 +19,6 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
@@ -115,7 +114,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	cataloger, err := catalogfactory.BuildCataloger(conn, config.NewConfig())
+	cataloger, err := catalog.NewCataloger(conn, config.NewConfig())
 	testutil.MustDo(t, "build cataloger", err)
 	multipartsTracker := multiparts.NewTracker(conn)
 

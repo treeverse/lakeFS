@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/catalog/rocks"
 	"github.com/treeverse/lakefs/cmdutils"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -33,7 +31,7 @@ type Config struct {
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
-	EntryCatalog       *rocks.EntryCatalog
+	EntryCatalog       *catalog.EntryCatalog
 }
 
 type Stats struct {
