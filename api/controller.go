@@ -35,7 +35,6 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/upload"
@@ -56,7 +55,6 @@ type Dependencies struct {
 	Cataloger       catalog.Cataloger
 	Auth            auth.Service
 	BlockAdapter    block.Adapter
-	Parade          parade.Parade
 	MetadataManager auth.MetadataManager
 	Migrator        db.Migrator
 	Collector       stats.Collector
@@ -69,7 +67,6 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		Cataloger:       d.Cataloger,
 		Auth:            d.Auth,
 		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
-		Parade:          d.Parade,
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
 		Collector:       d.Collector,
