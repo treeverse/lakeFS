@@ -160,7 +160,7 @@ gen-ddl: go-install ## Embed data migration files into the resulting binary
 	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
 
 proto: ## Build proto (Protocol Buffers) files
-	$(PROTOC) --proto_path=catalog/rocks --go_out=catalog/rocks --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=catalog --go_out=catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=graveler/committed --go_out=graveler/committed --go_opt=paths=source_relative committed.proto
 
 help:  ## Show Help menu
