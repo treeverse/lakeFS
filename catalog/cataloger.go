@@ -90,7 +90,7 @@ type Cataloger interface {
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 
-	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
+	Merge(ctx context.Context, repository, theirs, ours, committer, message string, metadata Metadata) (*MergeResult, error)
 
 	Hooks() *CatalogerHooks
 

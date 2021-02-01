@@ -1641,22 +1641,22 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
+  /repositories/{repository}/refs/{oursRef}/merge/{theirsBranch}:
     parameters:
       - in: path
         name: repository
         required: true
         type: string
       - in: path
-        name: sourceRef
+        name: oursRef
         required: true
         type: string
-        description: source branch name
+        description: ours ref
       - in: path
-        name: destinationRef
+        name: theirsBranch
         required: true
         type: string
-        description: destination branch name
+        description: theirs branch name
 
     post:
       tags:

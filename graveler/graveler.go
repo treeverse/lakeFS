@@ -279,7 +279,7 @@ type VersionController interface {
 
 	// Merge merge 'from' with 'to' branches under repository returns the new commit id on
 	// the 'to' branch and a summary of results.
-	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, DiffSummary, error)
+	Merge(ctx context.Context, repositoryID RepositoryID, theirs BranchID, ours Ref, committer string, message string, metadata Metadata) (CommitID, DiffSummary, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
@@ -1124,13 +1124,13 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 	return c.ID, c.Summary, nil
 }
 
-func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, DiffSummary, error) {
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, to, func() (interface{}, error) {
+func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, theirs BranchID, ours Ref, committer string, message string, metadata Metadata) (CommitID, DiffSummary, error) {
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, theirs, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", err
 		}
-		branch, err := g.GetBranch(ctx, repositoryID, to)
+		branch, err := g.GetBranch(ctx, repositoryID, theirs)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
@@ -1141,7 +1141,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if !empty {
 			return "", ErrDirtyBranch
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, Ref(to))
+		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, ours, Ref(theirs))
 		if err != nil {
 			return "", err
 		}
@@ -1165,9 +1165,9 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 			return "", fmt.Errorf("add commit: %w", err)
 		}
 		branch.CommitID = commitID
-		err = g.RefManager.SetBranch(ctx, repositoryID, to, *branch)
+		err = g.RefManager.SetBranch(ctx, repositoryID, theirs, *branch)
 		if err != nil {
-			return "", fmt.Errorf("update branch %s: %w", to, err)
+			return "", fmt.Errorf("update branch %s: %w", theirs, err)
 		}
 		return &CommitIDAndSummary{commitID, summary}, nil
 	})

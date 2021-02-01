@@ -554,12 +554,12 @@ func (c *client) DiffRefs(ctx context.Context, repository, leftRef, rightRef, af
 	return payload.Results, payload.Pagination, nil
 }
 
-func (c *client) Merge(ctx context.Context, repository, destinationRef, sourceRef string) (*models.MergeResult, error) {
+func (c *client) Merge(ctx context.Context, repository, theirsBranch, oursRef string) (*models.MergeResult, error) {
 	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
-		DestinationRef: destinationRef,
-		SourceRef:      sourceRef,
-		Repository:     repository,
-		Context:        ctx,
+		TheirsBranch: theirsBranch,
+		OursRef:      oursRef,
+		Repository:   repository,
+		Context:      ctx,
 	}, c.auth)
 
 	if err == nil {
