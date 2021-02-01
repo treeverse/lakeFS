@@ -1,36 +1,35 @@
-package rocks_test
+package catalog_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/catalog/rocks/testutils"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/testutils"
 	"github.com/treeverse/lakefs/graveler"
 )
 
 func TestNewEntryToValueIterator(t *testing.T) {
 	var expectedRecords []*graveler.ValueRecord
-	var entryRecords []*rocks.EntryRecord
+	var entryRecords []*catalog.EntryRecord
 
 	// generate data
 	for i := 0; i < 3; i++ {
-		record := &rocks.EntryRecord{
-			Path:  rocks.Path(fmt.Sprintf("path%d", i)),
-			Entry: &rocks.Entry{Address: fmt.Sprintf("addr%d", i)},
+		record := &catalog.EntryRecord{
+			Path:  catalog.Path(fmt.Sprintf("path%d", i)),
+			Entry: &catalog.Entry{Address: fmt.Sprintf("addr%d", i)},
 		}
 		entryRecords = append(entryRecords, record)
 		expectedRecords = append(expectedRecords, &graveler.ValueRecord{
 			Key:   []byte(record.Path.String()),
-			Value: rocks.MustEntryToValue(record.Entry),
+			Value: catalog.MustEntryToValue(record.Entry),
 		})
 	}
 
 	// collect the above using entry to value iterator
 	entryIterator := testutils.NewFakeEntryIterator(entryRecords)
-	it := rocks.NewEntryToValueIterator(entryIterator)
+	it := catalog.NewEntryToValueIterator(entryIterator)
 	defer it.Close()
 
 	var values []*graveler.ValueRecord

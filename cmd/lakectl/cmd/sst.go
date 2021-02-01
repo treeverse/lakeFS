@@ -8,7 +8,7 @@ import (
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/sstable"
 )
@@ -77,7 +77,7 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error
 		if err != nil {
 			panic(err)
 		}
-		ent, err := rocks.ValueToEntry(gv)
+		ent, err := catalog.ValueToEntry(gv)
 		if err != nil {
 			panic(err)
 		}

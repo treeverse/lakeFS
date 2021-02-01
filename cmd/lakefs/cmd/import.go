@@ -9,13 +9,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
-
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -66,7 +63,7 @@ var importCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
-		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(dbPool, cfg)
 		if err != nil {
 			fmt.Printf("Failed to create cataloger: %s\n", err)
 			os.Exit(1)
@@ -126,7 +123,7 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
 		}
 
-		entryCataloger, err := rocks.NewEntryCatalog(cfg, dbPool)
+		entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
 		if err != nil {
 			fmt.Printf("Failed to build entry catalog: %s\n", err)
 			os.Exit(1)
