@@ -277,14 +277,14 @@ func (e *EntryCatalog) WriteMetaRange(ctx context.Context, repositoryID graveler
 	return e.Store.WriteMetaRange(ctx, repositoryID, NewEntryToValueIterator(it))
 }
 
-func (e *EntryCatalog) Commit(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, error) {
+func (e *EntryCatalog) Commit(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
 	}); err != nil {
 		return "", err
 	}
-	return e.Store.Commit(ctx, repositoryID, branchID, committer, message, metadata)
+	return e.Store.Commit(ctx, repositoryID, branchID, commitParams)
 }
 
 func (e *EntryCatalog) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
@@ -340,33 +340,34 @@ func (e *EntryCatalog) ResetPrefix(ctx context.Context, repositoryID graveler.Re
 	return e.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, graveler.DiffSummary, error) {
+func (e *EntryCatalog) Revert(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"branchID", branchID, ValidateBranchID},
 		{"ref", ref, ValidateRef},
-		{"committer", committer, ValidateRequiredString},
-		{"message", message, ValidateRequiredString},
+		{"committer", commitParams.Committer, ValidateRequiredString},
+		{"message", commitParams.Message, ValidateRequiredString},
+		{"parentNumber", parentNumber, ValidateNonNegativeInt},
 	}); err != nil {
 		return "", graveler.DiffSummary{}, err
 	}
-	return e.Store.Revert(ctx, repositoryID, branchID, ref, committer, message, metadata)
+	return e.Store.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
 }
 
-func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, committer string, message string, metadata graveler.Metadata) (graveler.CommitID, graveler.DiffSummary, error) {
-	if message == "" {
-		message = fmt.Sprintf("Merge '%s' into '%s'", from, to)
+func (e *EntryCatalog) Merge(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.Ref, to graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, graveler.DiffSummary, error) {
+	if commitParams.Message == "" {
+		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", from, to)
 	}
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"from", from, ValidateRef},
 		{"to", to, ValidateBranchID},
-		{"committer", committer, ValidateRequiredString},
-		{"message", message, ValidateRequiredString},
+		{"committer", commitParams.Committer, ValidateRequiredString},
+		{"message", commitParams.Message, ValidateRequiredString},
 	}); err != nil {
 		return "", graveler.DiffSummary{}, err
 	}
-	return e.Store.Merge(ctx, repositoryID, from, to, committer, message, metadata)
+	return e.Store.Merge(ctx, repositoryID, from, to, commitParams)
 }
 
 func (e *EntryCatalog) DiffUncommitted(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (EntryDiffIterator, error) {
