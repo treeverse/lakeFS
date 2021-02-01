@@ -82,7 +82,7 @@ type RepositoryClient interface {
 	DeleteObject(ctx context.Context, repository, branchID, path string) error
 
 	DiffRefs(ctx context.Context, repository, leftRef, rightRef string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
-	Merge(ctx context.Context, repository, destinationRef, sourceRef string) (*models.MergeResult, error)
+	Merge(ctx context.Context, repository, theirsBranch, oursRef string) (*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
