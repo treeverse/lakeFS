@@ -825,7 +825,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
-				Resource: permissions.BranchArn(params.Repository, params.TheirsBranch),
+				Resource: permissions.BranchArn(params.Repository, params.DestinationBranch),
 			},
 		})
 		if err != nil {
@@ -843,7 +843,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			metadata = params.Merge.Metadata
 		}
 		res, err := deps.Cataloger.Merge(deps.ctx,
-			params.Repository, params.TheirsBranch, params.OursRef,
+			params.Repository, params.DestinationBranch, params.SourceRef,
 			userModel.Username,
 			message,
 			metadata)

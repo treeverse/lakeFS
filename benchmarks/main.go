@@ -189,12 +189,12 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 func merge(ctx context.Context) {
 	err := retry.Do(func() error {
 		_, err := client.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
-			TheirsBranch: "master",
+			DestinationBranch: "master",
 			Merge: &models.Merge{
 				Message: "merging all objects to master",
 			},
 			Repository: repoName,
-			OursRef:    branchName,
+			SourceRef:  branchName,
 			Context:    ctx,
 		}, nil)
 		return err

@@ -60,7 +60,7 @@ func TestMergeAndList(t *testing.T) {
 	require.NoError(t, err, "failed to commit changes")
 
 	mergeRes, err := client.Refs.MergeIntoBranch(
-		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithTheirsBranch(masterBranch).WithOursRef(branch), nil)
+		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationBranch(masterBranch).WithSourceRef(branch), nil)
 	require.NoError(t, err, "failed to merge branches")
 	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
 
