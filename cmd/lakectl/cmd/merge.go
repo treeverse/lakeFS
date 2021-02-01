@@ -41,14 +41,14 @@ var mergeCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		rightRefURI := uri.Must(uri.Parse(args[0]))
-		leftRefURI := uri.Must(uri.Parse(args[1]))
+		sourceRef := uri.Must(uri.Parse(args[0]))
+		destinationRef := uri.Must(uri.Parse(args[1]))
 
-		if leftRefURI.Repository != rightRefURI.Repository {
+		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
 
-		result, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+		result, err := client.Merge(context.Background(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
 		if errors.Is(err, catalog.ErrConflictFound) {
 			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
 			return
@@ -61,7 +61,7 @@ var mergeCmd = &cobra.Command{
 			Merge  FromTo
 			Result *models.MergeResult
 		}{
-			FromTo{FromRef: leftRefURI.Ref, ToRef: rightRefURI.Ref},
+			FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
 			result,
 		})
 	},

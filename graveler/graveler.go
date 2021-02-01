@@ -283,9 +283,8 @@ type VersionController interface {
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, DiffSummary, error)
 
-	// Merge merge 'from' with 'to' branches under repository returns the new commit id on
-	// the 'to' branch and a summary of results.
-	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, commitParams CommitParams) (CommitID, DiffSummary, error)
+	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit, and a summary of results.
+	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
@@ -442,14 +441,14 @@ type CommittedManager interface {
 	// This is similar to a two-dot diff in git (left..right)
 	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
 
-	// Compare returns the difference between 'theirs' and 'ours', relative to a merge base 'base'.
+	// Compare returns the difference between 'source' and 'destination', relative to a merge base 'base'.
 	// This is similar to a three-dot diff in git.
-	Compare(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (DiffIterator, error)
+	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
 
-	// Merge applies that changes from ours to theirs, relative to a merge base 'base' and
+	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
 	// returns the ID of the new metarange and a summary of diffs.  This is similar to a
-	// git merge operation.  The resulting tree is expected to be immediately addressable.
-	Merge(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (MetaRangeID, DiffSummary, error)
+	// git merge operation. The resulting tree is expected to be immediately addressable.
+	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, DiffSummary, error)
 
 	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -1138,13 +1137,13 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 	return c.ID, c.Summary, nil
 }
 
-func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, commitParams CommitParams) (CommitID, DiffSummary, error) {
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, to, func() (interface{}, error) {
+func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", err
 		}
-		branch, err := g.GetBranch(ctx, repositoryID, to)
+		branch, err := g.GetBranch(ctx, repositoryID, destination)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
@@ -1155,7 +1154,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if !empty {
 			return "", ErrDirtyBranch
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, Ref(to))
+		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, source, Ref(destination))
 		if err != nil {
 			return "", err
 		}
@@ -1179,9 +1178,9 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 			return "", fmt.Errorf("add commit: %w", err)
 		}
 		branch.CommitID = commitID
-		err = g.RefManager.SetBranch(ctx, repositoryID, to, *branch)
+		err = g.RefManager.SetBranch(ctx, repositoryID, destination, *branch)
 		if err != nil {
-			return "", fmt.Errorf("update branch %s: %w", to, err)
+			return "", fmt.Errorf("update branch %s: %w", destination, err)
 		}
 		return &CommitIDAndSummary{commitID, summary}, nil
 	})
