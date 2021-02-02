@@ -31,7 +31,9 @@ import * as async from "./async";
 const hydrateUser = () => {
     try {
         const u = window.localStorage.getItem('user');
-        return u && JSON.parse(u) || null;
+        if (u) {
+            return JSON.parse(u);
+        }
     } catch(ignored) {}
     return null;
 };
