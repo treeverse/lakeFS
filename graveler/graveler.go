@@ -262,8 +262,12 @@ type VersionController interface {
 
 	// AddCommitToBranchHead creates a commit in the branch from the given pre-existing tree.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
-	// Returns ErrConflictFound if the branch is no longer referencing to the parentCommit
+	// Returns ErrCommitNotHeadBranch if the branch is no longer referencing to the parentCommit
 	AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error)
+
+	// AddCommit creates a dangling (no referencing branch) commit in the repo from the pre-existing commit.
+	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
+	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
@@ -926,19 +930,41 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 	return StagingToken(v)
 }
 
+func (g *Graveler) validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	if len(commit.Parents) > 1 {
+		return "", ErrMultipleParents
+	}
+	if len(commit.Parents) == 0 {
+		return "", nil
+	}
+
+	parentCommitID := commit.Parents[0]
+	_, err := g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+	if err != nil {
+		return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
+	}
+	return parentCommitID, nil
+}
+
+func (g *Graveler) commitExists(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
+	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err == nil {
+		// commit already exists
+		return true, nil
+	}
+	if !errors.Is(err, ErrCommitNotFound) {
+		return false, fmt.Errorf("getting commit %s: %w", commitID, err)
+	}
+	return false, nil
+}
+
 func (g *Graveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		// parentCommitID should always match the HEAD of the branch.
 		// Empty parentCommitID matches first commit of the branch.
-		var parentCommitID CommitID
-		if len(commit.Parents) > 0 {
-			parentCommitID = commit.Parents[0]
-		}
-		if parentCommitID != "" {
-			_, err := g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
-			if err != nil {
-				return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
-			}
+		parentCommitID, err := g.validateCommitParent(ctx, repositoryID, commit)
+		if err != nil {
+			return nil, err
 		}
 
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
@@ -951,13 +977,10 @@ func (g *Graveler) AddCommitToBranchHead(ctx context.Context, repositoryID Repos
 
 		// check if commit already exists.
 		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-		_, err = g.RefManager.GetCommit(ctx, repositoryID, commitID)
-		if err == nil {
-			// commit already exists
+		if exists, err := g.commitExists(ctx, repositoryID, commitID); err != nil {
+			return nil, err
+		} else if exists {
 			return commitID, nil
-		}
-		if !errors.Is(err, ErrCommitNotFound) {
-			return "", fmt.Errorf("getting commit %s: %w", commitID, err)
 		}
 
 		commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
@@ -974,6 +997,32 @@ func (g *Graveler) AddCommitToBranchHead(ctx context.Context, repositoryID Repos
 		return "", err
 	}
 	return res.(CommitID), nil
+}
+
+func (g *Graveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	// at least a single parent must exists
+	if len(commit.Parents) == 0 {
+		return "", ErrAddCommitNoParent
+	}
+	_, err := g.validateCommitParent(ctx, repositoryID, commit)
+	if err != nil {
+		return "", err
+	}
+
+	// check if commit already exists.
+	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
+	if exists, err := g.commitExists(ctx, repositoryID, commitID); err != nil {
+		return "", err
+	} else if exists {
+		return commitID, nil
+	}
+
+	commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
+	if err != nil {
+		return "", fmt.Errorf("adding commit: %w", err)
+	}
+
+	return commitID, nil
 }
 
 // addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
