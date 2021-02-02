@@ -17,9 +17,9 @@ var (
 	ErrAuthenticationFailed    = openapierrors.New(http.StatusUnauthorized, "error authenticating request")
 )
 
-// BasicAuthHandler returns a function that hooks into Swagger's basic Auth provider
+// NewBasicAuthHandler returns a function that hooks into Swagger's basic Auth provider
 // it uses the Auth.Service provided to ensure credentials are valid
-func BasicAuthHandler(authService auth.Service) func(accessKey, secretKey string) (user *models.User, err error) {
+func NewBasicAuthHandler(authService auth.Service) func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := authService.GetCredentials(accessKey)
@@ -42,10 +42,10 @@ func BasicAuthHandler(authService auth.Service) func(accessKey, secretKey string
 	}
 }
 
-// JwtTokenAuthHandler decodes, validates and authenticates a user that exists
+// NewJwtTokenAuthHandler decodes, validates and authenticates a user that exists
 // in the X-JWT-Authorization header.
 // This header either exists natively, or is set using a token
-func JwtTokenAuthHandler(authService auth.Service) func(string) (*models.User, error) {
+func NewJwtTokenAuthHandler(authService auth.Service) func(string) (*models.User, error) {
 	logger := logging.Default().WithField("auth", "jwt")
 	return func(tokenString string) (*models.User, error) {
 		claims := &jwt.StandardClaims{}
