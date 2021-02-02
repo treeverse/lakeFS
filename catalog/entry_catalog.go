@@ -136,6 +136,10 @@ func (e *EntryCatalog) AddCommitToBranchHead(ctx context.Context, repositoryID g
 	return e.Store.AddCommitToBranchHead(ctx, repositoryID, branchID, commit)
 }
 
+func (e *EntryCatalog) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+	return e.Store.AddCommit(ctx, repositoryID, commit)
+}
+
 func (e *EntryCatalog) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},

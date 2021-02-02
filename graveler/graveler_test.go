@@ -612,6 +612,157 @@ func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 	}
 }
 
+func TestGraveler_AddCommit(t *testing.T) {
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const (
+		expectedCommitID       = graveler.CommitID("expectedCommitId")
+		expectedParentCommitID = graveler.CommitID("expectedParentCommitId")
+		expectedRangeID        = graveler.MetaRangeID("expectedRangeID")
+		expectedRepositoryID   = graveler.RepositoryID("expectedRepoID")
+	)
+
+	type fields struct {
+		CommittedManager *testutil.CommittedFake
+		StagingManager   *testutil.StagingFake
+		RefManager       *testutil.RefsFake
+	}
+	type args struct {
+		ctx            context.Context
+		repositoryID   graveler.RepositoryID
+		committer      string
+		message        string
+		metadata       graveler.Metadata
+		missingParents bool
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		want        graveler.CommitID
+		expectedErr error
+	}{
+		{
+			name: "valid commit",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID, Branch: &graveler.Branch{CommitID: expectedParentCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{
+						expectedParentCommitID: {},
+					},
+				}},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     graveler.Metadata{},
+			},
+			want:        expectedCommitID,
+			expectedErr: nil,
+		},
+		{
+			name: "meta range not found",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{Err: graveler.ErrMetaRangeNotFound},
+				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
+				RefManager: &testutil.RefsFake{CommitID: expectedParentCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedParentCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrMetaRangeNotFound,
+		},
+		{
+			name: "missing parents",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
+				RefManager: &testutil.RefsFake{CommitID: expectedParentCommitID,
+					Branch:  &graveler.Branch{CommitID: expectedParentCommitID},
+					Commits: map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
+			},
+			args: args{
+				ctx:            nil,
+				repositoryID:   "repo",
+				committer:      "committer",
+				message:        "a message",
+				metadata:       nil,
+				missingParents: true,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrAddCommitNoParent,
+		},
+		{
+			name: "fail on add commit",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
+				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
+				RefManager: &testutil.RefsFake{CommitID: expectedCommitID,
+					Branch:    &graveler.Branch{CommitID: expectedParentCommitID},
+					CommitErr: graveler.ErrConflictFound,
+					Commits:   map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}}},
+			},
+			args: args{
+				ctx:          nil,
+				repositoryID: "repo",
+				committer:    "committer",
+				message:      "a message",
+				metadata:     nil,
+			},
+			want:        expectedCommitID,
+			expectedErr: graveler.ErrConflictFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := graveler.NewGraveler(branchLocker, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager)
+			commit := graveler.Commit{
+				Committer:   tt.args.committer,
+				Message:     tt.args.message,
+				MetaRangeID: expectedRangeID,
+				Metadata:    tt.args.metadata,
+			}
+			if !tt.args.missingParents {
+				commit.Parents = graveler.CommitParents{expectedParentCommitID}
+			}
+			got, err := g.AddCommit(context.Background(), expectedRepositoryID, commit)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
+			}
+			if err != nil {
+				return
+			}
+
+			if diff := deep.Equal(tt.fields.RefManager.AddedCommit, testutil.AddedCommitData{
+				Committer:   tt.args.committer,
+				Message:     tt.args.message,
+				MetaRangeID: expectedRangeID,
+				Parents:     graveler.CommitParents{expectedParentCommitID},
+				Metadata:    graveler.Metadata{},
+			}); diff != nil {
+				t.Errorf("unexpected added commit %s", diff)
+			}
+			if tt.fields.StagingManager.DropCalled {
+				t.Error("Staging manager drop shouldn't be called")
+			}
+
+			if got != expectedCommitID {
+				t.Errorf("got wrong commitID, got = %v, want %v", got, expectedCommitID)
+			}
+		})
+	}
+}
+
 func TestGraveler_Delete(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	branchLocker := ref.NewBranchLocker(conn)

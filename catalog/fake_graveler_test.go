@@ -192,6 +192,10 @@ func (g *FakeGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID g
 	panic("implement me")
 }
 
+func (g *FakeGraveler) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ graveler.RepositoryID, _ graveler.Commit) (graveler.CommitID, error) {
 	panic("implement me")
 }
