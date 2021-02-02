@@ -91,7 +91,6 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		Cataloger:       cataloger,
 		Auth:            authService,
 		BlockAdapter:    blockAdapter,
-		Parade:          nil,
 		MetadataManager: meta,
 		Migrator:        migrator,
 		Collector:       &nullCollector{},
