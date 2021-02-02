@@ -22,10 +22,9 @@ securityDefinitions:
     in: header
     name: X-JWT-Authorization
 
-
 security:
-  - basic_auth: [ ]
-  - jwt_token: [ ]
+  - jwt_token: []
+  - basic_auth: []
 
 responses:
   Unauthorized:
