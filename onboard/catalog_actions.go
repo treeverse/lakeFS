@@ -89,6 +89,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}
+	defer listIt.Close()
 
 	c.createdMetaRangeID, err = c.entryCataloger.WriteMetaRange(ctx, c.repoID, newPrefixMergeIterator(NewValueToEntryIterator(invIt, c.progress), listIt, c.prefixes))
 	if err != nil {
