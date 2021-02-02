@@ -7,12 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 )

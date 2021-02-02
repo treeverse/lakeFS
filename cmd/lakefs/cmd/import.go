@@ -9,8 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
@@ -18,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 	"github.com/treeverse/lakefs/uri"
@@ -38,7 +37,7 @@ const (
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
-	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. Data available in branch %s", catalog.DefaultImportBranchName),
+	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", catalog.DefaultImportBranchName),
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(ImportCmdNumArgs),
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
@@ -51,7 +50,7 @@ var importCmd = &cobra.Command{
 var importBaseCmd = &cobra.Command{
 	Use:    "import-base <repository uri> --manifest <s3 uri to manifest.json> --commit <base commit>",
 	Short:  "Import data from S3 to a lakeFS repository on top of existing commit",
-	Long:   "Import from an S3 inventory to lakeFS without copying the data. Does not affect any branch",
+	Long:   "Creates a new commit with the imported data, on top of the given commit. Does not affect any branch",
 	Hidden: true,
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(ImportCmdNumArgs),
@@ -117,10 +116,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 
 	repo, err := getRepository(ctx, cataloger, repoName, dryRun)
 	if err != nil {
-		fmt.Println("Error", err)
-		if errors.Is(err, catalog.ErrBranchNotFound) {
-			fmt.Println("This repository was created with an older version of lakeFS. To use the import feature, create a new repository")
-		}
+		fmt.Println("Error getting repository", err)
 		return 1
 	}
 
@@ -194,7 +190,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
 	fmt.Println()
 
-	if baseCommit != "" {
+	if baseCommit == "" {
 		fmt.Printf("Import to branch %s finished successfully.\n", catalog.DefaultImportBranchName)
 		fmt.Println()
 	}

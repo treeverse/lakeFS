@@ -40,7 +40,8 @@ var (
 	ErrLockNotAcquired         = errors.New("lock not acquired")
 	ErrAlreadyLocked           = wrapError(ErrLockNotAcquired, "already locked")
 	ErrRevertMergeNoParent     = errors.New("must specify 1-based parent number for reverting merge commit")
-	ErrAddCommitNoParent       = errors.New("must specify 1-based parent commit")
+	ErrAddCommitNoParent       = errors.New("added commit must have a parent")
+	ErrMultipleParents         = errors.New("cannot have more than a single parent")
 	ErrRevertParentOutOfRange  = errors.New("given commit does not have the given parent number")
 )
 

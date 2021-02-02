@@ -80,12 +80,12 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, _ boo
 	// If we operate on branches and if repo is empty, it's an empty iterator.
 	// If we operate on commit (using plumbing) - then we point to previous commit.
 	// Otherwise, we point to the default import branch
-	refToList := graveler.Ref(c.branchID)
-	if refToList == "" {
-		refToList = graveler.Ref(c.previousCommitID)
+	importBase := graveler.Ref(c.branchID)
+	if importBase == "" {
+		importBase = graveler.Ref(c.previousCommitID)
 	}
 
-	listIt, err := c.entryCataloger.ListEntries(ctx, c.repoID, refToList, "", "")
+	listIt, err := c.entryCataloger.ListEntries(ctx, c.repoID, importBase, "", "")
 	if err != nil {
 		return nil, fmt.Errorf("listing commit: %w", err)
 	}

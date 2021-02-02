@@ -931,6 +931,9 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 }
 
 func (g *Graveler) validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	if len(commit.Parents) > 1 {
+		return "", ErrMultipleParents
+	}
 	if len(commit.Parents) == 0 {
 		return "", nil
 	}
