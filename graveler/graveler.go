@@ -946,7 +946,7 @@ func (g *Graveler) validateCommitParent(ctx context.Context, repositoryID Reposi
 	return parentCommitID, nil
 }
 
-func (g *Graveler) commitExists(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
+func (g *Graveler) isCommitExist(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
 	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
 	if err == nil {
 		// commit already exists
@@ -977,7 +977,7 @@ func (g *Graveler) AddCommitToBranchHead(ctx context.Context, repositoryID Repos
 
 		// check if commit already exists.
 		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-		if exists, err := g.commitExists(ctx, repositoryID, commitID); err != nil {
+		if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
 			return nil, err
 		} else if exists {
 			return commitID, nil
@@ -1011,7 +1011,7 @@ func (g *Graveler) AddCommit(ctx context.Context, repositoryID RepositoryID, com
 
 	// check if commit already exists.
 	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-	if exists, err := g.commitExists(ctx, repositoryID, commitID); err != nil {
+	if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
 		return "", err
 	} else if exists {
 		return commitID, nil
