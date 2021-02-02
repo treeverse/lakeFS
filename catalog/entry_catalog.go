@@ -133,10 +133,21 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 }
 
 func (e *EntryCatalog) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return "", err
+	}
 	return e.Store.AddCommitToBranchHead(ctx, repositoryID, branchID, commit)
 }
 
 func (e *EntryCatalog) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return "", err
+	}
 	return e.Store.AddCommit(ctx, repositoryID, commit)
 }
 
