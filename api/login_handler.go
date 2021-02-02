@@ -69,6 +69,7 @@ func NewLoginHandler(authService auth.Service) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
 		http.SetCookie(w, &http.Cookie{
 			Name:     JWTCookieName,
 			Value:    tokenString,
@@ -77,6 +78,7 @@ func NewLoginHandler(authService auth.Service) http.Handler {
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
 		})
+		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(LoginResponseData{
 			Token: tokenString,
 		})
