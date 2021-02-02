@@ -4,8 +4,8 @@ import "net/http"
 
 const JWTAuthorizationHeaderName = "X-JWT-Authorization"
 
-// CookieAPIHandler set JWT header with JWT cookie value
-func CookieAPIHandler(next http.Handler) http.Handler {
+// NewCookieAPIHandler set JWT header with JWT cookie value
+func NewCookieAPIHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// read cookie (no need to validate, this will be done in the API
 		cookie, err := r.Cookie(JWTCookieName)

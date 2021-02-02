@@ -18,6 +18,7 @@ require (
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
 	github.com/georgysavva/scany v0.2.7
@@ -52,7 +53,7 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/kr/pretty v0.2.1 // indirect
-	github.com/lib/pq v1.9.0
+	github.com/lib/pq v1.9.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid v1.5.0

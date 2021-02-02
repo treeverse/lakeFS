@@ -37,11 +37,12 @@ func TestBasicAuth(t *testing.T) {
 func TestJwtTokenAuth(t *testing.T) {
 	clt, deps := setupClient(t, "")
 	creds := createDefaultAdminUser(t, clt)
+	secret := deps.authService.SecretStore().SharedSecret()
 
 	t.Run("valid token", func(t *testing.T) {
 		now := time.Now()
 		exp := now.Add(10 * time.Minute)
-		token, err := api.CreateAuthToken(deps.authService, creds.AccessKeyID, now, exp)
+		token, err := api.GenerateJWT(secret, creds.AccessKeyID, now, exp)
 		testutil.MustDo(t, "create auth token", err)
 		authInfo := client.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
 		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParamsWithTimeout(timeout), authInfo)
@@ -51,7 +52,7 @@ func TestJwtTokenAuth(t *testing.T) {
 	t.Run("invalid token", func(t *testing.T) {
 		now := time.Now()
 		exp := now.Add(10 * time.Minute)
-		token, err := api.CreateAuthToken(deps.authService, "admin", now, exp)
+		token, err := api.GenerateJWT(secret, "admin", now, exp)
 		testutil.MustDo(t, "create auth token", err)
 		authInfo := client.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
 		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), authInfo)
