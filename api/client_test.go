@@ -28,5 +28,4 @@ func TestNewClient(t *testing.T) {
 	client, err = NewClient(server.URL+genclient.DefaultBasePath, "key2", "secret2")
 	testutil.Must(t, err)
 	_, _, _ = client.ListRepositories(context.Background(), "", 0)
-
 }

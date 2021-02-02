@@ -29,8 +29,8 @@ func Serve(deps Dependencies) http.Handler {
 	api.Logger = func(msg string, ctx ...interface{}) {
 		logging.Default().WithField("logger", "swagger").Debugf(msg, ctx)
 	}
-	api.BasicAuthAuth = BasicAuthHandler(deps.Auth)
-	api.JwtTokenAuth = JwtTokenAuthHandler(deps.Auth)
+	api.BasicAuthAuth = NewBasicAuthHandler(deps.Auth)
+	api.JwtTokenAuth = NewJwtTokenAuthHandler(deps.Auth)
 
 	// bind our handlers to the server
 	controller := NewController(deps)
@@ -44,9 +44,9 @@ func Serve(deps Dependencies) http.Handler {
 			logging.Fields{"service_name": LoggerServiceName},
 			promhttp.InstrumentHandlerCounter(requestCounter,
 				MetricsHandler(api.Context(),
-					CookieAPIHandler(handler))))
+					NewCookieAPIHandler(handler))))
 	})
-	uiHandler := UIHandler(deps.Auth)
+	uiHandler := NewUIHandler(deps.Auth)
 
 	mux := http.NewServeMux()
 	mux.Handle("/_health", httputil.ServeHealth())

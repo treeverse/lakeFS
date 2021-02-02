@@ -28,8 +28,18 @@ import {
 
 import * as async from "./async";
 
+const hydrateUser = () => {
+    try {
+        const u = window.localStorage.getItem('user');
+        if (u) {
+            return JSON.parse(u);
+        }
+    } catch(ignored) {}
+    return null;
+};
+
 const initialState = {
-    user: null,
+    user: hydrateUser(),
     loginError: null,
     redirectTo: null,
     usersList: async.initialState,
@@ -97,6 +107,7 @@ const store = (state = initialState, action) => {
                 loginError: action.error,
             };
         case AUTH_LOGIN.success:
+            window.localStorage.setItem('user', JSON.stringify({...action.payload.user, accessKeyId: action.payload.accessKeyId}, null, ""));
             return {
                 ...state,
                 user: {...action.payload.user, accessKeyId: action.payload.accessKeyId},
@@ -104,6 +115,7 @@ const store = (state = initialState, action) => {
                 loginError: null,
             };
         case AUTH_LOGOUT.success:
+            window.localStorage.removeItem('user');
             return {
                 ...initialState,
                 user: null,
