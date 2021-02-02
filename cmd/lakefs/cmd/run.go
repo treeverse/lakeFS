@@ -28,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/stats"
 )
 
@@ -95,8 +94,6 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		// parade
-		paradeDB := parade.NewParadeDB(dbPool.Pool())
 		defer func() {
 			_ = cataloger.Close()
 		}()
@@ -110,7 +107,6 @@ var runCmd = &cobra.Command{
 			Cataloger:       cataloger,
 			Auth:            authService,
 			BlockAdapter:    blockStore,
-			Parade:          paradeDB,
 			MetadataManager: authMetadataManager,
 			Migrator:        migrator,
 			Collector:       bufferedCollector,

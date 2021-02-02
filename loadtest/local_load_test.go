@@ -73,7 +73,6 @@ func TestLocalLoad(t *testing.T) {
 		Cataloger:       cataloger,
 		Auth:            authService,
 		BlockAdapter:    blockAdapter,
-		Parade:          nil,
 		MetadataManager: meta,
 		Migrator:        migrator,
 		Collector:       &nullCollector{},
