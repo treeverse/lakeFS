@@ -17,13 +17,27 @@ Since lakeFS supports AWS S3 API, it works seamlessly with all operators that wo
 
 All we need to do is set lakeFS as the endpoint-url and use our lakeFS credentials instead of our S3 credentials and that’s about it.
 
-We could then run tasks on lakeFS using the lakeFS path convention s3://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT
+We could then run tasks on lakeFS using the lakeFS path convention 
 
-The lakeFS docs contain explanations and examples on how to use lakeFS with AWS CLI, Spark, Presto and many more. 
+```s3://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT```
+
+The lakeFS docs contain explanations and examples on how to use lakeFS with [AWS CLI](aws_cli.md), [Spark](spark.md), [Presto](presto.md) and many more. 
 
 ## Run lakeFS commands such as creating branches, committing, merging, etc.
 We currently have two options to run lakeFS commands with Airflow
-Using the SimpleHttpOperator to send API requests to lakeFS. Or we could use the bashOperator with lakeCTL commands.
+Using the SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. Or we could use the bashOperator with [lakeCTL](../quickstart/lakefs_cli.md) commands.
 
-Soon lakeFS will have an airflow operator dedicated for lakeFS, but until then, using the bashOperator with lakeCTL commands is quite simple
+For example, a commit task using the bashOperator:
+
+```python
+
+commit_extract = BashOperator(
+       task_id='commit_extract',
+       bash_command='lakectl commit lakefs://example_repo@example_dag_branch -m "extract data"',
+       dag=dag,
+       )
+```
+
+
+
 
