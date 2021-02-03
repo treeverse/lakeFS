@@ -308,6 +308,71 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	return attrs.Etag, nil
 }
 
+func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
+	qualifiedKey, err := resolveNamespace(destinationObj)
+	if err != nil {
+		return "", err
+	}
+	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
+	objName := formatMultipartFilename(uploadID, partNumber)
+	o := a.client.
+		Bucket(qualifiedKey.StorageNamespace).
+		Object(objName)
+
+	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	if err != nil {
+		return "", fmt.Errorf("resolve source: %w", err)
+	}
+	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
+
+	attrs, err := o.CopierFrom(sourceObjectHandle).Run(a.ctx)
+	if err != nil {
+		return "", fmt.Errorf("CopyPart: %w", err)
+	}
+	return attrs.Etag, nil
+}
+
+func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
+	qualifiedKey, err := resolveNamespace(destinationObj)
+	if err != nil {
+		return "", err
+	}
+	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
+	objName := formatMultipartFilename(uploadID, partNumber)
+	o := a.client.
+		Bucket(qualifiedKey.StorageNamespace).
+		Object(objName)
+
+	reader, err := a.GetRange(sourceObj, startPosition, endPosition)
+	if err != nil {
+		return "", fmt.Errorf("GetRange: %w", err)
+	}
+	w := o.NewWriter(a.ctx)
+	_, err = io.Copy(w, reader)
+	if err != nil {
+		return "", fmt.Errorf("RangeCopy: %w", err)
+	}
+	err = w.Close()
+	if err != nil {
+		_ = reader.Close()
+		return "", fmt.Errorf("WriterClose: %w", err)
+	}
+	err = reader.Close()
+	if err != nil {
+		return "", fmt.Errorf("ReaderClose: %w", err)
+	}
+
+	attrs, err := o.Attrs(a.ctx)
+	if err != nil {
+		return "", fmt.Errorf("object.Attrs: %w", err)
+	}
+	return attrs.Etag, nil
+}
+
 func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
 	var err error
 	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
