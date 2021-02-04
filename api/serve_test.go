@@ -35,11 +35,16 @@ type dependencies struct {
 	blocks      block.Adapter
 	cataloger   catalog.Cataloger
 	authService *auth.DBAuthService
+	collector   *nullCollector
 }
 
-type nullCollector struct{}
+type nullCollector struct {
+	metadata []*stats.Metadata
+}
 
-func (m *nullCollector) CollectMetadata(_ *stats.Metadata) {}
+func (m *nullCollector) CollectMetadata(metadata *stats.Metadata) {
+	m.metadata = append(m.metadata, metadata)
+}
 
 func (m *nullCollector) CollectEvent(_, _ string) {}
 
@@ -87,13 +92,15 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		_ = cataloger.Close()
 	})
 
+	collector := &nullCollector{}
+
 	handler := api.Serve(api.Dependencies{
 		Cataloger:       cataloger,
 		Auth:            authService,
 		BlockAdapter:    blockAdapter,
 		MetadataManager: meta,
 		Migrator:        migrator,
-		Collector:       &nullCollector{},
+		Collector:       collector,
 		Logger:          logging.Default(),
 	})
 
@@ -101,6 +108,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		blocks:      blockAdapter,
 		authService: authService,
 		cataloger:   cataloger,
+		collector:   collector,
 	}
 }
 
