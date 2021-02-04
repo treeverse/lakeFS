@@ -79,11 +79,18 @@ func (a *mockAdapter) UploadPart(_ block.ObjectPointer, sizeBytes int64, reader 
 
 func (a *mockAdapter) AbortMultiPartUpload(_ block.ObjectPointer, uploadID string) error {
 	panic("try to abort multipart in mock adapter")
-
 }
 
 func (a *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	panic("try to complete multipart in mock adapter")
+}
+
+func (a *mockAdapter) UploadCopyPart(_, _ block.ObjectPointer, _ string, _ int64) (string, error) {
+	panic("try to upload copy part in mock adapter")
+}
+
+func (a *mockAdapter) UploadCopyPartRange(_, _ block.ObjectPointer, _ string, _, _, _ int64) (string, error) {
+	panic("try to upload copy part range in mock adapter")
 }
 
 func (a *mockAdapter) ValidateConfiguration(_ string) error {

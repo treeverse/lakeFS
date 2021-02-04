@@ -170,6 +170,59 @@ func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	return nil
 }
 
+func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
+	mpu, ok := a.mpu[uploadID]
+	if !ok {
+		return "", ErrMultiPartNotFound
+	}
+	entry, err := a.Get(sourceObj, 0)
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadAll(entry)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	_, err = h.Write(data)
+	if err != nil {
+		return "", err
+	}
+	code := h.Sum(nil)
+	mpu.parts[partNumber] = data
+	return fmt.Sprintf("%x", code), nil
+}
+
+func (a *Adapter) UploadCopyPartRange(sourceObj, _ block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
+	mpu, ok := a.mpu[uploadID]
+	if !ok {
+		return "", ErrMultiPartNotFound
+	}
+	data, ok := a.data[getKey(sourceObj)]
+	if !ok {
+		return "", ErrNoDataForKey
+	}
+	reader := io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)
+	data, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	_, err = h.Write(data)
+	if err != nil {
+		return "", err
+	}
+	code := h.Sum(nil)
+	mpu.parts[partNumber] = data
+	return fmt.Sprintf("%x", code), nil
+}
+
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
