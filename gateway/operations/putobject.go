@@ -39,7 +39,7 @@ func (controller *PutObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 	}, nil
 }
 
-func (controller *PutObject) entryForCopyOperation(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
+func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
 	copySourceDecoded, err := url.QueryUnescape(copySource)
 	if err != nil {
 		copySourceDecoded = copySource
@@ -67,9 +67,9 @@ func (controller *PutObject) entryForCopyOperation(w http.ResponseWriter, req *h
 	return ent
 }
 
-func (controller *PutObject) HandleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) {
+func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) {
 	o.Incr("copy_object")
-	ent := controller.entryForCopyOperation(w, req, o, copySource)
+	ent := extractEntryFromCopyReq(w, req, o, copySource)
 	if ent == nil {
 		return // operation already failed
 	}
@@ -88,7 +88,7 @@ func (controller *PutObject) HandleCopy(w http.ResponseWriter, req *http.Request
 	}, http.StatusOK)
 }
 
-func (controller *PutObject) HandleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_mpu_part")
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
@@ -118,7 +118,7 @@ func (controller *PutObject) HandleUploadPart(w http.ResponseWriter, req *http.R
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html#API_UploadPartCopy_RequestSyntax
 	if copySource := req.Header.Get(CopySourceHeader); copySource != "" {
 		// see if there's a range passed as well
-		ent := controller.entryForCopyOperation(w, req, o, copySource)
+		ent := extractEntryFromCopyReq(w, req, o, copySource)
 		if ent == nil {
 			return // operation already failed
 		}
@@ -192,15 +192,12 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	// check if this is a multipart upload creation call
 	_, hasUploadID := query[QueryParamUploadID]
 	if hasUploadID {
-		controller.HandleUploadPart(w, req, o)
+		handleUploadPart(w, req, o)
 		return
 	}
 
 	// check if this is a copy operation (i.e. https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
-	storageClass := StorageClassFromHeader(req.Header)
-	opts := block.PutOpts{StorageClass: storageClass}
-
 	copySource := req.Header.Get(CopySourceHeader)
 	if len(copySource) > 0 {
 		// The *first* PUT operation sets PutOpts such as
@@ -208,12 +205,18 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		// same file continue to use that storage class.
 
 		// TODO(ariels): Add a counter for how often a copy has different options
-		controller.HandleCopy(w, req, o, copySource)
+		handleCopy(w, req, o, copySource)
 		return
 	}
 
-	o.Incr("put_object")
 	// handle the upload itself
+	handlePut(w, req, o)
+}
+
+func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+	o.Incr("put_object")
+	storageClass := StorageClassFromHeader(req.Header)
+	opts := block.PutOpts{StorageClass: storageClass}
 	blob, err := upload.WriteBlob(o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")

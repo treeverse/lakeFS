@@ -329,7 +329,7 @@ func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, 
 
 	attrs, err := o.CopierFrom(sourceObjectHandle).Run(a.ctx)
 	if err != nil {
-		return "", fmt.Errorf("CopyPart: %w", err)
+		return "", fmt.Errorf("CopierFrom: %w", err)
 	}
 	return attrs.Etag, nil
 }
@@ -354,7 +354,7 @@ func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPoin
 	w := o.NewWriter(a.ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
-		return "", fmt.Errorf("RangeCopy: %w", err)
+		return "", fmt.Errorf("Copy: %w", err)
 	}
 	err = w.Close()
 	if err != nil {
