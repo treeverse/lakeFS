@@ -1,0 +1,21 @@
+name: Good merge
+description: set of checks to verify that branch is good
+on:
+  pre-merge:
+    branches:
+      - master
+      - stage
+  pre-commit:
+    branches:
+      - feature-*
+hooks:
+  - id: no_temp
+    type: webhook
+    description: checking no temporary files found
+    properties:
+      url: "https://api.lakefs.io/webhook1?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+  - id: no_freeze
+    type: webhook
+    description: check production is not in dev freeze
+    properties:
+      url: "https://api.lakefs.io/webhook2?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"

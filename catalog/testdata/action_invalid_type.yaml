@@ -1,0 +1,7 @@
+on:
+  pre-merge:
+    branches:
+      - master
+hooks:
+  - id: no_temp
+    type: command
