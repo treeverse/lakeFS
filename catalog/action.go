@@ -9,28 +9,22 @@ import (
 type Action struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
-	On          HookOn `yaml:"on"`
-	Hooks       []Hook `yaml:"hooks"`
+	On          struct {
+		PreMerge  *ActionOn `yaml:"pre-merge"`
+		PreCommit *ActionOn `yaml:"pre-commit"`
+	} `yaml:"on"`
+	Hooks []ActionHook `yaml:"hooks"`
 }
 
-type HookOnAction struct {
+type ActionOn struct {
 	Branches []string `yaml:"branches"`
 }
 
-type HookOn struct {
-	PreMerge  *HookOnAction `yaml:"pre-merge"`
-	PreCommit *HookOnAction `yaml:"pre-commit"`
-}
-
-type HookProperties struct {
-	URL string `yaml:"url"`
-}
-
-type Hook struct {
-	ID          string         `yaml:"id"`
-	Type        string         `yaml:"type"`
-	Description string         `yaml:"description"`
-	Properties  HookProperties `yaml:"properties"`
+type ActionHook struct {
+	ID          string            `yaml:"id"`
+	Type        string            `yaml:"type"`
+	Description string            `yaml:"description"`
+	Properties  map[string]string `yaml:"properties"`
 }
 
 var (
