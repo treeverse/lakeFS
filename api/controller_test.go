@@ -1372,7 +1372,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			clt, _ := setupClient(t, "", testutil.WithGetDBApplyDDL(false))
+			clt, deps := setupClient(t, "", testutil.WithGetDBApplyDDL(false))
 			t.Run("fresh start", func(t *testing.T) {
 				res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
 				if c.errorDefaultCode != 0 {
@@ -1419,6 +1419,15 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				}
 				if foundCreds.Payload.AccessKeyID != creds.AccessKeyID {
 					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.Payload.AccessKeyID, creds.AccessKeyID)
+				}
+				if len(deps.collector.metadata) != 1 {
+					t.Fatal("Failed to collect metadata")
+				}
+				if deps.collector.metadata[0].InstallationID == "" {
+					t.Fatal("Empty installationID")
+				}
+				if len(deps.collector.metadata[0].Entries) < 5 {
+					t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
 				}
 			})
 
