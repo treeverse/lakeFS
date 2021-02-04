@@ -75,6 +75,8 @@ type Adapter interface {
 	Copy(sourceObj, destinationObj ObjectPointer) error
 	CreateMultiPartUpload(obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
 	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
+	UploadCopyPart(sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int64) (string, error)
+	UploadCopyPartRange(sourceObj, destinationObj ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error)
 	AbortMultiPartUpload(obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*string, int64, error)
 	// ValidateConfiguration validates an appropriate bucket
