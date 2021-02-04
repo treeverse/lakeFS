@@ -4,6 +4,9 @@ on:
     branches:
       - master
 
+  # TODO: remove before merge
+  pull_request:
+
 jobs:
   deploy-executor-image:
     name: Build and push benchmark executor Docker image

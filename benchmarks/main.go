@@ -83,6 +83,27 @@ func testBenchmarkLakeFS() error {
 		return fmt.Errorf("failed to create repository, storage '%s': %w", ns, err)
 	}
 
+	// uploading dummy content before creating the first branch
+	contentReader := runtime.NamedReader("content", strings.NewReader("dummy content"))
+	if _, err := client.Objects.UploadObject(
+		objects.NewUploadObjectParamsWithContext(ctx).
+			WithRepository(repoName).
+			WithBranch("master").
+			WithPath("dummy-path").
+			WithContent(contentReader), nil); err != nil {
+		return fmt.Errorf("failed to upload first file : %w", err)
+	}
+	if _, err = client.Commits.Commit(&commits.CommitParams{
+		Branch: "master",
+		Commit: &models.CommitCreation{
+			Message: swag.String("first commit"),
+		},
+		Repository: repoName,
+		Context:    ctx,
+	}, nil); err != nil {
+		return fmt.Errorf("failed to commit to master : %w", err)
+	}
+
 	_, err = client.Branches.CreateBranch(&branches.CreateBranchParams{
 		Branch: &models.BranchCreation{
 			Source: swag.String("master"),
