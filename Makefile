@@ -65,6 +65,9 @@ docs: docs/assets/js/swagger.yml
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
 
+gen-docs: go-install ## Generate CLI docs automatically
+	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/commands.md
+
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 

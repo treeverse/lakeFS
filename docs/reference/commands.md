@@ -16,9 +16,9 @@ has_children: false
 1. TOC
 {:toc}
 
-### Installing the lakectl command locally
+## Installing the lakectl command locally
 
-The `lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
+`lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
 
 [Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
 
@@ -40,764 +40,1256 @@ This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoi
 When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
+### lakectl
 
-### Command Reference
+A cli tool to explore manage and work with lakeFS
 
-##### `lakectl branch create`
-````text
-create a new branch in a repository
+#### Synopsis
 
-Usage:
-  lakectl branch create [ref uri] [flags]
+lakeFS is data lake management solution, allowing Git-like semantics over common object stores
 
-Flags:
-  -h, --help            help for create
-  -s, --source string   source branch uri
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl branch delete`
-````text
-delete a branch in a repository, along with its uncommitted changes (CAREFUL)
-
-Usage:
-  lakectl branch delete [branch uri] [flags]
-
-Flags:
-  -h, --help   help for delete
-  -y, --sure   do not ask for confirmation
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl branch list`
-````text
-list branches in a repository
-
-Usage:
-  lakectl branch list [repository uri] [flags]
-
-Examples:
-lakectl branch list lakefs://myrepo
-
-Flags:
-      --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
-  -h, --help           help for list
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl branch revert`
-````text
-Records a new commit on the branch with the reverse effect of the given commit.
-Usage:
-  lakectl branch revert [branch uri] [commit ref]
-
-Example:
-  lakectl branch revert lakefs://example-repo@example-feature a1b2c3d4  # revert commit a1b2c3d4 from branch 'example-feature'
-Flags:
-  -h, --help            help for reset
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl branch reset`
-````text
-reset changes - There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit [commit ref]
-  2. reset all uncommitted changes - reset lakefs://myrepo@master 
-  3. reset uncommitted changes under specific path -	reset lakefs://myrepo@master --prefix path
-  4. reset uncommitted changes for specific object - reset lakefs://myrepo@master --object path
-Usage:
-  lakectl branch reset [branch uri] [flags]
-
-Flags:
-      --commit string   commit ref to reset branch to
-  -h, --help            help for reset
-      --object string   path to object to be reset
-      --tree string     path to tree to be reset
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl branch show`
-````text
-show branch metadata
-
-Usage:
-  lakectl branch show [branch uri] [flags]
-
-Flags:
-  -h, --help   help for show
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl commit`
-````text
-commit changes on a given branch
-
-Usage:
-  lakectl commit [branch uri] [flags]
-
-Flags:
-  -h, --help             help for commit
-  -m, --message string   commit message
-      --meta strings     key value pair in the form of key=value
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl config`
-````text
-Create/update local lakeFS configuration
-
-Usage:
-  lakectl config [flags]
-
-Flags:
-  -h, --help   help for config
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl diff`
-````text
-see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
-
-Usage:
-  lakectl diff [ref uri] <other ref uri> [flags]
-
-Flags:
-  -h, --help   help for diff
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl fs cat`
-````text
-dump content of object to stdout
-
-Usage:
-  lakectl fs cat [path uri] [flags]
-
-Flags:
-  -h, --help               help for cat
-      --read-uncommitted   read uncommitted data (default true)
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl fs ls`
-````text
-list entries under a given tree
-
-Usage:
-  lakectl fs ls [path uri] [flags]
-
-Flags:
-  -h, --help               help for ls
-      --read-uncommitted   read uncommitted data (default true)
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl fs rm`
-````text
-delete object
-
-Usage:
-  lakectl fs rm [path uri] [flags]
-
-Flags:
-  -h, --help   help for rm
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl fs stat`
-````text
-view object metadata
-
-Usage:
-  lakectl fs stat [path uri] [flags]
-
-Flags:
-  -h, --help               help for stat
-      --read-uncommitted   read uncommitted data (default true)
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-##### `lakectl fs upload`
-````text
-upload a local file to the specified URI
-
-Usage:
-  lakectl fs upload [path uri] [flags]
-
-Flags:
-  -h, --help            help for upload
-  -s, --source string   local file to upload, or "-" for stdin
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-##### `lakectl log`
-````text
-show log of commits for the given branch
-
-Usage:
-  lakectl log [branch uri] [flags]
-
-Flags:
-      --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
-  -h, --help           help for log
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-##### `lakectl merge`
-````text
-merge & commit changes from source branch into destination branch
-
-Usage:
-  lakectl merge [flags]
-
-Flags:
-  -h, --help   help for merge
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl repo create`
-````text
-create a new repository
-
-Usage:
-  lakectl repo create  [repository uri] [bucket name] [flags]
-
-Flags:
-  -d, --default-branch string   the default branch of this repository (default "master")
-  -h, --help                    help for create
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl repo delete`
-````text
-delete existing repository
-
-Usage:
-  lakectl repo delete [repository uri] [flags]
-
-Flags:
-  -h, --help   help for delete
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-##### `lakectl repo list`
-````text
-list repositories
-
-Usage:
-  lakectl repo list [flags]
-
-Flags:
-      --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
-  -h, --help           help for list
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl show`
-````text
-See detailed information about an entity by ID (commit, user, etc)
-
-Usage:
-  lakectl show [repository uri] [flags]
-
-Flags:
-      --commit string   commit id to show
-  -h, --help            help for show
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-````
-
-##### `lakectl auth users create `
-```text
-create a user
-
-Usage:
-  lakectl auth users create [flags]
-
-Flags:
-  -h, --help        help for create
-      --id string   user identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+#### Options
 
 ```
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+  -h, --help            help for lakectl
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+```
 
-##### `lakectl auth users list `
-```text
-list users
 
-Usage:
-  lakectl auth users list [flags]
 
-Flags:
+### lakectl auth
+
+manage authentication and authorization
+
+#### Synopsis
+
+manage authentication and authorization including users, groups and policies
+
+#### Options
+
+```
+  -h, --help   help for auth
+```
+
+
+
+### lakectl auth groups
+
+manage groups
+
+#### Options
+
+```
+  -h, --help   help for groups
+```
+
+
+
+### lakectl auth groups create
+
+create a group
+
+```
+lakectl auth groups create [flags]
+```
+
+#### Options
+
+```
+  -h, --help        help for create
+      --id string   group identifier
+```
+
+
+
+### lakectl auth groups delete
+
+delete a group
+
+```
+lakectl auth groups delete [flags]
+```
+
+#### Options
+
+```
+  -h, --help        help for delete
+      --id string   group identifier
+```
+
+
+
+### lakectl auth groups help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type groups help [path to command] for full details.
+
+```
+lakectl auth groups help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth groups list
+
+list groups
+
+```
+lakectl auth groups list [flags]
+```
+
+#### Options
+
+```
       --after string   show results after this value (used for pagination)
       --amount int     how many results to return (default 100)
   -h, --help           help for list
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
 ```
 
-##### `lakectl auth users delete `
-```text
+
+
+### lakectl auth groups members
+
+manage group user memberships
+
+#### Options
+
+```
+  -h, --help   help for members
+```
+
+
+
+### lakectl auth groups members add
+
+add a user to a group
+
+```
+lakectl auth groups members add [flags]
+```
+
+#### Options
+
+```
+  -h, --help          help for add
+      --id string     group identifier
+      --user string   user identifier to add to the group
+```
+
+
+
+### lakectl auth groups members help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type members help [path to command] for full details.
+
+```
+lakectl auth groups members help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth groups members list
+
+list users in a group
+
+```
+lakectl auth groups members list [flags]
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+      --id string      group identifier
+```
+
+
+
+### lakectl auth groups members remove
+
+remove a user from a group
+
+```
+lakectl auth groups members remove [flags]
+```
+
+#### Options
+
+```
+  -h, --help          help for remove
+      --id string     group identifier
+      --user string   user identifier to add to the group
+```
+
+
+
+### lakectl auth groups policies
+
+manage group policies
+
+#### Options
+
+```
+  -h, --help   help for policies
+```
+
+
+
+### lakectl auth groups policies attach
+
+attach a policy to a group
+
+```
+lakectl auth groups policies attach [flags]
+```
+
+#### Options
+
+```
+  -h, --help            help for attach
+      --id string       user identifier
+      --policy string   policy identifier
+```
+
+
+
+### lakectl auth groups policies detach
+
+detach a policy from a group
+
+```
+lakectl auth groups policies detach [flags]
+```
+
+#### Options
+
+```
+  -h, --help            help for detach
+      --id string       user identifier
+      --policy string   policy identifier
+```
+
+
+
+### lakectl auth groups policies help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type policies help [path to command] for full details.
+
+```
+lakectl auth groups policies help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth groups policies list
+
+list policies for the given group
+
+```
+lakectl auth groups policies list [flags]
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+      --id string      group identifier
+```
+
+
+
+### lakectl auth help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type auth help [path to command] for full details.
+
+```
+lakectl auth help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth policies
+
+manage policies
+
+#### Options
+
+```
+  -h, --help   help for policies
+```
+
+
+
+### lakectl auth policies create
+
+create a policy
+
+```
+lakectl auth policies create [flags]
+```
+
+#### Options
+
+```
+  -h, --help                        help for create
+      --id string                   policy identifier
+      --statement-document string   JSON statement document path (or "-" for stdin)
+```
+
+
+
+### lakectl auth policies delete
+
+delete a policy
+
+```
+lakectl auth policies delete [flags]
+```
+
+#### Options
+
+```
+  -h, --help        help for delete
+      --id string   policy identifier
+```
+
+
+
+### lakectl auth policies help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type policies help [path to command] for full details.
+
+```
+lakectl auth policies help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth policies list
+
+list policies
+
+```
+lakectl auth policies list [flags]
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+```
+
+
+
+### lakectl auth policies show
+
+show a policy
+
+```
+lakectl auth policies show [flags]
+```
+
+#### Options
+
+```
+  -h, --help        help for show
+      --id string   policy identifier
+```
+
+
+
+### lakectl auth users
+
+manage users
+
+#### Options
+
+```
+  -h, --help   help for users
+```
+
+
+
+### lakectl auth users create
+
+create a user
+
+```
+lakectl auth users create [flags]
+```
+
+#### Options
+
+```
+  -h, --help        help for create
+      --id string   user identifier
+```
+
+
+
+### lakectl auth users credentials
+
+manage user credentials
+
+#### Options
+
+```
+  -h, --help   help for credentials
+```
+
+
+
+### lakectl auth users credentials create
+
+create user credentials
+
+```
+lakectl auth users credentials create [flags]
+```
+
+#### Options
+
+```
+  -h, --help        help for create
+      --id string   user identifier (default: current user)
+```
+
+
+
+### lakectl auth users credentials delete
+
+delete user credentials
+
+```
+lakectl auth users credentials delete [flags]
+```
+
+#### Options
+
+```
+      --access-key-id string   access key ID to delete
+  -h, --help                   help for delete
+      --id string              user identifier (default: current user)
+```
+
+
+
+### lakectl auth users credentials help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type credentials help [path to command] for full details.
+
+```
+lakectl auth users credentials help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth users credentials list
+
+list user credentials
+
+```
+lakectl auth users credentials list [flags]
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+      --id string      user identifier (default: current user)
+```
+
+
+
+### lakectl auth users delete
+
 delete a user
 
-Usage:
-  lakectl auth users delete [flags]
-
-Flags:
-  -h, --help        help for delete
-      --id string   user identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
+```
+lakectl auth users delete [flags]
 ```
 
-##### `lakectl auth users --id <userID> groups list `
-```text
+#### Options
+
+```
+  -h, --help        help for delete
+      --id string   user identifier
+```
+
+
+
+### lakectl auth users groups
+
+manage user groups
+
+#### Options
+
+```
+  -h, --help   help for groups
+```
+
+
+
+### lakectl auth users groups help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type groups help [path to command] for full details.
+
+```
+lakectl auth users groups help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth users groups list
+
 list groups for the given user
 
-Usage:
-  lakectl auth users groups list [flags]
+```
+lakectl auth users groups list [flags]
+```
 
-Flags:
+#### Options
+
+```
       --after string   show results after this value (used for pagination)
       --amount int     how many results to return (default 100)
   -h, --help           help for list
       --id string      user identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
 ```
 
 
-##### `lakectl auth users --id <userID> credentials list `
-```text
-create user credentials
 
-Usage:
-  lakectl auth users credentials create [flags]
+### lakectl auth users help
 
-Flags:
-  -h, --help        help for create
-      --id string   user identifier (default: current user)
+Help about any command
 
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type users help [path to command] for full details.
 
 ```
-
-##### `lakectl auth users --id <userID> credentials create `
-```text
-create user credentials
-
-Usage:
-  lakectl auth users credentials create [flags]
-
-Flags:
-  -h, --help        help for create
-      --id string   user identifier (default: current user)
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
+lakectl auth users help [command] [flags]
 ```
 
-##### `lakectl auth users --id <userID> credentials delete `
-```text
-delete user credentials
+#### Options
 
-Usage:
-  lakectl auth users credentials delete [flags]
-
-Flags:
-      --access-key-id string   access key ID to delete
-  -h, --help                   help for delete
-      --id string              user identifier (default: current user)
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+```
+  -h, --help   help for help
 ```
 
-##### `lakectl auth users --id <userID> policies list `
-```text
+
+
+### lakectl auth users list
+
+list users
+
+```
+lakectl auth users list [flags]
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+```
+
+
+
+### lakectl auth users policies
+
+manage user policies
+
+#### Options
+
+```
+  -h, --help   help for policies
+```
+
+
+
+### lakectl auth users policies attach
+
+attach a policy to a user
+
+```
+lakectl auth users policies attach [flags]
+```
+
+#### Options
+
+```
+  -h, --help            help for attach
+      --id string       user identifier
+      --policy string   policy identifier
+```
+
+
+
+### lakectl auth users policies detach
+
+detach a policy from a user
+
+```
+lakectl auth users policies detach [flags]
+```
+
+#### Options
+
+```
+  -h, --help            help for detach
+      --id string       user identifier
+      --policy string   policy identifier
+```
+
+
+
+### lakectl auth users policies help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type policies help [path to command] for full details.
+
+```
+lakectl auth users policies help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth users policies list
+
 list policies for the given user
 
-Usage:
-  lakectl auth users policies list [flags]
+```
+lakectl auth users policies list [flags]
+```
 
-Flags:
+#### Options
+
+```
       --after string   show results after this value (used for pagination)
       --amount int     how many results to return (default 100)
       --effective      list all distinct policies attached to the user, even through group memberships
   -h, --help           help for list
       --id string      user identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
 ```
 
 
-##### `lakectl auth users --id <userID> policies attach `
-```text
-attach a policy to a user
 
-Usage:
-  lakectl auth users policies attach [flags]
+### lakectl branch
 
-Flags:
-  -h, --help            help for attach
-      --id string       user identifier
-      --policy string   policy identifier
+create and manage branches within a repository
 
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+#### Synopsis
 
+Create delete and list branches within a lakeFS repository
+
+#### Options
+
+```
+  -h, --help   help for branch
 ```
 
 
-##### `lakectl auth users --id <userID> policies detach`
-```text
-detach a policy from a user
 
-Usage:
-  lakectl auth users policies detach [flags]
+### lakectl branch create
 
-Flags:
-  -h, --help            help for detach
-      --id string       user identifier
-      --policy string   policy identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+create a new branch in a repository
 
 ```
+lakectl branch create <ref uri> [flags]
+```
 
-##### `lakectl auth groups list`
-```text
-list groups
+#### Options
 
-Usage:
-  lakectl auth groups list [flags]
+```
+  -h, --help            help for create
+  -s, --source string   source branch uri
+```
 
-Flags:
+
+
+### lakectl branch delete
+
+delete a branch in a repository, along with its uncommitted changes (CAREFUL)
+
+```
+lakectl branch delete <branch uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for delete
+  -y, --yes    Automatically say yes to all confirmations
+```
+
+
+
+### lakectl branch help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type branch help [path to command] for full details.
+
+```
+lakectl branch help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl branch list
+
+list branches in a repository
+
+```
+lakectl branch list <repository uri> [flags]
+```
+
+#### Examples
+
+```
+lakectl branch list lakefs://<repository>
+```
+
+#### Options
+
+```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return (default 100)
+      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
   -h, --help           help for list
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-```
-
-##### `lakectl auth groups create`
-```text
-create a group
-
-Usage:
-  lakectl auth groups create [flags]
-
-Flags:
-  -h, --help        help for create
-      --id string   group identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-
-```
-
-##### `lakectl auth groups delete`
-```text
-delete a group
-
-Usage:
-  lakectl auth groups delete [flags]
-
-Flags:
-  -h, --help        help for delete
-      --id string   group identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-```
-
-##### `lakectl auth groups --id <groupID> members list`
-```text
-list users in a group
-
-Usage:
-  lakectl auth groups members list [flags]
-
-Flags:
-      --after string   show results after this value (used for pagination)
-      --amount int     how many results to return (default 100)
-  -h, --help           help for list
-      --id string      group identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-
-```
-
-##### `lakectl auth groups --id <groupID> members add`
-```text
-add a user to a group
-
-Usage:
-  lakectl auth groups members add [flags]
-
-Flags:
-  -h, --help          help for add
-      --id string     group identifier
-      --user string   user identifier to add to the group
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-
-```
-
-##### `lakectl auth groups --id <groupID> members remove`
-```text
-remove a user from a group
-
-Usage:
-  lakectl auth groups members remove [flags]
-
-Flags:
-  -h, --help          help for remove
-      --id string     group identifier
-      --user string   user identifier to add to the group
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-```
-
-##### `lakectl auth groups --id <groupID> policies list`
-```text
-list policies for the given group
-
-Usage:
-  lakectl auth groups policies list [flags]
-
-Flags:
-      --after string   show results after this value (used for pagination)
-      --amount int     how many results to return (default 100)
-  -h, --help           help for list
-      --id string      group identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-```
-
-##### `lakectl auth groups --id <groupID> policies attach`
-```text
-attach a policy to a group
-
-Usage:
-  lakectl auth groups policies attach [flags]
-
-Flags:
-  -h, --help            help for attach
-      --id string       user identifier
-      --policy string   policy identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-```
-
-##### `lakectl auth groups --id <groupID> policies detach`
-```text
-detach a policy from a group
-
-Usage:
-  lakectl auth groups policies detach [flags]
-
-Flags:
-  -h, --help            help for detach
-      --id string       user identifier
-      --policy string   policy identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
 ```
 
 
-##### `lakectl auth policies create`
-```text
-create a policy
 
-Usage:
-  lakectl auth policies create [flags]
+### lakectl branch reset
 
-Flags:
-  -h, --help                        help for create
-      --id string                   policy identifier
-      --statement-document string   JSON statement document path (or "-" for stdin)
+reset changes to specified commit, or reset uncommitted changes - all changes, or by path
 
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+#### Synopsis
+
+reset changes.  There are four different ways to reset changes:
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit commitId
+  2. reset all uncommitted changes - reset lakefs://myrepo@master 
+  3. reset uncommitted changes under specific path -	reset lakefs://myrepo@master --prefix path
+  4. reset uncommitted changes for specific object - reset lakefs://myrepo@master --object path
 
 ```
-
-##### `lakectl auth policies delete`
-```text
-delete a policy
-
-Usage:
-  lakectl auth policies delete [flags]
-
-Flags:
-  -h, --help        help for delete
-      --id string   policy identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
+lakectl branch reset <branch uri> [flags]
 ```
 
-##### `lakectl auth policies list`
-```text
-list policies
-
-Usage:
-  lakectl auth policies list [flags]
-
-Flags:
-      --after string   show results after this value (used for pagination)
-      --amount int     how many results to return (default 100)
-  -h, --help           help for list
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+#### Options
 
 ```
-
-##### `lakectl auth policies show`
-```text
-show a policy
-
-Usage:
-  lakectl auth policies show [flags]
-
-Flags:
-  -h, --help        help for show
-      --id string   policy identifier
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
+      --commit string   commit ID to reset branch to
+  -h, --help            help for reset
+      --object string   path to object to be reset
+      --prefix string   prefix of the objects to be reset
+  -y, --yes             Automatically say yes to all confirmations
 ```
 
-#### `lakectl metastore copy`
-````text
+
+
+### lakectl branch revert
+
+given a commit, record a new commit to reverse the effect of this commit
+
+```
+lakectl branch revert <branch uri> <commit ref to revert> [flags]
+```
+
+#### Options
+
+```
+  -h, --help                help for revert
+  -m, --parent-number int   the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.
+  -y, --yes                 Automatically say yes to all confirmations
+```
+
+
+
+### lakectl branch show
+
+show branch latest commit reference
+
+```
+lakectl branch show <branch uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for show
+```
+
+
+
+### lakectl cat-sst
+
+Explore lakeFS .sst files
+
+```
+lakectl cat-sst <sst-file> [flags]
+```
+
+#### Options
+
+```
+      --amount int    how many records to return, or -1 for all records (default -1)
+  -f, --file string   path to an sstable file, or "-" for stdin
+  -h, --help          help for cat-sst
+```
+
+
+
+### lakectl commit
+
+commit changes on a given branch
+
+```
+lakectl commit <branch uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help             help for commit
+  -m, --message string   commit message
+      --meta strings     key value pair in the form of key=value
+```
+
+
+
+### lakectl completion
+
+Generate completion script
+
+#### Synopsis
+
+To load completions:
+
+Bash:
+
+```sh
+$ source <(lakectl completion bash)
+```
+
+To load completions for each session, execute once:
+Linux:
+
+```sh
+$ lakectl completion bash > /etc/bash_completion.d/lakectl
+```
+
+MacOS:
+
+```sh
+$ lakectl completion bash > /usr/local/etc/bash_completion.d/lakectl
+```
+
+Zsh:
+
+If shell completion is not already enabled in your environment you will need
+to enable it.  You can execute the following once:
+
+```sh
+$ echo "autoload -U compinit; compinit" >> ~/.zshrc
+```
+
+To load completions for each session, execute once:
+```sh
+$ lakectl completion zsh > "${fpath[1]}/_lakectl"
+```
+
+You will need to start a new shell for this setup to take effect.
+
+Fish:
+
+```sh
+$ lakectl completion fish | source
+```
+
+To load completions for each session, execute once:
+
+```sh
+$ lakectl completion fish > ~/.config/fish/completions/lakectl.fish
+```
+
+
+
+```
+lakectl completion <bash|zsh|fish>
+```
+
+#### Options
+
+```
+  -h, --help   help for completion
+```
+
+
+
+### lakectl config
+
+create/update local lakeFS configuration
+
+```
+lakectl config [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for config
+```
+
+
+
+### lakectl diff
+
+diff between commits/hashes
+
+#### Synopsis
+
+see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
+
+```
+lakectl diff <ref uri> [other ref uri] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for diff
+```
+
+
+
+### lakectl docs
+
+
+
+```
+lakectl docs [outfile] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for docs
+```
+
+
+
+### lakectl fs
+
+view and manipulate objects
+
+#### Options
+
+```
+  -h, --help   help for fs
+```
+
+
+
+### lakectl fs cat
+
+dump content of object to stdout
+
+```
+lakectl fs cat <path uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for cat
+```
+
+
+
+### lakectl fs help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type fs help [path to command] for full details.
+
+```
+lakectl fs help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl fs ls
+
+list entries under a given tree
+
+```
+lakectl fs ls <path uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for ls
+```
+
+
+
+### lakectl fs rm
+
+delete object
+
+```
+lakectl fs rm <path uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for rm
+```
+
+
+
+### lakectl fs stat
+
+view object metadata
+
+```
+lakectl fs stat <path uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for stat
+```
+
+
+
+### lakectl fs upload
+
+upload a local file to the specified URI
+
+```
+lakectl fs upload <path uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help            help for upload
+  -r, --recursive       recursively copy all files under local source
+  -s, --source string   local file to upload, or "-" for stdin
+```
+
+
+
+### lakectl help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type lakectl help [path to command] for full details.
+
+```
+lakectl help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl log
+
+show log of commits for the given branch
+
+```
+lakectl log <branch uri> [flags]
+```
+
+#### Options
+
+```
+      --after string         show results after this value (used for pagination)
+      --amount int           how many results to return, or-1 for all results (used for pagination) (default -1)
+  -h, --help                 help for log
+      --show-meta-range-id   also show meta range ID
+```
+
+
+
+### lakectl merge
+
+merge
+
+#### Synopsis
+
+merge & commit changes from source branch into destination branch
+
+```
+lakectl merge <source ref> <destination ref> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for merge
+```
+
+
+
+### lakectl metastore
+
+manage metastore commands
+
+#### Options
+
+```
+  -h, --help   help for metastore
+```
+
+
+
+### lakectl metastore copy
+
+copy or merge table
+
+#### Synopsis
+
 copy or merge table. the destination table will point to the selected branch
 
-Usage:
-  lakectl metastore copy [flags]
+```
+lakectl metastore copy [flags]
+```
 
-Flags:
+#### Options
+
+```
       --catalog-id string      Glue catalog ID
       --from-schema string     source schema name
       --from-table string      source table name
@@ -809,43 +1301,25 @@ Flags:
       --to-schema string       destination schema name [default is from-branch]
       --to-table string        destination table name [default is  from-table] 
       --type string            metastore type [hive, glue]
+```
 
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
-````
 
-#### `lakectl metastore diff`
-````text
-show column and partition differences between two tables
+### lakectl metastore create-symlink
 
-Usage:
-  lakectl metastore diff [flags]
+create symlink table and data
 
-Flags:
-      --catalog-id string      Glue catalog ID
-      --from-schema string     source schema name
-      --from-table string      source table name
-  -h, --help                   help for diff
-      --metastore-uri string   Hive metastore URI
-      --to-schema string       destination schema name 
-      --to-table string        destination table name [default is from-table]
-      --type string            metastore type [hive, glue]
+#### Synopsis
 
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)
 
-````
-#### `lakectl metastore create-symlink`
-````text
-create table with symlinks, and create the symlinks in s3 in order to access from external devices that could only access s3 directly (e.g athena)
+```
+lakectl metastore create-symlink [flags]
+```
 
-Usage:
-  lakectl metastore create-symlink [flags]
+#### Options
 
-Flags:
+```
       --branch string        lakeFS branch name
       --catalog-id string    Glue catalog ID
       --from-schema string   source schema name
@@ -855,79 +1329,263 @@ Flags:
       --repo string          lakeFS repository name
       --to-schema string     destination schema name
       --to-table string      destination table name
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-#### `lakectl export get `
-````text
-get continuous export configuration for branch
-
-Usage:
-  lakectl export get <branch uri> [flags]
-
-Flags:
-  -h, --help   help for get
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-  -f, --force           without prompting for confirmation
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-#### `lakectl export set `
-````text
-set continuous export configuration for branch
-
-Usage:
-  lakectl export set <branch uri> [flags]
-
-Flags:
-  -h, --help                       help for set
-      --path string                export objects to this path
-      --prefix-regex stringArray   list of regexps of keys to exported last in each prefix (for signalling)
-      --status-path string         write export status object to this path
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-  -f, --force           without prompting for confirmation
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-
-#### `lakectl export run `
-````text
-export requested branch now
-
-Usage:
-  lakectl export run [flags]
-
-Flags:
-  -h, --help   help for run
-
-Global Flags:
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-  -f, --force           without prompting for confirmation
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
-
-````
-### lakeFS URI pattern
-
-Different CLI and UI operations use `lakefs://` URIs.  
-These are resource identifiers used to indicate a certain resource within the system (repository, branch/commit id, object).
-
-Their pattern is:
-
-```text
-Repository URI: lakefs://<repository_id>
-Commit URI: lakefs://<repository_id>@<ref_id>
-Branch URI: lakefs://<repository_id>@<ref_id>
-Object URI: lakefs://<repository_id>@<ref_id>/<object_path>
-
-ref_id = either a commit ID or a branch ID.
-    lakeFS supports using them interchangeably where it makes sense to do so
 ```
+
+
+
+### lakectl metastore diff
+
+show column and partition differences between two tables
+
+```
+lakectl metastore diff [flags]
+```
+
+#### Options
+
+```
+      --catalog-id string      Glue catalog ID
+      --from-schema string     source schema name
+      --from-table string      source table name
+  -h, --help                   help for diff
+      --metastore-uri string   Hive metastore URI
+      --to-schema string       destination schema name 
+      --to-table string        destination table name [default is from-table]
+      --type string            metastore type [hive, glue]
+```
+
+
+
+### lakectl metastore help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type metastore help [path to command] for full details.
+
+```
+lakectl metastore help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl repo
+
+manage and explore repos
+
+#### Options
+
+```
+  -h, --help   help for repo
+```
+
+
+
+### lakectl repo create
+
+create a new repository 
+
+```
+lakectl repo create <repository uri> <storage namespace> [flags]
+```
+
+#### Options
+
+```
+  -d, --default-branch string   the default branch of this repository (default "master")
+  -h, --help                    help for create
+```
+
+
+
+### lakectl repo delete
+
+delete existing repository
+
+```
+lakectl repo delete <repository uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for delete
+  -y, --yes    Automatically say yes to all confirmations
+```
+
+
+
+### lakectl repo help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type repo help [path to command] for full details.
+
+```
+lakectl repo help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl repo list
+
+list repositories
+
+```
+lakectl repo list [flags]
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
+  -h, --help           help for list
+```
+
+
+
+### lakectl show
+
+See detailed information about an entity by ID (commit, user, etc)
+
+```
+lakectl show <repository uri> [flags]
+```
+
+#### Options
+
+```
+      --commit string        commit ID to show
+  -h, --help                 help for show
+      --show-meta-range-id   when showing commits, also show meta range ID
+```
+
+
+
+### lakectl tag
+
+create and manage tags within a repository
+
+#### Synopsis
+
+Create delete and list tags within a lakeFS repository
+
+#### Options
+
+```
+  -h, --help   help for tag
+```
+
+
+
+### lakectl tag create
+
+create a new tag in a repository
+
+```
+lakectl tag create <tag uri> <commit ref> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for create
+```
+
+
+
+### lakectl tag delete
+
+delete a tag from a repository
+
+```
+lakectl tag delete <tag uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for delete
+```
+
+
+
+### lakectl tag help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type tag help [path to command] for full details.
+
+```
+lakectl tag help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl tag list
+
+list tags in a repository
+
+```
+lakectl tag list <repository uri> [flags]
+```
+
+#### Examples
+
+```
+lakectl tag list lakefs://<repository>
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
+  -h, --help           help for list
+```
+
+
+
+### lakectl tag show
+
+show tag's commit reference
+
+```
+lakectl tag show <tag uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for show
+```
+
+
+
