@@ -1,5 +1,6 @@
 import {
     REPOSITORY_CREATE,
+    REPOSITORY_DELETE,
     REPOSITORY_LIST,
     REPOSITORY_GET, REPOSITORY_LIST_PAGINATE,
 } from '../actions/repositories';
@@ -10,6 +11,7 @@ const initialState = {
     createIndex: 0,
     list: async.initialState,
     create: async.initialState,
+    delete: async.actionInitialState,
     repo: async.initialState,
 };
 
@@ -19,6 +21,7 @@ const store = (state = initialState, action) => {
         ...state,
         list: async.reduce(REPOSITORY_LIST, state.list, action),
         create: async.actionReduce(REPOSITORY_CREATE, state.create, action),
+        delete: async.actionReduce(REPOSITORY_DELETE, state.delete, action),
         repo: async.reduce(REPOSITORY_GET, state.repo, action),
     };
 
