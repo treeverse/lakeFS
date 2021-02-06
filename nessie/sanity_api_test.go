@@ -53,8 +53,8 @@ func TestSanityAPI(t *testing.T) {
 	}), nil)
 	require.NoError(t, err, "initial commit")
 
-	log.Debug("list committed files on master")
-	entries = listRepositoryObjects(ctx, t, repo, masterBranch+":HEAD")
+	log.Debug("list files on master")
+	entries = listRepositoryObjects(ctx, t, repo, masterBranch)
 	require.Len(t, entries, numOfFiles, "repository should have files")
 
 	log.Debug("create 'branch1' based on 'master'")
@@ -83,7 +83,7 @@ func TestSanityAPI(t *testing.T) {
 		// collect the branch names
 		branches = append(branches, branch)
 	}
-	require.ElementsMatch(t, branches, []string{masterBranch, "import-from-inventory", "branch1"},
+	require.ElementsMatch(t, branches, []string{masterBranch, "branch1"},
 		"match existing branches")
 
 	log.Debug("branch1 - change file0")
@@ -96,8 +96,8 @@ func TestSanityAPI(t *testing.T) {
 	log.Debug("branch1 - add fileX")
 	_, _ = uploadFileRandomData(ctx, t, repo, "branch1", "fileX")
 
-	log.Debug("master - list committed files")
-	masterObjects := listRepositoryObjects(ctx, t, repo, "master:HEAD")
+	log.Debug("master - list files")
+	masterObjects := listRepositoryObjects(ctx, t, repo, "master")
 	masterPaths := make([]string, len(masterObjects))
 	for i := range masterObjects {
 		masterPaths[i] = masterObjects[i].Path
@@ -145,10 +145,9 @@ func TestSanityAPI(t *testing.T) {
 	mergeResp, err := client.Refs.MergeIntoBranch(refs.NewMergeIntoBranchParamsWithContext(ctx).
 		WithRepository(repo).
 		WithSourceRef("branch1").
-		WithDestinationRef(masterBranch), nil)
+		WithDestinationBranch(masterBranch), nil)
 	require.NoError(t, err, "merge branch1 to master")
 	require.NotEmpty(t, mergeResp.Payload.Reference, "merge should return a commit reference")
-	require.Equal(t, mergeResp.Payload.Summary, &models.MergeResultSummary{Added: 1, Changed: 1, Conflict: 0, Removed: 1}, "merge summary")
 
 	log.Debug("branch1 - diff after merge")
 	diffResp, err = client.Refs.DiffRefs(refs.NewDiffRefsParamsWithContext(ctx).

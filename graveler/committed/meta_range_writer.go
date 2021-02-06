@@ -40,7 +40,7 @@ func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManag
 		ctx:              ctx,
 		rangeManager:     rangeManager,
 		metaRangeManager: metaRangeManager,
-		batchWriteCloser: NewBatchCloser(),
+		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
 		params:           params,
 		namespace:        namespace,
 	}

@@ -115,22 +115,6 @@ func keysByRanges(t testing.TB, it committed.Iterator) []rangeKeys {
 	return ret
 }
 
-// pred returns the predecessor k, a non-empty key with a non-NUL last byte.
-func pred(k committed.Key) committed.Key {
-	c := make(committed.Key, len(k))
-	copy(c, k)
-	c[len(c)-1]--
-	return c
-}
-
-// succ returns the key right after k.
-func succ(k committed.Key) committed.Key {
-	c := make(committed.Key, len(k)+1)
-	copy(c, k)
-	c[len(c)] = 0
-	return c
-}
-
 func TestIterator(t *testing.T) {
 	namespace := committed.Namespace("ns")
 	tests := []struct {

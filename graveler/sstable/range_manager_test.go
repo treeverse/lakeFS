@@ -7,61 +7,59 @@ import (
 	"sort"
 	"testing"
 
+	pebblesst "github.com/cockroachdb/pebble/sstable"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/sstable"
-	ssMock "github.com/treeverse/lakefs/graveler/sstable/mock"
 	fsMock "github.com/treeverse/lakefs/pyramid/mock"
 )
+
+func makeNewReader(r fakeReader) func(context.Context, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
+	return func(context.Context, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
+		return r.Reader, nil
+	}
+}
 
 func TestGetEntrySuccess(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
-
-	ns := "some-ns"
 	keys := randomStrings(10)
 	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := "some-id"
 
 	reader := createSStableReader(t, keys, vals)
 
-	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(gomock.Any(), ns, committed.ID(sstableID)).Times(1).
-		Return(reader,
-			func() error {
-				derefCount++
-				return nil
-			}, nil)
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), mockFS, crypto.SHA256)
+
+	ns := "some-ns"
+	sstableID := "some-id"
 
 	val, err := sut.GetValue(ctx, committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
 	require.NoError(t, err)
 	require.NotNil(t, val)
 
-	require.Equal(t, 1, derefCount)
+	require.Equal(t, 1, reader.GetNumClosed())
 }
 
 func TestGetEntryCacheFailure(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockCache(ctrl)
+	expectedErr := errors.New("cache failure")
+
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(func(context.Context, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
+		return nil, expectedErr
+	}, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
-
-	expectedErr := errors.New("cache failure")
-	mockCache.EXPECT().GetOrOpen(gomock.Any(), ns, sstableID).Times(1).
-		Return(nil, nil, expectedErr)
 
 	val, err := sut.GetValue(ctx, committed.Namespace(ns), committed.ID(sstableID), committed.Key("some-key"))
 	require.Error(t, expectedErr, err)
@@ -72,42 +70,33 @@ func TestGetEntryNotFound(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
-
-	ns := "some-ns"
 	keys := randomStrings(10)
 	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := committed.ID("some-id")
 
 	reader := createSStableReader(t, keys, vals)
 
-	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ctx, ns, sstableID).Times(1).
-		Return(reader,
-			func() error {
-				derefCount++
-				return nil
-			}, nil)
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), mockFS, crypto.SHA256)
+
+	ns := "some-ns"
+	sstableID := committed.ID("some-id")
 
 	val, err := sut.GetValue(ctx, committed.Namespace(ns), committed.ID(sstableID), committed.Key("does-not-exist"))
 	require.Error(t, err)
 	require.Nil(t, val)
 
-	require.Equal(t, 1, derefCount)
+	require.Equal(t, 1, reader.GetNumClosed())
 }
 
 func TestGetWriterSuccess(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	mockFile := fsMock.NewMockStoredFile(ctrl)
@@ -128,25 +117,17 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
-
-	ns := "some-ns"
 	keys := randomStrings(10)
 	sort.Strings(keys)
 	vals := randomStrings(len(keys))
-	sstableID := committed.ID("some-id")
-
 	reader := createSStableReader(t, keys, vals)
-	derefCount := 0
-	mockCache.EXPECT().GetOrOpen(ctx, ns, sstableID).Times(1).
-		Return(reader,
-			func() error {
-				derefCount++
-				return nil
-			}, nil)
+
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), mockFS, crypto.SHA256)
+
+	ns := "some-ns"
+	sstableID := committed.ID("some-id")
 
 	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), committed.ID(sstableID))
 
@@ -159,17 +140,16 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	iter.Close()
 	require.NoError(t, iter.Err())
 
-	require.Equal(t, 1, derefCount)
+	require.Equal(t, 1, reader.GetNumClosed())
 }
 
 func TestGetWriterRangeID(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 
-	mockCache := ssMock.NewMockCache(ctrl)
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManager(mockCache, mockFS, crypto.SHA256)
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, mockFS, crypto.SHA256)
 
 	for times := 0; times < 2; times++ {
 		const ns = "some-ns"
@@ -193,7 +173,7 @@ func TestGetWriterRangeID(t *testing.T) {
 		result, err := writer.Close()
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		expectedID := committed.ID("573176aa7fc6f9123e509c560b8a4d7d3384d85c9a74f72890c0276a70f7bf67")
+		expectedID := committed.ID("1f60902cb44890618d61597673a62e44cf526f5991d9db687141218985fe60b8")
 		require.Equal(t, expectedID, result.RangeID, "Range ID should be kept the same based on the content")
 	}
 }

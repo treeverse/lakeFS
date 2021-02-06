@@ -14,9 +14,7 @@ import (
 func TestImport(t *testing.T) {
 	testdata := map[string]struct {
 		NewInventory                 []string
-		PreviousInventory            []string
 		ExpectedAdded                []string
-		ExpectedDeleted              []string
 		ExpectedErr                  error
 		OverrideNewInventoryURL      string
 		OverridePreviousInventoryURL string
@@ -29,46 +27,10 @@ func TestImport(t *testing.T) {
 		},
 		"new inventory - unsorted": {
 			NewInventory:  []string{"f2", "f1"},
-			ExpectedAdded: []string{"f2", "f1"},
-		},
-		"with previous inventory": {
-			NewInventory:      []string{"f1", "f2", "f3", "f4"},
-			PreviousInventory: []string{"f1", "f2"},
-			ExpectedAdded:     []string{"f3", "f4"},
-			ExpectedDeleted:   nil,
-		},
-		"with previous inventory - unsorted": {
-			NewInventory:      []string{"f4", "f3", "f2", "f1"},
-			PreviousInventory: []string{"f1", "f2"},
-			ExpectedAdded:     []string{"f3", "f4"},
-			ExpectedDeleted:   nil,
-		},
-		"delete objects": {
-			NewInventory:      []string{"f1", "f2"},
-			PreviousInventory: []string{"f1", "f2", "f3", "f4"},
-			ExpectedAdded:     nil,
-			ExpectedDeleted:   []string{"f3", "f4"},
-		},
-		"add and delete objects": {
-			NewInventory:      []string{"f1", "f2", "s1"},
-			PreviousInventory: []string{"f1", "f2", "f3", "f4"},
-			ExpectedAdded:     []string{"s1"},
-			ExpectedDeleted:   []string{"f3", "f4"},
-		},
-		"delete all objects": {
-			NewInventory:      []string{},
-			PreviousInventory: []string{"f1", "f2", "f3", "f4"},
-			ExpectedAdded:     nil,
-			ExpectedDeleted:   []string{"f1", "f2", "f3", "f4"},
+			ExpectedAdded: []string{"f1", "f2"},
 		},
 		"do nothing": {
 			// do nothing, expect no errors
-		},
-		"complex add and delete": {
-			NewInventory:      []string{"a01", "a02", "a03", "a04", "a05", "a06", "a07"},
-			PreviousInventory: []string{"a01", "a02", "a04", "a08", "a09", "a10"},
-			ExpectedDeleted:   []string{"a08", "a09", "a10"},
-			ExpectedAdded:     []string{"a03", "a05", "a06", "a07"},
 		},
 		"add many objects": {
 			NewInventory:  []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
@@ -94,53 +56,11 @@ func TestImport(t *testing.T) {
 			Prefixes:      []string{"b"},
 			ExpectedAdded: []string{"b1", "b2"},
 		},
-		"prefix incompatible with previous": {
-			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
-			PreviousInventory: []string{"a1", "a2", "b1", "b2"},
-			Prefixes:          []string{"a"},
-			PreviousPrefixes:  []string{"a", "c"},
-			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
-		},
-		"import with prefix - with previous import": {
-			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
-			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2", "b3"},
-			Prefixes:          []string{"a"},
-			PreviousPrefixes:  []string{"a"},
-			ExpectedDeleted:   []string{"a3"},
-		},
-		"prefix when previous import was without prefixes": {
-			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
-			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2", "b3"},
-			PreviousPrefixes:  []string{"a"},
-			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
-		},
-		"new prefixes superset of previous": {
-			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
-			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2"},
-			Prefixes:          []string{"a"},
-			PreviousPrefixes:  []string{"a1", "a2"},
-		},
-		"new prefixes superset of previous - type 2": {
-			NewInventory:      []string{"aa1", "ab1", "ab2", "b1", "b2"},
-			PreviousInventory: []string{"aa1", "aa2", "ab1", "b1", "b2"},
-			Prefixes:          []string{"a"},
-			PreviousPrefixes:  []string{"aa", "ac"},
-			ExpectedAdded:     []string{"ab1", "ab2"},
-			ExpectedDeleted:   []string{"aa2"},
-		},
-		"prefix incompatible with previous - type 2": {
-			NewInventory:      []string{"a1", "a2", "b1", "b2", "c1", "c2"},
-			PreviousInventory: []string{"a1", "a2", "a3", "b1", "b2"},
-			Prefixes:          []string{"a"},
-			PreviousPrefixes:  []string{"a1", "a2", "b"},
-			ExpectedErr:       onboard.ErrIncompatiblePrefixes,
-		},
 	}
 	for _, dryRun := range []bool{true, false} {
 		for name, test := range testdata {
 			t.Run(name, func(t *testing.T) {
 				newInventoryURL := NewInventoryURL
-				previousInventoryURL := PreviousInventoryURL
 				if test.OverrideNewInventoryURL != "" {
 					newInventoryURL = test.OverrideNewInventoryURL
 				}
@@ -148,18 +68,10 @@ func TestImport(t *testing.T) {
 					newInventoryURL = test.OverridePreviousInventoryURL
 				}
 				catalogActionsMock := mockCatalogActions{}
-				if len(test.PreviousInventory) > 0 {
-					catalogActionsMock = mockCatalogActions{
-						previousCommitInventory: previousInventoryURL,
-						previousCommitPrefixes:  test.PreviousPrefixes,
-					}
-				}
 				inventoryGenerator := &mockInventoryGenerator{
-					newInventoryURL:      newInventoryURL,
-					previousInventoryURL: previousInventoryURL,
-					newInventory:         test.NewInventory,
-					previousInventory:    test.PreviousInventory,
-					sourceBucket:         "example-repo",
+					inventoryURL: newInventoryURL,
+					inventory:    test.NewInventory,
+					sourceBucket: "example-repo",
 				}
 				config := &onboard.Config{
 					CommitUsername:     "committer",
@@ -187,13 +99,9 @@ func TestImport(t *testing.T) {
 				if !reflect.DeepEqual(stats.AddedOrChanged, len(test.ExpectedAdded)) {
 					t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), stats.AddedOrChanged)
 				}
-				if !reflect.DeepEqual(stats.Deleted, len(test.ExpectedDeleted)) {
-					t.Fatalf("number of deleted objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedDeleted), stats.Deleted)
-				}
 				var expectedAddedToCatalog, expectedDeletedFromCatalog []string
 				if !dryRun {
 					expectedAddedToCatalog = test.ExpectedAdded
-					expectedDeletedFromCatalog = test.ExpectedDeleted
 				}
 				if !reflect.DeepEqual(catalogActionsMock.objectActions.Added, expectedAddedToCatalog) {
 					t.Fatalf("objects added to catalog different than expected. expected=%v, got=%v.", expectedAddedToCatalog, catalogActionsMock.objectActions.Added)
@@ -217,10 +125,6 @@ func TestImport(t *testing.T) {
 				addedOrChangedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])
 				if err != nil || addedOrChangedCount != len(expectedAddedToCatalog) {
 					t.Fatalf("unexpected added_or_changed_objects in commit metadata. expected=%d, got=%d", len(expectedDeletedFromCatalog), addedOrChangedCount)
-				}
-				deletedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["deleted_objects"])
-				if err != nil || deletedCount != len(expectedDeletedFromCatalog) {
-					t.Fatalf("unexpected deleted_objects in commit metadata. expected=%d, got=%d", len(expectedDeletedFromCatalog), deletedCount)
 				}
 			})
 		}

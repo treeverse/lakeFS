@@ -69,6 +69,22 @@ func (a *Adapter) Copy(_, _ block.ObjectPointer) error {
 	return nil
 }
 
+func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+	h := sha256.New()
+	code := h.Sum(nil)
+	return hex.EncodeToString(code), nil
+}
+
+func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+	n := endPosition - startPosition
+	if n < 0 {
+		return "", io.ErrUnexpectedEOF
+	}
+	h := sha256.New()
+	code := h.Sum(nil)
+	return hex.EncodeToString(code), nil
+}
+
 func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	return nil
 }

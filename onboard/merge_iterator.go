@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/catalog"
 )
 
 // prefixMergeIterator takes inventory iterator and commit iterator and merges them.
@@ -12,8 +12,8 @@ import (
 // No entry from committedIt would be returned if its prefix is in prefixes.
 // The prefixes behaviour guarantees that the two iterators are distinct.
 type prefixMergeIterator struct {
-	invIt       rocks.EntryIterator
-	committedIt rocks.EntryIterator
+	invIt       catalog.EntryIterator
+	committedIt catalog.EntryIterator
 
 	err         error
 	bothDone    bool
@@ -22,7 +22,7 @@ type prefixMergeIterator struct {
 
 var ErrNotSeekable = errors.New("iterator isn't seekable")
 
-func newPrefixMergeIterator(invIt rocks.EntryIterator, committedIt rocks.EntryListingIterator, prefixes []string) rocks.EntryIterator {
+func newPrefixMergeIterator(invIt catalog.EntryIterator, committedIt catalog.EntryListingIterator, prefixes []string) catalog.EntryIterator {
 	if len(prefixes) == 0 {
 		// If there isn't a filter, take everything from the inventory
 		return invIt
@@ -70,17 +70,17 @@ func (pmi *prefixMergeIterator) Next() bool {
 	}
 }
 
-func (pmi *prefixMergeIterator) advanceIt(it rocks.EntryIterator) bool {
+func (pmi *prefixMergeIterator) advanceIt(it catalog.EntryIterator) bool {
 	hasNext := it.Next()
 	pmi.err = it.Err()
 	return hasNext
 }
 
-func (pmi *prefixMergeIterator) SeekGE(_ rocks.Path) {
+func (pmi *prefixMergeIterator) SeekGE(_ catalog.Path) {
 	pmi.err = ErrNotSeekable
 }
 
-func (pmi *prefixMergeIterator) Value() *rocks.EntryRecord {
+func (pmi *prefixMergeIterator) Value() *catalog.EntryRecord {
 	if pmi.err != nil || pmi.bothDone {
 		return nil
 	}
@@ -119,15 +119,15 @@ func (pmi *prefixMergeIterator) Close() {
 }
 
 type prefixIterator struct {
-	it       rocks.EntryIterator
+	it       catalog.EntryIterator
 	prefixes []string
 
 	err           error
-	value         *rocks.EntryRecord
+	value         *catalog.EntryRecord
 	allowPrefixes bool
 }
 
-func newPrefixIterator(it rocks.EntryIterator, prefixes []string, allowPrefixes bool) rocks.EntryIterator {
+func newPrefixIterator(it catalog.EntryIterator, prefixes []string, allowPrefixes bool) catalog.EntryIterator {
 	return &prefixIterator{
 		it:            it,
 		prefixes:      prefixes,
@@ -145,7 +145,7 @@ func (pi *prefixIterator) Next() bool {
 		// that doesn't start with one of the prefixes.
 		val := pi.it.Value()
 		if pi.include(val) {
-			pi.value = &rocks.EntryRecord{
+			pi.value = &catalog.EntryRecord{
 				Path:  val.Path,
 				Entry: val.Entry,
 			}
@@ -159,7 +159,7 @@ func (pi *prefixIterator) Next() bool {
 	return false
 }
 
-func (pi *prefixIterator) include(val *rocks.EntryRecord) bool {
+func (pi *prefixIterator) include(val *catalog.EntryRecord) bool {
 	for _, p := range pi.prefixes {
 		if strings.HasPrefix(val.Path.String(), p) {
 			return pi.allowPrefixes
@@ -169,11 +169,11 @@ func (pi *prefixIterator) include(val *rocks.EntryRecord) bool {
 	return !pi.allowPrefixes
 }
 
-func (pi *prefixIterator) SeekGE(_ rocks.Path) {
+func (pi *prefixIterator) SeekGE(_ catalog.Path) {
 	pi.err = ErrNotSeekable
 }
 
-func (pi *prefixIterator) Value() *rocks.EntryRecord {
+func (pi *prefixIterator) Value() *catalog.EntryRecord {
 	if pi.err != nil {
 		return nil
 	}
@@ -191,16 +191,16 @@ func (pi *prefixIterator) Close() {
 }
 
 type listToEntryIterator struct {
-	rocks.EntryListingIterator
+	catalog.EntryListingIterator
 }
 
-func (iter *listToEntryIterator) Value() *rocks.EntryRecord {
+func (iter *listToEntryIterator) Value() *catalog.EntryRecord {
 	val := iter.EntryListingIterator.Value()
 	if val == nil {
 		return nil
 	}
 
-	return &rocks.EntryRecord{
+	return &catalog.EntryRecord{
 		Path:  val.Path,
 		Entry: val.Entry,
 	}

@@ -68,7 +68,14 @@ func (m *Manager) ListRepositories(ctx context.Context) (graveler.RepositoryIter
 func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var err error
-		_, err = tx.Exec(`DELETE FROM graveler_branches WHERE repository_id = $1`, repositoryID)
+		x, err := tx.Exec(`DELETE FROM graveler_branches WHERE repository_id = $1`, repositoryID)
+		if err != nil {
+			return nil, err
+		}
+		if x.RowsAffected() == 0 {
+			return nil, db.ErrNotFound
+		}
+		_, err = tx.Exec(`DELETE FROM graveler_tags WHERE repository_id = $1`, repositoryID)
 		if err != nil {
 			return nil, err
 		}

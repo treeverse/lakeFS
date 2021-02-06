@@ -24,6 +24,10 @@ const (
 	DiffTypeConflict
 )
 
+type DiffSummary struct {
+	Count map[DiffType]int
+}
+
 // ReferenceType represents the type of the reference
 type ReferenceType uint8
 
@@ -183,6 +187,12 @@ func (d *Diff) Copy() *Diff {
 	}
 }
 
+type CommitParams struct {
+	Committer string
+	Message   string
+	Metadata  Metadata
+}
+
 // Interfaces
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
@@ -244,19 +254,20 @@ type VersionController interface {
 
 	// Commit the staged data and returns a commit ID that references that change
 	//   ErrNothingToCommit in case there is no data in stage
-	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error)
+	Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commitParams CommitParams) (CommitID, error)
 
 	// WriteMetaRange accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
 	WriteMetaRange(ctx context.Context, repositoryID RepositoryID, it ValueIterator) (*MetaRangeID, error)
 
-	// CommitExistingMetaRange creates a commit in the branch from the given pre-existing tree.
+	// AddCommitToBranchHead creates a commit in the branch from the given pre-existing tree.
 	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
-	CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, parentCommit CommitID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error)
+	// Returns ErrCommitNotHeadBranch if the branch is no longer referencing to the parentCommit
+	AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error)
 
-	// AddCommitNoLock creates a commit and associates it with the repository without locking metadata for update.
-	// Returns ErrTreeNotFound if the referenced treeID doesn't exist.
-	AddCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
+	// AddCommit creates a dangling (no referencing branch) commit in the repo from the pre-existing commit.
+	// Returns ErrMetaRangeNotFound if the referenced metaRangeID doesn't exist.
+	AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error)
 
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (*Commit, error)
@@ -274,10 +285,10 @@ type VersionController interface {
 	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
-	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, committer string, message string, metadata Metadata) (CommitID, error)
+	Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, DiffSummary, error)
 
-	// Merge merge 'from' with 'to' branches under repository returns the new commit id on 'to' branch
-	Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error)
+	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit, and a summary of results.
+	Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error)
@@ -434,19 +445,19 @@ type CommittedManager interface {
 	// This is similar to a two-dot diff in git (left..right)
 	Diff(ctx context.Context, ns StorageNamespace, left, right MetaRangeID) (DiffIterator, error)
 
-	// Compare returns the difference between 'theirs' and 'ours', relative to a merge base 'base'.
+	// Compare returns the difference between 'source' and 'destination', relative to a merge base 'base'.
 	// This is similar to a three-dot diff in git.
-	Compare(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (DiffIterator, error)
+	Compare(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (DiffIterator, error)
 
-	// Merge applies that changes from ours to theirs, relative to a merge base 'base'.
-	// This is similar to a git merge operation.
-	// The resulting tree is expected to be immediately addressable.
-	Merge(ctx context.Context, ns StorageNamespace, theirs, ours, base MetaRangeID) (MetaRangeID, error)
+	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
+	// returns the ID of the new metarange and a summary of diffs.  This is similar to a
+	// git merge operation. The resulting tree is expected to be immediately addressable.
+	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID) (MetaRangeID, DiffSummary, error)
 
 	// Apply is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new MetaRangeID that is expected to be immediately addressable
-	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, error)
+	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, DiffSummary, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -520,6 +531,10 @@ func (id CommitID) String() string {
 
 func (id CommitID) Ref() Ref {
 	return Ref(id)
+}
+
+func (id TagID) String() string {
+	return string(id)
 }
 
 type Graveler struct {
@@ -616,40 +631,44 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 
 func (g *Graveler) UpdateBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
-		if err != nil {
-			return nil, err
-		}
-
-		curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
-		if err != nil {
-			return nil, err
-		}
-		// validate no conflict
-		// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
-		iter, err := g.StagingManager.List(ctx, curBranch.StagingToken)
-		if err != nil {
-			return nil, err
-		}
-		defer iter.Close()
-		if iter.Next() {
-			return nil, ErrConflictFound
-		}
-
-		newBranch := Branch{
-			CommitID:     reference.CommitID(),
-			StagingToken: curBranch.StagingToken,
-		}
-		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
-		if err != nil {
-			return nil, err
-		}
-		return &newBranch, nil
+		return g.updateBranchNoLock(ctx, repositoryID, branchID, ref)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return res.(*Branch), nil
+}
+
+func (g *Graveler) updateBranchNoLock(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref) (*Branch, error) {
+	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
+	if err != nil {
+		return nil, err
+	}
+
+	curBranch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	// validate no conflict
+	// TODO(Guys) return error only on conflicts, currently returns error for any changes on staging
+	iter, err := g.StagingManager.List(ctx, curBranch.StagingToken)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	if iter.Next() {
+		return nil, ErrConflictFound
+	}
+
+	newBranch := Branch{
+		CommitID:     reference.CommitID(),
+		StagingToken: curBranch.StagingToken,
+	}
+	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
+	if err != nil {
+		return nil, err
+	}
+	return &newBranch, nil
 }
 
 func (g *Graveler) GetBranch(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*Branch, error) {
@@ -767,13 +786,19 @@ func (g *Graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return nil, err
 		}
-		commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
-		if err != nil {
-			return nil, err
+
+		// mark err as not found and lookup the branch's commit
+		err = ErrNotFound
+		if branch.CommitID != "" {
+			var commit *Commit
+			commit, err = g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
+			if err != nil {
+				return nil, err
+			}
+			// check key in committed - do we need tombstone?
+			_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 		}
 
-		// check key in committed - do we need tombstone?
-		_, err = g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 		if errors.Is(err, ErrNotFound) {
 			// no need for tombstone - drop key from stage
 			return nil, g.StagingManager.DropKey(ctx, branch.StagingToken, key)
@@ -831,7 +856,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 	return listing, nil
 }
 
-func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
+func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -854,18 +879,18 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
 		}
-		metaRangeID, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
+		metaRangeID, _, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
 		if err != nil {
-			return "", fmt.Errorf("apply: %w", err)
+			return "", fmt.Errorf("commit: %w", err)
 		}
 
 		// fill and add commit
 		commit := Commit{
-			Committer:    committer,
-			Message:      message,
+			Committer:    params.Committer,
+			Message:      params.Message,
 			MetaRangeID:  metaRangeID,
 			CreationDate: time.Now(),
-			Metadata:     metadata,
+			Metadata:     params.Metadata,
 		}
 		if branch.CommitID != "" {
 			commit.Parents = CommitParents{branch.CommitID}
@@ -888,7 +913,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 				"repository_id": repositoryID,
 				"branch_id":     branchID,
 				"commit_id":     branch.CommitID,
-				"message":       message,
+				"message":       params.Message,
 				"staging_token": branch.StagingToken,
 			}).Error("Failed to drop staging data")
 		}
@@ -905,59 +930,103 @@ func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken 
 	return StagingToken(v)
 }
 
-func (g *Graveler) CommitExistingMetaRange(ctx context.Context, repositoryID RepositoryID, parentCommitID CommitID, metaRangeID MetaRangeID, committer string, message string, metadata Metadata) (CommitID, error) {
-	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
+func (g *Graveler) validateCommitParent(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	if len(commit.Parents) > 1 {
+		return "", ErrMultipleParents
+	}
+	if len(commit.Parents) == 0 {
+		return "", nil
 	}
 
-	if parentCommitID != "" {
-		_, err = g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+	parentCommitID := commit.Parents[0]
+	_, err := g.RefManager.GetCommit(ctx, repositoryID, parentCommitID)
+	if err != nil {
+		return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
+	}
+	return parentCommitID, nil
+}
+
+func (g *Graveler) isCommitExist(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (bool, error) {
+	_, err := g.RefManager.GetCommit(ctx, repositoryID, commitID)
+	if err == nil {
+		// commit already exists
+		return true, nil
+	}
+	if !errors.Is(err, ErrCommitNotFound) {
+		return false, fmt.Errorf("getting commit %s: %w", commitID, err)
+	}
+	return false, nil
+}
+
+func (g *Graveler) AddCommitToBranchHead(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) (CommitID, error) {
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
+		// parentCommitID should always match the HEAD of the branch.
+		// Empty parentCommitID matches first commit of the branch.
+		parentCommitID, err := g.validateCommitParent(ctx, repositoryID, commit)
 		if err != nil {
-			return "", fmt.Errorf("get parent commit %s: %w", parentCommitID, err)
+			return nil, err
 		}
-	}
 
-	ok, err := g.CommittedManager.Exists(ctx, repo.StorageNamespace, metaRangeID)
+		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+		if err != nil {
+			return nil, err
+		}
+		if branch.CommitID != parentCommitID {
+			return nil, ErrCommitNotHeadBranch
+		}
+
+		// check if commit already exists.
+		commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
+		if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
+			return nil, err
+		} else if exists {
+			return commitID, nil
+		}
+
+		commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
+		if err != nil {
+			return nil, fmt.Errorf("adding commit: %w", err)
+		}
+		_, err = g.updateBranchNoLock(ctx, repositoryID, branchID, Ref(commitID))
+		if err != nil {
+			return nil, err
+		}
+		return commitID, nil
+	})
 	if err != nil {
-		return "", fmt.Errorf("checking for metarange %s: %w", metaRangeID, err)
+		return "", err
 	}
-	if !ok {
-		return "", ErrMetaRangeNotFound
-	}
+	return res.(CommitID), nil
+}
 
-	commit := Commit{
-		Committer:    committer,
-		Message:      message,
-		MetaRangeID:  metaRangeID,
-		CreationDate: time.Now(),
-		Metadata:     metadata,
+func (g *Graveler) AddCommit(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+	// at least a single parent must exists
+	if len(commit.Parents) == 0 {
+		return "", ErrAddCommitNoParent
 	}
-	if parentCommitID != "" {
-		commit.Parents = CommitParents{parentCommitID}
+	_, err := g.validateCommitParent(ctx, repositoryID, commit)
+	if err != nil {
+		return "", err
 	}
 
 	// check if commit already exists.
 	commitID := CommitID(ident.NewHexAddressProvider().ContentAddress(commit))
-	_, err = g.RefManager.GetCommit(ctx, repositoryID, commitID)
-	if err == nil {
-		// commit already exists
+	if exists, err := g.isCommitExist(ctx, repositoryID, commitID); err != nil {
+		return "", err
+	} else if exists {
 		return commitID, nil
 	}
-	if !errors.Is(err, ErrCommitNotFound) {
-		return "", fmt.Errorf("getting commit %s: %w", commitID, err)
-	}
 
-	newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
+	commitID, err = g.addCommitNoLock(ctx, repositoryID, commit)
 	if err != nil {
-		return "", fmt.Errorf("add commit: %w", err)
+		return "", fmt.Errorf("adding commit: %w", err)
 	}
 
-	return newCommit, nil
+	return commitID, nil
 }
 
-// AddCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
-func (g *Graveler) AddCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
+// addCommitNoLock lower API used to add commit into a repository. It will verify that the commit meta-range is accessible but will not lock any metadata update.
+func (g *Graveler) addCommitNoLock(ctx context.Context, repositoryID RepositoryID, commit Commit) (CommitID, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return "", fmt.Errorf("get repository %s: %w", repositoryID, err)
@@ -1028,21 +1097,34 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repositoryID RepositoryID, b
 	return err
 }
 
+type CommitIDAndSummary struct {
+	ID      CommitID
+	Summary DiffSummary
+}
+
 // Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
 // This is implemented by merging the parent of 'ref' into the branch, with 'ref' as the merge base.
 // Example: consider the following tree: C1 -> C2 -> C3, with the branch pointing at C3.
 // To revert C2, we merge C1 into the branch, with C2 as the merge base.
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
-func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, committer string, message string, metadata Metadata) (CommitID, error) {
-	commitID, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
-		commitRecord, err := g.getCommitRecordFromRef(ctx, repositoryID, ref)
-		if err != nil {
-			return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
+// If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
+func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, DiffSummary, error) {
+	commitRecord, err := g.getCommitRecordFromRef(ctx, repositoryID, ref)
+	if err != nil {
+		return "", DiffSummary{}, fmt.Errorf("get commit from ref %s: %w", ref, err)
+	}
+	if len(commitRecord.Parents) > 1 && parentNumber <= 0 {
+		// if commit has more than one parent, must explicitly specify parent number
+		return "", DiffSummary{}, ErrRevertMergeNoParent
+	}
+	if parentNumber > 0 {
+		// validate parent is in range:
+		if parentNumber > len(commitRecord.Parents) { // parent number is 1-based
+			return "", DiffSummary{}, fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
 		}
-		if len(commitRecord.Parents) > 1 {
-			// TODO(johnnyaug) support reverting merge commits
-			return "", ErrRevertMergeCommit
-		}
+		parentNumber--
+	}
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return nil, fmt.Errorf("get repo %s: %w", repositoryID, err)
@@ -1058,9 +1140,9 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		var parentMetaRangeID MetaRangeID
 		if len(commitRecord.Parents) > 0 {
-			parentCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, commitRecord.Parents[0].Ref())
+			parentCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, commitRecord.Parents[parentNumber].Ref())
 			if err != nil {
-				return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[0], err)
+				return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[parentNumber], err)
 			}
 			parentMetaRangeID = parentCommit.MetaRangeID
 		}
@@ -1069,17 +1151,20 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			return "", fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
+		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID)
 		if err != nil {
-			return "", fmt.Errorf("merge: %w", err)
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge: %w", err)
+			}
+			return "", err
 		}
 		commit := Commit{
-			Committer:    committer,
-			Message:      message,
+			Committer:    commitParams.Committer,
+			Message:      commitParams.Message,
 			MetaRangeID:  metaRangeID,
 			CreationDate: time.Now(),
 			Parents:      []CommitID{branch.CommitID},
-			Metadata:     metadata,
+			Metadata:     commitParams.Metadata,
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
@@ -1092,21 +1177,22 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return "", fmt.Errorf("set branch: %w", err)
 		}
-		return commitID, nil
+		return &CommitIDAndSummary{commitID, summary}, nil
 	})
 	if err != nil {
-		return "", err
+		return "", DiffSummary{}, err
 	}
-	return commitID.(CommitID), nil
+	c := res.(*CommitIDAndSummary)
+	return c.ID, c.Summary, nil
 }
 
-func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Ref, to BranchID, committer string, message string, metadata Metadata) (CommitID, error) {
-	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, to, func() (interface{}, error) {
+func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
+	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", err
 		}
-		branch, err := g.GetBranch(ctx, repositoryID, to)
+		branch, err := g.GetBranch(ctx, repositoryID, destination)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
@@ -1117,37 +1203,41 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, from Re
 		if !empty {
 			return "", ErrDirtyBranch
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, from, Ref(to))
+		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repositoryID, source, Ref(destination))
 		if err != nil {
 			return "", err
 		}
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
-			return "", fmt.Errorf("merge in CommitManager: %w", err)
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge in CommitManager: %w", err)
+			}
+			return "", err
 		}
 		commit := Commit{
-			Committer:    committer,
-			Message:      message,
+			Committer:    commitParams.Committer,
+			Message:      commitParams.Message,
 			MetaRangeID:  metaRangeID,
 			CreationDate: time.Now(),
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
-			Metadata:     metadata,
+			Metadata:     commitParams.Metadata,
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
 		}
 		branch.CommitID = commitID
-		err = g.RefManager.SetBranch(ctx, repositoryID, to, *branch)
+		err = g.RefManager.SetBranch(ctx, repositoryID, destination, *branch)
 		if err != nil {
-			return "", fmt.Errorf("update branch %s: %w", to, err)
+			return "", fmt.Errorf("update branch %s: %w", destination, err)
 		}
-		return commitID, nil
+		return &CommitIDAndSummary{commitID, summary}, nil
 	})
 	if err != nil {
-		return "", err
+		return "", DiffSummary{}, err
 	}
-	return res.(CommitID), nil
+	c := res.(*CommitIDAndSummary)
+	return c.ID, c.Summary, nil
 }
 
 func (g *Graveler) DiffUncommitted(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (DiffIterator, error) {

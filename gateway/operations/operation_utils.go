@@ -8,10 +8,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (o *PathOperation) finishUpload(req *http.Request, storageNamespace, checksum, physicalAddress string, size int64) error {
+func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddress string, size int64) error {
 	// write metadata
 	writeTime := time.Now()
-	entry := catalog.Entry{
+	entry := catalog.DBEntry{
 		Path:            o.Path,
 		PhysicalAddress: physicalAddress,
 		Checksum:        checksum,
@@ -20,13 +20,7 @@ func (o *PathOperation) finishUpload(req *http.Request, storageNamespace, checks
 		CreationDate:    writeTime,
 	}
 
-	err := o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry,
-		catalog.CreateEntryParams{
-			Dedup: catalog.DedupParams{
-				ID:               checksum,
-				StorageNamespace: storageNamespace,
-			},
-		})
+	err := o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not update metadata")
 		return err

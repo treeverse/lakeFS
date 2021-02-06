@@ -20,7 +20,7 @@ type Repository struct {
 	CreationDate     time.Time `db:"creation_date"`
 }
 
-type Entry struct {
+type DBEntry struct {
 	CommonLevel     bool
 	Path            string    `db:"path"`
 	PhysicalAddress string    `db:"physical_address"`
@@ -49,6 +49,11 @@ type MergeResult struct {
 type Branch struct {
 	Name      string `db:"name"`
 	Reference string
+}
+
+type Tag struct {
+	ID       string
+	CommitID string
 }
 
 func (j Metadata) Value() (driver.Value, error) {

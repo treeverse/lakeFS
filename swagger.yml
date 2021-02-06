@@ -22,10 +22,9 @@ securityDefinitions:
     in: header
     name: X-JWT-Authorization
 
-
 security:
-  - basic_auth: [ ]
-  - jwt_token: [ ]
+  - jwt_token: []
+  - basic_auth: []
 
 responses:
   Unauthorized:
@@ -222,6 +221,17 @@ definitions:
       source:
         type: string
 
+  tag_creation:
+    type: object
+    required:
+      - id
+      - ref
+    properties:
+      id:
+        type: string
+      ref:
+        type: string
+
   error:
     type: object
     properties:
@@ -377,68 +387,6 @@ definitions:
       isContinuous:
         type: boolean
         description: if true, export every commit or merge to branch
-
-  retention_policy:
-    type: object
-    required:
-      - rules
-    properties:
-      rules:
-        type: array
-        items:
-          $ref: "#/definitions/retention_policy_rule"
-      description:
-        type: string
-
-  retention_policy_with_creation_date:
-    allOf:
-      - $ref: "#/definitions/retention_policy"
-      - type: object
-        properties:
-          creation_date:
-            type: string
-            format: date-time
-        required:
-          - creation_date
-
-  retention_policy_rule:
-    type: object
-    required:
-      - status
-      - filter
-    properties:
-      status:
-        type: string
-        enum: [ enabled, disabled ]
-      filter:
-        type: object
-        properties:
-          prefix:
-            type: string
-      expiration:
-        type: object
-        minProperties: 1
-        properties:
-          all:
-            $ref: "#/definitions/time_period"
-          uncommitted:
-            $ref: "#/definitions/time_period"
-          noncurrent:
-            $ref: "#/definitions/time_period"
-
-  time_period:
-    type: object
-    description: |
-      a number of days, which can be broken up into a sum of weeks
-      and days
-    properties:
-      weeks:
-        type: integer
-        format: int32
-      days:
-        type: integer
-        format: int32
-    minProperties: 1
 
   config:
     type: object
@@ -1328,6 +1276,121 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/tags:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    get:
+      tags:
+        - tags
+      operationId: listTags
+      summary: list tags
+      parameters:
+        - in: query
+          name: after
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: tag list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - tags
+      operationId: createTag
+      summary: create tag
+      parameters:
+        - in: body
+          name: tag
+          schema:
+            $ref: "#/definitions/tag_creation"
+      responses:
+        201:
+          description: tag
+          schema:
+            type: object
+            $ref: "#/definitions/ref"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/tags/{tag}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: tag
+        required: true
+        type: string
+    get:
+      tags:
+        - tags
+      operationId: getTag
+      summary: get tag
+      responses:
+        200:
+          description: tag
+          schema:
+            type: object
+            $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: tag not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - tags
+      operationId: deleteTag
+      summary: delete tag
+      responses:
+        204:
+          description: tag deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repository}/branches:
     parameters:
       - in: path
@@ -1563,6 +1626,9 @@ paths:
               ref:
                 type: string
                 description: the commit to revert, given by a ref
+              parent_number:
+                type: integer
+                description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
       responses:
         204:
           description: revert successful
@@ -1577,7 +1643,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     parameters:
       - in: path
         name: repository
@@ -1587,9 +1653,9 @@ paths:
         name: sourceRef
         required: true
         type: string
-        description: source branch name
+        description: source ref
       - in: path
-        name: destinationRef
+        name: destinationBranch
         required: true
         type: string
         description: destination branch name
@@ -2036,169 +2102,6 @@ paths:
           description: repository or branch not found
           schema:
             $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
-  /repositories/{repository}/branches/{branch}/continuous-export:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: path
-        name: branch
-        required: true
-        type: string
-    get:
-      tags:
-        - export
-        - branches
-      operationId: getContinuousExport
-      summary: returns the current continuous export configuration of a branch
-      responses:
-        200:
-          description: continuous export policy
-          schema:
-            $ref: "#/definitions/continuous_export_configuration"
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no continuous export policy defined
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-    put:
-      tags:
-        - export
-        - branches
-      operationId: setContinuousExport
-      summary: sets a new continuous export configuration of a branch
-      parameters:
-        - in: body
-          name: config
-          required: true
-          schema:
-            $ref: "#/definitions/continuous_export_configuration"
-      responses:
-        201:
-          description: continuous export successfullyconfigured
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
-  /repositories/{repository}/branches/{branch}/repair-export:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: path
-        name: branch
-        required: true
-        type: string
-    post:
-      tags:
-        - export
-        - branches
-      operationId: repair
-      summary: set continuous export state as repaired
-      responses:
-        201:
-          description: continuous export status successfully changed to repaired
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
-  /repositories/{repository}/branches/{branch}/export-hook:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: path
-        name: branch
-        required: true
-        type: string
-    post:
-      tags:
-        - export
-        - branches
-      operationId: run
-      summary: hook to be called in order to execute continuous export on branch
-      responses:
-        201:
-          description: continuous export successfully started
-          schema:
-            description: "export ID"
-            type: string
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
-  /repositories/{repository}/retention:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-    put:
-      tags:
-        - retention
-      operationId: updateRetentionPolicy
-      description: set retention policy for repository
-      parameters:
-        - in: body
-          name: policy
-          required: true
-          schema:
-            $ref: "#/definitions/retention_policy"
-      responses:
-        201:
-          description: policy attached successfully
-        401:
-          $ref: "#/responses/Unauthorized"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-    get:
-      operationId: getRetentionPolicy
-      tags:
-        - retention
-      description: get retention policy for repository
-      responses:
-        200:
-          description: retention policy
-          schema:
-            $ref: "#/definitions/retention_policy_with_creation_date"
-        401:
-          $ref: "#/responses/Unauthorized"
         default:
           description: generic error response
           schema:

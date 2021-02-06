@@ -25,14 +25,14 @@ func NewBranchLocker(db db.Database) *BranchLocker {
 func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
 	writerLockKey, _ := calculateBranchLockerKeys(repositoryID, branchID)
 	return l.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// try lock committer key
+		// try to get a shared lock on the writer key
 		var locked bool
 		err := tx.GetPrimitive(&locked, `SELECT pg_try_advisory_xact_lock_shared($1)`, writerLockKey)
 		if err != nil {
 			return nil, fmt.Errorf("%w (%d): %s", graveler.ErrLockNotAcquired, writerLockKey, err)
 		}
 		if !locked {
-			return nil, fmt.Errorf("%w (%d)", graveler.ErrLockNotAcquired, writerLockKey)
+			return nil, fmt.Errorf("%w (%d)", graveler.ErrAlreadyLocked, writerLockKey)
 		}
 		return lockedFn()
 	}, db.WithContext(ctx), db.WithIsolationLevel(pgx.ReadCommitted))
@@ -51,7 +51,7 @@ func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID gravele
 			return nil, fmt.Errorf("%w (%d): %s", graveler.ErrLockNotAcquired, committerLockKey, err)
 		}
 		if !locked {
-			return nil, fmt.Errorf("%w (%d)", graveler.ErrLockNotAcquired, writerLockKey)
+			return nil, fmt.Errorf("%w (%d)", graveler.ErrAlreadyLocked, writerLockKey)
 		}
 		// lock writer key
 		_, err = tx.Exec(`SELECT pg_advisory_xact_lock($1);`, writerLockKey)

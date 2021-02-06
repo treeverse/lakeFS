@@ -5,16 +5,27 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func confirm(flags *pflag.FlagSet, question string) (bool, error) {
-	force, _ := flags.GetBool("force")
-	if force {
+const (
+	AutoConfirmFlagName     = "yes"
+	AutoConfigFlagShortName = "y"
+	AutoConfirmFlagHelp     = "Automatically say yes to all confirmations"
+)
+
+func AssignAutoConfirmFlag(flags *pflag.FlagSet) {
+	flags.BoolP(AutoConfirmFlagName, AutoConfigFlagShortName, false, AutoConfirmFlagHelp)
+}
+
+func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
+	yes, err := flags.GetBool(AutoConfirmFlagName)
+	if err == nil && yes {
+		// got auto confirm flag
 		return true, nil
 	}
 	prm := promptui.Prompt{
 		Label:     question,
 		IsConfirm: true,
 	}
-	_, err := prm.Run()
+	_, err = prm.Run()
 	if err != nil {
 		return false, err
 	}

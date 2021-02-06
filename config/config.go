@@ -19,8 +19,6 @@ import (
 	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block/factory"
 	blockparams "github.com/treeverse/lakefs/block/params"
-	"github.com/treeverse/lakefs/cache"
-	catalogparams "github.com/treeverse/lakefs/catalog/mvcc/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/logging"
@@ -29,7 +27,7 @@ import (
 
 const (
 	DefaultBlockStoreType                    = "local"
-	DefaultBlockStoreLocalPath               = "~/lakefs/data"
+	DefaultBlockStoreLocalPath               = "~/data/lakefs/block"
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
@@ -37,12 +35,9 @@ const (
 	DefaultCommittedLocalCacheRangePercent          = 0.9
 	DefaultCommittedLocalCacheMetaRangePercent      = 0.1
 	DefaultCommittedLocalCacheBytes                 = 1 * 1024 * 1024 * 1024
-	DefaultCommittedLocalCacheDir                   = "~/lakefs/local_tier"
-	DefaultCommittedMetaRangeReaderCacheSize        = 50
-	DefaultCommittedMetaRangeReaderNumShards        = 10
-	DefaultCommittedRangeReaderCacheSize            = 500
-	DefaultCommittedRangeReaderNumShards            = 30
-	DefaultCommittedPebbleSSTableCacheSizeBytes     = 200_000_000
+	DefaultCommittedLocalCacheDir                   = "~/data/lakefs/cache"
+	DefaultCommittedPebbleSSTableCacheSizeBytes     = 400_000_000
+	DefaultCommittedLocalCacheNumUploaders          = 10
 	DefaultCommittedBlockStoragePrefix              = "_lakefs"
 	DefaultCommittedPermanentMinRangeSizeBytes      = 0
 	DefaultCommittedPermanentMaxRangeSizeBytes      = 20 * 1024 * 1024
@@ -112,12 +107,9 @@ const (
 
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
-	CommittedLocalCacheRangeProportion          = "committed.local_cache.range_proportion"
-	CommittedRangeReaderCacheSize               = "committed.local_cache.range.open_readers"
-	CommittedRangeReaderCacheNumShards          = "committed.local_cache.range.num_shards"
-	CommittedLocalCacheMetaRangeProportion      = "committed.local_cache.metarange_proportion"
-	CommittedMetaRangeReaderCacheSize           = "committed.local_cache.metarange.open_readers"
-	CommittedMetaRangeReaderCacheNumShards      = "committed.local_cache.metarange.num_shards"
+	CommittedLocalCacheNumUploadersKey          = "committed.local_cache.max_uploaders_per_writer"
+	CommittedLocalCacheRangeProportionKey       = "committed.local_cache.range_proportion"
+	CommittedLocalCacheMetaRangeProportionKey   = "committed.local_cache.metarange_proportion"
 	CommittedBlockStoragePrefixKey              = "committed.block_storage_prefix"
 	CommittedPermanentStorageMinRangeSizeKey    = "committed.permanent.min_range_size_bytes"
 	CommittedPermanentStorageMaxRangeSizeKey    = "committed.permanent.max_range_size_bytes"
@@ -156,12 +148,9 @@ func setDefaults() {
 
 	viper.SetDefault(CommittedLocalCacheSizeBytesKey, DefaultCommittedLocalCacheBytes)
 	viper.SetDefault(CommittedLocalCacheDirKey, DefaultCommittedLocalCacheDir)
-	viper.SetDefault(CommittedRangeReaderCacheSize, DefaultCommittedRangeReaderCacheSize)
-	viper.SetDefault(CommittedRangeReaderCacheNumShards, DefaultCommittedRangeReaderNumShards)
-	viper.SetDefault(CommittedLocalCacheRangeProportion, DefaultCommittedLocalCacheRangePercent)
-	viper.SetDefault(CommittedLocalCacheMetaRangeProportion, DefaultCommittedLocalCacheMetaRangePercent)
-	viper.SetDefault(CommittedMetaRangeReaderCacheSize, DefaultCommittedMetaRangeReaderCacheSize)
-	viper.SetDefault(CommittedMetaRangeReaderCacheNumShards, DefaultCommittedMetaRangeReaderNumShards)
+	viper.SetDefault(CommittedLocalCacheNumUploadersKey, DefaultCommittedLocalCacheNumUploaders)
+	viper.SetDefault(CommittedLocalCacheRangeProportionKey, DefaultCommittedLocalCacheRangePercent)
+	viper.SetDefault(CommittedLocalCacheMetaRangeProportionKey, DefaultCommittedLocalCacheMetaRangePercent)
 
 	viper.SetDefault(CommittedBlockStoragePrefixKey, DefaultCommittedBlockStoragePrefix)
 	viper.SetDefault(CommittedPermanentStorageMinRangeSizeKey, DefaultCommittedPermanentMinRangeSizeBytes)
@@ -179,37 +168,27 @@ func setDefaults() {
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 }
 
+type Configurator interface {
+	SetDefault(key string, value interface{})
+}
+
+type viperConfigurator struct {
+}
+
+func (v viperConfigurator) SetDefault(key string, value interface{}) {
+	viper.SetDefault(key, value)
+}
+
+func (c *Config) Override(fn func(Configurator)) {
+	fn(viperConfigurator{})
+}
+
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
 		ConnectionString:      viper.GetString("database.connection_string"),
 		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
 		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
 		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
-	}
-}
-
-func (c *Config) GetCatalogerType() string {
-	return viper.GetString("cataloger.type")
-}
-
-func (c *Config) GetMvccCatalogerCatalogParams() catalogparams.Catalog {
-	return catalogparams.Catalog{
-		BatchRead: catalogparams.BatchRead{
-			EntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),
-			ScanTimeout:   viper.GetDuration("cataloger.batch_read.scan_timeout"),
-			Delay:         viper.GetDuration("cataloger.batch_read.batch_delay"),
-			EntriesAtOnce: viper.GetInt("cataloger.batch_read.entries_read_at_once"),
-			Readers:       viper.GetInt("cataloger.batch_read.readers"),
-		},
-		BatchWrite: catalogparams.BatchWrite{
-			EntriesInsertSize: viper.GetInt("cataloger.batch_write.insert_size"),
-		},
-		Cache: catalogparams.Cache{
-			Enabled: viper.GetBool("cataloger.cache.enabled"),
-			Size:    viper.GetInt("cataloger.cache.size"),
-			Expiry:  viper.GetDuration("cataloger.cache.expiry"),
-			Jitter:  viper.GetDuration("cataloger.cache.jitter"),
-		},
 	}
 }
 
@@ -392,8 +371,8 @@ func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
-	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportion)
-	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportion)
+	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportionKey)
+	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportionKey)
 
 	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
 		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
@@ -426,24 +405,7 @@ func (c *Config) GetCommittedParams() *committed.Params {
 		MinRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMinRangeSizeKey),
 		MaxRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMaxRangeSizeKey),
 		RangeSizeEntriesRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
-	}
-}
-
-func (c *Config) GetCommittedRangeSSTableCacheParams() *cache.ParamsWithDisposal {
-	return &cache.ParamsWithDisposal{
-		Name:   "ranges SSTable reader cache",
-		Logger: logging.Default().WithField("cache", "range_reader"),
-		Size:   viper.GetInt(CommittedRangeReaderCacheSize),
-		Shards: viper.GetInt(CommittedRangeReaderCacheNumShards),
-	}
-}
-
-func (c *Config) GetCommittedMetaRangeSSTableCacheParams() *cache.ParamsWithDisposal {
-	return &cache.ParamsWithDisposal{
-		Name:   "meta-ranges SSTable reader cache",
-		Logger: logging.Default().WithField("cache", "meta_range_reader"),
-		Size:   viper.GetInt(CommittedMetaRangeReaderCacheSize),
-		Shards: viper.GetInt(CommittedMetaRangeReaderCacheNumShards),
+		MaxUploaders:               viper.GetInt(CommittedLocalCacheNumUploadersKey),
 	}
 }
 

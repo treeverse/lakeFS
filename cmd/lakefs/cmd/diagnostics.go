@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/diagnostics"
 )
@@ -26,12 +26,16 @@ var diagnosticsCmd = &cobra.Command{
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
-		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(dbPool, cfg)
 		if err != nil {
 			log.Printf("Failed to create cataloger: %s", err)
 		}
+		pyrmaidParams, err := cfg.GetCommittedTierFSParams()
+		if err != nil {
+			log.Printf("Failed to get pyramid params: %s", err)
+		}
 
-		c := diagnostics.CreateCollector(dbPool, cataloger, cfg, adapter)
+		c := diagnostics.NewCollector(dbPool, cataloger, pyrmaidParams, adapter)
 
 		f, err := os.Create(output)
 		if err != nil {

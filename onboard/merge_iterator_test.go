@@ -4,30 +4,28 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/treeverse/lakefs/catalog/rocks/testutils"
-
-	"github.com/treeverse/lakefs/catalog/rocks"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/catalog/testutils"
 )
 
 func TestMergeIterator(t *testing.T) {
 	cases := []struct {
 		Name        string
-		InvIt       rocks.EntryIterator
-		CommittedIt rocks.EntryListingIterator
+		InvIt       catalog.EntryIterator
+		CommittedIt catalog.EntryListingIterator
 		Prefixes    []string
 		Results     []string
 	}{
 		{
 			Name: "Simple prefix",
-			InvIt: testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			InvIt: testutils.NewFakeEntryIterator([]*catalog.EntryRecord{
 				{Path: "a/b/c"},
 				{Path: "a/c/d"},
 				{Path: "b/c/d"},
 				{Path: "d/c"},
 			}),
-			CommittedIt: rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator(
-				[]*rocks.EntryRecord{
+			CommittedIt: catalog.NewEntryListingIterator(testutils.NewFakeEntryIterator(
+				[]*catalog.EntryRecord{
 					{Path: "a/b/d"},
 					{Path: "a/b/c/d"},
 					{Path: "a/c/d"},
@@ -38,12 +36,12 @@ func TestMergeIterator(t *testing.T) {
 		},
 		{
 			Name: "No prefixes - All inventory",
-			InvIt: testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			InvIt: testutils.NewFakeEntryIterator([]*catalog.EntryRecord{
 				{Path: "a/b/c"},
 				{Path: "e/f/s/a"},
 			}),
-			CommittedIt: rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator(
-				[]*rocks.EntryRecord{
+			CommittedIt: catalog.NewEntryListingIterator(testutils.NewFakeEntryIterator(
+				[]*catalog.EntryRecord{
 					{Path: "some/other/prefix"},
 					{Path: "some/other/prefix/c"},
 					{Path: "some/other/prefix/e"},
@@ -53,13 +51,13 @@ func TestMergeIterator(t *testing.T) {
 		},
 		{
 			Name: "Multiple prefixes",
-			InvIt: testutils.NewFakeEntryIterator([]*rocks.EntryRecord{
+			InvIt: testutils.NewFakeEntryIterator([]*catalog.EntryRecord{
 				{Path: "a/b/c"},
 				{Path: "a/d/c"},
 				{Path: "f/t/y"},
 			}),
-			CommittedIt: rocks.NewEntryListingIterator(testutils.NewFakeEntryIterator(
-				[]*rocks.EntryRecord{
+			CommittedIt: catalog.NewEntryListingIterator(testutils.NewFakeEntryIterator(
+				[]*catalog.EntryRecord{
 					{Path: "a/b/c"},
 					{Path: "a/b/c/d"},
 					{Path: "a/c/d"},

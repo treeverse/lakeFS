@@ -15,8 +15,24 @@ import (
 
 func TestMergeAndList(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	branch := "feature-1"
+	const branch = "feature-1"
 
+	logger.WithField("branch", masterBranch).Info("Upload initial content")
+	checksum, content := uploadFileRandomData(ctx, t, repo, masterBranch, "README")
+	checksums := map[string]string{
+		checksum: content,
+	}
+
+	logger.WithField("branch", masterBranch).Info("Commit initial content")
+	_, err := client.Commits.Commit(
+		commits.NewCommitParamsWithContext(ctx).
+			WithRepository(repo).
+			WithBranch(masterBranch).
+			WithCommit(&models.CommitCreation{Message: swag.String("Initial content")}),
+		nil)
+	require.NoError(t, err, "failed to commit initial content")
+
+	logger.WithField("branch", branch).Info("Create branch")
 	ref, err := client.Branches.CreateBranch(
 		branches.NewCreateBranchParamsWithContext(ctx).
 			WithRepository(repo).
@@ -25,23 +41,26 @@ func TestMergeAndList(t *testing.T) {
 				Source: swag.String(masterBranch),
 			}), nil)
 	require.NoError(t, err, "failed to create branch")
-	logger.WithField("branchRef", ref).Info("Created branch, committing files")
+	logger.WithField("branchRef", ref).Info("Branch created")
 
-	numberOfFiles := 10
-	checksums := map[string]string{}
-	for i := 0; i < numberOfFiles; i++ {
-		checksum, content := uploadFileRandomData(ctx, t, repo, branch, fmt.Sprintf("%d.txt", i))
+	const addedFiles = 10
+	for i := 0; i < addedFiles; i++ {
+		p := fmt.Sprintf("%d.txt", i)
+		logger.WithField("path", p).Info("Upload content to branch")
+		checksum, content := uploadFileRandomData(ctx, t, repo, branch, p)
 		checksums[checksum] = content
 	}
+	const totalFiles = addedFiles + 1
 
+	logger.Info("Commit uploaded files")
 	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).
 		WithRepository(repo).WithBranch(branch).WithCommit(&models.CommitCreation{
-		Message: swag.String(fmt.Sprintf("Adding %d files", numberOfFiles)),
+		Message: swag.String(fmt.Sprintf("Adding %d files", addedFiles)),
 	}), nil)
 	require.NoError(t, err, "failed to commit changes")
 
 	mergeRes, err := client.Refs.MergeIntoBranch(
-		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationRef(masterBranch).WithSourceRef(branch), nil)
+		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationBranch(masterBranch).WithSourceRef(branch), nil)
 	require.NoError(t, err, "failed to merge branches")
 	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
 
@@ -51,8 +70,8 @@ func TestMergeAndList(t *testing.T) {
 	objs := payload.Results
 	pagin := payload.Pagination
 	require.False(t, *pagin.HasMore, "pagination shouldn't have more items")
-	require.Equal(t, int64(numberOfFiles), *pagin.Results)
-	require.Equal(t, numberOfFiles, len(objs))
+	require.Equal(t, int64(totalFiles), *pagin.Results)
+	require.Equal(t, totalFiles, len(objs))
 	logger.WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
 
 	for _, obj := range objs {

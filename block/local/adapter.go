@@ -28,10 +28,10 @@ type Adapter struct {
 	path               string
 	ctx                context.Context
 	uploadIDTranslator block.UploadIDTranslator
+	removeEmptyDir     bool
 }
 
 var (
-	ErrPathNotValid          = errors.New("path provided is not a valid directory")
 	ErrPathNotWritable       = errors.New("path provided is not writable")
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
@@ -42,6 +42,7 @@ func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 		path:               l.path,
 		ctx:                ctx,
 		uploadIDTranslator: l.uploadIDTranslator,
+		removeEmptyDir:     l.removeEmptyDir,
 	}
 }
 
@@ -51,14 +52,17 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
+func WithRemoveEmptyDir(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.removeEmptyDir = b
+	}
+}
+
 func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	path = filepath.Clean(path)
-	stt, err := os.Stat(path)
+	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return nil, err
-	}
-	if !stt.IsDir() {
-		return nil, ErrPathNotValid
 	}
 	if !isDirectoryWritable(path) {
 		return nil, ErrPathNotWritable
@@ -67,6 +71,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 		path:               path,
 		ctx:                context.Background(),
 		uploadIDTranslator: &block.NoOpTranslator{},
+		removeEmptyDir:     true,
 	}
 	for _, opt := range opts {
 		opt(adapter)
@@ -108,6 +113,10 @@ func maybeMkdir(path string, f func(p string) (*os.File, error)) (*os.File, erro
 	return f(path)
 }
 
+func (l *Adapter) Path() string {
+	return l.path
+}
+
 func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
 	p, err := l.getPath(obj)
 	if err != nil {
@@ -131,7 +140,34 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 		return err
 	}
 	p = filepath.Clean(p)
-	return os.Remove(p)
+	err = os.Remove(p)
+	if err != nil {
+		return err
+	}
+	if l.removeEmptyDir {
+		dir := filepath.Dir(p)
+		removeEmptyDirUntil(dir, l.path)
+	}
+	return nil
+}
+
+func removeEmptyDirUntil(dir string, stopAt string) {
+	if stopAt == "" {
+		return
+	}
+	if !strings.HasSuffix(stopAt, "/") {
+		stopAt += "/"
+	}
+	for strings.HasPrefix(dir, stopAt) && dir != stopAt {
+		err := os.Remove(dir)
+		if err != nil {
+			break
+		}
+		dir = filepath.Dir(dir)
+		if dir == "/" {
+			break
+		}
+	}
 }
 
 func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
@@ -159,6 +195,36 @@ func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	}()
 	_, err = io.Copy(destinationFile, sourceFile)
 	return err
+}
+
+func (l *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+	if err := isValidUploadID(uploadID); err != nil {
+		return "", err
+	}
+	r, err := l.Get(sourceObj, 0)
+	if err != nil {
+		return "", err
+	}
+	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
+	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
+	err = l.Put(block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
+	return etag, err
+}
+
+func (l *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+	if err := isValidUploadID(uploadID); err != nil {
+		return "", err
+	}
+	r, err := l.GetRange(sourceObj, startPosition, endPosition)
+	if err != nil {
+		return "", err
+	}
+	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
+	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
+	err = l.Put(block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
+	return etag, err
 }
 
 func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {

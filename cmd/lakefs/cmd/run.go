@@ -20,18 +20,14 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/block/factory"
-	catalogfactory "github.com/treeverse/lakefs/catalog/factory"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/dedup"
-	"github.com/treeverse/lakefs/export"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/parade"
-	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 )
 
@@ -68,10 +64,9 @@ var runCmd = &cobra.Command{
 		defer dbPool.Close()
 
 		registerPrometheusCollector(dbPool)
-		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger, err := catalogfactory.BuildCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(dbPool, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
 		}
@@ -92,23 +87,15 @@ var runCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(logger, cfg, authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
+
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
+
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
-
-		// parade
-		paradeDB := parade.NewParadeDB(dbPool.Pool())
-		// export handler
-		exportHandler := export.NewHandler(blockStore, cataloger, paradeDB)
-		exportActionManager := parade.NewActionManager(exportHandler, paradeDB, nil)
 		defer func() {
-			// order is important - close cataloger channel before dedup
 			_ = cataloger.Close()
-			_ = dedupCleaner.Close()
-			exportActionManager.Close()
 		}()
 
 		// start API server
@@ -116,18 +103,15 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-		apiHandler := api.NewHandler(
-			cataloger,
-			blockStore,
-			authService,
-			authMetadataManager,
-			bufferedCollector,
-			retention,
-			migrator,
-			paradeDB,
-			dedupCleaner,
-			logger.WithField("service", "api_gateway"),
-		)
+		apiHandler := api.Serve(api.Dependencies{
+			Cataloger:       cataloger,
+			Auth:            authService,
+			BlockAdapter:    blockStore,
+			MetadataManager: authMetadataManager,
+			Migrator:        migrator,
+			Collector:       bufferedCollector,
+			Logger:          logger.WithField("service", "api_gateway"),
+		})
 
 		// init gateway server
 		s3Fallback := cfg.GetS3GatewayFallbackURL()
@@ -146,7 +130,6 @@ var runCmd = &cobra.Command{
 			authService,
 			cfg.GetS3GatewayDomainName(),
 			bufferedCollector,
-			dedupCleaner,
 			s3FallbackURL,
 		)
 		ctx, cancelFn := context.WithCancel(context.Background())
@@ -203,6 +186,7 @@ const runBanner = `
 
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
+	_, _ = fmt.Fprintf(w, "Version %s\n\n", config.Version)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {

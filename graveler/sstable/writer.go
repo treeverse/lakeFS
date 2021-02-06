@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/ident"
 
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/pyramid"
@@ -57,6 +58,7 @@ func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespac
 }
 
 // AddMetadata associates metadata value (which will be stringified) with key.
+// Keys and values are also calculated as part of the resulting range ID
 func (dw *DiskWriter) AddMetadata(key, value string) {
 	dw.props[key] = value
 }
@@ -122,6 +124,10 @@ func (dw *DiskWriter) Abort() error {
 }
 
 func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
+	// Before closing, we write all user supplied metadata keys and values to the hash
+	// This is done to avoid collisions, especially on empty sstables that might hash to the same value otherwise.
+	ident.MarshalStringMap(dw.hash, dw.props)
+
 	tableHash := dw.hash.Sum(nil)
 	sstableID := hex.EncodeToString(tableHash)
 

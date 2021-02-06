@@ -27,7 +27,7 @@ jobs:
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
-        uses: zricethezav/gitleaks-action@v1.1.4
+        uses: zricethezav/gitleaks-action@v1.3.0
 
   test:
     name: Run Test Suite

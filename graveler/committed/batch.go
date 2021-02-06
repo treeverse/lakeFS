@@ -10,21 +10,28 @@ type ResultCloser interface {
 }
 
 type BatchCloser struct {
+	// mu protects results and error
+	mu      sync.Mutex
 	results []WriteResult
 	err     error
 
 	wg sync.WaitGroup
-
-	// lock locks any access to the results and error
-	lock sync.Mutex
+	ch chan ResultCloser
 }
 
 // NewBatchCloser returns a new BatchCloser
-func NewBatchCloser() *BatchCloser {
-	return &BatchCloser{
-		wg:   sync.WaitGroup{},
-		lock: sync.Mutex{},
+func NewBatchCloser(numClosers int) *BatchCloser {
+	ret := &BatchCloser{
+		// Block when all closer goroutines are busy.
+		ch: make(chan ResultCloser),
 	}
+
+	ret.wg.Add(numClosers)
+	for i := 0; i < numClosers; i++ {
+		go ret.handleClose()
+	}
+
+	return ret
 }
 
 var (
@@ -35,28 +42,34 @@ var (
 // Any writes executed to the writer after this call are not guaranteed to succeed.
 // If Wait() has already been called, returns an error.
 func (bc *BatchCloser) CloseWriterAsync(w ResultCloser) error {
-	bc.lock.Lock()
-	defer bc.lock.Unlock()
+	bc.mu.Lock()
 
 	if bc.err != nil {
 		// Don't accept new writers if previous error occurred.
 		// In particular, if Wait has started then this is errMultipleWaitCalls.
+		bc.mu.Unlock()
 		return bc.err
 	}
 
-	bc.wg.Add(1)
-	go bc.closeWriter(w)
+	bc.mu.Unlock()
+	bc.ch <- w
 
 	return nil
 }
 
+func (bc *BatchCloser) handleClose() {
+	for w := range bc.ch {
+		bc.closeWriter(w)
+	}
+	bc.wg.Done()
+}
+
 func (bc *BatchCloser) closeWriter(w ResultCloser) {
-	defer bc.wg.Done()
 	res, err := w.Close()
 
 	// long operation is over, we can lock to have synchronized access to err and results
-	bc.lock.Lock()
-	defer bc.lock.Unlock()
+	bc.mu.Lock()
+	defer bc.mu.Unlock()
 
 	if err != nil {
 		if bc.nilErrOrMultipleCalls() {
@@ -69,22 +82,24 @@ func (bc *BatchCloser) closeWriter(w ResultCloser) {
 	bc.results = append(bc.results, *res)
 }
 
-// Wait returns when all Writers finished.
-// Any failure to close a single RangeWriter will return with a nil results slice and an error.
+// Wait returns when all Writers finished.  Returns a nil results slice and an error if *any*
+// RangeWriter failed to close and upload.
 func (bc *BatchCloser) Wait() ([]WriteResult, error) {
-	bc.lock.Lock()
+	bc.mu.Lock()
 	if bc.err != nil {
-		defer bc.lock.Unlock()
+		defer bc.mu.Unlock()
 		return nil, bc.err
 	}
 	bc.err = ErrMultipleWaitCalls
-	bc.lock.Unlock()
+	bc.mu.Unlock()
+
+	close(bc.ch)
 
 	bc.wg.Wait()
 
 	// all writers finished
-	bc.lock.Lock()
-	defer bc.lock.Unlock()
+	bc.mu.Lock()
+	defer bc.mu.Unlock()
 	if !bc.nilErrOrMultipleCalls() {
 		return nil, bc.err
 	}

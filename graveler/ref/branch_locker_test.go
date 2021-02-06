@@ -72,14 +72,14 @@ func TestBranchLock(t *testing.T) {
 		_, err := bl.Writer(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
 			return nil, nil
 		})
-		if !errors.Is(err, graveler.ErrLockNotAcquired) {
+		if !errors.Is(err, graveler.ErrAlreadyLocked) {
 			t.Fatalf("Writer should be locked during metadata updater, err=%v", err)
 		}
 		// try to acquire committer
 		_, err = bl.MetadataUpdater(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
 			return nil, nil
 		})
-		if !errors.Is(err, graveler.ErrLockNotAcquired) {
+		if !errors.Is(err, graveler.ErrAlreadyLocked) {
 			t.Fatalf("Committer should be locked during metadata updater, err=%s", err)
 		}
 		// release acquired lock
@@ -116,6 +116,7 @@ func TestBranchLock(t *testing.T) {
 		// start two committers and wait until one of them will fail to know that the first one is blocked
 		var metadataUpdates int64
 		chDoneCommitter := make([]chan struct{}, 2)
+		chReleaseCommitter := make(chan struct{})
 		committersErr := make([]error, 2)
 		for i := 0; i < len(chDoneCommitter); i++ {
 			chDoneCommitter[i] = make(chan struct{})
@@ -123,6 +124,7 @@ func TestBranchLock(t *testing.T) {
 				ctx := context.Background()
 				_, committersErr[pos] = bl.MetadataUpdater(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
 					atomic.AddInt64(&metadataUpdates, 1)
+					<-chReleaseCommitter
 					return nil, nil
 				})
 				close(chDoneCommitter[pos])
@@ -139,12 +141,12 @@ func TestBranchLock(t *testing.T) {
 		}
 
 		// check that the one that failed - failed with the right reason
-		if err := committersErr[failedCommitterPos]; !errors.Is(err, graveler.ErrLockNotAcquired) {
-			t.Fatalf("Failed committer (%d) should failed to acquire, err=%v", failedCommitterPos, err)
+		if err := committersErr[failedCommitterPos]; !errors.Is(err, graveler.ErrAlreadyLocked) {
+			t.Errorf("Failed committer (%d) should failed to acquire, err=%v", failedCommitterPos, err)
 		}
 		updates := atomic.LoadInt64(&metadataUpdates)
 		if updates != 0 {
-			t.Fatalf("No update should be done at this point, updates=%d", updates)
+			t.Errorf("No update should be done at this point, updates=%d", updates)
 		}
 
 		// verify that another writer can't start while committer is waiting
@@ -152,13 +154,16 @@ func TestBranchLock(t *testing.T) {
 		_, err := bl.Writer(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
 			return nil, nil
 		})
-		if !errors.Is(err, graveler.ErrLockNotAcquired) {
-			t.Fatalf("Should not acquire writer while committer is waiting, err=%v", err)
+		if !errors.Is(err, graveler.ErrAlreadyLocked) {
+			t.Errorf("Should not acquire writer while committer is waiting, err=%v", err)
 		}
 
 		// release the last writer and wait for it
 		close(chReleaseWriter)
 		<-chDoneWriter
+
+		// release that running committer
+		close(chReleaseCommitter)
 
 		// wait for the second committer
 		secondCommitterPos := (failedCommitterPos + 1) % 2
@@ -166,11 +171,11 @@ func TestBranchLock(t *testing.T) {
 
 		// verify no error and one update
 		if err := committersErr[secondCommitterPos]; err != nil {
-			t.Fatalf("Committer should ended without an error, err=%v", err)
+			t.Errorf("Committer should ended without an error, err=%v", err)
 		}
 		updates = atomic.LoadInt64(&metadataUpdates)
 		if updates != 1 {
-			t.Fatalf("Expected one update, updates=%d", updates)
+			t.Errorf("Expected one update, updates=%d", updates)
 		}
 	})
 }

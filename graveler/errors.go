@@ -9,6 +9,11 @@ import (
 
 // Graveler errors
 var (
+	// Base error for "user-visible" errors, which should not be wrapped with internal
+	// debug info.
+	ErrUserVisible = errors.New("")
+
+	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
 	ErrNotFound                = wrapError(db.ErrNotFound, "not found")
 	ErrNotUnique               = errors.New("not unique")
 	ErrInvalidValue            = errors.New("invalid value")
@@ -25,13 +30,19 @@ var (
 	ErrBranchNotFound          = fmt.Errorf("branch %w", ErrNotFound)
 	ErrTagNotFound             = fmt.Errorf("tag %w", ErrNotFound)
 	ErrRefAmbiguous            = fmt.Errorf("reference is ambiguous: %w", ErrNotFound)
+	ErrNoChanges               = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound           = errors.New("conflict found")
+	ErrCommitNotHeadBranch     = errors.New("commit is not head of branch")
 	ErrBranchExists            = errors.New("branch already exists")
 	ErrTagAlreadyExists        = errors.New("tag already exists")
 	ErrDirtyBranch             = errors.New("can't apply meta-range on dirty branch")
 	ErrMetaRangeNotFound       = errors.New("metarange not found")
 	ErrLockNotAcquired         = errors.New("lock not acquired")
-	ErrRevertMergeCommit       = errors.New("revert merge commit unsupported")
+	ErrAlreadyLocked           = wrapError(ErrLockNotAcquired, "already locked")
+	ErrRevertMergeNoParent     = errors.New("must specify 1-based parent number for reverting merge commit")
+	ErrAddCommitNoParent       = errors.New("added commit must have a parent")
+	ErrMultipleParents         = errors.New("cannot have more than a single parent")
+	ErrRevertParentOutOfRange  = errors.New("given commit does not have the given parent number")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

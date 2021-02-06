@@ -45,7 +45,13 @@ func TestApplyAdd(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeAdded: 3,
+		},
+	}, summary)
 }
 
 func TestApplyReplace(t *testing.T) {
@@ -73,7 +79,13 @@ func TestApplyReplace(t *testing.T) {
 	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeChanged: 2,
+		},
+	}, summary)
 }
 
 func TestApplyDelete(t *testing.T) {
@@ -99,7 +111,13 @@ func TestApplyDelete(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
 	writer.EXPECT().WriteRange(gomock.Eq(*range2))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeRemoved: 2,
+		},
+	}, summary)
 }
 
 func TestApplyCopiesLeftoverDiffs(t *testing.T) {
@@ -127,7 +145,14 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("e", "dest:e")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "dest:f")))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeChanged: 1,
+			graveler.DiffTypeAdded:   2,
+		},
+	}, summary)
 }
 
 func TestApplyCopiesLeftoverSources(t *testing.T) {
@@ -158,5 +183,32 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
 	writer.EXPECT().WriteRange(gomock.Eq(*range4))
 
-	assert.NoError(t, committed.Apply(context.Background(), writer, source, diffs))
+	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{
+			graveler.DiffTypeRemoved: 1,
+		},
+	}, summary)
+}
+
+func TestApplyNoChangesFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz")}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	source := testutil.NewFakeIterator()
+	source.
+		AddRange(range1).
+		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
+		AddRange(range2)
+
+	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{})
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+	writer.EXPECT().WriteRange(gomock.Any()).AnyTimes()
+
+	_, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.Error(t, err, graveler.ErrNoChanges)
 }

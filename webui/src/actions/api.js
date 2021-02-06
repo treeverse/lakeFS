@@ -30,15 +30,23 @@ export const extractError = async (response) => {
     return body;
 };
 
-const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, defaultHeaders ={"Accept": "application/json",
-    "Content-Type": "application/json",}) => {
-    return fetch(`${API_ENDPOINT}${uri}`, {
+const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, defaultHeaders = {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+}) => {
+    const response = await fetch(`${API_ENDPOINT}${uri}`, {
         headers: new Headers({
             ...defaultHeaders,
             ...additionalHeaders,
         }),
         ...requestData,
     });
+    if (response.status === 401) {
+        // unauthorized status code will throw the current user and reload
+        localStorage.removeItem('user');
+        window.location.reload(true);
+    }
+    return response;
 };
 
 // helper errors
