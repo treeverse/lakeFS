@@ -1,7 +1,6 @@
 package catalog
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 )
@@ -27,11 +26,7 @@ type ActionHook struct {
 	Properties  map[string]string `yaml:"properties"`
 }
 
-var (
-	ErrInvalidAction = errors.New("invalid action")
-
-	reHookID = regexp.MustCompile(`^[_a-zA-Z][_a-zA-Z0-9]{1,255}$`)
-)
+var reHookID = regexp.MustCompile(`^[_a-zA-Z][_a-zA-Z0-9]{1,255}$`)
 
 func (a *Action) Validate() error {
 	if a.On.PreMerge == nil && a.On.PreCommit == nil {
