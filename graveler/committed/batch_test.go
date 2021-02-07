@@ -92,7 +92,7 @@ func NewFakeRangeWriter(result *committed.WriteResult, err error) *FakeRangeWrit
 }
 
 func TestBatchCloserSuccess(t *testing.T) {
-	runSuccessScenario(t)
+	runSuccessScenario(t, 502, 5)
 }
 
 func TestBatchWriterFailed(t *testing.T) {
@@ -126,7 +126,7 @@ func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 		Count:   4321,
 	}, nil)
 
-	sut := runSuccessScenario(t)
+	sut := runSuccessScenario(t, 1, 1)
 
 	assert.Error(t, sut.CloseWriterAsync(writer), committed.ErrMultipleWaitCalls)
 	res, err := sut.Wait()
@@ -134,10 +134,11 @@ func TestBatchCloserMultipleWaitCalls(t *testing.T) {
 	require.Error(t, err, committed.ErrMultipleWaitCalls)
 }
 
-func runSuccessScenario(t *testing.T) *committed.BatchCloser {
-	const writersCount = 10
-	writers := make([]*FakeRangeWriter, writersCount)
-	for i := 0; i < writersCount; i++ {
+func runSuccessScenario(t *testing.T, numWriters, numClosers int) *committed.BatchCloser {
+	t.Helper()
+
+	writers := make([]*FakeRangeWriter, numWriters)
+	for i := 0; i < numWriters; i++ {
 		writers[i] = NewFakeRangeWriter(&committed.WriteResult{
 			RangeID: committed.ID(strconv.Itoa(i)),
 			First:   committed.Key(fmt.Sprintf("row_%d_1", i)),
@@ -146,16 +147,16 @@ func runSuccessScenario(t *testing.T) *committed.BatchCloser {
 		}, nil)
 	}
 
-	sut := committed.NewBatchCloser(writersCount)
+	sut := committed.NewBatchCloser(numClosers)
 
-	for i := 0; i < writersCount; i++ {
+	for i := 0; i < numWriters; i++ {
 		assert.NoError(t, sut.CloseWriterAsync(writers[i]))
 	}
 
 	res, err := sut.Wait()
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.Len(t, res, writersCount)
+	assert.Len(t, res, numWriters)
 
 	return sut
 }

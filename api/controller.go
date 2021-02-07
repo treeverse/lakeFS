@@ -241,6 +241,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			c.deps.Logger.Error("failed to write metadata after setup")
 		} else {
 			c.deps.Collector.SetInstallationID(metadata[auth.InstallationIDKeyName])
+			c.deps.Collector.CollectMetadata(convertMetadata(metadata))
 		}
 		c.deps.Collector.CollectEvent("global", "init")
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
@@ -249,6 +250,20 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			CreationDate:    cred.IssuedDate.Unix(),
 		})
 	})
+}
+
+func convertMetadata(metadata map[string]string) *stats.Metadata {
+	res := &stats.Metadata{
+		InstallationID: metadata[auth.InstallationIDKeyName],
+	}
+
+	for k, v := range metadata {
+		res.Entries = append(res.Entries, stats.MetadataEntry{
+			Name:  k,
+			Value: v,
+		})
+	}
+	return res
 }
 
 func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
