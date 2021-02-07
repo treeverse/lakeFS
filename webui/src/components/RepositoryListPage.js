@@ -36,8 +36,6 @@ const RepositoryList = connect(
 )(({ list, paginate, deleteStatus, deleteRepository, listRepositories}) => {
 
     const [showingDeleteModal, setShowDeleteModal] = useState(false);
-    const closeDeleteModal = () => setShowDeleteModal(false);
-    const showDeleteModal = () => setShowDeleteModal(true);
     const [selectedRepo, setSelectedRepo] = useState("");
 
     const deleteRepo = () => {
@@ -45,7 +43,7 @@ const RepositoryList = connect(
             return;
         }
         deleteRepository(selectedRepo);
-        closeDeleteModal();
+        setShowDeleteModal(false);
     }
 
     useEffect(()=> {
@@ -81,7 +79,7 @@ const RepositoryList = connect(
                                 <Card.Body>
                                 <Button className="float-right" onClick={() => {
                                                     setSelectedRepo(repo.id);
-                                                    showDeleteModal();
+                                                    setShowDeleteModal(true);
                                                     }} 
                                         variant="danger"><TrashIcon/> Delete Repository</Button>
                                     <h5><Link to={`/repositories/${repo.id}/tree`}>{repo.id}</Link></h5>
@@ -99,7 +97,7 @@ const RepositoryList = connect(
                 ))}
                 {paginator}
             </div>
-            <ConfirmationModal show={showingDeleteModal} onHide={closeDeleteModal} msg={`are you sure you wish to delete repository ${selectedRepo}?`} onConfirm={deleteRepo}/>
+            <ConfirmationModal show={showingDeleteModal} onHide={() => {setShowDeleteModal(false)}} msg={`are you sure you wish to delete repository ${selectedRepo}?`} onConfirm={deleteRepo}/>
         </>
     );
 });
