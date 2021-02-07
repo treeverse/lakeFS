@@ -6,7 +6,7 @@ version := "1.0"
 
 Compile / PB.protoSources := Seq(file("../catalog/"), file("../graveler/committed"))
 Compile / PB.targets := Seq(
-  scalapb.gen(flatPackage=true) -> file("src/main/gen")
+  scalapb.gen(flatPackage=true) -> (Compile / sourceManaged).value
 )
 
 libraryDependencies += "org.rocksdb" % "rocksdbjni" % "6.6.4"
