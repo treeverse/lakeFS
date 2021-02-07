@@ -10,3 +10,5 @@ Compile / PB.targets := Seq(
 
 libraryDependencies += "org.rocksdb" % "rocksdbjni" % "6.6.4"
 libraryDependencies += "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
+ libraryDependencies += "commons-codec" % "commons-codec" % "1.15"
+libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.946"

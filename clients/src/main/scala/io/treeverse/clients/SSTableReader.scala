@@ -1,22 +1,20 @@
+package io.treeverse.clients
 import catalog.catalog.Entry
 import committed.committed.RangeData
+import io.treeverse.clients.{Range => LakeFSRange}
+import org.apache.commons.codec.binary.Hex
 import org.rocksdb._
 
-import java.io.ByteArrayInputStream
-import java.io.DataInput
-import java.io.DataInputStream
-import java.io.IOException
-import java.util
-import java.util.{ArrayList, List, Map}
+import java.io.{ByteArrayInputStream, DataInputStream, IOException}
+import scala.collection.mutable.ListBuffer
 
 object SSTableReader {
-
   private trait DataHandler[T] {
     def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): T
   }
 
-  private class RangeDataHandler extends SSTableReader.DataHandler[Range] {
-    override def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): Range = try new Range(new String(key), new String(identity), RangeData.parseFrom(data))
+  private class RangeDataHandler extends SSTableReader.DataHandler[io.treeverse.clients.Range] {
+    override def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): LakeFSRange = try new LakeFSRange(new String(key), new String(identity), RangeData.parseFrom(data))
     catch {
       case e: IOException =>
         e.printStackTrace()
@@ -32,7 +30,6 @@ object SSTableReader {
         null
     }
   }
-
 }
 
 class SSTableReader() {
@@ -41,9 +38,9 @@ class SSTableReader() {
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getData[T](sstableFile: String, handler: SSTableReader.DataHandler[T], expectedType: String): util.List[T] = {
+  def getData[T](sstableFile: String, handler: SSTableReader.DataHandler[T], expectedType: String): List[T] = {
     reader.open(sstableFile)
-    val result = new util.ArrayList[T](reader.getTableProperties.getNumEntries.toInt)
+    var result = new ListBuffer[T]()
     val it = reader.newIterator(new ReadOptions)
     val props = reader.getTableProperties.getUserCollectedProperties
     if (!(expectedType == props.get("type"))) throw new RuntimeException(String.format("expected property type to be '%s'. got '%s'", expectedType, props.get("type")))
@@ -57,17 +54,17 @@ class SSTableReader() {
       val id = inputStream.readNBytes(identityLength.toInt)
       val dataLength = VarInt.readSignedVarLong(s)
       val data = inputStream.readNBytes(dataLength.toInt)
-      result.add(handler.handle(it.key, id, data))
+      result += handler.handle(it.key, id, data)
       it.next()
     }
-    result
+    result.toList
   }
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getRanges(sstableFile: String): util.List[Range] = getData(sstableFile, new SSTableReader.RangeDataHandler, "metaranges")
+  def getRanges(sstableFile: String): List[LakeFSRange] = getData(sstableFile, new SSTableReader.RangeDataHandler, "metaranges")
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getEntries(sstableFile: String): util.List[EntryRecord] = getData(sstableFile, new SSTableReader.EntryDataHandler, "ranges")
+  def getEntries(sstableFile: String): List[EntryRecord] = getData(sstableFile, new SSTableReader.EntryDataHandler, "ranges")
 }

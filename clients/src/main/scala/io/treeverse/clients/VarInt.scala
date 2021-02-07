@@ -1,3 +1,5 @@
+package io.treeverse.clients
+
 import java.io.DataInput
 import java.io.IOException
 
