@@ -15,7 +15,6 @@ import {DebouncedFormControl} from "./DebouncedInput";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
-import ConfirmationModal from './ConfirmationModal';
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
     return (
@@ -30,13 +29,54 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
     );
 };
 
+const DeleteRepositoryModal = ({selectedRepo, show, onSubmit, onCancel}) => {
+    const [isDisabled, setIsDisabled] = useState(true);
+    const repoNameField = useRef(null);
+
+    const compareRepoName = () => {
+        if (repoNameField.current.value === selectedRepo) {
+            setIsDisabled(false);
+        }
+        else {
+            setIsDisabled(true);
+        }
+    }
+
+    return (
+        <Modal show={show} onHide={onCancel} size="lg">
+            <Modal.Header closeButton>
+                <Modal.Title>Delete Repository</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                Are you sure you wish to delete repository <strong>{selectedRepo}</strong>? <br />
+                This action cannot be undone. This will delete the following: <br /> <br />
+
+                <ul>
+                    <li>All commits</li>
+                    <li>All branches</li>
+                    <li>All tags</li>
+                    <li>All repository configuration</li>
+                </ul>
+                
+                Data in the underlying object store will not be deleted by this action. <br /> <br />
+
+                Please type <strong>{selectedRepo}</strong> to confirm: <br />
+                <Form.Control className="mt-2" type="text" autoFocus ref={repoNameField} onChange={compareRepoName}/>  
+            </Modal.Body>
+            <Modal.Footer>
+                <Button disabled={isDisabled} variant="danger" onClick={onSubmit}>I understand the consequences, delete this repository</Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
+
 const RepositoryList = connect(
     ({ repositories }) => ({ deleteStatus: repositories.delete }),
     ({ deleteRepository, listRepositories })
 )(({ list, paginate, deleteStatus, deleteRepository, listRepositories}) => {
 
     const [showingDeleteModal, setShowDeleteModal] = useState(false);
-    const [selectedRepo, setSelectedRepo] = useState("");
+    const [selectedRepo, setSelectedRepo] = useState(null);
 
     const deleteRepo = () => {
         if (deleteStatus.inProgress) {
@@ -87,7 +127,7 @@ const RepositoryList = connect(
                                         <small>
                                             created at <code>{moment.unix(repo.creation_date).toISOString()}</code> ({moment.unix(repo.creation_date).fromNow()})<br/>
                                             default branch: <code>{repo.default_branch}</code>,{' '}
-                                            storage namesapce: <code>{repo.storage_namespace}</code>
+                                            storage namespace: <code>{repo.storage_namespace}</code>
                                         </small>
                                     </p>
                                 </Card.Body>
@@ -97,7 +137,11 @@ const RepositoryList = connect(
                 ))}
                 {paginator}
             </div>
-            <ConfirmationModal show={showingDeleteModal} onHide={() => {setShowDeleteModal(false)}} msg={`are you sure you wish to delete repository ${selectedRepo}?`} onConfirm={deleteRepo}/>
+            <DeleteRepositoryModal
+                selectedRepo={selectedRepo}
+                show={showingDeleteModal}
+                onSubmit={deleteRepo}
+                onCancel={()=>{setShowDeleteModal(false)}}/>
         </>
     );
 });
