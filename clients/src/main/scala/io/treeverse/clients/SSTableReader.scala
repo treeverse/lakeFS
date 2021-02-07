@@ -16,21 +16,11 @@ object SSTableReader {
   }
 
   private class RangeDataHandler extends SSTableReader.DataHandler[io.treeverse.clients.Range] {
-    override def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): LakeFSRange = try new LakeFSRange(new String(key), new String(identity), RangeData.parseFrom(data))
-    catch {
-      case e: IOException =>
-        e.printStackTrace()
-        null
-    }
+    override def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): LakeFSRange = new LakeFSRange(new String(key), new String(identity), RangeData.parseFrom(data))
   }
 
   private class EntryDataHandler extends SSTableReader.DataHandler[EntryRecord] {
-    override def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): EntryRecord = try new EntryRecord(new String(key), Hex.encodeHexString(identity), Entry.parseFrom(data))
-    catch {
-      case e: IOException =>
-        e.printStackTrace()
-        null
-    }
+    override def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): EntryRecord = new EntryRecord(new String(key), Hex.encodeHexString(identity), Entry.parseFrom(data))
   }
 
 }
