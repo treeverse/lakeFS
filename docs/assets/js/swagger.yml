@@ -22,9 +22,10 @@ securityDefinitions:
     in: header
     name: X-JWT-Authorization
 
+
 security:
-  - jwt_token: []
-  - basic_auth: []
+  - basic_auth: [ ]
+  - jwt_token: [ ]
 
 responses:
   Unauthorized:
@@ -230,16 +231,6 @@ definitions:
       id:
         type: string
       ref:
-        type: string
-
-  metadata_dump:
-    type: object
-    properties:
-      commits_meta_range_id:
-        type: string
-      tags_meta_range_id:
-        type: string
-      branches_meta_range_id:
         type: string
 
   error:
@@ -1286,37 +1277,6 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/metadata/dump:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-    put:
-      tags:
-        - metadata
-      operationId: dumpMetadata
-      summary: Dump repository metadata to object store
-      responses:
-        201:
-          description: metadata dump
-          schema:
-            type: object
-            $ref: "#/definitions/metadata_dump"
-        400:
-          description: validation error
-          schema:
-            $ref: "#/definitions/error"
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: repository not found
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
   /repositories/{repository}/tags:
     parameters:
       - in: path
@@ -1667,9 +1627,6 @@ paths:
               ref:
                 type: string
                 description: the commit to revert, given by a ref
-              parent_number:
-                type: integer
-                description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
       responses:
         204:
           description: revert successful
@@ -1684,7 +1641,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
     parameters:
       - in: path
         name: repository
@@ -1694,9 +1651,9 @@ paths:
         name: sourceRef
         required: true
         type: string
-        description: source ref
+        description: source branch name
       - in: path
-        name: destinationBranch
+        name: destinationRef
         required: true
         type: string
         description: destination branch name
@@ -2141,6 +2098,126 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/continuous-export:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    get:
+      tags:
+        - export
+        - branches
+      operationId: getContinuousExport
+      summary: returns the current continuous export configuration of a branch
+      responses:
+        200:
+          description: continuous export policy
+          schema:
+            $ref: "#/definitions/continuous_export_configuration"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no continuous export policy defined
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags:
+        - export
+        - branches
+      operationId: setContinuousExport
+      summary: sets a new continuous export configuration of a branch
+      parameters:
+        - in: body
+          name: config
+          required: true
+          schema:
+            $ref: "#/definitions/continuous_export_configuration"
+      responses:
+        201:
+          description: continuous export successfullyconfigured
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/repair-export:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - export
+        - branches
+      operationId: repair
+      summary: set continuous export state as repaired
+      responses:
+        201:
+          description: continuous export status successfully changed to repaired
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/export-hook:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+    post:
+      tags:
+        - export
+        - branches
+      operationId: run
+      summary: hook to be called in order to execute continuous export on branch
+      responses:
+        201:
+          description: continuous export successfully started
+          schema:
+            description: "export ID"
+            type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: no branch defined at that repo
           schema:
             $ref: "#/definitions/error"
         default:
