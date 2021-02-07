@@ -4,8 +4,9 @@ scalaVersion := "2.13.3"
 organization := "io.treeverse"
 version := "1.0"
 
+Compile / PB.protoSources := Seq(file("../catalog/"), file("../graveler/committed"))
 Compile / PB.targets := Seq(
-  scalapb.gen() -> (Compile / sourceManaged).value
+  scalapb.gen(flatPackage=true) -> file("src/main/gen")
 )
 
 libraryDependencies += "org.rocksdb" % "rocksdbjni" % "6.6.4"
