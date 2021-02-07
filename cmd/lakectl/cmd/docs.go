@@ -98,21 +98,18 @@ func genMarkdownForCmd(cmd *cobra.Command, w io.Writer) error {
 
 	buf.WriteString("\n\n")
 	_, err := buf.WriteTo(w)
-	return err
-}
+	if err != nil {
+		return err
+	}
 
-func recurseGenMarkdown(cmd *cobra.Command, w io.Writer) error {
+	// recurse to children
 	for _, c := range cmd.Commands() {
 		err := genMarkdownForCmd(c, w)
-		if err != nil {
-			DieErr(err)
-		}
-		// gen child commands now
-		err = recurseGenMarkdown(c, w)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -139,10 +136,6 @@ var docsCmd = &cobra.Command{
 			DieErr(err)
 		}
 		err = genMarkdownForCmd(rootCmd, writer)
-		if err != nil {
-			DieErr(err)
-		}
-		err = recurseGenMarkdown(rootCmd, writer)
 		if err != nil {
 			DieErr(err)
 		}
