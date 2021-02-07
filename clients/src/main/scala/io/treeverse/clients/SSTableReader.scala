@@ -41,16 +41,16 @@ class SSTableReader() {
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getData[T](sstableFile: String, handler: SSTableReader.DataHandler[T], expectedType: String): List[T] = {
+  def getData[T](sstableFile: String, handler: SSTableReader.DataHandler[T], expectedType: String): Seq[T] = {
     reader.open(sstableFile)
     var result = new ListBuffer[T]()
     val it = reader.newIterator(new ReadOptions)
     val props = reader.getTableProperties.getUserCollectedProperties
-    if (!(expectedType == props.get("type"))) throw new RuntimeException(String.format("expected property type to be '%s'. got '%s'", expectedType, props.get("type")))
+    if (expectedType != props.get("type")) {
+      throw new RuntimeException(String.format("expected property type to be '%s'. got '%s'", expectedType, props.get("type")))
+    }
     it.seekToFirst()
-    while ( {
-      it.isValid
-    }) {
+    while (it.isValid) {
       val inputStream = new ByteArrayInputStream(it.value)
       val s = new DataInputStream(inputStream)
       val identityLength = VarInt.readSignedVarLong(s)
@@ -65,9 +65,9 @@ class SSTableReader() {
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getRanges(sstableFile: String): List[LakeFSRange] = getData(sstableFile, new SSTableReader.RangeDataHandler, "metaranges")
+  def getRanges(sstableFile: String): Seq[LakeFSRange] = getData(sstableFile, new SSTableReader.RangeDataHandler, "metaranges")
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getEntries(sstableFile: String): List[EntryRecord] = getData(sstableFile, new SSTableReader.EntryDataHandler, "ranges")
+  def getEntries(sstableFile: String): Seq[EntryRecord] = getData(sstableFile, new SSTableReader.EntryDataHandler, "ranges")
 }

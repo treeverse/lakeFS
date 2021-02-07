@@ -2,4 +2,4 @@ package io.treeverse.clients
 
 import io.treeverse.clients.catalog.Entry
 
-class EntryRecord(var key: String, var identity: String, var entry: Entry)
+class EntryRecord(val key: String, val identity: String, val entry: Entry)

@@ -1,5 +1,5 @@
 package io.treeverse.clients
 
 trait RangeReader {
-  def getEntries(rangeID : String) : List[EntryRecord]
+  def getEntries(rangeID : String) : Seq[EntryRecord]
 }

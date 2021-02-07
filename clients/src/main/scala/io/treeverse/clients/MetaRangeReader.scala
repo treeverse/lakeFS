@@ -1,5 +1,5 @@
 package io.treeverse.clients
 
 trait MetaRangeReader {
-  def getRanges(metaRangeID: String) : List[Range]
+  def getRanges(metaRangeID: String) : Seq[Range]
 }
