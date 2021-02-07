@@ -130,11 +130,8 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	branchLocker := ref.NewBranchLocker(db)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
 	entryCatalog := &EntryCatalog{Store: store}
-
-	// register hooks
-	hooks := store.Hooks()
-	hooks.PreCommit = append(hooks.PreCommit, entryCatalog.preCommitHook)
-	hooks.PreMerge = append(hooks.PreMerge, entryCatalog.preMergeHook)
+	store.SetPreCommitHook(entryCatalog.preCommitHook)
+	store.SetPreMergeHook(entryCatalog.preMergeHook)
 	return entryCatalog, nil
 }
 
