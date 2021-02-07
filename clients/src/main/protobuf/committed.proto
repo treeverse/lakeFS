@@ -1,7 +1,6 @@
 syntax = "proto3";
-option go_package = "github.com/treeverse/lakefs/graveler/committed";
 
-package committed;
+package io.treeverse.clients;
 
 message RangeData {
 	// First key of range, must be >= key of range in SSTable.  If missing, == key of range in SSTable.

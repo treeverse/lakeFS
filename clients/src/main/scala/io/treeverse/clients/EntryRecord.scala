@@ -1,5 +1,5 @@
 package io.treeverse.clients
 
-import catalog.catalog.Entry
+import io.treeverse.clients.catalog.Entry
 
 class EntryRecord(var key: String, var identity: String, var entry: Entry)

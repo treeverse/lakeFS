@@ -1,9 +1,7 @@
 syntax = "proto3";
-option go_package = "github.com/treevese/lakefs/catalog";
-
 import "google/protobuf/timestamp.proto";
 
-package catalog;
+package io.treeverse.clients;
 
 message Entry {
 	string address = 1;

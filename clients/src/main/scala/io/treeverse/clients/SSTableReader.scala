@@ -1,6 +1,7 @@
 package io.treeverse.clients
-import catalog.catalog.Entry
-import committed.committed.RangeData
+
+import io.treeverse.clients.catalog.Entry
+import io.treeverse.clients.committed.RangeData
 import io.treeverse.clients.{Range => LakeFSRange}
 import org.apache.commons.codec.binary.Hex
 import org.rocksdb._
@@ -9,6 +10,7 @@ import java.io.{ByteArrayInputStream, DataInputStream, IOException}
 import scala.collection.mutable.ListBuffer
 
 object SSTableReader {
+
   private trait DataHandler[T] {
     def handle(key: Array[Byte], identity: Array[Byte], data: Array[Byte]): T
   }
@@ -30,6 +32,7 @@ object SSTableReader {
         null
     }
   }
+
 }
 
 class SSTableReader() {
