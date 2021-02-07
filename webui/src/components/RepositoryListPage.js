@@ -41,8 +41,9 @@ const RepositoryList = connect(
     const [selectedRepo, setSelectedRepo] = useState("");
 
     const deleteRepo = () => {
-        if(deleteStatus.inProgress)
+        if (deleteStatus.inProgress) {
             return;
+        }
         deleteRepository(selectedRepo);
         closeDeleteModal();
     }
