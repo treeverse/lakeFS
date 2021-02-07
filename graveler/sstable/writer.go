@@ -7,6 +7,8 @@ import (
 	"hash"
 	"strconv"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/ident"
 
@@ -34,13 +36,16 @@ type DiskWriter struct {
 	closed bool
 }
 
-func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
+func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, metadata graveler.Metadata) (*DiskWriter, error) {
 	fh, err := tierFS.Create(ctx, string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
 
 	props := make(map[string]string)
+	for k, v := range metadata {
+		props[k] = v
+	}
 
 	writer := sstable.NewWriter(fh, sstable.WriterOptions{
 		Compression:             sstable.SnappyCompression,

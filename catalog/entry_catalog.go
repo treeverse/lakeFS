@@ -74,6 +74,7 @@ func (id Path) String() string {
 type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
+	graveler.Dumper
 }
 
 type EntryCatalog struct {
@@ -487,4 +488,16 @@ func (e *EntryCatalog) ListEntries(ctx context.Context, repositoryID graveler.Re
 	}
 	it := NewValueToEntryIterator(iter)
 	return NewEntryListingIterator(it, prefix, delimiter), nil
+}
+
+func (e *EntryCatalog) DumpCommits(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	return e.Store.DumpCommits(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) DumpBranches(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	return e.Store.DumpBranches(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	return e.Store.DumpTags(ctx, repositoryID)
 }

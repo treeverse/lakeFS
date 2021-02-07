@@ -303,3 +303,7 @@ func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.Repos
 func (m *Manager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {
 	return NewCommitIterator(ctx, m.db, repositoryID, from), nil
 }
+
+func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
+}

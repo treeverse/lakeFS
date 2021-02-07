@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/graveler";
+
+import "google/protobuf/timestamp.proto";
+
+package graveler;
+
+message CommitData {
+  string id = 1;
+  string committer = 2;
+  string message = 3;
+  google.protobuf.Timestamp creation_date = 4;
+  string meta_range_id = 5;
+  map<string,string> metadata = 6;
+  repeated string parents = 7;
+}
