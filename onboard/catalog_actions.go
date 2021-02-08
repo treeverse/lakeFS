@@ -117,11 +117,6 @@ func (c *CatalogRepoActions) initBranch(ctx context.Context) error {
 	if errors.Is(err, graveler.ErrBranchNotFound) {
 		// first import, let's create the branch
 		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, catalog.DefaultBranchName)
-		if errors.Is(err, graveler.ErrCreateBranchNoCommit) {
-			// no commits in repo, merge to master
-			c.branchID = catalog.DefaultBranchName
-			return nil
-		}
 		if err != nil {
 			return fmt.Errorf("creating default branch %s: %w", catalog.DefaultImportBranchName, err)
 		}

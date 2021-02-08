@@ -124,6 +124,9 @@ func (ps CommitParents) Contains(commitID CommitID) bool {
 	return false
 }
 
+// FirstCommitMsg is the message of the first (zero) commit of a lakeFS repository
+const FirstCommitMsg = "Repository created"
+
 // Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
 	Committer    string        `db:"committer"`
@@ -376,7 +379,7 @@ type RefManager interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, token StagingToken) error
 
 	// ListRepositories lists repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -565,10 +568,8 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 		CreationDate:     time.Now(),
 		DefaultBranchID:  branchID,
 	}
-	branch := Branch{
-		StagingToken: generateStagingToken(repositoryID, branchID),
-	}
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, branch)
+	stagingToken := generateStagingToken(repositoryID, branchID)
+	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
 	if err != nil {
 		return nil, err
 	}

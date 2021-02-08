@@ -204,7 +204,7 @@ func (m *RefsFake) GetRepository(context.Context, graveler.RepositoryID) (*grave
 	return &graveler.Repository{}, nil
 }
 
-func (m *RefsFake) CreateRepository(context.Context, graveler.RepositoryID, graveler.Repository, graveler.Branch) error {
+func (m *RefsFake) CreateRepository(context.Context, graveler.RepositoryID, graveler.Repository, graveler.StagingToken) error {
 	return nil
 }
 
