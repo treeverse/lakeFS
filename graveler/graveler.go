@@ -1367,7 +1367,7 @@ func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (
 	if err != nil {
 		return nil, err
 	}
-	mid, err := g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
 		commitsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeCommit,
@@ -1375,10 +1375,6 @@ func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (
 			EntitySchemaDefinitionKey: schema,
 		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	return mid, nil
 }
 
 func (g *Graveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
@@ -1395,7 +1391,7 @@ func (g *Graveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) 
 	if err != nil {
 		return nil, err
 	}
-	mid, err := g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
 		branchesToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeBranch,
@@ -1403,10 +1399,6 @@ func (g *Graveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) 
 			EntitySchemaDefinitionKey: schema,
 		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	return mid, nil
 }
 
 func (g *Graveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
@@ -1423,7 +1415,7 @@ func (g *Graveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*Me
 	if err != nil {
 		return nil, err
 	}
-	mid, err := g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
 		tagsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeTag,
@@ -1431,10 +1423,6 @@ func (g *Graveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*Me
 			EntitySchemaDefinitionKey: schema,
 		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	return mid, nil
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {
