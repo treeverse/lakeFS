@@ -76,7 +76,7 @@ func TestImport(t *testing.T) {
 				config := &onboard.Config{
 					CommitUsername:     "committer",
 					InventoryURL:       newInventoryURL,
-					Repository:         "example-repo",
+					RepoID:             "example-repo",
 					InventoryGenerator: inventoryGenerator,
 					CatalogActions:     &catalogActionsMock,
 					KeyPrefixes:        test.Prefixes,

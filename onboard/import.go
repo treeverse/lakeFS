@@ -12,7 +12,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const CommitMsgTemplate = "Import from %s"
+const (
+	CommitMsgTemplate       = "Import from %s"
+	DefaultImportBranchName = "import-from-inventory"
+)
 
 type Importer struct {
 	inventoryGenerator block.InventoryGenerator
@@ -26,12 +29,13 @@ type Importer struct {
 type Config struct {
 	CommitUsername     string
 	InventoryURL       string
-	Repository         string
+	RepoID             graveler.RepositoryID
+	Repo               *catalog.Repository
 	InventoryGenerator block.InventoryGenerator
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
-	EntryCatalog       *catalog.EntryCatalog
+	EntryCatalog       entryCataloger
 
 	// BaseCommit is available only for import-plumbing command
 	BaseCommit graveler.CommitID
@@ -52,7 +56,7 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 	}
 
 	if res.CatalogActions == nil {
-		res.CatalogActions = NewCatalogRepoActions(config.EntryCatalog, graveler.RepositoryID(config.Repository), config.CommitUsername, logger, config.KeyPrefixes)
+		res.CatalogActions = NewCatalogRepoActions(config, logger)
 	}
 
 	if err := res.CatalogActions.Init(ctx, config.BaseCommit); err != nil {

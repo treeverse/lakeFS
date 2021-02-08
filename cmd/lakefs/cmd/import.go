@@ -37,7 +37,7 @@ const (
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
-	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", catalog.DefaultImportBranchName),
+	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", onboard.DefaultImportBranchName),
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(ImportCmdNumArgs),
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
@@ -114,7 +114,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 
-	repo, err := getRepository(ctx, cataloger, repoName, dryRun)
+	repo, err := getRepository(ctx, cataloger, repoName)
 	if err != nil {
 		fmt.Println("Error getting repository", err)
 		return 1
@@ -150,7 +150,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	importConfig := &onboard.Config{
 		CommitUsername:     CommitterName,
 		InventoryURL:       manifestURL,
-		Repository:         repoName,
+		RepoID:             graveler.RepositoryID(repoName),
+		Repo:               repo,
 		InventoryGenerator: blockStore,
 		Cataloger:          cataloger,
 		KeyPrefixes:        prefixes,
@@ -191,14 +192,14 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	fmt.Println()
 
 	if baseCommit == "" {
-		fmt.Printf("Import to branch %s finished successfully.\n", catalog.DefaultImportBranchName)
+		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultImportBranchName)
 		fmt.Println()
 	}
 
 	if withMerge {
 		fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-		commitLog, err := cataloger.Merge(ctx, repoName, catalog.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+		commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
 		if err != nil {
 			fmt.Printf("Merge failed: %s\n", err)
 			return 1
@@ -213,13 +214,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	return 0
 }
 
-func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string, dryRun bool) (*catalog.Repository, error) {
-	if dryRun {
-		return &catalog.Repository{
-			Name:          repoName,
-			DefaultBranch: catalog.DefaultBranchName,
-		}, nil
-	}
+func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string) (*catalog.Repository, error) {
 	repo, err := cataloger.GetRepository(ctx, repoName)
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
