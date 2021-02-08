@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -163,7 +164,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 
-	api.MetadataDumpMetadataHandler = c.MetadataDumpMetadataHandler()
+	api.RefsRefsDumpHandler = c.RefsRefsDumpHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -2385,17 +2386,25 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 	})
 }
 
-func (c *Controller) MetadataDumpMetadataHandler() metadata.DumpMetadataHandler {
-	return metadata.DumpMetadataHandlerFunc(func(params metadata.DumpMetadataParams, user *models.User) middleware.Responder {
+func (c *Controller) RefsRefsDumpHandler() refs.RefsDumpHandler {
+	return refs.RefsDumpHandlerFunc(func(params refs.RefsDumpParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DumpMetadataAction,
 				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
-
 		if err != nil {
-			return metadata.NewDumpMetadataUnauthorized().
+			return refs.NewRefsDumpUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) {
+			return refs.NewRefsDumpNotFound().
+				WithPayload(responseErrorFrom(err))
+		} else if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -2404,24 +2413,40 @@ func (c *Controller) MetadataDumpMetadataHandler() metadata.DumpMetadataHandler 
 		// dump all types:
 		tagsID, err := deps.Cataloger.DumpTags(deps.ctx, params.Repository)
 		if err != nil {
-			return metadata.NewDumpMetadataDefault(http.StatusInternalServerError).
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 		branchesID, err := deps.Cataloger.DumpBranches(deps.ctx, params.Repository)
 		if err != nil {
-			return metadata.NewDumpMetadataDefault(http.StatusInternalServerError).
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 		commitsID, err := deps.Cataloger.DumpCommits(deps.ctx, params.Repository)
 		if err != nil {
-			return metadata.NewDumpMetadataDefault(http.StatusInternalServerError).
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		return metadata.NewDumpMetadataCreated().
-			WithPayload(&models.MetadataDump{
-				BranchesMetaRangeID: branchesID,
-				CommitsMetaRangeID:  commitsID,
-				TagsMetaRangeID:     tagsID,
-			})
+		manifestData := &models.RefsDump{
+			BranchesMetaRangeID: branchesID,
+			CommitsMetaRangeID:  commitsID,
+			TagsMetaRangeID:     tagsID,
+		}
+
+		// write this to the block store
+		manifestBytes, err := json.MarshalIndent(manifestData, "", "  ")
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		err = deps.BlockAdapter.Put(block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       "_lakefs/refs_manifest.json",
+		}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return refs.NewRefsDumpCreated().WithPayload(manifestData)
 	})
 }

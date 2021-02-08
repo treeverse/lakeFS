@@ -88,7 +88,7 @@ type RepositoryClient interface {
 
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
 
-	DumpMetadata(ctx context.Context, repository string) (*models.MetadataDump, error)
+	RefsDump(ctx context.Context, repository string) (*models.RefsDump, error)
 }
 
 type Client interface {
@@ -717,8 +717,8 @@ func (c *client) DeleteObject(ctx context.Context, repository, branchID, path st
 	return err
 }
 
-func (c *client) DumpMetadata(ctx context.Context, repository string) (*models.MetadataDump, error) {
-	resp, err := c.remote.Metadata.DumpMetadata(&metadata.DumpMetadataParams{
+func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsDump, error) {
+	resp, err := c.remote.Refs.RefsDump(&refs.RefsDumpParams{
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)

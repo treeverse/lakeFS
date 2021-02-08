@@ -18,13 +18,6 @@ import (
 	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
-const (
-	entityTypePropKey = "entity"
-	entityTypeBranch  = "branch"
-	entityTypeCommit  = "commit"
-	entityTypeTag     = "tag"
-)
-
 func isSeekable(f io.Seeker) bool {
 	_, err := f.Seek(0, io.SeekCurrent)
 	return err == nil // a little naive, but probably good enough for its purpose
@@ -123,11 +116,12 @@ func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 		if err != nil {
 			return nil, err
 		}
-		commitID := string(gv.Data)
-		rows = append(rows, []interface{}{
-			string(v.Key),
-			commitID,
-		})
+		b := &graveler.BranchData{}
+		err = proto.Unmarshal(gv.Data, b)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, []interface{}{b.Id, b.CommitId})
 	}
 	if err := iter.Err(); err != nil {
 		return nil, err
@@ -149,11 +143,12 @@ func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 		if err != nil {
 			return nil, err
 		}
-		commitID := string(gv.Data)
-		rows = append(rows, []interface{}{
-			string(v.Key),
-			commitID,
-		})
+		t := &graveler.TagData{}
+		err = proto.Unmarshal(gv.Data, t)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, []interface{}{t.Id, t.CommitId})
 	}
 	if err := iter.Err(); err != nil {
 		return nil, err
@@ -217,11 +212,11 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 
 func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType string) (*Table, error) {
 	switch entityType {
-	case entityTypeBranch:
+	case graveler.EntityTypeBranch:
 		return formatBranchRangeSSTable(iter, amount)
-	case entityTypeCommit:
+	case graveler.EntityTypeCommit:
 		return formatCommitRangeSSTable(iter, amount)
-	case entityTypeTag:
+	case graveler.EntityTypeTag:
 		return formatTagsRangeSSTable(iter, amount)
 	default:
 		return formatEntryRangeSSTable(iter, amount)
@@ -286,7 +281,7 @@ var sstCmd = &cobra.Command{
 		case committed.MetadataMetarangesType:
 			table, err = formatMetaRangeSSTable(iter, amount)
 		case committed.MetadataRangesType:
-			table, err = formatRangeSSTable(iter, amount, props[entityTypePropKey])
+			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
 		default:
 			DieFmt("unknown sstable file type: %s", typ)
 		}

@@ -1363,9 +1363,17 @@ func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (
 		return nil, err
 	}
 	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&CommitData{})
+	if err != nil {
+		return nil, err
+	}
 	mid, err := g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
 		commitsToValueIterator(iter),
-		Metadata{"entity": "commit"},
+		Metadata{
+			EntityTypeKey:             EntityTypeCommit,
+			EntitySchemaKey:           EntitySchemaCommit,
+			EntitySchemaDefinitionKey: schema,
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -1383,9 +1391,17 @@ func (g *Graveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) 
 		return nil, err
 	}
 	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&BranchData{})
+	if err != nil {
+		return nil, err
+	}
 	mid, err := g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
 		branchesToValueIterator(iter),
-		Metadata{"entity": "branch"},
+		Metadata{
+			EntityTypeKey:             EntityTypeBranch,
+			EntitySchemaKey:           EntitySchemaBranch,
+			EntitySchemaDefinitionKey: schema,
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -1403,9 +1419,17 @@ func (g *Graveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*Me
 		return nil, err
 	}
 	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&TagData{})
+	if err != nil {
+		return nil, err
+	}
 	mid, err := g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
 		tagsToValueIterator(iter),
-		Metadata{"entity": "tag"},
+		Metadata{
+			EntityTypeKey:             EntityTypeTag,
+			EntitySchemaKey:           EntitySchemaTag,
+			EntitySchemaDefinitionKey: schema,
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -1420,29 +1444,55 @@ func tagsToValueIterator(src TagIterator) ValueIterator {
 }
 
 type tagValueIterator struct {
-	src TagIterator
+	src  TagIterator
+	next *ValueRecord
+	err  error
 }
 
 func (t *tagValueIterator) Next() bool {
-	return t.src.Next()
+	if t.err != nil {
+		return false
+	}
+	return t.setNext()
+}
+
+func (t *tagValueIterator) setNext() bool {
+	if !t.src.Next() {
+		return false
+	}
+	tag := t.src.Value()
+	data, err := proto.Marshal(&TagData{
+		Id:       string(tag.TagID),
+		CommitId: string(tag.CommitID),
+	})
+	if err != nil {
+		t.err = err
+		return false
+	}
+	t.next = &ValueRecord{
+		Key: Key(tag.TagID),
+		Value: &Value{
+			Identity: []byte(tag.CommitID),
+			Data:     data,
+		},
+	}
+	return true
 }
 
 func (t *tagValueIterator) SeekGE(id Key) {
+	t.err = nil
+	t.next = nil
 	t.src.SeekGE(TagID(id))
 }
 
 func (t *tagValueIterator) Value() *ValueRecord {
-	tag := t.src.Value()
-	return &ValueRecord{
-		Key: Key(tag.TagID),
-		Value: &Value{
-			Identity: []byte(tag.CommitID),
-			Data:     []byte(tag.CommitID),
-		},
-	}
+	return t.next
 }
 
 func (t *tagValueIterator) Err() error {
+	if t.err != nil {
+		return t.err
+	}
 	return t.src.Err()
 }
 
@@ -1457,29 +1507,55 @@ func branchesToValueIterator(src BranchIterator) ValueIterator {
 }
 
 type branchValueIterator struct {
-	src BranchIterator
+	src  BranchIterator
+	next *ValueRecord
+	err  error
 }
 
 func (b *branchValueIterator) Next() bool {
-	return b.src.Next()
+	if b.err != nil {
+		return false
+	}
+	return b.setNext()
+}
+
+func (b *branchValueIterator) setNext() bool {
+	if !b.src.Next() {
+		return false
+	}
+	branch := b.src.Value()
+	data, err := proto.Marshal(&BranchData{
+		Id:       string(branch.BranchID),
+		CommitId: string(branch.CommitID),
+	})
+	if err != nil {
+		b.err = err
+		return false
+	}
+	b.next = &ValueRecord{
+		Key: Key(branch.BranchID),
+		Value: &Value{
+			Identity: []byte(branch.CommitID),
+			Data:     data,
+		},
+	}
+	return true
 }
 
 func (b *branchValueIterator) SeekGE(id Key) {
+	b.err = nil
+	b.next = nil
 	b.src.SeekGE(BranchID(id))
 }
 
 func (b *branchValueIterator) Value() *ValueRecord {
-	branch := b.src.Value()
-	return &ValueRecord{
-		Key: Key(branch.BranchID),
-		Value: &Value{
-			Identity: []byte(branch.CommitID),
-			Data:     []byte(branch.CommitID),
-		},
-	}
+	return b.next
 }
 
 func (b *branchValueIterator) Err() error {
+	if b.err != nil {
+		return b.err
+	}
 	return b.src.Err()
 }
 

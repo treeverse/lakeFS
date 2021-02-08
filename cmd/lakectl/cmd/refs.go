@@ -9,14 +9,12 @@ import (
 )
 
 var metadataDumpTemplate = `
-Metadata dump completed successfully. Metadata manifest (used to restore this repository):
-
 {{ .Response | json }}
 `
 
-var metadataDumpCmd = &cobra.Command{
-	Use:    "metadata-dump <repository uri>",
-	Short:  "dumps metadata (branches, commits, tags) to the underlying object store",
+var refsDumpCmd = &cobra.Command{
+	Use:    "refs-dump <repository uri>",
+	Short:  "dumps refs (branches, commits, tags) to the underlying object store",
 	Hidden: true,
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
@@ -26,7 +24,7 @@ var metadataDumpCmd = &cobra.Command{
 		repoURI := uri.Must(uri.Parse(args[0]))
 
 		client := getClient()
-		resp, err := client.DumpMetadata(context.Background(), repoURI.Repository)
+		resp, err := client.RefsDump(context.Background(), repoURI.Repository)
 		if err != nil {
 			DieErr(err)
 		}
@@ -39,5 +37,5 @@ var metadataDumpCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(metadataDumpCmd)
+	rootCmd.AddCommand(refsDumpCmd)
 }

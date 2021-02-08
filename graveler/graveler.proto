@@ -3,7 +3,17 @@ option go_package = "github.com/treeverse/lakefs/graveler";
 
 import "google/protobuf/timestamp.proto";
 
-package graveler;
+package io.treeverse.lakefs.graveler;
+
+message BranchData {
+  string id = 1;
+  string commit_id = 2;
+}
+
+message TagData {
+  string id = 1;
+  string commit_id = 2;
+}
 
 message CommitData {
   string id = 1;
