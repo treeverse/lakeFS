@@ -1432,19 +1432,19 @@ func tagsToValueIterator(src TagIterator) ValueIterator {
 }
 
 type tagValueIterator struct {
-	src  TagIterator
-	next *ValueRecord
-	err  error
+	src   TagIterator
+	value *ValueRecord
+	err   error
 }
 
 func (t *tagValueIterator) Next() bool {
 	if t.err != nil {
 		return false
 	}
-	return t.setNext()
+	return t.setValue()
 }
 
-func (t *tagValueIterator) setNext() bool {
+func (t *tagValueIterator) setValue() bool {
 	if !t.src.Next() {
 		return false
 	}
@@ -1457,7 +1457,7 @@ func (t *tagValueIterator) setNext() bool {
 		t.err = err
 		return false
 	}
-	t.next = &ValueRecord{
+	t.value = &ValueRecord{
 		Key: Key(tag.TagID),
 		Value: &Value{
 			Identity: []byte(tag.CommitID),
@@ -1469,12 +1469,12 @@ func (t *tagValueIterator) setNext() bool {
 
 func (t *tagValueIterator) SeekGE(id Key) {
 	t.err = nil
-	t.next = nil
+	t.value = nil
 	t.src.SeekGE(TagID(id))
 }
 
 func (t *tagValueIterator) Value() *ValueRecord {
-	return t.next
+	return t.value
 }
 
 func (t *tagValueIterator) Err() error {
@@ -1495,19 +1495,19 @@ func branchesToValueIterator(src BranchIterator) ValueIterator {
 }
 
 type branchValueIterator struct {
-	src  BranchIterator
-	next *ValueRecord
-	err  error
+	src   BranchIterator
+	value *ValueRecord
+	err   error
 }
 
 func (b *branchValueIterator) Next() bool {
 	if b.err != nil {
 		return false
 	}
-	return b.setNext()
+	return b.setValue()
 }
 
-func (b *branchValueIterator) setNext() bool {
+func (b *branchValueIterator) setValue() bool {
 	if !b.src.Next() {
 		return false
 	}
@@ -1520,7 +1520,7 @@ func (b *branchValueIterator) setNext() bool {
 		b.err = err
 		return false
 	}
-	b.next = &ValueRecord{
+	b.value = &ValueRecord{
 		Key: Key(branch.BranchID),
 		Value: &Value{
 			Identity: []byte(branch.CommitID),
@@ -1532,12 +1532,12 @@ func (b *branchValueIterator) setNext() bool {
 
 func (b *branchValueIterator) SeekGE(id Key) {
 	b.err = nil
-	b.next = nil
+	b.value = nil
 	b.src.SeekGE(BranchID(id))
 }
 
 func (b *branchValueIterator) Value() *ValueRecord {
-	return b.next
+	return b.value
 }
 
 func (b *branchValueIterator) Err() error {
@@ -1558,19 +1558,19 @@ func commitsToValueIterator(src CommitIterator) ValueIterator {
 }
 
 type commitValueIterator struct {
-	src  CommitIterator
-	next *ValueRecord
-	err  error
+	src   CommitIterator
+	value *ValueRecord
+	err   error
 }
 
 func (c *commitValueIterator) Next() bool {
 	if c.err != nil {
 		return false
 	}
-	return c.setNext()
+	return c.setValue()
 }
 
-func (c *commitValueIterator) setNext() bool {
+func (c *commitValueIterator) setValue() bool {
 	if !c.src.Next() {
 		return false
 	}
@@ -1588,7 +1588,7 @@ func (c *commitValueIterator) setNext() bool {
 		c.err = err
 		return false
 	}
-	c.next = &ValueRecord{
+	c.value = &ValueRecord{
 		Key: Key(commit.CommitID),
 		Value: &Value{
 			Identity: []byte(commit.CommitID),
@@ -1600,12 +1600,12 @@ func (c *commitValueIterator) setNext() bool {
 
 func (c *commitValueIterator) SeekGE(id Key) {
 	c.err = nil
-	c.next = nil
+	c.value = nil
 	c.src.SeekGE(CommitID(id))
 }
 
 func (c *commitValueIterator) Value() *ValueRecord {
-	return c.next
+	return c.value
 }
 
 func (c *commitValueIterator) Err() error {

@@ -8,6 +8,8 @@ import (
 	"github.com/treeverse/lakefs/graveler"
 )
 
+// NewOrderedCommitIterator returns an iterator over all commits in the given repository.
+// Ordering is based on the Commit ID  value.
 func NewOrderedCommitIterator(ctx context.Context, database db.Database, repositoryID graveler.RepositoryID, prefetchSize int) (*OrderedCommitIterator, error) {
 	return &OrderedCommitIterator{
 		ctx:          ctx,
