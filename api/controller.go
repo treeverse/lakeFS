@@ -2390,7 +2390,15 @@ func (c *Controller) RefsRefsDumpHandler() refs.RefsDumpHandler {
 	return refs.RefsDumpHandlerFunc(func(params refs.RefsDumpParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.DumpMetadataAction,
+				Action:   permissions.ListTagsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ListCommitsAction,
 				Resource: permissions.RepoArn(params.Repository),
 			},
 		})

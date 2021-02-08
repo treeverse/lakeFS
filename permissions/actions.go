@@ -22,6 +22,7 @@ const (
 	ListObjectsAction      = "fs:ListObjects"
 	CreateCommitAction     = "fs:CreateCommit"
 	ReadCommitAction       = "fs:ReadCommit"
+	ListCommitsAction      = "fs:ListCommits"
 	CreateBranchAction     = "fs:CreateBranch"
 	DeleteBranchAction     = "fs:DeleteBranch"
 	ReadBranchAction       = "fs:ReadBranch"
@@ -31,7 +32,6 @@ const (
 	DeleteTagAction        = "fs:DeleteTag"
 	ReadTagAction          = "fs:ReadTag"
 	ListTagsAction         = "fs:ListTags"
-	DumpMetadataAction     = "fs:DumpMetadata"
 
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"
