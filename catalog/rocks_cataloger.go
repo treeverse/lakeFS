@@ -16,7 +16,6 @@ import (
 type cataloger struct {
 	EntryCatalog *EntryCatalog
 	log          logging.Logger
-	hooks        CatalogerHooks
 }
 
 const (
@@ -37,7 +36,6 @@ func NewCataloger(db db.Database, cfg *config.Config) (Cataloger, error) {
 	return &cataloger{
 		EntryCatalog: entryCatalog,
 		log:          logging.Default(),
-		hooks:        CatalogerHooks{},
 	}, nil
 }
 
@@ -647,10 +645,6 @@ func (c *cataloger) Merge(ctx context.Context, repository string, destinationBra
 		Summary:   count,
 		Reference: commitID.String(),
 	}, nil
-}
-
-func (c *cataloger) Hooks() *CatalogerHooks {
-	return &c.hooks
 }
 
 func (c *cataloger) DumpCommits(ctx context.Context, repositoryID string) (string, error) {

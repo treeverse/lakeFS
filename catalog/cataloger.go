@@ -99,8 +99,6 @@ type Cataloger interface {
 
 	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (*MergeResult, error)
 
-	Hooks() *CatalogerHooks
-
 	// dump/load metadata
 	DumpCommits(ctx context.Context, repositoryID string) (string, error)
 	DumpBranches(ctx context.Context, repositoryID string) (string, error)
@@ -110,27 +108,4 @@ type Cataloger interface {
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
 	io.Closer
-}
-
-type PostCommitFunc func(ctx context.Context, repo, branch string, commitLog CommitLog) error
-type PostMergeFunc func(ctx context.Context, repo, branch string, mergeResult MergeResult) error
-
-// CatalogerHooks describes the hooks available for some operations on the catalog.  Hooks are
-// called after the transaction ends; if they return an error they do not affect commit/merge.
-type CatalogerHooks struct {
-	// PostCommit hooks are called at the end of a commit.
-	PostCommit []PostCommitFunc
-
-	// PostMerge hooks are called at the end of a merge.
-	PostMerge []PostMergeFunc
-}
-
-func (h *CatalogerHooks) AddPostCommit(f PostCommitFunc) *CatalogerHooks {
-	h.PostCommit = append(h.PostCommit, f)
-	return h
-}
-
-func (h *CatalogerHooks) AddPostMerge(f PostMergeFunc) *CatalogerHooks {
-	h.PostMerge = append(h.PostMerge, f)
-	return h
 }
