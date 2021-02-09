@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestCataloger_ListRepositories(t *testing.T) {
