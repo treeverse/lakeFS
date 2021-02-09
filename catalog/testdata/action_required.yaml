@@ -1,0 +1,9 @@
+on:
+  pre-merge:
+    branches:
+      - master
+hooks:
+  - id: no_temp
+    type: webhook
+    properties:
+      url: "https://api.lakefs.io/webhook1?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"

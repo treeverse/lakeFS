@@ -457,6 +457,205 @@ func TestGraveler_Commit(t *testing.T) {
 		})
 	}
 }
+func TestGraveler_PreCommitHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+	}
+	// tests
+	errSomethingBad := errors.New("something bad")
+	const commitRepositoryID = "repoID"
+	const commitBranchID = "branchID"
+	const commitCommitter = "committer"
+	const commitMessage = "message"
+	commitMetadata := graveler.Metadata{"key1": "val1"}
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+			var (
+				called           bool
+				hookRepositoryID graveler.RepositoryID
+				hookBranch       graveler.BranchID
+				hookCommit       graveler.Commit
+			)
+			if tt.hook {
+				hookErr := tt.err
+				g.SetPreCommitHook(func(ctx context.Context, repositoryID graveler.RepositoryID, branch graveler.BranchID, commit graveler.Commit) error {
+					called = true
+					hookRepositoryID = repositoryID
+					hookBranch = branch
+					hookCommit = commit
+					return hookErr
+				})
+			}
+			// call commit
+			_, err := g.Commit(ctx, commitRepositoryID, commitBranchID, graveler.CommitParams{
+				Committer: commitCommitter,
+				Message:   commitMessage,
+				Metadata:  commitMetadata,
+			})
+			// check err composition
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Commit err=%v, expected=%v", err, tt.err)
+			}
+			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
+				t.Fatalf("Commit err=%v, expected ErrAbortedByHook", err)
+			}
+			if tt.hook != called {
+				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", called, tt.hook)
+			}
+			if !called {
+				return
+			}
+			if hookRepositoryID != commitRepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", hookRepositoryID, commitRepositoryID)
+			}
+			if hookBranch != commitBranchID {
+				t.Errorf("Hook branch '%s', expected '%s'", hookBranch, commitBranchID)
+			}
+			if hookCommit.Message != commitMessage {
+				t.Errorf("Hook commit message '%s', expected '%s'", hookCommit.Message, commitMessage)
+			}
+			if diff := deep.Equal(hookCommit.Metadata, commitMetadata); diff != nil {
+				t.Error("Hook commit metadata diff:", diff)
+			}
+		})
+	}
+}
+
+func TestGraveler_PreMergeHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+	}
+	// tests
+	errSomethingBad := errors.New("first error")
+	const mergeRepositoryID = "repoID"
+	const mergeDestination = "destinationID"
+	const commitCommitter = "committer"
+	const mergeMessage = "message"
+	mergeMetadata := graveler.Metadata{"key1": "val1"}
+	tests := []struct {
+		name string
+		hook bool
+		err  error
+	}{
+		{
+			name: "without hook",
+			hook: false,
+			err:  nil,
+		},
+		{
+			name: "hook no error",
+			hook: true,
+			err:  nil,
+		},
+		{
+			name: "hook error",
+			hook: true,
+			err:  errSomethingBad,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+			var (
+				called           bool
+				hookRepositoryID graveler.RepositoryID
+				hookDestination  graveler.BranchID
+				hookSource       graveler.Ref
+				hookCommit       graveler.Commit
+			)
+			if tt.hook {
+				hookErr := tt.err
+				g.SetPreMergeHook(func(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+					called = true
+					hookRepositoryID = repositoryID
+					hookDestination = destination
+					hookSource = source
+					hookCommit = commit
+					return hookErr
+				})
+			}
+			// call merge
+			_, _, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
+				Committer: commitCommitter,
+				Message:   mergeMessage,
+				Metadata:  mergeMetadata,
+			})
+			// verify we got an error
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Merge err=%v, pre-merge error expected=%v", err, tt.err)
+			}
+			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
+				t.Fatalf("Merge err=%v, pre-merge error expected ErrAbortedByHook", err)
+			}
+			// verify that calls made until the first error
+			if tt.hook != called {
+				t.Fatalf("Merge hook called=%t, expected=%t", called, tt.hook)
+			}
+			if !called {
+				return
+			}
+			if hookRepositoryID != mergeRepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", hookRepositoryID, mergeRepositoryID)
+			}
+			if hookDestination != mergeDestination {
+				t.Errorf("Hook destination '%s', expected '%s'", hookDestination, mergeDestination)
+			}
+			if hookSource.String() != expectedCommitID.String() {
+				t.Errorf("Hook source '%s', expected '%s'", hookSource, expectedCommitID)
+			}
+			if hookCommit.Message != mergeMessage {
+				t.Errorf("Hook merge message '%s', expected '%s'", hookCommit.Message, mergeMessage)
+			}
+			if diff := deep.Equal(hookCommit.Metadata, mergeMetadata); diff != nil {
+				t.Error("Hook merge metadata diff:", diff)
+			}
+		})
+	}
+}
 
 func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
