@@ -72,6 +72,19 @@ func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.Re
 	return err
 }
 
+func (m *Manager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(
+			`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
+			repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
+		if errors.Is(err, db.ErrAlreadyExists) {
+			return nil, graveler.ErrNotUnique
+		}
+		return nil, err
+	}, db.WithContext(ctx))
+	return err
+}
+
 func (m *Manager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
 	return NewRepositoryIterator(ctx, m.db, IteratorPrefetchSize), nil
 }

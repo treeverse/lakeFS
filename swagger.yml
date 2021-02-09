@@ -1225,6 +1225,11 @@ paths:
           name: repository
           schema:
             $ref: "#/definitions/repository_creation"
+        - in: query
+          name: bare
+          type: boolean
+          default: false
+          description: If true, create a bare repository with no initial commit and branch
       responses:
         201:
           description: repository

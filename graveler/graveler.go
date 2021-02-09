@@ -230,6 +230,9 @@ type VersionController interface {
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
 
+	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
+
 	// ListRepositories returns iterator to scan repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
@@ -402,6 +405,9 @@ type RefManager interface {
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, token StagingToken) error
+
+	// CreateBareRepository stores a new repository under RepositoryID without creating an initial commit and branch
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
 
 	// ListRepositories lists repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -595,6 +601,19 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 	}
 	stagingToken := generateStagingToken(repositoryID, branchID)
 	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
+	if err != nil {
+		return nil, err
+	}
+	return &repo, nil
+}
+
+func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
+	repo := Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now(),
+		DefaultBranchID:  branchID,
+	}
+	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}

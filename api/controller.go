@@ -512,6 +512,29 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 		}
 		deps.LogAction("create_repo")
 
+		if swag.BoolValue(params.Bare) {
+			// create a bare repository. This is useful in conjunction with refs-restore to create a copy
+			// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
+			repo, err := deps.Cataloger.CreateBareRepository(deps.ctx,
+				swag.StringValue(params.Repository.Name),
+				swag.StringValue(params.Repository.StorageNamespace),
+				params.Repository.DefaultBranch)
+			if err != nil {
+				c.deps.Logger.
+					WithError(err).
+					WithField("storage_namespace", swag.StringValue(params.Repository.StorageNamespace)).
+					Warn("Could not access storage namespace")
+				return repositories.NewCreateRepositoryBadRequest().
+					WithPayload(responseError("error creating repository: could not access storage namespace"))
+			}
+			return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
+				StorageNamespace: repo.StorageNamespace,
+				CreationDate:     repo.CreationDate.Unix(),
+				DefaultBranch:    repo.DefaultBranch,
+				ID:               repo.Name,
+			})
+		}
+
 		err = ensureStorageNamespaceRW(deps.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
 		if err != nil {
 			c.deps.Logger.

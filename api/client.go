@@ -57,6 +57,7 @@ type RepositoryClient interface {
 	ListRepositories(ctx context.Context, after string, amount int) ([]*models.Repository, *models.Pagination, error)
 	GetRepository(ctx context.Context, repository string) (*models.Repository, error)
 	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
+	CreateBareRepository(ctx context.Context, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repository string) error
 
 	ListBranches(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
@@ -433,6 +434,15 @@ func (c *client) ListBranches(ctx context.Context, repository string, after stri
 
 func (c *client) CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error {
 	_, err := c.remote.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	return err
+}
+
+func (c *client) CreateBareRepository(ctx context.Context, repository *models.RepositoryCreation) error {
+	_, err := c.remote.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
+		Bare:       swag.Bool(true),
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)

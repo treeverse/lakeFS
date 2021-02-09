@@ -69,7 +69,6 @@ var repoListCmd = &cobra.Command{
 
 // repoCreateCmd represents the create repo command
 // lakectl create lakefs://myrepo s3://my-bucket/
-// not verifying bucket name in order not to bind to s3
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
@@ -86,6 +85,41 @@ var repoCreateCmd = &cobra.Command{
 			DieErr(err)
 		}
 		err = clt.CreateRepository(context.Background(), &models.RepositoryCreation{
+			StorageNamespace: &args[1],
+			DefaultBranch:    defaultBranch,
+			Name:             &u.Repository,
+		})
+		if err != nil {
+			DieErr(err)
+		}
+		repo, err := clt.GetRepository(context.Background(), u.Repository)
+		if err != nil {
+			DieErr(err)
+		}
+		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+			repo.ID, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+	},
+}
+
+// repoCreateBareCmd represents the create repo command
+// lakectl create-bare lakefs://myrepo s3://my-bucket/
+var repoCreateBareCmd = &cobra.Command{
+	Use:    "create-bare <repository uri> <storage namespace>",
+	Short:  "create a new repository with no initial branch or commit",
+	Hidden: true,
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(repoCreateCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
+	),
+
+	Run: func(cmd *cobra.Command, args []string) {
+		clt := getClient()
+		u := uri.Must(uri.Parse(args[0]))
+		defaultBranch, err := cmd.Flags().GetString("default-branch")
+		if err != nil {
+			DieErr(err)
+		}
+		err = clt.CreateBareRepository(context.Background(), &models.RepositoryCreation{
 			StorageNamespace: &args[1],
 			DefaultBranch:    defaultBranch,
 			Name:             &u.Repository,
@@ -131,12 +165,15 @@ func init() {
 	rootCmd.AddCommand(repoCmd)
 	repoCmd.AddCommand(repoListCmd)
 	repoCmd.AddCommand(repoCreateCmd)
+	repoCmd.AddCommand(repoCreateBareCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
 
 	repoListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
+
+	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
 
 	AssignAutoConfirmFlag(repoDeleteCmd.Flags())
 }
