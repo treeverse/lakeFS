@@ -23,7 +23,7 @@ type Metadata struct {
 	Entries        []MetadataEntry `json:"entries"`
 }
 
-func NewMetadata(logger logging.Logger, c *config.Config, authMetadataManager auth.MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+func NewMetadata(logger logging.Logger, blockstoreType string, authMetadataManager auth.MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
 	res := &Metadata{}
 	authMetadata, err := authMetadataManager.Write()
 	if err != nil {
@@ -41,7 +41,6 @@ func NewMetadata(logger logging.Logger, c *config.Config, authMetadataManager au
 			res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
 		}
 	}
-	blockstoreType := c.GetBlockstoreType()
 	res.Entries = append(res.Entries, MetadataEntry{Name: BlockstoreTypeKey, Value: blockstoreType})
 	return res
 }
