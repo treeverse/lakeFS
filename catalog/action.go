@@ -56,7 +56,7 @@ const (
 	WebhookPropertyKeyURL = "url"
 )
 
-var reHookID = regexp.MustCompile(`^[_a-zA-Z][_a-zA-Z0-9]{1,255}$`)
+var reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
 func (a *Action) Validate() error {
 	if a.Name == "" {
