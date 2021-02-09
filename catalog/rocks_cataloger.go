@@ -677,6 +677,18 @@ func (c *cataloger) DumpTags(ctx context.Context, repositoryID string) (string, 
 	return string(*metaRangeID), nil
 }
 
+func (c *cataloger) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
+	return c.EntryCatalog.LoadCommits(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(commitsMetaRangeID))
+}
+
+func (c *cataloger) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
+	return c.EntryCatalog.LoadBranches(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(branchesMetaRangeID))
+}
+
+func (c *cataloger) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
+	return c.EntryCatalog.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
+}
+
 func (c *cataloger) Close() error {
 	return nil
 }

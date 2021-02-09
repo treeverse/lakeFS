@@ -167,6 +167,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 
 	api.RefsRefsDumpHandler = c.RefsRefsDumpHandler()
+	api.RefsRefsRestoreHandler = c.RefsRefsRestoreHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -2395,6 +2396,68 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 	})
 }
 
+func (c *Controller) RefsRefsRestoreHandler() refs.RefsRestoreHandler {
+	return refs.RefsRestoreHandlerFunc(func(params refs.RefsRestoreParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ListTagsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ListCommitsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return refs.NewRefsRestoreUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("restore_repository_refs")
+
+		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) {
+			return refs.NewRefsRestoreNotFound().
+				WithPayload(responseErrorFrom(err))
+		} else if err != nil {
+			return refs.NewRefsRestoreDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		// ensure no refs currently found
+		_, _, err = deps.Cataloger.ListCommits(deps.ctx, repo.Name, repo.DefaultBranch, "", 1)
+		if !errors.Is(err, graveler.ErrNotFound) {
+			return refs.NewRefsRestoreDefault(http.StatusInternalServerError).
+				WithPayload(responseError("restoring refs is supported only for bare repositories"))
+		}
+
+		// load commits
+		err = deps.Cataloger.LoadCommits(deps.ctx, repo.Name, params.Manifest.CommitsMetaRangeID)
+		if err != nil {
+			return refs.NewRefsRestoreDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = deps.Cataloger.LoadBranches(deps.ctx, repo.Name, params.Manifest.BranchesMetaRangeID)
+		if err != nil {
+			return refs.NewRefsRestoreDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = deps.Cataloger.LoadTags(deps.ctx, repo.Name, params.Manifest.TagsMetaRangeID)
+		if err != nil {
+			return refs.NewRefsRestoreDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		// DONE
+		return refs.NewRefsRestoreOK()
+	})
+}
+
 func (c *Controller) RefsRefsDumpHandler() refs.RefsDumpHandler {
 	return refs.RefsDumpHandlerFunc(func(params refs.RefsDumpParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
@@ -2415,6 +2478,7 @@ func (c *Controller) RefsRefsDumpHandler() refs.RefsDumpHandler {
 			return refs.NewRefsDumpUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
+		deps.LogAction("dump_repository_refs")
 
 		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) {
@@ -2424,8 +2488,6 @@ func (c *Controller) RefsRefsDumpHandler() refs.RefsDumpHandler {
 			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-
-		deps.LogAction("dump_repository_metadata")
 
 		// dump all types:
 		tagsID, err := deps.Cataloger.DumpTags(deps.ctx, params.Repository)

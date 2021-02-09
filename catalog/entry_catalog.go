@@ -75,6 +75,7 @@ type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
 	graveler.Dumper
+	graveler.Loader
 }
 
 type EntryCatalog struct {
@@ -510,4 +511,16 @@ func (e *EntryCatalog) DumpBranches(ctx context.Context, repositoryID graveler.R
 
 func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
 	return e.Store.DumpTags(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) LoadCommits(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	return e.Store.LoadCommits(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) LoadBranches(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	return e.Store.LoadBranches(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }

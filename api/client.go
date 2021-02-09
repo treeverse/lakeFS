@@ -90,6 +90,7 @@ type RepositoryClient interface {
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
 
 	RefsDump(ctx context.Context, repository string) (*models.RefsDump, error)
+	RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error
 }
 
 type Client interface {
@@ -736,6 +737,15 @@ func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsD
 		return nil, err
 	}
 	return resp.GetPayload(), nil
+}
+
+func (c *client) RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error {
+	_, err := c.remote.Refs.RefsRestore(&refs.RefsRestoreParams{
+		Manifest:   manifest,
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	return err
 }
 
 func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error) {

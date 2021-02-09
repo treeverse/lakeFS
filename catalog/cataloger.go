@@ -105,6 +105,9 @@ type Cataloger interface {
 	DumpCommits(ctx context.Context, repositoryID string) (string, error)
 	DumpBranches(ctx context.Context, repositoryID string) (string, error)
 	DumpTags(ctx context.Context, repositoryID string) (string, error)
+	LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error
+	LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error
+	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
 	io.Closer
 }
