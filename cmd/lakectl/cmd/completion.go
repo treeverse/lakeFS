@@ -14,32 +14,51 @@ var completionCmd = &cobra.Command{
 
 Bash:
 
+` + "```" + `sh
 $ source <(lakectl completion bash)
+` + "```" + `
 
-# To load completions for each session, execute once:
+To load completions for each session, execute once:
 Linux:
-  $ lakectl completion bash > /etc/bash_completion.d/lakectl
+
+` + "```" + `sh
+$ lakectl completion bash > /etc/bash_completion.d/lakectl
+` + "```" + `
+
 MacOS:
-  $ lakectl completion bash > /usr/local/etc/bash_completion.d/lakectl
+
+` + "```" + `sh
+$ lakectl completion bash > /usr/local/etc/bash_completion.d/lakectl
+` + "```" + `
 
 Zsh:
 
-# If shell completion is not already enabled in your environment you will need
-# to enable it.  You can execute the following once:
+If shell completion is not already enabled in your environment you will need
+to enable it.  You can execute the following once:
 
+` + "```" + `sh
 $ echo "autoload -U compinit; compinit" >> ~/.zshrc
+` + "```" + `
 
-# To load completions for each session, execute once:
+To load completions for each session, execute once:
+` + "```" + `sh
 $ lakectl completion zsh > "${fpath[1]}/_lakectl"
+` + "```" + `
 
-# You will need to start a new shell for this setup to take effect.
+You will need to start a new shell for this setup to take effect.
 
 Fish:
 
+` + "```" + `sh
 $ lakectl completion fish | source
+` + "```" + `
 
-# To load completions for each session, execute once:
+To load completions for each session, execute once:
+
+` + "```" + `sh
 $ lakectl completion fish > ~/.config/fish/completions/lakectl.fish
+` + "```" + `
+
 `,
 	DisableFlagsInUseLine: true,
 	ValidArgs:             []string{"bash", "zsh", "fish"},
