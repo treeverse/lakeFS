@@ -67,7 +67,7 @@ func (f *FakeRangeWriter) WriteRecord(r committed.Record) error {
 	return nil
 }
 
-func (f *FakeRangeWriter) AddMetadata(key, value string) {
+func (f *FakeRangeWriter) SetMetadata(key, value string) {
 	if key == committed.MetadataTypeKey {
 		f.storedType = value
 	}

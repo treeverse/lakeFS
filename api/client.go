@@ -87,6 +87,8 @@ type RepositoryClient interface {
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
+
+	RefsDump(ctx context.Context, repository string) (*models.RefsDump, error)
 }
 
 type Client interface {
@@ -713,6 +715,17 @@ func (c *client) DeleteObject(ctx context.Context, repository, branchID, path st
 		Context:    ctx,
 	}, c.auth)
 	return err
+}
+
+func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsDump, error) {
+	resp, err := c.remote.Refs.RefsDump(&refs.RefsDumpParams{
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
 }
 
 func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error) {

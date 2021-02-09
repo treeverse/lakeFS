@@ -14,6 +14,7 @@ import (
 
 type GeneralMetaRangeWriter struct {
 	ctx              context.Context
+	metadata         graveler.Metadata
 	params           *Params // for breaking ranges
 	namespace        Namespace
 	metaRangeManager RangeManager
@@ -35,9 +36,10 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
 		ctx:              ctx,
+		metadata:         md,
 		rangeManager:     rangeManager,
 		metaRangeManager: metaRangeManager,
 		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
@@ -57,11 +59,11 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 
 	var err error
 	if w.rangeWriter == nil {
-		w.rangeWriter, err = w.rangeManager.GetWriter(w.ctx, w.namespace)
+		w.rangeWriter, err = w.rangeManager.GetWriter(w.ctx, w.namespace, w.metadata)
 		if err != nil {
 			return fmt.Errorf("get range writer: %w", err)
 		}
-		w.rangeWriter.AddMetadata(MetadataTypeKey, MetadataRangesType)
+		w.rangeWriter.SetMetadata(MetadataTypeKey, MetadataRangesType)
 	}
 
 	v, err := MarshalValue(record.Value)
@@ -156,11 +158,18 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
 func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID, error) {
-	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.namespace)
+	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.namespace, w.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
 	}
-	metaRangeWriter.AddMetadata(MetadataTypeKey, MetadataMetarangesType)
+
+	// write user provided metadata, if any
+	for k, v := range w.metadata {
+		metaRangeWriter.SetMetadata(k, v)
+	}
+	// set type
+	metaRangeWriter.SetMetadata(MetadataTypeKey, MetadataMetarangesType)
+
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
 			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting metarange writer: %w", err)

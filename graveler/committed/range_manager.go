@@ -3,6 +3,8 @@ package committed
 import (
 	"context"
 	"errors"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 //go:generate mockgen -source=range_manager.go -destination=mock/range_manager.go -package=mock
@@ -56,7 +58,7 @@ type RangeManager interface {
 	NewRangeIterator(ctx context.Context, ns Namespace, pid ID) (ValueIterator, error)
 
 	// GetWriter returns a new Range writer instance
-	GetWriter(ctx context.Context, ns Namespace) (RangeWriter, error)
+	GetWriter(ctx context.Context, ns Namespace, metadata graveler.Metadata) (RangeWriter, error)
 }
 
 // WriteResult is the result of a completed write of a Range
@@ -86,7 +88,7 @@ type RangeWriter interface {
 
 	// AddMetadata associates metadata value (which will be stringified when the writer is
 	// Closed and added to the resulting range ID) with key.
-	AddMetadata(key, value string)
+	SetMetadata(key, value string)
 
 	// GetApproximateSize returns an estimate of the current written size of the Range.
 	GetApproximateSize() uint64

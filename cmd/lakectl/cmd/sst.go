@@ -1,14 +1,19 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"time"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/sstable"
 )
@@ -66,7 +71,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil
 }
 
-func formatRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -79,7 +84,7 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error
 		}
 		ent, err := catalog.ValueToEntry(gv)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		rows = append(rows, []interface{}{
 			string(v.Key),
@@ -98,6 +103,124 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error
 		Headers: []interface{}{"path", "identity", "size", "etag", "last_modified", "address", "metadata"},
 		Rows:    rows,
 	}, nil
+}
+
+func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+	rows := make([][]interface{}, 0)
+	for iter.Next() {
+		if amount != -1 && len(rows)+1 > amount {
+			break
+		}
+		v := iter.Value()
+		gv, err := committed.UnmarshalValue(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		b := &graveler.BranchData{}
+		err = proto.Unmarshal(gv.Data, b)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, []interface{}{b.Id, b.CommitId})
+	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+	return &Table{
+		Headers: []interface{}{"branch ID", "commit ID"},
+		Rows:    rows,
+	}, nil
+}
+
+func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+	rows := make([][]interface{}, 0)
+	for iter.Next() {
+		if amount != -1 && len(rows)+1 > amount {
+			break
+		}
+		v := iter.Value()
+		gv, err := committed.UnmarshalValue(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		t := &graveler.TagData{}
+		err = proto.Unmarshal(gv.Data, t)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, []interface{}{t.Id, t.CommitId})
+	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+	return &Table{
+		Headers: []interface{}{"tag ID", "commit ID"},
+		Rows:    rows,
+	}, nil
+}
+
+func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+	rows := make([][]interface{}, 0)
+	for iter.Next() {
+		if amount != -1 && len(rows)+1 > amount {
+			break
+		}
+		v := iter.Value()
+		gv, err := committed.UnmarshalValue(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		c := &graveler.CommitData{}
+		err = proto.Unmarshal(gv.Data, c)
+		if err != nil {
+			return nil, err
+		}
+
+		metadata := c.Metadata
+		if metadata == nil {
+			metadata = map[string]string{}
+		}
+		metadataJSON, err := json.Marshal(metadata)
+		if err != nil {
+			return nil, err
+		}
+		parents := c.Parents
+		if parents == nil {
+			parents = []string{}
+		}
+		parentsJSON, err := json.Marshal(parents)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, []interface{}{
+			string(v.Key),
+			c.Committer,
+			c.Message,
+			c.CreationDate.AsTime().Format(time.RFC3339),
+			string(metadataJSON),
+			string(parentsJSON),
+		})
+	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+	return &Table{
+		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents"},
+		Rows:    rows,
+	}, nil
+}
+
+func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType string) (*Table, error) {
+	switch entityType {
+	case graveler.EntityTypeBranch:
+		return formatBranchRangeSSTable(iter, amount)
+	case graveler.EntityTypeCommit:
+		return formatCommitRangeSSTable(iter, amount)
+	case graveler.EntityTypeTag:
+		return formatTagsRangeSSTable(iter, amount)
+	default:
+		return formatEntryRangeSSTable(iter, amount)
+	}
 }
 
 func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
@@ -158,7 +281,7 @@ var sstCmd = &cobra.Command{
 		case committed.MetadataMetarangesType:
 			table, err = formatMetaRangeSSTable(iter, amount)
 		case committed.MetadataRangesType:
-			table, err = formatRangeSSTable(iter, amount)
+			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
 		default:
 			DieFmt("unknown sstable file type: %s", typ)
 		}
