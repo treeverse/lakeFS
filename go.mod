@@ -46,7 +46,6 @@ require (
 	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgerrcode v0.0.0-20201024163028-a0d42d470451
 	github.com/jackc/pgproto3/v2 v2.0.6
-	github.com/jackc/pgtype v1.6.2 // indirect
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
@@ -89,5 +88,6 @@ require (
 	google.golang.org/api v0.36.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	pgregory.net/rapid v0.4.0 // indirect
 )

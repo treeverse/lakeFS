@@ -457,6 +457,248 @@ func TestGraveler_Commit(t *testing.T) {
 		})
 	}
 }
+func TestGraveler_Commit_PreHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+	}
+	// tests
+	errFirstErr := errors.New("first error")
+	errSecondErr := errors.New("second error")
+	const commitRepositoryID = "repoID"
+	const commitBranchID = "branchID"
+	const commitCommitter = "committer"
+	const commitMessage = "message"
+	commitMetadata := graveler.Metadata{"key1": "val1"}
+	tests := []struct {
+		name        string
+		hooksReturn []error
+		expectedErr error
+	}{
+		{
+			name:        "no hooks",
+			hooksReturn: nil,
+			expectedErr: nil,
+		},
+		{
+			name:        "all good",
+			hooksReturn: []error{nil, nil, nil},
+			expectedErr: nil,
+		},
+		{
+			name:        "error on the third",
+			hooksReturn: []error{nil, nil, errFirstErr, nil},
+			expectedErr: errFirstErr,
+		},
+		{
+			name:        "multiple errors",
+			hooksReturn: []error{nil, nil, errFirstErr, errSecondErr},
+			expectedErr: errFirstErr,
+		},
+		{
+			name:        "multiple errors reverse",
+			hooksReturn: []error{errSecondErr, errFirstErr, nil, nil},
+			expectedErr: errSecondErr,
+		},
+	}
+	type preCommitCallData struct {
+		RepositoryID graveler.RepositoryID
+		BranchID     graveler.BranchID
+		Commit       graveler.Commit
+	}
+	preCommitHooksBuilder := func(returns []error) ([]graveler.PreCommitFunc, [][]preCommitCallData) {
+		calls := make([][]preCommitCallData, len(returns))
+		var hooks []graveler.PreCommitFunc
+		for i := 0; i < len(returns); i++ {
+			id := i // pin callback id
+			fn := func(ctx context.Context, repositoryID graveler.RepositoryID, branch graveler.BranchID, commit graveler.Commit) error {
+				calls[id] = append(calls[id], preCommitCallData{
+					RepositoryID: repositoryID,
+					BranchID:     branch,
+					Commit:       commit,
+				})
+				return returns[id]
+			}
+			hooks = append(hooks, fn)
+		}
+		return hooks, calls
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+			preHooks, calls := preCommitHooksBuilder(tt.hooksReturn)
+			g.Hooks().PreCommit = preHooks
+			_, err := g.Commit(ctx, commitRepositoryID, commitBranchID, graveler.CommitParams{
+				Committer: commitCommitter,
+				Message:   commitMessage,
+				Metadata:  commitMetadata,
+			})
+			// verify we got an error
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("Commit err=%v, pre-commit error expected=%v", err, tt.expectedErr)
+			}
+			// verify that calls made until the first error
+			expectedCalls := 1
+			for i := range calls {
+				if len(calls[i]) != expectedCalls {
+					t.Fatalf("Pre-commit hook %d, called %d times, expected %d", i, len(calls[i]), expectedCalls)
+				}
+				for _, info := range calls[i] {
+					if info.RepositoryID != commitRepositoryID {
+						t.Errorf("Hook repository '%s', expected '%s'", info.RepositoryID, commitRepositoryID)
+					}
+					if info.BranchID != commitBranchID {
+						t.Errorf("Hook branch '%s', expected '%s'", info.BranchID, commitBranchID)
+					}
+					if info.Commit.Message != commitMessage {
+						t.Errorf("Hook commit message '%s', expected '%s'", info.Commit.Message, commitMessage)
+					}
+					if diff := deep.Equal(info.Commit.Metadata, commitMetadata); diff != nil {
+						t.Error("Hook commit metadata diff:", diff)
+					}
+				}
+				// first error will stop calling hooks
+				if tt.hooksReturn[i] != nil {
+					expectedCalls = 0
+				}
+			}
+		})
+	}
+}
+
+func TestGraveler_Merge_PreHook(t *testing.T) {
+	// prepare graveler
+	conn, _ := tu.GetDB(t, databaseURI)
+	branchLocker := ref.NewBranchLocker(conn)
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+	}
+	// tests
+	errFirstErr := errors.New("first error")
+	errSecondErr := errors.New("second error")
+	const mergeRepositoryID = "repoID"
+	const mergeDestination = "destinationID"
+	const commitCommitter = "committer"
+	const mergeMessage = "message"
+	mergeMetadata := graveler.Metadata{"key1": "val1"}
+	tests := []struct {
+		name        string
+		hooksReturn []error
+		expectedErr error
+	}{
+		{
+			name:        "no hooks",
+			hooksReturn: nil,
+			expectedErr: nil,
+		},
+		{
+			name:        "all good",
+			hooksReturn: []error{nil, nil, nil},
+			expectedErr: nil,
+		},
+		{
+			name:        "error on the third",
+			hooksReturn: []error{nil, nil, errFirstErr, nil},
+			expectedErr: errFirstErr,
+		},
+		{
+			name:        "multiple errors",
+			hooksReturn: []error{nil, nil, errFirstErr, errSecondErr},
+			expectedErr: errFirstErr,
+		},
+		{
+			name:        "multiple errors reverse",
+			hooksReturn: []error{errSecondErr, errFirstErr, nil, nil},
+			expectedErr: errSecondErr,
+		},
+	}
+	type preMergeCallData struct {
+		RepositoryID graveler.RepositoryID
+		Destination  graveler.BranchID
+		Source       graveler.Ref
+		Commit       graveler.Commit
+	}
+	preMergeHooksBuilder := func(returns []error) ([]graveler.PreMergeFunc, [][]preMergeCallData) {
+		calls := make([][]preMergeCallData, len(returns))
+		var hooks []graveler.PreMergeFunc
+		for i := 0; i < len(returns); i++ {
+			id := i // pin callback id
+			fn := func(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+				calls[id] = append(calls[id], preMergeCallData{
+					RepositoryID: repositoryID,
+					Destination:  destination,
+					Source:       source,
+					Commit:       commit,
+				})
+				return returns[id]
+			}
+			hooks = append(hooks, fn)
+		}
+		return hooks, calls
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+			preHooks, calls := preMergeHooksBuilder(tt.hooksReturn)
+			g.Hooks().PreMerge = preHooks
+			_, _, err := g.Merge(ctx, mergeRepositoryID, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
+				Committer: commitCommitter,
+				Message:   mergeMessage,
+				Metadata:  mergeMetadata,
+			})
+			// verify we got an error
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("Merge err=%v, pre-merge error expected=%v", err, tt.expectedErr)
+			}
+			// verify that calls made until the first error
+			expectedCalls := 1
+			for i := range calls {
+				if len(calls[i]) != expectedCalls {
+					t.Fatalf("Pre-merge hook %d, called %d times, expected %d", i, len(calls[i]), expectedCalls)
+				}
+				for _, info := range calls[i] {
+					if info.RepositoryID != mergeRepositoryID {
+						t.Errorf("Hook repository '%s', expected '%s'", info.RepositoryID, mergeRepositoryID)
+					}
+					if info.Destination != mergeDestination {
+						t.Errorf("Hook destination '%s', expected '%s'", info.Destination, mergeDestination)
+					}
+					if info.Source.String() != expectedCommitID.String() {
+						t.Errorf("Hook source '%s', expected '%s'", info.Source, expectedCommitID)
+					}
+					if info.Commit.Message != mergeMessage {
+						t.Errorf("Hook merge message '%s', expected '%s'", info.Commit.Message, mergeMessage)
+					}
+					if diff := deep.Equal(info.Commit.Metadata, mergeMetadata); diff != nil {
+						t.Error("Hook merge metadata diff:", diff)
+					}
+				}
+				// first error will stop calling hooks
+				if tt.hooksReturn[i] != nil {
+					expectedCalls = 0
+				}
+			}
+		})
+	}
+}
 
 func TestGraveler_AddCommitToBranchHead(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)

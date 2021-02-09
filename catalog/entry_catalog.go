@@ -128,9 +128,14 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	stagingManager := staging.NewManager(db)
 	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(db)
-	return &EntryCatalog{
-		Store: graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager),
-	}, nil
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+	entryCatalog := &EntryCatalog{Store: store}
+
+	// register hooks
+	hooks := store.Hooks()
+	hooks.PreCommit = append(hooks.PreCommit, entryCatalog.preCommitHook)
+	hooks.PreMerge = append(hooks.PreMerge, entryCatalog.preMergeHook)
+	return entryCatalog, nil
 }
 
 func (e *EntryCatalog) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
@@ -500,4 +505,12 @@ func (e *EntryCatalog) DumpBranches(ctx context.Context, repositoryID graveler.R
 
 func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
 	return e.Store.DumpTags(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
+	return nil
+}
+
+func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+	return nil
 }

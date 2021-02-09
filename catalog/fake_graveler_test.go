@@ -16,6 +16,7 @@ type FakeGraveler struct {
 	RepositoryIteratorFactory func() graveler.RepositoryIterator
 	BranchIteratorFactory     func() graveler.BranchIterator
 	TagIteratorFactory        func() graveler.TagIterator
+	hooks                     graveler.Hooks
 }
 
 func (g *FakeGraveler) DumpCommits(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
@@ -198,6 +199,10 @@ func (g *FakeGraveler) Compare(_ context.Context, _ graveler.RepositoryID, _, _ 
 		return nil, g.Err
 	}
 	return g.DiffIteratorFactory(), nil
+}
+
+func (g *FakeGraveler) Hooks() *graveler.Hooks {
+	return &g.hooks
 }
 
 func (g *FakeGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
