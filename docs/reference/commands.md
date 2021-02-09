@@ -933,6 +933,9 @@ lakectl branch show <branch uri> [flags]
 
 ### lakectl cat-sst
 
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
 Explore lakeFS .sst files
 
 ```
@@ -1073,6 +1076,9 @@ lakectl diff <ref uri> [other ref uri] [flags]
 
 
 ### lakectl docs
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
 
 
 
@@ -1373,6 +1379,25 @@ lakectl metastore help [command] [flags]
 
 ```
   -h, --help   help for help
+```
+
+
+
+### lakectl refs-dump
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+dumps refs (branches, commits, tags) to the underlying object store
+
+```
+lakectl refs-dump <repository uri> [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for refs-dump
 ```
 
 

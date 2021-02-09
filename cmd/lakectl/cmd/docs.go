@@ -77,6 +77,11 @@ func genMarkdownForCmd(cmd *cobra.Command, w io.Writer) error {
 	name := cmd.CommandPath()
 
 	buf.WriteString("### " + name + "\n\n")
+
+	if cmd.Hidden {
+		buf.WriteString("**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.\n{: .note .note-warning }\n\n")
+	}
+
 	buf.WriteString(cmd.Short + "\n\n")
 	if len(cmd.Long) > 0 {
 		buf.WriteString("#### Synopsis\n\n")
