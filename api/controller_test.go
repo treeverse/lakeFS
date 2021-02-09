@@ -232,7 +232,9 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
-		const expectedCommits = commitsLen
+
+		// repo is created with a commit
+		const expectedCommits = commitsLen + 1
 		commitsLog := resp.GetPayload().Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
