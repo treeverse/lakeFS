@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Basic Types
@@ -207,7 +207,9 @@ type CommitParams struct {
 	Metadata  Metadata
 }
 
-// Interfaces
+type PreCommitFunc func(ctx context.Context, repositoryID RepositoryID, branch BranchID, commit Commit) error
+type PreMergeFunc func(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error
+
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -314,6 +316,18 @@ type VersionController interface {
 	// Compare returns the difference between the commit where 'to' was last synced into 'from', and the most recent commit of `from`.
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
+
+	// PreCommitHook get current pre-commit hook function
+	PreCommitHook() PreCommitFunc
+
+	// SetPreCommitHook set pre-commit hook function
+	SetPreCommitHook(fn PreCommitFunc)
+
+	// PreMergeHook get pre-merge hook function
+	PreMergeHook() PreMergeFunc
+
+	// SetPreMergeHook set pre-merge hook function
+	SetPreMergeHook(fn PreMergeFunc)
 }
 
 type Dumper interface {
@@ -570,6 +584,8 @@ type Graveler struct {
 	StagingManager   StagingManager
 	RefManager       RefManager
 	branchLocker     BranchLocker
+	preCommitFn      PreCommitFunc
+	preMergeFn       PreMergeFunc
 	log              logging.Logger
 }
 
@@ -892,6 +908,23 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
+
+		// fill commit information - use for pre-commit and after adding the commit information used by commit
+		commit := Commit{
+			Committer:    params.Committer,
+			Message:      params.Message,
+			CreationDate: time.Now(),
+			Metadata:     params.Metadata,
+		}
+		if branch.CommitID != "" {
+			commit.Parents = CommitParents{branch.CommitID}
+		}
+
+		err = g.callPreCommitHooks(ctx, repositoryID, branchID, commit)
+		if err != nil {
+			return "", fmt.Errorf("pre-commit hooks: %w", err)
+		}
+
 		var branchMetaRangeID MetaRangeID
 		if branch.CommitID != "" {
 			commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
@@ -900,28 +933,18 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			}
 			branchMetaRangeID = commit.MetaRangeID
 		}
-
 		changes, err := g.StagingManager.List(ctx, branch.StagingToken)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
 		}
-		metaRangeID, _, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
+		defer changes.Close()
+
+		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
 		if err != nil {
 			return "", fmt.Errorf("commit: %w", err)
 		}
 
-		// fill and add commit
-		commit := Commit{
-			Committer:    params.Committer,
-			Message:      params.Message,
-			MetaRangeID:  metaRangeID,
-			CreationDate: time.Now(),
-			Metadata:     params.Metadata,
-		}
-		if branch.CommitID != "" {
-			commit.Parents = CommitParents{branch.CommitID}
-		}
-
+		// add commit
 		newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
@@ -1243,10 +1266,14 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		commit := Commit{
 			Committer:    commitParams.Committer,
 			Message:      commitParams.Message,
-			MetaRangeID:  metaRangeID,
 			CreationDate: time.Now(),
+			MetaRangeID:  metaRangeID,
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
+		}
+		err = g.callPreMergeHook(ctx, repositoryID, destination, fromCommit.CommitID.Ref(), commit)
+		if err != nil {
+			return "", err
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
@@ -1333,6 +1360,22 @@ func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from,
 		return nil, err
 	}
 	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+}
+
+func (g *Graveler) PreCommitHook() PreCommitFunc {
+	return g.preCommitFn
+}
+
+func (g *Graveler) SetPreCommitHook(fn PreCommitFunc) {
+	g.preCommitFn = fn
+}
+
+func (g *Graveler) PreMergeHook() PreMergeFunc {
+	return g.preMergeFn
+}
+
+func (g *Graveler) SetPreMergeHook(fn PreMergeFunc) {
+	g.preMergeFn = fn
 }
 
 func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
@@ -1618,4 +1661,47 @@ func (c *commitValueIterator) Err() error {
 
 func (c *commitValueIterator) Close() {
 	c.src.Close()
+}
+
+func newErrAbortedByHook(err error) error {
+	if err == nil {
+		return ErrAbortedByHook
+	}
+	merr := multierror.Append(ErrAbortedByHook, err)
+	merr.ErrorFormat = func(errs []error) string {
+		const minErrorLen = 2
+		if len(errs) < minErrorLen {
+			return multierror.ListFormatFunc(errs)
+		}
+		var details string
+		if len(errs) == minErrorLen {
+			details = errs[1].Error()
+		} else {
+			details = multierror.ListFormatFunc(errs[1:])
+		}
+		return errs[0].Error() + ": " + details
+	}
+	return merr
+}
+
+func (g *Graveler) callPreCommitHooks(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) error {
+	if g.preCommitFn == nil {
+		return nil
+	}
+	err := g.preCommitFn(ctx, repositoryID, branchID, commit)
+	if err != nil {
+		return newErrAbortedByHook(err)
+	}
+	return nil
+}
+
+func (g *Graveler) callPreMergeHook(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error {
+	if g.preMergeFn == nil {
+		return nil
+	}
+	err := g.preMergeFn(ctx, repositoryID, destination, source, commit)
+	if err != nil {
+		return newErrAbortedByHook(err)
+	}
+	return nil
 }
