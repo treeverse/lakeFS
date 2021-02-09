@@ -164,11 +164,10 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 	}
 	metaRangeWriter.AddMetadata(MetadataTypeKey, MetadataMetarangesType)
 	// write user provided metadata, if any
-	if w.metadata != nil {
-		for k, v := range w.metadata {
-			metaRangeWriter.AddMetadata(k, v)
-		}
+	for k, v := range w.metadata {
+		metaRangeWriter.AddMetadata(k, v)
 	}
+
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
 			logging.Default().WithField("namespace", w.namespace).Errorf("failed aborting metarange writer: %w", err)
