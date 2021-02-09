@@ -530,7 +530,7 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 				t.Fatalf("Commit err=%v, expected=%v", err, tt.err)
 			}
 			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
-				t.Fatalf("Commit err=%v, expected ErrAbortedByHookv", err)
+				t.Fatalf("Commit err=%v, expected ErrAbortedByHook", err)
 			}
 			if tt.hook != called {
 				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", called, tt.hook)

@@ -1669,7 +1669,17 @@ func newErrAbortedByHook(err error) error {
 	}
 	merr := multierror.Append(ErrAbortedByHook, err)
 	merr.ErrorFormat = func(errs []error) string {
-		return fmt.Sprintf("%s: %s", errs[0], errs[1])
+		const minErrorLen = 2
+		if len(errs) < minErrorLen {
+			return multierror.ListFormatFunc(errs)
+		}
+		var details string
+		if len(errs) == minErrorLen {
+			details = errs[1].Error()
+		} else {
+			details = multierror.ListFormatFunc(errs[1:])
+		}
+		return errs[0].Error() + ": " + details
 	}
 	return merr
 }

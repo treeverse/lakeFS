@@ -35,14 +35,14 @@ func (a *Action) Validate() error {
 	ids := make(map[string]struct{})
 	for i, hook := range a.Hooks {
 		if !reHookID.MatchString(hook.ID) {
-			return fmt.Errorf("%w hook[%d] missing ID", ErrInvalidAction, i)
+			return fmt.Errorf("hook[%d] missing ID: %w", i, ErrInvalidAction)
 		}
 		if _, found := ids[hook.ID]; found {
-			return fmt.Errorf("%w hook[%d] duplicate ID", ErrInvalidAction, i)
+			return fmt.Errorf("hook[%d] duplicate ID '%s': %w", i, hook.ID, ErrInvalidAction)
 		}
 		ids[hook.ID] = struct{}{}
 		if hook.Type != "webhook" {
-			return fmt.Errorf("%w hook[%d] unknown type", ErrInvalidAction, i)
+			return fmt.Errorf("hook[%d] '%s' unknown type: %w", i, hook.ID, ErrInvalidAction)
 		}
 	}
 	return nil
