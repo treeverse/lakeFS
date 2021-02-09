@@ -26,7 +26,7 @@ type ActionHook struct {
 	Properties  map[string]string `yaml:"properties"`
 }
 
-var reHookID = regexp.MustCompile(`^[_a-zA-Z][_-a-zA-Z0-9]{1,255}$`)
+var reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
 func (a *Action) Validate() error {
 	if a.On.PreMerge == nil && a.On.PreCommit == nil {
