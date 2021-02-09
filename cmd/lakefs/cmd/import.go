@@ -150,8 +150,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	importConfig := &onboard.Config{
 		CommitUsername:     CommitterName,
 		InventoryURL:       manifestURL,
-		RepoID:             graveler.RepositoryID(repoName),
-		Repo:               repo,
+		RepositoryID:       graveler.RepositoryID(repoName),
+		DefaultBranchID:    graveler.BranchID(repo.DefaultBranch),
 		InventoryGenerator: blockStore,
 		Cataloger:          cataloger,
 		KeyPrefixes:        prefixes,

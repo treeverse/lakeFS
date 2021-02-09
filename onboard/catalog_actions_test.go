@@ -52,10 +52,10 @@ func TestFullCyclePorcelainImportBranchExists(t *testing.T) {
 		Times(1).Return(commitID, nil)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
-		CommitUsername: committer,
-		RepoID:         repoID,
-		Repo:           &catalog.Repository{DefaultBranch: "master"},
-		EntryCatalog:   rangeManager,
+		CommitUsername:  committer,
+		RepositoryID:    repoID,
+		DefaultBranchID: "master",
+		EntryCatalog:    rangeManager,
 	}, logging.Default())
 
 	require.NoError(t, rocks.Init(context.Background(), ""))
@@ -103,10 +103,10 @@ func TestFullCyclePorcelainImportBranchMissing(t *testing.T) {
 		Times(1).Return(commitID, nil)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
-		CommitUsername: committer,
-		RepoID:         repoID,
-		Repo:           &catalog.Repository{DefaultBranch: "master"},
-		EntryCatalog:   rangeManager,
+		CommitUsername:  committer,
+		RepositoryID:    repoID,
+		DefaultBranchID: "master",
+		EntryCatalog:    rangeManager,
 	}, logging.Default())
 
 	require.NoError(t, rocks.Init(context.Background(), ""))
@@ -143,10 +143,10 @@ func TestFullCyclePlumbing(t *testing.T) {
 		Times(1).Return(commitID, nil)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
-		CommitUsername: committer,
-		RepoID:         repoID,
-		Repo:           &catalog.Repository{DefaultBranch: "master"},
-		EntryCatalog:   rangeManager,
+		CommitUsername:  committer,
+		RepositoryID:    repoID,
+		DefaultBranchID: "master",
+		EntryCatalog:    rangeManager,
 	}, logging.Default())
 
 	require.NoError(t, rocks.Init(context.Background(), prevCommitID))
@@ -186,10 +186,10 @@ func TestApplyImportWriteFailure(t *testing.T) {
 	rangeManager.EXPECT().WriteMetaRange(gomock.Any(), gomock.Eq(repoID), gomock.Any()).Times(1).Return(nil, errors.New("some failure"))
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
-		CommitUsername: committer,
-		RepoID:         repoID,
-		Repo:           &catalog.Repository{DefaultBranch: "master"},
-		EntryCatalog:   rangeManager,
+		CommitUsername:  committer,
+		RepositoryID:    repoID,
+		DefaultBranchID: "master",
+		EntryCatalog:    rangeManager,
 	}, logging.Default())
 
 	require.NoError(t, rocks.Init(context.Background(), ""))
@@ -206,10 +206,10 @@ func TestCommitBeforeApply(t *testing.T) {
 	rangeManager := mock.NewMockentryCataloger(ctrl)
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
-		CommitUsername: committer,
-		RepoID:         repoID,
-		Repo:           &catalog.Repository{DefaultBranch: "master"},
-		EntryCatalog:   rangeManager,
+		CommitUsername:  committer,
+		RepositoryID:    repoID,
+		DefaultBranchID: "master",
+		EntryCatalog:    rangeManager,
 	}, logging.Default())
 	retCommitID, err := rocks.Commit(context.Background(), msg, nil)
 	require.Error(t, err)
@@ -246,10 +246,10 @@ func TestCommitFailed(t *testing.T) {
 		Times(1).Return(graveler.CommitID(""), errors.New("some-failure"))
 
 	rocks := onboard.NewCatalogRepoActions(&onboard.Config{
-		CommitUsername: committer,
-		RepoID:         repoID,
-		Repo:           &catalog.Repository{DefaultBranch: "master"},
-		EntryCatalog:   rangeManager,
+		CommitUsername:  committer,
+		RepositoryID:    repoID,
+		DefaultBranchID: "master",
+		EntryCatalog:    rangeManager,
 	}, logging.Default())
 	require.NoError(t, rocks.Init(context.Background(), ""))
 

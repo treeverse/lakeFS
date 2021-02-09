@@ -57,8 +57,8 @@ type entryCataloger interface {
 func NewCatalogRepoActions(config *Config, logger logging.Logger) *CatalogRepoActions {
 	return &CatalogRepoActions{
 		entryCataloger:  config.EntryCatalog,
-		repoID:          config.RepoID,
-		defaultBranchID: graveler.BranchID(config.Repo.DefaultBranch),
+		repoID:          config.RepositoryID,
+		defaultBranchID: config.DefaultBranchID,
 		committer:       config.CommitUsername,
 		logger:          logger,
 		prefixes:        config.KeyPrefixes,
@@ -116,7 +116,10 @@ func (c *CatalogRepoActions) Init(ctx context.Context, baseCommit graveler.Commi
 func (c *CatalogRepoActions) initBranch(ctx context.Context) error {
 	c.branchID = DefaultImportBranchName
 	branch, err := c.entryCataloger.GetBranch(ctx, c.repoID, DefaultImportBranchName)
-	if errors.Is(err, graveler.ErrBranchNotFound) {
+	if err != nil {
+		if !errors.Is(err, graveler.ErrBranchNotFound) {
+			return err
+		}
 		// first import, let's create the branch
 		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, DefaultImportBranchName, graveler.Ref(c.defaultBranchID))
 		if err != nil {

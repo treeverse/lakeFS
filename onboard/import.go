@@ -29,8 +29,8 @@ type Importer struct {
 type Config struct {
 	CommitUsername     string
 	InventoryURL       string
-	RepoID             graveler.RepositoryID
-	Repo               *catalog.Repository
+	RepositoryID       graveler.RepositoryID
+	DefaultBranchID    graveler.BranchID
 	InventoryGenerator block.InventoryGenerator
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
