@@ -88,7 +88,7 @@ type RangeWriter interface {
 
 	// AddMetadata associates metadata value (which will be stringified when the writer is
 	// Closed and added to the resulting range ID) with key.
-	AddMetadata(key, value string)
+	SetMetadata(key, value string)
 
 	// GetApproximateSize returns an estimate of the current written size of the Range.
 	GetApproximateSize() uint64

@@ -63,7 +63,7 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 		if err != nil {
 			return fmt.Errorf("get range writer: %w", err)
 		}
-		w.rangeWriter.AddMetadata(MetadataTypeKey, MetadataRangesType)
+		w.rangeWriter.SetMetadata(MetadataTypeKey, MetadataRangesType)
 	}
 
 	v, err := MarshalValue(record.Value)
@@ -162,11 +162,13 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
 	}
-	metaRangeWriter.AddMetadata(MetadataTypeKey, MetadataMetarangesType)
+
 	// write user provided metadata, if any
 	for k, v := range w.metadata {
-		metaRangeWriter.AddMetadata(k, v)
+		metaRangeWriter.SetMetadata(k, v)
 	}
+	// set type
+	metaRangeWriter.SetMetadata(MetadataTypeKey, MetadataMetarangesType)
 
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
