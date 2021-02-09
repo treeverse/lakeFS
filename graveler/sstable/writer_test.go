@@ -27,7 +27,7 @@ func TestWriter(t *testing.T) {
 	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
 
 	writes := 500
-	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -79,7 +79,7 @@ func TestWriterAbort(t *testing.T) {
 	mockFile.EXPECT().Close().Return(nil).Times(1)
 	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
 
-	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -118,7 +118,7 @@ func TestWriterAbortAfterClose(t *testing.T) {
 	mockFile.EXPECT().Store(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, filename string) error { return nil }).Times(1)
 
 	// Create writer
-	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New())
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 

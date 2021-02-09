@@ -18,6 +18,18 @@ type FakeGraveler struct {
 	TagIteratorFactory        func() graveler.TagIterator
 }
 
+func (g *FakeGraveler) DumpCommits(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) DumpBranches(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) DumpTags(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
 func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
 	return strings.Join([]string{repositoryID.String(), ref.String(), key.String()}, "/")
 }

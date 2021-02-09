@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/graveler/committed"
@@ -164,8 +166,8 @@ func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namesp
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace) (committed.RangeWriter, error) {
-	return NewDiskWriter(ctx, m.fs, ns, m.hash.New())
+func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
+	return NewDiskWriter(ctx, m.fs, ns, m.hash.New(), metadata)
 }
 
 func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg string) {

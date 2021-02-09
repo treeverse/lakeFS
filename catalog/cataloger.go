@@ -6,9 +6,7 @@ import (
 )
 
 const (
-	DefaultBranchName       = "master"
-	DefaultImportBranchName = "import-from-inventory"
-	DefaultPathDelimiter    = "/"
+	DefaultPathDelimiter = "/"
 )
 
 type DiffParams struct {
@@ -99,6 +97,11 @@ type Cataloger interface {
 	Merge(ctx context.Context, repository, destinationBranch, sourceRef, committer, message string, metadata Metadata) (*MergeResult, error)
 
 	Hooks() *CatalogerHooks
+
+	// dump/load metadata
+	DumpCommits(ctx context.Context, repositoryID string) (string, error)
+	DumpBranches(ctx context.Context, repositoryID string) (string, error)
+	DumpTags(ctx context.Context, repositoryID string) (string, error)
 
 	io.Closer
 }
