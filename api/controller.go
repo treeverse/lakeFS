@@ -32,6 +32,7 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cloud"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/httputil"
@@ -52,14 +53,15 @@ const (
 )
 
 type Dependencies struct {
-	ctx             context.Context
-	Cataloger       catalog.Cataloger
-	Auth            auth.Service
-	BlockAdapter    block.Adapter
-	MetadataManager auth.MetadataManager
-	Migrator        db.Migrator
-	Collector       stats.Collector
-	Logger          logging.Logger
+	ctx                   context.Context
+	Cataloger             catalog.Cataloger
+	Auth                  auth.Service
+	BlockAdapter          block.Adapter
+	MetadataManager       auth.MetadataManager
+	Migrator              db.Migrator
+	Collector             stats.Collector
+	CloudMetadataProvider cloud.MetadataProvider
+	Logger                logging.Logger
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -239,34 +241,18 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
-		metadata, err := c.deps.MetadataManager.Write()
-		if err != nil {
-			c.deps.Logger.Error("failed to write metadata after setup")
-		} else {
-			c.deps.Collector.SetInstallationID(metadata[auth.InstallationIDKeyName])
-			c.deps.Collector.CollectMetadata(convertMetadata(metadata))
-		}
+
+		metadata := stats.NewMetadata(c.deps.Logger, c.deps.BlockAdapter.BlockstoreType(), c.deps.MetadataManager, c.deps.CloudMetadataProvider)
+		c.deps.Collector.SetInstallationID(metadata.InstallationID)
+		c.deps.Collector.CollectMetadata(metadata)
 		c.deps.Collector.CollectEvent("global", "init")
+
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
 			CreationDate:    cred.IssuedDate.Unix(),
 		})
 	})
-}
-
-func convertMetadata(metadata map[string]string) *stats.Metadata {
-	res := &stats.Metadata{
-		InstallationID: metadata[auth.InstallationIDKeyName],
-	}
-
-	for k, v := range metadata {
-		res.Entries = append(res.Entries, stats.MetadataEntry{
-			Name:  k,
-			Value: v,
-		})
-	}
-	return res
 }
 
 func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
