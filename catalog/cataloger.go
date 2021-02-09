@@ -6,9 +6,7 @@ import (
 )
 
 const (
-	DefaultBranchName       = "master"
-	DefaultImportBranchName = "import-from-inventory"
-	DefaultPathDelimiter    = "/"
+	DefaultPathDelimiter = "/"
 )
 
 type DiffParams struct {
