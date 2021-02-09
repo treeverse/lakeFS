@@ -202,7 +202,6 @@ func (g *FakeGraveler) Compare(_ context.Context, _ graveler.RepositoryID, _, _ 
 	return g.DiffIteratorFactory(), nil
 }
 
-<<<<<<< HEAD
 func (g *FakeGraveler) PreCommitHook() graveler.PreCommitFunc {
 	return g.preCommitHook
 }
