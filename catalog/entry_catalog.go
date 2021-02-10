@@ -91,8 +91,18 @@ const (
 	MetaRangeFSName = "meta-range"
 )
 
-func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) {
-	tierFSParams, err := cfg.GetCommittedTierFSParams()
+type Config struct {
+	Config *config.Config
+	DB     db.Database
+	LockDB db.Database
+}
+
+func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
+	if cfg.LockDB == nil {
+		cfg.LockDB = cfg.DB
+	}
+
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams()
 	if err != nil {
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
@@ -120,7 +130,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		*cfg.GetCommittedParams(),
+		*cfg.Config.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,
 		sstableManager,
@@ -130,9 +140,9 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
-	stagingManager := staging.NewManager(db)
-	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
-	branchLocker := ref.NewBranchLocker(db)
+	stagingManager := staging.NewManager(cfg.DB)
+	refManager := ref.NewPGRefManager(cfg.DB, ident.NewHexAddressProvider())
+	branchLocker := ref.NewBranchLocker(cfg.LockDB)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
 	entryCatalog := &EntryCatalog{
 		BlockAdapter: tierFSParams.Adapter,
