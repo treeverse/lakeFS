@@ -6,6 +6,7 @@ import (
 	"path"
 	"regexp"
 
+	"github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v3"
 )
 
@@ -113,13 +114,38 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-type Source interface {
-	List() []string
-	Load(name string) ([]byte, error)
-}
-
 func LoadActions(source Source) ([]*Action, error) {
-	return nil, nil
+	hooksAddresses, err := source.List()
+	if err != nil {
+		return nil, fmt.Errorf("reading actions fir commit: %w", err)
+	}
+
+	actions := make([]*Action, len(hooksAddresses))
+	var errGroup multierror.Group
+	for i := range hooksAddresses {
+		// localization of loop vars
+		ii := i
+		errGroup.Go(func() error {
+			addr := hooksAddresses[ii]
+			bytes, err := source.Load(addr)
+			if err != nil {
+				return fmt.Errorf("loading file %s: %w", addr, err)
+			}
+			action, err := ParseAction(bytes)
+			if err != nil {
+				return fmt.Errorf("parsing file %s: %w", addr, err)
+			}
+			actions[ii] = action
+
+			return nil
+		})
+	}
+
+	if err := errGroup.Wait(); err != nil {
+		return nil, err
+	}
+
+	return actions, nil
 }
 
 func MatchActions(actions []*Action, spec MatchSpec) ([]*Action, error) {

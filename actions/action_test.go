@@ -1,9 +1,15 @@
 package actions_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"path"
 	"testing"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/golang/mock/gomock"
+	"github.com/treeverse/lakefs/actions/mock"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/actions"
@@ -152,6 +158,125 @@ func TestAction_Match(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Match() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadActions(t *testing.T) {
+	tests := []struct {
+		name            string
+		configureSource func(*gomock.Controller) actions.Source
+		want            []*actions.Action
+		wantErr         bool
+	}{
+		{
+			name: "listing fails",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				source.EXPECT().List().Return(nil, errors.New("failed"))
+				return source
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "load fails",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				path := "one-path"
+				source.EXPECT().List().Return([]string{path}, nil)
+				source.EXPECT().Load(gomock.Eq(path)).Return(nil, errors.New("failed"))
+				return source
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "first load fails, second succeed",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				path1 := "1path"
+				path2 := "2path"
+				source.EXPECT().List().Return([]string{path1, path2}, nil)
+				source.EXPECT().Load(gomock.Eq(path1)).Return(yaml.Marshal(actions.Action{
+					Name: "some-action",
+					On: actions.OnEvents{
+						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "hook_id",
+							Type: "webhook",
+						},
+					},
+				}))
+				source.EXPECT().Load(gomock.Eq(path2)).Return(nil, errors.New("failed"))
+				return source
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "load success",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				path1 := "1path"
+				source.EXPECT().List().Return([]string{path1}, nil)
+				source.EXPECT().Load(gomock.Eq(path1)).Return(yaml.Marshal(actions.Action{
+					Name: "some-action",
+					On: actions.OnEvents{
+						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "hook_id_1",
+							Type: "webhook",
+						},
+						{
+							ID:   "hook_id_2",
+							Type: "webhook",
+						},
+					},
+				}))
+				return source
+			},
+			want: []*actions.Action{
+				{
+					Name: "some-action",
+					On: actions.OnEvents{
+						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:         "hook_id_1",
+							Type:       "webhook",
+							Properties: map[string]string{},
+						},
+						{
+							ID:         "hook_id_2",
+							Type:       "webhook",
+							Properties: map[string]string{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			source := tt.configureSource(ctrl)
+
+			res, err := actions.LoadActions(source)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadActions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := deep.Equal(res, tt.want); diff != nil {
+				t.Error("LoadActions() found diff", diff)
 			}
 		})
 	}

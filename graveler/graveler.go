@@ -1663,10 +1663,11 @@ func (c *commitValueIterator) Close() {
 	c.src.Close()
 }
 
-func newErrAbortedByHook(err error) error {
+func handleHookErr(err error) error {
 	if err == nil {
-		return ErrAbortedByHook
+		return nil
 	}
+
 	merr := multierror.Append(ErrAbortedByHook, err)
 	merr.ErrorFormat = func(errs []error) string {
 		const minErrorLen = 2
@@ -1688,20 +1689,12 @@ func (g *Graveler) callPreCommitHooks(ctx context.Context, repositoryID Reposito
 	if g.preCommitFn == nil {
 		return nil
 	}
-	err := g.preCommitFn(ctx, repositoryID, branchID, commit)
-	if err != nil {
-		return newErrAbortedByHook(err)
-	}
-	return nil
+	return handleHookErr(g.preCommitFn(ctx, repositoryID, branchID, commit))
 }
 
 func (g *Graveler) callPreMergeHook(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error {
 	if g.preMergeFn == nil {
 		return nil
 	}
-	err := g.preMergeFn(ctx, repositoryID, destination, source, commit)
-	if err != nil {
-		return newErrAbortedByHook(err)
-	}
-	return nil
+	return handleHookErr(g.preMergeFn(ctx, repositoryID, destination, source, commit))
 }
