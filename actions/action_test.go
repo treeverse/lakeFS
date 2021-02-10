@@ -338,6 +338,19 @@ func TestMatchedActions(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "invalid",
+			actions: []*actions.Action{
+				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{Branches: []string{"\\"}}}},
+			},
+			spec: actions.MatchSpec{
+				EventType: actions.EventTypePreMerge,
+				Branch:    "main",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

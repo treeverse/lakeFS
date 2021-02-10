@@ -115,34 +115,27 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
-	hooksAddresses, err := source.List(ctx)
+type Source interface {
+	List() ([]string, error)
+	Load(name string) ([]byte, error)
+}
+
+func LoadActions(source Source) ([]*Action, error) {
+	names, err := source.List()
 	if err != nil {
-		return nil, fmt.Errorf("list actions from commit: %w", err)
-	}
-
-	actions := make([]*Action, len(hooksAddresses))
-	var errGroup multierror.Group
-	for i := range hooksAddresses {
-		// pin i for embedded func
-		ii := i
-		errGroup.Go(func() error {
-			addr := hooksAddresses[ii]
-			bytes, err := source.Load(ctx, addr)
-			if err != nil {
-				return fmt.Errorf("loading file %s: %w", addr, err)
-			}
-			action, err := ParseAction(bytes)
-			if err != nil {
-				return fmt.Errorf("parsing file %s: %w", addr, err)
-			}
-			actions[ii] = action
-
-			return nil
-		})
-	}
-	if err := errGroup.Wait(); err != nil {
 		return nil, err
+	}
+	var actions []*Action
+	for _, name := range names {
+		data, err := source.Load(name)
+		if err != nil {
+			return nil, err
+		}
+		act, err := ParseAction(data)
+		if err != nil {
+			return nil, err
+		}
+		actions = append(actions, act)
 	}
 	return actions, nil
 }
