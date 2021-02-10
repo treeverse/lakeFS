@@ -38,7 +38,7 @@ var (
 	ErrWebhookMissingURL    = errors.New("webhook missing url")
 )
 
-func NewWebhook(action *Action, h ActionHook) (Hook, error) {
+func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	webhookURL := h.Properties["url"]
 	if len(webhookURL) == 0 {
 		return nil, ErrWebhookMissingURL

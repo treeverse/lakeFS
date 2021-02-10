@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/actions"
-
 	"github.com/cockroachdb/pebble"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -513,7 +512,7 @@ func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.Repos
 }
 
 func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
-	_ = actions.Event{
+	evt := actions.Event{
 		EventType:     actions.EventTypePreCommit,
 		EventTime:     time.Now(),
 		RepositoryID:  repositoryID.String(),
@@ -522,11 +521,13 @@ func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
-	return nil
+	var src actions.Source
+	var writer actions.OutputWriter
+	return actions.NewProcess(src, writer, evt).Run(ctx)
 }
 
 func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
-	_ = actions.Event{
+	evt := actions.Event{
 		EventType:     actions.EventTypePreMerge,
 		EventTime:     time.Now(),
 		RepositoryID:  repositoryID.String(),
@@ -535,5 +536,7 @@ func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.R
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
-	return nil
+	var src actions.Source
+	var writer actions.OutputWriter
+	return actions.NewProcess(src, writer, evt).Run(ctx)
 }

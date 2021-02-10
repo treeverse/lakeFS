@@ -21,7 +21,7 @@ type Hook interface {
 	Run(ctx context.Context, runID string, event Event, writer OutputWriter) error
 }
 
-type NewHookFunc func(*Action, ActionHook) (Hook, error)
+type NewHookFunc func(ActionHook, *Action) (Hook, error)
 
 var hooks = map[HookType]NewHookFunc{
 	HookTypeWebhook: NewWebhook,
@@ -29,10 +29,10 @@ var hooks = map[HookType]NewHookFunc{
 
 var ErrUnknownHookType = errors.New("unknown hook type")
 
-func NewHook(h HookType, a *Action, ah ActionHook) (Hook, error) {
-	f := hooks[h]
+func NewHook(h ActionHook, a *Action) (Hook, error) {
+	f := hooks[h.Type]
 	if f == nil {
-		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, h)
+		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, h.Type)
 	}
-	return f(a, ah)
+	return f(h, a)
 }

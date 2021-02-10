@@ -27,7 +27,7 @@ type ActionOn struct {
 
 type ActionHook struct {
 	ID          string            `yaml:"id"`
-	Type        string            `yaml:"type"`
+	Type        HookType          `yaml:"type"`
 	Description string            `yaml:"description"`
 	Properties  map[string]string `yaml:"properties"`
 }
@@ -60,7 +60,7 @@ func (a *Action) Validate() error {
 			return fmt.Errorf("hook[%d] duplicate ID '%s': %w", i, hook.ID, ErrInvalidAction)
 		}
 		ids[hook.ID] = struct{}{}
-		if _, found := hooks[HookType(hook.Type)]; !found {
+		if _, found := hooks[hook.Type]; !found {
 			return fmt.Errorf("hook[%d] type '%s' unknown: %w", i, hook.ID, ErrInvalidAction)
 		}
 	}
@@ -114,12 +114,28 @@ func ParseAction(data []byte) (*Action, error) {
 }
 
 type Source interface {
-	List() []string
+	List() ([]string, error)
 	Load(name string) ([]byte, error)
 }
 
 func LoadActions(source Source) ([]*Action, error) {
-	return nil, nil
+	names, err := source.List()
+	if err != nil {
+		return nil, err
+	}
+	var actions []*Action
+	for _, name := range names {
+		data, err := source.Load(name)
+		if err != nil {
+			return nil, err
+		}
+		act, err := ParseAction(data)
+		if err != nil {
+			return nil, err
+		}
+		actions = append(actions, act)
+	}
+	return actions, nil
 }
 
 func MatchActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
