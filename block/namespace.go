@@ -15,6 +15,7 @@ const (
 	StorageTypeLocal
 	StorageTypeS3
 	StorageTypeGS
+	StorageTypeAzure
 )
 
 var (
@@ -44,6 +45,8 @@ func (qk QualifiedKey) Format() string {
 		scheme = "gs"
 	case StorageTypeS3:
 		scheme = "s3"
+	case StorageTypeAzure:
+		scheme = "azure"
 	default:
 		panic("unknown storage type")
 	}
@@ -62,6 +65,8 @@ func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 		return StorageTypeLocal, nil
 	case "gs":
 		return StorageTypeGS, nil
+	case "azure":
+		return StorageTypeAzure, nil
 	default:
 		return st, fmt.Errorf("%s: %w", namespaceURL.Scheme, ErrInvalidNamespace)
 	}

@@ -5,6 +5,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Azure/azure-storage-blob-go/azblob"
+
+	"github.com/treeverse/lakefs/block/azure"
+
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -54,6 +58,12 @@ func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
 			return nil, err
 		}
 		return buildGSAdapter(p)
+	case azure.BlockstoreType:
+		p, err := c.GetBlockAdapterAzureParams()
+		if err != nil {
+			return nil, err
+		}
+		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
@@ -107,4 +117,22 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 	adapter := gs.NewAdapter(client)
 	log.WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
+}
+
+func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
+	accountName := params.StorageAccount
+	accountKey := params.StorageAccessKey // TODO(Guys): check if I need to try and get from other places such as env var "AZURE_STORAGE_ACCOUNT" "AZURE_STORAGE_ACCESS_KEY" or any file like .aws/credentials style
+	if len(accountName) == 0 || len(accountKey) == 0 {
+		return nil, fmt.Errorf("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
+	}
+
+	// Create a default request pipeline using your storage account name and account key.
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid credentials with error: " + err.Error())
+	}
+	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
+	a := azure.NewAdapter(p, accountName)
+
+	return a, nil
 }

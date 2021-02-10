@@ -316,6 +316,12 @@ func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
 		CredentialsJSON: viper.GetString("blockstore.gs.credentials_json"),
 	}, nil
 }
+func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
+	return blockparams.Azure{
+		StorageAccount:   viper.GetString("blockstore.azure.storage_account"),
+		StorageAccessKey: viper.GetString("blockstore.azure.storage_access_key"),
+	}, nil
+}
 
 func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
 	return authparams.ServiceCache{
