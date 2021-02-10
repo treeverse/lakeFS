@@ -77,7 +77,11 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 	default:
 		return false, nil
 	}
-	// action without branches spec is matched
+	// if no action specified - no match
+	if actionOn == nil {
+		return false, nil
+	}
+	// if no branches spec found - all match
 	if len(actionOn.Branches) == 0 {
 		return true, nil
 	}
