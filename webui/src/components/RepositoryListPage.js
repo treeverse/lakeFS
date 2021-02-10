@@ -6,11 +6,11 @@ import Card from "react-bootstrap/Card";
 import {useHistory, Link} from "react-router-dom";
 import * as moment from "moment";
 import {connect} from "react-redux";
-import {createRepository, createRepositoryDone, filterRepositories, listRepositories, listRepositoriesPaginate, deleteRepository} from "../actions/repositories";
+import {createRepository, createRepositoryDone, filterRepositories, listRepositories, listRepositoriesPaginate} from "../actions/repositories";
 import React, {useEffect, useRef, useState} from "react";
 import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
-import {RepoIcon, SearchIcon, TrashIcon} from "@primer/octicons-react";
+import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import {DebouncedFormControl} from "./DebouncedInput";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
@@ -29,68 +29,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
     );
 };
 
-const DeleteRepositoryModal = ({selectedRepo, show, onSubmit, onCancel}) => {
-    const [isDisabled, setIsDisabled] = useState(true);
-    const repoNameField = useRef(null);
-
-    const compareRepoName = () => {
-        if (repoNameField.current.value === selectedRepo) {
-            setIsDisabled(false);
-        }
-        else {
-            setIsDisabled(true);
-        }
-    }
-
-    return (
-        <Modal show={show} onHide={onCancel} size="lg">
-            <Modal.Header closeButton>
-                <Modal.Title>Delete Repository</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                Are you sure you wish to delete repository <strong>{selectedRepo}</strong>? <br />
-                This action cannot be undone. This will delete the following: <br /> <br />
-
-                <ul>
-                    <li>All commits</li>
-                    <li>All branches</li>
-                    <li>All tags</li>
-                    <li>All repository configuration</li>
-                </ul>
-                
-                Data in the underlying object store will not be deleted by this action. <br /> <br />
-
-                Please type <strong>{selectedRepo}</strong> to confirm: <br />
-                <Form.Control className="mt-2" type="text" autoFocus ref={repoNameField} onChange={compareRepoName}/>  
-            </Modal.Body>
-            <Modal.Footer>
-                <Button disabled={isDisabled} variant="danger" onClick={onSubmit}>I understand the consequences, delete this repository</Button>
-            </Modal.Footer>
-        </Modal>
-    );
-};
-
-const RepositoryList = connect(
-    ({ repositories }) => ({ deleteStatus: repositories.delete }),
-    ({ deleteRepository, listRepositories })
-)(({ list, paginate, deleteStatus, deleteRepository, listRepositories}) => {
-
-    const [showingDeleteModal, setShowDeleteModal] = useState(false);
-    const [selectedRepo, setSelectedRepo] = useState(null);
-
-    const deleteRepo = () => {
-        if (deleteStatus.inProgress) {
-            return;
-        }
-        deleteRepository(selectedRepo);
-        setShowDeleteModal(false);
-    }
-
-    useEffect(()=> {
-        if (deleteStatus.done) {
-            listRepositories();
-        }
-    }, [listRepositories, deleteStatus]);
+const RepositoryList = ({ list, paginate }) => {
 
     if (list.loading || !list.payload) {
         return <p>Loading...</p>;
@@ -110,41 +49,29 @@ const RepositoryList = connect(
     }
 
     return (
-        <>
-            <div>
-                {list.payload.results.map(repo => (
-                    <Row key={repo.id}>
-                        <Col className={"mb-2 mt-2"}>
-                            <Card>
-                                <Card.Body>
-                                <Button className="float-right" onClick={() => {
-                                                    setSelectedRepo(repo.id);
-                                                    setShowDeleteModal(true);
-                                                    }} 
-                                        variant="danger"><TrashIcon/> Delete Repository</Button>
-                                    <h5><Link to={`/repositories/${repo.id}/tree`}>{repo.id}</Link></h5>
-                                    <p>
-                                        <small>
-                                            created at <code>{moment.unix(repo.creation_date).toISOString()}</code> ({moment.unix(repo.creation_date).fromNow()})<br/>
-                                            default branch: <code>{repo.default_branch}</code>,{' '}
-                                            storage namespace: <code>{repo.storage_namespace}</code>
-                                        </small>
-                                    </p>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    </Row>
-                ))}
-                {paginator}
-            </div>
-            <DeleteRepositoryModal
-                selectedRepo={selectedRepo}
-                show={showingDeleteModal}
-                onSubmit={deleteRepo}
-                onCancel={()=>{setShowDeleteModal(false)}}/>
-        </>
+        <div>
+            {list.payload.results.map(repo => (
+                <Row key={repo.id}>
+                    <Col className={"mb-2 mt-2"}>
+                        <Card>
+                            <Card.Body>
+                                <h5><Link to={`/repositories/${repo.id}/tree`}>{repo.id}</Link></h5>
+                                <p>
+                                    <small>
+                                        created at <code>{moment.unix(repo.creation_date).toISOString()}</code> ({moment.unix(repo.creation_date).fromNow()})<br/>
+                                        default branch: <code>{repo.default_branch}</code>,{' '}
+                                        storage namespace: <code>{repo.storage_namespace}</code>
+                                    </small>
+                                </p>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            ))}
+            {paginator}
+        </div>
     );
-});
+};
 
 export const RepositoryListPage = connect(
     ({ repositories }) => {
