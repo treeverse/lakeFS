@@ -52,9 +52,15 @@ var entryCmd = &cobra.Command{
 		ctx := context.Background()
 		database := connectToDB(connectionString)
 		defer database.Close()
+		lockDB := connectToDB(connectionString)
+		defer lockDB.Close()
 
 		conf := config.NewConfig()
-		c, err := catalog.NewCataloger(database, conf)
+		c, err := catalog.NewCataloger(catalog.Config{
+			Config: conf,
+			DB:     database,
+			LockDB: lockDB,
+		})
 		if err != nil {
 			fmt.Printf("Cannot create cataloger: %s\n", err)
 			os.Exit(1)
