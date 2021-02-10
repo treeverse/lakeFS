@@ -124,6 +124,11 @@ type CopyObjectResult struct {
 	ETag         string `xml:"ETag"`
 }
 
+type CopyPartResult struct {
+	LastModified string `xml:"LastModified"`
+	ETag         string `xml:"ETag"`
+}
+
 type InitiateMultipartUploadResult struct {
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`

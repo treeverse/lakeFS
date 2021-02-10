@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -21,7 +22,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	configop "github.com/treeverse/lakefs/api/gen/restapi/operations/config"
 	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
-	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
@@ -31,11 +32,11 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cloud"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/parade"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/upload"
@@ -52,15 +53,15 @@ const (
 )
 
 type Dependencies struct {
-	ctx             context.Context
-	Cataloger       catalog.Cataloger
-	Auth            auth.Service
-	BlockAdapter    block.Adapter
-	Parade          parade.Parade
-	MetadataManager auth.MetadataManager
-	Migrator        db.Migrator
-	Collector       stats.Collector
-	Logger          logging.Logger
+	ctx                   context.Context
+	Cataloger             catalog.Cataloger
+	Auth                  auth.Service
+	BlockAdapter          block.Adapter
+	MetadataManager       auth.MetadataManager
+	Migrator              db.Migrator
+	Collector             stats.Collector
+	CloudMetadataProvider cloud.MetadataProvider
+	Logger                logging.Logger
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -69,7 +70,6 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		Cataloger:       d.Cataloger,
 		Auth:            d.Auth,
 		BlockAdapter:    d.BlockAdapter.WithContext(ctx),
-		Parade:          d.Parade,
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
 		Collector:       d.Collector,
@@ -165,6 +165,8 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
 
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
+
+	api.RefsRefsDumpHandler = c.RefsRefsDumpHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -239,13 +241,12 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
-		metadata, err := c.deps.MetadataManager.Write()
-		if err != nil {
-			c.deps.Logger.Error("failed to write metadata after setup")
-		} else {
-			c.deps.Collector.SetInstallationID(metadata[auth.InstallationIDKeyName])
-		}
+
+		metadata := stats.NewMetadata(c.deps.Logger, c.deps.BlockAdapter.BlockstoreType(), c.deps.MetadataManager, c.deps.CloudMetadataProvider)
+		c.deps.Collector.SetInstallationID(metadata.InstallationID)
+		c.deps.Collector.CollectMetadata(metadata)
 		c.deps.Collector.CollectEvent("global", "init")
+
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
@@ -1149,8 +1150,8 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 	})
 }
 
-func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHandler {
-	return metadataop.CreateSymlinkHandlerFunc(func(params metadataop.CreateSymlinkParams, user *models.User) middleware.Responder {
+func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
+	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -1158,7 +1159,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 			},
 		})
 		if err != nil {
-			return metadataop.NewCreateSymlinkUnauthorized().WithPayload(responseErrorFrom(err))
+			return metadata.NewCreateSymlinkUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("create_symlink")
 		cataloger := deps.Cataloger
@@ -1166,10 +1167,10 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 		// read repo
 		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
+			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
-			return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		// list entries
 		var currentPath string
@@ -1187,10 +1188,10 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 				"",
 				-1)
 			if errors.Is(err, db.ErrNotFound) {
-				return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
+				return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
 			}
 			if err != nil {
-				return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
+				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
 					WithPayload(responseError("error while listing objects: %s", err))
 			}
 			// loop all entries enter to map[path] physicalAddress
@@ -1205,7 +1206,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 					// push current
 					err := writeSymlinkToS3(params, repo, path, currentAddresses, deps)
 					if err != nil {
-						return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
+						return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
 							WithPayload(responseError("error while writing symlinks: %s", err))
 					}
 					currentPath = path
@@ -1219,15 +1220,15 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 		if len(currentAddresses) > 0 {
 			err = writeSymlinkToS3(params, repo, currentPath, currentAddresses, deps)
 			if err != nil {
-				return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
+				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
 					WithPayload(responseError("error while writing symlinks: %s", err))
 			}
 		}
 		metaLocation := fmt.Sprintf("%s/%s", repo.StorageNamespace, lakeFSPrefix)
-		return metadataop.NewCreateSymlinkCreated().WithPayload(metaLocation)
+		return metadata.NewCreateSymlinkCreated().WithPayload(metaLocation)
 	})
 }
-func writeSymlinkToS3(params metadataop.CreateSymlinkParams, repo *catalog.Repository, path string, addresses []string, deps *Dependencies) error {
+func writeSymlinkToS3(params metadata.CreateSymlinkParams, repo *catalog.Repository, path string, addresses []string, deps *Dependencies) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, params.Branch, path)
 	data := strings.Join(addresses, "\n")
 	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
@@ -2368,5 +2369,78 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 		}
 
 		return authop.NewDetachPolicyFromGroupNoContent()
+	})
+}
+
+func (c *Controller) RefsRefsDumpHandler() refs.RefsDumpHandler {
+	return refs.RefsDumpHandlerFunc(func(params refs.RefsDumpParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ListTagsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ListCommitsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return refs.NewRefsDumpUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) {
+			return refs.NewRefsDumpNotFound().
+				WithPayload(responseErrorFrom(err))
+		} else if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		deps.LogAction("dump_repository_metadata")
+
+		// dump all types:
+		tagsID, err := deps.Cataloger.DumpTags(deps.ctx, params.Repository)
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		branchesID, err := deps.Cataloger.DumpBranches(deps.ctx, params.Repository)
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		commitsID, err := deps.Cataloger.DumpCommits(deps.ctx, params.Repository)
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		manifestData := &models.RefsDump{
+			BranchesMetaRangeID: branchesID,
+			CommitsMetaRangeID:  commitsID,
+			TagsMetaRangeID:     tagsID,
+		}
+
+		// write this to the block store
+		manifestBytes, err := json.MarshalIndent(manifestData, "", "  ")
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		err = deps.BlockAdapter.Put(block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       "_lakefs/refs_manifest.json",
+		}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
+		if err != nil {
+			return refs.NewRefsDumpDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return refs.NewRefsDumpCreated().WithPayload(manifestData)
 	})
 }

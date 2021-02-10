@@ -90,7 +90,7 @@ func (c *CommittedFake) Apply(_ context.Context, _ graveler.StorageNamespace, me
 	return c.MetaRangeID, c.DiffSummary, nil
 }
 
-func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
@@ -191,6 +191,10 @@ type RefsFake struct {
 	Commits             map[graveler.CommitID]*graveler.Commit
 }
 
+func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	return nil, nil
+}
+
 func (m *RefsFake) RevParse(context.Context, graveler.RepositoryID, graveler.Ref) (graveler.Reference, error) {
 	var branch graveler.BranchID
 	if m.RefType == graveler.ReferenceTypeBranch {
@@ -204,7 +208,7 @@ func (m *RefsFake) GetRepository(context.Context, graveler.RepositoryID) (*grave
 	return &graveler.Repository{}, nil
 }
 
-func (m *RefsFake) CreateRepository(context.Context, graveler.RepositoryID, graveler.Repository, graveler.Branch) error {
+func (m *RefsFake) CreateRepository(context.Context, graveler.RepositoryID, graveler.Repository, graveler.StagingToken) error {
 	return nil
 }
 

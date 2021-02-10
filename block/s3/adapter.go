@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -401,6 +402,60 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 		Key:    aws.String(qualifiedKey.Key),
 	})
 	return err
+}
+
+func (a *Adapter) copyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64, byteRange *string) (string, error) {
+	qualifiedKey, err := resolveNamespace(destinationObj)
+	if err != nil {
+		return "", err
+	}
+	srcKey, err := resolveNamespace(sourceObj)
+	if err != nil {
+		return "", err
+	}
+
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
+	uploadPartCopyObject := s3.UploadPartCopyInput{
+		Bucket:     aws.String(qualifiedKey.StorageNamespace),
+		Key:        aws.String(qualifiedKey.Key),
+		PartNumber: aws.Int64(partNumber),
+		UploadId:   aws.String(uploadID),
+		CopySource: aws.String(fmt.Sprintf("%s/%s", srcKey.StorageNamespace, srcKey.Key)),
+	}
+	if byteRange != nil {
+		uploadPartCopyObject.CopySourceRange = byteRange
+	}
+
+	resp, err := a.s3.UploadPartCopyWithContext(a.ctx, &uploadPartCopyObject)
+	if err != nil {
+		return "", err
+	}
+	if resp == nil || resp.CopyPartResult == nil || resp.CopyPartResult.ETag == nil {
+		return "", ErrMissingETag
+	}
+	return strings.Trim(*resp.CopyPartResult.ETag, "\""), nil
+}
+
+func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
+	etag, err := a.copyPart(sourceObj, destinationObj, uploadID, partNumber, nil)
+	if err != nil {
+		return "", err
+	}
+	return etag, nil
+}
+
+func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
+	etag, err := a.copyPart(
+		sourceObj, destinationObj, uploadID, partNumber,
+		aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)))
+	if err != nil {
+		return "", err
+	}
+	return etag, nil
 }
 
 func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {

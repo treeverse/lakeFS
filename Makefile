@@ -65,6 +65,9 @@ docs: docs/assets/js/swagger.yml
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
 
+gen-docs: go-install ## Generate CLI docs automatically
+	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/commands.md
+
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 
@@ -141,6 +144,7 @@ validate-fmt:  ## Validate go format
 validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- catalog/catalog.pb.go
 	git diff --quiet -- graveler/committed/committed.pb.go
+	git diff --quiet -- graveler/graveler.pb.go
 
 checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
 
@@ -162,6 +166,7 @@ gen-ddl: go-install ## Embed data migration files into the resulting binary
 proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=catalog --go_out=catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=graveler/committed --go_out=graveler/committed --go_opt=paths=source_relative committed.proto
+	$(PROTOC) --proto_path=graveler --go_out=graveler --go_opt=paths=source_relative graveler.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

@@ -56,8 +56,8 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 	return NewValueIterator(it), nil
 }
 
-func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
-	writer := c.metaRangeManager.NewWriter(ctx, ns)
+func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
+	writer := c.metaRangeManager.NewWriter(ctx, ns, metadata)
 	defer func() {
 		if err := writer.Abort(); err != nil {
 			c.logger.Errorf("Aborting write to meta range: %w", err)
@@ -109,7 +109,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 }
 
 func (c *committedManager) Apply(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, diffs graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	mwWriter := c.metaRangeManager.NewWriter(ctx, ns)
+	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		err := mwWriter.Abort()
 		if err != nil {

@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 	"github.com/treeverse/lakefs/uri"
@@ -27,6 +28,7 @@ const (
 	HideProgressFlagName = "hide-progress"
 	ManifestURLFlagName  = "manifest"
 	PrefixesFileFlagName = "prefix-file"
+	BaseCommitFlagName   = "commit"
 	ManifestURLFormat    = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs     = 1
 	CommitterName        = "lakefs"
@@ -35,171 +37,184 @@ const (
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
-	Long:  "Import from an S3 inventory to lakeFS without copying the data.",
+	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", onboard.DefaultImportBranchName),
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(ImportCmdNumArgs),
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		flags := cmd.Flags()
-		dryRun, _ := flags.GetBool(DryRunFlagName)
-		manifestURL, _ := flags.GetString(ManifestURLFlagName)
-		withMerge, _ := flags.GetBool(WithMergeFlagName)
-		hideProgress, _ := flags.GetBool(HideProgressFlagName)
-		prefixFile, _ := flags.GetString(PrefixesFileFlagName)
-
-		ctx := context.Background()
-		conf := config.NewConfig()
-		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
-		if errors.Is(err, db.ErrSchemaNotCompatible) {
-			fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
-			os.Exit(1)
-		}
-		if err != nil {
-			fmt.Printf("%s\n", err)
-			os.Exit(1)
-		}
-		logger := logging.FromContext(ctx)
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		defer dbPool.Close()
-
-		cataloger, err := catalog.NewCataloger(dbPool, cfg)
-		if err != nil {
-			fmt.Printf("Failed to create cataloger: %s\n", err)
-			os.Exit(1)
-		}
-		defer func() { _ = cataloger.Close() }()
-
-		u := uri.Must(uri.Parse(args[0]))
-		blockStore, err := factory.BuildBlockAdapter(cfg)
-		if err != nil {
-			fmt.Printf("Failed to create block adapter: %s\n", err)
-			os.Exit(1)
-		}
-		if blockStore.BlockstoreType() != "s3" {
-			fmt.Printf("Configuration uses unsupported block adapter: %s. Only s3 is supported.\n", blockStore.BlockstoreType())
-			os.Exit(1)
-		}
-		repoName := u.Repository
-		parsedURL, err := url.Parse(manifestURL)
-		if err != nil || parsedURL.Scheme != "s3" || !strings.HasSuffix(parsedURL.Path, "/manifest.json") {
-			fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
-			os.Exit(1)
-		}
-
-		repo, err := getRepository(ctx, cataloger, repoName, dryRun)
-		if err != nil {
-			fmt.Println("Error", err)
-			if errors.Is(err, catalog.ErrBranchNotFound) {
-				fmt.Println("This repository was created with an older version of lakeFS. To use the import feature, create a new repository")
-			}
-			os.Exit(1)
-		}
-
-		if dryRun {
-			fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
-		}
-		var prefixes []string
-		if prefixFile != "" {
-			file, err := os.Open(prefixFile)
-			if err != nil {
-				fmt.Printf("Failed to read prefix filter: %s\n", err)
-				os.Exit(1)
-			}
-			defer func() {
-				_ = file.Close()
-			}()
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				prefix := scanner.Text()
-				if prefix != "" {
-					prefixes = append(prefixes, prefix)
-				}
-			}
-			if err := scanner.Err(); err != nil {
-				fmt.Printf("Failed to read prefix filter: %s\n", err)
-				os.Exit(1)
-			}
-			fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
-		}
-
-		entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
-		if err != nil {
-			fmt.Printf("Failed to build entry catalog: %s\n", err)
-			os.Exit(1)
-		}
-
-		importConfig := &onboard.Config{
-			CommitUsername:     CommitterName,
-			InventoryURL:       manifestURL,
-			Repository:         repoName,
-			InventoryGenerator: blockStore,
-			Cataloger:          cataloger,
-			KeyPrefixes:        prefixes,
-			EntryCatalog:       entryCataloger,
-		}
-
-		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
-		if err != nil {
-			fmt.Printf("Import failed: %s\n", err)
-			os.Exit(1)
-		}
-		var multiBar *cmdutils.MultiBar
-		if !hideProgress {
-			multiBar = cmdutils.NewMultiBar(importer)
-			multiBar.Start()
-		}
-		stats, err := importer.Import(ctx, dryRun)
-		if err != nil {
-			if multiBar != nil {
-				multiBar.Stop()
-			}
-			fmt.Printf("Import failed: %s\n", err)
-			os.Exit(1)
-		}
-		if multiBar != nil {
-			multiBar.Stop()
-		}
-		fmt.Println()
-		fmt.Println(text.FgYellow.Sprint("Added or changed objects:"), stats.AddedOrChanged)
-		if stats.PreviousInventoryURL != "" {
-			fmt.Println(text.FgYellow.Sprint("Previously imported inventory:"), stats.PreviousInventoryURL)
-			fmt.Println(text.FgYellow.Sprint("Previous import date:"), stats.PreviousImportDate)
-			fmt.Println()
-		}
-		if dryRun {
-			fmt.Println("Dry run successful. No changes were made.")
-			return
-		}
-
-		fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
-		fmt.Println()
-		fmt.Printf("Import to branch %s finished successfully.\n", catalog.DefaultImportBranchName)
-		fmt.Println()
-		if withMerge {
-			fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
-			msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-			commitLog, err := cataloger.Merge(ctx, repoName, catalog.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
-			if err != nil {
-				fmt.Printf("Merge failed: %s\n", err)
-				os.Exit(1)
-			}
-			fmt.Println("Merge was completed successfully.")
-			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
-		} else {
-			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
-			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, catalog.DefaultImportBranchName, repoName, repo.DefaultBranch)
-		}
+		os.Exit(runImport(cmd, args))
 	},
 }
 
-func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string, dryRun bool) (*catalog.Repository, error) {
-	if dryRun {
-		return &catalog.Repository{
-			Name:          repoName,
-			DefaultBranch: catalog.DefaultBranchName,
-		}, nil
+var importBaseCmd = &cobra.Command{
+	Use:    "import-base <repository uri> --manifest <s3 uri to manifest.json> --commit <base commit>",
+	Short:  "Import data from S3 to a lakeFS repository on top of existing commit",
+	Long:   "Creates a new commit with the imported data, on top of the given commit. Does not affect any branch",
+	Hidden: true,
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(ImportCmdNumArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		os.Exit(runImport(cmd, args))
+	},
+}
+
+func runImport(cmd *cobra.Command, args []string) (statusCode int) {
+	flags := cmd.Flags()
+	dryRun, _ := flags.GetBool(DryRunFlagName)
+	manifestURL, _ := flags.GetString(ManifestURLFlagName)
+	withMerge, _ := flags.GetBool(WithMergeFlagName)
+	hideProgress, _ := flags.GetBool(HideProgressFlagName)
+	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
+	baseCommit, _ := flags.GetString(BaseCommitFlagName)
+
+	ctx := context.Background()
+	conf := config.NewConfig()
+	err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
+	if errors.Is(err, db.ErrSchemaNotCompatible) {
+		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
+		return 1
 	}
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		return 1
+	}
+	logger := logging.FromContext(ctx)
+	dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+	defer dbPool.Close()
+
+	cataloger, err := catalog.NewCataloger(dbPool, cfg)
+	if err != nil {
+		fmt.Printf("Failed to create cataloger: %s\n", err)
+		return 1
+	}
+	defer func() { _ = cataloger.Close() }()
+
+	entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
+	if err != nil {
+		fmt.Printf("Failed to build entry catalog: %s\n", err)
+		return 1
+	}
+	u := uri.Must(uri.Parse(args[0]))
+	blockStore, err := factory.BuildBlockAdapter(cfg)
+	if err != nil {
+		fmt.Printf("Failed to create block adapter: %s\n", err)
+		return 1
+	}
+	if blockStore.BlockstoreType() != "s3" {
+		fmt.Printf("Configuration uses unsupported block adapter: %s. Only s3 is supported.\n", blockStore.BlockstoreType())
+		return 1
+	}
+	repoName := u.Repository
+	parsedURL, err := url.Parse(manifestURL)
+	if err != nil || parsedURL.Scheme != "s3" || !strings.HasSuffix(parsedURL.Path, "/manifest.json") {
+		fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
+		return 1
+	}
+
+	repo, err := getRepository(ctx, cataloger, repoName)
+	if err != nil {
+		fmt.Println("Error getting repository", err)
+		return 1
+	}
+
+	if dryRun {
+		fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
+	}
+	var prefixes []string
+	if prefixFile != "" {
+		file, err := os.Open(prefixFile)
+		if err != nil {
+			fmt.Printf("Failed to read prefix filter: %s\n", err)
+			return 1
+		}
+		defer func() {
+			_ = file.Close()
+		}()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			prefix := scanner.Text()
+			if prefix != "" {
+				prefixes = append(prefixes, prefix)
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Printf("Failed to read prefix filter: %s\n", err)
+			return 1
+		}
+		fmt.Printf("Filtering according to %d prefixes\n", len(prefixes))
+	}
+
+	importConfig := &onboard.Config{
+		CommitUsername:     CommitterName,
+		InventoryURL:       manifestURL,
+		RepositoryID:       graveler.RepositoryID(repoName),
+		DefaultBranchID:    graveler.BranchID(repo.DefaultBranch),
+		InventoryGenerator: blockStore,
+		Cataloger:          cataloger,
+		KeyPrefixes:        prefixes,
+		EntryCatalog:       entryCataloger,
+		BaseCommit:         graveler.CommitID(baseCommit),
+	}
+
+	importer, err := onboard.CreateImporter(ctx, logger, importConfig)
+	if err != nil {
+		fmt.Printf("Import failed: %s\n", err)
+		return 1
+	}
+	var multiBar *cmdutils.MultiBar
+	if !hideProgress {
+		multiBar = cmdutils.NewMultiBar(importer)
+		multiBar.Start()
+	}
+	stats, err := importer.Import(ctx, dryRun)
+	if err != nil {
+		if multiBar != nil {
+			multiBar.Stop()
+		}
+		fmt.Printf("Import failed: %s\n", err)
+		return 1
+	}
+	if multiBar != nil {
+		multiBar.Stop()
+	}
+	fmt.Println()
+	fmt.Println(text.FgYellow.Sprint("Added or changed objects:"), stats.AddedOrChanged)
+
+	if dryRun {
+		fmt.Println("Dry run successful. No changes were made.")
+		return 0
+	}
+
+	fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
+	fmt.Println()
+
+	if baseCommit == "" {
+		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultImportBranchName)
+		fmt.Println()
+	}
+
+	if withMerge {
+		fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
+		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
+		commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+		if err != nil {
+			fmt.Printf("Merge failed: %s\n", err)
+			return 1
+		}
+		fmt.Println("Merge was completed successfully.")
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
+	} else {
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
+		fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, stats.CommitRef, repoName, repo.DefaultBranch)
+	}
+
+	return 0
+}
+
+func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string) (*catalog.Repository, error) {
 	repo, err := cataloger.GetRepository(ctx, repoName)
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
@@ -211,11 +226,25 @@ func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName st
 
 //nolint:gochecknoinits
 func init() {
+	manifestFlagMsg := fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat)
+	const (
+		hideMsg     = "Suppress progress bar"
+		prefixesMsg = "File with a list of key prefixes. Imported object keys will be filtered according to these prefixes"
+	)
+
 	rootCmd.AddCommand(importCmd)
-	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory and print stats, without making any changes")
-	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
+	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory, print stats and write metarange. Commits nothing")
+	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", manifestFlagMsg)
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
 	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
-	importCmd.Flags().Bool(HideProgressFlagName, false, "Suppress progress bar")
-	importCmd.Flags().StringP(PrefixesFileFlagName, "p", "", "File with a list of key prefixes. Imported object keys will be filtered according to these prefixes")
+	importCmd.Flags().Bool(HideProgressFlagName, false, hideMsg)
+	importCmd.Flags().StringP(PrefixesFileFlagName, "p", "", prefixesMsg)
+
+	rootCmd.AddCommand(importBaseCmd)
+	importBaseCmd.Flags().StringP(ManifestURLFlagName, "m", "", manifestFlagMsg)
+	_ = importBaseCmd.MarkFlagRequired(ManifestURLFlagName)
+	importBaseCmd.Flags().Bool(HideProgressFlagName, false, hideMsg)
+	importBaseCmd.Flags().StringP(PrefixesFileFlagName, "p", "", prefixesMsg)
+	importBaseCmd.Flags().StringP(BaseCommitFlagName, "b", "", "Commit to apply to apply the import on top of")
+	_ = importCmd.MarkFlagRequired(BaseCommitFlagName)
 }

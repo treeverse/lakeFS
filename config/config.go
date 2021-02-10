@@ -253,7 +253,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
-	cfg.WithMaxRetries(viper.GetInt(BlockstoreS3MaxRetriesKey))
+	cfg = cfg.WithMaxRetries(viper.GetInt(BlockstoreS3MaxRetriesKey))
 	return cfg
 }
 

@@ -24,6 +24,7 @@ require (
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
 	github.com/georgysavva/scany v0.2.7
@@ -51,14 +52,13 @@ require (
 	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgerrcode v0.0.0-20201024163028-a0d42d470451
 	github.com/jackc/pgproto3/v2 v2.0.6
-	github.com/jackc/pgtype v1.6.2
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/kr/pretty v0.2.1 // indirect
-	github.com/lib/pq v1.9.0
+	github.com/lib/pq v1.9.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid v1.5.0
@@ -96,5 +96,6 @@ require (
 	google.golang.org/api v0.36.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	pgregory.net/rapid v0.4.0 // indirect
 )

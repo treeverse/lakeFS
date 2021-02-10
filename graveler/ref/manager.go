@@ -3,6 +3,7 @@ package ref
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -41,7 +42,13 @@ func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.Repos
 	return repository.(*graveler.Repository), nil
 }
 
-func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, branch graveler.Branch) error {
+func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
+	firstCommit := graveler.Commit{
+		Message:      graveler.FirstCommitMsg,
+		CreationDate: time.Now(),
+	}
+	commitID := m.addressProvider.ContentAddress(firstCommit)
+
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(
 			`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
@@ -55,8 +62,12 @@ func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.Re
 		_, err = tx.Exec(`
 				INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 				VALUES ($1, $2, $3, $4)`,
-			repositoryID, repository.DefaultBranchID, branch.StagingToken, branch.CommitID)
-		return nil, err
+			repositoryID, repository.DefaultBranchID, token, commitID)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, m.addCommit(tx, repositoryID, commitID, firstCommit)
 	}, db.WithContext(ctx))
 	return err
 }
@@ -270,26 +281,32 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 func (m *Manager) AddCommit(ctx context.Context, repositoryID graveler.RepositoryID, commit graveler.Commit) (graveler.CommitID, error) {
 	commitID := m.addressProvider.ContentAddress(commit)
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// convert parents to slice of strings
-		var parents []string
-		for _, parent := range commit.Parents {
-			parents = append(parents, string(parent))
-		}
-		// commits are written based on their content hash, if we insert the same ID again,
-		// it will necessarily have the same attributes as the existing one, so no need to overwrite it
-		_, err := tx.Exec(`
-				INSERT INTO graveler_commits 
-				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-				ON CONFLICT DO NOTHING`,
-			repositoryID, commitID, commit.Committer, commit.Message,
-			commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata)
-		return nil, err
+		return nil, m.addCommit(tx, repositoryID, commitID, commit)
 	}, db.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
 	return graveler.CommitID(commitID), err
+}
+
+func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commitID string, commit graveler.Commit) error {
+	// convert parents to slice of strings
+	var parents []string
+	for _, parent := range commit.Parents {
+		parents = append(parents, string(parent))
+	}
+
+	// commits are written based on their content hash, if we insert the same ID again,
+	// it will necessarily have the same attributes as the existing one, so no need to overwrite it
+	_, err := tx.Exec(`
+				INSERT INTO graveler_commits 
+				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				ON CONFLICT DO NOTHING`,
+		repositoryID, commitID, commit.Committer, commit.Message,
+		commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata)
+
+	return err
 }
 
 func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.RepositoryID, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
@@ -302,4 +319,8 @@ func (m *Manager) FindMergeBase(ctx context.Context, repositoryID graveler.Repos
 
 func (m *Manager) Log(ctx context.Context, repositoryID graveler.RepositoryID, from graveler.CommitID) (graveler.CommitIterator, error) {
 	return NewCommitIterator(ctx, m.db, repositoryID, from), nil
+}
+
+func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
+	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
 }

@@ -12,7 +12,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const CommitMsgTemplate = "Import from %s"
+const (
+	CommitMsgTemplate       = "Import from %s"
+	DefaultImportBranchName = "import-from-inventory"
+)
 
 type Importer struct {
 	inventoryGenerator block.InventoryGenerator
@@ -26,20 +29,23 @@ type Importer struct {
 type Config struct {
 	CommitUsername     string
 	InventoryURL       string
-	Repository         string
+	RepositoryID       graveler.RepositoryID
+	DefaultBranchID    graveler.BranchID
 	InventoryGenerator block.InventoryGenerator
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
-	EntryCatalog       *catalog.EntryCatalog
+	EntryCatalog       entryCataloger
+
+	// BaseCommit is available only for import-plumbing command
+	BaseCommit graveler.CommitID
 }
 
 type Stats struct {
-	AddedOrChanged       int
-	DryRun               bool
-	PreviousInventoryURL string
-	CommitRef            string
-	PreviousImportDate   time.Time
+	AddedOrChanged     int
+	DryRun             bool
+	CommitRef          string
+	PreviousImportDate time.Time
 }
 
 func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
@@ -50,11 +56,11 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 	}
 
 	if res.CatalogActions == nil {
-		res.CatalogActions = NewCatalogRepoActions(config.EntryCatalog, graveler.RepositoryID(config.Repository), config.CommitUsername, logger, config.KeyPrefixes)
+		res.CatalogActions = NewCatalogRepoActions(config, logger)
 	}
 
-	if err := res.CatalogActions.InitBranch(ctx); err != nil {
-		return nil, fmt.Errorf("failed to get previous commit: %w", err)
+	if err := res.CatalogActions.Init(ctx, config.BaseCommit); err != nil {
+		return nil, fmt.Errorf("init catalog actions: %w", err)
 	}
 
 	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, true, config.KeyPrefixes)
