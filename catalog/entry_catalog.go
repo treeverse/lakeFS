@@ -5,8 +5,12 @@ import (
 	"crypto"
 	_ "crypto/sha256"
 	"fmt"
+	"time"
+
+	"github.com/treeverse/lakefs/actions"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -78,7 +82,8 @@ type Store interface {
 }
 
 type EntryCatalog struct {
-	Store Store
+	BlockAdapter block.Adapter
+	Store        Store
 }
 
 const (
@@ -129,7 +134,10 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(db)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
-	entryCatalog := &EntryCatalog{Store: store}
+	entryCatalog := &EntryCatalog{
+		BlockAdapter: tierFSParams.Adapter,
+		Store:        store,
+	}
 	store.SetPreCommitHook(entryCatalog.preCommitHook)
 	store.SetPreMergeHook(entryCatalog.preMergeHook)
 	return entryCatalog, nil
@@ -505,9 +513,27 @@ func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.Repos
 }
 
 func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
+	_ = actions.Event{
+		EventType:     actions.EventTypePreCommit,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      branchID.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
 	return nil
 }
 
 func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+	_ = actions.Event{
+		EventType:     actions.EventTypePreMerge,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      source.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
 	return nil
 }

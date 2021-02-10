@@ -1,3 +1,4 @@
+name: action name
 on:
   pre-merge:
     branches:
