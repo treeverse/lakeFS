@@ -40,7 +40,8 @@ type MatchSpec struct {
 var (
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
-	ErrInvalidAction = errors.New("invalid action")
+	ErrInvalidAction    = errors.New("invalid action")
+	ErrInvalidEventType = errors.New("invalid event type")
 )
 
 func (a *Action) Validate() error {
@@ -75,7 +76,7 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 	case EventTypePreMerge:
 		actionOn = a.On.PreMerge
 	default:
-		return false, nil
+		return false, ErrInvalidEventType
 	}
 	// if no action specified - no match
 	if actionOn == nil {

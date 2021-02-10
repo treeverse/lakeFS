@@ -14,6 +14,7 @@ type Webhook struct {
 	ID         string
 	ActionName string
 	URL        string
+	Timeout    time.Duration
 }
 
 type WebhookEventInfo struct {
@@ -30,14 +31,34 @@ type WebhookEventInfo struct {
 	Metadata      map[string]string `json:"metadata"`
 }
 
-var ErrWebhookResponseStatusCode = errors.New("webhook non-success status code")
+const webhookClientTimeout = 5 * time.Minute
 
-func NewWebhook(action *Action, h ActionHook) Hook {
+var (
+	ErrWebhookRequestFailed = errors.New("webhook request failed")
+	ErrWebhookMissingURL    = errors.New("webhook missing url")
+)
+
+func NewWebhook(action *Action, h ActionHook) (Hook, error) {
+	webhookURL := h.Properties["url"]
+	if len(webhookURL) == 0 {
+		return nil, ErrWebhookMissingURL
+	}
+
+	requestTimeout := webhookClientTimeout
+	timeoutDuration := h.Properties["timeout"]
+	if len(timeoutDuration) > 0 {
+		d, err := time.ParseDuration(timeoutDuration)
+		if err != nil {
+			return nil, fmt.Errorf("webhook request duration: %w", err)
+		}
+		requestTimeout = d
+	}
 	return &Webhook{
 		ID:         h.ID,
 		ActionName: action.Name,
-		URL:        h.Properties["url"],
-	}
+		Timeout:    requestTimeout,
+		URL:        webhookURL,
+	}, nil
 }
 
 func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer OutputWriter) error {
@@ -51,7 +72,7 @@ func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer Output
 		return err
 	}
 	client := &http.Client{
-		Timeout: time.Minute,
+		Timeout: w.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -70,7 +91,7 @@ func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer Output
 
 	// check status code
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("%w (%d)", ErrWebhookResponseStatusCode, resp.StatusCode)
+		return fmt.Errorf("%w (status code: %d)", ErrWebhookRequestFailed, resp.StatusCode)
 	}
 	return nil
 }

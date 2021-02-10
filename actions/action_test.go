@@ -1,11 +1,11 @@
 package actions_test
 
 import (
-	"errors"
 	"io/ioutil"
 	"path"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/actions"
 )
 
@@ -13,13 +13,14 @@ func TestAction_ReadAction(t *testing.T) {
 	tests := []struct {
 		name     string
 		filename string
-		wantErr  error
+		wantErr  bool
 	}{
-		{name: "full", filename: "action_full.yaml", wantErr: nil},
-		{name: "required", filename: "action_required.yaml", wantErr: nil},
-		{name: "duplicate id", filename: "action_duplicate_id.yaml", wantErr: actions.ErrInvalidAction},
-		{name: "invalid id", filename: "action_invalid_id.yaml", wantErr: actions.ErrInvalidAction},
-		{name: "invalid hook type", filename: "action_invalid_type.yaml", wantErr: actions.ErrInvalidAction},
+		{name: "full", filename: "action_full.yaml", wantErr: false},
+		{name: "required", filename: "action_required.yaml", wantErr: false},
+		{name: "duplicate id", filename: "action_duplicate_id.yaml", wantErr: true},
+		{name: "invalid id", filename: "action_invalid_id.yaml", wantErr: true},
+		{name: "invalid hook type", filename: "action_invalid_type.yaml", wantErr: true},
+		{name: "invalid yaml", filename: "action_invalid_yaml.yaml", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -28,8 +29,8 @@ func TestAction_ReadAction(t *testing.T) {
 				t.Fatalf("Failed to load testdata %s, err=%s", tt.filename, err)
 			}
 			act, err := actions.ParseAction(data)
-			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("ParseAction() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseAction() error = %v, wantErr %t", err, tt.wantErr)
 			}
 			if err == nil && act == nil {
 				t.Error("ParseAction() no error, missing Action")
@@ -52,6 +53,13 @@ func TestAction_Match(t *testing.T) {
 			spec:    actions.MatchSpec{EventType: actions.EventTypePreMerge},
 			want:    false,
 			wantErr: false,
+		},
+		{
+			name:    "none - on invalid event type",
+			on:      actions.OnEvents{},
+			spec:    actions.MatchSpec{EventType: "nothing"},
+			want:    false,
+			wantErr: true,
 		},
 		{
 			name:    "pre-merge - on pre-merge without branch",
@@ -144,6 +152,77 @@ func TestAction_Match(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Match() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatchActions(t *testing.T) {
+	tests := []struct {
+		name    string
+		actions []*actions.Action
+		spec    actions.MatchSpec
+		want    []*actions.Action
+		wantErr bool
+	}{
+		{
+			name:    "empty",
+			actions: nil,
+			spec:    actions.MatchSpec{},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "all",
+			actions: []*actions.Action{
+				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+			},
+			spec: actions.MatchSpec{
+				EventType: actions.EventTypePreCommit,
+			},
+			want: []*actions.Action{
+				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "none",
+			actions: []*actions.Action{
+				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+			},
+			spec: actions.MatchSpec{
+				EventType: actions.EventTypePreMerge,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "one",
+			actions: []*actions.Action{
+				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
+				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
+			},
+			spec: actions.MatchSpec{
+				EventType: actions.EventTypePreMerge,
+			},
+			want: []*actions.Action{
+				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := actions.MatchActions(tt.actions, tt.spec)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MatchActions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Error("MatchActions() found diff", diff)
 			}
 		})
 	}
