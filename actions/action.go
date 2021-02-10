@@ -60,6 +60,9 @@ func (a *Action) Validate() error {
 			return fmt.Errorf("hook[%d] duplicate ID '%s': %w", i, hook.ID, ErrInvalidAction)
 		}
 		ids[hook.ID] = struct{}{}
+		if _, found := hooks[HookType(hook.Type)]; !found {
+			return fmt.Errorf("hook[%d] type '%s' unknown: %w", i, hook.ID, ErrInvalidAction)
+		}
 	}
 	return nil
 }
