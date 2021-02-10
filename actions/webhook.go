@@ -16,12 +16,6 @@ type Webhook struct {
 	URL        string
 }
 
-type WebhookCommitInfo struct {
-	Message   string            `json:"message"`
-	Committer string            `json:"committer"`
-	Metadata  map[string]string `json:"metadata"`
-}
-
 type WebhookEventInfo struct {
 	RunID         string            `json:"run_id"`
 	EventType     string            `json:"event_type"`
@@ -46,9 +40,9 @@ func NewWebhook(action *Action, h ActionHook) Hook {
 	}
 }
 
-func (w *Webhook) Run(ctx context.Context, ed Event, writer OutputWriter) error {
+func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer OutputWriter) error {
 	// post event information as json to webhook endpoint
-	eventData, err := w.marshalEvent(ed)
+	eventData, err := w.marshalEvent(runID, ed)
 	if err != nil {
 		return err
 	}
@@ -81,11 +75,12 @@ func (w *Webhook) Run(ctx context.Context, ed Event, writer OutputWriter) error 
 	return nil
 }
 
-func (w *Webhook) marshalEvent(ed Event) ([]byte, error) {
+func (w *Webhook) marshalEvent(runID string, ed Event) ([]byte, error) {
+	now := time.Now()
 	info := WebhookEventInfo{
-		RunID:         ed.RunID,
+		RunID:         runID,
 		EventType:     string(ed.EventType),
-		EventTime:     time.Now().UTC().Format(time.RFC3339),
+		EventTime:     now.UTC().Format(time.RFC3339),
 		ActionName:    w.ActionName,
 		HookID:        w.ID,
 		RepositoryID:  ed.RepositoryID,

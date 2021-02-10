@@ -15,7 +15,6 @@ const (
 )
 
 type Event struct {
-	RunID         string
 	EventType     EventType
 	EventTime     time.Time
 	RepositoryID  string
@@ -26,13 +25,8 @@ type Event struct {
 	Metadata      map[string]string
 }
 
-func NewEvent(eventType EventType) Event {
+func NewRunID(t time.Time) string {
 	uid := strings.ReplaceAll(uuid.New().String(), "-", "")
-	now := time.Now().UTC()
-	runID := now.Format(time.RFC3339) + "_" + uid
-	return Event{
-		RunID:     runID,
-		EventType: eventType,
-		EventTime: now,
-	}
+	runID := t.UTC().Format(time.RFC3339) + "_" + uid
+	return runID
 }

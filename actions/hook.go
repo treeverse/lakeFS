@@ -16,7 +16,7 @@ type OutputWriter interface {
 }
 
 type Hook interface {
-	Run(ctx context.Context, event Event, writer OutputWriter) error
+	Run(ctx context.Context, runID string, event Event, writer OutputWriter) error
 }
 
 type NewHookFunc func(*Action, ActionHook) Hook

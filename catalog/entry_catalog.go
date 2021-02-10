@@ -5,6 +5,7 @@ import (
 	"crypto"
 	_ "crypto/sha256"
 	"fmt"
+	"time"
 
 	"github.com/treeverse/lakefs/actions"
 
@@ -512,22 +513,27 @@ func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.Repos
 }
 
 func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
-	evt := actions.NewEvent(actions.EventTypePreCommit)
-	evt.RepositoryID = repositoryID.String()
-	evt.BranchID = branchID.String()
-	evt.Committer = commit.Committer
-	evt.CommitMessage = commit.Message
-	evt.Metadata = commit.Metadata
+	_ = actions.Event{
+		EventType:     actions.EventTypePreCommit,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      branchID.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
 	return nil
 }
 
 func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
-	evt := actions.NewEvent(actions.EventTypePreCommit)
-	evt.RepositoryID = repositoryID.String()
-	evt.BranchID = destination.String()
-	evt.SourceRef = source.String()
-	evt.Committer = commit.Committer
-	evt.CommitMessage = commit.Message
-	evt.Metadata = commit.Metadata
+	_ = actions.Event{
+		EventType:     actions.EventTypePreMerge,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      source.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
 	return nil
 }
