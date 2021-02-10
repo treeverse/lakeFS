@@ -85,14 +85,18 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 	defer dbPool.Close()
 
-	cataloger, err := catalog.NewCataloger(dbPool, cfg)
+	catalogCfg := catalog.Config{
+		Config: cfg,
+		DB:     dbPool,
+	}
+	cataloger, err := catalog.NewCataloger(catalogCfg)
 	if err != nil {
 		fmt.Printf("Failed to create cataloger: %s\n", err)
 		return 1
 	}
 	defer func() { _ = cataloger.Close() }()
 
-	entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
+	entryCataloger, err := catalog.NewEntryCatalog(catalogCfg)
 	if err != nil {
 		fmt.Printf("Failed to build entry catalog: %s\n", err)
 		return 1
