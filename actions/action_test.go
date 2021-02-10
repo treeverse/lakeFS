@@ -2,7 +2,7 @@ package actions_test
 
 import (
 	"errors"
-	"os"
+	"io/ioutil"
 	"path"
 	"testing"
 
@@ -23,17 +23,16 @@ func TestAction_ReadAction(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f, err := os.Open(path.Join("testdata", tt.filename))
+			data, err := ioutil.ReadFile(path.Join("testdata", tt.filename))
 			if err != nil {
 				t.Fatalf("Failed to load testdata %s, err=%s", tt.filename, err)
 			}
-			defer func() { _ = f.Close() }()
-			act, err := actions.ReadAction(f)
+			act, err := actions.ParseAction(data)
 			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("ReadAction() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseAction() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil && act == nil {
-				t.Error("ReadAction() no error, missing Action")
+				t.Error("ParseAction() no error, missing Action")
 			}
 		})
 	}

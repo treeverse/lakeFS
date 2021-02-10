@@ -3,7 +3,6 @@ package actions
 import (
 	"errors"
 	"fmt"
-	"io"
 	"path"
 	"regexp"
 
@@ -95,10 +94,10 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 	return false, nil
 }
 
-// ReadAction helper function to read, parse and validate Action from a reader
-func ReadAction(reader io.Reader) (*Action, error) {
+// ParseAction helper function to read, parse and validate Action from a reader
+func ParseAction(data []byte) (*Action, error) {
 	var act Action
-	err := yaml.NewDecoder(reader).Decode(&act)
+	err := yaml.Unmarshal(data, &act)
 	if err != nil {
 		return nil, err
 	}
