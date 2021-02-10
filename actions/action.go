@@ -1,13 +1,13 @@
-package catalog
+package actions
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"path"
 	"regexp"
-	"strings"
-	"time"
 
-	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 )
 
 type Action struct {
@@ -16,6 +16,7 @@ type Action struct {
 	On          OnEvents     `yaml:"on"`
 	Hooks       []ActionHook `yaml:"hooks"`
 }
+
 type OnEvents struct {
 	PreMerge  *ActionOn `yaml:"pre-merge"`
 	PreCommit *ActionOn `yaml:"pre-commit"`
@@ -32,31 +33,16 @@ type ActionHook struct {
 	Properties  map[string]string `yaml:"properties"`
 }
 
-type ActionCommitData struct {
-	Message   string            `json:"message"`
-	Committer string            `json:"committer"`
-	Metadata  map[string]string `json:"metadata"`
+type MatchSpec struct {
+	EventType EventType
+	Branch    string
 }
 
-type ActionEventData struct {
-	RunID        string           `json:"run_id"`
-	EventType    string           `json:"event_type"`
-	EventTime    string           `json:"event_time"`
-	ActionName   string           `json:"action_name"`
-	HookID       string           `json:"hook_id"`
-	RepositoryID string           `json:"repository_id"`
-	BranchID     string           `json:"branch_id"`
-	SourceRef    string           `json:"source_ref"`
-	Commit       ActionCommitData `json:"commit"`
-}
+var (
+	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
-const (
-	HookTypeWebhook = "webhook"
-
-	WebhookPropertyKeyURL = "url"
+	ErrInvalidAction = errors.New("invalid action")
 )
-
-var reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
 func (a *Action) Validate() error {
 	if a.Name == "" {
@@ -74,29 +60,28 @@ func (a *Action) Validate() error {
 			return fmt.Errorf("hook[%d] duplicate ID '%s': %w", i, hook.ID, ErrInvalidAction)
 		}
 		ids[hook.ID] = struct{}{}
-		if hook.Type != HookTypeWebhook {
-			return fmt.Errorf("hook[%d] '%s' unknown type: %w", i, hook.ID, ErrInvalidAction)
-		}
 	}
 	return nil
 }
 
-func (a *Action) Match(event string, branch string) (bool, error) {
+func (a *Action) Match(spec MatchSpec) (bool, error) {
+	// at least one matched event definition
 	var actionOn *ActionOn
-	switch event {
-	case ActionEventPreCommit:
+	switch spec.EventType {
+	case EventTypePreCommit:
 		actionOn = a.On.PreCommit
-	case ActionEventPreMerge:
+	case EventTypePreMerge:
 		actionOn = a.On.PreMerge
-	}
-	if actionOn == nil {
+	default:
 		return false, nil
 	}
+	// action without branches spec is matched
 	if len(actionOn.Branches) == 0 {
 		return true, nil
 	}
+	// find at least one match
 	for _, b := range actionOn.Branches {
-		matched, err := path.Match(b, branch)
+		matched, err := path.Match(b, spec.Branch)
 		if err != nil {
 			return false, err
 		}
@@ -107,14 +92,39 @@ func (a *Action) Match(event string, branch string) (bool, error) {
 	return false, nil
 }
 
-func NewActionEventData(eventType string) ActionEventData {
-	now := time.Now().UTC()
-	eventTime := now.Format(time.RFC3339)
-	uid := strings.ReplaceAll(uuid.New().String(), "-", "")
-	runID := eventTime + "_" + uid
-	return ActionEventData{
-		RunID:     runID,
-		EventType: eventType,
-		EventTime: eventTime,
+// ReadAction helper function to read, parse and validate Action from a reader
+func ReadAction(reader io.Reader) (*Action, error) {
+	var act Action
+	err := yaml.NewDecoder(reader).Decode(&act)
+	if err != nil {
+		return nil, err
 	}
+	err = act.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return &act, nil
+}
+
+type Source interface {
+	List() []string
+	Load(name string) ([]byte, error)
+}
+
+func LoadActions(source Source) ([]*Action, error) {
+	return nil, nil
+}
+
+func MatchActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
+	var matched []*Action
+	for _, act := range actions {
+		m, err := act.Match(spec)
+		if err != nil {
+			return nil, err
+		}
+		if m {
+			matched = append(matched, act)
+		}
+	}
+	return matched, nil
 }

@@ -6,6 +6,8 @@ import (
 	_ "crypto/sha256"
 	"fmt"
 
+	"github.com/treeverse/lakefs/actions"
+
 	"github.com/cockroachdb/pebble"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
@@ -18,18 +20,12 @@ import (
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/pyramid"
 	"github.com/treeverse/lakefs/pyramid/params"
-	"gopkg.in/yaml.v3"
 )
 
 // hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
 // causes all old identifiers to change, so while existing installations will continue to
 // function they will be unable to re-use any existing objects.
 const hashAlg = crypto.SHA256
-
-const (
-	ActionEventPreCommit = "pre-commit"
-	ActionEventPreMerge  = "pre-merge"
-)
 
 type Path string
 
@@ -516,90 +512,22 @@ func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.Repos
 }
 
 func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
-	const eventType = ActionEventPreCommit
-	actions, err := e.loadMatchedActions(ctx, eventType, repositoryID, branchID)
-	if err != nil || len(actions) == 0 {
-		return err
-	}
-
-	actionEventData := NewActionEventData(eventType)
-	actionEventData.RepositoryID = repositoryID.String()
-	actionEventData.BranchID = branchID.String()
-	actionEventData.Commit.Committer = commit.Committer
-	actionEventData.Commit.Message = commit.Message
-	actionEventData.Commit.Metadata = commit.Metadata
-
-	return e.runActions(ctx, repositoryID, actions, actionEventData)
+	evt := actions.NewEvent(actions.EventTypePreCommit)
+	evt.RepositoryID = repositoryID.String()
+	evt.BranchID = branchID.String()
+	evt.Committer = commit.Committer
+	evt.CommitMessage = commit.Message
+	evt.Metadata = commit.Metadata
+	return nil
 }
 
 func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
-	const eventType = ActionEventPreMerge
-	actions, err := e.loadMatchedActions(ctx, eventType, repositoryID, destination)
-	if err != nil || len(actions) == 0 {
-		return err
-	}
-
-	actionEventData := NewActionEventData(eventType)
-	actionEventData.RepositoryID = repositoryID.String()
-	actionEventData.BranchID = destination.String()
-	actionEventData.SourceRef = source.String()
-	actionEventData.Commit.Committer = commit.Committer
-	actionEventData.Commit.Message = commit.Message
-	actionEventData.Commit.Metadata = commit.Metadata
-
-	return e.runActions(ctx, repositoryID, actions, actionEventData)
-}
-
-func (e *EntryCatalog) loadMatchedActions(ctx context.Context, event string, repositoryID graveler.RepositoryID, branchID graveler.BranchID) ([]Action, error) {
-	// load actions from repository
-	actions, err := e.loadActionsFromRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	// filter matched actions
-	var matched []Action
-	for _, action := range actions {
-		m, err := action.Match(event, branchID.String())
-		if err != nil {
-			return nil, err
-		}
-		if m {
-			matched = append(matched, action)
-		}
-	}
-	return matched, nil
-}
-
-func (e *EntryCatalog) loadActionsFromRepository(_ context.Context, _ graveler.RepositoryID) ([]Action, error) {
-	// TODO(barak): load actions data from repo
-	const sample = `name: Good merge
-description: set of checks to verify that branch is good
-on:
-  pre-commit:
-    branches:
-      - master
-hooks:
-  - id: no_freeze
-    type: webhook
-    properties:
-      url: "http://localhost:8080/hook?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
-`
-	var act Action
-	if err := yaml.Unmarshal([]byte(sample), &act); err != nil {
-		return nil, err
-	}
-	if err := act.Validate(); err != nil {
-		return nil, err
-	}
-	return []Action{act}, nil
-}
-
-func (e *EntryCatalog) runActions(ctx context.Context, repositoryID graveler.RepositoryID, actions []Action, eventData ActionEventData) error {
-	repo, err := e.Store.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return fmt.Errorf("repository storage namespace: %w", err)
-	}
-	storageNamespace := repo.StorageNamespace.String()
-	runner := NewActionsRunner(e.BlockAdapter, storageNamespace, "_lakefs/actions/output", actions, eventData)
-	return runner.Run(ctx)
+	evt := actions.NewEvent(actions.EventTypePreCommit)
+	evt.RepositoryID = repositoryID.String()
+	evt.BranchID = destination.String()
+	evt.SourceRef = source.String()
+	evt.Committer = commit.Committer
+	evt.CommitMessage = commit.Message
+	evt.Metadata = commit.Metadata
+	return nil
 }
