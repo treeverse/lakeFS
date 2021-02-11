@@ -115,11 +115,6 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-type Source interface {
-	List() ([]string, error)
-	Load(name string) ([]byte, error)
-}
-
 func LoadActions(source Source) ([]*Action, error) {
 	names, err := source.List()
 	if err != nil {

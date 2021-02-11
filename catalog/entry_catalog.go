@@ -5,6 +5,9 @@ import (
 	"crypto"
 	_ "crypto/sha256"
 	"fmt"
+	"time"
+
+	"github.com/treeverse/lakefs/actions"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/treeverse/lakefs/block"
@@ -83,10 +86,14 @@ type ActionsClient interface {
 	Run(ctx context.Context, event actions.Event) error
 }
 
+type ActionsManager interface {
+	RunActions(ctx context.Context, event actions.Event) error
+}
+
 type EntryCatalog struct {
-	Actions      ActionsClient
-	BlockAdapter block.Adapter
-	Store        Store
+	ActionsManager ActionsManager
+	BlockAdapter   block.Adapter
+	Store          Store
 }
 
 const (
@@ -537,37 +544,27 @@ func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.Repos
 }
 
 func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
-	/*
-		evt := actions.Event{
-			EventType:     actions.EventTypePreCommit,
-			EventTime:     time.Now(),
-			RepositoryID:  repositoryID.String(),
-			BranchID:      branchID.String(),
-			CommitMessage: commit.Message,
-			Committer:     commit.Committer,
-			Metadata:      commit.Metadata,
-		}
-		var src actions.Source
-		var writer actions.OutputWriter
-		return actions.NewProcess(src, writer, evt).Run(ctx)
-	*/
-	return nil
+	evt := actions.Event{
+		EventType:     actions.EventTypePreCommit,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      branchID.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
+	return e.ActionsManager.RunActions(ctx, evt)
 }
 
 func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
-	/*
-		evt := actions.Event{
-			EventType:     actions.EventTypePreMerge,
-			EventTime:     time.Now(),
-			RepositoryID:  repositoryID.String(),
-			BranchID:      source.String(),
-			CommitMessage: commit.Message,
-			Committer:     commit.Committer,
-			Metadata:      commit.Metadata,
-		}
-		var src actions.Source
-		var writer actions.OutputWriter
-		return actions.NewProcess(src, writer, evt).Run(ctx)
-	*/
-	return nil
+	evt := actions.Event{
+		EventType:     actions.EventTypePreMerge,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      source.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
+	return e.ActionsManager.RunActions(ctx, evt)
 }

@@ -1,9 +1,9 @@
 package actions
 
 import (
+	"context"
+	"io"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type EventType string
@@ -13,8 +13,16 @@ const (
 	EventTypePreMerge  EventType = "pre-merge"
 )
 
+type Source interface {
+	List() ([]string, error)
+	Load(name string) ([]byte, error)
+}
+
+type OutputWriter interface {
+	OutputWrite(ctx context.Context, name string, reader io.Reader) error
+}
+
 type Event struct {
-	EventID       uuid.UUID
 	Source        Source
 	Output        OutputWriter
 	EventType     EventType
