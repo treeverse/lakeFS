@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 )
 
 type HookType string
@@ -13,12 +12,8 @@ const (
 	HookTypeWebhook HookType = "webhook"
 )
 
-type OutputWriter interface {
-	OutputWrite(ctx context.Context, name string, reader io.Reader) error
-}
-
 type Hook interface {
-	Run(ctx context.Context, runID string, event Event, writer OutputWriter) error
+	Run(ctx context.Context, event Event) error
 }
 
 type NewHookFunc func(ActionHook, *Action) (Hook, error)

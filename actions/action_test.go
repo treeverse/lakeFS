@@ -157,7 +157,7 @@ func TestAction_Match(t *testing.T) {
 	}
 }
 
-func TestMatchActions(t *testing.T) {
+func TestMatchedActions(t *testing.T) {
 	tests := []struct {
 		name    string
 		actions []*actions.Action
@@ -229,7 +229,7 @@ func TestMatchActions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := actions.MatchActions(tt.actions, tt.spec)
+			got, err := actions.MatchedActions(tt.actions, tt.spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchActions() error = %v, wantErr %v", err, tt.wantErr)
 				return

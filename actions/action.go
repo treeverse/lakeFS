@@ -113,11 +113,6 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-type Source interface {
-	List() ([]string, error)
-	Load(name string) ([]byte, error)
-}
-
 func LoadActions(source Source) ([]*Action, error) {
 	names, err := source.List()
 	if err != nil {
@@ -138,7 +133,7 @@ func LoadActions(source Source) ([]*Action, error) {
 	return actions, nil
 }
 
-func MatchActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
+func MatchedActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
 	var matched []*Action
 	for _, act := range actions {
 		m, err := act.Match(spec)

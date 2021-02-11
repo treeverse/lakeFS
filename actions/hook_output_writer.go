@@ -6,14 +6,14 @@ import (
 	"path"
 )
 
-type HookWriter struct {
+type HookOutputWriter struct {
 	RunID      string
 	ActionName string
 	HookID     string
 	Writer     OutputWriter
 }
 
-func (h *HookWriter) OutputWrite(ctx context.Context, name string, reader io.Reader) error {
+func (h *HookOutputWriter) OutputWrite(ctx context.Context, name string, reader io.Reader) error {
 	outputPath := FormatHookOutputPath(h.RunID, h.ActionName, h.HookID, name)
 	return h.Writer.OutputWrite(ctx, outputPath, reader)
 }

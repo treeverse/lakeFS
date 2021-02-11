@@ -18,7 +18,6 @@ type Webhook struct {
 }
 
 type WebhookEventInfo struct {
-	RunID         string            `json:"run_id"`
 	EventType     string            `json:"event_type"`
 	EventTime     string            `json:"event_time"`
 	ActionName    string            `json:"action_name"`
@@ -61,9 +60,9 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer OutputWriter) error {
+func (w *Webhook) Run(ctx context.Context, event Event) error {
 	// post event information as json to webhook endpoint
-	eventData, err := w.marshalEvent(runID, ed)
+	eventData, err := w.marshalEventInformation(event)
 	if err != nil {
 		return err
 	}
@@ -84,7 +83,7 @@ func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer Output
 
 	// log response body if needed
 	if resp.Body != nil && resp.ContentLength > 0 {
-		if err := writer.OutputWrite(ctx, w.ID, resp.Body); err != nil {
+		if err := event.Output.OutputWrite(ctx, w.ID, resp.Body); err != nil {
 			return err
 		}
 	}
@@ -96,10 +95,9 @@ func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer Output
 	return nil
 }
 
-func (w *Webhook) marshalEvent(runID string, ed Event) ([]byte, error) {
+func (w *Webhook) marshalEventInformation(ed Event) ([]byte, error) {
 	now := time.Now()
 	info := WebhookEventInfo{
-		RunID:         runID,
 		EventType:     string(ed.EventType),
 		EventTime:     now.UTC().Format(time.RFC3339),
 		ActionName:    w.ActionName,

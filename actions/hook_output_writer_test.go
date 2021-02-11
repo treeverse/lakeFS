@@ -3,7 +3,6 @@ package actions_test
 import (
 	"context"
 	"errors"
-	"io"
 	"strings"
 	"testing"
 
@@ -12,24 +11,15 @@ import (
 	"github.com/treeverse/lakefs/actions"
 )
 
-type MyOutputWriter struct {
-	mock.Mock
-}
-
-func (m *MyOutputWriter) OutputWrite(ctx context.Context, name string, reader io.Reader) error {
-	args := m.Mock.Called(ctx, name, reader)
-	return args.Error(0)
-}
-
 func TestHookWriter_OutputWritePath(t *testing.T) {
 	ctx := context.Background()
 	contentReader := strings.NewReader("content")
 
 	hookOutput := actions.FormatHookOutputPath("runID", "actionName", "hookID", "name1")
-	writer := &MyOutputWriter{}
+	writer := &MockOutputWriter{}
 	writer.On("OutputWrite", ctx, hookOutput, contentReader).Return(nil)
 
-	w := &actions.HookWriter{
+	w := &actions.HookOutputWriter{
 		RunID:      "runID",
 		ActionName: "actionName",
 		HookID:     "hookID",
@@ -42,10 +32,10 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 
 func TestHookWriter_OutputWriteError(t *testing.T) {
 	errSomeError := errors.New("some error")
-	writer := &MyOutputWriter{}
+	writer := &MockOutputWriter{}
 	writer.On("OutputWrite", mock.Anything, mock.Anything, mock.Anything).Return(errSomeError)
 
-	w := &actions.HookWriter{
+	w := &actions.HookOutputWriter{
 		RunID:      "runID",
 		ActionName: "actionName",
 		HookID:     "hookID",
