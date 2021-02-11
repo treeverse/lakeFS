@@ -5,16 +5,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
-
-	"github.com/treeverse/lakefs/block"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 
@@ -62,23 +57,22 @@ func defaults(u *azblob.UploadStreamToBlockBlobOptions) error {
 // well, 4 MiB or 8 MiB, and autoscale to as many goroutines within the memory limit. This gives a single dial to tweak and we can
 // choose a max value for the memory setting based on internal transfers within Azure (which will give us the maximum throughput model).
 // We can even provide a utility to dial this number in for customer networks to optimize their copies.
-func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, toIDs blockWriter, toSizes blockWriter, o azblob.UploadStreamToBlockBlobOptions) (string, error) {
+func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o azblob.UploadStreamToBlockBlobOptions) (*azblob.BlockBlobCommitBlockListResponse, error) {
 	if err := defaults(&o); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
 	cp := &copier{
-		ctx:     ctx,
-		cancel:  cancel,
-		reader:  block.NewHashingReader(from, block.HashFunctionMD5),
-		to:      to,
-		toIDs:   toIDs,
-		toSizes: toSizes,
-		id:      newID(),
-		o:       o,
-		errCh:   make(chan error, 1),
+		ctx:    ctx,
+		cancel: cancel,
+		reader: from,
+		to:     to,
+		id:     newID(),
+		o:      o,
+		errCh:  make(chan error, 1),
 	}
 
 	// Send all our chunks until we get an error.
@@ -90,35 +84,15 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, toIDs b
 	}
 	// If the error is not EOF, then we have a problem.
 	if err != nil && !errors.Is(err, io.EOF) {
-		return "", err
+		return nil, err
 	}
 
 	// Close out our upload.
 	if err := cp.close(); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// This part was added
-	// Instead of committing in close ( what is originally done in azblob/chunkwriting.go)
-	// we stage The blockIDs and size of this copy operation in the relevant blockBlobURLs ( cp.toIDs, cp.toSizes)
-	// Later on, in complete multipart upload we commit the file blockBlobURLs with etags as the blockIDs
-	// Then by reading the files we get the relevant blockIDs and sizes
-	etag := "\"" + hex.EncodeToString(cp.reader.Md5.Sum(nil)) + "\""
-	base64Etag := base64.StdEncoding.EncodeToString([]byte(etag))
-
-	// write to blockIDs
-	pd := strings.Join(cp.id.issued(), "\n") + "\n"
-	_, err = cp.toIDs.StageBlock(cp.ctx, base64Etag, strings.NewReader(pd), cp.o.AccessConditions.LeaseAccessConditions, nil, cp.o.ClientProvidedKeyOptions)
-	if err != nil {
-		return "", fmt.Errorf("failed staging part data: %w", err)
-	}
-	// write block sizes
-	sd := strconv.Itoa(int(cp.reader.CopiedSize)) + "\n"
-	_, err = cp.toSizes.StageBlock(cp.ctx, base64Etag, strings.NewReader(sd), cp.o.AccessConditions.LeaseAccessConditions, nil, cp.o.ClientProvidedKeyOptions)
-	if err != nil {
-		return "", fmt.Errorf("failed staging part data: %w", err)
-	}
-	return etag, nil
+	return cp.result, nil
 }
 
 // copier streams a file via chunks in parallel from a reader representing a file.
@@ -136,11 +110,9 @@ type copier struct {
 	id *id
 
 	// reader is the source to be written to storage.
-	reader *block.HashingReader
+	reader io.Reader
 	// to is the location we are writing our chunks to.
-	to      blockWriter
-	toIDs   blockWriter
-	toSizes blockWriter
+	to blockWriter
 
 	// errCh is used to hold the first error from our concurrent writers.
 	errCh chan error
@@ -176,8 +148,9 @@ func (c *copier) sendChunk() error {
 
 	buffer := c.o.TransferManager.Get()
 	if len(buffer) == 0 {
-		return errors.New("TransferManager returned a 0 size buffer, this is a bug in the manager")
+		return fmt.Errorf("TransferManager returned a 0 size buffer, this is a bug in the manager")
 	}
+
 	n, err := io.ReadFull(c.reader, buffer)
 	switch {
 	case err == nil && n == 0:
@@ -237,6 +210,7 @@ func (c *copier) close() error {
 	}
 
 	var err error
+	c.result, err = c.to.CommitBlockList(c.ctx, c.id.issued(), c.o.BlobHTTPHeaders, c.o.Metadata, c.o.AccessConditions, c.o.BlobAccessTier, c.o.BlobTagsMap, c.o.ClientProvidedKeyOptions)
 	return err
 }
 

@@ -308,7 +308,14 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, size int64, reader io.Read
 	blobIDsURL := a.getIDURL(containerName, objName)
 	blobSizesURL := a.getSizeURL(containerName, objName)
 
-	return copyFromReader(a.ctx, reader, blobURL, blobIDsURL, blobSizesURL, azblob.UploadStreamToBlockBlobOptions{})
+	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
+
+	multipartBlockWriter := NewMultipartBlockWriter(hashReader, blobURL, blobIDsURL, blobSizesURL)
+	_, err = copyFromReader(a.ctx, hashReader, multipartBlockWriter, azblob.UploadStreamToBlockBlobOptions{})
+	if err != nil {
+		return "", err
+	}
+	return multipartBlockWriter.etag, nil
 }
 
 func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
