@@ -15,13 +15,13 @@ class SSTableIterator(val it: SstFileReaderIterator) extends Iterator[SSTableIte
   override def hasNext: Boolean = it.isValid
 
   override def next(): SSTableItem = {
-    val inputStream = new ByteArrayInputStream(it.value)
+    val bais = new ByteArrayInputStream(it.value)
     val key = it.key()
-    val s = new DataInputStream(inputStream)
-    val identityLength = VarInt.readSignedVarLong(s)
-    val id = inputStream.readNBytes(identityLength.toInt)
-    val dataLength = VarInt.readSignedVarLong(s)
-    val data = inputStream.readNBytes(dataLength.toInt)
+    val dis = new DataInputStream(bais)
+    val identityLength = VarInt.readSignedVarLong(dis)
+    val id = dis.readNBytes(identityLength.toInt)
+    val dataLength = VarInt.readSignedVarLong(dis)
+    val data = dis.readNBytes(dataLength.toInt)
     it.next()
     new SSTableItem(key, id, data)
   }
@@ -32,7 +32,7 @@ object SSTableReader {
 }
 
 class SSTableReader() {
-  private val reader = new SstFileReader(new Options().setCompressionType(CompressionType.SNAPPY_COMPRESSION))
+  private val reader = new SstFileReader(new Options)
 
   @throws[RocksDBException]
   @throws[IOException]
