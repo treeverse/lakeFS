@@ -96,7 +96,7 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3|gs|azure|mem|local|transient)://.*$'
+        pattern: '^(s3|gs|wasb|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
