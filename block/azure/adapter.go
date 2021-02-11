@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +12,10 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
+
+	guuid "github.com/google/uuid"
 
 	"github.com/Azure/azure-pipeline-go/pipeline"
 
@@ -26,11 +30,11 @@ var (
 )
 
 const (
-	BlockstoreType          = "azure"
+	BlockstoreType          = "wasb"
 	sizeSuffix              = "_size"
 	idSuffix                = "_id"
 	_1MiB                   = 1024 * 1024
-	defaultMaxRetryRequests = 20
+	defaultMaxRetryRequests = 0
 )
 
 type Adapter struct {
@@ -132,7 +136,7 @@ func translatePutOpts(opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions 
 
 func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
-	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
+	//defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
@@ -146,8 +150,19 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 
 func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	var err error
-	defer reportMetrics("get", time.Now(), nil, &err)
+	defer reportMetrics("Get", time.Now(), nil, &err)
 
+	return a.Download(obj, 0, azblob.CountToEnd)
+}
+
+func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+	var err error
+	defer reportMetrics("GetRange", time.Now(), nil, &err)
+
+	return a.Download(obj, startPosition, endPosition-startPosition+1)
+}
+
+func (a *Adapter) Download(obj block.ObjectPointer, offset, count int64) (io.ReadCloser, error) {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
@@ -155,13 +170,14 @@ func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	blobURL := a.getBlobURL(qualifiedKey.StorageNamespace, qualifiedKey.Key)
 
 	keyOptions := azblob.ClientProvidedKeyOptions{}
-	downloadResponse, err := blobURL.Download(a.ctx, 0, azblob.CountToEnd, azblob.BlobAccessConditions{}, false, keyOptions)
+	downloadResponse, err := blobURL.Download(a.ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
+
 	if err != nil {
 		return nil, err
 	}
 	// NOTE: automatically retries are performed if the connection fails
 	bodyStream := downloadResponse.Body(a.configurations.retryReaderOptions)
-	return bodyStream, err
+	return bodyStream, nil
 }
 
 func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
@@ -209,26 +225,6 @@ func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
-	var err error
-	defer reportMetrics("GetRange", time.Now(), nil, &err)
-
-	qualifiedKey, err := resolveNamespace(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	blobURL := a.getBlobURL(qualifiedKey.StorageNamespace, qualifiedKey.Key)
-
-	downloadResponse, err := blobURL.Download(a.ctx, startPosition, endPosition-startPosition+1, azblob.BlobAccessConditions{}, false, azblob.ClientProvidedKeyOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	bodyStream := downloadResponse.Body(a.configurations.retryReaderOptions)
-	return bodyStream, err
 }
 
 func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
@@ -313,6 +309,77 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, size int64, reader io.Read
 	blobSizesURL := a.getSizeURL(containerName, objName)
 
 	return copyFromReader(a.ctx, reader, blobURL, blobIDsURL, blobSizesURL, azblob.UploadStreamToBlockBlobOptions{})
+}
+
+func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadPart", time.Now(), nil, &err)
+
+	return a.copyPartRange(sourceObj, destinationObj, 0, azblob.CountToEnd)
+}
+
+func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadPart", time.Now(), nil, &err)
+
+	return a.copyPartRange(sourceObj, destinationObj, startPosition, endPosition-startPosition+1)
+}
+
+func generateRandomBlockID() string {
+	uu := guuid.New()
+	u := [64]byte{}
+	copy(u[:], uu[:])
+	return base64.StdEncoding.EncodeToString(u[:])
+}
+
+func (a *Adapter) copyPartRange(sourceObj, destinationObj block.ObjectPointer, startPosition, count int64) (string, error) {
+	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	if err != nil {
+		return "", err
+	}
+
+	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
+	if err != nil {
+		return "", err
+	}
+
+	containerName := qualifiedDestinationKey.StorageNamespace
+	objName := qualifiedDestinationKey.Key
+
+	blobURL := a.getBlockBlobURL(containerName, objName)
+
+	sourceBlobURL := a.getBlockBlobURL(qualifiedSourceKey.StorageNamespace, qualifiedSourceKey.Key)
+
+	base64BlockID := generateRandomBlockID()
+	_, err = blobURL.StageBlockFromURL(a.ctx, base64BlockID, sourceBlobURL.URL(), startPosition, count, azblob.LeaseAccessConditions{}, azblob.ModifiedAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	// add size and id to etag
+	response, err := sourceBlobURL.GetProperties(a.ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return "", err
+	}
+	etag := "\"" + hex.EncodeToString(response.ContentMD5()) + "\""
+	size := response.ContentLength()
+	base64Etag := base64.StdEncoding.EncodeToString([]byte(etag))
+	// stage id data
+	blobIDsURL := a.getIDURL(containerName, objName)
+	_, err = blobIDsURL.StageBlock(a.ctx, base64Etag, strings.NewReader(base64BlockID+"\n"), azblob.LeaseAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed staging part data: %w", err)
+	}
+
+	// stage size data
+	sizeData := strconv.Itoa(int(size)) + "\n"
+	blobSizesURL := a.getSizeURL(containerName, objName)
+	_, err = blobSizesURL.StageBlock(a.ctx, base64Etag, strings.NewReader(sizeData), azblob.LeaseAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed staging part data: %w", err)
+	}
+
+	return etag, nil
 }
 
 func (a *Adapter) AbortMultiPartUpload(_ block.ObjectPointer, _ string) error {
