@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 
@@ -66,7 +67,7 @@ func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
 		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
+			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, azure.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
 	}
 }
 
@@ -131,7 +132,7 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Invalid credentials with error: " + err.Error())
 	}
-	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
+	p := azblob.NewPipeline(credential, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: 10 * time.Minute}})
 	a := azure.NewAdapter(p, accountName)
 
 	return a, nil
