@@ -14,7 +14,7 @@ type Manager struct {
 	DB db.Database
 }
 
-type RunnableHook struct {
+type Task struct {
 	RunID  string
 	Action *Action
 	HookID string
@@ -35,11 +35,11 @@ func (m *Manager) RunActions(ctx context.Context, event Event) error {
 	}
 	// allocate and run hooks
 	runID := NewRunID(event.EventTime)
-	runnableHooks, err := m.allocateRunnableHooks(runID, actions)
+	tasks, err := m.allocateTasks(runID, actions)
 	if err != nil {
 		return nil
 	}
-	return m.runHooks(ctx, runnableHooks, event)
+	return m.runTasks(ctx, tasks, event)
 }
 
 func (m *Manager) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, error) {
@@ -50,15 +50,15 @@ func (m *Manager) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, 
 	return MatchedActions(actions, spec)
 }
 
-func (m *Manager) allocateRunnableHooks(runID string, actions []*Action) ([]*RunnableHook, error) {
-	var runnableHooks []*RunnableHook
+func (m *Manager) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
+	var tasks []*Task
 	for _, action := range actions {
 		for _, hook := range action.Hooks {
 			h, err := NewHook(hook, action)
 			if err != nil {
 				return nil, err
 			}
-			runnableHooks = append(runnableHooks, &RunnableHook{
+			tasks = append(tasks, &Task{
 				RunID:  runID,
 				Action: action,
 				HookID: hook.ID,
@@ -66,10 +66,10 @@ func (m *Manager) allocateRunnableHooks(runID string, actions []*Action) ([]*Run
 			})
 		}
 	}
-	return runnableHooks, nil
+	return tasks, nil
 }
 
-func (m *Manager) runHooks(ctx context.Context, hooks []*RunnableHook, event Event) error {
+func (m *Manager) runTasks(ctx context.Context, hooks []*Task, event Event) error {
 	var g multierror.Group
 	for _, h := range hooks {
 		hh := h // pinning
