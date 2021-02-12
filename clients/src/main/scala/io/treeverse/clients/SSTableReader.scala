@@ -1,8 +1,8 @@
 package io.treeverse.clients
 
-import io.treeverse.clients.catalog.Entry
 import io.treeverse.clients.committed.RangeData
 import io.treeverse.clients.{Range => LakeFSRange}
+import com.google.protobuf.Message
 import org.rocksdb.{SstFileReader, _}
 
 import java.io.{ByteArrayInputStream, DataInputStream, IOException}
@@ -36,7 +36,7 @@ class SSTableReader() {
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getData[T](sstableFile: String, expectedType: String): SSTableIterator = {
+  def getData(sstableFile: String, expectedType: String): SSTableIterator = {
     reader.open(sstableFile)
     val props = reader.getTableProperties.getUserCollectedProperties
     if (expectedType != props.get("type")) {
@@ -45,19 +45,17 @@ class SSTableReader() {
     new SSTableIterator(reader.newIterator(new ReadOptions))
   }
 
-  @throws[RocksDBException]
-  @throws[IOException]
-  def getRanges(sstableFile: String): Seq[LakeFSRange] = {
-    getData(sstableFile, "metaranges")
-      .map(tableItem => new LakeFSRange(tableItem.key, tableItem.id, RangeData.parseFrom(tableItem.data)))
-      .toSeq
-  }
+  def make[Proto <: Message](item: SSTableItem, messagePrototype: Proto): EntryRecord[Proto] =
+    new EntryRecord[Proto](
+      item.key,
+      item.id,
+      messagePrototype.getParserForType().parseFrom(item.data).asInstanceOf[Proto],
+    )
 
   @throws[RocksDBException]
   @throws[IOException]
-  def getEntries(sstableFile: String): Seq[EntryRecord] = {
-    getData(sstableFile, "ranges")
-      .map(tableItem => new EntryRecord(tableItem.key, tableItem.id, Entry.parseFrom(tableItem.data)))
+  def get[Proto <: Message](sstableFile: String, messagePrototype: Proto): Seq[EntryRecord[Proto]] = getData(sstableFile, "metaranges")
+      .map(make(_, messagePrototype))
+        // TODO(yoni): Lazy read.
       .toSeq
-  }
 }
