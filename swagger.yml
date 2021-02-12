@@ -1300,7 +1300,7 @@ paths:
     put:
       tags:
         - refs
-      operationId: refsDump
+      operationId: dump
       summary: Dump repository refs (tags, commits, branches) to object store
       responses:
         201:
@@ -1331,7 +1331,7 @@ paths:
     put:
       tags:
         - refs
-      operationId: refsRestore
+      operationId: restore
       summary: Restore repository refs (tags, commits, branches) from object store
       parameters:
         - in: body

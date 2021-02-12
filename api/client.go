@@ -729,7 +729,7 @@ func (c *client) DeleteObject(ctx context.Context, repository, branchID, path st
 }
 
 func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsDump, error) {
-	resp, err := c.remote.Refs.RefsDump(&refs.RefsDumpParams{
+	resp, err := c.remote.Refs.Dump(&refs.DumpParams{
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)
@@ -740,7 +740,7 @@ func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsD
 }
 
 func (c *client) RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error {
-	_, err := c.remote.Refs.RefsRestore(&refs.RefsRestoreParams{
+	_, err := c.remote.Refs.Restore(&refs.RestoreParams{
 		Manifest:   manifest,
 		Repository: repository,
 		Context:    ctx,
