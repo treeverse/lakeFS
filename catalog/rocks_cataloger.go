@@ -56,10 +56,10 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 }
 
 // CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
-func (c *cataloger) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
+func (c *cataloger) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
-	branchID := graveler.BranchID(branch)
+	branchID := graveler.BranchID(defaultBranchID)
 	repo, err := c.EntryCatalog.CreateBareRepository(ctx, repositoryID, storageNS, branchID)
 	if err != nil {
 		return nil, err

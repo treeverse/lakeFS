@@ -50,7 +50,8 @@ type Cataloger interface {
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 
 	// CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
-	CreateBareRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
+	// defaultBranchID will point to a non-existent branch on creation, it is up to the caller to eventually create it.
+	CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error)
 
 	// GetRepository get repository information
 	GetRepository(ctx context.Context, repository string) (*Repository, error)

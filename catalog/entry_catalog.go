@@ -192,14 +192,14 @@ func (e *EntryCatalog) CreateRepository(ctx context.Context, repositoryID gravel
 	return e.Store.CreateRepository(ctx, repositoryID, storageNamespace, branchID)
 }
 
-func (e *EntryCatalog) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
+func (e *EntryCatalog) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, defaultBranchID graveler.BranchID) (*graveler.Repository, error) {
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
 		{"storageNamespace", storageNamespace, ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
 	}
-	return e.Store.CreateBareRepository(ctx, repositoryID, storageNamespace, branchID)
+	return e.Store.CreateBareRepository(ctx, repositoryID, storageNamespace, defaultBranchID)
 }
 
 func (e *EntryCatalog) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {

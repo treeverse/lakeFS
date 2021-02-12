@@ -233,7 +233,7 @@ type VersionController interface {
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
 
 	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
-	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error)
 
 	// ListRepositories returns iterator to scan repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -634,11 +634,11 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 	return &repo, nil
 }
 
-func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error) {
+func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error) {
 	repo := Repository{
 		StorageNamespace: storageNamespace,
 		CreationDate:     time.Now(),
-		DefaultBranchID:  branchID,
+		DefaultBranchID:  defaultBranchID,
 	}
 	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {

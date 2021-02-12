@@ -2430,7 +2430,7 @@ func (c *Controller) RefsRestoreHandler() refs.RestoreHandler {
 		// ensure no refs currently found
 		_, _, err = deps.Cataloger.ListCommits(deps.ctx, repo.Name, repo.DefaultBranch, "", 1)
 		if !errors.Is(err, graveler.ErrNotFound) {
-			return refs.NewRestoreDefault(http.StatusInternalServerError).
+			return refs.NewRestoreBadRequest().
 				WithPayload(responseError("restoring refs is supported only for bare repositories"))
 		}
 
