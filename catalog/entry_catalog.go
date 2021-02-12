@@ -79,6 +79,7 @@ type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
 	graveler.Dumper
+	graveler.Loader
 }
 
 type EntryCatalog struct {
@@ -189,6 +190,16 @@ func (e *EntryCatalog) CreateRepository(ctx context.Context, repositoryID gravel
 		return nil, err
 	}
 	return e.Store.CreateRepository(ctx, repositoryID, storageNamespace, branchID)
+}
+
+func (e *EntryCatalog) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"storageNamespace", storageNamespace, ValidateStorageNamespace},
+	}); err != nil {
+		return nil, err
+	}
+	return e.Store.CreateBareRepository(ctx, repositoryID, storageNamespace, branchID)
 }
 
 func (e *EntryCatalog) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
@@ -520,6 +531,18 @@ func (e *EntryCatalog) DumpBranches(ctx context.Context, repositoryID graveler.R
 
 func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
 	return e.Store.DumpTags(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) LoadCommits(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	return e.Store.LoadCommits(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) LoadBranches(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	return e.Store.LoadBranches(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }
 
 func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {

@@ -57,6 +57,7 @@ type RepositoryClient interface {
 	ListRepositories(ctx context.Context, after string, amount int) ([]*models.Repository, *models.Pagination, error)
 	GetRepository(ctx context.Context, repository string) (*models.Repository, error)
 	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
+	CreateBareRepository(ctx context.Context, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repository string) error
 
 	ListBranches(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
@@ -89,6 +90,7 @@ type RepositoryClient interface {
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
 
 	RefsDump(ctx context.Context, repository string) (*models.RefsDump, error)
+	RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error
 }
 
 type Client interface {
@@ -439,6 +441,15 @@ func (c *client) CreateRepository(ctx context.Context, repository *models.Reposi
 	return err
 }
 
+func (c *client) CreateBareRepository(ctx context.Context, repository *models.RepositoryCreation) error {
+	_, err := c.remote.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
+		Bare:       swag.Bool(true),
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	return err
+}
+
 func (c *client) DeleteRepository(ctx context.Context, repository string) error {
 	_, err := c.remote.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 		Repository: repository,
@@ -726,6 +737,15 @@ func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsD
 		return nil, err
 	}
 	return resp.GetPayload(), nil
+}
+
+func (c *client) RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error {
+	_, err := c.remote.Refs.RefsRestore(&refs.RefsRestoreParams{
+		Manifest:   manifest,
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	return err
 }
 
 func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error) {

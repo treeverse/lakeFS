@@ -49,6 +49,9 @@ type Cataloger interface {
 	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 
+	// CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
+	CreateBareRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
+
 	// GetRepository get repository information
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
 
@@ -100,6 +103,9 @@ type Cataloger interface {
 	DumpCommits(ctx context.Context, repositoryID string) (string, error)
 	DumpBranches(ctx context.Context, repositoryID string) (string, error)
 	DumpTags(ctx context.Context, repositoryID string) (string, error)
+	LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error
+	LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error
+	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
 	io.Closer
 }

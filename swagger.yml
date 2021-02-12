@@ -1225,6 +1225,11 @@ paths:
           name: repository
           schema:
             $ref: "#/definitions/repository_creation"
+        - in: query
+          name: bare
+          type: boolean
+          default: false
+          description: If true, create a bare repository with no initial commit and branch
       responses:
         201:
           description: repository
@@ -1303,6 +1308,39 @@ paths:
           schema:
             type: object
             $ref: "#/definitions/refs_dump"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+  /repositories/{repository}/refs/restore:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - refs
+      operationId: refsRestore
+      summary: Restore repository refs (tags, commits, branches) from object store
+      parameters:
+        - in: body
+          name: manifest
+          schema:
+            $ref: "#/definitions/refs_dump"
+      responses:
+        200:
+          description: refs successfully loaded
         400:
           description: validation error
           schema:
