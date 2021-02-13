@@ -1,5 +1,5 @@
 package io.treeverse.clients
 
-import io.treeverse.clients.catalog.Entry
+import com.google.protobuf.Message
 
-class EntryRecord(val key: Array[Byte], val identity: Array[Byte], val entry: Entry)
+class EntryRecord[Proto <: Message](val key: Array[Byte], val identity: Array[Byte], val value: Proto)
