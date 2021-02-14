@@ -18,6 +18,8 @@ services:
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
       - LAKEFS_CATALOGER_TYPE
+      - LAKEFS_AZURE_STORAGE_ACCOUNT
+      - LAKEFS_AZURE_STORAGE_ACCESS_KEY
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"
