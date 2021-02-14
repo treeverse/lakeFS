@@ -100,9 +100,8 @@ type Client interface {
 }
 
 type client struct {
-	remote    *genclient.Lakefs
-	transport *httptransport.Runtime
-	auth      runtime.ClientAuthInfoWriter
+	remote *genclient.Lakefs
+	auth   runtime.ClientAuthInfoWriter
 }
 
 func (c *client) GetCurrentUser(ctx context.Context) (*models.User, error) {
@@ -750,11 +749,21 @@ func (c *client) RefsRestore(ctx context.Context, repository string, manifest *m
 	return err
 }
 
-type ClientOption func(*client)
+type ClientOption func(config *ClientConfig)
 
-func MaxIdleConnsPerHost(maxIdleConnsPerHost int) ClientOption {
-	return func(c *client) {
-		c.transport.Transport.(*http.Transport).MaxIdleConnsPerHost = maxIdleConnsPerHost
+type ClientConfig struct {
+	client *http.Client
+}
+
+func defaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		client: http.DefaultClient,
+	}
+}
+
+func WithHTTPClient(client *http.Client) ClientOption {
+	return func(config *ClientConfig) {
+		config.client = client
 	}
 }
 
@@ -766,15 +775,19 @@ func NewClient(endpointURL, accessKeyID, secretAccessKey string, opts ...ClientO
 	if len(parsedURL.Path) == 0 {
 		parsedURL.Path = path.Join(parsedURL.Path, genclient.DefaultBasePath)
 	}
-	transport := httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme})
-	transport.Transport.(*http.Transport).MaxIdleConnsPerHost = 100 // make this configurable?
-	c := &client{
-		transport: transport,
-		remote:    genclient.New(transport, strfmt.Default),
-		auth:      httptransport.BasicAuth(accessKeyID, secretAccessKey),
-	}
+
+	cfg := defaultClientConfig()
 	for _, opt := range opts {
-		opt(c)
+		opt(cfg)
 	}
-	return c, nil
+
+	return &client{
+		remote: genclient.New(httptransport.NewWithClient(
+			parsedURL.Host,
+			parsedURL.Path,
+			[]string{parsedURL.Scheme},
+			cfg.client,
+		), strfmt.Default),
+		auth: httptransport.BasicAuth(accessKeyID, secretAccessKey),
+	}, nil
 }

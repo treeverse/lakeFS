@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -60,11 +61,18 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 }
 
 func getClient() api.Client {
+	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
+	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
+	// only to be immediately repoened.
+	// see: https://stackoverflow.com/a/39834253
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
+
 	client, err := api.NewClient(
 		viper.GetString(ConfigServerEndpointURL),
 		viper.GetString(ConfigAccessKeyID),
 		viper.GetString(ConfigSecretAccessKey),
-		api.MaxIdleConnsPerHost(DefaultMaxIdleConnsPerHost),
+		api.WithHTTPClient(&http.Client{Transport: transport}),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
