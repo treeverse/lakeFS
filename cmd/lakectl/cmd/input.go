@@ -1,6 +1,11 @@
 package cmd
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/pflag"
 )
@@ -30,4 +35,17 @@ func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+// GetReader returns a reader from the given path. If path is "-", it'll return Stdin
+func GetReader(path string) io.ReadCloser {
+	if strings.EqualFold(path, "-") {
+		// upload from stdin
+		return ioutil.NopCloser(os.Stdin)
+	}
+	fp, err := os.Open(path)
+	if err != nil {
+		DieErr(err)
+	}
+	return fp
 }
