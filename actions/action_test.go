@@ -184,9 +184,9 @@ func TestLoadActions(t *testing.T) {
 			name: "load fails",
 			configureSource: func(ctrl *gomock.Controller) actions.Source {
 				source := mock.NewMockSource(ctrl)
-				path := "one-path"
-				source.EXPECT().List().Return([]string{path}, nil)
-				source.EXPECT().Load(gomock.Eq(path)).Return(nil, errors.New("failed"))
+				ref := actions.FileRef{Path: "one-path", Address: "one-addr"}
+				source.EXPECT().List().Return([]actions.FileRef{ref}, nil)
+				source.EXPECT().Load(gomock.Eq(ref)).Return(nil, errors.New("failed"))
 				return source
 			},
 			want:    nil,
@@ -196,10 +196,10 @@ func TestLoadActions(t *testing.T) {
 			name: "first load fails, second succeed",
 			configureSource: func(ctrl *gomock.Controller) actions.Source {
 				source := mock.NewMockSource(ctrl)
-				path1 := "1path"
-				path2 := "2path"
-				source.EXPECT().List().Return([]string{path1, path2}, nil)
-				source.EXPECT().Load(gomock.Eq(path1)).Return(yaml.Marshal(actions.Action{
+				ref1 := actions.FileRef{Path: "path_1", Address: "addr_1"}
+				ref2 := actions.FileRef{Path: "path_2", Address: "addr_2"}
+				source.EXPECT().List().Return([]actions.FileRef{ref1, ref2}, nil)
+				source.EXPECT().Load(gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
 					On: actions.OnEvents{
 						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
@@ -211,7 +211,7 @@ func TestLoadActions(t *testing.T) {
 						},
 					},
 				}))
-				source.EXPECT().Load(gomock.Eq(path2)).Return(nil, errors.New("failed"))
+				source.EXPECT().Load(gomock.Eq(ref2)).Return(nil, errors.New("failed"))
 				return source
 			},
 			want:    nil,
@@ -221,9 +221,9 @@ func TestLoadActions(t *testing.T) {
 			name: "load success",
 			configureSource: func(ctrl *gomock.Controller) actions.Source {
 				source := mock.NewMockSource(ctrl)
-				path1 := "1path"
-				source.EXPECT().List().Return([]string{path1}, nil)
-				source.EXPECT().Load(gomock.Eq(path1)).Return(yaml.Marshal(actions.Action{
+				ref1 := actions.FileRef{Path: "path_1", Address: "addr_1"}
+				source.EXPECT().List().Return([]actions.FileRef{ref1}, nil)
+				source.EXPECT().Load(gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
 					On: actions.OnEvents{
 						PreCommit: &actions.ActionOn{Branches: []string{"master"}},

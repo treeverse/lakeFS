@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/treeverse/lakefs/actions"
+
 	"github.com/treeverse/lakefs/graveler"
 
 	"github.com/treeverse/lakefs/block"
@@ -21,16 +23,19 @@ type actionsSource struct {
 
 const actionsPrefix = "_lakefs_actions/"
 
-func (as *actionsSource) List(ctx context.Context) ([]string, error) {
+func (as *actionsSource) List(ctx context.Context) ([]actions.FileRef, error) {
 	it, err := as.catalog.ListEntries(ctx, as.repositoryID, as.ref, actionsPrefix, DefaultPathDelimiter)
 	if err != nil {
 		return nil, fmt.Errorf("listing actions: %w", err)
 	}
 	defer it.Close()
 
-	var addresses []string
+	var addresses []actions.FileRef
 	for it.Next() {
-		addresses = append(addresses, it.Value().Entry.Address)
+		addresses = append(addresses, actions.FileRef{
+			Path:    it.Value().Path.String(),
+			Address: it.Value().Entry.Address,
+		})
 	}
 	if it.Err() != nil {
 		return nil, fmt.Errorf("entries iterator: %w", it.Err())
@@ -39,13 +44,13 @@ func (as *actionsSource) List(ctx context.Context) ([]string, error) {
 	return addresses, nil
 }
 
-func (as *actionsSource) Load(address string) ([]byte, error) {
+func (as *actionsSource) Load(fileRef actions.FileRef) ([]byte, error) {
 	reader, err := as.adapter.Get(block.ObjectPointer{
 		StorageNamespace: as.repository.StorageNamespace.String(),
-		Identifier:       address,
+		Identifier:       fileRef.Address,
 	}, 0)
 	if err != nil {
-		return nil, fmt.Errorf("getting action file: %w", err)
+		return nil, fmt.Errorf("getting action file %s: %w", fileRef.Path, err)
 	}
 
 	bytes, err := ioutil.ReadAll(reader)

@@ -117,13 +117,13 @@ func ParseAction(data []byte) (*Action, error) {
 func LoadActions(source Source) ([]*Action, error) {
 	hooksAddresses, err := source.List()
 	if err != nil {
-		return nil, fmt.Errorf("reading actions fir commit: %w", err)
+		return nil, fmt.Errorf("list actions from commit: %w", err)
 	}
 
 	actions := make([]*Action, len(hooksAddresses))
 	var errGroup multierror.Group
 	for i := range hooksAddresses {
-		// localization of loop vars
+		// pin i for embedded func
 		ii := i
 		errGroup.Go(func() error {
 			addr := hooksAddresses[ii]

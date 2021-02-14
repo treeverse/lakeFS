@@ -25,10 +25,15 @@ type Hook interface {
 	Run(ctx context.Context, runID string, event Event, writer OutputWriter) error
 }
 
+type FileRef struct {
+	Path    string
+	Address string
+}
+
 // Source is an abstraction for reading actions from the storage
 type Source interface {
-	List() ([]string, error)
-	Load(name string) ([]byte, error)
+	List() ([]FileRef, error)
+	Load(file FileRef) ([]byte, error)
 }
 
 type NewHookFunc func(*Action, ActionHook) (Hook, error)
@@ -42,7 +47,7 @@ var ErrUnknownHookType = errors.New("unknown hook type")
 func NewHook(a *Action, ah ActionHook) (Hook, error) {
 	f := hooks[HookType(ah.Type)]
 	if f == nil {
-		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, ah)
+		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, ah.Type)
 	}
 	return f(a, ah)
 }
