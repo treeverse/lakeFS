@@ -42,6 +42,16 @@ func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.Repos
 	return repository.(*graveler.Repository), nil
 }
 
+func createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+	_, err := tx.Exec(
+		`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
+		repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
+	if errors.Is(err, db.ErrAlreadyExists) {
+		return graveler.ErrNotUnique
+	}
+	return nil
+}
+
 func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
 	firstCommit := graveler.Commit{
 		Message:      graveler.FirstCommitMsg,
@@ -50,15 +60,13 @@ func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.Re
 	commitID := m.addressProvider.ContentAddress(firstCommit)
 
 	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(
-			`INSERT INTO graveler_repositories (id, storage_namespace, creation_date, default_branch) VALUES ($1, $2, $3, $4)`,
-			repositoryID, repository.StorageNamespace, repository.CreationDate, repository.DefaultBranchID)
-		if errors.Is(err, db.ErrAlreadyExists) {
-			return nil, graveler.ErrNotUnique
-		}
+		// create an bare repository first
+		err := createBareRepository(tx, repositoryID, repository)
 		if err != nil {
 			return nil, err
 		}
+
+		// Create the default branch with its staging token
 		_, err = tx.Exec(`
 				INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 				VALUES ($1, $2, $3, $4)`,
@@ -67,7 +75,15 @@ func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.Re
 			return nil, err
 		}
 
+		// Add a first empty commit to allow branching off the default branch immediately after repository creation
 		return nil, m.addCommit(tx, repositoryID, commitID, firstCommit)
+	}, db.WithContext(ctx))
+	return err
+}
+
+func (m *Manager) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, createBareRepository(tx, repositoryID, repository)
 	}, db.WithContext(ctx))
 	return err
 }

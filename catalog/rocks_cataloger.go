@@ -55,6 +55,24 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 	return catalogRepo, nil
 }
 
+// CreateBareRepository creates a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
+func (c *cataloger) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	storageNS := graveler.StorageNamespace(storageNamespace)
+	branchID := graveler.BranchID(defaultBranchID)
+	repo, err := c.EntryCatalog.CreateBareRepository(ctx, repositoryID, storageNS, branchID)
+	if err != nil {
+		return nil, err
+	}
+	catalogRepo := &Repository{
+		Name:             repositoryID.String(),
+		StorageNamespace: storageNS.String(),
+		DefaultBranch:    branchID.String(),
+		CreationDate:     repo.CreationDate,
+	}
+	return catalogRepo, nil
+}
+
 // GetRepository get repository information
 func (c *cataloger) GetRepository(ctx context.Context, repository string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
@@ -649,6 +667,18 @@ func (c *cataloger) DumpTags(ctx context.Context, repositoryID string) (string, 
 		return "", err
 	}
 	return string(*metaRangeID), nil
+}
+
+func (c *cataloger) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
+	return c.EntryCatalog.LoadCommits(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(commitsMetaRangeID))
+}
+
+func (c *cataloger) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
+	return c.EntryCatalog.LoadBranches(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(branchesMetaRangeID))
+}
+
+func (c *cataloger) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
+	return c.EntryCatalog.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
 }
 
 func (c *cataloger) Close() error {
