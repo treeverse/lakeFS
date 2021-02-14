@@ -49,8 +49,8 @@ hooks:
 		Metadata:      map[string]string{"key": "value"},
 	}
 	ctx := context.Background()
-	actionsManager := actions.NewManager(nil)
-	err := actionsManager.RunActions(ctx, evt)
+	actionsManager := actions.New(nil)
+	err := actionsManager.Run(ctx, evt)
 	require.NoError(t, err)
 	testSource.AssertExpectations(t)
 	testOutputWriter.AssertExpectations(t)

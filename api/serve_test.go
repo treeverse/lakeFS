@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/actions"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/go-openapi/swag"
@@ -75,11 +77,12 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		blockstoreType = mem.BlockstoreType
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
+	actionsClient := actions.New(conn)
 	cfg := config.NewConfig()
 	cfg.Override(func(configurator config.Configurator) {
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
-	cataloger, err := catalog.NewCataloger(conn, cfg)
+	cataloger, err := catalog.NewCataloger(conn, actionsClient, cfg)
 	testutil.MustDo(t, "build cataloger", err)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{

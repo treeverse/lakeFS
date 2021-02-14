@@ -11,6 +11,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
@@ -84,15 +85,16 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	logger := logging.FromContext(ctx)
 	dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 	defer dbPool.Close()
+	actionsClient := actions.New(dbPool)
 
-	cataloger, err := catalog.NewCataloger(dbPool, cfg)
+	cataloger, err := catalog.NewCataloger(dbPool, actionsClient, cfg)
 	if err != nil {
 		fmt.Printf("Failed to create cataloger: %s\n", err)
 		return 1
 	}
 	defer func() { _ = cataloger.Close() }()
 
-	entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
+	entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool, actionsClient)
 	if err != nil {
 		fmt.Printf("Failed to build entry catalog: %s\n", err)
 		return 1

@@ -28,14 +28,14 @@ const (
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
-func NewCataloger(db db.Database, cfg *config.Config) (Cataloger, error) {
-	entryCatalog, err := NewEntryCatalog(cfg, db)
+func NewCataloger(db db.Database, actionsClient ActionsClient, cfg *config.Config) (Cataloger, error) {
+	entryCatalog, err := NewEntryCatalog(cfg, db, actionsClient)
 	if err != nil {
 		return nil, err
 	}
 	return &cataloger{
 		EntryCatalog: entryCatalog,
-		log:          logging.Default(),
+		log:          logging.Default().WithField("service_name", "entry_catalog"),
 	}, nil
 }
 

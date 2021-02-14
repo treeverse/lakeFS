@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-type Manager struct {
+type Actions struct {
 	DB db.Database
 }
 
@@ -21,13 +21,13 @@ type Task struct {
 	Hook   Hook
 }
 
-func NewManager(db db.Database) *Manager {
-	return &Manager{
+func New(db db.Database) *Actions {
+	return &Actions{
 		DB: db,
 	}
 }
 
-func (m *Manager) RunActions(ctx context.Context, event Event) error {
+func (m *Actions) Run(ctx context.Context, event Event) error {
 	// load relevant actions
 	actions, err := m.loadMatchedActions(event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
@@ -42,7 +42,10 @@ func (m *Manager) RunActions(ctx context.Context, event Event) error {
 	return m.runTasks(ctx, tasks, event)
 }
 
-func (m *Manager) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, error) {
+func (m *Actions) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, error) {
+	if source == nil {
+		return nil, nil
+	}
 	actions, err := LoadActions(source)
 	if err != nil {
 		return nil, err
@@ -50,7 +53,7 @@ func (m *Manager) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, 
 	return MatchedActions(actions, spec)
 }
 
-func (m *Manager) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
+func (m *Actions) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
 	var tasks []*Task
 	for _, action := range actions {
 		for _, hook := range action.Hooks {
@@ -69,7 +72,7 @@ func (m *Manager) allocateTasks(runID string, actions []*Action) ([]*Task, error
 	return tasks, nil
 }
 
-func (m *Manager) runTasks(ctx context.Context, hooks []*Task, event Event) error {
+func (m *Actions) runTasks(ctx context.Context, hooks []*Task, event Event) error {
 	var g multierror.Group
 	for _, h := range hooks {
 		hh := h // pinning

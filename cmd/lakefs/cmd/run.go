@@ -16,6 +16,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
@@ -65,8 +66,9 @@ var runCmd = &cobra.Command{
 
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
+		actionsClient := actions.New(dbPool)
 
-		cataloger, err := catalog.NewCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(dbPool, actionsClient, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
 		}

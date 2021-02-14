@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -23,7 +24,8 @@ var diagnoseCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-		cataloger, err := catalog.NewCataloger(dbPool, cfg)
+		actionsClient := actions.New(dbPool)
+		cataloger, err := catalog.NewCataloger(dbPool, actionsClient, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create cataloger")
 		}
