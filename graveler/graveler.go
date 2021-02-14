@@ -317,7 +317,7 @@ type VersionController interface {
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
 
-	// SetHooksHandler setup handler for all graveler hooks
+	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
 }
 
@@ -599,6 +599,7 @@ func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, s
 		StagingManager:   stagingManager,
 		RefManager:       refManager,
 		branchLocker:     branchLocker,
+		hooks:            &HooksNoOp{},
 		log:              logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }

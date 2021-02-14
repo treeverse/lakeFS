@@ -15,7 +15,6 @@ import (
 	nanoid "github.com/matoous/go-nanoid"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/config"
@@ -58,10 +57,9 @@ var entryCmd = &cobra.Command{
 
 		conf := config.NewConfig()
 		c, err := catalog.NewCataloger(catalog.Config{
-			Config:  conf,
-			DB:      database,
-			LockDB:  lockDB,
-			Actions: actions.New(database),
+			Config: conf,
+			DB:     database,
+			LockDB: lockDB,
 		})
 		if err != nil {
 			fmt.Printf("Cannot create cataloger: %s\n", err)
