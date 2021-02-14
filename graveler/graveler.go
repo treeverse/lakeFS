@@ -317,7 +317,7 @@ type VersionController interface {
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
 
-	// SetHooksHandler setup handler for all graveler hooks
+	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
 }
 
