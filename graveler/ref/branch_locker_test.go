@@ -179,3 +179,29 @@ func TestBranchLock(t *testing.T) {
 		}
 	})
 }
+
+// TestBranchLockPanic panic during metadata updater, checks that MetadataUpdater releases the lock
+// calling the method twice will locked in case of an error
+func TestBranchLockPanic(t *testing.T) {
+	conn, _ := tu.GetDB(t, databaseURI)
+	bl := ref.NewBranchLocker(conn)
+	panicOnMetadataUpdate(bl)
+	panicOnMetadataUpdate(bl)
+}
+
+func panicOnMetadataUpdate(bl *ref.BranchLocker) {
+	chDone := make(chan struct{})
+	go func() {
+		// ignore panics and release the function call
+		defer func() {
+			recover()
+			close(chDone)
+		}()
+		ctx := context.Background()
+		_, _ = bl.MetadataUpdater(ctx, "branch-locker", testutil.DefaultBranchID, func() (interface{}, error) {
+			panic("metadata updater")
+			return nil, nil
+		})
+	}()
+	<-chDone
+}

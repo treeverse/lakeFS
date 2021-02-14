@@ -162,6 +162,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	}
 	var attempt int
 	var ret interface{}
+	var err error
 	var tx pgx.Tx
 	defer func() {
 		if p := recover(); p != nil && tx != nil {
@@ -180,7 +181,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			time.Sleep(duration)
 		}
 
-		tx, err := d.db.BeginTx(options.ctx, pgx.TxOptions{
+		tx, err = d.db.BeginTx(options.ctx, pgx.TxOptions{
 			IsoLevel:   options.isolationLevel,
 			AccessMode: options.accessMode,
 		})
