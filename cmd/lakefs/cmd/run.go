@@ -63,10 +63,17 @@ var runCmd = &cobra.Command{
 		dbPool := db.BuildDatabaseConnection(dbParams)
 		defer dbPool.Close()
 
+		lockdbPool := db.BuildDatabaseConnection(dbParams)
+		defer lockdbPool.Close()
+
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger, err := catalog.NewCataloger(dbPool, cfg)
+		cataloger, err := catalog.NewCataloger(catalog.Config{
+			Config: cfg,
+			DB:     dbPool,
+			LockDB: lockdbPool,
+		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
 		}
@@ -85,7 +92,7 @@ var runCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(logger, cfg, authMetadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 
 		// send metadata
@@ -104,13 +111,14 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.Serve(api.Dependencies{
-			Cataloger:       cataloger,
-			Auth:            authService,
-			BlockAdapter:    blockStore,
-			MetadataManager: authMetadataManager,
-			Migrator:        migrator,
-			Collector:       bufferedCollector,
-			Logger:          logger.WithField("service", "api_gateway"),
+			Cataloger:             cataloger,
+			Auth:                  authService,
+			BlockAdapter:          blockStore,
+			MetadataManager:       authMetadataManager,
+			CloudMetadataProvider: cloudMetadataProvider,
+			Migrator:              migrator,
+			Collector:             bufferedCollector,
+			Logger:                logger.WithField("service", "api_gateway"),
 		})
 
 		// init gateway server

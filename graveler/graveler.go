@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Basic Types
@@ -105,9 +108,9 @@ func (v *ValueRecord) IsTombstone() bool {
 	return v.Value == nil
 }
 
-func (ps CommitParents) Identity() []byte {
-	commits := make([]string, len(ps))
-	for i, v := range ps {
+func (cp CommitParents) Identity() []byte {
+	commits := make([]string, len(cp))
+	for i, v := range cp {
 		commits[i] = string(v)
 	}
 	buf := ident.NewAddressWriter()
@@ -115,14 +118,25 @@ func (ps CommitParents) Identity() []byte {
 	return buf.Identity()
 }
 
-func (ps CommitParents) Contains(commitID CommitID) bool {
-	for _, c := range ps {
+func (cp CommitParents) Contains(commitID CommitID) bool {
+	for _, c := range cp {
 		if c == commitID {
 			return true
 		}
 	}
 	return false
 }
+
+func (cp CommitParents) AsStringSlice() []string {
+	stringSlice := make([]string, len(cp))
+	for i, p := range cp {
+		stringSlice[i] = string(p)
+	}
+	return stringSlice
+}
+
+// FirstCommitMsg is the message of the first (zero) commit of a lakeFS repository
+const FirstCommitMsg = "Repository created"
 
 // Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
@@ -193,7 +207,9 @@ type CommitParams struct {
 	Metadata  Metadata
 }
 
-// Interfaces
+type PreCommitFunc func(ctx context.Context, repositoryID RepositoryID, branch BranchID, commit Commit) error
+type PreMergeFunc func(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error
+
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -300,6 +316,29 @@ type VersionController interface {
 	// Compare returns the difference between the commit where 'to' was last synced into 'from', and the most recent commit of `from`.
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
+
+	// PreCommitHook get current pre-commit hook function
+	PreCommitHook() PreCommitFunc
+
+	// SetPreCommitHook set pre-commit hook function
+	SetPreCommitHook(fn PreCommitFunc)
+
+	// PreMergeHook get pre-merge hook function
+	PreMergeHook() PreMergeFunc
+
+	// SetPreMergeHook set pre-merge hook function
+	SetPreMergeHook(fn PreMergeFunc)
+}
+
+type Dumper interface {
+	// DumpCommits iterates through all commits and dumps them in Graveler format
+	DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
+
+	// DumpBranches iterates through all branches and dumps them in Graveler format
+	DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
+
+	// DumpTags iterates through all branches and dumps them in Graveler format
+	DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
 }
 
 // Internal structures used by Graveler
@@ -376,7 +415,7 @@ type RefManager interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*Repository, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, branch Branch) error
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, token StagingToken) error
 
 	// ListRepositories lists repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -424,6 +463,9 @@ type RefManager interface {
 
 	// Log returns an iterator starting at commit ID up to repository root
 	Log(ctx context.Context, repositoryID RepositoryID, commitID CommitID) (CommitIterator, error)
+
+	// ListCommits returns an iterator over all known commits, ordered by their commit ID
+	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -436,7 +478,7 @@ type CommittedManager interface {
 	Exists(ctx context.Context, ns StorageNamespace, id MetaRangeID) (bool, error)
 
 	// WriteMetaRange flushes the iterator to a new MetaRange and returns the created ID.
-	WriteMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*MetaRangeID, error)
+	WriteMetaRange(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
@@ -542,6 +584,8 @@ type Graveler struct {
 	StagingManager   StagingManager
 	RefManager       RefManager
 	branchLocker     BranchLocker
+	preCommitFn      PreCommitFunc
+	preMergeFn       PreMergeFunc
 	log              logging.Logger
 }
 
@@ -565,10 +609,8 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 		CreationDate:     time.Now(),
 		DefaultBranchID:  branchID,
 	}
-	branch := Branch{
-		StagingToken: generateStagingToken(repositoryID, branchID),
-	}
-	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, branch)
+	stagingToken := generateStagingToken(repositoryID, branchID)
+	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
 	if err != nil {
 		return nil, err
 	}
@@ -584,7 +626,7 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repositoryID RepositoryID
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, it)
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace, it, nil)
 }
 
 func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
@@ -866,6 +908,23 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
+
+		// fill commit information - use for pre-commit and after adding the commit information used by commit
+		commit := Commit{
+			Committer:    params.Committer,
+			Message:      params.Message,
+			CreationDate: time.Now(),
+			Metadata:     params.Metadata,
+		}
+		if branch.CommitID != "" {
+			commit.Parents = CommitParents{branch.CommitID}
+		}
+
+		err = g.callPreCommitHooks(ctx, repositoryID, branchID, commit)
+		if err != nil {
+			return "", fmt.Errorf("pre-commit hooks: %w", err)
+		}
+
 		var branchMetaRangeID MetaRangeID
 		if branch.CommitID != "" {
 			commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
@@ -874,28 +933,18 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			}
 			branchMetaRangeID = commit.MetaRangeID
 		}
-
 		changes, err := g.StagingManager.List(ctx, branch.StagingToken)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
 		}
-		metaRangeID, _, err := g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
+		defer changes.Close()
+
+		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
 		if err != nil {
 			return "", fmt.Errorf("commit: %w", err)
 		}
 
-		// fill and add commit
-		commit := Commit{
-			Committer:    params.Committer,
-			Message:      params.Message,
-			MetaRangeID:  metaRangeID,
-			CreationDate: time.Now(),
-			Metadata:     params.Metadata,
-		}
-		if branch.CommitID != "" {
-			commit.Parents = CommitParents{branch.CommitID}
-		}
-
+		// add commit
 		newCommit, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
@@ -1217,10 +1266,14 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		commit := Commit{
 			Committer:    commitParams.Committer,
 			Message:      commitParams.Message,
-			MetaRangeID:  metaRangeID,
 			CreationDate: time.Now(),
+			MetaRangeID:  metaRangeID,
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
+		}
+		err = g.callPreMergeHook(ctx, repositoryID, destination, fromCommit.CommitID.Ref(), commit)
+		if err != nil {
+			return "", err
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
@@ -1309,6 +1362,22 @@ func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from,
 	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
+func (g *Graveler) PreCommitHook() PreCommitFunc {
+	return g.preCommitFn
+}
+
+func (g *Graveler) SetPreCommitHook(fn PreCommitFunc) {
+	g.preCommitFn = fn
+}
+
+func (g *Graveler) PreMergeHook() PreMergeFunc {
+	return g.preMergeFn
+}
+
+func (g *Graveler) SetPreMergeHook(fn PreMergeFunc) {
+	g.preMergeFn = fn
+}
+
 func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
 	fromCommit, err := g.getCommitRecordFromRef(ctx, repositoryID, from)
 	if err != nil {
@@ -1326,4 +1395,313 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID Reposito
 		return nil, nil, nil, ErrNoMergeBase
 	}
 	return fromCommit, toCommit, baseCommit, nil
+}
+
+func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	iter, err := g.RefManager.ListCommits(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&CommitData{})
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
+		commitsToValueIterator(iter),
+		Metadata{
+			EntityTypeKey:             EntityTypeCommit,
+			EntitySchemaKey:           EntitySchemaCommit,
+			EntitySchemaDefinitionKey: schema,
+		},
+	)
+}
+
+func (g *Graveler) DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	iter, err := g.RefManager.ListBranches(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&BranchData{})
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
+		branchesToValueIterator(iter),
+		Metadata{
+			EntityTypeKey:             EntityTypeBranch,
+			EntitySchemaKey:           EntitySchemaBranch,
+			EntitySchemaDefinitionKey: schema,
+		},
+	)
+}
+
+func (g *Graveler) DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	iter, err := g.RefManager.ListTags(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+	schema, err := serializeSchemaDefinition(&TagData{})
+	if err != nil {
+		return nil, err
+	}
+	return g.CommittedManager.WriteMetaRange(ctx, repo.StorageNamespace,
+		tagsToValueIterator(iter),
+		Metadata{
+			EntityTypeKey:             EntityTypeTag,
+			EntitySchemaKey:           EntitySchemaTag,
+			EntitySchemaDefinitionKey: schema,
+		},
+	)
+}
+
+func tagsToValueIterator(src TagIterator) ValueIterator {
+	return &tagValueIterator{
+		src: src,
+	}
+}
+
+type tagValueIterator struct {
+	src   TagIterator
+	value *ValueRecord
+	err   error
+}
+
+func (t *tagValueIterator) Next() bool {
+	if t.err != nil {
+		return false
+	}
+	return t.setValue()
+}
+
+func (t *tagValueIterator) setValue() bool {
+	if !t.src.Next() {
+		return false
+	}
+	tag := t.src.Value()
+	data, err := proto.Marshal(&TagData{
+		Id:       string(tag.TagID),
+		CommitId: string(tag.CommitID),
+	})
+	if err != nil {
+		t.err = err
+		return false
+	}
+	t.value = &ValueRecord{
+		Key: Key(tag.TagID),
+		Value: &Value{
+			Identity: []byte(tag.CommitID),
+			Data:     data,
+		},
+	}
+	return true
+}
+
+func (t *tagValueIterator) SeekGE(id Key) {
+	t.err = nil
+	t.value = nil
+	t.src.SeekGE(TagID(id))
+}
+
+func (t *tagValueIterator) Value() *ValueRecord {
+	return t.value
+}
+
+func (t *tagValueIterator) Err() error {
+	if t.err != nil {
+		return t.err
+	}
+	return t.src.Err()
+}
+
+func (t *tagValueIterator) Close() {
+	t.src.Close()
+}
+
+func branchesToValueIterator(src BranchIterator) ValueIterator {
+	return &branchValueIterator{
+		src: src,
+	}
+}
+
+type branchValueIterator struct {
+	src   BranchIterator
+	value *ValueRecord
+	err   error
+}
+
+func (b *branchValueIterator) Next() bool {
+	if b.err != nil {
+		return false
+	}
+	return b.setValue()
+}
+
+func (b *branchValueIterator) setValue() bool {
+	if !b.src.Next() {
+		return false
+	}
+	branch := b.src.Value()
+	data, err := proto.Marshal(&BranchData{
+		Id:       string(branch.BranchID),
+		CommitId: string(branch.CommitID),
+	})
+	if err != nil {
+		b.err = err
+		return false
+	}
+	b.value = &ValueRecord{
+		Key: Key(branch.BranchID),
+		Value: &Value{
+			Identity: []byte(branch.CommitID),
+			Data:     data,
+		},
+	}
+	return true
+}
+
+func (b *branchValueIterator) SeekGE(id Key) {
+	b.err = nil
+	b.value = nil
+	b.src.SeekGE(BranchID(id))
+}
+
+func (b *branchValueIterator) Value() *ValueRecord {
+	return b.value
+}
+
+func (b *branchValueIterator) Err() error {
+	if b.err != nil {
+		return b.err
+	}
+	return b.src.Err()
+}
+
+func (b *branchValueIterator) Close() {
+	b.src.Close()
+}
+
+func commitsToValueIterator(src CommitIterator) ValueIterator {
+	return &commitValueIterator{
+		src: src,
+	}
+}
+
+type commitValueIterator struct {
+	src   CommitIterator
+	value *ValueRecord
+	err   error
+}
+
+func (c *commitValueIterator) Next() bool {
+	if c.err != nil {
+		return false
+	}
+	return c.setValue()
+}
+
+func (c *commitValueIterator) setValue() bool {
+	if !c.src.Next() {
+		return false
+	}
+	commit := c.src.Value()
+	data, err := proto.Marshal(&CommitData{
+		Id:           string(commit.CommitID),
+		Committer:    commit.Committer,
+		Message:      commit.Message,
+		CreationDate: timestamppb.New(commit.CreationDate),
+		MetaRangeId:  string(commit.MetaRangeID),
+		Metadata:     commit.Metadata,
+		Parents:      commit.Parents.AsStringSlice(),
+	})
+	if err != nil {
+		c.err = err
+		return false
+	}
+	c.value = &ValueRecord{
+		Key: Key(commit.CommitID),
+		Value: &Value{
+			Identity: []byte(commit.CommitID),
+			Data:     data,
+		},
+	}
+	return true
+}
+
+func (c *commitValueIterator) SeekGE(id Key) {
+	c.err = nil
+	c.value = nil
+	c.src.SeekGE(CommitID(id))
+}
+
+func (c *commitValueIterator) Value() *ValueRecord {
+	return c.value
+}
+
+func (c *commitValueIterator) Err() error {
+	if c.err != nil {
+		return c.err
+	}
+	return c.src.Err()
+}
+
+func (c *commitValueIterator) Close() {
+	c.src.Close()
+}
+
+func newErrAbortedByHook(err error) error {
+	if err == nil {
+		return ErrAbortedByHook
+	}
+	merr := multierror.Append(ErrAbortedByHook, err)
+	merr.ErrorFormat = func(errs []error) string {
+		const minErrorLen = 2
+		if len(errs) < minErrorLen {
+			return multierror.ListFormatFunc(errs)
+		}
+		var details string
+		if len(errs) == minErrorLen {
+			details = errs[1].Error()
+		} else {
+			details = multierror.ListFormatFunc(errs[1:])
+		}
+		return errs[0].Error() + ": " + details
+	}
+	return merr
+}
+
+func (g *Graveler) callPreCommitHooks(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) error {
+	if g.preCommitFn == nil {
+		return nil
+	}
+	err := g.preCommitFn(ctx, repositoryID, branchID, commit)
+	if err != nil {
+		return newErrAbortedByHook(err)
+	}
+	return nil
+}
+
+func (g *Graveler) callPreMergeHook(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error {
+	if g.preMergeFn == nil {
+		return nil
+	}
+	err := g.preMergeFn(ctx, repositoryID, destination, source, commit)
+	if err != nil {
+		return newErrAbortedByHook(err)
+	}
+	return nil
 }

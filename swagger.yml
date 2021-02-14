@@ -232,6 +232,16 @@ definitions:
       ref:
         type: string
 
+  refs_dump:
+    type: object
+    properties:
+      commits_meta_range_id:
+        type: string
+      tags_meta_range_id:
+        type: string
+      branches_meta_range_id:
+        type: string
+
   error:
     type: object
     properties:
@@ -1276,6 +1286,37 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/refs/dump:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - refs
+      operationId: refsDump
+      summary: Dump repository refs (tags, commits, branches) to object store
+      responses:
+        201:
+          description: refs dump
+          schema:
+            type: object
+            $ref: "#/definitions/refs_dump"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
   /repositories/{repository}/tags:
     parameters:
       - in: path

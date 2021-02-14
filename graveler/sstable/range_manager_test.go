@@ -102,7 +102,7 @@ func TestGetWriterSuccess(t *testing.T) {
 	mockFile := fsMock.NewMockStoredFile(ctrl)
 	mockFS.EXPECT().Create(ctx, ns).Return(mockFile, nil).Times(1)
 
-	writer, err := sut.GetWriter(ctx, committed.Namespace(ns))
+	writer, err := sut.GetWriter(ctx, committed.Namespace(ns), nil)
 	require.NoError(t, err)
 	require.NotNil(t, writer)
 
@@ -162,7 +162,7 @@ func TestGetWriterRangeID(t *testing.T) {
 		mockFile.EXPECT().Store(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		mockFS.EXPECT().Create(ctx, ns).Return(mockFile, nil).Times(1)
 
-		writer, err := sut.GetWriter(ctx, ns)
+		writer, err := sut.GetWriter(ctx, ns, nil)
 		require.NoError(t, err)
 		require.NotNil(t, writer)
 		err = writer.WriteRecord(committed.Record{

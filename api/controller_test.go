@@ -29,6 +29,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -232,7 +233,9 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
-		const expectedCommits = commitsLen
+
+		// repo is created with a commit
+		const expectedCommits = commitsLen + 1
 		commitsLog := resp.GetPayload().Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
@@ -1428,6 +1431,20 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				}
 				if len(deps.collector.metadata[0].Entries) < 5 {
 					t.Fatalf("There should be at least 5 metadata entries: %s", deps.collector.metadata[0].Entries)
+				}
+
+				hasBlockStoreType := false
+				for _, ent := range deps.collector.metadata[0].Entries {
+					if ent.Name == stats.BlockstoreTypeKey {
+						hasBlockStoreType = true
+						if ent.Value == "" {
+							t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.metadata[0].Entries)
+						}
+						break
+					}
+				}
+				if !hasBlockStoreType {
+					t.Fatalf("missing blockstorage key: %s", deps.collector.metadata[0].Entries)
 				}
 			})
 

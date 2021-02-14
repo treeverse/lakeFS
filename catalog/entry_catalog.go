@@ -5,8 +5,12 @@ import (
 	"crypto"
 	_ "crypto/sha256"
 	"fmt"
+	"time"
+
+	"github.com/treeverse/lakefs/actions"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -74,10 +78,12 @@ func (id Path) String() string {
 type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
+	graveler.Dumper
 }
 
 type EntryCatalog struct {
-	Store Store
+	BlockAdapter block.Adapter
+	Store        Store
 }
 
 const (
@@ -85,8 +91,18 @@ const (
 	MetaRangeFSName = "meta-range"
 )
 
-func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) {
-	tierFSParams, err := cfg.GetCommittedTierFSParams()
+type Config struct {
+	Config *config.Config
+	DB     db.Database
+	LockDB db.Database
+}
+
+func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
+	if cfg.LockDB == nil {
+		cfg.LockDB = cfg.DB
+	}
+
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams()
 	if err != nil {
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
@@ -114,7 +130,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		*cfg.GetCommittedParams(),
+		*cfg.Config.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,
 		sstableManager,
@@ -124,12 +140,17 @@ func NewEntryCatalog(cfg *config.Config, db db.Database) (*EntryCatalog, error) 
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
-	stagingManager := staging.NewManager(db)
-	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
-	branchLocker := ref.NewBranchLocker(db)
-	return &EntryCatalog{
-		Store: graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager),
-	}, nil
+	stagingManager := staging.NewManager(cfg.DB)
+	refManager := ref.NewPGRefManager(cfg.DB, ident.NewHexAddressProvider())
+	branchLocker := ref.NewBranchLocker(cfg.LockDB)
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+	entryCatalog := &EntryCatalog{
+		BlockAdapter: tierFSParams.Adapter,
+		Store:        store,
+	}
+	store.SetPreCommitHook(entryCatalog.preCommitHook)
+	store.SetPreMergeHook(entryCatalog.preMergeHook)
+	return entryCatalog, nil
 }
 
 func (e *EntryCatalog) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
@@ -487,4 +508,42 @@ func (e *EntryCatalog) ListEntries(ctx context.Context, repositoryID graveler.Re
 	}
 	it := NewValueToEntryIterator(iter)
 	return NewEntryListingIterator(it, prefix, delimiter), nil
+}
+
+func (e *EntryCatalog) DumpCommits(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	return e.Store.DumpCommits(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) DumpBranches(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	return e.Store.DumpBranches(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
+	return e.Store.DumpTags(ctx, repositoryID)
+}
+
+func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
+	_ = actions.Event{
+		EventType:     actions.EventTypePreCommit,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      branchID.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
+	return nil
+}
+
+func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+	_ = actions.Event{
+		EventType:     actions.EventTypePreMerge,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryID.String(),
+		BranchID:      source.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
+	return nil
 }

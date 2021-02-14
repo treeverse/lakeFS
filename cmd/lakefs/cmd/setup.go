@@ -54,7 +54,7 @@ var setupCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		metadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(logging.Default(), cfg, metadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(logging.Default(), cfg.GetBlockstoreType(), metadataManager, cloudMetadataProvider)
 
 		credentials, err := auth.CreateInitialAdminUserWithKeys(authService, metadataManager, userName, &accessKeyID, &secretAccessKey)
 		if err != nil {

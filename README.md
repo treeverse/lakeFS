@@ -104,6 +104,7 @@ Stay up to date and get lakeFS support via:
 
 - [lakeFS documentation](https://docs.lakefs.io)
 - If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
+- [Roadmap](https://docs.lakefs.io/roadmap.html)
 
 ## Licensing
 

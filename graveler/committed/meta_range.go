@@ -33,7 +33,7 @@ type MetaRangeManager interface {
 	GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewRangeWriter returns a writer that is used for creating new MetaRanges
-	NewWriter(ctx context.Context, ns graveler.StorageNamespace) MetaRangeWriter
+	NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter
 
 	// NewMetaRangeIterator returns an Iterator over the MetaRange with id.
 	NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)

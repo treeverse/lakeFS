@@ -7,6 +7,8 @@ import (
 	"hash"
 	"strconv"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/ident"
 
@@ -34,13 +36,16 @@ type DiskWriter struct {
 	closed bool
 }
 
-func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash) (*DiskWriter, error) {
+func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, metadata graveler.Metadata) (*DiskWriter, error) {
 	fh, err := tierFS.Create(ctx, string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
 
 	props := make(map[string]string)
+	for k, v := range metadata {
+		props[k] = v
+	}
 
 	writer := sstable.NewWriter(fh, sstable.WriterOptions{
 		Compression:             sstable.SnappyCompression,
@@ -59,7 +64,7 @@ func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespac
 
 // AddMetadata associates metadata value (which will be stringified) with key.
 // Keys and values are also calculated as part of the resulting range ID
-func (dw *DiskWriter) AddMetadata(key, value string) {
+func (dw *DiskWriter) SetMetadata(key, value string) {
 	dw.props[key] = value
 }
 
@@ -134,10 +139,10 @@ func (dw *DiskWriter) Close() (*committed.WriteResult, error) {
 	// Prepare metadata properties for Close to write.  The map was already set in the
 	// sstable.Writer constructor and cannot be changed, but we can replace its values
 	// before writing it out.
-	dw.AddMetadata(MetadataFirstKey, string(dw.first))
-	dw.AddMetadata(MetadataLastKey, string(dw.last))
-	dw.AddMetadata(MetadataNumRecordsKey, fmt.Sprint(dw.count))
-	dw.AddMetadata(MetadataEstimatedSizeKey, fmt.Sprint(dw.w.EstimatedSize()))
+	dw.SetMetadata(MetadataFirstKey, string(dw.first))
+	dw.SetMetadata(MetadataLastKey, string(dw.last))
+	dw.SetMetadata(MetadataNumRecordsKey, fmt.Sprint(dw.count))
+	dw.SetMetadata(MetadataEstimatedSizeKey, fmt.Sprint(dw.w.EstimatedSize()))
 
 	if err := dw.w.Close(); err != nil {
 		return nil, fmt.Errorf("sstable close (%s): %w", sstableID, err)

@@ -19,7 +19,7 @@ func TestBranchIterator(t *testing.T) {
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
-	}, graveler.Branch{}))
+	}, ""))
 
 	// prepare data
 	for _, b := range branches {

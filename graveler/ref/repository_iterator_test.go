@@ -21,7 +21,7 @@ func TestRepositoryIterator(t *testing.T) {
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "master",
-		}, graveler.Branch{}))
+		}, ""))
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {

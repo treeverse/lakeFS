@@ -25,10 +25,11 @@ type RepoActions interface {
 type CatalogRepoActions struct {
 	committer string
 
-	repoID         graveler.RepositoryID
-	logger         logging.Logger
-	entryCataloger entryCataloger
-	prefixes       []string
+	defaultBranchID graveler.BranchID
+	repoID          graveler.RepositoryID
+	logger          logging.Logger
+	entryCataloger  entryCataloger
+	prefixes        []string
 
 	createdMetaRangeID *graveler.MetaRangeID
 	previousCommitID   graveler.CommitID
@@ -53,15 +54,16 @@ type entryCataloger interface {
 	CreateBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error)
 }
 
-func NewCatalogRepoActions(eCataloger entryCataloger, repository graveler.RepositoryID, committer string, logger logging.Logger, prefixes []string) *CatalogRepoActions {
+func NewCatalogRepoActions(config *Config, logger logging.Logger) *CatalogRepoActions {
 	return &CatalogRepoActions{
-		entryCataloger: eCataloger,
-		repoID:         repository,
-		committer:      committer,
-		logger:         logger,
-		prefixes:       prefixes,
-		progress:       cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
-		commit:         cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
+		entryCataloger:  config.EntryCatalog,
+		repoID:          config.RepositoryID,
+		defaultBranchID: config.DefaultBranchID,
+		committer:       config.CommitUsername,
+		logger:          logger,
+		prefixes:        config.KeyPrefixes,
+		progress:        cmdutils.NewActiveProgress("Objects imported", cmdutils.Spinner),
+		commit:          cmdutils.NewActiveProgress("Commit progress", cmdutils.Spinner),
 	}
 }
 
@@ -112,18 +114,16 @@ func (c *CatalogRepoActions) Init(ctx context.Context, baseCommit graveler.Commi
 }
 
 func (c *CatalogRepoActions) initBranch(ctx context.Context) error {
-	c.branchID = catalog.DefaultImportBranchName
-	branch, err := c.entryCataloger.GetBranch(ctx, c.repoID, catalog.DefaultImportBranchName)
-	if errors.Is(err, graveler.ErrBranchNotFound) {
-		// first import, let's create the branch
-		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, catalog.DefaultImportBranchName, catalog.DefaultBranchName)
-		if errors.Is(err, graveler.ErrCreateBranchNoCommit) {
-			// no commits in repo, merge to master
-			c.branchID = catalog.DefaultBranchName
-			return nil
+	c.branchID = DefaultImportBranchName
+	branch, err := c.entryCataloger.GetBranch(ctx, c.repoID, DefaultImportBranchName)
+	if err != nil {
+		if !errors.Is(err, graveler.ErrBranchNotFound) {
+			return err
 		}
+		// first import, let's create the branch
+		branch, err = c.entryCataloger.CreateBranch(ctx, c.repoID, DefaultImportBranchName, graveler.Ref(c.defaultBranchID))
 		if err != nil {
-			return fmt.Errorf("creating default branch %s: %w", catalog.DefaultImportBranchName, err)
+			return fmt.Errorf("creating default branch %s: %w", DefaultImportBranchName, err)
 		}
 	}
 

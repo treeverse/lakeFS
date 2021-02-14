@@ -81,8 +81,8 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 	}, nil
 }
 
-func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace) MetaRangeWriter {
-	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, Namespace(ns))
+func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
+	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, Namespace(ns), metadata)
 }
 
 func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
