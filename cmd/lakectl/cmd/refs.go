@@ -24,8 +24,12 @@ var refsRestoreSuccess = `
 `
 
 var refsRestoreCmd = &cobra.Command{
-	Use:     "refs-restore <repository uri>",
-	Short:   "restores refs (branches, commits, tags) from the underlying object store to a bare repository",
+	Use:   "refs-restore <repository uri>",
+	Short: "restores refs (branches, commits, tags) from the underlying object store to a bare repository",
+	Long: `restores refs (branches, commits, tags) from the underlying object store to a bare repository.
+
+This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
+Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.`,
 	Example: "aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -",
 	Hidden:  true,
 	Args: cmdutils.ValidationChain(

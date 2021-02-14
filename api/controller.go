@@ -2431,7 +2431,7 @@ func (c *Controller) RefsRestoreHandler() refs.RestoreHandler {
 		_, _, err = deps.Cataloger.ListCommits(deps.ctx, repo.Name, repo.DefaultBranch, "", 1)
 		if !errors.Is(err, graveler.ErrNotFound) {
 			return refs.NewRestoreBadRequest().
-				WithPayload(responseError("restoring refs is supported only for bare repositories"))
+				WithPayload(responseError("can only restore into a bare repository"))
 		}
 
 		// load commits
