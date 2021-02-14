@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
+	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
+	"github.com/treeverse/lakefs/actions/mock"
 )
 
 func TestManager_RunActions(t *testing.T) {
@@ -19,13 +19,16 @@ func TestManager_RunActions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	ctx := context.Background()
-	testOutputWriter := &MockOutputWriter{}
-	testOutputWriter.On("OutputWrite", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	testSource := &MockSource{}
-	testSource.On("List", ctx).Return([]actions.FileRef{{Path: "act.yaml", Address: "act.addr"}}, nil)
-	testSource.On("Load", ctx, actions.FileRef{Path: "act.yaml", Address: "act.addr"}).Return([]byte(`
+	ctx := context.Background()
+	testOutputWriter := mock.NewMockOutputWriter(ctrl)
+	testOutputWriter.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+	testSource := mock.NewMockSource(ctrl)
+	testSource.EXPECT().List(gomock.Any()).Return([]actions.FileRef{{Path: "act.yaml", Address: "act.addr"}}, nil)
+	testSource.EXPECT().Load(gomock.Any(), actions.FileRef{Path: "act.yaml", Address: "act.addr"}).Return([]byte(`
 name: test action
 on:
   pre-commit: {}
@@ -51,7 +54,7 @@ hooks:
 	}
 	actionsManager := actions.New(nil)
 	err := actionsManager.Run(ctx, evt)
-	require.NoError(t, err)
-	testSource.AssertExpectations(t)
-	testOutputWriter.AssertExpectations(t)
+	if err != nil {
+		t.Fatalf("Run() failed with err=%s", err)
+	}
 }

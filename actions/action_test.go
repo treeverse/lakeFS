@@ -162,7 +162,7 @@ func TestAction_Match(t *testing.T) {
 	}
 }
 
-func TestMatchedActions(t *testing.T) {
+func TestLoadActions(t *testing.T) {
 	tests := []struct {
 		name            string
 		configureSource func(*gomock.Controller) actions.Source
@@ -277,90 +277,6 @@ func TestMatchedActions(t *testing.T) {
 			}
 			if diff := deep.Equal(res, tt.want); diff != nil {
 				t.Error("LoadActions() found diff", diff)
-			}
-		})
-	}
-}
-
-func TestMatchActions(t *testing.T) {
-	tests := []struct {
-		name    string
-		actions []*actions.Action
-		spec    actions.MatchSpec
-		want    []*actions.Action
-		wantErr bool
-	}{
-		{
-			name:    "empty",
-			actions: nil,
-			spec:    actions.MatchSpec{},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "all",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreCommit,
-			},
-			want: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-			},
-			wantErr: false,
-		},
-		{
-			name: "none",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreMerge,
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "one",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreMerge,
-			},
-			want: []*actions.Action{
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
-			},
-			wantErr: false,
-		},
-		{
-			name: "invalid",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{Branches: []string{"\\"}}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreMerge,
-				Branch:    "main",
-			},
-			want:    nil,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := actions.MatchedActions(tt.actions, tt.spec)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MatchActions() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if diff := deep.Equal(got, tt.want); diff != nil {
-				t.Error("MatchActions() found diff", diff)
 			}
 		})
 	}

@@ -6,18 +6,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
+	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
+	"github.com/treeverse/lakefs/actions/mock"
 )
 
 func TestHookWriter_OutputWritePath(t *testing.T) {
 	ctx := context.Background()
 	contentReader := strings.NewReader("content")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	hookOutput := actions.FormatHookOutputPath("runID", "actionName", "hookID", "name1")
-	writer := &MockOutputWriter{}
-	writer.On("OutputWrite", ctx, hookOutput, contentReader).Return(nil)
+	writer := mock.NewMockOutputWriter(ctrl)
+	writer.EXPECT().OutputWrite(ctx, hookOutput, contentReader).Return(nil)
 
 	w := &actions.HookOutputWriter{
 		RunID:      "runID",
@@ -26,14 +28,18 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 		Writer:     writer,
 	}
 	err := w.OutputWrite(ctx, "name1", contentReader)
-	require.NoError(t, err)
-	writer.AssertExpectations(t)
+	if err != nil {
+		t.Fatalf("OutputWrite failed with err=%s", err)
+	}
 }
 
 func TestHookWriter_OutputWriteError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	errSomeError := errors.New("some error")
-	writer := &MockOutputWriter{}
-	writer.On("OutputWrite", mock.Anything, mock.Anything, mock.Anything).Return(errSomeError)
+	writer := mock.NewMockOutputWriter(ctrl)
+	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
 
 	w := &actions.HookOutputWriter{
 		RunID:      "runID",
@@ -44,6 +50,7 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	ctx := context.Background()
 	contentReader := strings.NewReader("content")
 	err := w.OutputWrite(ctx, "name1", contentReader)
-	require.True(t, errors.Is(err, errSomeError))
-	writer.AssertExpectations(t)
+	if !errors.Is(err, errSomeError) {
+		t.Fatalf("OutputWrite() err=%v expected=%v", err, errSomeError)
+	}
 }
