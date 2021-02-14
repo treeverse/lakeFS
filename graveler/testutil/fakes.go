@@ -191,6 +191,10 @@ type RefsFake struct {
 	Commits             map[graveler.CommitID]*graveler.Commit
 }
 
+func (m *RefsFake) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) error {
+	panic("implement me")
+}
+
 func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.CommitIterator, error) {
 	return nil, nil
 }
