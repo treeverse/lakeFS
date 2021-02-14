@@ -752,9 +752,9 @@ func (c *client) RefsRestore(ctx context.Context, repository string, manifest *m
 
 type ClientOption func(*client)
 
-func MaxIdleConnsPerHost(maxIdelConnsPerHost int) ClientOption {
+func MaxIdleConnsPerHost(maxIdleConnsPerHost int) ClientOption {
 	return func(c *client) {
-		c.transport.Transport.(*http.Transport).MaxIdleConnsPerHost = maxIdelConnsPerHost
+		c.transport.Transport.(*http.Transport).MaxIdleConnsPerHost = maxIdleConnsPerHost
 	}
 }
 
