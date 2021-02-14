@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
 
@@ -97,8 +98,9 @@ type Client interface {
 }
 
 type client struct {
-	remote *genclient.Lakefs
-	auth   runtime.ClientAuthInfoWriter
+	remote    *genclient.Lakefs
+	transport *httptransport.Runtime
+	auth      runtime.ClientAuthInfoWriter
 }
 
 func (c *client) GetCurrentUser(ctx context.Context) (*models.User, error) {
@@ -728,7 +730,15 @@ func (c *client) RefsDump(ctx context.Context, repository string) (*models.RefsD
 	return resp.GetPayload(), nil
 }
 
-func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error) {
+type ClientOption func(*client)
+
+func MaxIdleConnsPerHost(maxIdelConnsPerHost int) ClientOption {
+	return func(c *client) {
+		c.transport.Transport.(*http.Transport).MaxIdleConnsPerHost = maxIdelConnsPerHost
+	}
+}
+
+func NewClient(endpointURL, accessKeyID, secretAccessKey string, opts ...ClientOption) (Client, error) {
 	parsedURL, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
@@ -736,8 +746,15 @@ func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error)
 	if len(parsedURL.Path) == 0 {
 		parsedURL.Path = path.Join(parsedURL.Path, genclient.DefaultBasePath)
 	}
-	return &client{
-		remote: genclient.New(httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme}), strfmt.Default),
-		auth:   httptransport.BasicAuth(accessKeyID, secretAccessKey),
-	}, nil
+	transport := httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme})
+	transport.Transport.(*http.Transport).MaxIdleConnsPerHost = 100 // make this configurable?
+	c := &client{
+		transport: transport,
+		remote:    genclient.New(transport, strfmt.Default),
+		auth:      httptransport.BasicAuth(accessKeyID, secretAccessKey),
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c, nil
 }

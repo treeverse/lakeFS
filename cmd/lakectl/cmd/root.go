@@ -20,6 +20,8 @@ const (
 	ConfigSecretAccessKey    = "credentials.secret_access_key"
 	ConfigServerEndpointURL  = "server.endpoint_url"
 	DefaultServerEndpointURL = "http://127.0.0.1:8000"
+
+	DefaultMaxIdleConnsPerHost = 100
 )
 
 var (
@@ -62,6 +64,7 @@ func getClient() api.Client {
 		viper.GetString(ConfigServerEndpointURL),
 		viper.GetString(ConfigAccessKeyID),
 		viper.GetString(ConfigSecretAccessKey),
+		api.MaxIdleConnsPerHost(DefaultMaxIdleConnsPerHost),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
