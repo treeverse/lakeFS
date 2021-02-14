@@ -232,6 +232,9 @@ type VersionController interface {
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*Repository, error)
 
+	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error)
+
 	// ListRepositories returns iterator to scan repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
@@ -337,8 +340,19 @@ type Dumper interface {
 	// DumpBranches iterates through all branches and dumps them in Graveler format
 	DumpBranches(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
 
-	// DumpTags iterates through all branches and dumps them in Graveler format
+	// DumpTags iterates through all tags and dumps them in Graveler format
 	DumpTags(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
+}
+
+type Loader interface {
+	// DumpCommits iterates through all commits in Graveler format and loads them into repositoryID
+	LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
+
+	// DumpBranches iterates through all branches in Graveler format and loads them into repositoryID
+	LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
+
+	// DumpTags iterates through all tags in Graveler format and loads them into repositoryID
+	LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 }
 
 // Internal structures used by Graveler
@@ -416,6 +430,9 @@ type RefManager interface {
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository, token StagingToken) error
+
+	// CreateBareRepository stores a new repository under RepositoryID without creating an initial commit and branch
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) error
 
 	// ListRepositories lists repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -611,6 +628,19 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 	}
 	stagingToken := generateStagingToken(repositoryID, branchID)
 	err := g.RefManager.CreateRepository(ctx, repositoryID, repo, stagingToken)
+	if err != nil {
+		return nil, err
+	}
+	return &repo, nil
+}
+
+func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*Repository, error) {
+	repo := Repository{
+		StorageNamespace: storageNamespace,
+		CreationDate:     time.Now(),
+		DefaultBranchID:  defaultBranchID,
+	}
+	err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -1395,6 +1425,110 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID Reposito
 		return nil, nil, nil, ErrNoMergeBase
 	}
 	return fromCommit, toCommit, baseCommit, nil
+}
+
+func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	for iter.Next() {
+		rawValue := iter.Value()
+		commit := &CommitData{}
+		err := proto.Unmarshal(rawValue.Data, commit)
+		if err != nil {
+			return err
+		}
+		parents := make(CommitParents, len(commit.GetParents()))
+		for i, p := range commit.GetParents() {
+			parents[i] = CommitID(p)
+		}
+		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+			Committer:    commit.GetCommitter(),
+			Message:      commit.GetMessage(),
+			MetaRangeID:  MetaRangeID(commit.GetMetaRangeId()),
+			CreationDate: commit.GetCreationDate().AsTime(),
+			Parents:      parents,
+			Metadata:     commit.GetMetadata(),
+		})
+		if err != nil {
+			return err
+		}
+		// integrity check that we get for free!
+		if commitID != CommitID(commit.Id) {
+			return fmt.Errorf("commit ID does not match for %s: %w", commitID, ErrInvalidCommitID)
+		}
+	}
+	if iter.Err() != nil {
+		return iter.Err()
+	}
+	return nil
+}
+
+func (g *Graveler) LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	for iter.Next() {
+		rawValue := iter.Value()
+		branch := &BranchData{}
+		err := proto.Unmarshal(rawValue.Data, branch)
+		if err != nil {
+			return err
+		}
+		branchID := BranchID(branch.Id)
+		err = g.RefManager.SetBranch(ctx, repositoryID, branchID, Branch{
+			CommitID:     CommitID(branch.CommitId),
+			StagingToken: generateStagingToken(repositoryID, branchID),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	if iter.Err() != nil {
+		return iter.Err()
+	}
+	return nil
+}
+
+func (g *Graveler) LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
+	repo, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	iter, err := g.CommittedManager.List(ctx, repo.StorageNamespace, metaRangeID)
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	for iter.Next() {
+		rawValue := iter.Value()
+		tag := &TagData{}
+		err := proto.Unmarshal(rawValue.Data, tag)
+		if err != nil {
+			return err
+		}
+		tagID := TagID(tag.Id)
+		err = g.RefManager.CreateTag(ctx, repositoryID, tagID, CommitID(tag.CommitId))
+		if err != nil {
+			return err
+		}
+	}
+	if iter.Err() != nil {
+		return iter.Err()
+	}
+	return nil
 }
 
 func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {

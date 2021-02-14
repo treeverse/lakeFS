@@ -20,6 +20,22 @@ type FakeGraveler struct {
 	preMergeHook              graveler.PreMergeFunc
 }
 
+func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) LoadCommits(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) LoadBranches(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) LoadTags(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) DumpCommits(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
