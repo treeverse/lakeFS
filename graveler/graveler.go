@@ -1439,9 +1439,6 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 	defer iter.Close()
 	for iter.Next() {
 		rawValue := iter.Value()
-		if rawValue == nil {
-			break // better check for error
-		}
 		commit := &CommitData{}
 		err := proto.Unmarshal(rawValue.Data, commit)
 		if err != nil {
@@ -1485,9 +1482,6 @@ func (g *Graveler) LoadBranches(ctx context.Context, repositoryID RepositoryID, 
 	defer iter.Close()
 	for iter.Next() {
 		rawValue := iter.Value()
-		if rawValue == nil {
-			break // better check for error
-		}
 		branch := &BranchData{}
 		err := proto.Unmarshal(rawValue.Data, branch)
 		if err != nil {
@@ -1520,9 +1514,6 @@ func (g *Graveler) LoadTags(ctx context.Context, repositoryID RepositoryID, meta
 	defer iter.Close()
 	for iter.Next() {
 		rawValue := iter.Value()
-		if rawValue == nil {
-			break // better check for error
-		}
 		tag := &TagData{}
 		err := proto.Unmarshal(rawValue.Data, tag)
 		if err != nil {
