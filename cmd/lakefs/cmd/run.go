@@ -69,13 +69,9 @@ var runCmd = &cobra.Command{
 
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
+		actionsClient := actions.New(dbPool)
 
-		cataloger, err := catalog.NewCataloger(catalog.Config{
-			Config:  cfg,
-			DB:      dbPool,
-			LockDB:  lockdbPool,
-			Actions: actions.New(dbPool),
-		})
+		cataloger, err := catalog.NewCataloger(dbPool, actionsClient, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
 		}

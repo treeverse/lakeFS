@@ -24,11 +24,8 @@ var diagnoseCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-		cataloger, err := catalog.NewCataloger(catalog.Config{
-			Config:  cfg,
-			DB:      dbPool,
-			Actions: actions.New(dbPool),
-		})
+		actionsClient := actions.New(dbPool)
+		cataloger, err := catalog.NewCataloger(dbPool, actionsClient, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create cataloger")
 		}

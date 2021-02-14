@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type EventType string
@@ -23,6 +25,7 @@ type OutputWriter interface {
 }
 
 type Event struct {
+	EventID       uuid.UUID
 	Source        Source
 	Output        OutputWriter
 	EventType     EventType
