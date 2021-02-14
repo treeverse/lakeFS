@@ -366,38 +366,6 @@ definitions:
       - id
       - statement
 
-  continuous_export_configuration:
-    type: object
-    required:
-      - exportPath
-    properties:
-      exportPath:
-        type: string
-        format: uri
-        x-nullable: false       # Override https://github.com/go-swagger/go-swagger/issues/1188
-        # go-swagger totally not a bug.  This causes the generated field
-        # *not* to be a pointer.  Then the regular (incorrect, in this
-        # case) JSON parser parses it as an empty field, and validation
-        # verifies the value is non-empty.  In *this particular case* it
-        # works because a URI cannot be empty (at least not an absolute
-        # URI, which is what we require).
-        description: export objects to this path
-        example: s3://company-bucket/path/to/export
-      exportStatusPath:
-        type: string
-        format: uri
-        description: write export status object to this path
-        example: s3://company-bucket/path/to/status
-      lastKeysInPrefixRegexp:
-        type: array
-        items:
-          type: string
-        description: "list of regexps of keys to exported last in each prefix (for signalling)"
-        example: [ "^SUCCESS$", ".*/_SUCCESS$" ]
-      isContinuous:
-        type: boolean
-        description: if true, export every commit or merge to branch
-
   config:
     type: object
     properties:

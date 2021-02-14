@@ -532,18 +532,35 @@ func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
+
+	_ = &actionsSource{
+		catalog:      e,
+		adapter:      e.BlockAdapter,
+		repositoryID: repositoryID,
+		repository:   graveler.Repository{},
+		ref:          graveler.Ref(branchID),
+	}
+
 	return nil
 }
 
-func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, sourceRef graveler.Ref, commit graveler.Commit) error {
 	_ = actions.Event{
 		EventType:     actions.EventTypePreMerge,
 		EventTime:     time.Now(),
 		RepositoryID:  repositoryID.String(),
-		BranchID:      source.String(),
+		BranchID:      sourceRef.String(),
 		CommitMessage: commit.Message,
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
+	_ = &actionsSource{
+		catalog:      e,
+		adapter:      e.BlockAdapter,
+		repositoryID: repositoryID,
+		repository:   graveler.Repository{},
+		ref:          sourceRef,
+	}
+
 	return nil
 }

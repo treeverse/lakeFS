@@ -43,7 +43,7 @@ all: build
 
 clean:
 	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
-	    graveler/committed/mock graveler/sstable/mock
+	    graveler/committed/mock graveler/sstable/mock actions/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -95,6 +95,7 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./graveler/committed
 	$(GOGENERATE) ./pyramid
 	$(GOGENERATE) ./onboard
+	$(GOGENERATE) ./actions
 
 validate-swagger: go-install ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml

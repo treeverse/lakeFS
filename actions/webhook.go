@@ -71,9 +71,11 @@ func (w *Webhook) Run(ctx context.Context, runID string, ed Event, writer Output
 	if err != nil {
 		return err
 	}
+
 	client := &http.Client{
 		Timeout: w.Timeout,
 	}
+	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
