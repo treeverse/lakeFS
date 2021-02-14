@@ -162,85 +162,121 @@ func TestAction_Match(t *testing.T) {
 	}
 }
 
-func TestMatchedActions(t *testing.T) {
+func TestLoadActions(t *testing.T) {
 	tests := []struct {
-		name    string
-		actions []*actions.Action
-		spec    actions.MatchSpec
-		want    []*actions.Action
-		wantErr bool
+		name            string
+		configureSource func(*gomock.Controller) actions.Source
+		want            []*actions.Action
+		wantErr         bool
 	}{
 		{
-			name:    "empty",
-			actions: nil,
-			spec:    actions.MatchSpec{},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "all",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreCommit,
-			},
-			want: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-			},
-			wantErr: false,
-		},
-		{
-			name: "none",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreMerge,
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "one",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreMerge,
-			},
-			want: []*actions.Action{
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{}}},
-			},
-			wantErr: false,
-		},
-		{
-			name: "invalid",
-			actions: []*actions.Action{
-				{Name: "act1", On: actions.OnEvents{PreCommit: &actions.ActionOn{}}},
-				{Name: "act2", On: actions.OnEvents{PreMerge: &actions.ActionOn{Branches: []string{"\\"}}}},
-			},
-			spec: actions.MatchSpec{
-				EventType: actions.EventTypePreMerge,
-				Branch:    "main",
+			name: "listing fails",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				source.EXPECT().List(gomock.Any()).Return(nil, errors.New("failed"))
+				return source
 			},
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "load fails",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				ref := actions.FileRef{Path: "one-path", Address: "one-addr"}
+				source.EXPECT().List(gomock.Any()).Return([]actions.FileRef{ref}, nil)
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref)).Return(nil, errors.New("failed"))
+				return source
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "first load fails, second succeed",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				ref1 := actions.FileRef{Path: "path_1", Address: "addr_1"}
+				ref2 := actions.FileRef{Path: "path_2", Address: "addr_2"}
+				source.EXPECT().List(gomock.Any()).Return([]actions.FileRef{ref1, ref2}, nil)
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
+					Name: "some-action",
+					On: actions.OnEvents{
+						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "hook_id",
+							Type: "webhook",
+						},
+					},
+				}))
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref2)).Return(nil, errors.New("failed"))
+				return source
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "load success",
+			configureSource: func(ctrl *gomock.Controller) actions.Source {
+				source := mock.NewMockSource(ctrl)
+				ref1 := actions.FileRef{Path: "path_1", Address: "addr_1"}
+				source.EXPECT().List(gomock.Any()).Return([]actions.FileRef{ref1}, nil)
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
+					Name: "some-action",
+					On: actions.OnEvents{
+						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "hook_id_1",
+							Type: "webhook",
+						},
+						{
+							ID:   "hook_id_2",
+							Type: "webhook",
+						},
+					},
+				}))
+				return source
+			},
+			want: []*actions.Action{
+				{
+					Name: "some-action",
+					On: actions.OnEvents{
+						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:         "hook_id_1",
+							Type:       "webhook",
+							Properties: map[string]string{},
+						},
+						{
+							ID:         "hook_id_2",
+							Type:       "webhook",
+							Properties: map[string]string{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := actions.MatchedActions(tt.actions, tt.spec)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			source := tt.configureSource(ctrl)
+
+			ctx := context.Background()
+			res, err := actions.LoadActions(ctx, source)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("MatchActions() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("LoadActions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if diff := deep.Equal(got, tt.want); diff != nil {
-				t.Error("MatchActions() found diff", diff)
+			if diff := deep.Equal(res, tt.want); diff != nil {
+				t.Error("LoadActions() found diff", diff)
 			}
 		})
 	}

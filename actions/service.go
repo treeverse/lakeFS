@@ -1,7 +1,5 @@
 package actions
 
-//go:generate mockgen -package=mock -destination=mock/mock_actions.go github.com/treeverse/lakefs/actions Source,OutputWriter
-
 import (
 	"context"
 	"strings"
@@ -29,33 +27,33 @@ func New(db db.Database) *Service {
 	}
 }
 
-func (s *Service) Run(ctx context.Context, event Event) error {
+func (m *Service) Run(ctx context.Context, event Event) error {
 	// load relevant actions
-	actions, err := s.loadMatchedActions(ctx, event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
+	actions, err := m.loadMatchedActions(event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
 		return err
 	}
 	// allocate and run hooks
 	runID := NewRunID(event.EventTime)
-	tasks, err := s.allocateTasks(runID, actions)
+	tasks, err := m.allocateTasks(runID, actions)
 	if err != nil {
 		return nil
 	}
-	return s.runTasks(ctx, tasks, event)
+	return m.runTasks(ctx, tasks, event)
 }
 
-func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
+func (m *Actions) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, error) {
 	if source == nil {
 		return nil, nil
 	}
-	actions, err := LoadActions(ctx, source)
+	actions, err := LoadActions(source)
 	if err != nil {
 		return nil, err
 	}
-	return MatchedActions(actions, spec)
+	return matchedActions(actions, spec)
 }
 
-func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
+func (m *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
 	var tasks []*Task
 	for _, action := range actions {
 		for _, hook := range action.Hooks {
@@ -74,7 +72,7 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 	return tasks, nil
 }
 
-func (s *Service) runTasks(ctx context.Context, hooks []*Task, event Event) error {
+func (m *Service) runTasks(ctx context.Context, hooks []*Task, event Event) error {
 	var g multierror.Group
 	for _, h := range hooks {
 		hh := h // pinning

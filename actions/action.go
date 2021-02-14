@@ -135,7 +135,7 @@ func LoadActions(source Source) ([]*Action, error) {
 	return actions, nil
 }
 
-func MatchedActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
+func matchedActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
 	var matched []*Action
 	for _, act := range actions {
 		m, err := act.Match(spec)

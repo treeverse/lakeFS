@@ -207,13 +207,6 @@ type CommitParams struct {
 	Metadata  Metadata
 }
 
-type HooksHandler interface {
-	PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, branch BranchID, commit Commit) error
-	PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, branch BranchID, commitRecord CommitRecord) error
-	PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error
-	PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, destination BranchID, source Ref, commitRecord CommitRecord) error
-}
-
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -1390,7 +1383,11 @@ func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from,
 }
 
 func (g *Graveler) SetHooksHandler(handler HooksHandler) {
-	g.hooks = handler
+	if handler == nil {
+		g.hooks = &HooksNoOp{}
+	} else {
+		g.hooks = handler
+	}
 }
 
 func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
@@ -1799,28 +1796,4 @@ func newHookError(hookEvent string, err error) error {
 		return errs[0].Error() + ": " + details
 	}
 	return merr
-}
-
-func (g *Graveler) callPreCommitHooks(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) error {
-	if g.hooks == nil {
-		return nil
-	}
-	eventID := uuid.New()
-	err := g.hooks.PreCommitHook(ctx, eventID, repositoryID, branchID, commit)
-	if err != nil {
-		return newErrAbortedByHook(err)
-	}
-	return nil
-}
-
-func (g *Graveler) callPreMergeHook(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error {
-	if g.hooks == nil {
-		return nil
-	}
-	eventID := uuid.New()
-	err := g.hooks.PreMergeHook(ctx, eventID, repositoryID, destination, source, commit)
-	if err != nil {
-		return newErrAbortedByHook(err)
-	}
-	return nil
 }
