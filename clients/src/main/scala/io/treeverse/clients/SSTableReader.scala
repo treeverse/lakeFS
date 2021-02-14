@@ -1,9 +1,9 @@
 package io.treeverse.clients
 
-import com.google.protobuf.Message
+import com.google.protobuf.{CodedInputStream, Message}
 import org.rocksdb.{SstFileReader, _}
 
-import java.io.{ByteArrayInputStream, DataInputStream, IOException}
+import java.io.{ByteArrayInputStream, DataInputStream}
 
 class SSTableItem(val key: Array[Byte], val id: Array[Byte], val data: Array[Byte])
 
@@ -32,27 +32,25 @@ object SSTableReader {
 class SSTableReader() {
   private val reader = new SstFileReader(new Options)
 
-  @throws[RocksDBException]
-  @throws[IOException]
-  def getData(sstableFile: String, expectedType: String): SSTableIterator = {
+  def getData(sstableFile: String): SSTableIterator = {
     reader.open(sstableFile)
-    val props = reader.getTableProperties.getUserCollectedProperties
-    if (expectedType != props.get("type")) {
-      throw new RuntimeException(String.format("expected property type to be '%s'. got '%s'", expectedType, props.get("type")))
-    }
     new SSTableIterator(reader.newIterator(new ReadOptions))
   }
 
-  def make[Proto <: Message](item: SSTableItem, messagePrototype: Proto): EntryRecord[Proto] =
-    new EntryRecord[Proto](
+  def make[Proto <: Message](item: SSTableItem, messagePrototype: Proto): EntryRecord[Proto] = {
+    val data = CodedInputStream.newInstance(item.data)
+    val entry = new EntryRecord[Proto](
       item.key,
       item.id,
-      messagePrototype.getParserForType.parseFrom(item.data).asInstanceOf[Proto],
+      messagePrototype.getParserForType.parseFrom(data).asInstanceOf[Proto],
     )
+    // TODO (johnnyaug) validate item is of the expected type - metarange/range
+    data.checkLastTagWas(0)
+    entry
+  }
 
-  @throws[RocksDBException]
-  @throws[IOException]
-  def get[Proto <: Message](sstableFile: String, messagePrototype: Proto, expectedType: String): Seq[EntryRecord[Proto]] = getData(sstableFile, expectedType)
-      .map(make(_, messagePrototype))
-      .toSeq
+  def get[Proto <: Message](sstableFile: String, messagePrototype: Proto): Seq[EntryRecord[Proto]] = getData(sstableFile)
+    .map(make(_, messagePrototype))
+    .toSeq
+
 }
