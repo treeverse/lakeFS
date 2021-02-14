@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
@@ -122,11 +123,12 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	accountName := params.StorageAccount
-	accountKey := params.StorageAccessKey // TODO(Guys): check if I need to try and get from other places such as env var "AZURE_STORAGE_ACCOUNT" "AZURE_STORAGE_ACCESS_KEY" or any file like .aws/credentials style
-	if len(accountName) == 0 || len(accountKey) == 0 {
-		return nil, fmt.Errorf("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
-	}
+	accountKey := params.StorageAccessKey
+	if len(accountName) == 0 && len(accountKey) == 0 {
+		// fallback to Azure environment variables
+		accountName, accountKey = os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 
+	}
 	// Create a default request pipeline using your storage account name and account key.
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {

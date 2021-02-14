@@ -12,9 +12,10 @@ import (
 	"sync/atomic"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-
 	guuid "github.com/google/uuid"
 )
+
+var ErrEmptyBuffer = errors.New("TransferManager returned a 0 size buffer, this is a bug in the manager")
 
 // This code is taken from azblob chunkwriting.go
 // The reason is that the original code commit the data at the end of the copy
@@ -44,7 +45,7 @@ func defaults(u *azblob.UploadStreamToBlockBlobOptions) error {
 	var err error
 	u.TransferManager, err = azblob.NewStaticBuffer(u.BufferSize, u.MaxBuffers)
 	if err != nil {
-		return fmt.Errorf("bug: default transfer manager could not be created: %s", err)
+		return fmt.Errorf("bug: default transfer manager could not be created: %w", err)
 	}
 	return nil
 }
@@ -148,7 +149,7 @@ func (c *copier) sendChunk() error {
 
 	buffer := c.o.TransferManager.Get()
 	if len(buffer) == 0 {
-		return fmt.Errorf("TransferManager returned a 0 size buffer, this is a bug in the manager")
+		return ErrEmptyBuffer
 	}
 
 	n, err := io.ReadFull(c.reader, buffer)
@@ -165,11 +166,11 @@ func (c *copier) sendChunk() error {
 			},
 		)
 		return nil
-	case err != nil && (err == io.EOF || err == io.ErrUnexpectedEOF) && n == 0:
+	case err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) && n == 0:
 		return io.EOF
 	}
 
-	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		id := c.id.next()
 		c.wg.Add(1)
 		c.o.TransferManager.Run(
@@ -198,7 +199,6 @@ func (c *copier) write(chunk copierChunk) {
 		c.errCh <- fmt.Errorf("write error: %w", err)
 		return
 	}
-	return
 }
 
 // close commits our blocks to blob storage and closes our writer.

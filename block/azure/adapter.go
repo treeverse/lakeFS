@@ -136,7 +136,7 @@ func translatePutOpts(opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions 
 
 func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
-	//defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
+	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {

@@ -36,7 +36,6 @@ func (m *MultipartBlockWriter) StageBlock(ctx context.Context, s string, seeker 
 }
 
 func (m *MultipartBlockWriter) CommitBlockList(ctx context.Context, ids []string, headers azblob.BlobHTTPHeaders, metadata azblob.Metadata, conditions azblob.BlobAccessConditions, tierType azblob.AccessTierType, tagsMap azblob.BlobTagsMap, options azblob.ClientProvidedKeyOptions) (*azblob.BlockBlobCommitBlockListResponse, error) {
-
 	m.etag = "\"" + hex.EncodeToString(m.reader.Md5.Sum(nil)) + "\""
 	base64Etag := base64.StdEncoding.EncodeToString([]byte(m.etag))
 
