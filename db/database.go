@@ -162,6 +162,14 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	}
 	var attempt int
 	var ret interface{}
+	var err error
+	var tx pgx.Tx
+	defer func() {
+		if p := recover(); p != nil && tx != nil {
+			_ = tx.Rollback(options.ctx)
+			panic(p)
+		}
+	}()
 	for attempt < SerializationRetryMaxAttempts {
 		if attempt > 0 {
 			duration := SerializationRetryStartInterval * time.Duration(attempt)
@@ -173,7 +181,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			time.Sleep(duration)
 		}
 
-		tx, err := d.db.BeginTx(options.ctx, pgx.TxOptions{
+		tx, err = d.db.BeginTx(options.ctx, pgx.TxOptions{
 			IsoLevel:   options.isolationLevel,
 			AccessMode: options.accessMode,
 		})
