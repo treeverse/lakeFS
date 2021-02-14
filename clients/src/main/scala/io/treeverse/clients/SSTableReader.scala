@@ -1,6 +1,5 @@
 package io.treeverse.clients
 
-import io.treeverse.clients.committed.RangeData
 import com.google.protobuf.Message
 import org.rocksdb.{SstFileReader, _}
 
@@ -48,13 +47,12 @@ class SSTableReader() {
     new EntryRecord[Proto](
       item.key,
       item.id,
-      messagePrototype.getParserForType().parseFrom(item.data).asInstanceOf[Proto],
+      messagePrototype.getParserForType.parseFrom(item.data).asInstanceOf[Proto],
     )
 
   @throws[RocksDBException]
   @throws[IOException]
-  def get[Proto <: Message](sstableFile: String, messagePrototype: Proto): Seq[EntryRecord[Proto]] = getData(sstableFile, "metaranges")
+  def get[Proto <: Message](sstableFile: String, messagePrototype: Proto, expectedType: String): Seq[EntryRecord[Proto]] = getData(sstableFile, expectedType)
       .map(make(_, messagePrototype))
-        // TODO(yoni): Lazy read.
       .toSeq
 }

@@ -17,7 +17,7 @@ class S3Reader[Proto <: Message](val s3: AmazonS3, val bucket: String, val repos
     localFile.deleteOnExit()
     s3.getObject(new GetObjectRequest(bucket, "%s/_lakefs/%s".format(repositoryPrefix, new String(rangeID))), localFile)
     try {
-      reader.get(localFile.getAbsolutePath, messagePrototype)
+      reader.get(localFile.getAbsolutePath, messagePrototype, typeName)
     }
     finally {
       localFile.delete()
