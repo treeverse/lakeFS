@@ -157,6 +157,10 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Extract lakeFS coverage from container
+        run: |
+          docker cp lakefs:cov.out ./nessie-s3-cover.out
+        continue-on-error: true
       - name: Export DB
         if: ${{ always() }}
         env:
@@ -183,7 +187,7 @@ jobs:
       - name: Run Nessie S3 with local API key
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
-        run: go test -v ./nessie --system-tests --use-local-credentials --coverprofile=nessie-cover.out --cover
+        run: go test -v ./nessie --system-tests --use-local-credentials
       - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -208,8 +212,12 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Extract lakeFS coverage from container
+        run: |
+          docker cp lakefs:cov.out ./nessie-gs-cover.out
+        continue-on-error: true
       - name: Publish coverage
         uses: codecov/codecov-action@v1
         with:
-          files: ./nessie-cover.out
+          files: nessie-s3-cover.out,nessie-gs-cover.out
           fail_ci_if_error: false

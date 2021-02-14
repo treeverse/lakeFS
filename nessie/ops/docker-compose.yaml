@@ -18,7 +18,7 @@ services:
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
       - LAKEFS_CATALOGER_TYPE
-    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs.cover", "run", "--test.coverprofile=cov.out"]
   postgres:
     image: "postgres:11"
     ports:

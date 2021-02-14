@@ -19,6 +19,9 @@ RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}"
 RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakectl ./cmd/lakectl
 RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o benchmark-executor ./benchmarks
 
+# Build chimera that can collect coverage.  Run it with e.g. --test.coverprofile=out.cov.
+RUN go test -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -tags buildcover --coverpkg=github.com/treeverse/lakefs/... --cover  -c -o lakefs.cover ./cmd/lakefs
+
 # lakectl image
 FROM alpine:3.12.0 AS lakectl
 WORKDIR /app
@@ -45,7 +48,7 @@ RUN apk add netcat-openbsd
 WORKDIR /app
 COPY ./wait-for ./
 ENV PATH /app:$PATH
-COPY --from=build /build/lakefs /build/lakectl ./
+COPY --from=build /build/lakefs /build/lakefs.cover /build/lakectl ./
 
 EXPOSE 8000/tcp
 
