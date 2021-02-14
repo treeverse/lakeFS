@@ -5,17 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
-
-	"github.com/Azure/azure-storage-blob-go/azblob"
-
-	"github.com/treeverse/lakefs/block/azure"
 
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/azure"
 	"github.com/treeverse/lakefs/block/gs"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
@@ -127,15 +124,13 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	if len(accountName) == 0 && len(accountKey) == 0 {
 		// fallback to Azure environment variables
 		accountName, accountKey = os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-
 	}
 	// Create a default request pipeline using your storage account name and account key.
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid credentials with error: " + err.Error())
+		return nil, fmt.Errorf("invalid credentials : %w", err)
 	}
-	p := azblob.NewPipeline(credential, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: 10 * time.Minute}})
-	a := azure.NewAdapter(p, accountName)
+	p := azblob.NewPipeline(credential, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}})
 
-	return a, nil
+	return azure.NewAdapter(p, accountName), nil
 }

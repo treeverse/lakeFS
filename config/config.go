@@ -62,6 +62,8 @@ const (
 	MetaStoreType          = "metastore.type"
 	MetaStoreHiveURI       = "metastore.hive.uri"
 	MetastoreGlueCatalogID = "metastore.glue.catalog_id"
+
+	DefaultAzureTryTimeout = 10 * time.Minute
 )
 
 var (
@@ -104,6 +106,7 @@ const (
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
+	BlockstoreAzureTryTimeout            = "blockstore.azure.try_timout"
 
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
@@ -166,6 +169,8 @@ func setDefaults() {
 	viper.SetDefault(StatsEnabledKey, DefaultStatsEnabled)
 	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
+
+	viper.SetDefault(BlockstoreAzureTryTimeout, DefaultAzureTryTimeout)
 }
 
 type Configurator interface {
@@ -320,6 +325,7 @@ func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
 		StorageAccount:   viper.GetString("blockstore.azure.storage_account"),
 		StorageAccessKey: viper.GetString("blockstore.azure.storage_access_key"),
+		TryTimeout:       viper.GetDuration(BlockstoreAzureTryTimeout),
 	}, nil
 }
 

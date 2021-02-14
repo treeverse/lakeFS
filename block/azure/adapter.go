@@ -281,6 +281,7 @@ func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 }
 
 func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+	// Azure has no create multipart upload
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 
