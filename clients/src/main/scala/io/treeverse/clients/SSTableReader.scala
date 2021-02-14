@@ -1,7 +1,6 @@
 package io.treeverse.clients
 
 import io.treeverse.clients.committed.RangeData
-import io.treeverse.clients.{Range => LakeFSRange}
 import com.google.protobuf.Message
 import org.rocksdb.{SstFileReader, _}
 
