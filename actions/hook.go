@@ -12,6 +12,7 @@ const (
 	HookTypeWebhook HookType = "webhook"
 )
 
+// Hook is the abstraction of the basic user-configured runnable building-stone
 type Hook interface {
 	Run(ctx context.Context, event Event) error
 }

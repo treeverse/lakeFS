@@ -208,10 +208,10 @@ type CommitParams struct {
 }
 
 type HooksHandler interface {
-	PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, branch BranchID, commit Commit) error
-	PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, branch BranchID, commitRecord CommitRecord) error
-	PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error
-	PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryID RepositoryID, destination BranchID, source Ref, commitRecord CommitRecord) error
+	PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, branch BranchID, commit Commit) error
+	PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, branch BranchID, commitRecord CommitRecord) error
+	PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commit Commit) error
+	PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commitRecord CommitRecord) error
 }
 
 type KeyValueStore interface {
@@ -914,7 +914,11 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		err = g.callPreCommitHooks(ctx, repositoryID, branchID, commit)
+		eventID := uuid.New()
+		err = g.callPreCommitHooks(ctx, eventID, RepositoryRecord{
+			RepositoryID: repositoryID,
+			Repository:   repo,
+		}, branchID, commit)
 		if err != nil {
 			return "", fmt.Errorf("pre-commit hooks: %w", err)
 		}
@@ -1230,6 +1234,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
+	eventID := uuid.New()
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -1265,7 +1270,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
-		err = g.callPreMergeHook(ctx, repositoryID, destination, fromCommit.CommitID.Ref(), commit)
+		err = g.callPreMergeHook(ctx, eventID, RepositoryRecord{
+			RepositoryID: repositoryID,
+			Repository:   repo,
+		}, destination, fromCommit.CommitID.Ref(), commit)
 		if err != nil {
 			return "", err
 		}
@@ -1645,10 +1653,11 @@ func (c *commitValueIterator) Close() {
 	c.src.Close()
 }
 
-func newErrAbortedByHook(err error) error {
+func handleHookErr(err error) error {
 	if err == nil {
-		return ErrAbortedByHook
+		return nil
 	}
+
 	merr := multierror.Append(ErrAbortedByHook, err)
 	merr.ErrorFormat = func(errs []error) string {
 		const minErrorLen = 2
@@ -1666,26 +1675,16 @@ func newErrAbortedByHook(err error) error {
 	return merr
 }
 
-func (g *Graveler) callPreCommitHooks(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) error {
+func (g *Graveler) callPreCommitHooks(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, branchID BranchID, commit Commit) error {
 	if g.hooks == nil {
 		return nil
 	}
-	eventID := uuid.New()
-	err := g.hooks.PreCommitHook(ctx, eventID, repositoryID, branchID, commit)
-	if err != nil {
-		return newErrAbortedByHook(err)
-	}
-	return nil
+	return handleHookErr(g.hooks.PreCommitHook(ctx, eventID, repositoryRecord, branchID, commit))
 }
 
-func (g *Graveler) callPreMergeHook(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error {
+func (g *Graveler) callPreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commit Commit) error {
 	if g.hooks == nil {
 		return nil
 	}
-	eventID := uuid.New()
-	err := g.hooks.PreMergeHook(ctx, eventID, repositoryID, destination, source, commit)
-	if err != nil {
-		return newErrAbortedByHook(err)
-	}
-	return nil
+	return handleHookErr(g.hooks.PreMergeHook(ctx, eventID, repositoryRecord, destination, source, commit))
 }

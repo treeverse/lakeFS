@@ -1,5 +1,7 @@
 package actions
 
+//go:generate mockgen -package=mock -destination=mock/mock_actions.go github.com/treeverse/lakefs/actions Source,OutputWriter
+
 import (
 	"context"
 	"strings"
@@ -29,7 +31,7 @@ func New(db db.Database) *Actions {
 
 func (m *Actions) Run(ctx context.Context, event Event) error {
 	// load relevant actions
-	actions, err := m.loadMatchedActions(event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
+	actions, err := m.loadMatchedActions(ctx, event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
 		return err
 	}
@@ -42,11 +44,11 @@ func (m *Actions) Run(ctx context.Context, event Event) error {
 	return m.runTasks(ctx, tasks, event)
 }
 
-func (m *Actions) loadMatchedActions(source Source, spec MatchSpec) ([]*Action, error) {
+func (m *Actions) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
 	if source == nil {
 		return nil, nil
 	}
-	actions, err := LoadActions(source)
+	actions, err := LoadActions(ctx, source)
 	if err != nil {
 		return nil, err
 	}

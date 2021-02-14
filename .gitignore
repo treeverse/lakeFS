@@ -76,5 +76,6 @@ terraform.rc
 /graveler/sstable/mock/
 /pyramid/mock/
 /onboard/mock/
+/actions/mock/
 
 .eslintcache

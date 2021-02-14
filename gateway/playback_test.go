@@ -14,13 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/actions"
-
-	"github.com/treeverse/lakefs/config"
-
 	"github.com/ory/dockertest/v3"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/multiparts"
 	"github.com/treeverse/lakefs/gateway/simulator"
@@ -116,8 +114,11 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	actionsClient := actions.New(conn)
-	cataloger, err := catalog.NewCataloger(conn, actionsClient, config.NewConfig())
+	cataloger, err := catalog.NewCataloger(catalog.Config{
+		Config:  config.NewConfig(),
+		DB:      conn,
+		Actions: actions.New(conn),
+	})
 	testutil.MustDo(t, "build cataloger", err)
 	multipartsTracker := multiparts.NewTracker(conn)
 

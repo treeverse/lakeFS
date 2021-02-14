@@ -19,12 +19,13 @@ func TestManager_RunActions(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	ctx := context.Background()
 	testOutputWriter := &MockOutputWriter{}
 	testOutputWriter.On("OutputWrite", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	testSource := &MockSource{}
-	testSource.On("List").Return([]string{"act.yaml"}, nil)
-	testSource.On("Load", "act.yaml").Return([]byte(`
+	testSource.On("List", ctx).Return([]actions.FileRef{{Path: "act.yaml", Address: "act.addr"}}, nil)
+	testSource.On("Load", ctx, actions.FileRef{Path: "act.yaml", Address: "act.addr"}).Return([]byte(`
 name: test action
 on:
   pre-commit: {}
@@ -48,7 +49,6 @@ hooks:
 		Committer:     "committer",
 		Metadata:      map[string]string{"key": "value"},
 	}
-	ctx := context.Background()
 	actionsManager := actions.New(nil)
 	err := actionsManager.Run(ctx, evt)
 	require.NoError(t, err)

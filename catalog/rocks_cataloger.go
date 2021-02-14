@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,8 +26,8 @@ const (
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
-func NewCataloger(db db.Database, actionsClient ActionsClient, cfg *config.Config) (Cataloger, error) {
-	entryCatalog, err := NewEntryCatalog(cfg, db, actionsClient)
+func NewCataloger(cfg Config) (Cataloger, error) {
+	entryCatalog, err := NewEntryCatalog(cfg)
 	if err != nil {
 		return nil, err
 	}

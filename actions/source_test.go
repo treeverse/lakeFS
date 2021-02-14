@@ -1,17 +1,22 @@
 package actions_test
 
-import "github.com/stretchr/testify/mock"
+import (
+	"context"
+
+	"github.com/stretchr/testify/mock"
+	"github.com/treeverse/lakefs/actions"
+)
 
 type MockSource struct {
 	mock.Mock
 }
 
-func (m *MockSource) List() ([]string, error) {
-	args := m.Called()
-	return args.Get(0).([]string), args.Error(1)
+func (m *MockSource) List(ctx context.Context) ([]actions.FileRef, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]actions.FileRef), args.Error(1)
 }
 
-func (m *MockSource) Load(name string) ([]byte, error) {
-	args := m.Called(name)
+func (m *MockSource) Load(ctx context.Context, name actions.FileRef) ([]byte, error) {
+	args := m.Called(ctx, name)
 	return args.Get(0).([]byte), args.Error(1)
 }

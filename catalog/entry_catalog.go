@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-
-	"github.com/treeverse/lakefs/actions"
-
 	"github.com/cockroachdb/pebble"
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -98,8 +96,19 @@ const (
 	MetaRangeFSName = "meta-range"
 )
 
-func NewEntryCatalog(cfg *config.Config, db db.Database, actionsClient ActionsClient) (*EntryCatalog, error) {
-	tierFSParams, err := cfg.GetCommittedTierFSParams()
+type Config struct {
+	Config  *config.Config
+	DB      db.Database
+	LockDB  db.Database
+	Actions ActionsClient
+}
+
+func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
+	if cfg.LockDB == nil {
+		cfg.LockDB = cfg.DB
+	}
+
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams()
 	if err != nil {
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
@@ -127,7 +136,7 @@ func NewEntryCatalog(cfg *config.Config, db db.Database, actionsClient ActionsCl
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		*cfg.GetCommittedParams(),
+		*cfg.Config.GetCommittedParams(),
 		// TODO(ariels): Use separate range managers for metaranges and ranges
 		sstableMetaManager,
 		sstableManager,
@@ -137,14 +146,14 @@ func NewEntryCatalog(cfg *config.Config, db db.Database, actionsClient ActionsCl
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
-	stagingManager := staging.NewManager(db)
-	refManager := ref.NewPGRefManager(db, ident.NewHexAddressProvider())
-	branchLocker := ref.NewBranchLocker(db)
+	stagingManager := staging.NewManager(cfg.DB)
+	refManager := ref.NewPGRefManager(cfg.DB, ident.NewHexAddressProvider())
+	branchLocker := ref.NewBranchLocker(cfg.LockDB)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
 	entryCatalog := &EntryCatalog{
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
-		Actions:      actionsClient,
+		Actions:      cfg.Actions,
 	}
 	store.SetHooksHandler(entryCatalog)
 	return entryCatalog, nil
@@ -519,12 +528,19 @@ func (e *EntryCatalog) DumpTags(ctx context.Context, repositoryID graveler.Repos
 	return e.Store.DumpTags(ctx, repositoryID)
 }
 
-func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryID graveler.RepositoryID, branch graveler.BranchID, commit graveler.Commit) error {
+func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventID:       eventID,
-		EventType:     actions.EventTypePreCommit,
-		EventTime:     time.Now(),
-		RepositoryID:  repositoryID.String(),
+		EventType: actions.EventTypePreCommit,
+		EventID:   eventID,
+		EventTime: time.Now(),
+		Source: &actionsSource{
+			catalog:          e,
+			adapter:          e.BlockAdapter,
+			repositoryID:     repositoryRecord.RepositoryID,
+			storageNamespace: repositoryRecord.StorageNamespace,
+			ref:              branch.Ref(),
+		},
+		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      branch.String(),
 		CommitMessage: commit.Message,
 		Committer:     commit.Committer,
@@ -533,15 +549,23 @@ func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, rep
 	return e.Actions.Run(ctx, evt)
 }
 
-func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryID graveler.RepositoryID, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
+func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
 	return nil
 }
 
-func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventType:     actions.EventTypePreMerge,
-		EventTime:     time.Now(),
-		RepositoryID:  repositoryID.String(),
+		EventType: actions.EventTypePreMerge,
+		EventID:   eventID,
+		EventTime: time.Now(),
+		Source: &actionsSource{
+			catalog:          e,
+			adapter:          e.BlockAdapter,
+			repositoryID:     repositoryRecord.RepositoryID,
+			storageNamespace: repositoryRecord.StorageNamespace,
+			ref:              source,
+		},
+		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      destination.String(),
 		SourceRef:     source.String(),
 		CommitMessage: commit.Message,
@@ -551,6 +575,6 @@ func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repo
 	return e.Actions.Run(ctx, evt)
 }
 
-func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryID graveler.RepositoryID, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
+func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
 	return nil
 }
