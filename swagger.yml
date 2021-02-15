@@ -372,6 +372,54 @@ definitions:
       blockstore.type:
         type: string
 
+  action_run:
+    type: object
+    required:
+      - run_id
+      - branch
+      - commit_id
+    properties:
+      run_id:
+        type: string
+      branch:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+      end_time:
+        type: string
+        format: date-time
+      status:
+        type: string
+        enum: [ running, failed, completed ]
+      commit_id:
+        type: string
+
+  hook_run:
+    type: object
+    required:
+      - hook_id
+    properties:
+      hook_id:
+        type: string
+      hook_type:
+        type: string
+        enum: [webhook]
+      trigger:
+        type: string
+        enum: [pre-commit, pre-merge]
+      action:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+      end_time:
+        type: string
+        format: date-time
+      status:
+        type: string
+        enum: [ running, failed, completed ]
+
 paths:
 
   /setup_lakefs:
@@ -2147,6 +2195,170 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs:
+    get:
+      tags:
+        - actions
+      operationId: listRuns
+      summary: list runs
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: query
+          name: before
+          type: string
+          format: date-time
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: list action runs
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}:
+    get:
+      tags:
+        - actions
+      operationId: getRun
+      summary: get a run
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: action run result
+          schema:
+            $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks:
+    get:
+      tags:
+        - actions
+      operationId: listRunHooks
+      summary: list run hooks
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+        - in: query
+          name: before
+          type: string
+          format: date-time
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: list specific run hooks
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/hook_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_id}/output:
+    get:
+      tags:
+        - actions
+      operationId: getRunHookOutput
+      summary: get run hook output
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+        - in: path
+          name: hook_id
+          required: true
+          type: string
+      produces:
+        - application/octet-stream
+      responses:
+        200:
+          description: run hook output
+          schema:
+            type: file
+          headers:
+            Content-Length:
+              type: integer
+              format: int64
+            Last-Modified:
+              type: string
+            Content-Disposition:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: output not found
           schema:
             $ref: "#/definitions/error"
         default:
