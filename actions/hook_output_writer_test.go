@@ -13,13 +13,14 @@ import (
 
 func TestHookWriter_OutputWritePath(t *testing.T) {
 	ctx := context.Background()
-	contentReader := strings.NewReader("content")
+	content := "content"
+	contentReader := strings.NewReader(content)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	hookOutput := actions.FormatHookOutputPath("runID", "actionName", "hookID", "name1")
+	hookOutput := actions.FormatHookOutputPath("runID", "actionName", "hookID")
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(ctx, hookOutput, contentReader).Return(nil)
+	writer.EXPECT().OutputWrite(ctx, hookOutput, contentReader, int64(len(content))).Return(nil)
 
 	w := &actions.HookOutputWriter{
 		RunID:      "runID",
@@ -27,7 +28,7 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 		HookID:     "hookID",
 		Writer:     writer,
 	}
-	err := w.OutputWrite(ctx, "name1", contentReader)
+	err := w.OutputWrite(ctx, contentReader, int64(len(content)))
 	if err != nil {
 		t.Fatalf("OutputWrite failed with err=%s", err)
 	}
@@ -39,7 +40,7 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 
 	errSomeError := errors.New("some error")
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
+	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
 
 	w := &actions.HookOutputWriter{
 		RunID:      "runID",
@@ -49,7 +50,7 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	}
 	ctx := context.Background()
 	contentReader := strings.NewReader("content")
-	err := w.OutputWrite(ctx, "name1", contentReader)
+	err := w.OutputWrite(ctx, contentReader, 10)
 	if !errors.Is(err, errSomeError) {
 		t.Fatalf("OutputWrite() err=%v expected=%v", err, errSomeError)
 	}

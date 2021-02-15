@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 
 	"github.com/treeverse/lakefs/actions"
@@ -58,4 +59,16 @@ func (as *actionsSource) Load(ctx context.Context, fileRef actions.FileRef) ([]b
 		return nil, fmt.Errorf("reading action file: %w", err)
 	}
 	return bytes, nil
+}
+
+type actionsWriter struct {
+	adapter          block.Adapter
+	storageNamespace graveler.StorageNamespace
+}
+
+func (aw *actionsWriter) OutputWrite(ctx context.Context, path string, reader io.Reader, size int64) error {
+	return aw.adapter.WithContext(ctx).Put(block.ObjectPointer{
+		StorageNamespace: aw.storageNamespace.String(),
+		Identifier:       path,
+	}, size, reader, block.PutOpts{})
 }
