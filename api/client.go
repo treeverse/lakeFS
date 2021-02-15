@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
 
@@ -748,7 +749,25 @@ func (c *client) RefsRestore(ctx context.Context, repository string, manifest *m
 	return err
 }
 
-func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error) {
+type ClientOption func(config *ClientConfig)
+
+type ClientConfig struct {
+	client *http.Client
+}
+
+func defaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		client: http.DefaultClient,
+	}
+}
+
+func WithHTTPClient(client *http.Client) ClientOption {
+	return func(config *ClientConfig) {
+		config.client = client
+	}
+}
+
+func NewClient(endpointURL, accessKeyID, secretAccessKey string, opts ...ClientOption) (Client, error) {
 	parsedURL, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
@@ -756,8 +775,19 @@ func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error)
 	if len(parsedURL.Path) == 0 {
 		parsedURL.Path = path.Join(parsedURL.Path, genclient.DefaultBasePath)
 	}
+
+	cfg := defaultClientConfig()
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
 	return &client{
-		remote: genclient.New(httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme}), strfmt.Default),
-		auth:   httptransport.BasicAuth(accessKeyID, secretAccessKey),
+		remote: genclient.New(httptransport.NewWithClient(
+			parsedURL.Host,
+			parsedURL.Path,
+			[]string{parsedURL.Scheme},
+			cfg.client,
+		), strfmt.Default),
+		auth: httptransport.BasicAuth(accessKeyID, secretAccessKey),
 	}, nil
 }
