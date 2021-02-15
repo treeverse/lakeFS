@@ -29,22 +29,22 @@ func New(db db.Database) *Service {
 	}
 }
 
-func (m *Service) Run(ctx context.Context, event Event) error {
+func (s *Service) Run(ctx context.Context, event Event) error {
 	// load relevant actions
-	actions, err := m.loadMatchedActions(ctx, event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
+	actions, err := s.loadMatchedActions(ctx, event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
 		return err
 	}
 	// allocate and run hooks
 	runID := NewRunID(event.EventTime)
-	tasks, err := m.allocateTasks(runID, actions)
+	tasks, err := s.allocateTasks(runID, actions)
 	if err != nil {
 		return nil
 	}
-	return m.runTasks(ctx, tasks, event)
+	return s.runTasks(ctx, tasks, event)
 }
 
-func (m *Service) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
+func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
 	if source == nil {
 		return nil, nil
 	}
@@ -52,10 +52,10 @@ func (m *Service) loadMatchedActions(ctx context.Context, source Source, spec Ma
 	if err != nil {
 		return nil, err
 	}
-	return matchedActions(actions, spec)
+	return MatchedActions(actions, spec)
 }
 
-func (m *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
+func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
 	var tasks []*Task
 	for _, action := range actions {
 		for _, hook := range action.Hooks {
@@ -74,7 +74,7 @@ func (m *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 	return tasks, nil
 }
 
-func (m *Service) runTasks(ctx context.Context, hooks []*Task, event Event) error {
+func (s *Service) runTasks(ctx context.Context, hooks []*Task, event Event) error {
 	var g multierror.Group
 	for _, h := range hooks {
 		hh := h // pinning
