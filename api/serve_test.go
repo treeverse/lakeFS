@@ -8,9 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/setup"
@@ -25,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -80,8 +80,9 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
 	cataloger, err := catalog.NewCataloger(catalog.Config{
-		Config: cfg,
-		DB:     conn,
+		Config:  cfg,
+		DB:      conn,
+		Actions: actions.New(conn),
 	})
 	testutil.MustDo(t, "build cataloger", err)
 

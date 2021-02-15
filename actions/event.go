@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +14,9 @@ const (
 )
 
 type Event struct {
+	EventID       uuid.UUID
+	Source        Source
+	Output        OutputWriter
 	EventType     EventType
 	EventTime     time.Time
 	RepositoryID  string
@@ -23,10 +25,4 @@ type Event struct {
 	CommitMessage string
 	Committer     string
 	Metadata      map[string]string
-}
-
-func NewRunID(t time.Time) string {
-	uid := strings.ReplaceAll(uuid.New().String(), "-", "")
-	runID := t.UTC().Format(time.RFC3339) + "_" + uid
-	return runID
 }
