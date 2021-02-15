@@ -5,9 +5,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"github.com/treeverse/lakefs/testutil"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 
@@ -34,8 +39,6 @@ var abuseRandomReadsCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
-
-		client := getClient()
 
 		// how many branches to create
 		amount, err := cmd.Flags().GetInt("amount")
@@ -68,68 +71,55 @@ var abuseRandomReadsCmd = &cobra.Command{
 		}
 		Fmt("read a total of %d keys from key file\n", len(keys))
 
-		const requestBufferSize = 10000
-		reqs := make(chan string, requestBufferSize)
-		responses := make(chan bool)
-
-		var wg sync.WaitGroup
-		wg.Add(amount)
-		rand.Seed(time.Now().Unix())
-		go func() {
-			for i := 0; i < amount; i++ {
-				//nolint:gosec
-				reqs <- keys[rand.Intn(len(keys))]
-				wg.Done()
-			}
-		}()
-
-		worker := func(ctx context.Context, inp chan string, out chan bool) {
-			for {
-				select {
-				case key := <-inp:
-					_, err := client.StatObject(ctx, u.Repository, u.Ref, key)
-					if err != nil {
-						out <- false
-						continue
-					}
-					out <- true
-				case <-ctx.Done():
-					break
+		workFn := func(input chan testutil.Request, output chan testutil.Result) {
+			ctx := context.Background()
+			client := getClient()
+			for work := range input {
+				start := time.Now()
+				_, err := client.StatObject(ctx, u.Repository, u.Ref, work.Payload)
+				output <- testutil.Result{
+					Error: err,
+					Took:  time.Since(start),
 				}
 			}
 		}
+		pool := testutil.NewWorkerPool(parallelism, workFn)
 
-		// now run it with the given parallelism
-		ctx := context.Background()
-		for i := 0; i < parallelism; i++ {
-			go worker(ctx, reqs, responses)
-		}
-		Fmt("%d workers started\n", parallelism)
+		// generate load
+		go func(reqs chan testutil.Request) {
+			rand.Seed(time.Now().Unix())
+			for i := 0; i < amount; i++ {
+				//nolint:gosec
+				reqs <- testutil.Request{
+					Payload: keys[rand.Intn(len(keys))],
+				}
+			}
+			close(reqs)
+		}(pool.Input)
 
-		// collect responses
-		i := 0
-		failures := 0
-		t := time.Now()
-		const printEvery = 10000
-		start := time.Now()
+		// execute the things!
+		collector := testutil.NewResultCollector(pool.Output)
+		go collector.Collect() // start measuring the stuff
+		pool.Start()           // start executing the stuff
+
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+
+		ticker := time.NewTicker(time.Second)
 		for {
-			success := <-responses
-			if !success {
-				failures++
-			}
-			i++
-			if i%printEvery == 0 {
-				thisBatch := time.Since(t)
-				Fmt("done %d calls (%d failures so far) in %s (%.2f/second)\n", i, failures, thisBatch, float64(printEvery)/thisBatch.Seconds())
-				t = time.Now()
-			}
-			if i == amount {
-				break
+			select {
+			case <-ticker.C:
+				fmt.Printf("%s\n", collector.Stats())
+			case <-pool.Done():
+				fmt.Printf("%s\n\n", collector.Stats())
+				fmt.Printf("%s\n", collector.Histogram())
+				return
+			case <-signals:
+				fmt.Printf("%s\n\n", collector.Stats())
+				fmt.Printf("Historgram (ms): %s\n", collector.Histogram())
+				return
 			}
 		}
-
-		took := time.Since(start)
-		Fmt("Done! %d random reads (%d errors) in %s: (%.2f/second)\n\n", amount, failures, took, float64(amount)/took.Seconds())
 	},
 }
 

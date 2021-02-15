@@ -2,136 +2,99 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 	"time"
-
-	"github.com/hashicorp/go.net/context"
 )
 
-type Request struct {
-	Payload string
+type CollectorRequest int
+
+const (
+	CollectorRequestStats CollectorRequest = iota
+	CollectorRequestHistogram
+)
+
+type Stats struct {
+	TotalCompleted   int64
+	TotalErrors      int64
+	CurrentCompleted int64
+	CurrentInterval  time.Duration
 }
 
-type Result struct {
-	Error error
-	Took  time.Duration
-}
-
-type WorkFn func(Request) error
-
-func Execute(ctx context.Context, parallelism int, fn WorkFn, input chan Request, output chan Result) {
-	// spawn workers
-	worker := func(ctx context.Context, fn WorkFn, input chan Request, output chan Result) {
-		for {
-			select {
-			case request := <-input:
-				start := time.Now()
-				err := fn(request)
-				output <- Result{
-					Error: err,
-					Took:  time.Since(start),
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}
-	for i := 0; i < parallelism; i++ {
-		go worker(ctx, fn, input, output)
-	}
-
-	<-ctx.Done() // block until done
-}
-
-type Histogram struct {
-	buckets  []int64
-	counters map[int64]int64
-}
-
-func NewHistogram(buckets []int64) *Histogram {
-	return &Histogram{
-		buckets:  buckets,
-		counters: make(map[int64]int64),
-	}
-}
-
-func (h *Histogram) String() string {
-	builder := &strings.Builder{}
-	for _, b := range h.buckets {
-		builder.WriteString(fmt.Sprintf("%d\t%d\n", b, h.counters[b]))
-	}
-	return builder.String()
-}
-
-func (h *Histogram) Add(v int64) {
-	for _, b := range h.buckets {
-		if v < b {
-			h.counters[b]++
-		}
-	}
+func (s *Stats) String() string {
+	return fmt.Sprintf("completed: %d, errors: %d, current rate: %.2f done/second",
+		s.TotalCompleted, s.TotalErrors,
+		float64(s.CurrentCompleted)/s.CurrentInterval.Seconds())
 }
 
 type ResultCollector struct {
-	histogram *Histogram
-	totals    int64
-	current   int64
-	errors    int64
+	// Have workers write to here
+	Results chan Result
 
-	input chan Result
+	// for getting data out using methods
+	requests   chan CollectorRequest
+	stats      chan *Stats
+	histograms chan *Histogram
 
-	emitEvery time.Duration
-	emitChan  chan string
+	// collected stats
+	lastFlush        time.Time
+	histogram        *Histogram
+	totalCompleted   int64
+	totalErrors      int64
+	currentCompleted int64
 }
 
-func (rc *ResultCollector) Sink() chan Result {
-	return rc.input
+func (rc *ResultCollector) flushCurrent() *Stats {
+	return &Stats{
+		TotalCompleted:   rc.totalCompleted,
+		TotalErrors:      rc.totalErrors,
+		CurrentCompleted: rc.currentCompleted,
+		CurrentInterval:  time.Since(rc.lastFlush),
+	}
 }
 
-func (rc *ResultCollector) flushCurrent() string {
-	return fmt.Sprintf("completed: %d, errors: %d, current rate: %.2f done/second, histogram (ms):\n%s\n\n",
-		rc.totals, rc.errors,
-		float64(rc.current)/rc.emitEvery.Seconds(),
-		rc.histogram)
+func (rc *ResultCollector) Stats() *Stats {
+	rc.requests <- CollectorRequestStats
+	return <-rc.stats
 }
 
-func (rc *ResultCollector) Collect(ctx context.Context) {
-	every := time.NewTicker(rc.emitEvery)
+func (rc *ResultCollector) Histogram() *Histogram {
+	rc.requests <- CollectorRequestHistogram
+	return <-rc.histograms
+}
+
+func (rc *ResultCollector) Collect() {
 	for {
 		select {
-		case result := <-rc.input:
-			rc.totals++
-			rc.current++
+		case result := <-rc.Results:
+			rc.totalCompleted++
+			rc.currentCompleted++
 			if result.Error != nil {
-				rc.errors++
+				rc.totalErrors++
 			} else {
 				rc.histogram.Add(result.Took.Milliseconds())
 			}
-		case <-every.C:
-			// write but don't block if no-one's listening.
-			select {
-			case rc.emitChan <- rc.flushCurrent():
-			default:
+		case request := <-rc.requests:
+			switch request {
+			case CollectorRequestHistogram:
+				rc.histograms <- rc.histogram.Clone()
+			case CollectorRequestStats:
+				rc.stats <- rc.flushCurrent()
+				rc.currentCompleted = 0
+				rc.lastFlush = time.Now()
 			}
-
-			rc.current = 0
-		case <-ctx.Done():
-			every.Stop()
-			close(rc.emitChan)
-			close(rc.input)
-			return
 		}
 	}
 }
 
-func (rc *ResultCollector) EmitChan() chan string {
-	return rc.emitChan
-}
+// TODO(ozkatz): make this configurable
+var defaultHistogramBuckets = []int64{1, 2, 5, 7, 10, 15, 25, 50, 75, 100, 250, 350, 500, 750, 1000, 5000}
 
-func NewResultCollector(emitEvery time.Duration) *ResultCollector {
+func NewResultCollector(workerResults chan Result) *ResultCollector {
 	return &ResultCollector{
-		histogram: NewHistogram([]int64{}),
-		input:     make(chan Result),
-		emitEvery: emitEvery,
-		emitChan:  make(chan string),
+		Results:    workerResults,
+		requests:   make(chan CollectorRequest),
+		stats:      make(chan *Stats),
+		histograms: make(chan *Histogram),
+		lastFlush:  time.Now(),
+		histogram:  NewHistogram(defaultHistogramBuckets),
 	}
 }
