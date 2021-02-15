@@ -29,9 +29,9 @@ func New(db db.Database) *Service {
 	}
 }
 
-func (s *Service) Run(ctx context.Context, event Event) error {
+func (s *Service) Run(ctx context.Context, event Event, deps Deps) error {
 	// load relevant actions
-	actions, err := s.loadMatchedActions(ctx, event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
+	actions, err := s.loadMatchedActions(ctx, deps.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
 		return err
 	}
@@ -41,7 +41,7 @@ func (s *Service) Run(ctx context.Context, event Event) error {
 	if err != nil {
 		return nil
 	}
-	return s.runTasks(ctx, tasks, event)
+	return s.runTasks(ctx, tasks, event, deps)
 }
 
 func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
@@ -74,20 +74,17 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 	return tasks, nil
 }
 
-func (s *Service) runTasks(ctx context.Context, hooks []*Task, event Event) error {
+func (s *Service) runTasks(ctx context.Context, hooks []*Task, event Event, deps Deps) error {
 	var g multierror.Group
 	for _, h := range hooks {
 		hh := h // pinning
 		g.Go(func() error {
-			// set hook's event to have scoped writer
-			hookEvent := event
-			hookEvent.Output = &HookOutputWriter{
+			return hh.Hook.Run(ctx, event, &HookOutputWriter{
 				RunID:      hh.RunID,
 				ActionName: hh.Action.Name,
 				HookID:     hh.HookID,
-				Writer:     event.Output,
-			}
-			return hh.Hook.Run(ctx, hookEvent)
+				Writer:     deps.Output,
+			})
 		})
 	}
 	return g.Wait().ErrorOrNil()

@@ -60,7 +60,7 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, event Event) error {
+func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter) error {
 	// post event information as json to webhook endpoint
 	eventData, err := w.marshalEventInformation(event)
 	if err != nil {
@@ -85,7 +85,7 @@ func (w *Webhook) Run(ctx context.Context, event Event) error {
 
 	// log response body if needed
 	if resp.Body != nil && resp.ContentLength > 0 {
-		if err := event.Output.OutputWrite(ctx, w.ID, resp.Body); err != nil {
+		if err := writer.OutputWrite(ctx, resp.Body, resp.ContentLength); err != nil {
 			return err
 		}
 	}
