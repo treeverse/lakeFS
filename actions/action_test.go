@@ -1,18 +1,17 @@
 package actions_test
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"path"
 	"testing"
 
-	"gopkg.in/yaml.v3"
-
-	"github.com/golang/mock/gomock"
-	"github.com/treeverse/lakefs/actions/mock"
-
 	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
+	"github.com/treeverse/lakefs/actions/mock"
+	"gopkg.in/yaml.v3"
 )
 
 func TestAction_ReadAction(t *testing.T) {
@@ -174,7 +173,7 @@ func TestLoadActions(t *testing.T) {
 			name: "listing fails",
 			configureSource: func(ctrl *gomock.Controller) actions.Source {
 				source := mock.NewMockSource(ctrl)
-				source.EXPECT().List().Return(nil, errors.New("failed"))
+				source.EXPECT().List(gomock.Any()).Return(nil, errors.New("failed"))
 				return source
 			},
 			want:    nil,
@@ -185,8 +184,8 @@ func TestLoadActions(t *testing.T) {
 			configureSource: func(ctrl *gomock.Controller) actions.Source {
 				source := mock.NewMockSource(ctrl)
 				ref := actions.FileRef{Path: "one-path", Address: "one-addr"}
-				source.EXPECT().List().Return([]actions.FileRef{ref}, nil)
-				source.EXPECT().Load(gomock.Eq(ref)).Return(nil, errors.New("failed"))
+				source.EXPECT().List(gomock.Any()).Return([]actions.FileRef{ref}, nil)
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref)).Return(nil, errors.New("failed"))
 				return source
 			},
 			want:    nil,
@@ -198,8 +197,8 @@ func TestLoadActions(t *testing.T) {
 				source := mock.NewMockSource(ctrl)
 				ref1 := actions.FileRef{Path: "path_1", Address: "addr_1"}
 				ref2 := actions.FileRef{Path: "path_2", Address: "addr_2"}
-				source.EXPECT().List().Return([]actions.FileRef{ref1, ref2}, nil)
-				source.EXPECT().Load(gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
+				source.EXPECT().List(gomock.Any()).Return([]actions.FileRef{ref1, ref2}, nil)
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
 					On: actions.OnEvents{
 						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
@@ -211,7 +210,7 @@ func TestLoadActions(t *testing.T) {
 						},
 					},
 				}))
-				source.EXPECT().Load(gomock.Eq(ref2)).Return(nil, errors.New("failed"))
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref2)).Return(nil, errors.New("failed"))
 				return source
 			},
 			want:    nil,
@@ -222,8 +221,8 @@ func TestLoadActions(t *testing.T) {
 			configureSource: func(ctrl *gomock.Controller) actions.Source {
 				source := mock.NewMockSource(ctrl)
 				ref1 := actions.FileRef{Path: "path_1", Address: "addr_1"}
-				source.EXPECT().List().Return([]actions.FileRef{ref1}, nil)
-				source.EXPECT().Load(gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
+				source.EXPECT().List(gomock.Any()).Return([]actions.FileRef{ref1}, nil)
+				source.EXPECT().Load(gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
 					On: actions.OnEvents{
 						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
@@ -270,7 +269,8 @@ func TestLoadActions(t *testing.T) {
 			defer ctrl.Finish()
 			source := tt.configureSource(ctrl)
 
-			res, err := actions.LoadActions(source)
+			ctx := context.Background()
+			res, err := actions.LoadActions(ctx, source)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadActions() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -282,7 +282,7 @@ func TestLoadActions(t *testing.T) {
 	}
 }
 
-func TestMatchActions(t *testing.T) {
+func TestMatchedActions(t *testing.T) {
 	tests := []struct {
 		name    string
 		actions []*actions.Action
@@ -341,7 +341,7 @@ func TestMatchActions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := actions.MatchActions(tt.actions, tt.spec)
+			got, err := actions.MatchedActions(tt.actions, tt.spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchActions() error = %v, wantErr %v", err, tt.wantErr)
 				return

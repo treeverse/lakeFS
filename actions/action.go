@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path"
@@ -28,7 +29,7 @@ type ActionOn struct {
 
 type ActionHook struct {
 	ID          string            `yaml:"id"`
-	Type        string            `yaml:"type"`
+	Type        HookType          `yaml:"type"`
 	Description string            `yaml:"description"`
 	Properties  map[string]string `yaml:"properties"`
 }
@@ -61,7 +62,7 @@ func (a *Action) Validate() error {
 			return fmt.Errorf("hook[%d] duplicate ID '%s': %w", i, hook.ID, ErrInvalidAction)
 		}
 		ids[hook.ID] = struct{}{}
-		if _, found := hooks[HookType(hook.Type)]; !found {
+		if _, found := hooks[hook.Type]; !found {
 			return fmt.Errorf("hook[%d] type '%s' unknown: %w", i, hook.ID, ErrInvalidAction)
 		}
 	}
@@ -114,8 +115,8 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-func LoadActions(source Source) ([]*Action, error) {
-	hooksAddresses, err := source.List()
+func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
+	hooksAddresses, err := source.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list actions from commit: %w", err)
 	}
@@ -127,7 +128,7 @@ func LoadActions(source Source) ([]*Action, error) {
 		ii := i
 		errGroup.Go(func() error {
 			addr := hooksAddresses[ii]
-			bytes, err := source.Load(addr)
+			bytes, err := source.Load(ctx, addr)
 			if err != nil {
 				return fmt.Errorf("loading file %s: %w", addr, err)
 			}
@@ -140,15 +141,13 @@ func LoadActions(source Source) ([]*Action, error) {
 			return nil
 		})
 	}
-
 	if err := errGroup.Wait(); err != nil {
 		return nil, err
 	}
-
 	return actions, nil
 }
 
-func MatchActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
+func MatchedActions(actions []*Action, spec MatchSpec) ([]*Action, error) {
 	var matched []*Action
 	for _, act := range actions {
 		m, err := act.Match(spec)

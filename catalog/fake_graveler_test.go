@@ -16,8 +16,7 @@ type FakeGraveler struct {
 	RepositoryIteratorFactory func() graveler.RepositoryIterator
 	BranchIteratorFactory     func() graveler.BranchIterator
 	TagIteratorFactory        func() graveler.TagIterator
-	preCommitHook             graveler.PreCommitFunc
-	preMergeHook              graveler.PreMergeFunc
+	hooks                     graveler.HooksHandler
 }
 
 func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.Repository, error) {
@@ -218,20 +217,8 @@ func (g *FakeGraveler) Compare(_ context.Context, _ graveler.RepositoryID, _, _ 
 	return g.DiffIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) PreCommitHook() graveler.PreCommitFunc {
-	return g.preCommitHook
-}
-
-func (g *FakeGraveler) SetPreCommitHook(fn graveler.PreCommitFunc) {
-	g.preCommitHook = fn
-}
-
-func (g *FakeGraveler) PreMergeHook() graveler.PreMergeFunc {
-	return g.preMergeHook
-}
-
-func (g *FakeGraveler) SetPreMergeHook(fn graveler.PreMergeFunc) {
-	g.preMergeHook = fn
+func (g *FakeGraveler) SetHooksHandler(handler graveler.HooksHandler) {
+	g.hooks = handler
 }
 
 func (g *FakeGraveler) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {

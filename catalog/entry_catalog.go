@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/actions"
-
 	"github.com/cockroachdb/pebble"
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -82,7 +82,12 @@ type Store interface {
 	graveler.Loader
 }
 
+type ActionsClient interface {
+	Run(ctx context.Context, event actions.Event) error
+}
+
 type EntryCatalog struct {
+	Actions      ActionsClient
 	BlockAdapter block.Adapter
 	Store        Store
 }
@@ -93,9 +98,10 @@ const (
 )
 
 type Config struct {
-	Config *config.Config
-	DB     db.Database
-	LockDB db.Database
+	Config  *config.Config
+	DB      db.Database
+	LockDB  db.Database
+	Actions ActionsClient
 }
 
 func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
@@ -148,9 +154,9 @@ func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
 	entryCatalog := &EntryCatalog{
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
+		Actions:      cfg.Actions,
 	}
-	store.SetPreCommitHook(entryCatalog.preCommitHook)
-	store.SetPreMergeHook(entryCatalog.preMergeHook)
+	store.SetHooksHandler(entryCatalog)
 	return entryCatalog, nil
 }
 
@@ -545,45 +551,53 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }
 
-func (e *EntryCatalog) preCommitHook(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) error {
-	_ = actions.Event{
-		EventType:     actions.EventTypePreCommit,
-		EventTime:     time.Now(),
-		RepositoryID:  repositoryID.String(),
-		BranchID:      branchID.String(),
+func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+	evt := actions.Event{
+		EventType: actions.EventTypePreCommit,
+		EventID:   eventID,
+		EventTime: time.Now(),
+		Source: &actionsSource{
+			catalog:          e,
+			adapter:          e.BlockAdapter,
+			repositoryID:     repositoryRecord.RepositoryID,
+			storageNamespace: repositoryRecord.StorageNamespace,
+			ref:              branch.Ref(),
+		},
+		RepositoryID:  repositoryRecord.RepositoryID.String(),
+		BranchID:      branch.String(),
 		CommitMessage: commit.Message,
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
+	return e.Actions.Run(ctx, evt)
+}
 
-	_ = &actionsSource{
-		catalog:      e,
-		adapter:      e.BlockAdapter,
-		repositoryID: repositoryID,
-		repository:   graveler.Repository{},
-		ref:          graveler.Ref(branchID),
-	}
-
+func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
 	return nil
 }
 
-func (e *EntryCatalog) preMergeHook(ctx context.Context, repositoryID graveler.RepositoryID, destination graveler.BranchID, sourceRef graveler.Ref, commit graveler.Commit) error {
-	_ = actions.Event{
-		EventType:     actions.EventTypePreMerge,
-		EventTime:     time.Now(),
-		RepositoryID:  repositoryID.String(),
-		BranchID:      sourceRef.String(),
+func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+	evt := actions.Event{
+		EventType: actions.EventTypePreMerge,
+		EventID:   eventID,
+		EventTime: time.Now(),
+		Source: &actionsSource{
+			catalog:          e,
+			adapter:          e.BlockAdapter,
+			repositoryID:     repositoryRecord.RepositoryID,
+			storageNamespace: repositoryRecord.StorageNamespace,
+			ref:              source,
+		},
+		RepositoryID:  repositoryRecord.RepositoryID.String(),
+		BranchID:      destination.String(),
+		SourceRef:     source.String(),
 		CommitMessage: commit.Message,
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
-	_ = &actionsSource{
-		catalog:      e,
-		adapter:      e.BlockAdapter,
-		repositoryID: repositoryID,
-		repository:   graveler.Repository{},
-		ref:          sourceRef,
-	}
+	return e.Actions.Run(ctx, evt)
+}
 
+func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
 	return nil
 }

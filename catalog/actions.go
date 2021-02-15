@@ -6,19 +6,16 @@ import (
 	"io/ioutil"
 
 	"github.com/treeverse/lakefs/actions"
-
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type actionsSource struct {
-	catalog *EntryCatalog
-	adapter block.Adapter
-
-	repositoryID graveler.RepositoryID
-	repository   graveler.Repository
-	ref          graveler.Ref
+	catalog          *EntryCatalog
+	adapter          block.Adapter
+	repositoryID     graveler.RepositoryID
+	storageNamespace graveler.StorageNamespace
+	ref              graveler.Ref
 }
 
 const actionsPrefix = "_lakefs_actions/"
@@ -44,14 +41,17 @@ func (as *actionsSource) List(ctx context.Context) ([]actions.FileRef, error) {
 	return addresses, nil
 }
 
-func (as *actionsSource) Load(fileRef actions.FileRef) ([]byte, error) {
-	reader, err := as.adapter.Get(block.ObjectPointer{
-		StorageNamespace: as.repository.StorageNamespace.String(),
+func (as *actionsSource) Load(ctx context.Context, fileRef actions.FileRef) ([]byte, error) {
+	reader, err := as.adapter.WithContext(ctx).Get(block.ObjectPointer{
+		StorageNamespace: as.storageNamespace.String(),
 		Identifier:       fileRef.Address,
 	}, 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting action file %s: %w", fileRef.Path, err)
 	}
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	bytes, err := ioutil.ReadAll(reader)
 	if err != nil {

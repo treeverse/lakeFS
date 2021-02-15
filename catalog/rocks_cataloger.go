@@ -33,7 +33,7 @@ func NewCataloger(cfg Config) (Cataloger, error) {
 	}
 	return &cataloger{
 		EntryCatalog: entryCatalog,
-		log:          logging.Default(),
+		log:          logging.Default().WithField("service_name", "entry_catalog"),
 	}, nil
 }
 
