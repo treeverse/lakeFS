@@ -13,7 +13,9 @@ import (
 )
 
 type Service struct {
-	DB db.Database
+	DB     db.Database
+	source Source
+	writer OutputWriter
 }
 
 type Task struct {
@@ -23,15 +25,17 @@ type Task struct {
 	Hook   Hook
 }
 
-func New(db db.Database) *Service {
+func New(db db.Database, source Source, writer OutputWriter) *Service {
 	return &Service{
-		DB: db,
+		DB:     db,
+		source: source,
+		writer: writer,
 	}
 }
 
 func (s *Service) Run(ctx context.Context, event Event) error {
 	// load relevant actions
-	actions, err := s.loadMatchedActions(ctx, event.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
+	actions, err := s.loadMatchedActions(ctx, s.source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
 		return err
 	}
@@ -79,15 +83,11 @@ func (s *Service) runTasks(ctx context.Context, hooks []*Task, event Event) erro
 	for _, h := range hooks {
 		hh := h // pinning
 		g.Go(func() error {
-			// set hook's event to have scoped writer
-			hookEvent := event
-			hookEvent.Output = &HookOutputWriter{
-				RunID:      hh.RunID,
-				ActionName: hh.Action.Name,
-				HookID:     hh.HookID,
-				Writer:     event.Output,
-			}
-			return hh.Hook.Run(ctx, hookEvent)
+			return hh.Hook.Run(ctx, event, &HookOutputWriter{
+				path:             FormatHookOutputPath(hh.RunID, hh.Action.Name, hh.HookID),
+				storageNamespace: event.StorageNamespace,
+				wr:               s.writer,
+			})
 		})
 	}
 	return g.Wait().ErrorOrNil()

@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 
 	"github.com/treeverse/lakefs/actions"
@@ -11,17 +12,14 @@ import (
 )
 
 type actionsSource struct {
-	catalog          *EntryCatalog
-	adapter          block.Adapter
-	repositoryID     graveler.RepositoryID
-	storageNamespace graveler.StorageNamespace
-	ref              graveler.Ref
+	catalog *EntryCatalog
+	adapter block.Adapter
 }
 
 const actionsPrefix = "_lakefs_actions/"
 
-func (as *actionsSource) List(ctx context.Context) ([]actions.FileRef, error) {
-	it, err := as.catalog.ListEntries(ctx, as.repositoryID, as.ref, actionsPrefix, DefaultPathDelimiter)
+func (as *actionsSource) List(ctx context.Context, repoID, ref string) ([]actions.FileRef, error) {
+	it, err := as.catalog.ListEntries(ctx, graveler.RepositoryID(repoID), graveler.Ref(ref), actionsPrefix, DefaultPathDelimiter)
 	if err != nil {
 		return nil, fmt.Errorf("listing actions: %w", err)
 	}
@@ -41,9 +39,9 @@ func (as *actionsSource) List(ctx context.Context) ([]actions.FileRef, error) {
 	return addresses, nil
 }
 
-func (as *actionsSource) Load(ctx context.Context, fileRef actions.FileRef) ([]byte, error) {
+func (as *actionsSource) Load(ctx context.Context, storageNamespace string, fileRef actions.FileRef) ([]byte, error) {
 	reader, err := as.adapter.WithContext(ctx).Get(block.ObjectPointer{
-		StorageNamespace: as.storageNamespace.String(),
+		StorageNamespace: storageNamespace,
 		Identifier:       fileRef.Address,
 	}, 0)
 	if err != nil {
@@ -58,4 +56,15 @@ func (as *actionsSource) Load(ctx context.Context, fileRef actions.FileRef) ([]b
 		return nil, fmt.Errorf("reading action file: %w", err)
 	}
 	return bytes, nil
+}
+
+type actionsOutputWriter struct {
+	adapter block.Adapter
+}
+
+func (aow *actionsOutputWriter) OutputWrite(ctx context.Context, storageNamespace, path string, reader io.Reader, size int64) error {
+	return aow.adapter.WithContext(ctx).Put(block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		Identifier:       path,
+	}, size, reader, block.PutOpts{})
 }

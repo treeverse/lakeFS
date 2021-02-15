@@ -553,21 +553,15 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 
 func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventType: actions.EventTypePreCommit,
-		EventID:   eventID,
-		EventTime: time.Now(),
-		Source: &actionsSource{
-			catalog:          e,
-			adapter:          e.BlockAdapter,
-			repositoryID:     repositoryRecord.RepositoryID,
-			storageNamespace: repositoryRecord.StorageNamespace,
-			ref:              branch.Ref(),
-		},
-		RepositoryID:  repositoryRecord.RepositoryID.String(),
-		BranchID:      branch.String(),
-		CommitMessage: commit.Message,
-		Committer:     commit.Committer,
-		Metadata:      commit.Metadata,
+		EventType:        actions.EventTypePreCommit,
+		EventID:          eventID,
+		EventTime:        time.Now(),
+		RepositoryID:     repositoryRecord.RepositoryID.String(),
+		StorageNamespace: repositoryRecord.StorageNamespace.String(),
+		BranchID:         branch.String(),
+		CommitMessage:    commit.Message,
+		Committer:        commit.Committer,
+		Metadata:         commit.Metadata,
 	}
 	return e.Actions.Run(ctx, evt)
 }
