@@ -13,10 +13,13 @@ const (
 	EventTypePreMerge  EventType = "pre-merge"
 )
 
+type Deps struct {
+	Source Source
+	Output OutputWriter
+}
+
 type Event struct {
 	EventID       uuid.UUID
-	Source        Source
-	Output        OutputWriter
 	EventType     EventType
 	EventTime     time.Time
 	RepositoryID  string
