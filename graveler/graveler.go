@@ -207,9 +207,6 @@ type CommitParams struct {
 	Metadata  Metadata
 }
 
-type PreCommitFunc func(ctx context.Context, repositoryID RepositoryID, branch BranchID, commit Commit) error
-type PreMergeFunc func(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error
-
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -320,17 +317,8 @@ type VersionController interface {
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repositoryID RepositoryID, from, to Ref) (DiffIterator, error)
 
-	// PreCommitHook get current pre-commit hook function
-	PreCommitHook() PreCommitFunc
-
-	// SetPreCommitHook set pre-commit hook function
-	SetPreCommitHook(fn PreCommitFunc)
-
-	// PreMergeHook get pre-merge hook function
-	PreMergeHook() PreMergeFunc
-
-	// SetPreMergeHook set pre-merge hook function
-	SetPreMergeHook(fn PreMergeFunc)
+	// SetHooksHandler set handler for all graveler hooks
+	SetHooksHandler(handler HooksHandler)
 }
 
 type Dumper interface {
@@ -601,8 +589,7 @@ type Graveler struct {
 	StagingManager   StagingManager
 	RefManager       RefManager
 	branchLocker     BranchLocker
-	preCommitFn      PreCommitFunc
-	preMergeFn       PreMergeFunc
+	hooks            HooksHandler
 	log              logging.Logger
 }
 
@@ -612,6 +599,7 @@ func NewGraveler(branchLocker BranchLocker, committedManager CommittedManager, s
 		StagingManager:   stagingManager,
 		RefManager:       refManager,
 		branchLocker:     branchLocker,
+		hooks:            &HooksNoOp{},
 		log:              logging.Default().WithField("service_name", "graveler_graveler"),
 	}
 }
@@ -950,9 +938,10 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		err = g.callPreCommitHooks(ctx, repositoryID, branchID, commit)
+		eventID := uuid.New()
+		err = g.hooks.PreCommitHook(ctx, eventID, RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, branchID, commit)
 		if err != nil {
-			return "", fmt.Errorf("pre-commit hooks: %w", err)
+			return "", newHookError("pre-commit", err)
 		}
 
 		var branchMetaRangeID MetaRangeID
@@ -1266,6 +1255,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
+	eventID := uuid.New()
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -1301,9 +1291,9 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
-		err = g.callPreMergeHook(ctx, repositoryID, destination, fromCommit.CommitID.Ref(), commit)
+		err = g.hooks.PreMergeHook(ctx, eventID, RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, destination, source, commit)
 		if err != nil {
-			return "", err
+			return "", newHookError("pre-merge", err)
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
@@ -1392,20 +1382,12 @@ func (g *Graveler) Compare(ctx context.Context, repositoryID RepositoryID, from,
 	return g.CommittedManager.Compare(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 }
 
-func (g *Graveler) PreCommitHook() PreCommitFunc {
-	return g.preCommitFn
-}
-
-func (g *Graveler) SetPreCommitHook(fn PreCommitFunc) {
-	g.preCommitFn = fn
-}
-
-func (g *Graveler) PreMergeHook() PreMergeFunc {
-	return g.preMergeFn
-}
-
-func (g *Graveler) SetPreMergeHook(fn PreMergeFunc) {
-	g.preMergeFn = fn
+func (g *Graveler) SetHooksHandler(handler HooksHandler) {
+	if handler == nil {
+		g.hooks = &HooksNoOp{}
+	} else {
+		g.hooks = handler
+	}
 }
 
 func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID RepositoryID, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
@@ -1797,11 +1779,8 @@ func (c *commitValueIterator) Close() {
 	c.src.Close()
 }
 
-func handleHookErr(err error) error {
-	if err == nil {
-		return nil
-	}
-
+func newHookError(hookEvent string, err error) error {
+	err = fmt.Errorf("%s hook: %w", hookEvent, err)
 	merr := multierror.Append(ErrAbortedByHook, err)
 	merr.ErrorFormat = func(errs []error) string {
 		const minErrorLen = 2
@@ -1817,18 +1796,4 @@ func handleHookErr(err error) error {
 		return errs[0].Error() + ": " + details
 	}
 	return merr
-}
-
-func (g *Graveler) callPreCommitHooks(ctx context.Context, repositoryID RepositoryID, branchID BranchID, commit Commit) error {
-	if g.preCommitFn == nil {
-		return nil
-	}
-	return handleHookErr(g.preCommitFn(ctx, repositoryID, branchID, commit))
-}
-
-func (g *Graveler) callPreMergeHook(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commit Commit) error {
-	if g.preMergeFn == nil {
-		return nil
-	}
-	return handleHookErr(g.preMergeFn(ctx, repositoryID, destination, source, commit))
 }

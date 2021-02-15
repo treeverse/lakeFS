@@ -11,6 +11,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
@@ -86,8 +87,9 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	defer dbPool.Close()
 
 	catalogCfg := catalog.Config{
-		Config: cfg,
-		DB:     dbPool,
+		Config:  cfg,
+		DB:      dbPool,
+		Actions: actions.New(dbPool),
 	}
 	cataloger, err := catalog.NewCataloger(catalogCfg)
 	if err != nil {
