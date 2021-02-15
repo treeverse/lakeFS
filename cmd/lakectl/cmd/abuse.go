@@ -66,20 +66,22 @@ var abuseRandomReadsCmd = &cobra.Command{
 		for scanner.Scan() {
 			keys = append(keys, scanner.Text())
 		}
+		Fmt("read a total of %d keys from key file\n", len(keys))
 
-		reqs := make(chan string, amount)
+		const requestBufferSize = 10000
+		reqs := make(chan string, requestBufferSize)
 		responses := make(chan bool)
 
 		var wg sync.WaitGroup
 		wg.Add(amount)
 		rand.Seed(time.Now().Unix())
 		go func() {
-			//nolint:gosec
-			reqs <- keys[rand.Intn(len(keys))]
-			wg.Done()
+			for i := 0; i < amount; i++ {
+				//nolint:gosec
+				reqs <- keys[rand.Intn(len(keys))]
+				wg.Done()
+			}
 		}()
-
-		// start throwing random stuff into the input channel
 
 		worker := func(ctx context.Context, inp chan string, out chan bool) {
 			for {
@@ -102,6 +104,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		for i := 0; i < parallelism; i++ {
 			go worker(ctx, reqs, responses)
 		}
+		Fmt("%d workers started\n", parallelism)
 
 		// collect responses
 		i := 0
@@ -274,7 +277,7 @@ func init() {
 	abuseCreateBranchesCmd.Flags().Int("parallelism", 100, "amount of things to do in parallel")
 
 	abuseCmd.AddCommand(abuseRandomReadsCmd)
-	abuseCreateBranchesCmd.Flags().String("from-file", "", "read keys from file instead of picking at random")
-	abuseCreateBranchesCmd.Flags().Int("amount", 1000000, "amount of reads to do")
+	abuseRandomReadsCmd.Flags().String("from-file", "", "read keys from this file (\"-\" for stdin)")
+	abuseRandomReadsCmd.Flags().Int("amount", 1000000, "amount of reads to do")
 	abuseRandomReadsCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
 }
