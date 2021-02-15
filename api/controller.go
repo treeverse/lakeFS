@@ -1281,6 +1281,56 @@ func writeSymlinkToS3(params metadata.CreateSymlinkParams, repo *catalog.Reposit
 	return err
 }
 
+func (c *Controller) MetadataGetMetarangeHandler() metadata.GetMetaRangeHandler {
+	return metadata.GetMetaRangeHandlerFunc(func(params metadata.GetMetaRangeParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				// TODO(oz): May want tighter permissions here.
+				Action:   permissions.ReadRepositoryAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return metadata.NewGetMetaRangeUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("metadata_get_metarange")
+		cataloger := deps.Cataloger
+
+		metarange, err := cataloger.GetMetaRange(deps.ctx, params.Repository, params.MetaRange)
+		if err != nil {
+			return metadata.NewGetMetaRangeDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		ret := metadata.NewGetMetaRangeOK()
+		ret.Location = metarange.Address
+		return ret
+	})
+}
+
+func (c *Controller) MetadataGetRangeHandler() metadata.GetRangeHandler {
+	return metadata.GetRangeHandlerFunc(func(params metadata.GetRangeParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				// TODO(oz): May want tighter permissions here.
+				Action:   permissions.ReadRepositoryAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return metadata.NewGetRangeUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("metadata_get_range")
+		cataloger := deps.Cataloger
+
+		rng, err := cataloger.GetRange(deps.ctx, params.Repository, params.Range)
+		if err != nil {
+			return metadata.NewGetRangeDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		ret := metadata.NewGetRangeOK()
+		ret.Location = rng.Address
+		return ret
+	})
+}
+
 func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{

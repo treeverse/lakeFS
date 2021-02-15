@@ -37,6 +37,14 @@ type MetaRangeManager interface {
 
 	// NewMetaRangeIterator returns an Iterator over the MetaRange with id.
 	NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)
+
+	// GetMetaRangeURI returns a URI with an object representing metarange ID.  It may
+	// return a URI that does not resolve (rather than an error) if ID does not exist.
+	GetMetaRangeURI(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (string, error)
+
+	// GetRangeURI returns a URI with an object representing metarange ID.  It may
+	// return a URI that does not resolve (rather than an error) if ID does not exist.
+	GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (string, error)
 }
 
 // MetaRangeWriter is an abstraction for creating new MetaRanges

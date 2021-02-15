@@ -3,6 +3,8 @@ package catalog
 import (
 	"context"
 	"io"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 const (
@@ -107,6 +109,10 @@ type Cataloger interface {
 	LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error
 	LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
+
+	// forward metadata for thick clients
+	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeData, error)
+	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeData, error)
 
 	io.Closer
 }

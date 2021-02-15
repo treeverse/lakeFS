@@ -79,6 +79,7 @@ type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
 	graveler.Dumper
+	graveler.Plumbing
 	graveler.Loader
 }
 
@@ -612,4 +613,12 @@ func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repo
 
 func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
 	return nil
+}
+
+func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeData, error) {
+	return e.Store.GetMetaRange(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeData, error) {
+	return e.Store.GetRange(ctx, repositoryID, rangeID)
 }

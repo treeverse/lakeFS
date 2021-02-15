@@ -170,6 +170,10 @@ func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, f
 	}
 }
 
+func (tfs *TierFS) GetRemoteURI(_ context.Context, _, filename string) (string, error) {
+	return tfs.blockStoragePath(filename), nil
+}
+
 // Create creates a new file in TierFS.  File isn't stored in TierFS until a successful close
 // operation.  Open(namespace, filename) calls will return an error before the close was
 // called.  Create only performs local operations so it ignores the context.

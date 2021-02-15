@@ -97,6 +97,18 @@ func (c *CommittedFake) WriteMetaRange(ctx context.Context, ns graveler.StorageN
 	return &c.MetaRangeID, nil
 }
 
+func (c *CommittedFake) GetMetaRange(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeData, error) {
+	return graveler.MetaRangeData{
+		Address: fmt.Sprintf("fake://prefix/%s(metarange)", metaRangeID),
+	}, nil
+}
+
+func (c *CommittedFake) GetRange(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeData, error) {
+	return graveler.RangeData{
+		Address: fmt.Sprintf("fake://prefix/%s(range)", rangeID),
+	}, nil
+}
+
 type StagingFake struct {
 	Err                error
 	DropErr            error // specific error for drop call

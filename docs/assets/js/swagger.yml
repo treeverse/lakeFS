@@ -22,10 +22,9 @@ securityDefinitions:
     in: header
     name: X-JWT-Authorization
 
-
 security:
-  - basic_auth: [ ]
-  - jwt_token: [ ]
+  - jwt_token: []
+  - basic_auth: []
 
 responses:
   Unauthorized:
@@ -233,6 +232,16 @@ definitions:
       ref:
         type: string
 
+  refs_dump:
+    type: object
+    properties:
+      commits_meta_range_id:
+        type: string
+      tags_meta_range_id:
+        type: string
+      branches_meta_range_id:
+        type: string
+
   error:
     type: object
     properties:
@@ -356,38 +365,6 @@ definitions:
     required:
       - id
       - statement
-
-  continuous_export_configuration:
-    type: object
-    required:
-      - exportPath
-    properties:
-      exportPath:
-        type: string
-        format: uri
-        x-nullable: false       # Override https://github.com/go-swagger/go-swagger/issues/1188
-        # go-swagger totally not a bug.  This causes the generated field
-        # *not* to be a pointer.  Then the regular (incorrect, in this
-        # case) JSON parser parses it as an empty field, and validation
-        # verifies the value is non-empty.  In *this particular case* it
-        # works because a URI cannot be empty (at least not an absolute
-        # URI, which is what we require).
-        description: export objects to this path
-        example: s3://company-bucket/path/to/export
-      exportStatusPath:
-        type: string
-        format: uri
-        description: write export status object to this path
-        example: s3://company-bucket/path/to/status
-      lastKeysInPrefixRegexp:
-        type: array
-        items:
-          type: string
-        description: "list of regexps of keys to exported last in each prefix (for signalling)"
-        example: [ "^SUCCESS$", ".*/_SUCCESS$" ]
-      isContinuous:
-        type: boolean
-        description: if true, export every commit or merge to branch
 
   config:
     type: object
@@ -1216,6 +1193,11 @@ paths:
           name: repository
           schema:
             $ref: "#/definitions/repository_creation"
+        - in: query
+          name: bare
+          type: boolean
+          default: false
+          description: If true, create a bare repository with no initial commit and branch
       responses:
         201:
           description: repository
@@ -1277,6 +1259,70 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/refs/dump:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - refs
+      operationId: dump
+      summary: Dump repository refs (tags, commits, branches) to object store
+      responses:
+        201:
+          description: refs dump
+          schema:
+            type: object
+            $ref: "#/definitions/refs_dump"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+  /repositories/{repository}/refs/restore:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - refs
+      operationId: restore
+      summary: Restore repository refs (tags, commits, branches) from object store
+      parameters:
+        - in: body
+          name: manifest
+          schema:
+            $ref: "#/definitions/refs_dump"
+      responses:
+        200:
+          description: refs successfully loaded
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
   /repositories/{repository}/tags:
     parameters:
       - in: path
@@ -1627,6 +1673,9 @@ paths:
               ref:
                 type: string
                 description: the commit to revert, given by a ref
+              parent_number:
+                type: integer
+                description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
       responses:
         204:
           description: revert successful
@@ -1641,7 +1690,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     parameters:
       - in: path
         name: repository
@@ -1651,9 +1700,9 @@ paths:
         name: sourceRef
         required: true
         type: string
-        description: source branch name
+        description: source ref
       - in: path
-        name: destinationRef
+        name: destinationBranch
         required: true
         type: string
         description: destination branch name
@@ -2105,121 +2154,59 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/branches/{branch}/continuous-export:
+  /repositories/{repository}/metadata/meta_range/{meta_range}:
     parameters:
       - in: path
         name: repository
         required: true
         type: string
       - in: path
-        name: branch
+        name: meta_range
         required: true
         type: string
     get:
       tags:
-        - export
-        - branches
-      operationId: getContinuousExport
-      summary: returns the current continuous export configuration of a branch
+        - metadata
+      operationId: getMetaRange
+      summary: return URI to a meta-range file
+      # TODO(ariels): Actually redirect to S3.
       responses:
         200:
-          description: continuous export policy
-          schema:
-            $ref: "#/definitions/continuous_export_configuration"
+          description: meta-range URI
+          headers:
+            Location:
+              type: string
         401:
           $ref: "#/responses/Unauthorized"
-        404:
-          description: no continuous export policy defined
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-    put:
-      tags:
-        - export
-        - branches
-      operationId: setContinuousExport
-      summary: sets a new continuous export configuration of a branch
-      parameters:
-        - in: body
-          name: config
-          required: true
-          schema:
-            $ref: "#/definitions/continuous_export_configuration"
-      responses:
-        201:
-          description: continuous export successfullyconfigured
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/branches/{branch}/repair-export:
+  /repositories/{repository}/metadata/range/{range}:
     parameters:
       - in: path
         name: repository
         required: true
         type: string
       - in: path
-        name: branch
+        name: range
         required: true
         type: string
-    post:
+    get:
       tags:
-        - export
-        - branches
-      operationId: repair
-      summary: set continuous export state as repaired
+        - metadata
+      operationId: getRange
+      summary: return URI to a range file
+      # TODO(ariels): Actually redirect to S3.
       responses:
-        201:
-          description: continuous export status successfully changed to repaired
+        200:
+          description: range URI
+          headers:
+            Location:
+              type: string
         401:
           $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
-  /repositories/{repository}/branches/{branch}/export-hook:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: path
-        name: branch
-        required: true
-        type: string
-    post:
-      tags:
-        - export
-        - branches
-      operationId: run
-      summary: hook to be called in order to execute continuous export on branch
-      responses:
-        201:
-          description: continuous export successfully started
-          schema:
-            description: "export ID"
-            type: string
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:

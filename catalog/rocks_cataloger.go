@@ -681,6 +681,14 @@ func (c *cataloger) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID 
 	return c.EntryCatalog.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
 }
 
+func (c *cataloger) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeData, error) {
+	return c.EntryCatalog.GetMetaRange(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(metaRangeID))
+}
+
+func (c *cataloger) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeData, error) {
+	return c.EntryCatalog.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
+}
+
 func (c *cataloger) Close() error {
 	return nil
 }

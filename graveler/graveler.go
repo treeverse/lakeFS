@@ -46,6 +46,16 @@ type Reference interface {
 	CommitID() CommitID
 }
 
+type MetaRangeData struct {
+	// URI of metarange file.
+	Address string
+}
+
+type RangeData struct {
+	// URI of range file.
+	Address string
+}
+
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
@@ -73,6 +83,9 @@ type CommitID string
 
 // MetaRangeID represents a snapshot of the MetaRange, referenced by a commit
 type MetaRangeID string
+
+// RangeID represents a part of a MetaRange, useful only for plumbing.
+type RangeID string
 
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
@@ -321,6 +334,15 @@ type VersionController interface {
 	SetHooksHandler(handler HooksHandler)
 }
 
+// Plumbing includes commands for fiddling more directly with graveler implementation
+// internals.
+type Plumbing interface {
+	// GetMetarange returns information where metarangeID is stored.
+	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeData, error)
+	// GetRange returns information where rangeID is stored.
+	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeData, error)
+}
+
 type Dumper interface {
 	// DumpCommits iterates through all commits and dumps them in Graveler format
 	DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
@@ -333,13 +355,13 @@ type Dumper interface {
 }
 
 type Loader interface {
-	// DumpCommits iterates through all commits in Graveler format and loads them into repositoryID
+	// LoadCommits iterates through all commits in Graveler format and loads them into repositoryID
 	LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 
-	// DumpBranches iterates through all branches in Graveler format and loads them into repositoryID
+	// LoadBranches iterates through all branches in Graveler format and loads them into repositoryID
 	LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 
-	// DumpTags iterates through all tags in Graveler format and loads them into repositoryID
+	// LoadTags iterates through all tags in Graveler format and loads them into repositoryID
 	LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 }
 
@@ -505,6 +527,11 @@ type CommittedManager interface {
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new MetaRangeID that is expected to be immediately addressable
 	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, DiffSummary, error)
+
+	// GetMetarange returns information where metarangeID is stored.
+	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeData, error)
+	// GetRange returns information where rangeID is stored.
+	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeData, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -1511,6 +1538,22 @@ func (g *Graveler) LoadTags(ctx context.Context, repositoryID RepositoryID, meta
 		return iter.Err()
 	}
 	return nil
+}
+
+func (g *Graveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeData, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return MetaRangeData{}, nil
+	}
+	return g.CommittedManager.GetMetaRange(ctx, repo.StorageNamespace, metaRangeID)
+}
+
+func (g *Graveler) GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeData, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return RangeData{}, nil
+	}
+	return g.CommittedManager.GetRange(ctx, repo.StorageNamespace, rangeID)
 }
 
 func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {
