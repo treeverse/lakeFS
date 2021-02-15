@@ -2,6 +2,7 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -19,6 +20,14 @@ type Task struct {
 	Action *Action
 	HookID string
 	Hook   Hook
+}
+
+type TaskResult struct {
+	Task
+	Event     Event
+	StartTime time.Time
+	EndTime   time.Time
+	Passed    bool
 }
 
 func New(db db.Database) *Service {
@@ -96,3 +105,7 @@ func NewRunID(t time.Time) string {
 	runID := t.UTC().Format(time.RFC3339) + "_" + uid
 	return runID
 }
+
+var (
+	ErrNotFound = errors.New("not found")
+)

@@ -11,12 +11,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/strfmt"
+
+	"github.com/treeverse/lakefs/actions"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	actionsop "github.com/treeverse/lakefs/api/gen/restapi/operations/actions"
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
@@ -61,7 +66,13 @@ type Dependencies struct {
 	Migrator              db.Migrator
 	Collector             stats.Collector
 	CloudMetadataProvider cloud.MetadataProvider
+	Actions               actionsHandler
 	Logger                logging.Logger
+}
+
+type actionsHandler interface {
+	GetRun(repository, runID string) (actions.TaskResult, error)
+	GetHook(repository, runID, hookID string) (actions.TaskResult, error)
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -168,6 +179,11 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.RefsDumpHandler = c.RefsDumpHandler()
 	api.RefsRestoreHandler = c.RefsRestoreHandler()
+
+	api.ActionsGetRunHandler = c.ActionsGetRunHandler()
+	api.ActionsGetRunHookOutputHandler = c.ActionsGetRunHookOutputHandler()
+	api.ActionsListRunHooksHandler = c.ActionsListRunHooksHandler()
+	api.ActionsListRunsHandler = c.ActionsListRunsHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -2528,4 +2544,86 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 
 		return refs.NewDumpCreated().WithPayload(manifestData)
 	})
+}
+
+func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
+	return actionsop.GetRunHandlerFunc(func(params actionsop.GetRunParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return actionsop.NewGetRunUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		taskRes, err := deps.Actions.GetRun(params.Repository, params.RunID)
+		if err != nil {
+			if errors.Is(err, actions.ErrNotFound) {
+				return actionsop.NewGetRunNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+
+			return actionsop.NewGetRunDefault(500).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		res := &models.ActionRun{
+			RunID:     &taskRes.RunID,
+			StartTime: strfmt.DateTime(taskRes.StartTime),
+			Status:    models.ActionRunStatusRunning,
+			Branch:    &taskRes.Event.BranchID,
+			CommitID:  &taskRes.Event.SourceRef,
+		}
+		if !taskRes.EndTime.IsZero() {
+			res.EndTime = strfmt.DateTime(taskRes.EndTime)
+			res.Status = models.ActionRunStatusFailed
+			if taskRes.Passed {
+				res.Status = models.ActionRunStatusCompleted
+			}
+		}
+
+		return actionsop.NewGetRunOK().WithPayload(res)
+	})
+}
+
+func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutputHandler {
+	return actionsop.GetRunHookOutputHandlerFunc(func(params actionsop.GetRunHookOutputParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return actionsop.NewGetRunHookOutputUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if err != nil {
+
+		}
+		out, err := c.deps.Actions.GetHook(repo.Name, params.RunID, params.HookID)
+
+		reader, err := c.deps.BlockAdapter.Get(block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       out,
+		}, 0)
+		if err != nil {
+			return actionsop.NewGetRunHookOutputDefault(500).
+				WithPayload(responseErrorFrom(err))
+		}
+		return actionsop.NewGetRunHookOutputOK().WithPayload(reader)
+	})
+}
+
+func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler {
+
+}
+
+func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
+
 }
