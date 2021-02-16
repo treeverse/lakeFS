@@ -25,16 +25,19 @@ type Task struct {
 }
 
 type TaskResult struct {
-	Task
-	Event     Event
-	StartTime time.Time
-	EndTime   time.Time
-	Passed    bool
+	RunID      string
+	HookID     string
+	HookType   string
+	ActionName string
+	StartTime  time.Time
+	EndTime    time.Time
+	Passed     bool
 }
 
 type RunResult struct {
 	RunID     string
-	Event     Event
+	BranchID  string
+	OnRef     string
 	Action    *Action
 	StartTime time.Time
 	EndTime   time.Time

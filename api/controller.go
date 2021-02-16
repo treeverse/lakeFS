@@ -2573,8 +2573,8 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 			RunID:     &taskRes.RunID,
 			StartTime: strfmt.DateTime(taskRes.StartTime),
 			Status:    models.ActionRunStatusRunning,
-			Branch:    &taskRes.Event.BranchID,
-			CommitID:  &taskRes.Event.SourceRef,
+			Branch:    &taskRes.BranchID,
+			CommitID:  &taskRes.OnRef,
 		}
 		if !taskRes.EndTime.IsZero() {
 			res.EndTime = strfmt.DateTime(taskRes.EndTime)
@@ -2674,12 +2674,11 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		for hooksIter.Next() {
 			val := hooksIter.Value()
 			hookRun := &models.HookRun{
-				Action:    val.Action.Name,
+				Action:    val.ActionName,
 				HookID:    &val.HookID,
-				HookType:  string(val.Event.EventType),
+				HookType:  val.HookType,
 				StartTime: strfmt.DateTime(val.StartTime),
 				Status:    models.HookRunStatusRunning,
-				Trigger:   string(val.Event.EventType),
 			}
 
 			if !val.EndTime.IsZero() {
@@ -2743,8 +2742,8 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		for runsIter.Next() {
 			val := runsIter.Value()
 			var run = &models.ActionRun{
-				Branch:    &val.Event.BranchID,
-				CommitID:  &val.Event.SourceRef,
+				Branch:    &val.BranchID,
+				CommitID:  &val.OnRef,
 				RunID:     &val.RunID,
 				StartTime: strfmt.DateTime(val.StartTime),
 				Status:    models.ActionRunStatusRunning,
