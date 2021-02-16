@@ -975,7 +975,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
 		diffFunc := cataloger.Compare // default diff type is three-dot
-		if swag.StringValue(params.Type) == string(models.DiffTypeTwoDot) {
+		if swag.StringValue(params.Type) == "two_dot" {
 			diffFunc = cataloger.Diff
 		}
 		diff, hasMore, err := diffFunc(deps.ctx, params.Repository, params.LeftRef, params.RightRef, catalog.DiffParams{

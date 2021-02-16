@@ -200,7 +200,6 @@ func panicOnMetadataUpdate(bl *ref.BranchLocker) {
 		ctx := context.Background()
 		_, _ = bl.MetadataUpdater(ctx, "branch-locker", testutil.DefaultBranchID, func() (interface{}, error) {
 			panic("metadata updater")
-			return nil, nil
 		})
 	}()
 	<-chDone

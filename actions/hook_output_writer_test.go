@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
@@ -23,7 +25,7 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	writer.EXPECT().OutputWrite(ctx, hookOutput, contentReader, int64(len(content))).Return(nil)
 
 	w := &actions.HookOutputWriter{
-		RunID:      "runID",
+		RunID:      uuid.New(),
 		ActionName: "actionName",
 		HookID:     "hookID",
 		Writer:     writer,
@@ -43,7 +45,7 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
 
 	w := &actions.HookOutputWriter{
-		RunID:      "runID",
+		RunID:      uuid.New(),
 		ActionName: "actionName",
 		HookID:     "hookID",
 		Writer:     writer,
