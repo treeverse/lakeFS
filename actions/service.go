@@ -35,13 +35,14 @@ type TaskResult struct {
 }
 
 type RunResult struct {
-	RunID     string
-	BranchID  string
-	OnRef     string
-	Action    *Action
-	StartTime time.Time
-	EndTime   time.Time
-	Passed    bool
+	RunID      string
+	BranchID   string
+	OnRef      string
+	ActionName string
+	EventType  EventType
+	StartTime  time.Time
+	EndTime    time.Time
+	Passed     bool
 }
 
 type TaskResultIter interface {

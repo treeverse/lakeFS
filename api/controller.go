@@ -2581,6 +2581,7 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 			Status:    status,
 			Branch:    &taskRes.BranchID,
 			CommitID:  &taskRes.OnRef,
+			EventType: string(taskRes.EventType),
 		}
 
 		return actionsop.NewGetRunOK().WithPayload(res)
@@ -2621,7 +2622,7 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 
 		reader, err := c.deps.BlockAdapter.Get(block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
-			Identifier:       actions.FormatHookOutputPath(out.RunID, out.Action.Name, params.HookID),
+			Identifier:       actions.FormatHookOutputPath(out.RunID, out.ActionName, params.HookID),
 		}, 0)
 
 		if err != nil {
@@ -2748,6 +2749,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 				StartTime: strfmt.DateTime(val.StartTime),
 				EndTime:   strfmt.DateTime(val.EndTime),
 				Status:    status,
+				EventType: string(val.EventType),
 			})
 
 			res.Pagination.NextOffset = strfmt.DateTime(val.StartTime).String()

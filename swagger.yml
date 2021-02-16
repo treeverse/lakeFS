@@ -389,6 +389,9 @@ definitions:
       end_time:
         type: string
         format: date-time
+      event_type:
+        type: string
+        enum: [ pre_commit, pre_merge ]
       status:
         type: string
         enum: [ failed, completed ]
