@@ -5,7 +5,6 @@ package actions
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,7 +17,7 @@ type Service struct {
 }
 
 type Task struct {
-	RunID     string
+	RunID     uuid.UUID
 	Action    *Action
 	HookID    string
 	Hook      Hook
@@ -60,8 +59,7 @@ func (s *Service) Run(ctx context.Context, event Event, deps Deps) error {
 	}
 
 	// allocate and run hooks
-	runID := NewRunID(event.EventTime)
-	tasks, err := s.allocateTasks(runID, actions)
+	tasks, err := s.allocateTasks(event.RunID, actions)
 	if err != nil {
 		return nil
 	}
@@ -88,7 +86,7 @@ func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec Ma
 	return MatchedActions(actions, spec)
 }
 
-func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
+func (s *Service) allocateTasks(runID uuid.UUID, actions []*Action) ([]*Task, error) {
 	var tasks []*Task
 	for _, action := range actions {
 		for _, hook := range action.Hooks {
@@ -151,12 +149,6 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 		return nil, nil
 	}, db.WithContext(ctx))
 	return err
-}
-
-func NewRunID(t time.Time) string {
-	uid := strings.ReplaceAll(uuid.New().String(), "-", "")
-	runID := t.UTC().Format(time.RFC3339) + "_" + uid
-	return runID
 }
 
 func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID uuid.UUID, eventType EventType, commitID string) error {
