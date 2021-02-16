@@ -8,13 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
-	"github.com/treeverse/lakefs/testutil"
-
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestManager_RunActions(t *testing.T) {
