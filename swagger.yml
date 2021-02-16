@@ -2221,6 +2221,9 @@ paths:
           name: amount
           type: integer
           default: 100
+        - in: query
+          name: branch
+          type: string
       responses:
         200:
           description: list action runs

@@ -71,7 +71,7 @@ type Dependencies struct {
 type actionsHandler interface {
 	GetRun(repository, runID string) (actions.RunResult, error)
 	ListHooks(repository, runID string, before time.Time) (actions.TaskResultIter, error)
-	ListRuns(repository string, before time.Time) (actions.RunResultIter, error)
+	ListRuns(repository string, before time.Time, branch *string) (actions.RunResultIter, error)
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -2728,7 +2728,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		if params.Before != nil {
 			before = time.Time(*params.Before)
 		}
-		runsIter, err := deps.Actions.ListRuns(params.Repository, before)
+		runsIter, err := deps.Actions.ListRuns(params.Repository, before, params.Branch)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewListRunsNotFound().
