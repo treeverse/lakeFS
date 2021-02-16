@@ -391,7 +391,7 @@ definitions:
         format: date-time
       status:
         type: string
-        enum: [ running, failed, completed ]
+        enum: [ failed, completed ]
       commit_id:
         type: string
 
@@ -415,7 +415,7 @@ definitions:
         format: date-time
       status:
         type: string
-        enum: [ running, failed, completed ]
+        enum: [ failed, completed ]
 
 paths:
 

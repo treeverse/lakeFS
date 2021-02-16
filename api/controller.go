@@ -83,6 +83,7 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
 		Collector:       d.Collector,
+		Actions:         d.Actions,
 		Logger:          d.Logger.WithContext(ctx),
 	}
 }
@@ -2569,19 +2570,17 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
+		status := models.ActionRunStatusCompleted
+		if !taskRes.Passed {
+			status = models.ActionRunStatusFailed
+		}
 		res := &models.ActionRun{
 			RunID:     &taskRes.RunID,
 			StartTime: strfmt.DateTime(taskRes.StartTime),
-			Status:    models.ActionRunStatusRunning,
+			EndTime:   strfmt.DateTime(taskRes.EndTime),
+			Status:    status,
 			Branch:    &taskRes.BranchID,
 			CommitID:  &taskRes.OnRef,
-		}
-		if !taskRes.EndTime.IsZero() {
-			res.EndTime = strfmt.DateTime(taskRes.EndTime)
-			res.Status = models.ActionRunStatusFailed
-			if taskRes.Passed {
-				res.Status = models.ActionRunStatusCompleted
-			}
 		}
 
 		return actionsop.NewGetRunOK().WithPayload(res)
@@ -2673,23 +2672,19 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		res := &actionsop.ListRunHooksOKBody{Pagination: &models.Pagination{HasMore: swag.Bool(true)}}
 		for hooksIter.Next() {
 			val := hooksIter.Value()
-			hookRun := &models.HookRun{
+			status := models.HookRunStatusCompleted
+			if !val.Passed {
+				status = models.HookRunStatusFailed
+			}
+
+			res.Results = append(res.Results, &models.HookRun{
 				Action:    val.ActionName,
 				HookID:    &val.HookID,
 				HookType:  val.HookType,
 				StartTime: strfmt.DateTime(val.StartTime),
-				Status:    models.HookRunStatusRunning,
-			}
-
-			if !val.EndTime.IsZero() {
-				hookRun.EndTime = strfmt.DateTime(val.EndTime)
-				hookRun.Status = models.HookRunStatusCompleted
-				if !val.Passed {
-					hookRun.Status = models.HookRunStatusFailed
-				}
-			}
-
-			res.Results = append(res.Results, hookRun)
+				EndTime:   strfmt.DateTime(val.EndTime),
+				Status:    status,
+			})
 			res.Pagination.NextOffset = strfmt.DateTime(val.StartTime).String()
 			res.Pagination.Results = swag.Int64(int64(len(res.Results)))
 
@@ -2702,7 +2697,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 				WithPayload(responseErrorFrom(hooksIter.Err()))
 		}
 
-		if len(res.Results) < int(*params.Amount) {
+		if len(res.Results) < int(swag.Int64Value(params.Amount)) {
 			res.Pagination.HasMore = swag.Bool(false)
 		}
 
@@ -2741,22 +2736,20 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		res := &actionsop.ListRunsOKBody{Pagination: &models.Pagination{HasMore: swag.Bool(true)}}
 		for runsIter.Next() {
 			val := runsIter.Value()
-			var run = &models.ActionRun{
+			status := models.HookRunStatusCompleted
+			if !val.Passed {
+				status = models.HookRunStatusFailed
+			}
+
+			res.Results = append(res.Results, &models.ActionRun{
 				Branch:    &val.BranchID,
 				CommitID:  &val.OnRef,
 				RunID:     &val.RunID,
 				StartTime: strfmt.DateTime(val.StartTime),
-				Status:    models.ActionRunStatusRunning,
-			}
-			if !val.EndTime.IsZero() {
-				run.EndTime = strfmt.DateTime(val.EndTime)
-				run.Status = models.HookRunStatusCompleted
-				if !val.Passed {
-					run.Status = models.HookRunStatusFailed
-				}
-			}
+				EndTime:   strfmt.DateTime(val.EndTime),
+				Status:    status,
+			})
 
-			res.Results = append(res.Results, run)
 			res.Pagination.NextOffset = strfmt.DateTime(val.StartTime).String()
 			res.Pagination.Results = swag.Int64(int64(len(res.Results)))
 
@@ -2769,7 +2762,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 				WithPayload(responseErrorFrom(runsIter.Err()))
 		}
 
-		if len(res.Results) < int(*params.Amount) {
+		if len(res.Results) < int(swag.Int64Value(params.Amount)) {
 			res.Pagination.HasMore = swag.Bool(false)
 		}
 
