@@ -113,8 +113,20 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	container := a.getContainerURL(qualifiedKey.StorageNamespace)
 	blobURL := container.NewBlockBlobURL(qualifiedKey.Key)
 
-	_, err = azblob.UploadStreamToBlockBlob(a.ctx, reader, blobURL, translatePutOpts(opts))
-	return err
+	// TODO(Guys): remove this work around once azure fixes panic issue and use azblob.UploadStreamToBlockBlob
+	transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
+	if err != nil {
+		return err
+	}
+	uploadOpts := translatePutOpts(opts)
+	uploadOpts.TransferManager = transferManager
+	defer transferManager.Close()
+	resp, err := copyFromReader(a.ctx, reader, blobURL, uploadOpts)
+	if err != nil {
+		return err
+	}
+	_ = resp == nil // this is done in order to ignore "result 0 is never used" error ( copyFromReader is copied from azure, and we want to keep it with minimum changes)
+	return nil
 }
 
 func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {

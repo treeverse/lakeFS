@@ -51,6 +51,7 @@ func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o azblo
 			break
 		}
 	}
+	cp.wg.Wait()
 	// If the error is not EOF, then we have a problem.
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, err
@@ -171,8 +172,6 @@ func (c *copier) write(chunk copierChunk) {
 
 // close commits our blocks to blob storage and closes our writer.
 func (c *copier) close() error {
-	c.wg.Wait()
-
 	if err := c.getErr(); err != nil {
 		return err
 	}
