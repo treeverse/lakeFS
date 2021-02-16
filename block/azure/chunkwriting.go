@@ -29,40 +29,8 @@ type blockWriter interface {
 	CommitBlockList(context.Context, []string, azblob.BlobHTTPHeaders, azblob.Metadata, azblob.BlobAccessConditions, azblob.AccessTierType, azblob.BlobTagsMap, azblob.ClientProvidedKeyOptions) (*azblob.BlockBlobCommitBlockListResponse, error)
 }
 
-func defaults(u *azblob.UploadStreamToBlockBlobOptions) error {
-	if u.TransferManager != nil {
-		return nil
-	}
-
-	if u.MaxBuffers == 0 {
-		u.MaxBuffers = 1
-	}
-
-	if u.BufferSize < _1MiB {
-		u.BufferSize = _1MiB
-	}
-
-	var err error
-	u.TransferManager, err = azblob.NewStaticBuffer(u.BufferSize, u.MaxBuffers)
-	if err != nil {
-		return fmt.Errorf("bug: default transfer manager could not be created: %w", err)
-	}
-	return nil
-}
-
 // copyFromReader copies a source io.Reader to blob storage using concurrent uploads.
-// TODO(someone): The existing model provides a buffer size and buffer limit as limiting factors.  The buffer size is probably
-// useless other than needing to be above some number, as the network stack is going to hack up the buffer over some size. The
-// max buffers is providing a cap on how much memory we use (by multiplying it times the buffer size) and how many go routines can upload
-// at a time.  I think having a single max memory dial would be more efficient.  We can choose an internal buffer size that works
-// well, 4 MiB or 8 MiB, and autoscale to as many goroutines within the memory limit. This gives a single dial to tweak and we can
-// choose a max value for the memory setting based on internal transfers within Azure (which will give us the maximum throughput model).
-// We can even provide a utility to dial this number in for customer networks to optimize their copies.
 func copyFromReader(ctx context.Context, from io.Reader, to blockWriter, o azblob.UploadStreamToBlockBlobOptions) (*azblob.BlockBlobCommitBlockListResponse, error) {
-	if err := defaults(&o); err != nil {
-		return nil, err
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

@@ -106,8 +106,11 @@ const (
 	BlockstoreS3StreamingChunkSizeKey    = "blockstore.s3.streaming_chunk_size"
 	BlockstoreS3StreamingChunkTimeoutKey = "blockstore.s3.streaming_chunk_timeout"
 	BlockstoreS3MaxRetriesKey            = "blockstore.s3.max_retries"
-	BlockstoreAzureTryTimeout            = "blockstore.azure.try_timout"
 
+	BlockstoreAzureTryTimeoutKey                = "blockstore.azure.try_timeout"
+	BlockstoreAzureStorageAccountKey            = "blockstore.azure.storage_account"
+	BlockstoreAzureStorageAccessKey             = "blockstore.azure.storage_access_key"
+	BlockstoreAzureServiceURL                   = "blockstore.azure.service_url"
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
 	CommittedLocalCacheNumUploadersKey          = "committed.local_cache.max_uploaders_per_writer"
@@ -170,7 +173,7 @@ func setDefaults() {
 	viper.SetDefault(StatsAddressKey, DefaultStatsAddr)
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 
-	viper.SetDefault(BlockstoreAzureTryTimeout, DefaultAzureTryTimeout)
+	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultAzureTryTimeout)
 }
 
 type Configurator interface {
@@ -323,9 +326,10 @@ func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
 }
 func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
-		StorageAccount:   viper.GetString("blockstore.azure.storage_account"),
-		StorageAccessKey: viper.GetString("blockstore.azure.storage_access_key"),
-		TryTimeout:       viper.GetDuration(BlockstoreAzureTryTimeout),
+		StorageAccount:   viper.GetString(BlockstoreAzureStorageAccountKey),
+		StorageAccessKey: viper.GetString(BlockstoreAzureStorageAccessKey),
+		ServiceURL:       viper.GetString(BlockstoreAzureServiceURL),
+		TryTimeout:       viper.GetDuration(BlockstoreAzureTryTimeoutKey),
 	}, nil
 }
 
