@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	multipartNumberOfParts = 20
-	multipartPartSize      = 6 * 1024 * 1024
+	multipartNumberOfParts = 7
+	multipartPartSize      = 5 * 1024 * 1024
 )
 
 func TestMultipartUpload(t *testing.T) {
