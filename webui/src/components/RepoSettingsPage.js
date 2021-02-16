@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, {useRef, useState, useEffect} from "react";
 import {connect} from "react-redux";
 import Form from "react-bootstrap/Form";
 import {Container} from "react-bootstrap";
@@ -7,7 +7,8 @@ import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import {TrashIcon} from "@primer/octicons-react";
 import Modal from "react-bootstrap/Modal";
-import {deleteRepository} from "../actions/repositories";
+import {deleteRepository, listRepositories} from "../actions/repositories";
+import {useHistory} from "react-router-dom";
 
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
@@ -54,10 +55,11 @@ const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
 
 const RepoSettingsPage = connect(
     ({ repositories }) => ({ deleteStatus: repositories.delete }),
-    ({ deleteRepository })
-)(({repo, deleteStatus, deleteRepository}) => {
+    ({ deleteRepository, listRepositories })
+)(({repo, deleteStatus, deleteRepository, listRepositories}) => {
 
     const [showingDeleteModal, setShowDeleteModal] = useState(false);
+    const history = useHistory();
 
     const deleteRepo = () => {
         if (deleteStatus.inProgress) {
@@ -66,6 +68,13 @@ const RepoSettingsPage = connect(
         setShowDeleteModal(false);
         deleteRepository(repo.id);
     }
+
+    useEffect(()=> {
+        if (deleteStatus.done) {
+            history.push('/repositories');
+        }
+        listRepositories();
+    }, [listRepositories, deleteStatus.done, history]);
 
     const body = (
         <>
