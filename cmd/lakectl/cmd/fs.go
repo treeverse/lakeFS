@@ -100,7 +100,7 @@ var fsCatCmd = &cobra.Command{
 }
 
 func upload(client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
-	fp := GetReader(sourcePathname)
+	fp := GetReaderFromPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()

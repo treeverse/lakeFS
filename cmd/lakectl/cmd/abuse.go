@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
-	"github.com/treeverse/lakefs/testutil"
-
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/testutil/stress"
 
 	"github.com/go-openapi/swag"
 
@@ -29,6 +26,23 @@ var abuseCmd = &cobra.Command{
 	Hidden: true,
 }
 
+func readLines(path string) ([]string, error) {
+	reader := GetReaderFromPath(path)
+	var err error
+	defer func() {
+		err = reader.Close()
+	}()
+	scanner := bufio.NewScanner(reader)
+	keys := make([]string, 0)
+	for scanner.Scan() {
+		keys = append(keys, scanner.Text())
+	}
+	if scanner.Err() != nil {
+		return nil, scanner.Err()
+	}
+	return keys, err
+}
+
 var abuseRandomReadsCmd = &cobra.Command{
 	Use:    "random-read <source ref uri>",
 	Short:  "Read keys from a file and generate random reads from the source ref for those keys.",
@@ -40,86 +54,41 @@ var abuseRandomReadsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
 
-		// how many branches to create
-		amount, err := cmd.Flags().GetInt("amount")
-		if err != nil {
-			DieErr(err)
-		}
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
+		fromFile := MustString(cmd.Flags().GetString("from-file"))
 
-		// how many calls in parallel to execute
-		parallelism, err := cmd.Flags().GetInt("parallelism")
+		// read the input file
+		keys, err := readLines(fromFile)
 		if err != nil {
 			DieErr(err)
-		}
-
-		// prefix to create new branches with
-		fromFile, err := cmd.Flags().GetString("from-file")
-		if err != nil {
-			DieErr(err)
-		}
-		reader := GetReader(fromFile)
-		defer func() {
-			err := reader.Close()
-			if err != nil {
-				DieErr(err)
-			}
-		}()
-		scanner := bufio.NewScanner(reader)
-		keys := make([]string, 0)
-		for scanner.Scan() {
-			keys = append(keys, scanner.Text())
 		}
 		Fmt("read a total of %d keys from key file\n", len(keys))
 
-		workFn := func(input chan testutil.Request, output chan testutil.Result) {
+		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// generate randomly selected keys as input
+		rand.Seed(time.Now().Unix())
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				//nolint:gosec
+				add(keys[rand.Intn(len(keys))])
+			}
+		})
+
+		// execute the things!
+		generator.Run(func(input chan string, output chan stress.Result) {
 			ctx := context.Background()
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				_, err := client.StatObject(ctx, u.Repository, u.Ref, work.Payload)
-				output <- testutil.Result{
+				_, err := client.StatObject(ctx, u.Repository, u.Ref, work)
+				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
 				}
 			}
-		}
-		pool := testutil.NewWorkerPool(parallelism, workFn)
-
-		// generate load
-		go func(reqs chan testutil.Request) {
-			rand.Seed(time.Now().Unix())
-			for i := 0; i < amount; i++ {
-				//nolint:gosec
-				reqs <- testutil.Request{
-					Payload: keys[rand.Intn(len(keys))],
-				}
-			}
-			close(reqs)
-		}(pool.Input)
-
-		// execute the things!
-		collector := testutil.NewResultCollector(pool.Output)
-		go collector.Collect() // start measuring the stuff
-		pool.Start()           // start executing the stuff
-
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-
-		ticker := time.NewTicker(time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				fmt.Printf("%s\n", collector.Stats())
-			case <-pool.Done():
-				fmt.Printf("%s\n\n", collector.Stats())
-				fmt.Printf("%s\n", collector.Histogram())
-				return
-			case <-signals:
-				fmt.Printf("%s\n\n", collector.Stats())
-				fmt.Printf("Historgram (ms): %s\n", collector.Histogram())
-				return
-			}
-		}
+		})
 	},
 }
 
@@ -134,125 +103,75 @@ var abuseCreateBranchesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
 
-		// only clean prefixed branches without creating new ones
-		cleanOnly, err := cmd.Flags().GetBool("clean-only")
-		if err != nil {
-			DieErr(err)
-		}
+		cleanOnly := MustBool(cmd.Flags().GetBool("clean-only"))
+		branchPrefix := MustString(cmd.Flags().GetString("branch-prefix"))
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 
-		// prefix to create new branches with
-		branchPrefix, err := cmd.Flags().GetString("branch-prefix")
-		if err != nil {
-			DieErr(err)
-		}
-		client := getClient()
+		deleteGen := stress.NewGenerator(parallelism)
 
-		// how many branches to create
-		amount, err := cmd.Flags().GetInt("amount")
-		if err != nil {
-			DieErr(err)
-		}
-
-		// how many calls in parallel to execute
-		parallelism, err := cmd.Flags().GetInt("parallelism")
-		if err != nil {
-			DieErr(err)
-		}
-
-		// delete all prefixed branches first for a clean start
-		totalDeleted := 0
-		semaphore := make(chan bool, parallelism)
-		for {
-			branches, pagination, err := client.ListBranches(context.Background(), u.Repository, branchPrefix, 1000)
-			if err != nil {
-				DieErr(err)
-			}
-			matches := 0
-			var wg sync.WaitGroup
-			for _, b := range branches {
-				branch := swag.StringValue(b.ID)
-				if !strings.HasPrefix(branch, branchPrefix) {
-					continue
+		deleteGen.Setup(func(add stress.GeneratorAddFn) {
+			client := getClient()
+			currentOffset := branchPrefix
+			for {
+				branches, pagination, err := client.ListBranches(context.Background(), u.Repository, currentOffset, 1000)
+				if err != nil {
+					DieErr(err)
 				}
-				matches++
-				totalDeleted++
-				wg.Add(1)
-				go func(branch string) {
-					semaphore <- true
-					err := client.DeleteBranch(context.Background(), u.Repository, branch)
-					if err != nil {
-						DieErr(err)
+				for _, b := range branches {
+					branch := swag.StringValue(b.ID)
+					if !strings.HasPrefix(branch, branchPrefix) {
+						return
 					}
-					wg.Done()
-					<-semaphore
-				}(branch)
+					add(branch) // this branch should be deleted!
+				}
+				if !swag.BoolValue(pagination.HasMore) {
+					return
+				}
+				currentOffset = pagination.NextOffset
 			}
-			if matches == 0 {
-				break // no more
+		})
+
+		// wait for deletes to end
+		deleteGen.Run(func(input chan string, output chan stress.Result) {
+			client := getClient()
+			for branch := range input {
+				start := time.Now()
+				err := client.DeleteBranch(context.Background(), u.Repository, branch)
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
+				}
 			}
-			wg.Wait() // wait for this batch to be over
-			Fmt("branches deleted so far: %d\n", totalDeleted)
-			if !swag.BoolValue(pagination.HasMore) {
-				break
-			}
-		}
-		Fmt("total deleted with prefix: %d\n", totalDeleted)
+		})
 
 		if cleanOnly {
 			return // done.
 		}
 
-		worker := func(ctx context.Context, inp chan string, out chan struct{}) {
-			for {
-				select {
-				case x := <-inp:
-					_, err := client.CreateBranch(ctx, u.Repository, &models.BranchCreation{
-						Name:   &x,
-						Source: &u.Ref,
-					})
-					if err != nil {
-						DieErr(err)
-					}
-					out <- struct{}{}
-				case <-ctx.Done():
-					break
+		// start creating branches
+		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// generate create branch requests
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				add(fmt.Sprintf("%s-%d", branchPrefix, i))
+			}
+		})
+
+		generator.Run(func(input chan string, output chan stress.Result) {
+			client := getClient()
+			ctx := context.Background()
+			for branch := range input {
+				start := time.Now()
+				_, err := client.CreateBranch(
+					ctx, u.Repository, &models.BranchCreation{Name: swag.String(branch), Source: &u.Ref})
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
 				}
 			}
-		}
-
-		Fmt("creating %d branches now...\n", amount)
-		reqs := make(chan string, amount)
-		responses := make(chan struct{})
-		for i := 1; i <= amount; i++ {
-			reqs <- fmt.Sprintf("%s%d", branchPrefix, i)
-		}
-
-		// now run it with the given parallelism
-		ctx := context.Background()
-		for i := 0; i < parallelism; i++ {
-			go worker(ctx, reqs, responses)
-		}
-
-		// collect responses
-		i := 0
-		t := time.Now()
-		const printEvery = 10000
-		start := time.Now()
-		for {
-			<-responses
-			i++
-			if i%printEvery == 0 {
-				thisBatch := time.Since(t)
-				Fmt("done %d calls in %s (%.2f/second)\n", i, thisBatch, float64(printEvery)/thisBatch.Seconds())
-				t = time.Now()
-			}
-			if i == amount {
-				break
-			}
-		}
-
-		took := time.Since(start)
-		Fmt("Done! created %d branches in %s: (%.2f/second)\n\n", amount, took, float64(amount)/took.Seconds())
+		})
 	},
 }
 

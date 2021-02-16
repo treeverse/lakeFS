@@ -14,6 +14,8 @@ const (
 	AutoConfirmFlagName     = "yes"
 	AutoConfigFlagShortName = "y"
 	AutoConfirmFlagHelp     = "Automatically say yes to all confirmations"
+
+	StdinFileName = "-"
 )
 
 func AssignAutoConfirmFlag(flags *pflag.FlagSet) {
@@ -37,10 +39,10 @@ func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
 	return true, nil
 }
 
-// GetReader returns a reader from the given path. If path is "-", it'll return Stdin
-func GetReader(path string) io.ReadCloser {
-	if strings.EqualFold(path, "-") {
-		// upload from stdin
+// GetReaderFromPath returns a reader from the given path. If path is "-", it'll return Stdin
+func GetReaderFromPath(path string) io.ReadCloser {
+	if strings.EqualFold(path, StdinFileName) {
+		// read from stdin
 		return ioutil.NopCloser(os.Stdin)
 	}
 	fp, err := os.Open(path)
@@ -48,4 +50,25 @@ func GetReader(path string) io.ReadCloser {
 		DieErr(err)
 	}
 	return fp
+}
+
+func MustString(v string, err error) string {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
+}
+
+func MustInt(v int, err error) int {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
+}
+
+func MustBool(v bool, err error) bool {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
 }

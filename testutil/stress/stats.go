@@ -1,15 +1,15 @@
-package testutil
+package stress
 
 import (
 	"fmt"
 	"time"
 )
 
-type CollectorRequest int
+type collectorRequest int
 
 const (
-	CollectorRequestStats CollectorRequest = iota
-	CollectorRequestHistogram
+	collectorRequestStats collectorRequest = iota
+	collectorRequestHistogram
 )
 
 type Stats struct {
@@ -30,7 +30,7 @@ type ResultCollector struct {
 	Results chan Result
 
 	// for getting data out using methods
-	requests   chan CollectorRequest
+	requests   chan collectorRequest
 	stats      chan *Stats
 	histograms chan *Histogram
 
@@ -52,12 +52,12 @@ func (rc *ResultCollector) flushCurrent() *Stats {
 }
 
 func (rc *ResultCollector) Stats() *Stats {
-	rc.requests <- CollectorRequestStats
+	rc.requests <- collectorRequestStats
 	return <-rc.stats
 }
 
 func (rc *ResultCollector) Histogram() *Histogram {
-	rc.requests <- CollectorRequestHistogram
+	rc.requests <- collectorRequestHistogram
 	return <-rc.histograms
 }
 
@@ -74,9 +74,9 @@ func (rc *ResultCollector) Collect() {
 			}
 		case request := <-rc.requests:
 			switch request {
-			case CollectorRequestHistogram:
+			case collectorRequestHistogram:
 				rc.histograms <- rc.histogram.Clone()
-			case CollectorRequestStats:
+			case collectorRequestStats:
 				rc.stats <- rc.flushCurrent()
 				rc.currentCompleted = 0
 				rc.lastFlush = time.Now()
@@ -85,16 +85,15 @@ func (rc *ResultCollector) Collect() {
 	}
 }
 
-// TODO(ozkatz): make this configurable
-var defaultHistogramBuckets = []int64{1, 2, 5, 7, 10, 15, 25, 50, 75, 100, 250, 350, 500, 750, 1000, 5000}
+var DefaultHistogramBuckets = []int64{1, 2, 5, 7, 10, 15, 25, 50, 75, 100, 250, 350, 500, 750, 1000, 5000}
 
 func NewResultCollector(workerResults chan Result) *ResultCollector {
 	return &ResultCollector{
 		Results:    workerResults,
-		requests:   make(chan CollectorRequest),
+		requests:   make(chan collectorRequest),
 		stats:      make(chan *Stats),
 		histograms: make(chan *Histogram),
 		lastFlush:  time.Now(),
-		histogram:  NewHistogram(defaultHistogramBuckets),
+		histogram:  NewHistogram(DefaultHistogramBuckets),
 	}
 }
