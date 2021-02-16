@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -53,7 +52,6 @@ func New(db db.Database) *Service {
 		DB: db,
 	}
 }
-
 func (s *Service) Run(ctx context.Context, event Event, deps Deps) error {
 	// load relevant actions
 	actions, err := s.loadMatchedActions(ctx, deps.Source, MatchSpec{EventType: event.EventType, Branch: event.BranchID})
@@ -68,12 +66,11 @@ func (s *Service) Run(ctx context.Context, event Event, deps Deps) error {
 		return nil
 	}
 
-	startTime := time.Now()
 	runErr := s.runTasks(ctx, tasks, event, deps)
 	endTime := time.Now()
 
 	// write results and return multi error
-	err = s.insertRunInformation(ctx, event, tasks, startTime, endTime, runErr)
+	err = s.insertRunInformation(ctx, event, tasks, endTime, runErr)
 	if err != nil {
 		return err
 	}
@@ -129,14 +126,14 @@ func (s *Service) runTasks(ctx context.Context, tasks []*Task, event Event, deps
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks []*Task, startTime, endTime time.Time, runErr error) error {
+func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks []*Task, endTime time.Time, runErr error) error {
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		var err error
 		// insert run information
 		runPassed := runErr == nil
-		_, err = tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, start_time, end_time, event_type, branch_id, source_ref, commit_id, passed)
+		_, err = tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,'',$8)`,
-			event.RepositoryID, event.RunID.String(), startTime, endTime, event.EventType, event.BranchID, event.SourceRef, runPassed)
+			event.RepositoryID, event.RunID.String(), event.EventType, event.EventTime, endTime, event.BranchID, event.SourceRef, runPassed)
 		if err != nil {
 			return nil, fmt.Errorf("insert run information: %w", err)
 		}
@@ -144,9 +141,9 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 		// insert each task information
 		for _, task := range tasks {
 			taskPassed := runErr == nil
-			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, action_name, hook_id, start_time, end_time, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-				event.RepositoryID, event.RunID.String(), task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
+			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, event_type, action_name, hook_id, start_time, end_time, passed)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+				event.RepositoryID, event.RunID.String(), event.EventType, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
 			if err != nil {
 				return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
 			}
@@ -160,4 +157,16 @@ func NewRunID(t time.Time) string {
 	uid := strings.ReplaceAll(uuid.New().String(), "-", "")
 	runID := t.UTC().Format(time.RFC3339) + "_" + uid
 	return runID
+}
+
+func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID uuid.UUID, eventType EventType, commitID string) error {
+	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`UPDATE actions_runs SET commit_id=$4 WHERE repository_id=$1 AND run_id=$2 AND event_type=$3`,
+			repositoryID, runID, string(eventType), commitID)
+		if err != nil {
+			return nil, fmt.Errorf("update run commit_id: %w", err)
+		}
+		return nil, nil
+	}, db.WithContext(ctx))
+	return err
 }

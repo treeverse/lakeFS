@@ -84,6 +84,7 @@ type Store interface {
 
 type Actions interface {
 	Run(ctx context.Context, event actions.Event, deps actions.Deps) error
+	UpdateCommitID(ctx context.Context, repositoryID string, runID uuid.UUID, eventType actions.EventType, commitID string) error
 }
 
 type EntryCatalog struct {
@@ -551,10 +552,10 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }
 
-func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+func (e *EntryCatalog) PreCommitHook(ctx context.Context, runID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	evt := actions.Event{
 		EventType:     actions.EventTypePreCommit,
-		RunID:         eventID,
+		RunID:         runID,
 		EventTime:     time.Now(),
 		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      branch.String(),
@@ -578,8 +579,8 @@ func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, rep
 	return e.Actions.Run(ctx, evt, deps)
 }
 
-func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
-	return nil
+func (e *EntryCatalog) PostCommitHook(ctx context.Context, runID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
+	return e.Actions.UpdateCommitID(ctx, repositoryRecord.RepositoryID.String(), runID, actions.EventTypePreCommit, commitRecord.CommitID.String())
 }
 
 func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {

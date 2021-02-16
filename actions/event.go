@@ -9,8 +9,10 @@ import (
 type EventType string
 
 const (
-	EventTypePreCommit EventType = "pre-commit"
-	EventTypePreMerge  EventType = "pre-merge"
+	EventTypePreCommit  EventType = "pre-commit"
+	EventTypePostCommit EventType = "post-commit"
+	EventTypePreMerge   EventType = "pre-merge"
+	EventTypePostMerge  EventType = "post-merge"
 )
 
 type Deps struct {
@@ -28,4 +30,5 @@ type Event struct {
 	CommitMessage string
 	Committer     string
 	Metadata      map[string]string
+	CommitID      string
 }

@@ -917,6 +917,9 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 }
 
 func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
+	runID := uuid.New()
+	var repoRecord RepositoryRecord
+	var commitRecord CommitRecord
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -938,8 +941,8 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		eventID := uuid.New()
-		err = g.hooks.PreCommitHook(ctx, eventID, RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, branchID, commit)
+		repoRecord = RepositoryRecord{RepositoryID: repositoryID, Repository: repo}
+		err = g.hooks.PreCommitHook(ctx, runID, repoRecord, branchID, commit)
 		if err != nil {
 			return "", newHookError("pre-commit", err)
 		}
@@ -985,10 +988,18 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 				"staging_token": branch.StagingToken,
 			}).Error("Failed to drop staging data")
 		}
+		commitRecord = CommitRecord{
+			CommitID: newCommit,
+			Commit:   &commit,
+		}
 		return newCommit, nil
 	})
 	if err != nil {
 		return "", err
+	}
+	err = g.hooks.PostCommitHook(ctx, runID, repoRecord, branchID, commitRecord)
+	if err != nil {
+		g.log.WithError(err).Error("Post-commit hook failed")
 	}
 	return res.(CommitID), nil
 }
@@ -1255,7 +1266,9 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
-	eventID := uuid.New()
+	runID := uuid.New()
+	var commitRecord CommitRecord
+	var repoRecord RepositoryRecord
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
@@ -1291,7 +1304,8 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
-		err = g.hooks.PreMergeHook(ctx, eventID, RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, destination, source, commit)
+		repoRecord = RepositoryRecord{RepositoryID: repositoryID, Repository: repo}
+		err = g.hooks.PreMergeHook(ctx, runID, repoRecord, destination, source, commit)
 		if err != nil {
 			return "", newHookError("pre-merge", err)
 		}
@@ -1304,12 +1318,17 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		if err != nil {
 			return "", fmt.Errorf("update branch %s: %w", destination, err)
 		}
+		commitRecord = CommitRecord{CommitID: commitID, Commit: &commit}
 		return &CommitIDAndSummary{commitID, summary}, nil
 	})
 	if err != nil {
 		return "", DiffSummary{}, err
 	}
 	c := res.(*CommitIDAndSummary)
+	err = g.hooks.PostMergeHook(ctx, runID, repoRecord, destination, source, commitRecord)
+	if err != nil {
+		g.log.WithError(err).Error("Post-merge hook failed")
+	}
 	return c.ID, c.Summary, nil
 }
 

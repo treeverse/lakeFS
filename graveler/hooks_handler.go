@@ -7,10 +7,10 @@ import (
 )
 
 type HooksHandler interface {
-	PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, branch BranchID, commit Commit) error
-	PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, branch BranchID, commitRecord CommitRecord) error
-	PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commit Commit) error
-	PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commitRecord CommitRecord) error
+	PreCommitHook(ctx context.Context, runID uuid.UUID, repositoryRecord RepositoryRecord, branch BranchID, commit Commit) error
+	PostCommitHook(ctx context.Context, runID uuid.UUID, repositoryRecord RepositoryRecord, branch BranchID, commitRecord CommitRecord) error
+	PreMergeHook(ctx context.Context, runID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commit Commit) error
+	PostMergeHook(ctx context.Context, runID uuid.UUID, repositoryRecord RepositoryRecord, destination BranchID, source Ref, commitRecord CommitRecord) error
 }
 
 type HooksNoOp struct{}

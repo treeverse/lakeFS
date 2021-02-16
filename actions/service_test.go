@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/treeverse/lakefs/testutil"
 
 	"github.com/golang/mock/gomock"
@@ -43,10 +45,10 @@ hooks:
       url: "`+ts.URL+`/hook"
 `), nil)
 
-	evtTime := time.Now()
 	evt := actions.Event{
+		RunID:         uuid.New(),
 		EventType:     actions.EventTypePreCommit,
-		EventTime:     evtTime,
+		EventTime:     time.Now(),
 		RepositoryID:  "repoID",
 		BranchID:      "branchID",
 		SourceRef:     "sourceRef",
@@ -62,5 +64,9 @@ hooks:
 	err := actionsManager.Run(ctx, evt, deps)
 	if err != nil {
 		t.Fatalf("Run() failed with err=%s", err)
+	}
+	err = actionsManager.UpdateCommitID(ctx, evt.RepositoryID, evt.RunID, evt.EventType, "commit1")
+	if err != nil {
+		t.Fatalf("UpdateCommitID() failed with err=%s", err)
 	}
 }
