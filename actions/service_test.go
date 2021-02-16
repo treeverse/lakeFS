@@ -8,12 +8,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
 )
 
 func TestManager_RunActions(t *testing.T) {
+	conn, _ := testutil.GetDB(t, databaseURI)
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, "OK")
 	}))
@@ -54,7 +58,7 @@ hooks:
 		Source: testSource,
 		Output: testOutputWriter,
 	}
-	actionsManager := actions.New(nil)
+	actionsManager := actions.New(conn)
 	err := actionsManager.Run(ctx, evt, deps)
 	if err != nil {
 		t.Fatalf("Run() failed with err=%s", err)

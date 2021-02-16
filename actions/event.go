@@ -19,7 +19,7 @@ type Deps struct {
 }
 
 type Event struct {
-	EventID       uuid.UUID
+	RunID         uuid.UUID
 	EventType     EventType
 	EventTime     time.Time
 	RepositoryID  string
