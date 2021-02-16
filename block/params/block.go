@@ -12,6 +12,7 @@ type AdapterConfig interface {
 	GetBlockAdapterLocalParams() (Local, error)
 	GetBlockAdapterS3Params() (S3, error)
 	GetBlockAdapterGSParams() (GS, error)
+	GetBlockAdapterAzureParams() (Azure, error)
 }
 
 type Mem struct{}
@@ -29,4 +30,11 @@ type S3 struct {
 type GS struct {
 	CredentialsFile string
 	CredentialsJSON string
+}
+
+type Azure struct {
+	StorageAccount   string
+	StorageAccessKey string
+	ServiceURL       string
+	TryTimeout       time.Duration
 }
