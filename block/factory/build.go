@@ -125,6 +125,7 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 		// fallback to Azure environment variables
 		accountName, accountKey = os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	}
+	logging.Default().WithField("account_name", accountName).Warn("Test to see account name from nessie")
 	// Create a default request pipeline using your storage account name and account key.
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
