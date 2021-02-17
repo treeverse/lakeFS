@@ -184,7 +184,6 @@ func (a *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	req.Header.Set("Transfer-Encoding", "chunked")
 	req.Header.Set("x-amz-content-sha256", StreamingSha256)
 	req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", sizeBytes))
-	req.Header.Set("Expect", "100-Continue")
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
 	baseSigner.DisableURIPathEscaping = true
@@ -193,6 +192,7 @@ func (a *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 		log.WithError(err).Error("failed to sign request")
 		return "", err
 	}
+	req.Header.Set("Expect", "100-Continue")
 
 	sigSeed, err := v4.GetSignedRequestSignature(req)
 	if err != nil {
