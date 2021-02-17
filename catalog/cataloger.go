@@ -111,8 +111,8 @@ type Cataloger interface {
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
 	// forward metadata for thick clients
-	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeData, error)
-	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeData, error)
+	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
+	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
 
 	io.Closer
 }

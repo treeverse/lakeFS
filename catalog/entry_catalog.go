@@ -615,10 +615,10 @@ func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, rep
 	return nil
 }
 
-func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeData, error) {
+func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
 	return e.Store.GetMetaRange(ctx, repositoryID, metaRangeID)
 }
 
-func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeData, error) {
+func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
 	return e.Store.GetRange(ctx, repositoryID, rangeID)
 }

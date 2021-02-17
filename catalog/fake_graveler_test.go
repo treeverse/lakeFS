@@ -47,11 +47,11 @@ func (g *FakeGraveler) DumpTags(ctx context.Context, repositoryID graveler.Repos
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeData, error) {
+func (g *FakeGraveler) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeData, error) {
+func (g *FakeGraveler) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
 	panic("implement me")
 }
 

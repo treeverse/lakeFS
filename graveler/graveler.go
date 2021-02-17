@@ -46,12 +46,12 @@ type Reference interface {
 	CommitID() CommitID
 }
 
-type MetaRangeData struct {
+type MetaRangeInfo struct {
 	// URI of metarange file.
 	Address string
 }
 
-type RangeData struct {
+type RangeInfo struct {
 	// URI of range file.
 	Address string
 }
@@ -338,9 +338,9 @@ type VersionController interface {
 // internals.
 type Plumbing interface {
 	// GetMetarange returns information where metarangeID is stored.
-	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeData, error)
+	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeInfo, error)
 	// GetRange returns information where rangeID is stored.
-	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeData, error)
+	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeInfo, error)
 }
 
 type Dumper interface {
@@ -529,9 +529,9 @@ type CommittedManager interface {
 	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, DiffSummary, error)
 
 	// GetMetarange returns information where metarangeID is stored.
-	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeData, error)
+	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeInfo, error)
 	// GetRange returns information where rangeID is stored.
-	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeData, error)
+	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeInfo, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -1540,18 +1540,18 @@ func (g *Graveler) LoadTags(ctx context.Context, repositoryID RepositoryID, meta
 	return nil
 }
 
-func (g *Graveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeData, error) {
+func (g *Graveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeInfo, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
-		return MetaRangeData{}, nil
+		return MetaRangeInfo{}, nil
 	}
 	return g.CommittedManager.GetMetaRange(ctx, repo.StorageNamespace, metaRangeID)
 }
 
-func (g *Graveler) GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeData, error) {
+func (g *Graveler) GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeInfo, error) {
 	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil {
-		return RangeData{}, nil
+		return RangeInfo{}, nil
 	}
 	return g.CommittedManager.GetRange(ctx, repo.StorageNamespace, rangeID)
 }
