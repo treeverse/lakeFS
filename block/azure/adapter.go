@@ -32,17 +32,17 @@ type Adapter struct {
 	ctx            context.Context
 	pipeline       pipeline.Pipeline
 	configurations configurations
-	serviceURL     string
+	endpointURL    string
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func NewAdapter(pipeline pipeline.Pipeline, serviceURL string, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(pipeline pipeline.Pipeline, endpointURL string, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		ctx:            context.Background(),
-		serviceURL:     serviceURL,
+		endpointURL:    endpointURL,
 		pipeline:       pipeline,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
 	}
@@ -54,9 +54,9 @@ func NewAdapter(pipeline pipeline.Pipeline, serviceURL string, opts ...func(a *A
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
-		pipeline:   a.pipeline,
-		serviceURL: a.serviceURL,
-		ctx:        ctx,
+		pipeline:    a.pipeline,
+		endpointURL: a.endpointURL,
+		ctx:         ctx,
 	}
 }
 
@@ -87,7 +87,7 @@ func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, 
 }
 
 func (a *Adapter) getContainerURL(containerName string) azblob.ContainerURL {
-	u, err := url.Parse(fmt.Sprintf("%s/%s", a.serviceURL, containerName))
+	u, err := url.Parse(fmt.Sprintf("%s/%s", a.endpointURL, containerName))
 	if err != nil {
 		panic(err)
 	}

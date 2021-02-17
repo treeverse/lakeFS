@@ -131,10 +131,10 @@ func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 		return nil, fmt.Errorf("invalid credentials : %w", err)
 	}
 	pipeline := azblob.NewPipeline(credential, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}})
-	serviceURL := params.ServiceURL
+	endpointURL := params.EndpointURL
 
-	if serviceURL == "" {
-		serviceURL = fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
+	if endpointURL == "" {
+		endpointURL = fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
 	}
-	return azure.NewAdapter(pipeline, serviceURL), nil
+	return azure.NewAdapter(pipeline, endpointURL), nil
 }
