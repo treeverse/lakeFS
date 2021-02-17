@@ -2364,6 +2364,10 @@ paths:
           description: output not found
           schema:
             $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
 
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     parameters:
