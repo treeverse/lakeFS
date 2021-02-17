@@ -1285,7 +1285,10 @@ func (c *Controller) MetadataGetMetarangeHandler() metadata.GetMetaRangeHandler 
 	return metadata.GetMetaRangeHandlerFunc(func(params metadata.GetMetaRangeParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				// TODO(oz): May want tighter permissions here.
+				Action:   permissions.ListObjectsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
 				Action:   permissions.ReadRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
 			},
@@ -1310,7 +1313,10 @@ func (c *Controller) MetadataGetRangeHandler() metadata.GetRangeHandler {
 	return metadata.GetRangeHandlerFunc(func(params metadata.GetRangeParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				// TODO(oz): May want tighter permissions here.
+				Action:   permissions.ListObjectsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
 				Action:   permissions.ReadRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
 			},
