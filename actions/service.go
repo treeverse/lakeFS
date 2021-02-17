@@ -46,14 +46,6 @@ type TaskResult struct {
 	Passed     bool      `db:"passed"`
 }
 
-type TaskResultIterator interface {
-	Next() bool
-	Value() *TaskResult
-	SeekGE(runID string)
-	Err() error
-	Close()
-}
-
 type RunResultIterator interface {
 	Next() bool
 	Value() *RunResult
@@ -61,6 +53,15 @@ type RunResultIterator interface {
 	Err() error
 	Close()
 }
+
+type TaskResultIterator interface {
+	Next() bool
+	Value() *TaskResult
+	Err() error
+	Close()
+}
+
+const defaultFetchSize = 1024
 
 var ErrNotFound = errors.New("not found")
 
@@ -244,10 +245,12 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 	return res.(*TaskResult), nil
 }
 
-func (s *Service) ListRuns(ctx context.Context, repositoryID string, afterRunID string, branchID *string) (RunResultIterator, error) {
-	return nil, ErrNotFound
+func (s *Service) ListRuns(ctx context.Context, repositoryID string, fromRunID string, branchID *string) (RunResultIterator, error) {
+	iter := NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, fromRunID, branchID)
+	return iter, nil
 }
 
-func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, afterRunID string) (TaskResultIterator, error) {
-	return nil, ErrNotFound
+func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, runID string) (TaskResultIterator, error) {
+	iter := NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID)
+	return iter, nil
 }

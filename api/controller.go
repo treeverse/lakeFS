@@ -72,7 +72,7 @@ type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, actionName string, hookID string) (*actions.TaskResult, error)
 	ListRuns(ctx context.Context, repositoryID string, afterRunID string, branchID *string) (actions.RunResultIterator, error)
-	ListRunTasks(ctx context.Context, repositoryID string, afterRunID string) (actions.TaskResultIterator, error)
+	ListRunTasks(ctx context.Context, repositoryID string, runID string) (actions.TaskResultIterator, error)
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
