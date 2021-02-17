@@ -55,6 +55,8 @@ const (
 	DeleteCredentialsAction = "auth:DeleteCredentials"
 	ListCredentialsAction   = "auth:ListCredentials"
 	ReadConfigAction        = "auth:ReadConfig"
+
+	ReadActionsAction = "ci:ReadAction"
 )
 
 var serviceSet = map[string]struct{}{

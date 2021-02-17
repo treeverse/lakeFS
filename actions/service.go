@@ -4,6 +4,7 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -22,6 +23,49 @@ type Task struct {
 	HookID string
 	Hook   Hook
 }
+
+type TaskResult struct {
+	RunID      string
+	HookID     string
+	HookType   string
+	ActionName string
+	StartTime  time.Time
+	EndTime    time.Time
+	Passed     bool
+}
+
+type RunResult struct {
+	RunID      string
+	BranchID   string
+	OnRef      string
+	ActionName string
+	EventType  EventType
+	StartTime  time.Time
+	EndTime    time.Time
+	Passed     bool
+}
+
+type TaskResultIter interface {
+	Next() bool
+	Value() TaskResult
+	// SeekGE seeks by start-time
+	SeekGE(time.Time)
+	Err() error
+	Close()
+}
+
+type RunResultIter interface {
+	Next() bool
+	Value() RunResult
+	// SeekGE seeks by start-time
+	SeekGE(time.Time)
+	Err() error
+	Close()
+}
+
+var (
+	ErrNotFound = errors.New("not found")
+)
 
 func New(db db.Database) *Service {
 	return &Service{
