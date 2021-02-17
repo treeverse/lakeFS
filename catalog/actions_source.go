@@ -22,7 +22,7 @@ func NewActionsSource(entryCatalog *EntryCatalog) *ActionsSource {
 }
 
 func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([]string, error) {
-	it, err := s.catalog.ListEntries(ctx, record.RepositoryID, record.BranchID.Ref(), repositoryLocation, DefaultPathDelimiter)
+	it, err := s.catalog.ListEntries(ctx, record.RepositoryID, record.SourceRef, repositoryLocation, DefaultPathDelimiter)
 	if err != nil {
 		return nil, fmt.Errorf("listing actions: %w", err)
 	}
@@ -42,8 +42,7 @@ func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
 	// get name's address
 	repositoryID := record.RepositoryID
-	branchRef := record.BranchID.Ref()
-	ent, err := s.catalog.GetEntry(ctx, repositoryID, branchRef, Path(name))
+	ent, err := s.catalog.GetEntry(ctx, repositoryID, record.SourceRef, Path(name))
 	if err != nil {
 		return nil, fmt.Errorf("get action file metadata %s: %w", name, err)
 	}

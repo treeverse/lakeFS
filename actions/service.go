@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/graveler"
@@ -84,10 +86,12 @@ func NewService(db db.Database, source Source, writer OutputWriter) *Service {
 // Run load and run actions based on the event information
 func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
 	// load relevant actions
-	actions, err := s.loadMatchedActions(ctx, record, MatchSpec{
+	spec := MatchSpec{
 		EventType: record.EventType,
 		BranchID:  record.BranchID,
-	})
+	}
+	logging.Default().WithField("record", record).WithField("spec", spec).Info("Filtering actions")
+	actions, err := s.loadMatchedActions(ctx, record, spec)
 	if err != nil || len(actions) == 0 {
 		return err
 	}
