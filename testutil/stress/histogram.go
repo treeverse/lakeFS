@@ -8,6 +8,9 @@ import (
 type Histogram struct {
 	buckets  []int64
 	counters map[int64]int64
+	min      int64
+	max      int64
+	total    int64
 }
 
 func NewHistogram(buckets []int64) *Histogram {
@@ -22,10 +25,20 @@ func (h *Histogram) String() string {
 	for _, b := range h.buckets {
 		builder.WriteString(fmt.Sprintf("%d\t%d\n", b, h.counters[b]))
 	}
+	builder.WriteString(fmt.Sprintf("min\t%d\n", h.min))
+	builder.WriteString(fmt.Sprintf("max\t%d\n", h.max))
+	builder.WriteString(fmt.Sprintf("total\t%d\n", h.total))
 	return builder.String()
 }
 
 func (h *Histogram) Add(v int64) {
+	if v < h.min {
+		h.min = v
+	}
+	if v > h.max {
+		h.max = v
+	}
+	h.total++
 	for _, b := range h.buckets {
 		if v < b {
 			h.counters[b]++
@@ -45,5 +58,8 @@ func (h *Histogram) Clone() *Histogram {
 	return &Histogram{
 		buckets:  buckets,
 		counters: counters,
+		min:      h.min,
+		max:      h.max,
+		total:    h.total,
 	}
 }
