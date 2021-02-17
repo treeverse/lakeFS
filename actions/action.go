@@ -40,6 +40,7 @@ type MatchSpec struct {
 }
 
 var (
+	reName   = regexp.MustCompile(`^[\w\-. ]+$`)
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
 	ErrInvalidAction    = errors.New("invalid action")
@@ -49,6 +50,9 @@ var (
 func (a *Action) Validate() error {
 	if a.Name == "" {
 		return fmt.Errorf("%w 'name' is required", ErrInvalidAction)
+	}
+	if !reName.MatchString(a.Name) {
+		return fmt.Errorf("%w 'name' is not valid", ErrInvalidAction)
 	}
 	if a.On.PreMerge == nil && a.On.PreCommit == nil {
 		return fmt.Errorf("%w 'on' is required", ErrInvalidAction)
