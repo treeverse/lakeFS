@@ -7,7 +7,7 @@ import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import {TrashIcon} from "@primer/octicons-react";
 import Modal from "react-bootstrap/Modal";
-import {deleteRepository, listRepositories} from "../actions/repositories";
+import {deleteRepository, listRepositories, deleteRepositoryDone} from "../actions/repositories";
 import {useHistory} from "react-router-dom";
 
 
@@ -55,8 +55,8 @@ const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
 
 const RepoSettingsPage = connect(
     ({ repositories }) => ({ deleteStatus: repositories.delete }),
-    ({ deleteRepository, listRepositories })
-)(({repo, deleteStatus, deleteRepository, listRepositories}) => {
+    ({ deleteRepository, listRepositories, deleteRepositoryDone })
+)(({repo, deleteStatus, deleteRepository, listRepositories, deleteRepositoryDone}) => {
 
     const [showingDeleteModal, setShowDeleteModal] = useState(false);
     const history = useHistory();
@@ -72,9 +72,10 @@ const RepoSettingsPage = connect(
     useEffect(()=> {
         if (deleteStatus.done) {
             history.push('/repositories');
+            deleteRepositoryDone();
         }
         listRepositories();
-    }, [listRepositories, deleteStatus.done, history]);
+    }, [listRepositories, deleteStatus.done, history, deleteRepositoryDone]);
 
     const body = (
         <>

@@ -89,10 +89,11 @@ export const RepositoryListPage = connect(
 
     useEffect(()=> {
         if (create.done) {
-            history.push(`/repositories/${create.payload.id}/tree`)
+            history.push(`/repositories/${create.payload.id}/tree`);
+            createRepositoryDone();
         }
         listRepositories();
-    }, [listRepositories, create, history]);
+    }, [listRepositories, create, history, createRepositoryDone]);
 
     return (
         <div className="mt-3">

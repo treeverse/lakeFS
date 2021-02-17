@@ -24,6 +24,8 @@ export const deleteRepository = (repoId) => {
     })
 };
 
+export const deleteRepositoryDone = () => REPOSITORY_DELETE.resetAction();
+
 export const listRepositories = (after = "", amount = PAGINATION_AMOUNT) => {
     return REPOSITORY_LIST.execute(async () => {
         return await api.repositories.list(after, amount);
