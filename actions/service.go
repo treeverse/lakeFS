@@ -196,20 +196,58 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID
 	return err
 }
 
-func (s *Service) GetRun(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
+func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
 	res, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		result := &RunResult{
 			RunID: runID,
 		}
-		err := tx.Get(result, `SELECT event_type, branch_id, start_time, end_time, passed, commit_id FROM actions_runs WHERE repository_id=$1 AND run_id=$2`,
+		err := tx.Get(result, `SELECT event_type, branch_id, start_time, end_time, passed, commit_id
+			FROM actions_runs
+			WHERE repository_id=$1 AND run_id=$2`,
 			repositoryID, runID)
 		if err != nil {
 			return nil, fmt.Errorf("get run result: %w", err)
 		}
 		return result, nil
 	}, db.WithContext(ctx), db.ReadOnly())
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
 	return res.(*RunResult), nil
+}
+
+func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID string, actionName string, hookID string) (*TaskResult, error) {
+	res, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
+		result := &TaskResult{
+			RunID:      runID,
+			HookID:     hookID,
+			ActionName: actionName,
+		}
+		err := tx.Get(result, `SELECT hook_type, start_time, end_time, passed
+			FROM actions_run_hooks 
+			WHERE repository_id=$1 AND run_id=$2 AND action_name=$3 AND hook_id=$4`,
+			repositoryID, runID, actionName, hookID)
+		if err != nil {
+			return nil, fmt.Errorf("get task result: %w", err)
+		}
+		return result, nil
+	}, db.WithContext(ctx), db.ReadOnly())
+	if errors.Is(err, db.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res.(*TaskResult), nil
+}
+
+func (s *Service) ListRuns(ctx context.Context, repositoryID string, afterRunID string, branchID *string) (RunResultIterator, error) {
+	return nil, ErrNotFound
+}
+
+func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, afterRunID string) (TaskResultIterator, error) {
+	return nil, ErrNotFound
 }

@@ -69,10 +69,10 @@ type Dependencies struct {
 }
 
 type actionsHandler interface {
-	GetRunResult(repositoryID string, runID string) (actions.RunResult, error)
-	GetTaskResult(repositoryID string, runID string, actionName string, hookID string) (actions.TaskResult, error)
-	ListRuns(repositoryID string, afterRunID string, branchID *string) (actions.RunResultIterator, error)
-	ListRunTasks(repositoryID string, afterRunID string) (actions.TaskResultIterator, error)
+	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
+	GetTaskResult(ctx context.Context, repositoryID string, runID string, actionName string, hookID string) (*actions.TaskResult, error)
+	ListRuns(ctx context.Context, repositoryID string, afterRunID string, branchID *string) (actions.RunResultIterator, error)
+	ListRunTasks(ctx context.Context, repositoryID string, afterRunID string) (actions.TaskResultIterator, error)
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -2620,7 +2620,7 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		runResult, err := deps.Actions.GetRunResult(params.Repository, params.RunID)
+		runResult, err := deps.Actions.GetRunResult(deps.ctx, params.Repository, params.RunID)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewGetRunNotFound().
@@ -2680,7 +2680,7 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 			return handleErr(err, catalog.ErrRepositoryNotFound)
 		}
 
-		taskResult, err := c.deps.Actions.GetTaskResult(repo.Name, params.RunID, "params.ActionName", params.HookID)
+		taskResult, err := c.deps.Actions.GetTaskResult(deps.ctx, repo.Name, params.RunID, "params.ActionName", params.HookID)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
 		}
@@ -2729,7 +2729,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 			return handleErr(err, catalog.ErrRepositoryNotFound)
 		}
 
-		tasksIter, err := c.deps.Actions.ListRunTasks(repo.Name, params.RunID)
+		tasksIter, err := c.deps.Actions.ListRunTasks(deps.ctx, repo.Name, params.RunID)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
 		}
@@ -2783,7 +2783,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		afterRunID := swag.StringValue(params.After)
-		runsIter, err := deps.Actions.ListRuns(params.Repository, afterRunID, params.Branch)
+		runsIter, err := deps.Actions.ListRuns(deps.ctx, params.Repository, afterRunID, params.Branch)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewListRunsNotFound().

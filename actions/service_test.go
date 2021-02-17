@@ -15,7 +15,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -123,41 +122,42 @@ hooks:
 	}
 
 	// get existing run
-	runResult, err := actionsService.GetRun(ctx, evt.RepositoryID, runID)
+	runResult, err := actionsService.GetRunResult(ctx, evt.RepositoryID, runID)
 	if err != nil {
-		t.Fatal("GetRun() get run result", err)
+		t.Fatal("GetRunResult() get run result", err)
 	}
 	if runResult.RunID != runID {
-		t.Errorf("GetRun() result RunID=%s, expect=%s", runResult.RunID, runID)
+		t.Errorf("GetRunResult() result RunID=%s, expect=%s", runResult.RunID, runID)
 	}
 	if runResult.BranchID != evt.BranchID {
-		t.Errorf("GetRun() result BranchID=%s, expect=%s", runResult.BranchID, evt.BranchID)
+		t.Errorf("GetRunResult() result BranchID=%s, expect=%s", runResult.BranchID, evt.BranchID)
 	}
 	if runResult.EventType != string(evt.Type) {
-		t.Errorf("GetRun() result Type=%s, expect=%s", runResult.EventType, evt.Type)
+		t.Errorf("GetRunResult() result Type=%s, expect=%s", runResult.EventType, evt.Type)
 	}
 	startTime := runResult.StartTime.Round(time.Second)
 	expectedStartTime := evt.Time.Round(time.Second)
 	if startTime != expectedStartTime {
-		t.Errorf("GetRun() result StartTime=%s, expect=%s", startTime, expectedStartTime)
+		t.Errorf("GetRunResult() result StartTime=%s, expect=%s", startTime, expectedStartTime)
 	}
 	if runResult.EndTime.Sub(runResult.StartTime) < 0 {
-		t.Error("GetRun() result EndTime-StartTime can't be negative")
+		t.Error("GetRunResult() result EndTime-StartTime can't be negative")
 	}
 	const expectedPassed = true
 	if runResult.Passed != expectedPassed {
-		t.Errorf("GetRun() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
+		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
 	}
 	const expectedCommitID = "commit1"
 	if runResult.CommitID != expectedCommitID {
-		t.Errorf("GetRun() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
+		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
 	// get run - not found
-	runResult, err = actionsService.GetRun(ctx, evt.RepositoryID, "billing")
-	if !errors.Is(err, db.ErrNotFound) {
-		t.Errorf("GetRun() err=%v, expected=%v", err, db.ErrNotFound)
+	runResult, err = actionsService.GetRunResult(ctx, evt.RepositoryID, "billing")
+	expectedErr := actions.ErrNotFound
+	if !errors.Is(err, expectedErr) {
+		t.Errorf("GetRunResult() err=%v, expected=%v", err, expectedErr)
 	}
 	if runResult != nil {
-		t.Errorf("GetRun() result=%v, expected nil", runResult)
+		t.Errorf("GetRunResult() result=%v, expected nil", runResult)
 	}
 }
