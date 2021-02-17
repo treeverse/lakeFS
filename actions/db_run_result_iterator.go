@@ -21,12 +21,12 @@ type DBRunResultIterator struct {
 	branchID     *string
 }
 
-func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID, fromRunID string, branchID *string) *DBRunResultIterator {
+func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID string, branchID *string, after string) *DBRunResultIterator {
 	return &DBRunResultIterator{
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
-		offset:       fromRunID,
+		offset:       after,
 		branchID:     branchID,
 		fetchSize:    fetchSize,
 		buf:          make([]*RunResult, 0, fetchSize),

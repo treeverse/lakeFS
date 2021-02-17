@@ -2283,10 +2283,9 @@ paths:
           name: run_id
           required: true
           type: string
-#        - in: query
-#          name: before
-#          type: string
-#          format: date-time
+        - in: query
+          name: after
+          type: string
         - in: query
           name: amount
           type: integer

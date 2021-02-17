@@ -70,11 +70,12 @@ var runCmd = &cobra.Command{
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
+		actionsService := actions.NewService(dbPool)
 		cataloger, err := catalog.NewCataloger(catalog.Config{
 			Config:  cfg,
 			DB:      dbPool,
 			LockDB:  lockdbPool,
-			Actions: actions.NewService(dbPool),
+			Actions: actionsService,
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
@@ -120,6 +121,7 @@ var runCmd = &cobra.Command{
 			CloudMetadataProvider: cloudMetadataProvider,
 			Migrator:              migrator,
 			Collector:             bufferedCollector,
+			Actions:               actionsService,
 			Logger:                logger.WithField("service", "api_gateway"),
 		})
 

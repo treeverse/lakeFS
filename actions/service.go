@@ -60,6 +60,7 @@ type TaskResultIterator interface {
 	Value() *TaskResult
 	Err() error
 	Close()
+	Token() string
 }
 
 const defaultFetchSize = 1024
@@ -246,12 +247,12 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 	return res.(*TaskResult), nil
 }
 
-func (s *Service) ListRuns(ctx context.Context, repositoryID string, fromRunID string, branchID *string) (RunResultIterator, error) {
-	iter := NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, fromRunID, branchID)
+func (s *Service) ListRuns(ctx context.Context, repositoryID string, branchID *string, after string) (RunResultIterator, error) {
+	iter := NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, after)
 	return iter, nil
 }
 
-func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, runID string) (TaskResultIterator, error) {
-	iter := NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID)
+func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
+	iter := NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID, after)
 	return iter, nil
 }

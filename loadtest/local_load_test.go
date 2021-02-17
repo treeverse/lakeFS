@@ -61,10 +61,11 @@ func TestLocalLoad(t *testing.T) {
 		blockstoreType = "mem"
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
+	actionsService := actions.NewService(conn)
 	cataloger, err := catalog.NewCataloger(catalog.Config{
 		Config:  config.NewConfig(),
 		DB:      conn,
-		Actions: actions.NewService(conn),
+		Actions: actionsService,
 	})
 	testutil.MustDo(t, "build cataloger", err)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
@@ -81,6 +82,7 @@ func TestLocalLoad(t *testing.T) {
 		MetadataManager: meta,
 		Migrator:        migrator,
 		Collector:       &nullCollector{},
+		Actions:         actionsService,
 		Logger:          logging.Default(),
 	})
 

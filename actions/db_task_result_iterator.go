@@ -2,6 +2,7 @@ package actions
 
 import (
 	"context"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
@@ -21,8 +22,8 @@ type DBTaskResultIterator struct {
 	hookIDOffset     string
 }
 
-func NewDBTaskResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID, runID string) *DBTaskResultIterator {
-	return &DBTaskResultIterator{
+func NewDBTaskResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID, runID, after string) *DBTaskResultIterator {
+	it := &DBTaskResultIterator{
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
@@ -30,73 +31,91 @@ func NewDBTaskResultIterator(ctx context.Context, db db.Database, fetchSize int,
 		fetchSize:    fetchSize,
 		buf:          make([]*TaskResult, 0, fetchSize),
 	}
+	it.actionNameOffset, it.hookIDOffset = parseTaskResultToken(after)
+	return it
 }
 
-func (ri *DBTaskResultIterator) Next() bool {
-	if ri.err != nil {
+func (it *DBTaskResultIterator) Next() bool {
+	if it.err != nil {
 		return false
 	}
 
-	ri.maybeFetch()
+	it.maybeFetch()
 
 	// stage a value and increment offset
-	if len(ri.buf) == 0 {
+	if len(it.buf) == 0 {
 		return false
 	}
-	ri.value = ri.buf[0]
-	ri.buf = ri.buf[1:]
-	ri.actionNameOffset = ri.value.ActionName
-	ri.hookIDOffset = ri.value.HookID
+	it.value = it.buf[0]
+	it.buf = it.buf[1:]
+	it.actionNameOffset = it.value.ActionName
+	it.hookIDOffset = it.value.HookID
 	return true
 }
 
-func (ri *DBTaskResultIterator) maybeFetch() {
-	if ri.state == iteratorStateDone {
+func (it *DBTaskResultIterator) maybeFetch() {
+	if it.state == iteratorStateDone {
 		return
 	}
-	if len(ri.buf) > 0 {
+	if len(it.buf) > 0 {
 		return
 	}
 
-	if ri.state == iteratorStateInit {
-		ri.state = iteratorStateQuery
+	if it.state == iteratorStateInit {
+		it.state = iteratorStateQuery
 	}
 
 	q := psql.
 		Select("run_id", "hook_id", "hook_type", "action_name", "start_time", "end_time", "passed").
 		From("actions_run_hooks").
-		Where(sq.Eq{"repository_id": ri.repositoryID, "run_id": ri.runID}).
-		Where(sq.Gt{"action_name": ri.actionNameOffset, "hook_id": ri.hookIDOffset}).
+		Where(sq.Eq{"repository_id": it.repositoryID, "run_id": it.runID}).
+		Where(sq.Gt{"action_name": it.actionNameOffset, "hook_id": it.hookIDOffset}).
 		OrderBy("action_name", "hook_id").
-		Limit(uint64(ri.fetchSize))
+		Limit(uint64(it.fetchSize))
 
 	var sql string
 	var args []interface{}
-	sql, args, ri.err = q.ToSql()
-	if ri.err != nil {
+	sql, args, it.err = q.ToSql()
+	if it.err != nil {
 		return
 	}
-	ri.err = ri.db.WithContext(ri.ctx).Select(&ri.buf, sql, args...)
-	if ri.err != nil {
+	it.err = it.db.WithContext(it.ctx).Select(&it.buf, sql, args...)
+	if it.err != nil {
 		return
 	}
-	if len(ri.buf) < ri.fetchSize {
-		ri.state = iteratorStateDone
+	if len(it.buf) < it.fetchSize {
+		it.state = iteratorStateDone
 	}
 }
 
-func (ri *DBTaskResultIterator) Value() *TaskResult {
-	if ri.err != nil {
+func (it *DBTaskResultIterator) Value() *TaskResult {
+	if it.err != nil {
 		return nil
 	}
-	return ri.value
+	return it.value
 }
 
-func (ri *DBTaskResultIterator) Err() error {
-	return ri.err
+func (it *DBTaskResultIterator) Err() error {
+	return it.err
 }
 
-func (ri *DBTaskResultIterator) Close() {
-	ri.err = ErrIteratorClosed
-	ri.buf = nil
+func (it *DBTaskResultIterator) Close() {
+	it.err = ErrIteratorClosed
+	it.buf = nil
+}
+
+func (it *DBTaskResultIterator) Token() string {
+	if it.err != nil || it.value == nil {
+		return ""
+	}
+	return it.value.ActionName + "/" + it.value.HookID
+}
+
+func parseTaskResultToken(token string) (actionName string, hookID string) {
+	idx := strings.LastIndex(token, "/")
+	if idx != -1 {
+		actionName = token[:idx]
+		hookID = token[idx+1:]
+	}
+	return
 }

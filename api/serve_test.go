@@ -79,10 +79,11 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	cfg.Override(func(configurator config.Configurator) {
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
+	actionsService := actions.NewService(conn)
 	cataloger, err := catalog.NewCataloger(catalog.Config{
 		Config:  cfg,
 		DB:      conn,
-		Actions: actions.NewService(conn),
+		Actions: actionsService,
 	})
 	testutil.MustDo(t, "build cataloger", err)
 
@@ -105,6 +106,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		MetadataManager: meta,
 		Migrator:        migrator,
 		Collector:       collector,
+		Actions:         actionsService,
 		Logger:          logging.Default(),
 	})
 
