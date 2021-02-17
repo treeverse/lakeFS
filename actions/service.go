@@ -29,6 +29,7 @@ type Task struct {
 type RunResult struct {
 	RunID     string    `db:"run_id"`
 	BranchID  string    `db:"branch_id"`
+	SourceRef string    `db:"source_ref"`
 	EventType string    `db:"event_type"`
 	StartTime time.Time `db:"start_time"`
 	EndTime   time.Time `db:"end_time"`
@@ -75,14 +76,14 @@ func (s *Service) Run(ctx context.Context, event Event, deps Deps) (string, erro
 	// load relevant actions
 	actions, err := s.loadMatchedActions(ctx, deps.Source, MatchSpec{EventType: event.Type, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
-		return runID, err
+		return "", err
 	}
 
 	// allocate and run hooks
 	runID = NewRunID()
 	tasks, err := s.allocateTasks(runID, actions)
 	if err != nil {
-		return runID, nil
+		return "", err
 	}
 
 	runErr := s.runTasks(ctx, tasks, event, deps)
@@ -90,7 +91,7 @@ func (s *Service) Run(ctx context.Context, event Event, deps Deps) (string, erro
 	// write results and return multi error
 	err = s.insertRunInformation(ctx, runID, event, tasks, runErr)
 	if err != nil {
-		return runID, err
+		return "", err
 	}
 	return runID, runErr
 }
@@ -202,7 +203,7 @@ func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID s
 		result := &RunResult{
 			RunID: runID,
 		}
-		err := tx.Get(result, `SELECT event_type, branch_id, start_time, end_time, passed, commit_id
+		err := tx.Get(result, `SELECT event_type, branch_id, source_ref, start_time, end_time, passed, commit_id
 			FROM actions_runs
 			WHERE repository_id=$1 AND run_id=$2`,
 			repositoryID, runID)
