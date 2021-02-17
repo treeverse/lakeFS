@@ -553,9 +553,9 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 
 func (e *EntryCatalog) PreCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventType:     actions.EventTypePreCommit,
+		Type:          actions.EventTypePreCommit,
 		RunID:         runID,
-		EventTime:     time.Now(),
+		Time:          time.Now(),
 		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      branch.String(),
 		CommitMessage: commit.Message,
@@ -584,9 +584,9 @@ func (e *EntryCatalog) PostCommitHook(ctx context.Context, runID string, reposit
 
 func (e *EntryCatalog) PreMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventType:     actions.EventTypePreMerge,
+		Type:          actions.EventTypePreMerge,
 		RunID:         runID,
-		EventTime:     time.Now(),
+		Time:          time.Now(),
 		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      destination.String(),
 		SourceRef:     source.String(),

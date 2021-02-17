@@ -74,7 +74,7 @@ var runCmd = &cobra.Command{
 			Config:  cfg,
 			DB:      dbPool,
 			LockDB:  lockdbPool,
-			Actions: actions.New(dbPool),
+			Actions: actions.NewService(dbPool),
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")

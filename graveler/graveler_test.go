@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/testutil"
@@ -17,7 +16,7 @@ import (
 type Hooks struct {
 	Called           bool
 	Err              error
-	EventID          uuid.UUID
+	RunID            string
 	RepositoryRecord graveler.RepositoryRecord
 	Branch           graveler.BranchID
 	Source           graveler.Ref
@@ -27,7 +26,7 @@ type Hooks struct {
 
 func (h *Hooks) PreCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	h.Called = true
-	h.EventID = eventID
+	h.RunID = runID
 	h.RepositoryRecord = repositoryRecord
 	h.Branch = branch
 	h.Commit = commit
@@ -36,7 +35,7 @@ func (h *Hooks) PreCommitHook(ctx context.Context, runID string, repositoryRecor
 
 func (h *Hooks) PostCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
 	h.Called = true
-	h.EventID = eventID
+	h.RunID = runID
 	h.RepositoryRecord = repositoryRecord
 	h.Branch = branch
 	h.CommitID = commitRecord.CommitID
@@ -46,7 +45,7 @@ func (h *Hooks) PostCommitHook(ctx context.Context, runID string, repositoryReco
 
 func (h *Hooks) PreMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
 	h.Called = true
-	h.EventID = eventID
+	h.RunID = runID
 	h.RepositoryRecord = repositoryRecord
 	h.Branch = destination
 	h.Source = source
@@ -56,7 +55,7 @@ func (h *Hooks) PreMergeHook(ctx context.Context, runID string, repositoryRecord
 
 func (h *Hooks) PostMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
 	h.Called = true
-	h.EventID = eventID
+	h.RunID = runID
 	h.RepositoryRecord = repositoryRecord
 	h.Branch = destination
 	h.Source = source

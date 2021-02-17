@@ -100,7 +100,7 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 func (w *Webhook) marshalEventInformation(ed Event) ([]byte, error) {
 	now := time.Now()
 	info := WebhookEventInfo{
-		EventType:     string(ed.EventType),
+		EventType:     string(ed.Type),
 		EventTime:     now.UTC().Format(time.RFC3339),
 		ActionName:    w.ActionName,
 		HookID:        w.ID,

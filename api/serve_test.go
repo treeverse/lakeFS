@@ -82,7 +82,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	cataloger, err := catalog.NewCataloger(catalog.Config{
 		Config:  cfg,
 		DB:      conn,
-		Actions: actions.New(conn),
+		Actions: actions.NewService(conn),
 	})
 	testutil.MustDo(t, "build cataloger", err)
 

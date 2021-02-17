@@ -30,7 +30,7 @@ var diagnosticsCmd = &cobra.Command{
 		cataloger, err := catalog.NewCataloger(catalog.Config{
 			Config:  cfg,
 			DB:      dbPool,
-			Actions: actions.New(dbPool),
+			Actions: actions.NewService(dbPool),
 		})
 		if err != nil {
 			log.Printf("Failed to create cataloger: %s", err)

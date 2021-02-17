@@ -89,7 +89,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	catalogCfg := catalog.Config{
 		Config:  cfg,
 		DB:      dbPool,
-		Actions: actions.New(dbPool),
+		Actions: actions.NewService(dbPool),
 	}
 	cataloger, err := catalog.NewCataloger(catalogCfg)
 	if err != nil {

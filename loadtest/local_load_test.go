@@ -64,7 +64,7 @@ func TestLocalLoad(t *testing.T) {
 	cataloger, err := catalog.NewCataloger(catalog.Config{
 		Config:  config.NewConfig(),
 		DB:      conn,
-		Actions: actions.New(conn),
+		Actions: actions.NewService(conn),
 	})
 	testutil.MustDo(t, "build cataloger", err)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
