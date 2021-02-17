@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
-	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/proto"
@@ -47,6 +46,16 @@ type Reference interface {
 	CommitID() CommitID
 }
 
+type MetaRangeInfo struct {
+	// URI of metarange file.
+	Address string
+}
+
+type RangeInfo struct {
+	// URI of range file.
+	Address string
+}
+
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
@@ -74,6 +83,9 @@ type CommitID string
 
 // MetaRangeID represents a snapshot of the MetaRange, referenced by a commit
 type MetaRangeID string
+
+// RangeID represents a part of a MetaRange, useful only for plumbing.
+type RangeID string
 
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
@@ -322,6 +334,15 @@ type VersionController interface {
 	SetHooksHandler(handler HooksHandler)
 }
 
+// Plumbing includes commands for fiddling more directly with graveler implementation
+// internals.
+type Plumbing interface {
+	// GetMetarange returns information where metarangeID is stored.
+	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeInfo, error)
+	// GetRange returns information where rangeID is stored.
+	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeInfo, error)
+}
+
 type Dumper interface {
 	// DumpCommits iterates through all commits and dumps them in Graveler format
 	DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error)
@@ -334,13 +355,13 @@ type Dumper interface {
 }
 
 type Loader interface {
-	// DumpCommits iterates through all commits in Graveler format and loads them into repositoryID
+	// LoadCommits iterates through all commits in Graveler format and loads them into repositoryID
 	LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 
-	// DumpBranches iterates through all branches in Graveler format and loads them into repositoryID
+	// LoadBranches iterates through all branches in Graveler format and loads them into repositoryID
 	LoadBranches(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 
-	// DumpTags iterates through all tags in Graveler format and loads them into repositoryID
+	// LoadTags iterates through all tags in Graveler format and loads them into repositoryID
 	LoadTags(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error
 }
 
@@ -506,6 +527,11 @@ type CommittedManager interface {
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new MetaRangeID that is expected to be immediately addressable
 	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, DiffSummary, error)
+
+	// GetMetarange returns information where metarangeID is stored.
+	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeInfo, error)
+	// GetRange returns information where rangeID is stored.
+	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeInfo, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -918,21 +944,23 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 }
 
 func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
-	runID := actions.NewRunID()
-	var repoRecord RepositoryRecord
-	var commitRecord CommitRecord
+	var preRunID string
+	var commit Commit
+	var storageNamespace StorageNamespace
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", fmt.Errorf("get repository: %w", err)
 		}
+		storageNamespace = repo.StorageNamespace
+
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
 
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
-		commit := Commit{
+		commit = Commit{
 			Committer:    params.Committer,
 			Message:      params.Message,
 			CreationDate: time.Now(),
@@ -942,8 +970,12 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		repoRecord = RepositoryRecord{RepositoryID: repositoryID, Repository: repo}
-		err = g.hooks.PreCommitHook(ctx, runID, repoRecord, branchID, commit)
+		preRunID, err = g.hooks.PreCommitHook(ctx, PreCommitRecord{
+			RepositoryID:     repositoryID,
+			StorageNamespace: storageNamespace,
+			BranchID:         branchID,
+			Commit:           commit,
+		})
 		if err != nil {
 			return "", newHookError("pre-commit", err)
 		}
@@ -962,7 +994,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		defer changes.Close()
 
-		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
+		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, storageNamespace, branchMetaRangeID, changes)
 		if err != nil {
 			return "", fmt.Errorf("commit: %w", err)
 		}
@@ -989,20 +1021,26 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 				"staging_token": branch.StagingToken,
 			}).Error("Failed to drop staging data")
 		}
-		commitRecord = CommitRecord{
-			CommitID: newCommit,
-			Commit:   &commit,
-		}
 		return newCommit, nil
 	})
 	if err != nil {
 		return "", err
 	}
-	err = g.hooks.PostCommitHook(ctx, runID, repoRecord, branchID, commitRecord)
+	newCommitID := res.(CommitID)
+	runID, err := g.hooks.PostCommitHook(ctx, PostCommitRecord{
+		RepositoryID:     repositoryID,
+		StorageNamespace: "",
+		BranchID:         branchID,
+		Commit:           commit,
+		CommitID:         newCommitID,
+		PreRunID:         preRunID,
+	})
 	if err != nil {
-		g.log.WithError(err).Error("Post-commit hook failed")
+		g.log.WithError(err).
+			WithField("run_id", runID).
+			Error("Post-commit hook failed")
 	}
-	return res.(CommitID), nil
+	return newCommitID, nil
 }
 
 func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
@@ -1267,14 +1305,16 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
-	runID := actions.NewRunID()
-	var commitRecord CommitRecord
-	var repoRecord RepositoryRecord
+	var preRunID string
+	var storageNamespace StorageNamespace
+	var commit Commit
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", err
 		}
+		storageNamespace = repo.StorageNamespace
+
 		branch, err := g.GetBranch(ctx, repositoryID, destination)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
@@ -1290,14 +1330,14 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		if err != nil {
 			return "", err
 		}
-		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
 			}
 			return "", err
 		}
-		commit := Commit{
+		commit = Commit{
 			Committer:    commitParams.Committer,
 			Message:      commitParams.Message,
 			CreationDate: time.Now(),
@@ -1305,8 +1345,13 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
-		repoRecord = RepositoryRecord{RepositoryID: repositoryID, Repository: repo}
-		err = g.hooks.PreMergeHook(ctx, runID, repoRecord, destination, source, commit)
+		preRunID, err = g.hooks.PreMergeHook(ctx, PreMergeRecord{
+			RepositoryID:     repositoryID,
+			StorageNamespace: storageNamespace,
+			Destination:      destination,
+			Source:           source,
+			Commit:           commit,
+		})
 		if err != nil {
 			return "", newHookError("pre-merge", err)
 		}
@@ -1319,16 +1364,26 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		if err != nil {
 			return "", fmt.Errorf("update branch %s: %w", destination, err)
 		}
-		commitRecord = CommitRecord{CommitID: commitID, Commit: &commit}
 		return &CommitIDAndSummary{commitID, summary}, nil
 	})
 	if err != nil {
 		return "", DiffSummary{}, err
 	}
 	c := res.(*CommitIDAndSummary)
-	err = g.hooks.PostMergeHook(ctx, runID, repoRecord, destination, source, commitRecord)
+	runID, err := g.hooks.PostMergeHook(ctx, PostMergeRecord{
+		RepositoryID:     repositoryID,
+		StorageNamespace: storageNamespace,
+		Destination:      destination,
+		Source:           source,
+		Commit:           commit,
+		CommitID:         c.ID,
+		PreRunID:         preRunID,
+	})
 	if err != nil {
-		g.log.WithError(err).Error("Post-merge hook failed")
+		g.log.
+			WithError(err).
+			WithField("run_id", runID).
+			Error("Post-merge hook failed")
 	}
 	return c.ID, c.Summary, nil
 }
@@ -1531,6 +1586,22 @@ func (g *Graveler) LoadTags(ctx context.Context, repositoryID RepositoryID, meta
 		return iter.Err()
 	}
 	return nil
+}
+
+func (g *Graveler) GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeInfo, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return MetaRangeInfo{}, nil
+	}
+	return g.CommittedManager.GetMetaRange(ctx, repo.StorageNamespace, metaRangeID)
+}
+
+func (g *Graveler) GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeInfo, error) {
+	repo, err := g.RefManager.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return RangeInfo{}, nil
+	}
+	return g.CommittedManager.GetRange(ctx, repo.StorageNamespace, rangeID)
 }
 
 func (g *Graveler) DumpCommits(ctx context.Context, repositoryID RepositoryID) (*MetaRangeID, error) {

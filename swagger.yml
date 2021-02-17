@@ -95,7 +95,7 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3|gs|mem|local|transient)://.*$'
+        pattern: '^(s3|gs|wasb|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
@@ -368,6 +368,54 @@ definitions:
     properties:
       blockstore.type:
         type: string
+
+  action_run:
+    type: object
+    required:
+      - run_id
+      - branch
+      - commit_id
+    properties:
+      run_id:
+        type: string
+      branch:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+      end_time:
+        type: string
+        format: date-time
+      event_type:
+        type: string
+        enum: [ pre_commit, pre_merge ]
+      status:
+        type: string
+        enum: [ failed, completed ]
+      commit_id:
+        type: string
+
+  hook_run:
+    type: object
+    required:
+      - hook_id
+    properties:
+      hook_id:
+        type: string
+      hook_type:
+        type: string
+        enum: [webhook]
+      action:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+      end_time:
+        type: string
+        format: date-time
+      status:
+        type: string
+        enum: [ failed, completed ]
 
 paths:
 
@@ -2140,6 +2188,230 @@ paths:
           description: repository or branch not found
           schema:
             $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs:
+    get:
+      tags:
+        - actions
+      operationId: listRuns
+      summary: list runs
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+        - in: query
+          name: branch
+          type: string
+      responses:
+        200:
+          description: list action runs
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}:
+    get:
+      tags:
+        - actions
+      operationId: getRun
+      summary: get a run
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: action run result
+          schema:
+            $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks:
+    get:
+      tags:
+        - actions
+      operationId: listRunHooks
+      summary: list run hooks
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+#        - in: query
+#          name: before
+#          type: string
+#          format: date-time
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: list specific run hooks
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/hook_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_id}/output:
+    get:
+      tags:
+        - actions
+      operationId: getRunHookOutput
+      summary: get run hook output
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+        - in: path
+          name: hook_id
+          required: true
+          type: string
+      produces:
+        - application/octet-stream
+      responses:
+        200:
+          description: run hook output
+          schema:
+            type: file
+          headers:
+            Content-Length:
+              type: integer
+              format: int64
+            Last-Modified:
+              type: string
+            Content-Disposition:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: output not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/metadata/meta_range/{meta_range}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: meta_range
+        required: true
+        type: string
+    get:
+      tags:
+        - metadata
+      operationId: getMetaRange
+      summary: return URI to a meta-range file
+      # TODO(ariels): Actually redirect to S3.
+      responses:
+        200:
+          description: meta-range URI
+          headers:
+            Location:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/metadata/range/{range}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: range
+        required: true
+        type: string
+    get:
+      tags:
+        - metadata
+      operationId: getRange
+      summary: return URI to a range file
+      # TODO(ariels): Actually redirect to S3.
+      responses:
+        200:
+          description: range URI
+          headers:
+            Location:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
         default:
           description: generic error response
           schema:

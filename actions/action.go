@@ -137,14 +137,28 @@ func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
 				return fmt.Errorf("parsing file %s: %w", addr, err)
 			}
 			actions[ii] = action
-
 			return nil
 		})
 	}
 	if err := errGroup.Wait(); err != nil {
 		return nil, err
 	}
+	if err := validateActions(actions); err != nil {
+		return nil, err
+	}
 	return actions, nil
+}
+
+// validateActions verify we do not two actions with the same name
+func validateActions(actions []*Action) error {
+	actionNames := make(map[string]struct{})
+	for _, action := range actions {
+		if _, found := actionNames[action.Name]; found {
+			return fmt.Errorf("action name '%s' already loaded: %w", action.Name, ErrInvalidAction)
+		}
+		actionNames[action.Name] = struct{}{}
+	}
+	return nil
 }
 
 func MatchedActions(actions []*Action, spec MatchSpec) ([]*Action, error) {

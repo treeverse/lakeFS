@@ -78,12 +78,13 @@ type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
 	graveler.Dumper
+	graveler.Plumbing
 	graveler.Loader
 }
 
 type Actions interface {
-	Run(ctx context.Context, event actions.Event, deps actions.Deps) error
-	UpdateCommitID(ctx context.Context, repositoryID string, runID string, eventType actions.EventType, commitID string) error
+	Run(ctx context.Context, event actions.Event, deps actions.Deps) (string, error)
+	UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error
 }
 
 type EntryCatalog struct {
@@ -551,65 +552,86 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }
 
-func (e *EntryCatalog) PreCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+func (e *EntryCatalog) PreCommitHook(ctx context.Context, record graveler.PreCommitRecord) (string, error) {
 	evt := actions.Event{
 		Type:          actions.EventTypePreCommit,
-		RunID:         runID,
 		Time:          time.Now(),
-		RepositoryID:  repositoryRecord.RepositoryID.String(),
-		BranchID:      branch.String(),
-		CommitMessage: commit.Message,
-		Committer:     commit.Committer,
-		Metadata:      commit.Metadata,
+		RepositoryID:  record.RepositoryID.String(),
+		BranchID:      record.BranchID.String(),
+		CommitMessage: record.Commit.Message,
+		Committer:     record.Commit.Committer,
+		Metadata:      record.Commit.Metadata,
 	}
 	deps := actions.Deps{
 		Source: &actionsSource{
 			catalog:          e,
 			adapter:          e.BlockAdapter,
-			repositoryID:     repositoryRecord.RepositoryID,
-			storageNamespace: repositoryRecord.StorageNamespace,
-			ref:              branch.Ref(),
+			repositoryID:     record.RepositoryID,
+			storageNamespace: record.StorageNamespace,
+			ref:              record.BranchID.Ref(),
 		},
 		Output: &actionsWriter{
 			adapter:          e.BlockAdapter,
-			storageNamespace: repositoryRecord.StorageNamespace,
+			storageNamespace: record.StorageNamespace,
 		},
 	}
 	return e.Actions.Run(ctx, evt, deps)
 }
 
-func (e *EntryCatalog) PostCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
-	return e.Actions.UpdateCommitID(ctx, repositoryRecord.RepositoryID.String(), runID, actions.EventTypePreCommit, commitRecord.CommitID.String())
+func (e *EntryCatalog) PostCommitHook(ctx context.Context, record graveler.PostCommitRecord) (string, error) {
+	// update pre-commit with commit ID if needed
+	if record.PreRunID != "" {
+		err := e.Actions.UpdateCommitID(ctx, record.RepositoryID.String(), record.PreRunID, record.CommitID.String())
+		if err != nil {
+			return "", err
+		}
+	}
+	return "", nil
 }
 
-func (e *EntryCatalog) PreMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (e *EntryCatalog) PreMergeHook(ctx context.Context, record graveler.PreMergeRecord) (string, error) {
 	evt := actions.Event{
 		Type:          actions.EventTypePreMerge,
-		RunID:         runID,
 		Time:          time.Now(),
-		RepositoryID:  repositoryRecord.RepositoryID.String(),
-		BranchID:      destination.String(),
-		SourceRef:     source.String(),
-		CommitMessage: commit.Message,
-		Committer:     commit.Committer,
-		Metadata:      commit.Metadata,
+		RepositoryID:  record.RepositoryID.String(),
+		BranchID:      record.Destination.String(),
+		SourceRef:     record.Source.String(),
+		CommitMessage: record.Commit.Message,
+		Committer:     record.Commit.Committer,
+		Metadata:      record.Commit.Metadata,
 	}
 	deps := actions.Deps{
 		Source: &actionsSource{
 			catalog:          e,
 			adapter:          e.BlockAdapter,
-			repositoryID:     repositoryRecord.RepositoryID,
-			storageNamespace: repositoryRecord.StorageNamespace,
-			ref:              source,
+			repositoryID:     record.RepositoryID,
+			storageNamespace: record.StorageNamespace,
+			ref:              record.Source,
 		},
 		Output: &actionsWriter{
 			adapter:          e.BlockAdapter,
-			storageNamespace: repositoryRecord.StorageNamespace,
+			storageNamespace: record.StorageNamespace,
 		},
 	}
 	return e.Actions.Run(ctx, evt, deps)
 }
 
-func (e *EntryCatalog) PostMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
-	return e.Actions.UpdateCommitID(ctx, repositoryRecord.RepositoryID.String(), runID, actions.EventTypePreMerge, commitRecord.CommitID.String())
+func (e *EntryCatalog) PostMergeHook(ctx context.Context, record graveler.PostMergeRecord) (string, error) {
+	// update pre-merge with commit ID if needed
+	if record.PreRunID != "" {
+		err := e.Actions.UpdateCommitID(ctx, record.RepositoryID.String(), record.PreRunID, record.CommitID.String())
+		if err != nil {
+			return "", err
+		}
+	}
+	// TODO(barak): invoke post merge actions
+	return "", nil
+}
+
+func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
+	return e.Store.GetMetaRange(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
+	return e.Store.GetRange(ctx, repositoryID, rangeID)
 }

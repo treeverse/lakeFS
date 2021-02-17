@@ -17,51 +17,51 @@ type Hooks struct {
 	Called           bool
 	Err              error
 	RunID            string
-	RepositoryRecord graveler.RepositoryRecord
+	RepositoryID     graveler.RepositoryID
+	StorageNamespace graveler.StorageNamespace
 	Branch           graveler.BranchID
 	Source           graveler.Ref
 	CommitID         graveler.CommitID
 	Commit           graveler.Commit
 }
 
-func (h *Hooks) PreCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+func (h *Hooks) PreCommitHook(_ context.Context, record graveler.PreCommitRecord) (string, error) {
 	h.Called = true
-	h.RunID = runID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = branch
-	h.Commit = commit
-	return h.Err
+	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.StorageNamespace
+	h.Branch = record.BranchID
+	h.Commit = record.Commit
+	return h.RunID, h.Err
 }
 
-func (h *Hooks) PostCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
+func (h *Hooks) PostCommitHook(_ context.Context, record graveler.PostCommitRecord) (string, error) {
 	h.Called = true
-	h.RunID = runID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = branch
-	h.CommitID = commitRecord.CommitID
-	h.Commit = *commitRecord.Commit
-	return h.Err
+	h.RepositoryID = record.RepositoryID
+	h.Branch = record.BranchID
+	h.CommitID = record.CommitID
+	h.Commit = record.Commit
+	return h.RunID, h.Err
 }
 
-func (h *Hooks) PreMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (h *Hooks) PreMergeHook(_ context.Context, record graveler.PreMergeRecord) (string, error) {
 	h.Called = true
-	h.RunID = runID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = destination
-	h.Source = source
-	h.Commit = commit
-	return h.Err
+	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.StorageNamespace
+	h.Branch = record.Destination
+	h.Source = record.Source
+	h.Commit = record.Commit
+	return h.RunID, h.Err
 }
 
-func (h *Hooks) PostMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
+func (h *Hooks) PostMergeHook(_ context.Context, record graveler.PostMergeRecord) (string, error) {
 	h.Called = true
-	h.RunID = runID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = destination
-	h.Source = source
-	h.CommitID = commitRecord.CommitID
-	h.Commit = *commitRecord.Commit
-	return h.Err
+	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.StorageNamespace
+	h.Branch = record.Destination
+	h.Source = record.Source
+	h.CommitID = record.CommitID
+	h.Commit = record.Commit
+	return h.RunID, h.Err
 }
 
 func TestGraveler_List(t *testing.T) {
@@ -578,8 +578,8 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryRecord.RepositoryID != commitRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryRecord.RepositoryID, commitRepositoryID)
+			if h.RepositoryID != commitRepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, commitRepositoryID)
 			}
 			if h.Branch != commitBranchID {
 				t.Errorf("Hook branch '%s', expected '%s'", h.Branch, commitBranchID)
@@ -664,8 +664,8 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryRecord.RepositoryID != mergeRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryRecord.RepositoryID, mergeRepositoryID)
+			if h.RepositoryID != mergeRepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, mergeRepositoryID)
 			}
 			if h.Branch != mergeDestination {
 				t.Errorf("Hook branch (destination) '%s', expected '%s'", h.Branch, mergeDestination)

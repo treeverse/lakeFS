@@ -33,6 +33,7 @@ type RunResult struct {
 	StartTime time.Time `db:"start_time"`
 	EndTime   time.Time `db:"end_time"`
 	Passed    bool      `db:"passed"`
+	CommitID  string    `db:"commit_id"`
 }
 
 type TaskResult struct {
@@ -47,7 +48,7 @@ type TaskResult struct {
 
 type TaskResultIterator interface {
 	Next() bool
-	Value() TaskResult
+	Value() *TaskResult
 	SeekGE(runID string)
 	Err() error
 	Close()
@@ -55,7 +56,7 @@ type TaskResultIterator interface {
 
 type RunResultIterator interface {
 	Next() bool
-	Value() RunResult
+	Value() *RunResult
 	SeekGE(runID string)
 	Err() error
 	Close()
@@ -68,27 +69,29 @@ func NewService(db db.Database) *Service {
 		DB: db,
 	}
 }
-func (s *Service) Run(ctx context.Context, event Event, deps Deps) error {
+func (s *Service) Run(ctx context.Context, event Event, deps Deps) (string, error) {
+	var runID string
 	// load relevant actions
 	actions, err := s.loadMatchedActions(ctx, deps.Source, MatchSpec{EventType: event.Type, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
-		return err
+		return runID, err
 	}
 
 	// allocate and run hooks
-	tasks, err := s.allocateTasks(event.RunID, actions)
+	runID = NewRunID()
+	tasks, err := s.allocateTasks(runID, actions)
 	if err != nil {
-		return nil
+		return runID, nil
 	}
 
 	runErr := s.runTasks(ctx, tasks, event, deps)
 
 	// write results and return multi error
-	err = s.insertRunInformation(ctx, event, tasks, runErr)
+	err = s.insertRunInformation(ctx, runID, event, tasks, runErr)
 	if err != nil {
-		return err
+		return runID, err
 	}
-	return runErr
+	return runID, runErr
 }
 
 func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
@@ -140,7 +143,7 @@ func (s *Service) runTasks(ctx context.Context, tasks []*Task, event Event, deps
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks []*Task, runErr error) error {
+func (s *Service) insertRunInformation(ctx context.Context, runID string, event Event, tasks []*Task, runErr error) error {
 	if len(tasks) == 0 {
 		return nil
 	}
@@ -151,7 +154,7 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 		runPassed := runErr == nil
 		_, err := tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,'',$8)`,
-			event.RepositoryID, event.RunID, event.Type, event.Time, runEndTime, event.BranchID, event.SourceRef, runPassed)
+			event.RepositoryID, runID, event.Type, event.Time, runEndTime, event.BranchID, event.SourceRef, runPassed)
 		if err != nil {
 			return nil, fmt.Errorf("insert run information: %w", err)
 		}
@@ -161,7 +164,7 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 			taskPassed := task.Err == nil
 			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, event_type, action_name, hook_id, start_time, end_time, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				event.RepositoryID, event.RunID, event.Type, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
+				event.RepositoryID, runID, event.Type, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
 			if err != nil {
 				return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
 			}
@@ -181,10 +184,10 @@ func getMaxEndTime(tasks []*Task) time.Time {
 	return endTime
 }
 
-func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID string, eventType EventType, commitID string) error {
+func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error {
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`UPDATE actions_runs SET commit_id=$4 WHERE repository_id=$1 AND run_id=$2 AND event_type=$3`,
-			repositoryID, runID, string(eventType), commitID)
+		_, err := tx.Exec(`UPDATE actions_runs SET commit_id=$3 WHERE repository_id=$1 AND run_id=$2`,
+			repositoryID, runID, commitID)
 		if err != nil {
 			return nil, fmt.Errorf("update run commit_id: %w", err)
 		}
@@ -193,14 +196,13 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID
 	return err
 }
 
-func (s *Service) GetRun(ctx context.Context, repositoryID string, runID string, eventType EventType) (*RunResult, error) {
+func (s *Service) GetRun(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
 	res, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		result := &RunResult{
-			RunID:     runID,
-			EventType: string(eventType),
+			RunID: runID,
 		}
-		err := tx.Get(result, `SELECT branch_id, start_time, end_time, passed FROM actions_runs WHERE repository_id=$1 AND run_id=$2 AND event_type=$3`,
-			repositoryID, runID, eventType)
+		err := tx.Get(result, `SELECT event_type, branch_id, start_time, end_time, passed, commit_id FROM actions_runs WHERE repository_id=$1 AND run_id=$2`,
+			repositoryID, runID)
 		if err != nil {
 			return nil, fmt.Errorf("get run result: %w", err)
 		}

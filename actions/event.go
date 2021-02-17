@@ -21,7 +21,6 @@ type Deps struct {
 }
 
 type Event struct {
-	RunID         string
 	Type          EventType
 	Time          time.Time
 	RepositoryID  string
