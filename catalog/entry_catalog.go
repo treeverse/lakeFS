@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
@@ -84,7 +83,7 @@ type Store interface {
 
 type Actions interface {
 	Run(ctx context.Context, event actions.Event, deps actions.Deps) error
-	UpdateCommitID(ctx context.Context, repositoryID string, runID uuid.UUID, eventType actions.EventType, commitID string) error
+	UpdateCommitID(ctx context.Context, repositoryID string, runID string, eventType actions.EventType, commitID string) error
 }
 
 type EntryCatalog struct {
@@ -552,7 +551,7 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }
 
-func (e *EntryCatalog) PreCommitHook(ctx context.Context, runID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+func (e *EntryCatalog) PreCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	evt := actions.Event{
 		EventType:     actions.EventTypePreCommit,
 		RunID:         runID,
@@ -579,14 +578,14 @@ func (e *EntryCatalog) PreCommitHook(ctx context.Context, runID uuid.UUID, repos
 	return e.Actions.Run(ctx, evt, deps)
 }
 
-func (e *EntryCatalog) PostCommitHook(ctx context.Context, runID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
+func (e *EntryCatalog) PostCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
 	return e.Actions.UpdateCommitID(ctx, repositoryRecord.RepositoryID.String(), runID, actions.EventTypePreCommit, commitRecord.CommitID.String())
 }
 
-func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (e *EntryCatalog) PreMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
 	evt := actions.Event{
 		EventType:     actions.EventTypePreMerge,
-		RunID:         eventID,
+		RunID:         runID,
 		EventTime:     time.Now(),
 		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      destination.String(),
@@ -611,6 +610,6 @@ func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repo
 	return e.Actions.Run(ctx, evt, deps)
 }
 
-func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
-	return nil
+func (e *EntryCatalog) PostMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
+	return e.Actions.UpdateCommitID(ctx, repositoryRecord.RepositoryID.String(), runID, actions.EventTypePreMerge, commitRecord.CommitID.String())
 }

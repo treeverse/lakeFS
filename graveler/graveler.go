@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/proto"
@@ -917,7 +918,7 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 }
 
 func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
-	runID := uuid.New()
+	runID := actions.NewRunID()
 	var repoRecord RepositoryRecord
 	var commitRecord CommitRecord
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
@@ -1266,7 +1267,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
-	runID := uuid.New()
+	runID := actions.NewRunID()
 	var commitRecord CommitRecord
 	var repoRecord RepositoryRecord
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {

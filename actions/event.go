@@ -3,7 +3,7 @@ package actions
 import (
 	"time"
 
-	"github.com/google/uuid"
+	nanoid "github.com/matoous/go-nanoid"
 )
 
 type EventType string
@@ -21,7 +21,7 @@ type Deps struct {
 }
 
 type Event struct {
-	RunID         uuid.UUID
+	RunID         string
 	EventType     EventType
 	EventTime     time.Time
 	RepositoryID  string
@@ -31,4 +31,11 @@ type Event struct {
 	Committer     string
 	Metadata      map[string]string
 	CommitID      string
+}
+
+func NewRunID() string {
+	const nanoLen = 6
+	id := nanoid.MustID(nanoLen)
+	tm := time.Now().UTC().Format("20060102150405")
+	return tm + id
 }

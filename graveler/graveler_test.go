@@ -25,7 +25,7 @@ type Hooks struct {
 	Commit           graveler.Commit
 }
 
-func (h *Hooks) PreCommitHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+func (h *Hooks) PreCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	h.Called = true
 	h.EventID = eventID
 	h.RepositoryRecord = repositoryRecord
@@ -34,7 +34,7 @@ func (h *Hooks) PreCommitHook(_ context.Context, eventID uuid.UUID, repositoryRe
 	return h.Err
 }
 
-func (h *Hooks) PostCommitHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
+func (h *Hooks) PostCommitHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
 	h.Called = true
 	h.EventID = eventID
 	h.RepositoryRecord = repositoryRecord
@@ -44,7 +44,7 @@ func (h *Hooks) PostCommitHook(_ context.Context, eventID uuid.UUID, repositoryR
 	return h.Err
 }
 
-func (h *Hooks) PreMergeHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (h *Hooks) PreMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
 	h.Called = true
 	h.EventID = eventID
 	h.RepositoryRecord = repositoryRecord
@@ -54,7 +54,7 @@ func (h *Hooks) PreMergeHook(_ context.Context, eventID uuid.UUID, repositoryRec
 	return h.Err
 }
 
-func (h *Hooks) PostMergeHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
+func (h *Hooks) PostMergeHook(ctx context.Context, runID string, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
 	h.Called = true
 	h.EventID = eventID
 	h.RepositoryRecord = repositoryRecord

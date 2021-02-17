@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
 	"github.com/treeverse/lakefs/testutil"
@@ -44,7 +43,7 @@ hooks:
 `), nil)
 
 	evt := actions.Event{
-		RunID:         uuid.New(),
+		RunID:         actions.NewRunID(),
 		EventType:     actions.EventTypePreCommit,
 		EventTime:     time.Now(),
 		RepositoryID:  "repoID",

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/db"
 )
@@ -17,7 +16,7 @@ type Service struct {
 }
 
 type Task struct {
-	RunID     uuid.UUID
+	RunID     string
 	Action    *Action
 	HookID    string
 	Hook      Hook
@@ -86,7 +85,7 @@ func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec Ma
 	return MatchedActions(actions, spec)
 }
 
-func (s *Service) allocateTasks(runID uuid.UUID, actions []*Action) ([]*Task, error) {
+func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
 	var tasks []*Task
 	for _, action := range actions {
 		for _, hook := range action.Hooks {
@@ -131,7 +130,7 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 		runPassed := runErr == nil
 		_, err = tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,'',$8)`,
-			event.RepositoryID, event.RunID.String(), event.EventType, event.EventTime, endTime, event.BranchID, event.SourceRef, runPassed)
+			event.RepositoryID, event.RunID, event.EventType, event.EventTime, endTime, event.BranchID, event.SourceRef, runPassed)
 		if err != nil {
 			return nil, fmt.Errorf("insert run information: %w", err)
 		}
@@ -141,7 +140,7 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 			taskPassed := runErr == nil
 			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, event_type, action_name, hook_id, start_time, end_time, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				event.RepositoryID, event.RunID.String(), event.EventType, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
+				event.RepositoryID, event.RunID, event.EventType, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
 			if err != nil {
 				return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
 			}
@@ -151,7 +150,7 @@ func (s *Service) insertRunInformation(ctx context.Context, event Event, tasks [
 	return err
 }
 
-func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID uuid.UUID, eventType EventType, commitID string) error {
+func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID string, eventType EventType, commitID string) error {
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`UPDATE actions_runs SET commit_id=$4 WHERE repository_id=$1 AND run_id=$2 AND event_type=$3`,
 			repositoryID, runID, string(eventType), commitID)
