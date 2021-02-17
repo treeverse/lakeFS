@@ -14,9 +14,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	actionsop "github.com/treeverse/lakefs/api/gen/restapi/operations/actions"
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
@@ -61,7 +64,14 @@ type Dependencies struct {
 	Migrator              db.Migrator
 	Collector             stats.Collector
 	CloudMetadataProvider cloud.MetadataProvider
+	Actions               actionsHandler
 	Logger                logging.Logger
+}
+
+type actionsHandler interface {
+	GetRun(repository, runID string) (actions.RunResult, error)
+	ListHooks(repository, runID string, before time.Time) (actions.TaskResultIter, error)
+	ListRuns(repository string, before time.Time, branch *string) (actions.RunResultIter, error)
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -73,6 +83,7 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		MetadataManager: d.MetadataManager,
 		Migrator:        d.Migrator,
 		Collector:       d.Collector,
+		Actions:         d.Actions,
 		Logger:          d.Logger.WithContext(ctx),
 	}
 }
@@ -168,6 +179,11 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.RefsDumpHandler = c.RefsDumpHandler()
 	api.RefsRestoreHandler = c.RefsRestoreHandler()
+
+	api.ActionsGetRunHandler = c.ActionsGetRunHandler()
+	api.ActionsGetRunHookOutputHandler = c.ActionsGetRunHookOutputHandler()
+	api.ActionsListRunHooksHandler = c.ActionsListRunHooksHandler()
+	api.ActionsListRunsHandler = c.ActionsListRunsHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -2528,4 +2544,255 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 
 		return refs.NewDumpCreated().WithPayload(manifestData)
 	})
+}
+
+func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
+	return actionsop.GetRunHandlerFunc(func(params actionsop.GetRunParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewGetRunDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return actionsop.NewGetRunUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		taskRes, err := deps.Actions.GetRun(params.Repository, params.RunID)
+		if err != nil {
+			if errors.Is(err, actions.ErrNotFound) {
+				return actionsop.NewGetRunNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+
+			return actionsop.NewGetRunDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		status := models.ActionRunStatusCompleted
+		if !taskRes.Passed {
+			status = models.ActionRunStatusFailed
+		}
+		res := &models.ActionRun{
+			RunID:     &taskRes.RunID,
+			StartTime: strfmt.DateTime(taskRes.StartTime),
+			EndTime:   strfmt.DateTime(taskRes.EndTime),
+			Status:    status,
+			Branch:    &taskRes.BranchID,
+			CommitID:  &taskRes.OnRef,
+			EventType: string(taskRes.EventType),
+		}
+
+		return actionsop.NewGetRunOK().WithPayload(res)
+	})
+}
+
+func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutputHandler {
+	return actionsop.GetRunHookOutputHandlerFunc(func(params actionsop.GetRunHookOutputParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewGetRunHookOutputDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return actionsop.NewGetRunHookOutputUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		handleErr := func(err, target error) middleware.Responder {
+			if errors.Is(err, target) {
+				return actionsop.NewGetRunHookOutputNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+			return actionsop.NewGetRunHookOutputDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if err != nil {
+			return handleErr(err, catalog.ErrRepositoryNotFound)
+		}
+
+		out, err := c.deps.Actions.GetRun(repo.Name, params.RunID)
+		if err != nil {
+			return handleErr(err, actions.ErrNotFound)
+		}
+
+		reader, err := c.deps.BlockAdapter.Get(block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       actions.FormatHookOutputPath(out.RunID, out.ActionName, params.HookID),
+		}, 0)
+
+		if err != nil {
+			return actionsop.NewGetRunHookOutputDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return actionsop.NewGetRunHookOutputOK().WithPayload(reader)
+	})
+}
+
+func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler {
+	return actionsop.ListRunHooksHandlerFunc(func(params actionsop.ListRunHooksParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewListRunHooksDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return actionsop.NewListRunHooksUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		handleErr := func(err, target error) middleware.Responder {
+			if errors.Is(err, target) {
+				return actionsop.NewListRunHooksNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+			return actionsop.NewListRunHooksDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		repo, err := deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if err != nil {
+			return handleErr(err, catalog.ErrRepositoryNotFound)
+		}
+
+		before := time.Now()
+		if params.Before != nil {
+			before = time.Time(*params.Before)
+		}
+		hooksIter, err := c.deps.Actions.ListHooks(repo.Name, params.RunID, before)
+		if err != nil {
+			return handleErr(err, actions.ErrNotFound)
+		}
+		defer hooksIter.Close()
+
+		res := &actionsop.ListRunHooksOKBody{Pagination: &models.Pagination{HasMore: swag.Bool(true)}}
+		for hooksIter.Next() {
+			val := hooksIter.Value()
+			status := models.HookRunStatusCompleted
+			if !val.Passed {
+				status = models.HookRunStatusFailed
+			}
+
+			res.Results = append(res.Results, &models.HookRun{
+				Action:    val.ActionName,
+				HookID:    &val.HookID,
+				HookType:  val.HookType,
+				StartTime: strfmt.DateTime(val.StartTime),
+				EndTime:   strfmt.DateTime(val.EndTime),
+				Status:    status,
+			})
+			res.Pagination.NextOffset = strfmt.DateTime(val.StartTime).String()
+			res.Pagination.Results = swag.Int64(int64(len(res.Results)))
+
+			if len(res.Results) == int(*params.Amount) {
+				break
+			}
+		}
+		if hooksIter.Err() != nil {
+			return actionsop.NewListRunHooksDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(hooksIter.Err()))
+		}
+
+		if len(res.Results) < int(swag.Int64Value(params.Amount)) {
+			res.Pagination.HasMore = swag.Bool(false)
+		}
+
+		return actionsop.NewListRunHooksOK().WithPayload(res)
+	})
+}
+
+func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
+	return actionsop.ListRunsHandlerFunc(func(params actionsop.ListRunsParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewListRunsDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return actionsop.NewListRunsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		before := time.Now()
+		if params.Before != nil {
+			before = time.Time(*params.Before)
+		}
+		runsIter, err := deps.Actions.ListRuns(params.Repository, before, params.Branch)
+		if err != nil {
+			if errors.Is(err, actions.ErrNotFound) {
+				return actionsop.NewListRunsNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+
+			return actionsop.NewListRunsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		res := &actionsop.ListRunsOKBody{Pagination: &models.Pagination{HasMore: swag.Bool(true)}}
+		for runsIter.Next() {
+			val := runsIter.Value()
+			status := models.HookRunStatusCompleted
+			if !val.Passed {
+				status = models.HookRunStatusFailed
+			}
+
+			res.Results = append(res.Results, &models.ActionRun{
+				Branch:    &val.BranchID,
+				CommitID:  &val.OnRef,
+				RunID:     &val.RunID,
+				StartTime: strfmt.DateTime(val.StartTime),
+				EndTime:   strfmt.DateTime(val.EndTime),
+				Status:    status,
+				EventType: string(val.EventType),
+			})
+
+			res.Pagination.NextOffset = strfmt.DateTime(val.StartTime).String()
+			res.Pagination.Results = swag.Int64(int64(len(res.Results)))
+
+			if len(res.Results) == int(*params.Amount) {
+				break
+			}
+		}
+		if runsIter.Err() != nil {
+			return actionsop.NewListRunsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(runsIter.Err()))
+		}
+
+		if len(res.Results) < int(swag.Int64Value(params.Amount)) {
+			res.Pagination.HasMore = swag.Bool(false)
+		}
+
+		return actionsop.NewListRunsOK().WithPayload(res)
+	})
+}
+
+var errActionsNotImplemented = errors.New("actions not implemented yet")
+
+func (c *Controller) actionsReady() error {
+	if c.deps.Actions == nil {
+		return errActionsNotImplemented
+	}
+	return nil
 }
