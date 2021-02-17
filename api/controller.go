@@ -2548,6 +2548,10 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 
 func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 	return actionsop.GetRunHandlerFunc(func(params actionsop.GetRunParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewGetRunDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2590,6 +2594,10 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 
 func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutputHandler {
 	return actionsop.GetRunHookOutputHandlerFunc(func(params actionsop.GetRunHookOutputParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewGetRunHookOutputDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2635,6 +2643,10 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 
 func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler {
 	return actionsop.ListRunHooksHandlerFunc(func(params actionsop.ListRunHooksParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewListRunHooksDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2708,6 +2720,10 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 
 func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 	return actionsop.ListRunsHandlerFunc(func(params actionsop.ListRunsParams, user *models.User) middleware.Responder {
+		if err := c.actionsReady(); err != nil {
+			return actionsop.NewListRunsDefault(http.StatusNotImplemented).
+				WithPayload(responseErrorFrom(err))
+		}
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2770,4 +2786,13 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 
 		return actionsop.NewListRunsOK().WithPayload(res)
 	})
+}
+
+var errActionsNotImplemented = errors.New("actions not implemented yet")
+
+func (c *Controller) actionsReady() error {
+	if c.deps.Actions == nil {
+		return errActionsNotImplemented
+	}
+	return nil
 }
