@@ -24,10 +24,10 @@ type WebhookEventInfo struct {
 	HookID        string            `json:"hook_id"`
 	RepositoryID  string            `json:"repository_id"`
 	BranchID      string            `json:"branch_id"`
-	SourceRef     string            `json:"source_ref"`
+	SourceRef     string            `json:"source_ref,omitempty"`
 	CommitMessage string            `json:"commit_message"`
 	Committer     string            `json:"committer"`
-	Metadata      map[string]string `json:"metadata"`
+	Metadata      map[string]string `json:"metadata,omitempty"`
 }
 
 const webhookClientTimeout = 5 * time.Minute

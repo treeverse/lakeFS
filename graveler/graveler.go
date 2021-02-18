@@ -1349,7 +1349,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			RepositoryID:     repositoryID,
 			StorageNamespace: storageNamespace,
 			Destination:      destination,
-			Source:           source,
+			Source:           fromCommit.CommitID.Ref(),
 			Commit:           commit,
 		})
 		if err != nil {
