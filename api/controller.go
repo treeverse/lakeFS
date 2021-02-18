@@ -428,6 +428,9 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 		commitMessage := swag.StringValue(params.Commit.Message)
 		commit, err := deps.Cataloger.Commit(deps.ctx, params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
+		if errors.Is(err, graveler.ErrAbortedByHook) {
+			return commits.NewCommitPreconditionFailed().WithPayload(responseError("aborted by hook"))
+		}
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -905,6 +908,8 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("no difference was found"))
 		case errors.Is(err, graveler.ErrLockNotAcquired):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branch is currently locked, try again later"))
+		case errors.Is(err, graveler.ErrAbortedByHook):
+			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseError("aborted by hook"))
 		default:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 		}

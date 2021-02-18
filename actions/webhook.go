@@ -70,6 +70,7 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 	if err != nil {
 		return err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{
 		Timeout: w.Timeout,

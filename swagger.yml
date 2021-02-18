@@ -1604,6 +1604,10 @@ paths:
           description: branch not found
           schema:
             $ref: "#/definitions/error"
+        412:
+          description: precondition failed
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
@@ -1768,6 +1772,10 @@ paths:
           description: conflict
           schema:
             $ref: "#/definitions/merge_result"
+        412:
+          description: precondition failed
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
