@@ -18,15 +18,19 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	const hookID = "hook_id"
+	const actionName = "action_name"
 	runID := actions.NewRunID()
-	hookOutput := actions.FormatHookOutputPath(runID, "actionName", "hookID")
+	hookRunID := actions.NewRunID()
+	hookOutput := actions.FormatHookOutputPath(runID, actionName, hookID)
 	writer := mock.NewMockOutputWriter(ctrl)
 	writer.EXPECT().OutputWrite(ctx, hookOutput, contentReader, int64(len(content))).Return(nil)
 
 	w := &actions.HookOutputWriter{
 		RunID:      runID,
-		ActionName: "actionName",
-		HookID:     "hookID",
+		HookID:     hookID,
+		HookRunID:  hookRunID,
+		ActionName: actionName,
 		Writer:     writer,
 	}
 	err := w.OutputWrite(ctx, contentReader, int64(len(content)))

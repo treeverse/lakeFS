@@ -85,7 +85,7 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 	}()
 
 	// log response body if needed
-	if resp.Body != nil && resp.ContentLength > 0 {
+	if resp.Body != nil && resp.ContentLength != 0 {
 		if err := writer.OutputWrite(ctx, resp.Body, resp.ContentLength); err != nil {
 			return err
 		}

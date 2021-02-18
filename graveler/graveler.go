@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/actions"
+
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/proto"
@@ -977,7 +978,11 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			Commit:           commit,
 		})
 		if err != nil {
-			return "", newHookError("pre-commit", err)
+			return "", &HookAbortError{
+				EventType: actions.EventTypePreCommit,
+				RunID:     preRunID,
+				Err:       err,
+			}
 		}
 
 		var branchMetaRangeID MetaRangeID
@@ -1353,7 +1358,11 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Commit:           commit,
 		})
 		if err != nil {
-			return "", newHookError("pre-merge", err)
+			return "", &HookAbortError{
+				EventType: actions.EventTypePreMerge,
+				RunID:     preRunID,
+				Err:       err,
+			}
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
@@ -1868,23 +1877,4 @@ func (c *commitValueIterator) Err() error {
 
 func (c *commitValueIterator) Close() {
 	c.src.Close()
-}
-
-func newHookError(hookEvent string, err error) error {
-	err = fmt.Errorf("%s hook: %w", hookEvent, err)
-	merr := multierror.Append(ErrAbortedByHook, err)
-	merr.ErrorFormat = func(errs []error) string {
-		const minErrorLen = 2
-		if len(errs) < minErrorLen {
-			return multierror.ListFormatFunc(errs)
-		}
-		var details string
-		if len(errs) == minErrorLen {
-			details = errs[1].Error()
-		} else {
-			details = multierror.ListFormatFunc(errs[1:])
-		}
-		return errs[0].Error() + ": " + details
-	}
-	return merr
 }

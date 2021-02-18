@@ -22,8 +22,6 @@ type actionsSource struct {
 const (
 	repositoryLocation = "_lakefs_actions/"
 	outputLocation     = "_lakefs/actions/log"
-
-	outputExtension = ".log"
 )
 
 func (as *actionsSource) List(ctx context.Context) ([]actions.FileRef, error) {
@@ -77,7 +75,7 @@ type actionsWriter struct {
 //
 func (aw *actionsWriter) OutputWrite(ctx context.Context, outputPath string, reader io.Reader, size int64) error {
 	storageNamespace := aw.storageNamespace.String()
-	identifier := path.Join(outputLocation, outputPath+outputExtension)
+	identifier := path.Join(outputLocation, outputPath)
 	return aw.adapter.WithContext(ctx).Put(block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       identifier,

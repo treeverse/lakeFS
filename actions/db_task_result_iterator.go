@@ -2,37 +2,34 @@ package actions
 
 import (
 	"context"
-	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
 type DBTaskResultIterator struct {
-	db               db.Database
-	ctx              context.Context
-	value            *TaskResult
-	buf              []*TaskResult
-	fetchSize        int
-	err              error
-	state            iteratorState
-	repositoryID     string
-	runID            string
-	actionNameOffset string
-	hookIDOffset     string
+	db           db.Database
+	ctx          context.Context
+	value        *TaskResult
+	buf          []*TaskResult
+	fetchSize    int
+	err          error
+	state        iteratorState
+	repositoryID string
+	runID        string
+	offset       string
 }
 
 func NewDBTaskResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID, runID, after string) *DBTaskResultIterator {
-	it := &DBTaskResultIterator{
+	return &DBTaskResultIterator{
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		runID:        runID,
 		fetchSize:    fetchSize,
+		offset:       after,
 		buf:          make([]*TaskResult, 0, fetchSize),
 	}
-	it.actionNameOffset, it.hookIDOffset = parseTaskResultToken(after)
-	return it
 }
 
 func (it *DBTaskResultIterator) Next() bool {
@@ -48,8 +45,7 @@ func (it *DBTaskResultIterator) Next() bool {
 	}
 	it.value = it.buf[0]
 	it.buf = it.buf[1:]
-	it.actionNameOffset = it.value.ActionName
-	it.hookIDOffset = it.value.HookID
+	it.offset = it.value.HookRunID
 	return true
 }
 
@@ -66,11 +62,11 @@ func (it *DBTaskResultIterator) maybeFetch() {
 	}
 
 	q := psql.
-		Select("run_id", "hook_id", "hook_type", "action_name", "start_time", "end_time", "passed").
+		Select("run_id", "hook_run_id", "hook_id", "action_name", "start_time", "end_time", "passed").
 		From("actions_run_hooks").
 		Where(sq.Eq{"repository_id": it.repositoryID, "run_id": it.runID}).
-		Where(sq.Gt{"action_name": it.actionNameOffset, "hook_id": it.hookIDOffset}).
-		OrderBy("action_name", "hook_id").
+		Where(sq.Gt{"action_name": it.offset}).
+		OrderBy("hook_run_id").
 		Limit(uint64(it.fetchSize))
 
 	var sql string
@@ -102,20 +98,4 @@ func (it *DBTaskResultIterator) Err() error {
 func (it *DBTaskResultIterator) Close() {
 	it.err = ErrIteratorClosed
 	it.buf = nil
-}
-
-func (it *DBTaskResultIterator) Token() string {
-	if it.err != nil || it.value == nil {
-		return ""
-	}
-	return it.value.ActionName + "/" + it.value.HookID
-}
-
-func parseTaskResultToken(token string) (actionName string, hookID string) {
-	idx := strings.LastIndex(token, "/")
-	if idx != -1 {
-		actionName = token[:idx]
-		hookID = token[idx+1:]
-	}
-	return
 }

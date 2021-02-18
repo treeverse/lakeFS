@@ -18,6 +18,7 @@ type Service struct {
 
 type Task struct {
 	RunID     string
+	HookRunID string
 	Action    *Action
 	HookID    string
 	Hook      Hook
@@ -39,12 +40,16 @@ type RunResult struct {
 
 type TaskResult struct {
 	RunID      string    `db:"run_id"`
+	HookRunID  string    `db:"hook_run_id"`
 	HookID     string    `db:"hook_id"`
-	HookType   string    `db:"hook_type"`
 	ActionName string    `db:"action_name"`
 	StartTime  time.Time `db:"start_time"`
 	EndTime    time.Time `db:"end_time"`
 	Passed     bool      `db:"passed"`
+}
+
+func (r *TaskResult) LogPath() string {
+	return FormatHookOutputPath(r.RunID, r.ActionName, r.HookID)
 }
 
 type RunResultIterator interface {
@@ -60,7 +65,6 @@ type TaskResultIterator interface {
 	Value() *TaskResult
 	Err() error
 	Close()
-	Token() string
 }
 
 const defaultFetchSize = 1024
@@ -72,27 +76,29 @@ func NewService(db db.Database) *Service {
 		DB: db,
 	}
 }
+
+// Run load and run actions based on the event information. Always returns run id in order to track back hooks errors
+//
 func (s *Service) Run(ctx context.Context, event Event, deps Deps) (string, error) {
-	var runID string
+	runID := NewRunID()
+
 	// load relevant actions
 	actions, err := s.loadMatchedActions(ctx, deps.Source, MatchSpec{EventType: event.Type, Branch: event.BranchID})
 	if err != nil || len(actions) == 0 {
-		return "", err
+		return runID, err
 	}
 
 	// allocate and run hooks
-	runID = NewRunID()
 	tasks, err := s.allocateTasks(runID, actions)
 	if err != nil {
-		return "", err
+		return runID, err
 	}
 
 	runErr := s.runTasks(ctx, tasks, event, deps)
-
-	// write results and return multi error
+	// keep results before returning an error (if any)
 	err = s.insertRunInformation(ctx, runID, event, tasks, runErr)
 	if err != nil {
-		return "", err
+		return runID, err
 	}
 	return runID, runErr
 }
@@ -117,10 +123,11 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 				return nil, err
 			}
 			tasks = append(tasks, &Task{
-				RunID:  runID,
-				Action: action,
-				HookID: hook.ID,
-				Hook:   h,
+				RunID:     runID,
+				HookRunID: NewRunID(),
+				Action:    action,
+				HookID:    hook.ID,
+				Hook:      h,
 			})
 		}
 	}
@@ -135,6 +142,7 @@ func (s *Service) runTasks(ctx context.Context, tasks []*Task, event Event, deps
 			task.StartTime = time.Now()
 			err := task.Hook.Run(ctx, event, &HookOutputWriter{
 				RunID:      task.RunID,
+				HookRunID:  task.HookRunID,
 				ActionName: task.Action.Name,
 				HookID:     task.HookID,
 				Writer:     deps.Output,
@@ -169,9 +177,9 @@ func (s *Service) insertRunInformation(ctx context.Context, runID string, event 
 		// insert each task information
 		for _, task := range tasks {
 			taskPassed := task.Err == nil
-			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, event_type, action_name, hook_id, start_time, end_time, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				event.RepositoryID, runID, event.Type, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
+			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, event_type, action_name, hook_id, start_time, end_time, passed)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+				event.RepositoryID, runID, task.HookRunID, event.Type, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
 			if err != nil {
 				return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
 			}
@@ -226,17 +234,16 @@ func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID s
 	return res.(*RunResult), nil
 }
 
-func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID string, actionName string, hookID string) (*TaskResult, error) {
+func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
 	res, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		result := &TaskResult{
-			RunID:      runID,
-			HookID:     hookID,
-			ActionName: actionName,
+			RunID:     runID,
+			HookRunID: hookRunID,
 		}
-		err := tx.Get(result, `SELECT hook_type, start_time, end_time, passed
+		err := tx.Get(result, `SELECT hook_id, action_name, start_time, end_time, passed
 			FROM actions_run_hooks 
-			WHERE repository_id=$1 AND run_id=$2 AND action_name=$3 AND hook_id=$4`,
-			repositoryID, runID, actionName, hookID)
+			WHERE repository_id=$1 AND run_id=$2 AND hook_run_id=$3`,
+			repositoryID, runID, hookRunID)
 		if err != nil {
 			return nil, fmt.Errorf("get task result: %w", err)
 		}

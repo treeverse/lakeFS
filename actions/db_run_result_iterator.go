@@ -57,19 +57,19 @@ func (it *DBRunResultIterator) maybeFetch() {
 	if len(it.buf) > 0 {
 		return
 	}
-
+	if it.state == iteratorStateInit {
+		it.state = iteratorStateQuery
+	}
 	q := psql.
-		Select("run_id", "event_id", "start_time", "end_time", "branch_id", "source_ref", "commit_id", "passed").
+		Select("run_id", "event_type", "start_time", "end_time", "branch_id", "source_ref", "commit_id", "passed").
 		From("actions_runs").
+		Where(sq.Eq{"repository_id": it.repositoryID}).
 		OrderBy("run_id DESC").
 		Limit(uint64(it.fetchSize))
 	if it.branchID != nil {
 		q = q.Where(sq.Eq{"branch_id": *it.branchID})
 	}
-	if it.state == iteratorStateInit {
-		it.state = iteratorStateQuery
-		q = q.Where(sq.LtOrEq{"run_id": it.offset})
-	} else {
+	if it.offset != "" {
 		q = q.Where(sq.Lt{"run_id": it.offset})
 	}
 

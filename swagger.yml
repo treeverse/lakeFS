@@ -398,14 +398,13 @@ definitions:
   hook_run:
     type: object
     required:
-      - hook_id
+      - hook_run_id
     properties:
-      hook_id:
+      hook_run_id:
         type: string
-      hook_type:
-        type: string
-        enum: [webhook]
       action:
+        type: string
+      hook_id:
         type: string
       start_time:
         type: string
@@ -2326,7 +2325,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_id}/output:
+  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
     get:
       tags:
         - actions
@@ -2342,7 +2341,7 @@ paths:
           required: true
           type: string
         - in: path
-          name: hook_id
+          name: hook_run_id
           required: true
           type: string
       produces:

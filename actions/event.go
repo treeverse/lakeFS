@@ -33,7 +33,7 @@ type Event struct {
 }
 
 func NewRunID() string {
-	const nanoLen = 6
+	const nanoLen = 8
 	id := nanoid.MustID(nanoLen)
 	tm := time.Now().UTC().Format("20060102150405")
 	return tm + id

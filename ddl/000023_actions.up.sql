@@ -21,15 +21,16 @@ CREATE TABLE IF NOT EXISTS actions_run_hooks
 (
     repository_id       text NOT NULL,
     run_id              text NOT NULL,
+    hook_run_id         text NOT NULL,
+
     action_name         text NOT NULL,
     hook_id             text NOT NULL,
-
     event_type          text NOT NULL,
     start_time          timestamptz NOT NULL,
     end_time            timestamptz NOT NULL,
     passed              BOOLEAN DEFAULT false NOT NULL,
 
-    PRIMARY KEY (repository_id, run_id, action_name, hook_id)
+    PRIMARY KEY (repository_id, run_id, hook_run_id)
 );
 
 COMMIT;

@@ -569,8 +569,9 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Commit err=%v, expected=%v", err, tt.err)
 			}
-			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
-				t.Fatalf("Commit err=%v, expected ErrAbortedByHook", err)
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Commit err=%v, expected HookAbortError", err)
 			}
 			if tt.hook != h.Called {
 				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", h.Called, tt.hook)
@@ -654,8 +655,9 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Merge err=%v, pre-merge error expected=%v", err, tt.err)
 			}
-			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
-				t.Fatalf("Merge err=%v, pre-merge error expected ErrAbortedByHook", err)
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Merge err=%v, pre-merge error expected HookAbortError", err)
 			}
 			// verify that calls made until the first error
 			if tt.hook != h.Called {

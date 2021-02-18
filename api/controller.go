@@ -70,7 +70,7 @@ type Dependencies struct {
 
 type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
-	GetTaskResult(ctx context.Context, repositoryID string, runID string, actionName string, hookID string) (*actions.TaskResult, error)
+	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
 	ListRuns(ctx context.Context, repositoryID string, branchID *string, after string) (actions.RunResultIterator, error)
 	ListRunTasks(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
@@ -428,8 +428,9 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 		commitMessage := swag.StringValue(params.Commit.Message)
 		commit, err := deps.Cataloger.Commit(deps.ctx, params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
-		if errors.Is(err, graveler.ErrAbortedByHook) {
-			return commits.NewCommitPreconditionFailed().WithPayload(responseError("aborted by hook"))
+		var hookAbortErr *graveler.HookAbortError
+		if errors.As(err, &hookAbortErr) {
+			return commits.NewCommitPreconditionFailed().WithPayload(responseError("aborted by hooks, run id: " + hookAbortErr.RunID))
 		}
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -893,6 +894,10 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message,
 			meta)
 
+		var hookAbortErr *graveler.HookAbortError
+		if errors.As(err, &hookAbortErr) {
+			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseError("aborted by hooks, run id: " + hookAbortErr.RunID))
+		}
 		switch {
 		case err == nil:
 			payload := newMergeResultFromCatalog(res)
@@ -908,8 +913,6 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("no difference was found"))
 		case errors.Is(err, graveler.ErrLockNotAcquired):
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branch is currently locked, try again later"))
-		case errors.Is(err, graveler.ErrAbortedByHook):
-			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseError("aborted by hook"))
 		default:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 		}
@@ -2655,7 +2658,6 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 			Branch:    swag.String(runResult.BranchID),
 			CommitID:  swag.String(runResult.CommitID),
 		}
-
 		return actionsop.NewGetRunOK().WithPayload(res)
 	})
 }
@@ -2687,14 +2689,15 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 			return handleErr(err, catalog.ErrRepositoryNotFound)
 		}
 
-		taskResult, err := c.deps.Actions.GetTaskResult(deps.ctx, repo.Name, params.RunID, "params.ActionName", params.HookID)
+		taskResult, err := c.deps.Actions.GetTaskResult(deps.ctx, repo.Name, params.RunID, params.HookRunID)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
 		}
 
+		logPath := taskResult.LogPath()
 		reader, err := c.deps.BlockAdapter.Get(block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
-			Identifier:       actions.FormatHookOutputPath(taskResult.RunID, taskResult.ActionName, params.HookID),
+			Identifier:       logPath,
 		}, 0)
 
 		if err != nil {
@@ -2740,6 +2743,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		defer tasksIter.Close()
 
 		payload := &actionsop.ListRunHooksOKBody{
+			Results: make([]*models.HookRun, 0),
 			Pagination: &models.Pagination{
 				HasMore: swag.Bool(false),
 			},
@@ -2748,9 +2752,9 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		for tasksIter.Next() && len(payload.Results) < amount {
 			val := tasksIter.Value()
 			hookRun := &models.HookRun{
+				HookRunID: swag.String(val.HookRunID),
 				Action:    val.ActionName,
-				HookID:    swag.String(val.HookID),
-				HookType:  val.HookType,
+				HookID:    val.HookID,
 				StartTime: strfmt.DateTime(val.StartTime),
 				EndTime:   strfmt.DateTime(val.EndTime),
 			}
@@ -2763,7 +2767,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		}
 		if tasksIter.Next() {
 			payload.Pagination.HasMore = swag.Bool(true)
-			payload.Pagination.NextOffset = tasksIter.Token()
+			payload.Pagination.NextOffset = tasksIter.Value().HookRunID
 		}
 		if err := tasksIter.Err(); err != nil {
 			return actionsop.NewListRunHooksDefault(http.StatusInternalServerError).
@@ -2799,6 +2803,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		payload := &actionsop.ListRunsOKBody{
+			Results: make([]*models.ActionRun, 0),
 			Pagination: &models.Pagination{
 				HasMore: swag.Bool(false),
 			},
