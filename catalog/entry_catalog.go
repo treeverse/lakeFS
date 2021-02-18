@@ -562,19 +562,7 @@ func (e *EntryCatalog) PreCommitHook(ctx context.Context, record graveler.PreCom
 		Committer:     record.Commit.Committer,
 		Metadata:      record.Commit.Metadata,
 	}
-	deps := actions.Deps{
-		Source: &actionsSource{
-			catalog:          e,
-			adapter:          e.BlockAdapter,
-			repositoryID:     record.RepositoryID,
-			storageNamespace: record.StorageNamespace,
-			ref:              record.BranchID.Ref(),
-		},
-		Output: &actionsWriter{
-			adapter:          e.BlockAdapter,
-			storageNamespace: record.StorageNamespace,
-		},
-	}
+	deps := e.actionsDeps(record.RepositoryID, record.StorageNamespace, record.BranchID)
 	return e.Actions.Run(ctx, evt, deps)
 }
 
@@ -600,19 +588,7 @@ func (e *EntryCatalog) PreMergeHook(ctx context.Context, record graveler.PreMerg
 		Committer:     record.Commit.Committer,
 		Metadata:      record.Commit.Metadata,
 	}
-	deps := actions.Deps{
-		Source: &actionsSource{
-			catalog:          e,
-			adapter:          e.BlockAdapter,
-			repositoryID:     record.RepositoryID,
-			storageNamespace: record.StorageNamespace,
-			ref:              record.Source,
-		},
-		Output: &actionsWriter{
-			adapter:          e.BlockAdapter,
-			storageNamespace: record.StorageNamespace,
-		},
-	}
+	deps := e.actionsDeps(record.RepositoryID, record.StorageNamespace, record.Destination)
 	return e.Actions.Run(ctx, evt, deps)
 }
 
@@ -634,4 +610,19 @@ func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.R
 
 func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
 	return e.Store.GetRange(ctx, repositoryID, rangeID)
+}
+
+func (e *EntryCatalog) actionsDeps(repositoryID graveler.RepositoryID, repoStorageNamespace graveler.StorageNamespace, sourceBranchID graveler.BranchID) actions.Deps {
+	return actions.Deps{
+		Source: &actionsSource{
+			catalog:          e,
+			repositoryID:     repositoryID,
+			storageNamespace: repoStorageNamespace,
+			ref:              sourceBranchID.Ref(),
+		},
+		Output: &actionsWriter{
+			adapter:          e.BlockAdapter,
+			storageNamespace: repoStorageNamespace,
+		},
+	}
 }
