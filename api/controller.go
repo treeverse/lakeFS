@@ -1281,7 +1281,17 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		delimiter := catalog.DefaultPathDelimiter
+		// discern between an empty delimiter and no delimiter being passed at all
+		// by default, go-swagger will use the default value ("/") even if we pass
+		// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
+		delimiter := params.Delimiter
+		query := params.HTTPRequest.URL.Query()
+		_, delimiterPassed := query["delimiter"]
+		queryDelimiter := query.Get("delimiter")
+		if delimiterPassed && queryDelimiter == "" {
+			delimiter = ""
+		}
+
 		res, hasMore, err := cataloger.ListEntries(
 			deps.ctx,
 			params.Repository,

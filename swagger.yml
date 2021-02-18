@@ -2089,6 +2089,11 @@ paths:
         name: amount
         type: integer
         default: 100
+      - in: query
+        name: delimiter
+        type: string
+        default: "/"
+        allowEmptyValue: true
     get:
       tags:
         - objects
