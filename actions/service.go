@@ -133,12 +133,16 @@ func (s *Service) runTasks(ctx context.Context, tasks []*Task, event Event, deps
 		task := task // pin
 		g.Go(func() error {
 			task.StartTime = time.Now()
-			task.Err = task.Hook.Run(ctx, event, &HookOutputWriter{
+			err := task.Hook.Run(ctx, event, &HookOutputWriter{
 				RunID:      task.RunID,
 				ActionName: task.Action.Name,
 				HookID:     task.HookID,
 				Writer:     deps.Output,
 			})
+			if err != nil {
+				task.Err = fmt.Errorf("run '%s' failed on action '%s' hook '%s': %w",
+					task.RunID, task.Action.Name, task.HookID, err)
+			}
 			task.EndTime = time.Now()
 			return task.Err
 		})
