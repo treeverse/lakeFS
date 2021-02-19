@@ -107,9 +107,10 @@ func (g *Generator) Run(fn WorkFn) {
 	}
 
 	collecting := true
+	ticker := time.NewTicker(time.Second)
 	for collecting {
 		select {
-		case <-time.Tick(time.Second):
+		case <-ticker.C:
 			fmt.Printf("%s\n", g.collector.Stats())
 		case <-g.pool.Done():
 			collecting = false

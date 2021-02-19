@@ -429,7 +429,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -533,7 +532,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -637,7 +635,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -771,7 +768,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -851,7 +847,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -955,7 +950,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -994,7 +988,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1081,7 +1074,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1158,7 +1150,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1338,7 +1329,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1453,7 +1443,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer

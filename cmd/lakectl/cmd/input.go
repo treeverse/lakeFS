@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/pflag"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/pflag"
 )
 
 const (
