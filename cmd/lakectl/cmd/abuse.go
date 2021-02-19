@@ -26,20 +26,21 @@ var abuseCmd = &cobra.Command{
 	Hidden: true,
 }
 
-func readLines(path string) (keys []string, err error) {
-	reader := GetReaderFromPath(path)
-	defer func() {
-		err = reader.Close()
-	}()
+func readLines(path string) ([]string, error) {
+	reader := OpenByPath(path)
 	scanner := bufio.NewScanner(reader)
-	keys = make([]string, 0)
+	keys := make([]string, 0)
 	for scanner.Scan() {
 		keys = append(keys, scanner.Text())
 	}
-	if err = scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	return
+	err := reader.Close()
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
 }
 
 var abuseRandomReadsCmd = &cobra.Command{

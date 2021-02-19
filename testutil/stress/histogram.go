@@ -32,7 +32,7 @@ func (h *Histogram) String() string {
 }
 
 func (h *Histogram) Add(v int64) {
-	if v < h.min {
+	if h.min == 0 || v <= h.min {
 		h.min = v
 	}
 	if v > h.max {
@@ -40,7 +40,7 @@ func (h *Histogram) Add(v int64) {
 	}
 	h.total++
 	for _, b := range h.buckets {
-		if v < b {
+		if v <= b {
 			h.counters[b]++
 		}
 	}
@@ -48,13 +48,13 @@ func (h *Histogram) Add(v int64) {
 
 func (h *Histogram) Clone() *Histogram {
 	buckets := make([]int64, len(h.buckets))
-	for i, b := range h.buckets {
-		buckets[i] = b
-	}
+	copy(buckets, h.buckets)
+
 	counters := make(map[int64]int64)
 	for k, v := range h.counters {
 		counters[k] = v
 	}
+
 	return &Histogram{
 		buckets:  buckets,
 		counters: counters,

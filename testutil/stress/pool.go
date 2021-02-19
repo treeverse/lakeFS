@@ -41,8 +41,8 @@ func (p *WorkerPool) Start(workFn WorkFn) {
 	p.wg.Add(p.parallelism)
 	for i := 0; i < p.parallelism; i++ {
 		go func() {
+			defer p.wg.Done()
 			workFn(p.Input, p.Output) // call the worker we were given
-			p.wg.Done()
 		}()
 	}
 	go func() {
@@ -84,12 +84,13 @@ func NewGenerator(parallelism int, opts ...GeneratorOption) *Generator {
 	return g
 }
 
+func (g *Generator) addResult(s string) {
+	g.pool.Input <- s
+}
+
 func (g *Generator) Setup(fn GenerateFn) {
-	add := func(s string) {
-		g.pool.Input <- s
-	}
 	go func() {
-		fn(add)
+		fn(g.addResult)
 		close(g.pool.Input)
 	}()
 }
@@ -99,20 +100,16 @@ func (g *Generator) Setup(fn GenerateFn) {
 func (g *Generator) Run(fn WorkFn) {
 	go g.collector.Collect()
 	g.pool.Start(fn)
-	printSummary := func() {
-		fmt.Printf("%s\n\n", g.collector.Stats())
-		fmt.Printf("Historgram (ms):\n%s\n", g.collector.Histogram())
-	}
+
 	termSignal := make(chan os.Signal, 1)
 	if len(g.handleSignals) > 0 {
 		signal.Notify(termSignal, g.handleSignals...)
 	}
 
-	ticker := time.NewTicker(time.Second)
 	collecting := true
 	for collecting {
 		select {
-		case <-ticker.C:
+		case <-time.Tick(time.Second):
 			fmt.Printf("%s\n", g.collector.Stats())
 		case <-g.pool.Done():
 			collecting = false
@@ -120,5 +117,6 @@ func (g *Generator) Run(fn WorkFn) {
 			collecting = false
 		}
 	}
-	printSummary()
+	fmt.Printf("%s\n\n", g.collector.Stats())
+	fmt.Printf("Historgram (ms):\n%s\n", g.collector.Histogram())
 }

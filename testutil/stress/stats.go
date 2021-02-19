@@ -26,7 +26,7 @@ func (s *Stats) String() string {
 }
 
 type ResultCollector struct {
-	// Have workers write to here
+	// Results is the channel workers should write their output to
 	Results chan Result
 
 	// for getting data out using methods
