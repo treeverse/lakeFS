@@ -3,10 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"io/ioutil"
-	"os"
-	"strings"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 
@@ -39,20 +36,10 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 	Run: func(cmd *cobra.Command, args []string) {
 		repoURI := uri.Must(uri.Parse(args[0]))
 		manifestFileName, _ := cmd.Flags().GetString("manifest")
-		var fp io.Reader
-		if strings.EqualFold(manifestFileName, "-") {
-			// upload from stdin
-			fp = os.Stdin
-		} else {
-			file, err := os.Open(manifestFileName)
-			if err != nil {
-				DieErr(err)
-			}
-			defer func() {
-				_ = file.Close()
-			}()
-			fp = file
-		}
+		fp := OpenByPath(manifestFileName)
+		defer func() {
+			_ = fp.Close()
+		}()
 
 		// read and parse the JSON
 		data, err := ioutil.ReadAll(fp)
