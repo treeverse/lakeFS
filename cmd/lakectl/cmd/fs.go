@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -101,25 +100,13 @@ var fsCatCmd = &cobra.Command{
 }
 
 func upload(client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
-	var fp io.Reader
-	if strings.EqualFold(sourcePathname, "-") {
-		// upload from stdin
-		fp = os.Stdin
-	} else {
-		file, err := os.Open(sourcePathname)
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			_ = file.Close()
-		}()
-		fp = file
-	}
+	fp := OpenByPath(sourcePathname)
+	defer func() {
+		_ = fp.Close()
+	}()
 
 	// read
-	stat, err := client.UploadObject(context.Background(), destURI.Repository, destURI.Ref, destURI.Path, fp)
-
-	return stat, err
+	return client.UploadObject(context.Background(), destURI.Repository, destURI.Ref, destURI.Path, fp)
 }
 
 var fsUploadCmd = &cobra.Command{
