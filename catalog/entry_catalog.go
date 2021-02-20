@@ -79,15 +79,16 @@ type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
 	graveler.Dumper
+	graveler.Plumbing
 	graveler.Loader
 }
 
-type ActionsClient interface {
-	Run(ctx context.Context, event actions.Event) error
+type Actions interface {
+	Run(ctx context.Context, event actions.Event, deps actions.Deps) error
 }
 
 type EntryCatalog struct {
-	Actions      ActionsClient
+	Actions      Actions
 	BlockAdapter block.Adapter
 	Store        Store
 }
@@ -101,7 +102,7 @@ type Config struct {
 	Config  *config.Config
 	DB      db.Database
 	LockDB  db.Database
-	Actions ActionsClient
+	Actions Actions
 }
 
 func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
@@ -553,9 +554,16 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 
 func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventType: actions.EventTypePreCommit,
-		EventID:   eventID,
-		EventTime: time.Now(),
+		EventType:     actions.EventTypePreCommit,
+		EventID:       eventID,
+		EventTime:     time.Now(),
+		RepositoryID:  repositoryRecord.RepositoryID.String(),
+		BranchID:      branch.String(),
+		CommitMessage: commit.Message,
+		Committer:     commit.Committer,
+		Metadata:      commit.Metadata,
+	}
+	deps := actions.Deps{
 		Source: &actionsSource{
 			catalog:          e,
 			adapter:          e.BlockAdapter,
@@ -563,13 +571,12 @@ func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, rep
 			storageNamespace: repositoryRecord.StorageNamespace,
 			ref:              branch.Ref(),
 		},
-		RepositoryID:  repositoryRecord.RepositoryID.String(),
-		BranchID:      branch.String(),
-		CommitMessage: commit.Message,
-		Committer:     commit.Committer,
-		Metadata:      commit.Metadata,
+		Output: &actionsWriter{
+			adapter:          e.BlockAdapter,
+			storageNamespace: repositoryRecord.StorageNamespace,
+		},
 	}
-	return e.Actions.Run(ctx, evt)
+	return e.Actions.Run(ctx, evt, deps)
 }
 
 func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
@@ -578,16 +585,9 @@ func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, re
 
 func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
 	evt := actions.Event{
-		EventType: actions.EventTypePreMerge,
-		EventID:   eventID,
-		EventTime: time.Now(),
-		Source: &actionsSource{
-			catalog:          e,
-			adapter:          e.BlockAdapter,
-			repositoryID:     repositoryRecord.RepositoryID,
-			storageNamespace: repositoryRecord.StorageNamespace,
-			ref:              source,
-		},
+		EventType:     actions.EventTypePreMerge,
+		EventID:       eventID,
+		EventTime:     time.Now(),
 		RepositoryID:  repositoryRecord.RepositoryID.String(),
 		BranchID:      destination.String(),
 		SourceRef:     source.String(),
@@ -595,9 +595,30 @@ func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repo
 		Committer:     commit.Committer,
 		Metadata:      commit.Metadata,
 	}
-	return e.Actions.Run(ctx, evt)
+	deps := actions.Deps{
+		Source: &actionsSource{
+			catalog:          e,
+			adapter:          e.BlockAdapter,
+			repositoryID:     repositoryRecord.RepositoryID,
+			storageNamespace: repositoryRecord.StorageNamespace,
+			ref:              source,
+		},
+		Output: &actionsWriter{
+			adapter:          e.BlockAdapter,
+			storageNamespace: repositoryRecord.StorageNamespace,
+		},
+	}
+	return e.Actions.Run(ctx, evt, deps)
 }
 
 func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
 	return nil
+}
+
+func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
+	return e.Store.GetMetaRange(ctx, repositoryID, metaRangeID)
+}
+
+func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
+	return e.Store.GetRange(ctx, repositoryID, rangeID)
 }

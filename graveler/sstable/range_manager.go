@@ -170,6 +170,10 @@ func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, me
 	return NewDiskWriter(ctx, m.fs, ns, m.hash.New(), metadata)
 }
 
+func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {
+	return m.fs.GetRemoteURI(ctx, string(ns), string(id))
+}
+
 func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg string) {
 	if err := f(); err != nil {
 		logging.FromContext(ctx).WithError(err).Error(msg)

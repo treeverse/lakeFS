@@ -60,7 +60,7 @@ const RepositoryList = ({ list, paginate }) => {
                                     <small>
                                         created at <code>{moment.unix(repo.creation_date).toISOString()}</code> ({moment.unix(repo.creation_date).fromNow()})<br/>
                                         default branch: <code>{repo.default_branch}</code>,{' '}
-                                        storage namesapce: <code>{repo.storage_namespace}</code>
+                                        storage namespace: <code>{repo.storage_namespace}</code>
                                     </small>
                                 </p>
                             </Card.Body>
@@ -89,10 +89,11 @@ export const RepositoryListPage = connect(
 
     useEffect(()=> {
         if (create.done) {
-            history.push(`/repositories/${create.payload.id}/tree`)
+            history.push(`/repositories/${create.payload.id}/tree`);
+            createRepositoryDone();
         }
         listRepositories();
-    }, [listRepositories, create, history]);
+    }, [listRepositories, create, history, createRepositoryDone]);
 
     return (
         <div className="mt-3">

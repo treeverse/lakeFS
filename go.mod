@@ -5,6 +5,9 @@ go 1.15
 require (
 	cloud.google.com/go v0.74.0
 	cloud.google.com/go/storage v1.12.0
+	github.com/Azure/azure-pipeline-go v0.2.3
+	github.com/Azure/azure-storage-blob-go v0.13.0
+	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/apache/thrift v0.13.0
@@ -80,10 +83,12 @@ require (
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/exp v0.0.0-20201229011636-eab1b5eb1a03 // indirect
+	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
+	golang.org/x/tools v0.1.0 // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.36.0
 	google.golang.org/protobuf v1.25.0

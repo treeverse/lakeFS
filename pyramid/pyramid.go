@@ -22,6 +22,10 @@ type FS interface {
 
 	// Exists returns true if filename currently exists on block storage.
 	Exists(ctx context.Context, namespace, filename string) (bool, error)
+
+	// GetRemoteURI returns the URI for filename on block storage.  That URI might not
+	// resolve if filename does not exist.
+	GetRemoteURI(ctx context.Context, namespace, filename string) (string, error)
 }
 
 // File is pyramid abstraction for an os.File

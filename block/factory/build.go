@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/azure"
 	"github.com/treeverse/lakefs/block/gs"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
@@ -54,9 +57,15 @@ func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
 			return nil, err
 		}
 		return buildGSAdapter(p)
+	case azure.BlockstoreType:
+		p, err := c.GetBlockAdapterAzureParams()
+		if err != nil {
+			return nil, err
+		}
+		return buildAzureAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
+			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, azure.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
 	}
 }
 
@@ -107,4 +116,25 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 	adapter := gs.NewAdapter(client)
 	log.WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
+}
+
+func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
+	accountName := params.StorageAccount
+	accountKey := params.StorageAccessKey
+	if len(accountName) == 0 && len(accountKey) == 0 {
+		// fallback to Azure environment variables
+		accountName, accountKey = os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+	}
+	// Create a default request pipeline using your storage account name and account key.
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials : %w", err)
+	}
+	pipeline := azblob.NewPipeline(credential, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}})
+	endpointURL := params.EndpointURL
+
+	if endpointURL == "" {
+		endpointURL = fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
+	}
+	return azure.NewAdapter(pipeline, endpointURL), nil
 }
