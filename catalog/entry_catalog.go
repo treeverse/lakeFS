@@ -5,10 +5,8 @@ import (
 	"crypto"
 	_ "crypto/sha256"
 	"fmt"
-	"time"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -83,7 +81,7 @@ type Store interface {
 }
 
 type Actions interface {
-	Run(ctx context.Context, event actions.Event, deps actions.Deps) (string, error)
+	Run(ctx context.Context, record graveler.HookRecord) (string, error)
 	UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error
 }
 
@@ -99,10 +97,9 @@ const (
 )
 
 type Config struct {
-	Config  *config.Config
-	DB      db.Database
-	LockDB  db.Database
-	Actions Actions
+	Config *config.Config
+	DB     db.Database
+	LockDB db.Database
 }
 
 func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
@@ -155,10 +152,12 @@ func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
 	entryCatalog := &EntryCatalog{
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
-		Actions:      cfg.Actions,
 	}
-	store.SetHooksHandler(entryCatalog)
 	return entryCatalog, nil
+}
+
+func (e *EntryCatalog) SetHooksHandler(hooks graveler.HooksHandler) {
+	e.Store.SetHooksHandler(hooks)
 }
 
 func (e *EntryCatalog) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
@@ -552,77 +551,10 @@ func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.Repos
 	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
 }
 
-func (e *EntryCatalog) PreCommitHook(ctx context.Context, record graveler.PreCommitRecord) (string, error) {
-	evt := actions.Event{
-		Type:          actions.EventTypePreCommit,
-		Time:          time.Now(),
-		RepositoryID:  record.RepositoryID.String(),
-		BranchID:      record.BranchID.String(),
-		CommitMessage: record.Commit.Message,
-		Committer:     record.Commit.Committer,
-		Metadata:      record.Commit.Metadata,
-	}
-	deps := e.actionsDeps(record.RepositoryID, record.StorageNamespace, record.BranchID)
-	return e.Actions.Run(ctx, evt, deps)
-}
-
-func (e *EntryCatalog) PostCommitHook(ctx context.Context, record graveler.PostCommitRecord) (string, error) {
-	// update pre-commit with commit ID if needed
-	if record.PreRunID != "" {
-		err := e.Actions.UpdateCommitID(ctx, record.RepositoryID.String(), record.PreRunID, record.CommitID.String())
-		if err != nil {
-			return "", err
-		}
-	}
-	return "", nil
-}
-
-func (e *EntryCatalog) PreMergeHook(ctx context.Context, record graveler.PreMergeRecord) (string, error) {
-	evt := actions.Event{
-		Type:          actions.EventTypePreMerge,
-		Time:          time.Now(),
-		RepositoryID:  record.RepositoryID.String(),
-		BranchID:      record.Destination.String(),
-		SourceRef:     record.Source.String(),
-		CommitMessage: record.Commit.Message,
-		Committer:     record.Commit.Committer,
-		Metadata:      record.Commit.Metadata,
-	}
-	deps := e.actionsDeps(record.RepositoryID, record.StorageNamespace, record.Destination)
-	return e.Actions.Run(ctx, evt, deps)
-}
-
-func (e *EntryCatalog) PostMergeHook(ctx context.Context, record graveler.PostMergeRecord) (string, error) {
-	// update pre-merge with commit ID if needed
-	if record.PreRunID != "" {
-		err := e.Actions.UpdateCommitID(ctx, record.RepositoryID.String(), record.PreRunID, record.CommitID.String())
-		if err != nil {
-			return "", err
-		}
-	}
-	// TODO(barak): invoke post merge actions
-	return "", nil
-}
-
 func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
 	return e.Store.GetMetaRange(ctx, repositoryID, metaRangeID)
 }
 
 func (e *EntryCatalog) GetRange(ctx context.Context, repositoryID graveler.RepositoryID, rangeID graveler.RangeID) (graveler.RangeInfo, error) {
 	return e.Store.GetRange(ctx, repositoryID, rangeID)
-}
-
-func (e *EntryCatalog) actionsDeps(repositoryID graveler.RepositoryID, repoStorageNamespace graveler.StorageNamespace, sourceBranchID graveler.BranchID) actions.Deps {
-	return actions.Deps{
-		Source: &actionsSource{
-			catalog:          e,
-			repositoryID:     repositoryID,
-			storageNamespace: repoStorageNamespace,
-			ref:              sourceBranchID.Ref(),
-		},
-		Output: &actionsWriter{
-			adapter:          e.BlockAdapter,
-			storageNamespace: repoStorageNamespace,
-		},
-	}
 }

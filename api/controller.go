@@ -2698,13 +2698,13 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 		reader, err := c.deps.BlockAdapter.Get(block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       logPath,
-		}, 0)
+		}, -1)
 
 		if err != nil {
 			return actionsop.NewGetRunHookOutputDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		return actionsop.NewGetRunHookOutputOK().WithPayload(reader)
+		return actionsop.NewGetRunHookOutputOK().WithPayload(reader).WithContentLength(-1)
 	})
 }
 

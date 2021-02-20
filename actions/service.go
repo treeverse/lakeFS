@@ -8,12 +8,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/db"
 )
 
 type Service struct {
-	DB db.Database
+	DB     db.Database
+	Source Source
+	Writer OutputWriter
 }
 
 type Task struct {
@@ -71,43 +75,44 @@ const defaultFetchSize = 1024
 
 var ErrNotFound = errors.New("not found")
 
-func NewService(db db.Database) *Service {
+func NewService(db db.Database, source Source, writer OutputWriter) *Service {
 	return &Service{
-		DB: db,
+		DB:     db,
+		Source: source,
+		Writer: writer,
 	}
 }
 
 // Run load and run actions based on the event information. Always returns run id in order to track back hooks errors
-//
-func (s *Service) Run(ctx context.Context, event Event, deps Deps) (string, error) {
-	runID := NewRunID()
-
+func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
 	// load relevant actions
-	actions, err := s.loadMatchedActions(ctx, deps.Source, MatchSpec{EventType: event.Type, Branch: event.BranchID})
+	actions, err := s.loadMatchedActions(ctx, record, MatchSpec{
+		EventType: record.EventType,
+		BranchID:  record.BranchID,
+	})
 	if err != nil || len(actions) == 0 {
-		return runID, err
+		return err
 	}
 
 	// allocate and run hooks
-	tasks, err := s.allocateTasks(runID, actions)
+	tasks, err := s.allocateTasks(record.RunID, actions)
 	if err != nil {
-		return runID, err
+		return err
 	}
 
-	runErr := s.runTasks(ctx, tasks, event, deps)
+	runErr := s.runTasks(ctx, record, tasks)
+
 	// keep results before returning an error (if any)
-	err = s.insertRunInformation(ctx, runID, event, tasks, runErr)
+	err = s.insertRunInformation(ctx, record, tasks)
 	if err != nil {
-		return runID, err
+		return err
 	}
-	return runID, runErr
+
+	return runErr
 }
 
-func (s *Service) loadMatchedActions(ctx context.Context, source Source, spec MatchSpec) ([]*Action, error) {
-	if source == nil {
-		return nil, nil
-	}
-	actions, err := LoadActions(ctx, source)
+func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRecord, spec MatchSpec) ([]*Action, error) {
+	actions, err := LoadActions(ctx, s.Source, record)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +129,7 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 			}
 			tasks = append(tasks, &Task{
 				RunID:     runID,
-				HookRunID: NewRunID(),
+				HookRunID: graveler.NewRunID(),
 				Action:    action,
 				HookID:    hook.ID,
 				Hook:      h,
@@ -134,20 +139,21 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 	return tasks, nil
 }
 
-func (s *Service) runTasks(ctx context.Context, tasks []*Task, event Event, deps Deps) error {
+func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, tasks []*Task) error {
 	var g multierror.Group
 	for _, task := range tasks {
 		task := task // pin
 		g.Go(func() error {
+			hookOutputWriter := &HookOutputWriter{
+				Writer:           s.Writer,
+				StorageNamespace: record.StorageNamespace.String(),
+				RunID:            task.RunID,
+				HookRunID:        task.HookRunID,
+				ActionName:       task.Action.Name,
+				HookID:           task.HookID,
+			}
 			task.StartTime = time.Now()
-			err := task.Hook.Run(ctx, event, &HookOutputWriter{
-				RunID:      task.RunID,
-				HookRunID:  task.HookRunID,
-				ActionName: task.Action.Name,
-				HookID:     task.HookID,
-				Writer:     deps.Output,
-			})
-			if err != nil {
+			if err := task.Hook.Run(ctx, record, hookOutputWriter); err != nil {
 				task.Err = fmt.Errorf("run '%s' failed on action '%s' hook '%s': %w",
 					task.RunID, task.Action.Name, task.HookID, err)
 			}
@@ -158,18 +164,32 @@ func (s *Service) runTasks(ctx context.Context, tasks []*Task, event Event, deps
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *Service) insertRunInformation(ctx context.Context, runID string, event Event, tasks []*Task, runErr error) error {
+func (s *Service) insertRunInformation(ctx context.Context, record graveler.HookRecord, tasks []*Task) error {
 	if len(tasks) == 0 {
 		return nil
 	}
-	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
-		runEndTime := getMaxEndTime(tasks)
+	// collect run information based on tasks
+	var runStartTime time.Time
+	var runEndTime time.Time
+	runPassed := true
+	for _, task := range tasks {
+		if task.StartTime.Before(runStartTime) {
+			runStartTime = task.StartTime
+		}
+		if task.EndTime.After(runEndTime) {
+			runEndTime = task.EndTime
+		}
+		if task.Err != nil {
+			runPassed = false
+		}
+	}
 
+	// save run and tasks information
+	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// insert run information
-		runPassed := runErr == nil
 		_, err := tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,'',$8)`,
-			event.RepositoryID, runID, event.Type, event.Time, runEndTime, event.BranchID, event.SourceRef, runPassed)
+			record.RepositoryID, record.RunID, record.EventType, runStartTime, runEndTime, record.BranchID, record.SourceRef, runPassed)
 		if err != nil {
 			return nil, fmt.Errorf("insert run information: %w", err)
 		}
@@ -177,9 +197,9 @@ func (s *Service) insertRunInformation(ctx context.Context, runID string, event 
 		// insert each task information
 		for _, task := range tasks {
 			taskPassed := task.Err == nil
-			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, event_type, action_name, hook_id, start_time, end_time, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-				event.RepositoryID, runID, task.HookRunID, event.Type, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
+			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+				record.RepositoryID, task.RunID, task.HookRunID, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
 			if err != nil {
 				return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
 			}
@@ -187,16 +207,6 @@ func (s *Service) insertRunInformation(ctx context.Context, runID string, event 
 		return nil, nil
 	}, db.WithContext(ctx))
 	return err
-}
-
-func getMaxEndTime(tasks []*Task) time.Time {
-	var endTime time.Time
-	for _, task := range tasks {
-		if task.EndTime.After(endTime) {
-			endTime = task.EndTime
-		}
-	}
-	return endTime
 }
 
 func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error {
@@ -259,11 +269,36 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 }
 
 func (s *Service) ListRuns(ctx context.Context, repositoryID string, branchID *string, after string) (RunResultIterator, error) {
-	iter := NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, after)
-	return iter, nil
+	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, after), nil
 }
 
 func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
-	iter := NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID, after)
-	return iter, nil
+	return NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID, after), nil
+}
+
+func (s *Service) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
+	// update pre-commit with commit ID if needed
+	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.PreRunID, record.CommitID.String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) PreMergeHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
+	// update pre-merge with commit ID if needed
+	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.PreRunID, record.CommitID.String())
+	if err != nil {
+		return err
+	}
+	// TODO(barak): invoke post merge actions
+	return nil
 }

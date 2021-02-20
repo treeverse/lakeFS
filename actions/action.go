@@ -7,6 +7,8 @@ import (
 	"path"
 	"regexp"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v3"
 )
@@ -35,8 +37,8 @@ type ActionHook struct {
 }
 
 type MatchSpec struct {
-	EventType EventType
-	Branch    string
+	EventType graveler.EventType
+	BranchID  graveler.BranchID
 }
 
 var (
@@ -77,9 +79,9 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 	// at least one matched event definition
 	var actionOn *ActionOn
 	switch spec.EventType {
-	case EventTypePreCommit:
+	case graveler.EventTypePreCommit:
 		actionOn = a.On.PreCommit
-	case EventTypePreMerge:
+	case graveler.EventTypePreMerge:
 		actionOn = a.On.PreMerge
 	default:
 		return false, ErrInvalidEventType
@@ -93,8 +95,9 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 		return true, nil
 	}
 	// find at least one match
+	branchSpec := spec.BranchID.String()
 	for _, b := range actionOn.Branches {
-		matched, err := path.Match(b, spec.Branch)
+		matched, err := path.Match(b, branchSpec)
 		if err != nil {
 			return false, err
 		}
@@ -119,8 +122,8 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
-	hooksAddresses, err := source.List(ctx)
+func LoadActions(ctx context.Context, source Source, record graveler.HookRecord) ([]*Action, error) {
+	hooksAddresses, err := source.List(ctx, record)
 	if err != nil {
 		return nil, fmt.Errorf("list actions from commit: %w", err)
 	}
@@ -132,7 +135,7 @@ func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
 		ii := i
 		errGroup.Go(func() error {
 			addr := hooksAddresses[ii]
-			bytes, err := source.Load(ctx, addr)
+			bytes, err := source.Load(ctx, record, addr)
 			if err != nil {
 				return fmt.Errorf("loading file %s: %w", addr, err)
 			}

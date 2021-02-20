@@ -79,13 +79,21 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	cfg.Override(func(configurator config.Configurator) {
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
-	actionsService := actions.NewService(conn)
 	cataloger, err := catalog.NewCataloger(catalog.Config{
-		Config:  cfg,
-		DB:      conn,
-		Actions: actionsService,
+		Config: cfg,
+		DB:     conn,
 	})
 	testutil.MustDo(t, "build cataloger", err)
+
+	entryCatalog := cataloger.GetEntryCatalog()
+
+	// wire actions
+	actionsService := actions.NewService(
+		conn,
+		catalog.NewActionsSource(entryCatalog),
+		catalog.NewActionsOutputWriter(blockAdapter),
+	)
+	entryCatalog.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,

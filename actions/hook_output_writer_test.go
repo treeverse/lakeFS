@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/graveler"
+
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
@@ -18,20 +20,22 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	const hookID = "hook_id"
-	const actionName = "action_name"
-	runID := actions.NewRunID()
-	hookRunID := actions.NewRunID()
-	hookOutput := actions.FormatHookOutputPath(runID, actionName, hookID)
+	const hookID = "hookID"
+	const actionName = "actionName"
+	const storageNamespace = "storageNamespace"
+	runID := graveler.NewRunID()
+	outputPath := actions.FormatHookOutputPath(runID, actionName, hookID)
+
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(ctx, hookOutput, contentReader, int64(len(content))).Return(nil)
+	writer.EXPECT().OutputWrite(ctx, storageNamespace, outputPath, contentReader, int64(len(content))).Return(nil)
 
 	w := &actions.HookOutputWriter{
-		RunID:      runID,
-		HookID:     hookID,
-		HookRunID:  hookRunID,
-		ActionName: actionName,
-		Writer:     writer,
+		StorageNamespace: storageNamespace,
+		RunID:            runID,
+		HookID:           hookID,
+		HookRunID:        graveler.NewRunID(),
+		ActionName:       actionName,
+		Writer:           writer,
 	}
 	err := w.OutputWrite(ctx, contentReader, int64(len(content)))
 	if err != nil {
@@ -45,13 +49,15 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 
 	errSomeError := errors.New("some error")
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
+	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
 
 	w := &actions.HookOutputWriter{
-		RunID:      actions.NewRunID(),
-		ActionName: "actionName",
-		HookID:     "hookID",
-		Writer:     writer,
+		RunID:            graveler.NewRunID(),
+		HookRunID:        graveler.NewRunID(),
+		StorageNamespace: "storageNamespace",
+		ActionName:       "actionName",
+		HookID:           "hookID",
+		Writer:           writer,
 	}
 	ctx := context.Background()
 	contentReader := strings.NewReader("content")

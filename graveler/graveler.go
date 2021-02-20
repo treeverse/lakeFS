@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/actions"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
@@ -971,7 +969,10 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		preRunID, err = g.hooks.PreCommitHook(ctx, PreCommitRecord{
+		preRunID = NewRunID()
+		err = g.hooks.PreCommitHook(ctx, HookRecord{
+			RunID:            preRunID,
+			EventType:        EventTypePreCommit,
 			RepositoryID:     repositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         branchID,
@@ -979,7 +980,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		})
 		if err != nil {
 			return "", &HookAbortError{
-				EventType: actions.EventTypePreCommit,
+				EventType: EventTypePreCommit,
 				RunID:     preRunID,
 				Err:       err,
 			}
@@ -1032,9 +1033,12 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		return "", err
 	}
 	newCommitID := res.(CommitID)
-	runID, err := g.hooks.PostCommitHook(ctx, PostCommitRecord{
+	runID := NewRunID()
+	err = g.hooks.PostCommitHook(ctx, HookRecord{
+		EventType:        EventTypePostCommit,
+		RunID:            runID,
 		RepositoryID:     repositoryID,
-		StorageNamespace: "",
+		StorageNamespace: storageNamespace,
 		BranchID:         branchID,
 		Commit:           commit,
 		CommitID:         newCommitID,
@@ -1350,16 +1354,19 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
-		preRunID, err = g.hooks.PreMergeHook(ctx, PreMergeRecord{
+		preRunID = NewRunID()
+		err = g.hooks.PreMergeHook(ctx, HookRecord{
+			EventType:        EventTypePreMerge,
+			RunID:            preRunID,
 			RepositoryID:     repositoryID,
 			StorageNamespace: storageNamespace,
-			Destination:      destination,
-			Source:           fromCommit.CommitID.Ref(),
+			BranchID:         destination,
+			SourceRef:        fromCommit.CommitID.Ref(),
 			Commit:           commit,
 		})
 		if err != nil {
 			return "", &HookAbortError{
-				EventType: actions.EventTypePreMerge,
+				EventType: EventTypePreMerge,
 				RunID:     preRunID,
 				Err:       err,
 			}
@@ -1379,11 +1386,14 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		return "", DiffSummary{}, err
 	}
 	c := res.(*CommitIDAndSummary)
-	runID, err := g.hooks.PostMergeHook(ctx, PostMergeRecord{
+	runID := NewRunID()
+	err = g.hooks.PostMergeHook(ctx, HookRecord{
+		EventType:        EventTypePostMerge,
+		RunID:            runID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
-		Destination:      destination,
-		Source:           source,
+		BranchID:         destination,
+		SourceRef:        source,
 		Commit:           commit,
 		CommitID:         c.ID,
 		PreRunID:         preRunID,

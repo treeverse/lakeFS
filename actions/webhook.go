@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type Webhook struct {
@@ -60,9 +62,9 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter) error {
+func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
 	// post event information as json to webhook endpoint
-	eventData, err := w.marshalEventInformation(event)
+	eventData, err := w.marshalEventInformation(record)
 	if err != nil {
 		return err
 	}
@@ -98,19 +100,19 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 	return nil
 }
 
-func (w *Webhook) marshalEventInformation(ed Event) ([]byte, error) {
+func (w *Webhook) marshalEventInformation(record graveler.HookRecord) ([]byte, error) {
 	now := time.Now()
 	info := WebhookEventInfo{
-		EventType:     string(ed.Type),
+		EventType:     string(record.EventType),
 		EventTime:     now.UTC().Format(time.RFC3339),
 		ActionName:    w.ActionName,
 		HookID:        w.ID,
-		RepositoryID:  ed.RepositoryID,
-		BranchID:      ed.BranchID,
-		SourceRef:     ed.SourceRef,
-		CommitMessage: ed.CommitMessage,
-		Committer:     ed.Committer,
-		Metadata:      ed.Metadata,
+		RepositoryID:  record.RepositoryID.String(),
+		BranchID:      record.BranchID.String(),
+		SourceRef:     record.SourceRef.String(),
+		CommitMessage: record.Commit.Message,
+		Committer:     record.Commit.Committer,
+		Metadata:      record.Commit.Metadata,
 	}
 	return json.Marshal(info)
 }

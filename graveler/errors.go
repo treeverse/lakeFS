@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/actions"
-
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -69,7 +67,7 @@ func wrapError(err error, msg string) error {
 
 // HookAbortError about by hook error, holds the event type with the run id to trace back the run
 type HookAbortError struct {
-	EventType actions.EventType
+	EventType EventType
 	RunID     string
 	Err       error
 }

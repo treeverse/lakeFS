@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type HookType string
@@ -14,7 +16,7 @@ const (
 
 // Hook is the abstraction of the basic user-configured runnable building-stone
 type Hook interface {
-	Run(ctx context.Context, event Event, writer *HookOutputWriter) error
+	Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error
 }
 
 type NewHookFunc func(ActionHook, *Action) (Hook, error)
