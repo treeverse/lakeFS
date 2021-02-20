@@ -7,12 +7,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
+	"github.com/treeverse/lakefs/graveler"
 	"gopkg.in/yaml.v3"
 )
 

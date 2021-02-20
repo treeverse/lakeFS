@@ -8,10 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type Service struct {
@@ -173,10 +172,10 @@ func (s *Service) insertRunInformation(ctx context.Context, record graveler.Hook
 	var runEndTime time.Time
 	runPassed := true
 	for _, task := range tasks {
-		if task.StartTime.Before(runStartTime) {
+		if runStartTime.IsZero() || task.StartTime.Before(runStartTime) {
 			runStartTime = task.StartTime
 		}
-		if task.EndTime.After(runEndTime) {
+		if runEndTime.IsZero() || task.EndTime.After(runEndTime) {
 			runEndTime = task.EndTime
 		}
 		if task.Err != nil {

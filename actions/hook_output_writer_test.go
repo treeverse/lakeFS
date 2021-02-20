@@ -6,11 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
+	"github.com/treeverse/lakefs/graveler"
 )
 
 func TestHookWriter_OutputWritePath(t *testing.T) {

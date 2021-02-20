@@ -9,10 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/actions"
-
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"

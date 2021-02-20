@@ -9,13 +9,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/treeverse/lakefs/graveler"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -103,6 +103,7 @@ hooks:
 	testSource.EXPECT().Load(gomock.Any(), gomock.Any(), "act.yaml").Return([]byte(actionContent), nil)
 
 	// run actions
+	now := time.Now()
 	actionsService := actions.NewService(conn, testSource, testOutputWriter)
 	err := actionsService.Run(ctx, record)
 	if err != nil {
@@ -129,14 +130,14 @@ hooks:
 	if runResult.EventType != string(record.EventType) {
 		t.Errorf("GetRunResult() result Type=%s, expect=%s", runResult.EventType, record.EventType)
 	}
-	//startTime := runResult.StartTime.Round(time.Second)
-	//expectedStartTime := record.Time.Round(time.Second)
-	//if startTime != expectedStartTime {
-	//	t.Errorf("GetRunResult() result StartTime=%s, expect=%s", startTime, expectedStartTime)
-	//}
-	//if runResult.EndTime.Sub(runResult.StartTime) < 0 {
-	//	t.Error("GetRunResult() result EndTime-StartTime can't be negative")
-	//}
+	startTime := runResult.StartTime
+	if startTime.Before(now) {
+		t.Errorf("GetRunResult() result StartTime should be after we run the actions, %v > %v", startTime, now)
+	}
+	endTime := runResult.EndTime
+	if endTime.Before(startTime) {
+		t.Errorf("GetRunResult() result EndTime should be same or after StartTime %v >= %v", endTime, startTime)
+	}
 	const expectedPassed = true
 	if runResult.Passed != expectedPassed {
 		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)

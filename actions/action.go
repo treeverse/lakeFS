@@ -7,9 +7,8 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/treeverse/lakefs/graveler"
-
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/graveler"
 	"gopkg.in/yaml.v3"
 )
 
