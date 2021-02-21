@@ -174,6 +174,8 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
 
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
+	api.MetadataGetRangeHandler = c.MetadataGetRangeHandler()
+	api.MetadataGetMetaRangeHandler = c.MetadataGetMetarangeHandler()
 
 	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 
