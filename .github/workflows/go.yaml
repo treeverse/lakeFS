@@ -20,17 +20,13 @@ jobs:
         id: go
       - name: Generated code
         run: make gen
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: '3.14.0'
       - name: Checks validator
         run: make checks-validator
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
         uses: zricethezav/gitleaks-action@v1.3.0
-
+  
   test:
     name: Run Test Suite
     runs-on: ubuntu-20.04
