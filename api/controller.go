@@ -55,6 +55,13 @@ const (
 	UserContextKey        contextKey = "user"
 )
 
+type actionsHandler interface {
+	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
+	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
+	ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string) (actions.RunResultIterator, error)
+	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
+}
+
 type Dependencies struct {
 	ctx                   context.Context
 	Cataloger             catalog.Cataloger
@@ -66,13 +73,6 @@ type Dependencies struct {
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
 	Logger                logging.Logger
-}
-
-type actionsHandler interface {
-	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
-	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
-	ListRuns(ctx context.Context, repositoryID string, branchID *string, after string) (actions.RunResultIterator, error)
-	ListRunTasks(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
@@ -430,6 +430,10 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
 		var hookAbortErr *graveler.HookAbortError
 		if errors.As(err, &hookAbortErr) {
+			c.deps.Logger.
+				WithError(err).
+				WithField("run_id", hookAbortErr.RunID).
+				Error("aborted by hooks")
 			return commits.NewCommitPreconditionFailed().WithPayload(responseError("aborted by hooks, run id: " + hookAbortErr.RunID))
 		}
 		if err != nil {
@@ -896,6 +900,10 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 
 		var hookAbortErr *graveler.HookAbortError
 		if errors.As(err, &hookAbortErr) {
+			c.deps.Logger.
+				WithError(err).
+				WithField("run_id", hookAbortErr.RunID).
+				Error("aborted by hooks")
 			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseError("aborted by hooks, run id: " + hookAbortErr.RunID))
 		}
 		switch {
@@ -2736,7 +2744,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		}
 
 		after := swag.StringValue(params.After)
-		tasksIter, err := c.deps.Actions.ListRunTasks(deps.ctx, repo.Name, params.RunID, after)
+		tasksIter, err := c.deps.Actions.ListRunTaskResults(deps.ctx, repo.Name, params.RunID, after)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
 		}
@@ -2792,7 +2800,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		after := swag.StringValue(params.After)
-		runsIter, err := deps.Actions.ListRuns(deps.ctx, params.Repository, params.Branch, after)
+		runsIter, err := deps.Actions.ListRunResults(deps.ctx, params.Repository, params.Branch, after)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewListRunsNotFound().

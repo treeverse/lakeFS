@@ -295,11 +295,11 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 	return res.(*TaskResult), nil
 }
 
-func (s *Service) ListRuns(ctx context.Context, repositoryID string, branchID *string, after string) (RunResultIterator, error) {
+func (s *Service) ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string) (RunResultIterator, error) {
 	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, after), nil
 }
 
-func (s *Service) ListRunTasks(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
+func (s *Service) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {
 	return NewDBTaskResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, runID, after), nil
 }
 
