@@ -20,10 +20,6 @@ jobs:
         id: go
       - name: Generated code
         run: make gen
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: '3.14.0'
       - name: Checks validator
         run: make checks-validator
         env:
