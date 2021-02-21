@@ -434,7 +434,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 				WithError(err).
 				WithField("run_id", hookAbortErr.RunID).
 				Error("aborted by hooks")
-			return commits.NewCommitPreconditionFailed().WithPayload(responseError("aborted by hooks, run id: " + hookAbortErr.RunID))
+			return commits.NewCommitPreconditionFailed().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -904,7 +904,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 				WithError(err).
 				WithField("run_id", hookAbortErr.RunID).
 				Error("aborted by hooks")
-			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseError("aborted by hooks, run id: " + hookAbortErr.RunID))
+			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseErrorFrom(err))
 		}
 		switch {
 		case err == nil:
