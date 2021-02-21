@@ -50,10 +50,10 @@ var (
 
 func (a *Action) Validate() error {
 	if a.Name == "" {
-		return fmt.Errorf("%w 'name' is required", ErrInvalidAction)
+		return fmt.Errorf("'name' is required: %w", ErrInvalidAction)
 	}
 	if !reName.MatchString(a.Name) {
-		return fmt.Errorf("'name' is not valid: %w", ErrInvalidAction)
+		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
 	if a.On.PreMerge == nil && a.On.PreCommit == nil {
 		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)

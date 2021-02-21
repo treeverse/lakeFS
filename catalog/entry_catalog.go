@@ -80,13 +80,7 @@ type Store interface {
 	graveler.Loader
 }
 
-type Actions interface {
-	Run(ctx context.Context, record graveler.HookRecord) (string, error)
-	UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error
-}
-
 type EntryCatalog struct {
-	Actions      Actions
 	BlockAdapter block.Adapter
 	Store        Store
 }

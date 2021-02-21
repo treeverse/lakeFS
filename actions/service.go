@@ -82,7 +82,7 @@ func NewService(db db.Database, source Source, writer OutputWriter) *Service {
 	}
 }
 
-// Run load and run actions based on the event information. Always returns run id in order to track back hooks errors
+// Run load and run actions based on the event information
 func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
 	// load relevant actions
 	actions, err := s.loadMatchedActions(ctx, record, MatchSpec{

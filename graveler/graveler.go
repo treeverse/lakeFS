@@ -1047,6 +1047,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		g.log.WithError(err).
 			WithField("run_id", runID).
+			WithField("pre_run_id", preRunID).
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil

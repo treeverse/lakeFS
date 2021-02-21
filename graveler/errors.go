@@ -65,7 +65,7 @@ func wrapError(err error, msg string) error {
 	return &wrappedError{err: err, msg: msg}
 }
 
-// HookAbortError about by hook error, holds the event type with the run id to trace back the run
+// HookAbortError abort by hook error, holds the event type with the run id to trace back the run
 type HookAbortError struct {
 	EventType EventType
 	RunID     string
