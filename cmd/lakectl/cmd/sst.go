@@ -199,13 +199,14 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 			c.CreationDate.AsTime().Format(time.RFC3339),
 			string(metadataJSON),
 			string(parentsJSON),
+			c.MetaRangeId,
 		})
 	}
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents"},
+		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID"},
 		Rows:    rows,
 	}, nil
 }
