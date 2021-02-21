@@ -26,7 +26,7 @@ jobs:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
         uses: zricethezav/gitleaks-action@v1.3.0
-  
+
   test:
     name: Run Test Suite
     runs-on: ubuntu-20.04

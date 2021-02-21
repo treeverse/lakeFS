@@ -3,13 +3,12 @@ DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PA
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
-# Protoc is a Docker dependency (since it's a pain to install locally and manage version of it)
+# Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -it -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
 # Same for python swagger validation
 SWAGGER_VALIDATOR_IMAGE=treeverse/swagger-spec-validator:latest
-# docker run --rm -it -v /tmp/swagger.json:/mnt/swagger.json validate:tmp
 SWAGGER_VALIDATOR=$(DOCKER) run --rm -it -v $(shell pwd):/mnt $(SWAGGER_VALIDATOR_IMAGE)
 
 export PATH:= $(PATH):$(GOBINPATH)
