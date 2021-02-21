@@ -28,6 +28,7 @@ type Task struct {
 	Err       error
 	StartTime time.Time
 	EndTime   time.Time
+	NextTask  *Task
 }
 
 type RunResult struct {
@@ -58,7 +59,6 @@ func (r *TaskResult) LogPath() string {
 type RunResultIterator interface {
 	Next() bool
 	Value() *RunResult
-	SeekGE(runID string)
 	Err() error
 	Close()
 }
@@ -121,18 +121,26 @@ func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRe
 func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
 	var tasks []*Task
 	for _, action := range actions {
+		var prevTask *Task
 		for _, hook := range action.Hooks {
 			h, err := NewHook(hook, action)
 			if err != nil {
 				return nil, err
 			}
-			tasks = append(tasks, &Task{
+			task := &Task{
 				RunID:     runID,
 				HookRunID: graveler.NewRunID(),
 				Action:    action,
 				HookID:    hook.ID,
 				Hook:      h,
-			})
+			}
+			// append new task or chain to the last one based on the current action
+			if prevTask == nil {
+				tasks = append(tasks, task)
+			} else {
+				prevTask.NextTask = task
+			}
+			prevTask = task
 		}
 	}
 	return tasks, nil
@@ -143,21 +151,29 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 	for _, task := range tasks {
 		task := task // pin
 		g.Go(func() error {
-			hookOutputWriter := &HookOutputWriter{
-				Writer:           s.Writer,
-				StorageNamespace: record.StorageNamespace.String(),
-				RunID:            task.RunID,
-				HookRunID:        task.HookRunID,
-				ActionName:       task.Action.Name,
-				HookID:           task.HookID,
+			for task != nil {
+				hookOutputWriter := &HookOutputWriter{
+					Writer:           s.Writer,
+					StorageNamespace: record.StorageNamespace.String(),
+					RunID:            task.RunID,
+					HookRunID:        task.HookRunID,
+					ActionName:       task.Action.Name,
+					HookID:           task.HookID,
+				}
+				task.StartTime = time.Now()
+				task.Err = task.Hook.Run(ctx, record, hookOutputWriter)
+				task.EndTime = time.Now()
+
+				if task.Err != nil {
+					// wrap error with more information and return
+					task.Err = fmt.Errorf("run '%s' failed on action '%s' hook '%s': %w",
+						task.RunID, task.Action.Name, task.HookID, task.Err)
+					return task.Err
+				}
+
+				task = task.NextTask
 			}
-			task.StartTime = time.Now()
-			if err := task.Hook.Run(ctx, record, hookOutputWriter); err != nil {
-				task.Err = fmt.Errorf("run '%s' failed on action '%s' hook '%s': %w",
-					task.RunID, task.Action.Name, task.HookID, err)
-			}
-			task.EndTime = time.Now()
-			return task.Err
+			return nil
 		})
 	}
 	return g.Wait().ErrorOrNil()

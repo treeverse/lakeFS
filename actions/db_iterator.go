@@ -6,14 +6,6 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-type iteratorState int
-
-const (
-	iteratorStateInit iteratorState = iota
-	iteratorStateQuery
-	iteratorStateDone
-)
-
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 var (

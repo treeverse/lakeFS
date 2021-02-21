@@ -2,7 +2,6 @@ package actions
 
 import (
 	"context"
-	"errors"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
@@ -16,7 +15,7 @@ type DBRunResultIterator struct {
 	offset       string
 	fetchSize    int
 	err          error
-	state        iteratorState
+	done         bool
 	repositoryID string
 	branchID     *string
 }
@@ -51,15 +50,13 @@ func (it *DBRunResultIterator) Next() bool {
 }
 
 func (it *DBRunResultIterator) maybeFetch() {
-	if it.state == iteratorStateDone {
+	if it.done {
 		return
 	}
 	if len(it.buf) > 0 {
 		return
 	}
-	if it.state == iteratorStateInit {
-		it.state = iteratorStateQuery
-	}
+
 	q := psql.
 		Select("run_id", "event_type", "start_time", "end_time", "branch_id", "source_ref", "commit_id", "passed").
 		From("actions_runs").
@@ -84,19 +81,8 @@ func (it *DBRunResultIterator) maybeFetch() {
 		return
 	}
 	if len(it.buf) < it.fetchSize {
-		it.state = iteratorStateDone
+		it.done = true
 	}
-}
-
-func (it *DBRunResultIterator) SeekGE(runID string) {
-	if errors.Is(it.err, ErrIteratorClosed) {
-		return
-	}
-	it.offset = runID
-	it.buf = it.buf[:0]
-	it.value = nil
-	it.err = nil
-	it.state = iteratorStateInit
 }
 
 func (it *DBRunResultIterator) Value() *RunResult {

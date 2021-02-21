@@ -12,9 +12,9 @@ type DBTaskResultIterator struct {
 	ctx          context.Context
 	value        *TaskResult
 	buf          []*TaskResult
+	done         bool
 	fetchSize    int
 	err          error
-	state        iteratorState
 	repositoryID string
 	runID        string
 	offset       string
@@ -50,15 +50,11 @@ func (it *DBTaskResultIterator) Next() bool {
 }
 
 func (it *DBTaskResultIterator) maybeFetch() {
-	if it.state == iteratorStateDone {
+	if it.done {
 		return
 	}
 	if len(it.buf) > 0 {
 		return
-	}
-
-	if it.state == iteratorStateInit {
-		it.state = iteratorStateQuery
 	}
 
 	q := psql.
@@ -80,7 +76,7 @@ func (it *DBTaskResultIterator) maybeFetch() {
 		return
 	}
 	if len(it.buf) < it.fetchSize {
-		it.state = iteratorStateDone
+		it.done = true
 	}
 }
 
