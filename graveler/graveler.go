@@ -1033,10 +1033,10 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		return "", err
 	}
 	newCommitID := res.(CommitID)
-	runID := NewRunID()
+	postRunID := NewRunID()
 	err = g.hooks.PostCommitHook(ctx, HookRecord{
 		EventType:        EventTypePostCommit,
-		RunID:            runID,
+		RunID:            postRunID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         branchID,
@@ -1046,7 +1046,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	})
 	if err != nil {
 		g.log.WithError(err).
-			WithField("run_id", runID).
+			WithField("run_id", postRunID).
 			WithField("pre_run_id", preRunID).
 			Error("Post-commit hook failed")
 	}
@@ -1387,10 +1387,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		return "", DiffSummary{}, err
 	}
 	c := res.(*CommitIDAndSummary)
-	runID := NewRunID()
+	postRunID := NewRunID()
 	err = g.hooks.PostMergeHook(ctx, HookRecord{
 		EventType:        EventTypePostMerge,
-		RunID:            runID,
+		RunID:            postRunID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
 		BranchID:         destination,
@@ -1402,7 +1402,8 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 	if err != nil {
 		g.log.
 			WithError(err).
-			WithField("run_id", runID).
+			WithField("run_id", postRunID).
+			WithField("pre_run_id", preRunID).
 			Error("Post-merge hook failed")
 	}
 	return c.ID, c.Summary, nil

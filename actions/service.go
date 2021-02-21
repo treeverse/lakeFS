@@ -313,6 +313,7 @@ func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord
 	if err != nil {
 		return err
 	}
+	// post commit actions will be enabled here
 	return nil
 }
 
@@ -326,6 +327,6 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 	if err != nil {
 		return err
 	}
-	// TODO(barak): invoke post merge actions
+	// post merge actions will be enabled here
 	return nil
 }
