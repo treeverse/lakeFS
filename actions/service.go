@@ -28,7 +28,6 @@ type Task struct {
 	Err       error
 	StartTime time.Time
 	EndTime   time.Time
-	NextTask  *Task
 }
 
 type RunResult struct {
@@ -118,10 +117,10 @@ func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRe
 	return MatchedActions(actions, spec)
 }
 
-func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error) {
-	var tasks []*Task
+func (s *Service) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
+	var tasks [][]*Task
 	for _, action := range actions {
-		var prevTask *Task
+		var actionTasks []*Task
 		for _, hook := range action.Hooks {
 			h, err := NewHook(hook, action)
 			if err != nil {
@@ -135,23 +134,21 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([]*Task, error
 				Hook:      h,
 			}
 			// append new task or chain to the last one based on the current action
-			if prevTask == nil {
-				tasks = append(tasks, task)
-			} else {
-				prevTask.NextTask = task
-			}
-			prevTask = task
+			actionTasks = append(actionTasks, task)
+		}
+		if len(actionTasks) > 0 {
+			tasks = append(tasks, actionTasks)
 		}
 	}
 	return tasks, nil
 }
 
-func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, tasks []*Task) error {
+func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	var g multierror.Group
-	for _, task := range tasks {
-		task := task // pin
+	for _, actionTasks := range tasks {
+		actionTasks := actionTasks // pin
 		g.Go(func() error {
-			for task != nil {
+			for _, task := range actionTasks {
 				hookOutputWriter := &HookOutputWriter{
 					Writer:           s.Writer,
 					StorageNamespace: record.StorageNamespace.String(),
@@ -170,8 +167,6 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 						task.RunID, task.Action.Name, task.HookID, task.Err)
 					return task.Err
 				}
-
-				task = task.NextTask
 			}
 			return nil
 		})
@@ -179,49 +174,66 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *Service) insertRunInformation(ctx context.Context, record graveler.HookRecord, tasks []*Task) error {
+func (s *Service) insertRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	if len(tasks) == 0 {
 		return nil
 	}
 	// collect run information based on tasks
-	var runStartTime time.Time
-	var runEndTime time.Time
-	runPassed := true
-	for _, task := range tasks {
-		if runStartTime.IsZero() || task.StartTime.Before(runStartTime) {
-			runStartTime = task.StartTime
-		}
-		if runEndTime.IsZero() || task.EndTime.After(runEndTime) {
-			runEndTime = task.EndTime
-		}
-		if task.Err != nil {
-			runPassed = false
-		}
-	}
+	runStartTime, runEndTime, runPassed := runInformationBasedOnTasks(tasks)
 
 	// save run and tasks information
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// insert run information
 		_, err := tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,'',$8)`,
-			record.RepositoryID, record.RunID, record.EventType, runStartTime, runEndTime, record.BranchID, record.SourceRef, runPassed)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			record.RepositoryID, record.RunID, record.EventType, runStartTime, runEndTime, record.BranchID, record.SourceRef, record.CommitID, runPassed)
 		if err != nil {
 			return nil, fmt.Errorf("insert run information: %w", err)
 		}
 
 		// insert each task information
-		for _, task := range tasks {
-			taskPassed := task.Err == nil
-			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
+		for _, actionTasks := range tasks {
+			for _, task := range actionTasks {
+				if task.StartTime.IsZero() {
+					break
+				}
+				taskPassed := task.Err == nil
+				_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				record.RepositoryID, task.RunID, task.HookRunID, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
-			if err != nil {
-				return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
+					record.RepositoryID, task.RunID, task.HookRunID, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
+				if err != nil {
+					return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
+				}
 			}
 		}
 		return nil, nil
 	}, db.WithContext(ctx))
 	return err
+}
+
+func runInformationBasedOnTasks(tasks [][]*Task) (startTime time.Time, endTime time.Time, passed bool) {
+	passed = true
+	for _, actionTasks := range tasks {
+		for _, task := range actionTasks {
+			// skip scan when task didn't run
+			if task.StartTime.IsZero() {
+				break
+			}
+			// keep min start time
+			if startTime.IsZero() || task.StartTime.Before(startTime) {
+				startTime = task.StartTime
+			}
+			// keep max end time
+			if endTime.IsZero() || task.EndTime.After(endTime) {
+				endTime = task.EndTime
+			}
+			// did we failed
+			if passed && task.Err != nil {
+				passed = false
+			}
+		}
+	}
+	return
 }
 
 func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error {
