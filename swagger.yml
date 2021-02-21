@@ -1313,7 +1313,6 @@ paths:
         201:
           description: refs dump
           schema:
-            type: object
             $ref: "#/definitions/refs_dump"
         400:
           description: validation error
@@ -1413,7 +1412,6 @@ paths:
         201:
           description: tag
           schema:
-            type: object
             $ref: "#/definitions/ref"
         400:
           description: validation error
@@ -1445,7 +1443,6 @@ paths:
         200:
           description: tag
           schema:
-            type: object
             $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
@@ -1575,9 +1572,7 @@ paths:
                 items:
                   $ref: "#/definitions/commit"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
           schema:
@@ -1631,7 +1626,6 @@ paths:
         200:
           description: branch
           schema:
-            type: object
             $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
@@ -1760,9 +1754,7 @@ paths:
           schema:
             $ref: "#/definitions/merge_result"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: reference not found
           schema:
@@ -1811,9 +1803,7 @@ paths:
                 items:
                   $ref: "#/definitions/diff"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
           schema:
@@ -1869,9 +1859,7 @@ paths:
                 items:
                   $ref: "#/definitions/diff"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: reference not found
           schema:
