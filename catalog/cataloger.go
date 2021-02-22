@@ -114,5 +114,8 @@ type Cataloger interface {
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
 
+	// GetEntryCatalog return underlying EntryCatalog until Cataloger is removed
+	GetEntryCatalog() *EntryCatalog
+
 	io.Closer
 }

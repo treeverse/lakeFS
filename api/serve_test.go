@@ -80,11 +80,20 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
 	cataloger, err := catalog.NewCataloger(catalog.Config{
-		Config:  cfg,
-		DB:      conn,
-		Actions: actions.New(conn),
+		Config: cfg,
+		DB:     conn,
 	})
 	testutil.MustDo(t, "build cataloger", err)
+
+	entryCatalog := cataloger.GetEntryCatalog()
+
+	// wire actions
+	actionsService := actions.NewService(
+		conn,
+		catalog.NewActionsSource(entryCatalog),
+		catalog.NewActionsOutputWriter(blockAdapter),
+	)
+	entryCatalog.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
@@ -105,6 +114,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		MetadataManager: meta,
 		Migrator:        migrator,
 		Collector:       collector,
+		Actions:         actionsService,
 		Logger:          logging.Default(),
 	})
 

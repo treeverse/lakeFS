@@ -43,7 +43,6 @@ var (
 	ErrAddCommitNoParent       = errors.New("added commit must have a parent")
 	ErrMultipleParents         = errors.New("cannot have more than a single parent")
 	ErrRevertParentOutOfRange  = errors.New("given commit does not have the given parent number")
-	ErrAbortedByHook           = errors.New("aborted by hook")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.
@@ -64,4 +63,19 @@ func (w *wrappedError) Unwrap() error {
 // err.
 func wrapError(err error, msg string) error {
 	return &wrappedError{err: err, msg: msg}
+}
+
+// HookAbortError abort by hook error, holds the event type with the run id to trace back the run
+type HookAbortError struct {
+	EventType EventType
+	RunID     string
+	Err       error
+}
+
+func (e *HookAbortError) Error() string {
+	return fmt.Sprintf("%s hook aborted (run id: %s): %s", e.EventType, e.RunID, e.Err)
+}
+
+func (e *HookAbortError) Unwrap() error {
+	return e.Err
 }

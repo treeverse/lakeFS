@@ -601,11 +601,7 @@ type fakeAddressProvider struct {
 
 func (f *fakeAddressProvider) ContentAddress(_ ident.Identifiable) string {
 	res := f.identities[f.idx]
-	fmt.Println(f.idx)
-	f.idx++
-	if f.idx == len(f.identities) {
-		f.idx = 0
-	}
+	f.idx = (f.idx + 1) % len(f.identities)
 	return res
 }
 
