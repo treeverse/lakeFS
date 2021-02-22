@@ -21,6 +21,7 @@ services:
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+    network_mode: "host"
   postgres:
     image: "postgres:11"
     ports:

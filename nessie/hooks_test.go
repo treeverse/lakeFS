@@ -11,8 +11,6 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/spf13/viper"
-
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
@@ -76,11 +74,6 @@ func TestHooks(t *testing.T) {
 		URL string
 	}{
 		URL: server.s.URL,
-	}
-	// replace endpoint with
-	lakefsContainerized := viper.GetBool("lakefs_containerized")
-	if lakefsContainerized {
-		docData.URL = strings.ReplaceAll(docData.URL, "127.0.0.1", "host.docker.internal")
 	}
 
 	actionPreMergeTmpl := template.Must(template.New("action-pre-merge").Parse(actionPreMergeYaml))

@@ -145,7 +145,6 @@ jobs:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-          NESSIE_LAKEFS_CONTAINERIZED: "true"
         run: go test -v ./nessie --system-tests
       - name: Check files in S3 bucket
         env:
