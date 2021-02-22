@@ -3,13 +3,13 @@ package nessie
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
@@ -21,12 +21,43 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
+const actionPreMergeYaml = `
+name: Test Merge
+description: set of checks to verify that branch is good
+on:
+  pre-merge:
+    branches:
+      - master
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-merge works
+    properties:
+      url: "{{.URL}}/pre-merge"
+`
+
+const actionPreCommitYaml = `
+name: Test Commit
+description: set of checks to verify that branch is good
+on:
+  pre-commit:
+    branches:
+      - feature-*
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-commit works
+    properties:
+      url: "{{.URL}}/pre-commit"
+`
+
+var (
+	actionPreMergeTmpl  = template.Must(template.New("action-pre-merge").Parse(actionPreMergeYaml))
+	actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(actionPreCommitYaml))
+)
+
 func TestHooks(t *testing.T) {
 	server := startWebhookServer(t)
-	//defer func() {
-	//	_ = server.s.Close()
-	//}()
-	t.Cleanup(server.s.Close)
 
 	ctx, logger, repo := setupTest(t)
 	const branch = "feature-1"
@@ -41,22 +72,13 @@ func TestHooks(t *testing.T) {
 			}), nil)
 	require.NoError(t, err, "failed to create branch")
 	logger.WithField("branchRef", ref).Info("Branch created")
-
 	logger.WithField("branch", branch).Info("Upload initial content")
-	preMergeAction := fmt.Sprintf(`
-name: Test Merge
-description: set of checks to verify that branch is good
-on:
-  pre-merge:
-	branches:
-	  - master
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-merge works
-    properties:
-      url: "%s/pre-merge"
-`, server.s.URL)
+
+	var doc bytes.Buffer
+	err = actionPreMergeTmpl.Execute(&doc, server.s)
+	require.NoError(t, err)
+	preMergeAction := doc.String()
+
 	_, err = client.Objects.UploadObject(
 		objects.NewUploadObjectParamsWithContext(ctx).
 			WithRepository(repo).
@@ -65,20 +87,11 @@ hooks:
 			WithContent(runtime.NamedReader("content", strings.NewReader(preMergeAction))), nil)
 	require.NoError(t, err)
 
-	preCommitAction := fmt.Sprintf(`
-name: Test Commit
-description: set of checks to verify that branch is good
-on:
-  pre-commit:
-    branches:
-      - feature-*
-hooks:
-  - id: test_webhook
-    type: webhook
-    description: Check webhooks for pre-commit works
-    properties:
-      url: "%s/pre-commit"
-`, server.s.URL)
+	doc.Reset()
+	err = actionPreCommitTmpl.Execute(&doc, server.s)
+	require.NoError(t, err)
+	preCommitAction := doc.String()
+
 	_, err = client.Objects.UploadObject(
 		objects.NewUploadObjectParamsWithContext(ctx).
 			WithRepository(repo).
@@ -87,21 +100,18 @@ hooks:
 			WithContent(runtime.NamedReader("content", strings.NewReader(preCommitAction))), nil)
 	require.NoError(t, err)
 	logger.WithField("branch", branch).Info("Commit initial content")
+
 	stats, err := client.Commits.Commit(
 		commits.NewCommitParamsWithContext(ctx).
 			WithRepository(repo).
 			WithBranch(branch).
 			WithCommit(&models.CommitCreation{Message: swag.String("Initial content")}),
 		nil)
-	webhookData := <-server.commit
 	require.NoError(t, err, "failed to commit initial content")
-	select {
-	case err = <-server.errCh:
-	default:
-		err = nil
-	}
-	require.NoError(t, err, "error on pre commit serving")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData))
+
+	webhookData := <-server.respCh
+	require.NoError(t, webhookData.err, "error on pre commit serving")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
 	var commitEvent, mergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&commitEvent), "reading pre-commit data")
 
@@ -118,17 +128,12 @@ hooks:
 	mergeRes, err := client.Refs.MergeIntoBranch(
 		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationBranch(masterBranch).WithSourceRef(branch), nil)
 
-	webhookData = <-server.merge
+	webhookData = <-server.respCh
+	require.NoError(t, webhookData.err, "failed to merge branches")
 	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
-	require.NoError(t, err, "failed to merge branches")
-	select {
-	case err = <-server.errCh:
-	default:
-		err = nil
-	}
 
 	require.NoError(t, err, "error on pre commit serving")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData))
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
 	require.NoError(t, decoder.Decode(&mergeEvent), "reading pre-merge data")
 
 	require.Equal(t, "pre-merge", mergeEvent.EventType)
@@ -139,30 +144,27 @@ hooks:
 	require.Equal(t, branch, mergeEvent.SourceRef)
 }
 
+type hookResponse struct {
+	path string
+	err  error
+	data []byte
+}
+
 type server struct {
-	//s      *http.Server
 	s      *httptest.Server
-	commit chan []byte
-	merge  chan []byte
-	errCh  chan error
+	respCh chan hookResponse
 }
 
 func startWebhookServer(t *testing.T) *server {
-	commit := make(chan []byte)
-	merge := make(chan []byte)
-	errCh := make(chan error, 2)
-	//http.HandleFunc("/pre-commit", hookHandlerFunc(commit, errCh))
-	//http.HandleFunc("/pre-merge", hookHandlerFunc(merge, errCh))
-	//listener, err := net.Listen("tcp", ":0")
-	//require.NoError(t, err)
-
-	//addr := listener.Addr().String()
-	//fmt.Printf("Listen on address: %s\n", addr)
-
+	respCh := make(chan hookResponse, 10)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/pre-commit", hookHandlerFunc(commit, errCh))
-	mux.HandleFunc("/pre-merge", hookHandlerFunc(merge, errCh))
+	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
+	mux.HandleFunc("/pre-merge", hookHandlerFunc(respCh))
 	ts := httptest.NewServer(mux)
+	t.Cleanup(func() {
+		ts.Close()
+		close(respCh)
+	})
 
 	//s := &http.Server{
 	//	Addr: ts,
@@ -173,30 +175,26 @@ func startWebhookServer(t *testing.T) *server {
 	//		os.Exit(1)
 	//	}
 	//}()
-
 	return &server{
 		s:      ts,
-		commit: commit,
-		merge:  merge,
-		errCh:  errCh,
+		respCh: respCh,
 	}
 }
 
-func hookHandlerFunc(resCh chan<- []byte, errCh chan<- error) func(http.ResponseWriter, *http.Request) {
+func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		bytes, err := ioutil.ReadAll(request.Body)
+		data, err := ioutil.ReadAll(request.Body)
 		if err != nil {
-			errCh <- err
+			respCh <- hookResponse{path: request.URL.Path, err: err}
 			_, _ = io.WriteString(writer, "Failed")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		resCh <- bytes
+		respCh <- hookResponse{path: request.URL.Path, data: data}
 		_, _ = io.WriteString(writer, "OK")
 		writer.WriteHeader(http.StatusOK)
 		return
 	}
-
 }
 
 type webhookEventInfo struct {
