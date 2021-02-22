@@ -6,11 +6,8 @@ require (
 	cloud.google.com/go v0.74.0
 	cloud.google.com/go/storage v1.12.0
 	github.com/Azure/azure-pipeline-go v0.2.3
-	github.com/Azure/azure-sdk-for-go v51.0.0+incompatible // indirect
 	github.com/Azure/azure-storage-blob-go v0.13.0
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.6 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
-	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/apache/thrift v0.13.0

@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/graveler"
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,11 +36,12 @@ type ActionHook struct {
 }
 
 type MatchSpec struct {
-	EventType EventType
-	Branch    string
+	EventType graveler.EventType
+	BranchID  graveler.BranchID
 }
 
 var (
+	reName   = regexp.MustCompile(`^\w[\w\-. ]+$`)
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 
 	ErrInvalidAction    = errors.New("invalid action")
@@ -48,10 +50,13 @@ var (
 
 func (a *Action) Validate() error {
 	if a.Name == "" {
-		return fmt.Errorf("%w 'name' is required", ErrInvalidAction)
+		return fmt.Errorf("'name' is required: %w", ErrInvalidAction)
+	}
+	if !reName.MatchString(a.Name) {
+		return fmt.Errorf("'name' is invalid: %w", ErrInvalidAction)
 	}
 	if a.On.PreMerge == nil && a.On.PreCommit == nil {
-		return fmt.Errorf("%w 'on' is required", ErrInvalidAction)
+		return fmt.Errorf("'on' is required: %w", ErrInvalidAction)
 	}
 	ids := make(map[string]struct{})
 	for i, hook := range a.Hooks {
@@ -73,9 +78,9 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 	// at least one matched event definition
 	var actionOn *ActionOn
 	switch spec.EventType {
-	case EventTypePreCommit:
+	case graveler.EventTypePreCommit:
 		actionOn = a.On.PreCommit
-	case EventTypePreMerge:
+	case graveler.EventTypePreMerge:
 		actionOn = a.On.PreMerge
 	default:
 		return false, ErrInvalidEventType
@@ -89,8 +94,9 @@ func (a *Action) Match(spec MatchSpec) (bool, error) {
 		return true, nil
 	}
 	// find at least one match
+	branchSpec := spec.BranchID.String()
 	for _, b := range actionOn.Branches {
-		matched, err := path.Match(b, spec.Branch)
+		matched, err := path.Match(b, branchSpec)
 		if err != nil {
 			return false, err
 		}
@@ -115,8 +121,8 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
-func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
-	hooksAddresses, err := source.List(ctx)
+func LoadActions(ctx context.Context, source Source, record graveler.HookRecord) ([]*Action, error) {
+	hooksAddresses, err := source.List(ctx, record)
 	if err != nil {
 		return nil, fmt.Errorf("list actions from commit: %w", err)
 	}
@@ -128,7 +134,7 @@ func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
 		ii := i
 		errGroup.Go(func() error {
 			addr := hooksAddresses[ii]
-			bytes, err := source.Load(ctx, addr)
+			bytes, err := source.Load(ctx, record, addr)
 			if err != nil {
 				return fmt.Errorf("loading file %s: %w", addr, err)
 			}
@@ -137,14 +143,28 @@ func LoadActions(ctx context.Context, source Source) ([]*Action, error) {
 				return fmt.Errorf("parsing file %s: %w", addr, err)
 			}
 			actions[ii] = action
-
 			return nil
 		})
 	}
 	if err := errGroup.Wait(); err != nil {
 		return nil, err
 	}
+	if err := validateActions(actions); err != nil {
+		return nil, err
+	}
 	return actions, nil
+}
+
+// validateActions verify we do not two actions with the same name
+func validateActions(actions []*Action) error {
+	actionNames := make(map[string]struct{})
+	for _, action := range actions {
+		if _, found := actionNames[action.Name]; found {
+			return fmt.Errorf("action name '%s' already loaded: %w", action.Name, ErrInvalidAction)
+		}
+		actionNames[action.Name] = struct{}{}
+	}
+	return nil
 }
 
 func MatchedActions(actions []*Action, spec MatchSpec) ([]*Action, error) {

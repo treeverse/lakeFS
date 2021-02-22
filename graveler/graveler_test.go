@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/testutil"
@@ -17,51 +16,51 @@ import (
 type Hooks struct {
 	Called           bool
 	Err              error
-	EventID          uuid.UUID
-	RepositoryRecord graveler.RepositoryRecord
-	Branch           graveler.BranchID
-	Source           graveler.Ref
+	RunID            string
+	RepositoryID     graveler.RepositoryID
+	StorageNamespace graveler.StorageNamespace
+	BranchID         graveler.BranchID
+	SourceRef        graveler.Ref
 	CommitID         graveler.CommitID
 	Commit           graveler.Commit
 }
 
-func (h *Hooks) PreCommitHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
+func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.EventID = eventID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = branch
-	h.Commit = commit
+	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.StorageNamespace
+	h.BranchID = record.BranchID
+	h.Commit = record.Commit
 	return h.Err
 }
 
-func (h *Hooks) PostCommitHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
+func (h *Hooks) PostCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.EventID = eventID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = branch
-	h.CommitID = commitRecord.CommitID
-	h.Commit = *commitRecord.Commit
+	h.RepositoryID = record.RepositoryID
+	h.BranchID = record.BranchID
+	h.CommitID = record.CommitID
+	h.Commit = record.Commit
 	return h.Err
 }
 
-func (h *Hooks) PreMergeHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
+func (h *Hooks) PreMergeHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.EventID = eventID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = destination
-	h.Source = source
-	h.Commit = commit
+	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.StorageNamespace
+	h.BranchID = record.BranchID
+	h.SourceRef = record.SourceRef
+	h.Commit = record.Commit
 	return h.Err
 }
 
-func (h *Hooks) PostMergeHook(_ context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
+func (h *Hooks) PostMergeHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.EventID = eventID
-	h.RepositoryRecord = repositoryRecord
-	h.Branch = destination
-	h.Source = source
-	h.CommitID = commitRecord.CommitID
-	h.Commit = *commitRecord.Commit
+	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.StorageNamespace
+	h.BranchID = record.BranchID
+	h.SourceRef = record.SourceRef
+	h.CommitID = record.CommitID
+	h.Commit = record.Commit
 	return h.Err
 }
 
@@ -570,8 +569,9 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Commit err=%v, expected=%v", err, tt.err)
 			}
-			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
-				t.Fatalf("Commit err=%v, expected ErrAbortedByHook", err)
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Commit err=%v, expected HookAbortError", err)
 			}
 			if tt.hook != h.Called {
 				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", h.Called, tt.hook)
@@ -579,11 +579,11 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryRecord.RepositoryID != commitRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryRecord.RepositoryID, commitRepositoryID)
+			if h.RepositoryID != commitRepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, commitRepositoryID)
 			}
-			if h.Branch != commitBranchID {
-				t.Errorf("Hook branch '%s', expected '%s'", h.Branch, commitBranchID)
+			if h.BranchID != commitBranchID {
+				t.Errorf("Hook branch '%s', expected '%s'", h.BranchID, commitBranchID)
 			}
 			if h.Commit.Message != commitMessage {
 				t.Errorf("Hook commit message '%s', expected '%s'", h.Commit.Message, commitMessage)
@@ -655,8 +655,9 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Merge err=%v, pre-merge error expected=%v", err, tt.err)
 			}
-			if err != nil && !errors.Is(err, graveler.ErrAbortedByHook) {
-				t.Fatalf("Merge err=%v, pre-merge error expected ErrAbortedByHook", err)
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Merge err=%v, pre-merge error expected HookAbortError", err)
 			}
 			// verify that calls made until the first error
 			if tt.hook != h.Called {
@@ -665,14 +666,14 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if !h.Called {
 				return
 			}
-			if h.RepositoryRecord.RepositoryID != mergeRepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryRecord.RepositoryID, mergeRepositoryID)
+			if h.RepositoryID != mergeRepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, mergeRepositoryID)
 			}
-			if h.Branch != mergeDestination {
-				t.Errorf("Hook branch (destination) '%s', expected '%s'", h.Branch, mergeDestination)
+			if h.BranchID != mergeDestination {
+				t.Errorf("Hook branch (destination) '%s', expected '%s'", h.BranchID, mergeDestination)
 			}
-			if h.Source.String() != expectedCommitID.String() {
-				t.Errorf("Hook source '%s', expected '%s'", h.Source, expectedCommitID)
+			if h.SourceRef.String() != expectedCommitID.String() {
+				t.Errorf("Hook source '%s', expected '%s'", h.SourceRef, expectedCommitID)
 			}
 			if h.Commit.Message != mergeMessage {
 				t.Errorf("Hook merge message '%s', expected '%s'", h.Commit.Message, mergeMessage)

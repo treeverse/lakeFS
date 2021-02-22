@@ -553,6 +553,7 @@ class Refs {
             case 200:
               return response.json();
             case 409:
+            case 412:
                 const resp = await response.json();
                 throw new MergeError(response.statusText, resp.body);
             default:

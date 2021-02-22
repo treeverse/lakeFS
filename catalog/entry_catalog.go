@@ -5,11 +5,8 @@ import (
 	"crypto"
 	_ "crypto/sha256"
 	"fmt"
-	"time"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -83,12 +80,7 @@ type Store interface {
 	graveler.Loader
 }
 
-type Actions interface {
-	Run(ctx context.Context, event actions.Event, deps actions.Deps) error
-}
-
 type EntryCatalog struct {
-	Actions      Actions
 	BlockAdapter block.Adapter
 	Store        Store
 }
@@ -99,10 +91,9 @@ const (
 )
 
 type Config struct {
-	Config  *config.Config
-	DB      db.Database
-	LockDB  db.Database
-	Actions Actions
+	Config *config.Config
+	DB     db.Database
+	LockDB db.Database
 }
 
 func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
@@ -155,10 +146,12 @@ func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
 	entryCatalog := &EntryCatalog{
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
-		Actions:      cfg.Actions,
 	}
-	store.SetHooksHandler(entryCatalog)
 	return entryCatalog, nil
+}
+
+func (e *EntryCatalog) SetHooksHandler(hooks graveler.HooksHandler) {
+	e.Store.SetHooksHandler(hooks)
 }
 
 func (e *EntryCatalog) AddCommitToBranchHead(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, commit graveler.Commit) (graveler.CommitID, error) {
@@ -550,69 +543,6 @@ func (e *EntryCatalog) LoadBranches(ctx context.Context, repositoryID graveler.R
 
 func (e *EntryCatalog) LoadTags(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) error {
 	return e.Store.LoadTags(ctx, repositoryID, metaRangeID)
-}
-
-func (e *EntryCatalog) PreCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commit graveler.Commit) error {
-	evt := actions.Event{
-		EventType:     actions.EventTypePreCommit,
-		EventID:       eventID,
-		EventTime:     time.Now(),
-		RepositoryID:  repositoryRecord.RepositoryID.String(),
-		BranchID:      branch.String(),
-		CommitMessage: commit.Message,
-		Committer:     commit.Committer,
-		Metadata:      commit.Metadata,
-	}
-	deps := actions.Deps{
-		Source: &actionsSource{
-			catalog:          e,
-			adapter:          e.BlockAdapter,
-			repositoryID:     repositoryRecord.RepositoryID,
-			storageNamespace: repositoryRecord.StorageNamespace,
-			ref:              branch.Ref(),
-		},
-		Output: &actionsWriter{
-			adapter:          e.BlockAdapter,
-			storageNamespace: repositoryRecord.StorageNamespace,
-		},
-	}
-	return e.Actions.Run(ctx, evt, deps)
-}
-
-func (e *EntryCatalog) PostCommitHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, branch graveler.BranchID, commitRecord graveler.CommitRecord) error {
-	return nil
-}
-
-func (e *EntryCatalog) PreMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commit graveler.Commit) error {
-	evt := actions.Event{
-		EventType:     actions.EventTypePreMerge,
-		EventID:       eventID,
-		EventTime:     time.Now(),
-		RepositoryID:  repositoryRecord.RepositoryID.String(),
-		BranchID:      destination.String(),
-		SourceRef:     source.String(),
-		CommitMessage: commit.Message,
-		Committer:     commit.Committer,
-		Metadata:      commit.Metadata,
-	}
-	deps := actions.Deps{
-		Source: &actionsSource{
-			catalog:          e,
-			adapter:          e.BlockAdapter,
-			repositoryID:     repositoryRecord.RepositoryID,
-			storageNamespace: repositoryRecord.StorageNamespace,
-			ref:              source,
-		},
-		Output: &actionsWriter{
-			adapter:          e.BlockAdapter,
-			storageNamespace: repositoryRecord.StorageNamespace,
-		},
-	}
-	return e.Actions.Run(ctx, evt, deps)
-}
-
-func (e *EntryCatalog) PostMergeHook(ctx context.Context, eventID uuid.UUID, repositoryRecord graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitRecord graveler.CommitRecord) error {
-	return nil
 }
 
 func (e *EntryCatalog) GetMetaRange(ctx context.Context, repositoryID graveler.RepositoryID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {
