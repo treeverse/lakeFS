@@ -116,6 +116,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 				{
 					Action: []string{
 						"retention:*",
+						"ci:*",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,
@@ -129,6 +130,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 				{
 					Action: []string{
 						"retention:Get*",
+						"ci:Get*",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,

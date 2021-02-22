@@ -148,10 +148,7 @@ definitions:
       path_type:
         type: string
         enum: [ common_prefix, object ]
-  diff_type: &DIFF_TYPE
-    type: string
-    enum: [two_dot, three_dot]
-    default: three_dot
+
   reset_creation:
     type: object
     required:
@@ -401,14 +398,13 @@ definitions:
   hook_run:
     type: object
     required:
-      - hook_id
+      - hook_run_id
     properties:
-      hook_id:
+      hook_run_id:
         type: string
-      hook_type:
-        type: string
-        enum: [webhook]
       action:
+        type: string
+      hook_id:
         type: string
       start_time:
         type: string
@@ -477,7 +473,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -581,7 +576,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -685,7 +679,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -819,7 +812,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -899,7 +891,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1003,7 +994,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1042,7 +1032,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1129,7 +1118,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1206,7 +1194,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1386,7 +1373,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1501,7 +1487,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1616,6 +1601,10 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        412:
+          description: precondition failed
           schema:
             $ref: "#/definitions/error"
         default:
@@ -1782,6 +1771,10 @@ paths:
           description: conflict
           schema:
             $ref: "#/definitions/merge_result"
+        412:
+          description: precondition failed
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
@@ -1861,7 +1854,12 @@ paths:
       - in: query
         name: type
         type: string
-        <<: *DIFF_TYPE
+      - in: query
+        name: diff_type
+        type: string
+        enum: [two_dot, three_dot]
+        default: three_dot
+
     get:
       tags:
         - refs
@@ -2137,6 +2135,11 @@ paths:
         name: amount
         type: integer
         default: 100
+      - in: query
+        name: delimiter
+        type: string
+        default: "/"
+        allowEmptyValue: true
     get:
       tags:
         - objects
@@ -2214,9 +2217,8 @@ paths:
           required: true
           type: string
         - in: query
-          name: before
+          name: after
           type: string
-          format: date-time
         - in: query
           name: amount
           type: integer
@@ -2294,9 +2296,8 @@ paths:
           required: true
           type: string
         - in: query
-          name: before
+          name: after
           type: string
-          format: date-time
         - in: query
           name: amount
           type: integer
@@ -2324,7 +2325,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_id}/output:
+  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
     get:
       tags:
         - actions
@@ -2340,7 +2341,7 @@ paths:
           required: true
           type: string
         - in: path
-          name: hook_id
+          name: hook_run_id
           required: true
           type: string
       produces:
@@ -2362,6 +2363,10 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: output not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
           schema:
             $ref: "#/definitions/error"
 

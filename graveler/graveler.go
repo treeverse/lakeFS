@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/proto"
@@ -944,18 +943,23 @@ func (g *Graveler) List(ctx context.Context, repositoryID RepositoryID, ref Ref)
 }
 
 func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branchID BranchID, params CommitParams) (CommitID, error) {
+	var preRunID string
+	var commit Commit
+	var storageNamespace StorageNamespace
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, branchID, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", fmt.Errorf("get repository: %w", err)
 		}
+		storageNamespace = repo.StorageNamespace
+
 		branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
 		}
 
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
-		commit := Commit{
+		commit = Commit{
 			Committer:    params.Committer,
 			Message:      params.Message,
 			CreationDate: time.Now(),
@@ -965,10 +969,21 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		eventID := uuid.New()
-		err = g.hooks.PreCommitHook(ctx, eventID, RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, branchID, commit)
+		preRunID = NewRunID()
+		err = g.hooks.PreCommitHook(ctx, HookRecord{
+			RunID:            preRunID,
+			EventType:        EventTypePreCommit,
+			RepositoryID:     repositoryID,
+			StorageNamespace: storageNamespace,
+			BranchID:         branchID,
+			Commit:           commit,
+		})
 		if err != nil {
-			return "", newHookError("pre-commit", err)
+			return "", &HookAbortError{
+				EventType: EventTypePreCommit,
+				RunID:     preRunID,
+				Err:       err,
+			}
 		}
 
 		var branchMetaRangeID MetaRangeID
@@ -985,7 +1000,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 		defer changes.Close()
 
-		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, repo.StorageNamespace, branchMetaRangeID, changes)
+		commit.MetaRangeID, _, err = g.CommittedManager.Apply(ctx, storageNamespace, branchMetaRangeID, changes)
 		if err != nil {
 			return "", fmt.Errorf("commit: %w", err)
 		}
@@ -1017,7 +1032,25 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 	if err != nil {
 		return "", err
 	}
-	return res.(CommitID), nil
+	newCommitID := res.(CommitID)
+	postRunID := NewRunID()
+	err = g.hooks.PostCommitHook(ctx, HookRecord{
+		EventType:        EventTypePostCommit,
+		RunID:            postRunID,
+		RepositoryID:     repositoryID,
+		StorageNamespace: storageNamespace,
+		BranchID:         branchID,
+		Commit:           commit,
+		CommitID:         newCommitID,
+		PreRunID:         preRunID,
+	})
+	if err != nil {
+		g.log.WithError(err).
+			WithField("run_id", postRunID).
+			WithField("pre_run_id", preRunID).
+			Error("Post-commit hook failed")
+	}
+	return newCommitID, nil
 }
 
 func newStagingToken(repositoryID RepositoryID, branchID BranchID) StagingToken {
@@ -1282,12 +1315,16 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 }
 
 func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destination BranchID, source Ref, commitParams CommitParams) (CommitID, DiffSummary, error) {
-	eventID := uuid.New()
+	var preRunID string
+	var storageNamespace StorageNamespace
+	var commit Commit
 	res, err := g.branchLocker.MetadataUpdater(ctx, repositoryID, destination, func() (interface{}, error) {
 		repo, err := g.RefManager.GetRepository(ctx, repositoryID)
 		if err != nil {
 			return "", err
 		}
+		storageNamespace = repo.StorageNamespace
+
 		branch, err := g.GetBranch(ctx, repositoryID, destination)
 		if err != nil {
 			return "", fmt.Errorf("get branch: %w", err)
@@ -1303,14 +1340,14 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		if err != nil {
 			return "", err
 		}
-		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, repo.StorageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
+		metaRangeID, summary, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
 			}
 			return "", err
 		}
-		commit := Commit{
+		commit = Commit{
 			Committer:    commitParams.Committer,
 			Message:      commitParams.Message,
 			CreationDate: time.Now(),
@@ -1318,9 +1355,22 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
-		err = g.hooks.PreMergeHook(ctx, eventID, RepositoryRecord{RepositoryID: repositoryID, Repository: repo}, destination, source, commit)
+		preRunID = NewRunID()
+		err = g.hooks.PreMergeHook(ctx, HookRecord{
+			EventType:        EventTypePreMerge,
+			RunID:            preRunID,
+			RepositoryID:     repositoryID,
+			StorageNamespace: storageNamespace,
+			BranchID:         destination,
+			SourceRef:        fromCommit.CommitID.Ref(),
+			Commit:           commit,
+		})
 		if err != nil {
-			return "", newHookError("pre-merge", err)
+			return "", &HookAbortError{
+				EventType: EventTypePreMerge,
+				RunID:     preRunID,
+				Err:       err,
+			}
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
@@ -1337,6 +1387,25 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		return "", DiffSummary{}, err
 	}
 	c := res.(*CommitIDAndSummary)
+	postRunID := NewRunID()
+	err = g.hooks.PostMergeHook(ctx, HookRecord{
+		EventType:        EventTypePostMerge,
+		RunID:            postRunID,
+		RepositoryID:     repositoryID,
+		StorageNamespace: storageNamespace,
+		BranchID:         destination,
+		SourceRef:        source,
+		Commit:           commit,
+		CommitID:         c.ID,
+		PreRunID:         preRunID,
+	})
+	if err != nil {
+		g.log.
+			WithError(err).
+			WithField("run_id", postRunID).
+			WithField("pre_run_id", preRunID).
+			Error("Post-merge hook failed")
+	}
 	return c.ID, c.Summary, nil
 }
 
@@ -1820,23 +1889,4 @@ func (c *commitValueIterator) Err() error {
 
 func (c *commitValueIterator) Close() {
 	c.src.Close()
-}
-
-func newHookError(hookEvent string, err error) error {
-	err = fmt.Errorf("%s hook: %w", hookEvent, err)
-	merr := multierror.Append(ErrAbortedByHook, err)
-	merr.ErrorFormat = func(errs []error) string {
-		const minErrorLen = 2
-		if len(errs) < minErrorLen {
-			return multierror.ListFormatFunc(errs)
-		}
-		var details string
-		if len(errs) == minErrorLen {
-			details = errs[1].Error()
-		} else {
-			details = multierror.ListFormatFunc(errs[1:])
-		}
-		return errs[0].Error() + ": " + details
-	}
-	return merr
 }

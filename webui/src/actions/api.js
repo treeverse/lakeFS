@@ -357,7 +357,7 @@ class Repositories {
             }
         }
         const results = response.results.filter(repo => repo.id.indexOf(from) === 0);
-        if (self) results.unshift(from);
+        if (self) results.unshift(self);
         const hasMore = response.pagination.has_more;
 
         return {
@@ -553,6 +553,7 @@ class Refs {
             case 200:
               return response.json();
             case 409:
+            case 412:
                 const resp = await response.json();
                 throw new MergeError(response.statusText, resp.body);
             default:

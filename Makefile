@@ -1,8 +1,15 @@
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
-PROTOC=$(or $(shell which protoc), $(error "Missing protobuf compilter - no protoc on PATH"))
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
+
+# Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
+PROTOC_IMAGE="treeverse/protoc:3.14.0"
+PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
+
+# Same for python swagger validation
+SWAGGER_VALIDATOR_IMAGE=treeverse/swagger-spec-validator:latest
+SWAGGER_VALIDATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(SWAGGER_VALIDATOR_IMAGE)
 
 export PATH:= $(PATH):$(GOBINPATH)
 
@@ -15,7 +22,6 @@ GOTEST=$(GOCMD) test
 GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
-PROTOC=protoc
 
 GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
 
@@ -99,6 +105,10 @@ gen-mockgen: go-install ## Run the generator for inline commands
 
 validate-swagger: go-install ## Validate swagger.yaml
 	$(GOBINPATH)/swagger validate swagger.yml
+	# Run python validation as well
+	$(GOBINPATH)/swagger expand --format=json swagger.yml > swagger.json
+	$(SWAGGER_VALIDATOR) /mnt/swagger.json
+	@rm swagger.json
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary

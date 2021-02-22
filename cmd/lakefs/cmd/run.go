@@ -71,14 +71,23 @@ var runCmd = &cobra.Command{
 		migrator := db.NewDatabaseMigrator(dbParams)
 
 		cataloger, err := catalog.NewCataloger(catalog.Config{
-			Config:  cfg,
-			DB:      dbPool,
-			LockDB:  lockdbPool,
-			Actions: actions.New(dbPool),
+			Config: cfg,
+			DB:     dbPool,
+			LockDB: lockdbPool,
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create cataloger")
 		}
+
+		// wire actions
+		entryCatalog := cataloger.GetEntryCatalog()
+		actionsService := actions.NewService(
+			dbPool,
+			catalog.NewActionsSource(entryCatalog),
+			catalog.NewActionsOutputWriter(entryCatalog.BlockAdapter),
+		)
+		entryCatalog.SetHooksHandler(actionsService)
+
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init block store
@@ -120,6 +129,7 @@ var runCmd = &cobra.Command{
 			CloudMetadataProvider: cloudMetadataProvider,
 			Migrator:              migrator,
 			Collector:             bufferedCollector,
+			Actions:               actionsService,
 			Logger:                logger.WithField("service", "api_gateway"),
 		})
 

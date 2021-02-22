@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/treeverse/lakefs/graveler"
 )
 
 type Webhook struct {
@@ -24,10 +26,10 @@ type WebhookEventInfo struct {
 	HookID        string            `json:"hook_id"`
 	RepositoryID  string            `json:"repository_id"`
 	BranchID      string            `json:"branch_id"`
-	SourceRef     string            `json:"source_ref"`
+	SourceRef     string            `json:"source_ref,omitempty"`
 	CommitMessage string            `json:"commit_message"`
 	Committer     string            `json:"committer"`
-	Metadata      map[string]string `json:"metadata"`
+	Metadata      map[string]string `json:"metadata,omitempty"`
 }
 
 const webhookClientTimeout = 5 * time.Minute
@@ -60,9 +62,9 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter) error {
+func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
 	// post event information as json to webhook endpoint
-	eventData, err := w.marshalEventInformation(event)
+	eventData, err := w.marshalEventInformation(record)
 	if err != nil {
 		return err
 	}
@@ -70,6 +72,7 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 	if err != nil {
 		return err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{
 		Timeout: w.Timeout,
@@ -84,7 +87,7 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 	}()
 
 	// log response body if needed
-	if resp.Body != nil && resp.ContentLength > 0 {
+	if resp.Body != nil && resp.ContentLength != 0 {
 		if err := writer.OutputWrite(ctx, resp.Body, resp.ContentLength); err != nil {
 			return err
 		}
@@ -97,19 +100,19 @@ func (w *Webhook) Run(ctx context.Context, event Event, writer *HookOutputWriter
 	return nil
 }
 
-func (w *Webhook) marshalEventInformation(ed Event) ([]byte, error) {
+func (w *Webhook) marshalEventInformation(record graveler.HookRecord) ([]byte, error) {
 	now := time.Now()
 	info := WebhookEventInfo{
-		EventType:     string(ed.EventType),
+		EventType:     string(record.EventType),
 		EventTime:     now.UTC().Format(time.RFC3339),
 		ActionName:    w.ActionName,
 		HookID:        w.ID,
-		RepositoryID:  ed.RepositoryID,
-		BranchID:      ed.BranchID,
-		SourceRef:     ed.SourceRef,
-		CommitMessage: ed.CommitMessage,
-		Committer:     ed.Committer,
-		Metadata:      ed.Metadata,
+		RepositoryID:  record.RepositoryID.String(),
+		BranchID:      record.BranchID.String(),
+		SourceRef:     record.SourceRef.String(),
+		CommitMessage: record.Commit.Message,
+		Committer:     record.Commit.Committer,
+		Metadata:      record.Commit.Metadata,
 	}
 	return json.Marshal(info)
 }
