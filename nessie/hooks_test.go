@@ -122,7 +122,7 @@ func TestHooks(t *testing.T) {
 	require.Equal(t, branch, commitEvent.BranchID)
 	require.Equal(t, stats.Payload.Committer, commitEvent.Committer)
 	require.Equal(t, stats.Payload.Message, commitEvent.CommitMessage)
-	require.Equal(t, branch, commitEvent.SourceRef)
+	require.Equal(t, "", commitEvent.SourceRef)
 	require.Equal(t, stats.Payload.Metadata, commitEvent.Metadata)
 
 	mergeRes, err := client.Refs.MergeIntoBranch(
@@ -140,7 +140,7 @@ func TestHooks(t *testing.T) {
 	require.Equal(t, "Test Merge", mergeEvent.ActionName)
 	require.Equal(t, "test_webhook", mergeEvent.HookID)
 	require.Equal(t, repo, mergeEvent.RepositoryID)
-	require.Equal(t, branch, mergeEvent.BranchID)
+	require.Equal(t, masterBranch, mergeEvent.BranchID)
 	require.Equal(t, branch, mergeEvent.SourceRef)
 }
 
@@ -166,15 +166,6 @@ func startWebhookServer(t *testing.T) *server {
 		close(respCh)
 	})
 
-	//s := &http.Server{
-	//	Addr: ts,
-	//}
-	//go func() {
-	//	if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-	//		fmt.Printf("server failed to listen on %s: %v\n", addr, err)
-	//		os.Exit(1)
-	//	}
-	//}()
 	return &server{
 		s:      ts,
 		respCh: respCh,
