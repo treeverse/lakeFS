@@ -2,8 +2,6 @@ version: '3'
 services:
   lakefs:
     image: "${REPO}/lakefs:${TAG}"
-    ports:
-      - "8000:8000"
     depends_on:
       - "postgres"
     environment:
