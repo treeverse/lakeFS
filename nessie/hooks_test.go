@@ -11,6 +11,8 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/spf13/viper"
+
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
@@ -51,11 +53,6 @@ hooks:
       url: "{{.URL}}/pre-commit"
 `
 
-var (
-	actionPreMergeTmpl  = template.Must(template.New("action-pre-merge").Parse(actionPreMergeYaml))
-	actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(actionPreCommitYaml))
-)
-
 func TestHooks(t *testing.T) {
 	server := startWebhookServer(t)
 
@@ -74,8 +71,21 @@ func TestHooks(t *testing.T) {
 	logger.WithField("branchRef", ref).Info("Branch created")
 	logger.WithField("branch", branch).Info("Upload initial content")
 
+	// render actions based on templates
+	docData := struct {
+		URL string
+	}{
+		URL: server.s.URL,
+	}
+	// replace endpoint with
+	lakefsContainerized := viper.GetBool("lakefs_containerized")
+	if lakefsContainerized {
+		docData.URL = strings.ReplaceAll(docData.URL, "127.0.0.1", "host.docker.internal")
+	}
+
+	actionPreMergeTmpl := template.Must(template.New("action-pre-merge").Parse(actionPreMergeYaml))
 	var doc bytes.Buffer
-	err = actionPreMergeTmpl.Execute(&doc, server.s)
+	err = actionPreMergeTmpl.Execute(&doc, docData)
 	require.NoError(t, err)
 	preMergeAction := doc.String()
 
@@ -87,8 +97,9 @@ func TestHooks(t *testing.T) {
 			WithContent(runtime.NamedReader("content", strings.NewReader(preMergeAction))), nil)
 	require.NoError(t, err)
 
+	actionPreCommitTmpl := template.Must(template.New("action-pre-commit").Parse(actionPreCommitYaml))
 	doc.Reset()
-	err = actionPreCommitTmpl.Execute(&doc, server.s)
+	err = actionPreCommitTmpl.Execute(&doc, docData)
 	require.NoError(t, err)
 	preCommitAction := doc.String()
 
