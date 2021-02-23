@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -23,11 +25,12 @@ func TestServiceRun(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 
 	record := graveler.HookRecord{
-		RunID:        graveler.NewRunID(),
-		EventType:    graveler.EventTypePreCommit,
-		RepositoryID: "repoID",
-		BranchID:     "branchID",
-		SourceRef:    "sourceRef",
+		RunID:            graveler.NewRunID(),
+		EventType:        graveler.EventTypePreCommit,
+		StorageNamespace: "storageNamespace",
+		RepositoryID:     "repoID",
+		BranchID:         "branchID",
+		SourceRef:        "sourceRef",
 		Commit: graveler.Commit{
 			Message:   "commitMessage",
 			Committer: "committer",
@@ -36,6 +39,7 @@ func TestServiceRun(t *testing.T) {
 	}
 	const actionName = "test action"
 	const hookID = "hook_id"
+	hookResponse := "OK"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
@@ -77,7 +81,7 @@ func TestServiceRun(t *testing.T) {
 		if diff := deep.Equal(eventInfo.Metadata, map[string]string(record.Commit.Metadata)); diff != nil {
 			t.Errorf("Webhook post Metadata diff=%s", diff)
 		}
-		_, _ = io.WriteString(w, "OK")
+		_, _ = io.WriteString(w, hookResponse)
 	}))
 	defer ts.Close()
 
@@ -96,16 +100,33 @@ hooks:
 
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	testOutputWriter.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	testOutputWriter.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	expectedHookRunID := "1"
+	testOutputWriter.EXPECT().
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
+		Return(nil)
+	testOutputWriter.EXPECT().
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+		Return(nil)
 
 	testSource := mock.NewMockSource(ctrl)
-	testSource.EXPECT().List(gomock.Any(), gomock.Any()).Return([]string{"act.yaml"}, nil)
-	testSource.EXPECT().Load(gomock.Any(), gomock.Any(), "act.yaml").Return([]byte(actionContent), nil)
+	testSource.EXPECT().
+		List(ctx, record).
+		Return([]string{"act.yaml"}, nil)
+	testSource.EXPECT().
+		Load(ctx, record, "act.yaml").
+		Return([]byte(actionContent), nil)
 
 	// run actions
 	now := time.Now()
 	actionsService := actions.NewService(conn, testSource, testOutputWriter)
+
+	// serial run id generator to have expected results
+	var hookRunIDCounter int64
+	actionsService.RunIDGenerator = func() string {
+		id := atomic.AddInt64(&hookRunIDCounter, 1)
+		return strconv.Itoa(int(id))
+	}
+
 	err := actionsService.Run(ctx, record)
 	if err != nil {
 		t.Fatalf("Run() failed with err=%s", err)

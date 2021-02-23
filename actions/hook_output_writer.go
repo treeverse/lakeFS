@@ -16,8 +16,8 @@ type HookOutputWriter struct {
 }
 
 const (
-	hookOutputExtension = ".log"
-	outputLocation      = "_lakefs/actions/log"
+	LogOutputExtension  = ".log"
+	LogOutputLocation   = "_lakefs/actions/log"
 	runManifestFilename = "run.manifest"
 )
 
@@ -27,9 +27,9 @@ func (h *HookOutputWriter) OutputWrite(ctx context.Context, reader io.Reader, si
 }
 
 func FormatHookOutputPath(runID, hookRunID string) string {
-	return path.Join(outputLocation, runID, hookRunID+hookOutputExtension)
+	return path.Join(LogOutputLocation, runID, hookRunID+LogOutputExtension)
 }
 
 func FormatRunManifestOutputPath(runID string) string {
-	return path.Join(outputLocation, runID, runManifestFilename)
+	return path.Join(LogOutputLocation, runID, runManifestFilename)
 }

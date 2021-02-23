@@ -16,9 +16,10 @@ import (
 )
 
 type Service struct {
-	DB     db.Database
-	Source Source
-	Writer OutputWriter
+	DB             db.Database
+	Source         Source
+	Writer         OutputWriter
+	RunIDGenerator func() string
 }
 
 type Task struct {
@@ -82,9 +83,10 @@ var ErrNotFound = errors.New("not found")
 
 func NewService(db db.Database, source Source, writer OutputWriter) *Service {
 	return &Service{
-		DB:     db,
-		Source: source,
-		Writer: writer,
+		DB:             db,
+		Source:         source,
+		Writer:         writer,
+		RunIDGenerator: graveler.NewRunID,
 	}
 }
 
@@ -135,7 +137,7 @@ func (s *Service) allocateTasks(runID string, actions []*Action) ([][]*Task, err
 			}
 			task := &Task{
 				RunID:     runID,
-				HookRunID: graveler.NewRunID(),
+				HookRunID: s.RunIDGenerator(),
 				Action:    action,
 				HookID:    hook.ID,
 				Hook:      h,
