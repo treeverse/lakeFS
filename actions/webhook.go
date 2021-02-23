@@ -32,7 +32,7 @@ type WebhookEventInfo struct {
 	Metadata      map[string]string `json:"metadata,omitempty"`
 }
 
-const webhookClientTimeout = 5 * time.Minute
+const webhookClientTimeout = 1 * time.Minute
 
 var (
 	ErrWebhookRequestFailed = errors.New("webhook request failed")
