@@ -40,7 +40,7 @@ type RunResult struct {
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`
 	Passed    bool      `db:"passed" json:"passed"`
-	CommitID  string    `db:"commit_id" json:"commit_id"`
+	CommitID  string    `db:"commit_id" json:"commit_id,omitempty"`
 }
 
 type TaskResult struct {
@@ -164,9 +164,9 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 					ActionName:       task.Action.Name,
 					HookID:           task.HookID,
 				}
-				task.StartTime = time.Now()
+				task.StartTime = time.Now().UTC()
 				task.Err = task.Hook.Run(ctx, record, hookOutputWriter)
-				task.EndTime = time.Now()
+				task.EndTime = time.Now().UTC()
 
 				if task.Err != nil {
 					// wrap error with more information and return
