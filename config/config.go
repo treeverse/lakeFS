@@ -4,14 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
@@ -200,38 +197,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
-type AwsS3RetentionConfig struct {
-	RoleArn           string
-	ManifestBaseURL   *url.URL
-	ReportS3PrefixURL *string
-}
-
-func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
-	var errs []string
-	roleArn := viper.GetString("blockstore.s3.retention.role_arn")
-	if roleArn == "" {
-		errs = append(errs, "blockstore.s3.retention.role_arn")
-	}
-
-	manifestBaseURL, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
-	if err != nil {
-		errs = append(errs, fmt.Sprintf("blockstore.s3.retention.manifest_base_url: %s", err))
-	}
-	if len(errs) > 0 {
-		panic(fmt.Sprintf("need %s to handle retention on S3", strings.Join(errs, ", ")))
-	}
-	var reportS3PrefixURL *string
-	prefixURL := viper.GetString("blockstore.s3.retention.report_s3_prefix_url")
-	if prefixURL != "" {
-		reportS3PrefixURL = &prefixURL
-	}
-	return AwsS3RetentionConfig{
-		RoleArn:           roleArn,
-		ManifestBaseURL:   manifestBaseURL,
-		ReportS3PrefixURL: reportS3PrefixURL,
-	}
-}
-
 func (c *Config) GetAwsConfig() *aws.Config {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString(BlockstoreS3RegionKey)),
@@ -263,35 +228,6 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	}
 	cfg = cfg.WithMaxRetries(viper.GetInt(BlockstoreS3MaxRetriesKey))
 	return cfg
-}
-
-func GetAwsAccessKeyID(awsConfig *aws.Config) (string, error) {
-	awsCredentials, err := awsConfig.Credentials.Get()
-	if err != nil {
-		return "", fmt.Errorf("access AWS credentials: %w", err)
-	}
-	return awsCredentials.AccessKeyID, nil
-}
-
-func GetAccount(awsConfig *aws.Config) (string, error) {
-	accessKeyID, err := GetAwsAccessKeyID(awsConfig)
-	if err != nil {
-		return "", err
-	}
-	sess, err := session.NewSession(awsConfig)
-	if err != nil {
-		return "", fmt.Errorf("get AWS session: %w", err)
-	}
-	sess.ClientConfig(sts.ServiceName)
-	svc := sts.New(sess)
-
-	account, err := svc.GetAccessKeyInfo(&sts.GetAccessKeyInfoInput{
-		AccessKeyId: aws.String(accessKeyID),
-	})
-	if err != nil {
-		return "", fmt.Errorf("get access key info for %s: %w", accessKeyID, err)
-	}
-	return *account.Account, nil
 }
 
 func (c *Config) GetBlockstoreType() string {
