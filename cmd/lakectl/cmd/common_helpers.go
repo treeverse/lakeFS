@@ -54,7 +54,7 @@ type Pagination struct {
 	After   string
 }
 
-func WriteTo(tpl string, ctx interface{}, w io.Writer) {
+func WriteTo(tpl string, data interface{}, w io.Writer) {
 	templ := template.New("output")
 	templ.Funcs(template.FuncMap{
 		"red": func(arg interface{}) string {
@@ -131,14 +131,14 @@ func WriteTo(tpl string, ctx interface{}, w io.Writer) {
 		},
 	})
 	t := template.Must(templ.Parse(tpl))
-	err := t.Execute(w, ctx)
+	err := t.Execute(w, data)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func Write(tpl string, ctx interface{}) {
-	WriteTo(tpl, ctx, os.Stdout)
+func Write(tpl string, data interface{}) {
+	WriteTo(tpl, data, os.Stdout)
 }
 
 func Die(err string, code int) {
