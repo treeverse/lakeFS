@@ -97,6 +97,7 @@ hooks:
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
 	testOutputWriter.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	testOutputWriter.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	testSource := mock.NewMockSource(ctrl)
 	testSource.EXPECT().List(gomock.Any(), gomock.Any()).Return([]string{"act.yaml"}, nil)

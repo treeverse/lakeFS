@@ -23,7 +23,8 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	const actionName = "actionName"
 	const storageNamespace = "storageNamespace"
 	runID := graveler.NewRunID()
-	outputPath := actions.FormatHookOutputPath(runID, actionName, hookID)
+	hookRunID := graveler.NewRunID()
+	outputPath := actions.FormatHookOutputPath(runID, hookRunID)
 
 	writer := mock.NewMockOutputWriter(ctrl)
 	writer.EXPECT().OutputWrite(ctx, storageNamespace, outputPath, contentReader, int64(len(content))).Return(nil)
@@ -32,7 +33,7 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 		StorageNamespace: storageNamespace,
 		RunID:            runID,
 		HookID:           hookID,
-		HookRunID:        graveler.NewRunID(),
+		HookRunID:        hookRunID,
 		ActionName:       actionName,
 		Writer:           writer,
 	}

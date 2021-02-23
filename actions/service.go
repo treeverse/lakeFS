@@ -3,7 +3,9 @@ package actions
 //go:generate mockgen -package=mock -destination=mock/mock_actions.go github.com/treeverse/lakefs/actions Source,OutputWriter
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -31,28 +33,33 @@ type Task struct {
 }
 
 type RunResult struct {
-	RunID     string    `db:"run_id"`
-	BranchID  string    `db:"branch_id"`
-	SourceRef string    `db:"source_ref"`
-	EventType string    `db:"event_type"`
-	StartTime time.Time `db:"start_time"`
-	EndTime   time.Time `db:"end_time"`
-	Passed    bool      `db:"passed"`
-	CommitID  string    `db:"commit_id"`
+	RunID     string    `db:"run_id" json:"run_id"`
+	BranchID  string    `db:"branch_id" json:"branch_id"`
+	SourceRef string    `db:"source_ref" json:"source_ref"`
+	EventType string    `db:"event_type" json:"event_type"`
+	StartTime time.Time `db:"start_time" json:"start_time"`
+	EndTime   time.Time `db:"end_time" json:"end_time"`
+	Passed    bool      `db:"passed" json:"passed"`
+	CommitID  string    `db:"commit_id" json:"commit_id"`
 }
 
 type TaskResult struct {
-	RunID      string    `db:"run_id"`
-	HookRunID  string    `db:"hook_run_id"`
-	HookID     string    `db:"hook_id"`
-	ActionName string    `db:"action_name"`
-	StartTime  time.Time `db:"start_time"`
-	EndTime    time.Time `db:"end_time"`
-	Passed     bool      `db:"passed"`
+	RunID      string    `db:"run_id" json:"run_id"`
+	HookRunID  string    `db:"hook_run_id" json:"hook_run_id"`
+	HookID     string    `db:"hook_id" json:"hook_id"`
+	ActionName string    `db:"action_name" json:"action_name"`
+	StartTime  time.Time `db:"start_time" json:"start_time"`
+	EndTime    time.Time `db:"end_time" json:"end_time"`
+	Passed     bool      `db:"passed" json:"passed"`
+}
+
+type runManifest struct {
+	Run      RunResult    `json:"run"`
+	HooksRun []TaskResult `json:"hooks,omitempty"`
 }
 
 func (r *TaskResult) LogPath() string {
-	return FormatHookOutputPath(r.RunID, r.ActionName, r.HookID)
+	return FormatHookOutputPath(r.RunID, r.HookRunID)
 }
 
 type RunResultIterator interface {
@@ -101,7 +108,7 @@ func (s *Service) Run(ctx context.Context, record graveler.HookRecord) error {
 	runErr := s.runTasks(ctx, record, tasks)
 
 	// keep results before returning an error (if any)
-	err = s.insertRunInformation(ctx, record, tasks)
+	err = s.saveRunInformation(ctx, record, tasks)
 	if err != nil {
 		return err
 	}
@@ -174,36 +181,51 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 	return g.Wait().ErrorOrNil()
 }
 
-func (s *Service) insertRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
+func (s *Service) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	if len(tasks) == 0 {
 		return nil
 	}
-	// collect run information based on tasks
-	runStartTime, runEndTime, runPassed := runInformationBasedOnTasks(tasks)
 
-	// save run and tasks information
+	manifest := buildRunManifest(record, tasks)
+
+	err := s.insertRunInformation(ctx, record.RepositoryID, manifest)
+	if err != nil {
+		return fmt.Errorf("insert run information: %w", err)
+	}
+
+	return s.saveRunManifest(ctx, record, manifest)
+}
+
+func (s *Service) saveRunManifest(ctx context.Context, record graveler.HookRecord, manifest runManifest) error {
+	manifestJSON, err := json.Marshal(manifest)
+	if err != nil {
+		return fmt.Errorf("marshal run manifest: %w", err)
+	}
+	runManifestPath := FormatRunManifestOutputPath(record.RunID)
+	manifestReader := bytes.NewReader(manifestJSON)
+	manifestSize := int64(len(manifestJSON))
+	storageNamespace := record.StorageNamespace.String()
+	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
+}
+
+func (s *Service) insertRunInformation(ctx context.Context, repositoryID graveler.RepositoryID, manifest runManifest) error {
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// insert run information
+		run := manifest.Run
 		_, err := tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-			record.RepositoryID, record.RunID, record.EventType, runStartTime, runEndTime, record.BranchID, record.SourceRef, record.CommitID, runPassed)
+			repositoryID, run.RunID, run.EventType, run.StartTime, run.EndTime, run.BranchID, run.SourceRef, run.CommitID, run.Passed)
 		if err != nil {
-			return nil, fmt.Errorf("insert run information: %w", err)
+			return nil, fmt.Errorf("insert run information %s: %w", run.RunID, err)
 		}
 
 		// insert each task information
-		for _, actionTasks := range tasks {
-			for _, task := range actionTasks {
-				if task.StartTime.IsZero() {
-					break
-				}
-				taskPassed := task.Err == nil
-				_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-					record.RepositoryID, task.RunID, task.HookRunID, task.Action.Name, task.HookID, task.StartTime, task.EndTime, taskPassed)
-				if err != nil {
-					return nil, fmt.Errorf("insert run hook information (%s %s): %w", task.Action.Name, task.HookID, err)
-				}
+		for _, hookRun := range manifest.HooksRun {
+			_, err = tx.Exec(`INSERT INTO actions_run_hooks(repository_id, run_id, hook_run_id, action_name, hook_id, start_time, end_time, passed)
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+				repositoryID, hookRun.RunID, hookRun.HookRunID, hookRun.ActionName, hookRun.HookID, hookRun.StartTime, hookRun.EndTime, hookRun.Passed)
+			if err != nil {
+				return nil, fmt.Errorf("insert run hook information %s/%s: %w", hookRun.RunID, hookRun.HookRunID, err)
 			}
 		}
 		return nil, nil
@@ -211,29 +233,49 @@ func (s *Service) insertRunInformation(ctx context.Context, record graveler.Hook
 	return err
 }
 
-func runInformationBasedOnTasks(tasks [][]*Task) (startTime time.Time, endTime time.Time, passed bool) {
-	passed = true
+func buildRunManifest(record graveler.HookRecord, tasks [][]*Task) runManifest {
+	manifest := runManifest{
+		Run: RunResult{
+			RunID:     record.RunID,
+			BranchID:  record.BranchID.String(),
+			SourceRef: record.SourceRef.String(),
+			EventType: string(record.EventType),
+			Passed:    true,
+			CommitID:  record.CommitID.String(),
+		},
+	}
 	for _, actionTasks := range tasks {
 		for _, task := range actionTasks {
 			// skip scan when task didn't run
 			if task.StartTime.IsZero() {
 				break
 			}
-			// keep min start time
-			if startTime.IsZero() || task.StartTime.Before(startTime) {
-				startTime = task.StartTime
+			// record hook run information
+			manifest.HooksRun = append(manifest.HooksRun, TaskResult{
+				RunID:      task.RunID,
+				HookRunID:  task.HookRunID,
+				HookID:     task.HookID,
+				ActionName: task.Action.Name,
+				StartTime:  task.StartTime,
+				EndTime:    task.EndTime,
+				Passed:     task.Err == nil,
+			})
+			// keep min run start time
+			if manifest.Run.StartTime.IsZero() || task.StartTime.Before(manifest.Run.StartTime) {
+				manifest.Run.StartTime = task.StartTime
 			}
-			// keep max end time
-			if endTime.IsZero() || task.EndTime.After(endTime) {
-				endTime = task.EndTime
+			// keep max run end time
+			if manifest.Run.EndTime.IsZero() || task.EndTime.After(manifest.Run.EndTime) {
+				manifest.Run.EndTime = task.EndTime
 			}
 			// did we failed
-			if passed && task.Err != nil {
-				passed = false
+			if manifest.Run.Passed && task.Err != nil {
+				manifest.Run.Passed = false
 			}
 		}
 	}
-	return
+
+	return manifest
 }
 
 func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, runID string, commitID string) error {
