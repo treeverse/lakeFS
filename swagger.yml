@@ -1909,6 +1909,40 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/commits/{commitId}/runs:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: commitId
+        required: true
+        type: string
+    get:
+      tags:
+        - commits
+      operationId: listCommitRuns
+      summary: list commit runs
+      responses:
+        200:
+          description: list action runs
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
   /repositories/{repository}/refs/{ref}/objects:
     parameters:
       - in: path
