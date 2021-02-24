@@ -969,6 +969,10 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
 		diff, hasMore, err := cataloger.DiffUncommitted(deps.ctx, params.Repository, params.Branch, limit, after)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return branches.NewDiffBranchNotFound().
+				WithPayload(responseError("could not diff branch: %s", err))
+		}
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
