@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/graveler"
@@ -103,6 +105,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	client := &http.Client{
 		Timeout: w.Timeout,
 	}
+
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -113,10 +116,8 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	}()
 
 	// log response body if needed
-	if resp.Body != nil && resp.ContentLength != 0 {
-		if err := writer.OutputWrite(ctx, resp.Body, resp.ContentLength); err != nil {
-			return err
-		}
+	if err := writeOutput(ctx, writer, req, resp, eventData); err != nil {
+		return err
 	}
 
 	// check status code
@@ -124,6 +125,36 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		return fmt.Errorf("%w (status code: %d)", ErrWebhookRequestFailed, resp.StatusCode)
 	}
 	return nil
+}
+
+func writeOutput(ctx context.Context, writer *HookOutputWriter, req *http.Request, resp *http.Response, reqBody []byte) error {
+	var sb strings.Builder
+	if _, err := sb.WriteString(fmt.Sprintf("Request URL: %v\n", req.URL.String())); err != nil {
+		return err
+	}
+	if _, err := sb.WriteString(fmt.Sprintf("Request Headers: %v\n", req.Header)); err != nil {
+		return err
+	}
+	if _, err := sb.WriteString(fmt.Sprintf("Request Body: %s\n", reqBody)); err != nil {
+		return err
+	}
+	if _, err := sb.WriteString(fmt.Sprintf("Response Headers: %v\n", resp.Header)); err != nil {
+		return err
+	}
+
+	respBody := []byte("<empty>")
+	if resp.Body != nil && resp.ContentLength != 0 {
+		var err error
+		respBody, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, err := sb.WriteString(fmt.Sprintf("Response Body: %s", respBody)); err != nil {
+		return err
+	}
+	return writer.OutputWrite(ctx, strings.NewReader(sb.String()), int64(sb.Len()))
 }
 
 func (w *Webhook) marshalEventInformation(record graveler.HookRecord) ([]byte, error) {

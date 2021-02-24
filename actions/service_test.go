@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -116,9 +117,15 @@ hooks:
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
 	expectedHookRunID := "1"
 	var lastManifest *actions.RunManifest
+	var data []byte
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
-		Return(nil)
+		Return(nil).
+		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			var err error
+			data, err = ioutil.ReadAll(reader)
+			return err
+		})
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
@@ -226,4 +233,15 @@ hooks:
 	if runResult != nil {
 		t.Errorf("GetRunResult() result=%v, expected nil", runResult)
 	}
+
+	bytes, err := ioutil.ReadAll(outputReader)
+	require.NoError(t, err)
+	str := string(bytes)
+	rows := strings.Split(str, "\n")
+	require.Len(t, rows, 5)
+	require.True(t, strings.HasPrefix(rows[0], "Request URL: http://"))
+	require.Equal(t, rows[1], "Request Headers: map[Content-Type:[application/json]]")
+	require.True(t, strings.HasPrefix(rows[2], "Request Body: "))
+	require.True(t, strings.HasPrefix(rows[3], "Response Headers: "))
+	require.Equal(t, rows[4], "Response Body: OK")
 }
