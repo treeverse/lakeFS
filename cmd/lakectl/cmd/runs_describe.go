@@ -36,11 +36,11 @@ Output:
 
 const runsShowRequiredArgs = 2
 
-var runsShowCmd = &cobra.Command{
-	Use:     "show",
-	Short:   "Show run results",
+var runsDescribeCmd = &cobra.Command{
+	Use:     "describe",
+	Short:   "Describe run results",
 	Long:    `Show information about the run and all the hooks that were executed as part of the run`,
-	Example: "lakectl actions runs show lakefs://<repository> <run_id>",
+	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(runsShowRequiredArgs),
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
@@ -89,16 +89,13 @@ var runsShowCmd = &cobra.Command{
 				After:   pagination.NextOffset,
 			}
 		}
-		if err != nil {
-			DieErr(err)
-		}
 		Write(actionTaskResultTemplate, data)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	actionsRunsCmd.AddCommand(runsShowCmd)
-	runsShowCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
-	runsShowCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	actionsRunsCmd.AddCommand(runsDescribeCmd)
+	runsDescribeCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	runsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

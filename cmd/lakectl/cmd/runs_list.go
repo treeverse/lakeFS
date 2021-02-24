@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	"github.com/treeverse/lakefs/api/gen/models"
+
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmdutils"
@@ -16,33 +18,45 @@ const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
 var runsListCmd = &cobra.Command{
 	Use:     "list",
 	Short:   "List runs",
-	Long:    `List all runs on a repository or a specific branch`,
-	Example: "lakectl actions runs list lakefs://<repository>[@branch]",
+	Long:    `List all runs on a repository optional filter by branch or commit`,
+	Example: "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
-		cmdutils.Or(
-			cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-			cmdutils.FuncValidator(0, uri.ValidateRefURI),
-		),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		u := uri.Must(uri.Parse(args[0]))
+		commit, _ := cmd.Flags().GetString("commit")
+		branch, _ := cmd.Flags().GetString("branch")
 
-		var branchOptional *string
-		if u.Ref != "" {
-			branchOptional = &u.Ref
+		u := uri.Must(uri.Parse(args[0]))
+		if commit != "" && branch != "" {
+			Die("Can't specify 'commit' and 'branch'", 1)
 		}
+
 		client := getClient()
 		ctx := context.Background()
-		response, pagination, err := client.ListRunResults(ctx, u.Repository, branchOptional, after, amount)
-		if err != nil {
-			DieErr(err)
+		var err error
+		var results []*models.ActionRun
+		var pagination *models.Pagination
+		if commit != "" {
+			// list runs based on commit
+			results, err = client.ListCommitRunResults(ctx, u.Repository, commit)
+		} else {
+			// list runs with optional branch filter
+			var optionalBranch *string
+			if branch != "" {
+				optionalBranch = &branch
+			}
+			results, pagination, err = client.ListRunResults(ctx, u.Repository, optionalBranch, after, amount)
+			if err != nil {
+				DieErr(err)
+			}
 		}
 
-		rows := make([][]interface{}, len(response))
-		for i, row := range response {
+		rows := make([][]interface{}, len(results))
+		for i, row := range results {
 			rows[i] = []interface{}{
 				swag.StringValue(row.RunID),
 				row.EventType,
@@ -88,4 +102,6 @@ func init() {
 	actionsRunsCmd.AddCommand(runsListCmd)
 	runsListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	runsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	runsListCmd.Flags().String("branch", "", "show results for specific branch")
+	runsListCmd.Flags().String("commit", "", "show results for specific commit ID")
 }

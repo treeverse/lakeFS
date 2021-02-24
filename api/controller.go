@@ -336,16 +336,13 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 
 func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	// amount
-	amount := MaxResultsPerPage
-	if swagAmount != nil && 0 <= *swagAmount && *swagAmount <= MaxResultsPerPage {
-		amount = int(swag.Int64Value(swagAmount))
+	amount := int(swag.Int64Value(swagAmount))
+	if swagAmount == nil || amount < 0 || amount > MaxResultsPerPage {
+		amount = MaxResultsPerPage
 	}
 
 	// paginate after
-	after := ""
-	if swagAfter != nil {
-		after = swag.StringValue(swagAfter)
-	}
+	after := swag.StringValue(swagAfter)
 	return after, amount
 }
 

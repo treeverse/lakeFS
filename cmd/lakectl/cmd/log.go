@@ -50,6 +50,9 @@ var logCmd = &cobra.Command{
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
 		commits, pagination, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Ref, after, amount)
+		if err != nil {
+			DieErr(err)
+		}
 		ctx := struct {
 			Commits         []*models.Commit
 			Pagination      *Pagination
@@ -64,9 +67,6 @@ var logCmd = &cobra.Command{
 				HasNext: true,
 				After:   pagination.NextOffset,
 			}
-		}
-		if err != nil {
-			DieErr(err)
 		}
 		Write(commitsTemplate, ctx)
 	},
