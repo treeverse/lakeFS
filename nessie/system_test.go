@@ -31,18 +31,23 @@ func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 
 func createRepositoryForTest(ctx context.Context, t *testing.T) string {
 	name := strings.ToLower(t.Name())
+	return createRepositoryByName(ctx, t, name)
+}
+
+func createRepositoryByName(ctx context.Context, t *testing.T, name string) string {
 	storageNamespace := viper.GetString("storage_namespace")
-	repoStorage := storageNamespace + "/" + name
-	createRepository(ctx, t, name, repoStorage)
+	if !strings.HasSuffix(storageNamespace, "/") {
+		storageNamespace += "/"
+	}
+	storageNamespace += name
+	createRepository(ctx, t, name, storageNamespace)
 	return name
 }
 
 func createRepositoryUnique(ctx context.Context, t *testing.T) string {
 	id := xid.New().String()
 	name := "repo-" + id
-	storage := viper.GetString("storage_namespace") + "/" + id
-	createRepository(ctx, t, name, storage)
-	return name
+	return createRepositoryByName(ctx, t, name)
 }
 
 func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
