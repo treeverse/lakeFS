@@ -250,12 +250,12 @@ func TestLoadActions(t *testing.T) {
 						{
 							ID:         "hook_id_1",
 							Type:       "webhook",
-							Properties: map[string]string{},
+							Properties: map[string]interface{}{},
 						},
 						{
 							ID:         "hook_id_2",
 							Type:       "webhook",
-							Properties: map[string]string{},
+							Properties: map[string]interface{}{},
 						},
 					},
 				},

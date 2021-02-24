@@ -14,6 +14,9 @@ hooks:
     description: checking no temporary files found
     properties:
       url: "https://api.lakefs.io/webhook1?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+      query_params:
+        disallow: ["user_", "private_"]
+        prefix: public/
   - id: no_freeze
     type: webhook
     description: check production is not in dev freeze
