@@ -115,7 +115,6 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 			Statement: model.Statements{
 				{
 					Action: []string{
-						"retention:*",
 						"ci:*",
 					},
 					Resource: permissions.All,
@@ -129,7 +128,6 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 			Statement: model.Statements{
 				{
 					Action: []string{
-						"retention:Get*",
 						"ci:Read*",
 					},
 					Resource: permissions.All,
