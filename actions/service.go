@@ -195,18 +195,17 @@ func (s *Service) saveRunInformation(ctx context.Context, record graveler.HookRe
 		return fmt.Errorf("insert run information: %w", err)
 	}
 
-	return s.saveRunManifestObjectStore(ctx, record, manifest)
+	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
 }
 
-func (s *Service) saveRunManifestObjectStore(ctx context.Context, record graveler.HookRecord, manifest runManifest) error {
+func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest runManifest, storageNamespace string, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
 	}
-	runManifestPath := FormatRunManifestOutputPath(record.RunID)
+	runManifestPath := FormatRunManifestOutputPath(runID)
 	manifestReader := bytes.NewReader(manifestJSON)
 	manifestSize := int64(len(manifestJSON))
-	storageNamespace := record.StorageNamespace.String()
 	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
 }
 
@@ -280,13 +279,17 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) runM
 	return manifest
 }
 
-func (s *Service) UpdateCommitID(ctx context.Context, record graveler.HookRecord) error {
+// UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
+func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
+	if runID == "" || commitID == "" {
+		return nil
+	}
 	// update database and re-read the run manifest
 	var manifest runManifest
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// update commit id
 		res, err := tx.Exec(`UPDATE actions_runs SET commit_id=$3 WHERE repository_id=$1 AND run_id=$2`,
-			record.RepositoryID, record.RunID, record.CommitID)
+			repositoryID, runID, commitID)
 		if err != nil {
 			return nil, fmt.Errorf("update run commit_id: %w", err)
 		}
@@ -296,22 +299,19 @@ func (s *Service) UpdateCommitID(ctx context.Context, record graveler.HookRecord
 		}
 
 		// read run information
-		runResult, err := s.getRunResultTx(tx, record.RepositoryID.String(), record.RunID)
+		runResult, err := s.getRunResultTx(tx, repositoryID, runID)
 		if err != nil {
 			return nil, err
 		}
 		manifest.Run = *runResult
 
 		// read tasks information
-		err = tx.Select(&manifest.HooksRun, `SELECT hook_run_id, hook_id, action_name, start_time, end_time, passed
+		err = tx.Select(&manifest.HooksRun, `SELECT run_id, hook_run_id, hook_id, action_name, start_time, end_time, passed
 			FROM actions_run_hooks 
 			WHERE repository_id=$1 AND run_id=$2`,
-			record.RepositoryID, record.RunID)
+			repositoryID, runID)
 		if err != nil {
 			return nil, fmt.Errorf("get tasks result: %w", err)
-		}
-		for _, hooksRun := range manifest.HooksRun {
-			hooksRun.RunID = record.RunID
 		}
 		return nil, nil
 	}, db.WithContext(ctx))
@@ -323,7 +323,7 @@ func (s *Service) UpdateCommitID(ctx context.Context, record graveler.HookRecord
 	}
 
 	// update manifest
-	return s.saveRunManifestObjectStore(ctx, record, manifest)
+	return s.saveRunManifestObjectStore(ctx, manifest, storageNamespace, runID)
 }
 
 func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
@@ -391,7 +391,7 @@ func (s *Service) PreCommitHook(ctx context.Context, record graveler.HookRecord)
 
 func (s *Service) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-commit with commit ID if needed
-	err := s.UpdateCommitID(ctx, record)
+	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
 		return err
 	}
@@ -405,7 +405,7 @@ func (s *Service) PreMergeHook(ctx context.Context, record graveler.HookRecord) 
 
 func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-merge with commit ID if needed
-	err := s.UpdateCommitID(ctx, record)
+	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
 	if err != nil {
 		return err
 	}

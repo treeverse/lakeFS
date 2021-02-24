@@ -133,15 +133,13 @@ hooks:
 		t.Fatalf("Run() failed with err=%s", err)
 	}
 
-	// update commit id
-	const expectedCommitID = "commit1"
-	record.CommitID = expectedCommitID
-	err = actionsService.UpdateCommitID(ctx, record)
+	// update commit using post event record
+	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
 	if err != nil {
 		t.Fatalf("UpdateCommitID() failed with err=%s", err)
 	}
 
-	// get existing run
+	// get run result
 	runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
 	if err != nil {
 		t.Fatal("GetRunResult() get run result", err)
@@ -167,6 +165,7 @@ hooks:
 	if runResult.Passed != expectedPassed {
 		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
 	}
+	const expectedCommitID = "commit1"
 	if runResult.CommitID != expectedCommitID {
 		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
