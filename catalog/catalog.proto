@@ -1,5 +1,6 @@
 syntax = "proto3";
 option go_package = "github.com/treevese/lakefs/catalog";
+option java_package = "io.treeverse.catalog";
 
 import "google/protobuf/timestamp.proto";
 

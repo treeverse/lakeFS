@@ -1,5 +1,6 @@
 syntax = "proto3";
 option go_package = "github.com/treeverse/lakefs/graveler/committed";
+option java_package = "io.treeverse.committed";
 
 package committed;
 
