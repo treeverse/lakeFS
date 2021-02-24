@@ -55,26 +55,6 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
-* `blockstore.s3.retention.role_arn` - ARN of IAM role to use to
-  perform AWS S3 Batch tagging operations.  This role must be
-  configured according to [Granting permissions for Amazon S3 Batch
-  Operations][aws-s3-batch-permissions] for "PUT object tagging", with
-  these permissions:
-  * `ListBucket` on all buckets used for storing repositories.
-  * `PutObjectTagging` and `PutObjectVersionTagging` on all buckets
-     and prefixes used for storing repositories.
-  * `GetObject` under `blockstore.s3.retention.manifest_base_url`,
-  * `PutObject` under `blockstore.s3.retention.report_s3_prefix_url`.
-* `blockstore.s3.retention.manifest_base_url` - Base S3 URL to use for
-  uploading batch tagging manifest files.  Must be readable by
-  `blockstore.s3.retention.role_arn` and writable by the configured
-  AWS role running `lakefs`.
-* `blockstore.s3.retention.report_s3_prefix_url` - Base S3 URL to use
-  for writing batch tagging completion reports.  Must be writable by
-  `blockstore.s3.retention.role_arn`.
-* `cataloger.type` (one of `rocks` or `mvcc`, default `rocks`) - whether to use `mvcc` or
-  `rocks` cataloger.  Changing from `mvcc` to `rocks` requires migration.  Changing back is
-  not possible.
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.

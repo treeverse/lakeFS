@@ -973,6 +973,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		err = g.hooks.PreCommitHook(ctx, HookRecord{
 			RunID:            preRunID,
 			EventType:        EventTypePreCommit,
+			SourceRef:        branchID.Ref(),
 			RepositoryID:     repositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         branchID,
@@ -1039,6 +1040,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		RunID:            postRunID,
 		RepositoryID:     repositoryID,
 		StorageNamespace: storageNamespace,
+		SourceRef:        branchID.Ref(),
 		BranchID:         branchID,
 		Commit:           commit,
 		CommitID:         newCommitID,

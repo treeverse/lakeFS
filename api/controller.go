@@ -59,6 +59,7 @@ type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
 	ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string) (actions.RunResultIterator, error)
+	ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) (actions.RunResultIterator, error)
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
@@ -161,6 +162,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.CommitsCommitHandler = c.CommitHandler()
 	api.CommitsGetCommitHandler = c.GetCommitHandler()
+	api.CommitsListCommitRunsHandler = c.ListCommitRunsHandler()
 	api.CommitsGetBranchCommitLogHandler = c.CommitsGetBranchCommitLogHandler()
 
 	api.RefsDiffRefsHandler = c.RefsDiffRefsHandler()
@@ -407,6 +409,53 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 			Parents:      commit.Parents,
 			MetaRangeID:  commit.MetaRangeID,
 		})
+	})
+}
+
+func (c *Controller) ListCommitRunsHandler() commits.ListCommitRunsHandler {
+	return commits.ListCommitRunsHandlerFunc(func(params commits.ListCommitRunsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.ReadCommitAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+			{
+				Action:   permissions.ReadActionsAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return commits.NewListCommitRunsUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("list_commit_runs")
+		_, err = deps.Cataloger.GetCommit(deps.ctx, params.Repository, params.CommitID)
+		if errors.Is(err, db.ErrNotFound) {
+			return commits.NewListCommitRunsNotFound().WithPayload(responseError("commit not found"))
+		}
+		if err != nil {
+			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		runsIter, err := c.deps.Actions.ListCommitRunResults(deps.ctx, params.Repository, params.CommitID)
+		if err != nil {
+			if errors.Is(err, actions.ErrNotFound) {
+				return commits.NewListCommitRunsNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		defer runsIter.Close()
+
+		payload := []*models.ActionRun{}
+		for runsIter.Next() {
+			payload = append(payload, convertRun(runsIter.Value()))
+		}
+		if err := runsIter.Err(); err != nil {
+			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return commits.NewListCommitRunsOK().WithPayload(payload)
 	})
 }
 
@@ -2856,20 +2905,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		var nextToken string
 		for runsIter.Next() && len(payload.Results) < amount {
 			val := runsIter.Value()
-			runResult := &models.ActionRun{
-				Branch:    swag.String(val.BranchID),
-				CommitID:  swag.String(val.CommitID),
-				RunID:     swag.String(val.RunID),
-				StartTime: strfmt.DateTime(val.StartTime),
-				EndTime:   strfmt.DateTime(val.EndTime),
-				EventType: val.EventType,
-			}
-			if val.Passed {
-				runResult.Status = models.HookRunStatusCompleted
-			} else {
-				runResult.Status = models.HookRunStatusFailed
-			}
-			payload.Results = append(payload.Results, runResult)
+			payload.Results = append(payload.Results, convertRun(val))
 			nextToken = val.RunID
 		}
 		payload.Pagination.Results = swag.Int64(int64(len(payload.Results)))
@@ -2883,4 +2919,21 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 		return actionsop.NewListRunsOK().WithPayload(payload)
 	})
+}
+
+func convertRun(val *actions.RunResult) *models.ActionRun {
+	runResult := &models.ActionRun{
+		Branch:    swag.String(val.BranchID),
+		CommitID:  swag.String(val.CommitID),
+		RunID:     swag.String(val.RunID),
+		StartTime: strfmt.DateTime(val.StartTime),
+		EndTime:   strfmt.DateTime(val.EndTime),
+		EventType: val.EventType,
+	}
+	if val.Passed {
+		runResult.Status = models.HookRunStatusCompleted
+	} else {
+		runResult.Status = models.HookRunStatusFailed
+	}
+	return runResult
 }

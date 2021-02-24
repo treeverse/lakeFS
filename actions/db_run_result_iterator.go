@@ -18,15 +18,17 @@ type DBRunResultIterator struct {
 	done         bool
 	repositoryID string
 	branchID     *string
+	commitID     *string
 }
 
-func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID string, branchID *string, after string) *DBRunResultIterator {
+func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID string, branchID, commitID *string, after string) *DBRunResultIterator {
 	return &DBRunResultIterator{
 		db:           db,
 		ctx:          ctx,
 		repositoryID: repositoryID,
 		offset:       after,
 		branchID:     branchID,
+		commitID:     commitID,
 		fetchSize:    fetchSize,
 		buf:          make([]*RunResult, 0, fetchSize),
 	}
@@ -65,7 +67,10 @@ func (it *DBRunResultIterator) maybeFetch() {
 		Limit(uint64(it.fetchSize))
 	if it.branchID != nil {
 		q = q.Where(sq.Eq{"branch_id": *it.branchID})
+	} else if it.commitID != nil {
+		q = q.Where(sq.Eq{"commit_id": *it.commitID})
 	}
+
 	if it.offset != "" {
 		q = q.Where(sq.Lt{"run_id": it.offset})
 	}
