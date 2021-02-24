@@ -190,7 +190,7 @@ func (s *Service) saveRunInformation(ctx context.Context, record graveler.HookRe
 
 	manifest := buildRunManifestFromTasks(record, tasks)
 
-	err := s.saveRunInformationDB(ctx, record.RepositoryID, manifest)
+	err := s.saveRunManifestDB(ctx, record.RepositoryID, manifest)
 	if err != nil {
 		return fmt.Errorf("insert run information: %w", err)
 	}
@@ -209,7 +209,7 @@ func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest RunMa
 	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
 }
 
-func (s *Service) saveRunInformationDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
+func (s *Service) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// insert run information
 		run := manifest.Run
@@ -281,9 +281,10 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 
 // UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
 func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
-	if runID == "" || commitID == "" {
-		return nil
+	if runID == "" {
+		return fmt.Errorf("run id: %w", ErrNotFound)
 	}
+
 	// update database and re-read the run manifest
 	var manifest RunManifest
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
