@@ -74,7 +74,7 @@ func TestServiceRun(t *testing.T) {
 		if eventInfo.Committer != record.Commit.Committer {
 			t.Errorf("Webhook post Committer=%s, expected=%s", eventInfo.Committer, record.Commit.Committer)
 		}
-		if diff := deep.Equal(eventInfo.Metadata, map[string]string(record.Commit.Metadata)); diff != nil {
+		if diff := deep.Equal(eventInfo.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
 			t.Errorf("Webhook post Metadata diff=%s", diff)
 		}
 		_, _ = io.WriteString(w, "OK")
