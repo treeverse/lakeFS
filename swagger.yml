@@ -184,6 +184,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      run_id:
+        type: string
 
   commit_creation:
     type: object
