@@ -32,7 +32,10 @@ type WebhookEventInfo struct {
 	CommitMetadata map[string]string `json:"commit_metadata,omitempty"`
 }
 
-const webhookClientTimeout = 5 * time.Minute
+const (
+	webhookClientTimeout      = 1 * time.Minute
+	webhookTimeoutPropertyKey = "timeout"
+)
 
 var (
 	ErrWebhookRequestFailed = errors.New("webhook request failed")
@@ -46,7 +49,7 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}
 
 	requestTimeout := webhookClientTimeout
-	timeoutDuration := h.Properties["timeout"]
+	timeoutDuration := h.Properties[webhookTimeoutPropertyKey]
 	if len(timeoutDuration) > 0 {
 		d, err := time.ParseDuration(timeoutDuration)
 		if err != nil {
