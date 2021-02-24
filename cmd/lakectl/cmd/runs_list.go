@@ -66,6 +66,7 @@ var runsListCmd = &cobra.Command{
 					"End Time",
 					"Branch",
 					"Commit ID",
+					"Status",
 				},
 				Rows: rows,
 			},
@@ -85,6 +86,6 @@ var runsListCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsListCmd)
-	runsListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	runsListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	runsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

@@ -168,7 +168,7 @@ func init() {
 	repoCmd.AddCommand(repoCreateBareCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
 
-	repoListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	repoListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")

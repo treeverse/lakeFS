@@ -75,7 +75,7 @@ var logCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	logCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }

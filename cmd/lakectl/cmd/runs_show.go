@@ -99,6 +99,6 @@ var runsShowCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsShowCmd)
-	runsShowCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	runsShowCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	runsShowCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
