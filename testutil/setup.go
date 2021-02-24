@@ -73,6 +73,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, *genclient.
 	}
 	r := httptransport.New(u.Host, apiBasePath, []string{u.Scheme})
 	client := genclient.New(r, strfmt.Default)
+
 	if err := waitUntilLakeFSRunning(ctx, logger, client); err != nil {
 		logger.WithError(err).Fatal("Waiting for lakeFS")
 	}
