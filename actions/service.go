@@ -54,7 +54,7 @@ type TaskResult struct {
 	Passed     bool      `db:"passed" json:"passed"`
 }
 
-type runManifest struct {
+type RunManifest struct {
 	Run      RunResult    `json:"run"`
 	HooksRun []TaskResult `json:"hooks,omitempty"`
 }
@@ -198,7 +198,7 @@ func (s *Service) saveRunInformation(ctx context.Context, record graveler.HookRe
 	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
 }
 
-func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest runManifest, storageNamespace string, runID string) error {
+func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
@@ -209,7 +209,7 @@ func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest runMa
 	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
 }
 
-func (s *Service) saveRunInformationDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest runManifest) error {
+func (s *Service) saveRunInformationDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// insert run information
 		run := manifest.Run
@@ -234,8 +234,8 @@ func (s *Service) saveRunInformationDB(ctx context.Context, repositoryID gravele
 	return err
 }
 
-func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) runManifest {
-	manifest := runManifest{
+func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunManifest {
+	manifest := RunManifest{
 		Run: RunResult{
 			RunID:     record.RunID,
 			BranchID:  record.BranchID.String(),
@@ -285,7 +285,7 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 		return nil
 	}
 	// update database and re-read the run manifest
-	var manifest runManifest
+	var manifest RunManifest
 	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
 		// update commit id
 		res, err := tx.Exec(`UPDATE actions_runs SET commit_id=$3 WHERE repository_id=$1 AND run_id=$2`,

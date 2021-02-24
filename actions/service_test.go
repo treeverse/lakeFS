@@ -101,12 +101,25 @@ hooks:
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
 	expectedHookRunID := "1"
+	var lastManifest *actions.RunManifest
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
 		Return(nil)
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
-		Return(nil).
+		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			data, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+			var manifest actions.RunManifest
+			err = json.Unmarshal(data, &manifest)
+			if err != nil {
+				return err
+			}
+			lastManifest = &manifest
+			return nil
+		}).
 		Times(2)
 
 	testSource := mock.NewMockSource(ctrl)
@@ -132,11 +145,30 @@ hooks:
 	if err != nil {
 		t.Fatalf("Run() failed with err=%s", err)
 	}
+	if lastManifest == nil {
+		t.Fatalf("Run() should store manifest")
+	}
+	if lastManifest.Run.RunID != record.RunID {
+		t.Errorf("Run() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
+	}
+	if lastManifest.Run.CommitID != "" {
+		t.Errorf("Run() manifest CommitID %s, expected empty", lastManifest.Run.CommitID)
+	}
+	lastManifest = nil
 
 	// update commit using post event record
 	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
 	if err != nil {
 		t.Fatalf("UpdateCommitID() failed with err=%s", err)
+	}
+	if lastManifest == nil {
+		t.Fatalf("UpdateCommitID() should store updated manifest")
+	}
+	if lastManifest.Run.RunID != record.RunID {
+		t.Errorf("UpdateCommitID() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
+	}
+	if lastManifest.Run.CommitID != "commit1" {
+		t.Errorf("UpdateCommitID() manifest CommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
 	}
 
 	// get run result
@@ -161,6 +193,7 @@ hooks:
 	if endTime.Before(startTime) {
 		t.Errorf("GetRunResult() result EndTime should be same or after StartTime %v >= %v", endTime, startTime)
 	}
+
 	const expectedPassed = true
 	if runResult.Passed != expectedPassed {
 		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
@@ -169,6 +202,7 @@ hooks:
 	if runResult.CommitID != expectedCommitID {
 		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
+
 	// get run - not found
 	runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
 	expectedErr := actions.ErrNotFound
