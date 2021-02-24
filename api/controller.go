@@ -336,16 +336,13 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 
 func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	// amount
-	amount := MaxResultsPerPage
-	if swagAmount != nil && 0 <= *swagAmount && *swagAmount <= MaxResultsPerPage {
-		amount = int(swag.Int64Value(swagAmount))
+	amount := int(swag.Int64Value(swagAmount))
+	if swagAmount == nil || amount < 0 || amount > MaxResultsPerPage {
+		amount = MaxResultsPerPage
 	}
 
 	// paginate after
-	after := ""
-	if swagAfter != nil {
-		after = swag.StringValue(swagAfter)
-	}
+	after := swag.StringValue(swagAfter)
 	return after, amount
 }
 
@@ -2696,6 +2693,16 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
+		_, err = deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) {
+			return actionsop.NewListRunsNotFound().
+				WithPayload(responseErrorFrom(catalog.ErrRepositoryNotFound))
+		}
+		if err != nil {
+			return actionsop.NewListRunsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
 		runResult, err := deps.Actions.GetRunResult(deps.ctx, params.Repository, params.RunID)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
@@ -2766,7 +2773,7 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 			return actionsop.NewGetRunHookOutputDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		return actionsop.NewGetRunHookOutputOK().WithPayload(reader).WithContentLength(-1)
+		return actionsop.NewGetRunHookOutputOK().WithPayload(reader)
 	})
 }
 
@@ -2797,7 +2804,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 			return handleErr(err, catalog.ErrRepositoryNotFound)
 		}
 
-		after := swag.StringValue(params.After)
+		after, amount := getPaginationParams(params.After, params.Amount)
 		tasksIter, err := c.deps.Actions.ListRunTaskResults(deps.ctx, repo.Name, params.RunID, after)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
@@ -2810,7 +2817,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 				HasMore: swag.Bool(false),
 			},
 		}
-		amount := int(swag.Int64Value(params.Amount))
+		var nextToken string
 		for tasksIter.Next() && len(payload.Results) < amount {
 			val := tasksIter.Value()
 			hookRun := &models.HookRun{
@@ -2826,10 +2833,11 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 				hookRun.Status = models.HookRunStatusFailed
 			}
 			payload.Results = append(payload.Results, hookRun)
+			nextToken = val.HookRunID
 		}
 		if tasksIter.Next() {
 			payload.Pagination.HasMore = swag.Bool(true)
-			payload.Pagination.NextOffset = tasksIter.Value().HookRunID
+			payload.Pagination.NextOffset = nextToken
 		}
 		if err := tasksIter.Err(); err != nil {
 			return actionsop.NewListRunHooksDefault(http.StatusInternalServerError).
@@ -2853,7 +2861,28 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		after := swag.StringValue(params.After)
+		_, err = deps.Cataloger.GetRepository(deps.ctx, params.Repository)
+		if errors.Is(err, catalog.ErrRepositoryNotFound) {
+			return actionsop.NewListRunsNotFound().
+				WithPayload(responseErrorFrom(catalog.ErrRepositoryNotFound))
+		}
+		if err != nil {
+			return actionsop.NewListRunsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		if params.Branch != nil {
+			exists, err := deps.Cataloger.BranchExists(deps.ctx, params.Repository, swag.StringValue(params.Branch))
+			if err != nil {
+				return actionsop.NewListRunsDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+			if !exists {
+				return actionsop.NewListRunsNotFound().
+					WithPayload(responseErrorFrom(catalog.ErrBranchNotFound))
+			}
+		}
+
+		after, amount := getPaginationParams(params.After, params.Amount)
 		runsIter, err := deps.Actions.ListRunResults(deps.ctx, params.Repository, params.Branch, after)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
@@ -2870,14 +2899,16 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 				HasMore: swag.Bool(false),
 			},
 		}
-		amount := int(swag.Int64Value(params.Amount))
+		var nextToken string
 		for runsIter.Next() && len(payload.Results) < amount {
-			payload.Results = append(payload.Results, convertRun(runsIter.Value()))
+			val := runsIter.Value()
+			payload.Results = append(payload.Results, convertRun(val))
+			nextToken = val.RunID
 		}
 		payload.Pagination.Results = swag.Int64(int64(len(payload.Results)))
 		if runsIter.Next() {
-			payload.Pagination.NextOffset = runsIter.Value().RunID
 			payload.Pagination.HasMore = swag.Bool(true)
+			payload.Pagination.NextOffset = nextToken
 		}
 		if err := runsIter.Err(); err != nil {
 			return actionsop.NewListRunsDefault(http.StatusInternalServerError).

@@ -50,6 +50,9 @@ var logCmd = &cobra.Command{
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
 		commits, pagination, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Ref, after, amount)
+		if err != nil {
+			DieErr(err)
+		}
 		ctx := struct {
 			Commits         []*models.Commit
 			Pagination      *Pagination
@@ -65,9 +68,6 @@ var logCmd = &cobra.Command{
 				After:   pagination.NextOffset,
 			}
 		}
-		if err != nil {
-			DieErr(err)
-		}
 		Write(commitsTemplate, ctx)
 	},
 }
@@ -75,7 +75,7 @@ var logCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	logCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }

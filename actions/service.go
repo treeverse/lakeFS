@@ -267,7 +267,7 @@ func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID s
 		return result, nil
 	}, db.WithContext(ctx), db.ReadOnly())
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("run id %s: %w", runID, ErrNotFound)
 	}
 	if err != nil {
 		return nil, err
@@ -291,7 +291,7 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 		return result, nil
 	}, db.WithContext(ctx), db.ReadOnly())
 	if errors.Is(err, db.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("hook run id %s/%s: %w", runID, hookRunID, ErrNotFound)
 	}
 	if err != nil {
 		return nil, err
