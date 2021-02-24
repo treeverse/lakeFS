@@ -29,7 +29,7 @@ type WebhookEventInfo struct {
 	SourceRef      string            `json:"source_ref,omitempty"`
 	CommitMessage  string            `json:"commit_message"`
 	Committer      string            `json:"committer"`
-	CommitMetadata map[string]string `json:"metadata,omitempty"`
+	CommitMetadata map[string]string `json:"commit_metadata,omitempty"`
 }
 
 const webhookClientTimeout = 5 * time.Minute
