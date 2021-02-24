@@ -12,6 +12,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	genclient "github.com/treeverse/lakefs/api/gen/client"
+	genactions "github.com/treeverse/lakefs/api/gen/client/actions"
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
@@ -92,6 +93,12 @@ type RepositoryClient interface {
 
 	RefsDump(ctx context.Context, repository string) (*models.RefsDump, error)
 	RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error
+
+	GetRunResult(ctx context.Context, repositoryID string, runID string) (*models.ActionRun, error)
+	ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string, amount int) ([]*models.ActionRun, *models.Pagination, error)
+	ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) ([]*models.ActionRun, error)
+	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string, amount int) ([]*models.HookRun, *models.Pagination, error)
+	GetRunHookOutput(ctx context.Context, repositoryID string, runID string, hookRunID string, writer io.Writer) error
 }
 
 type Client interface {
@@ -747,6 +754,72 @@ func (c *client) RefsRestore(ctx context.Context, repository string, manifest *m
 		Context:    ctx,
 	}, c.auth)
 	return err
+}
+
+func (c *client) GetRunResult(ctx context.Context, repositoryID string, runID string) (*models.ActionRun, error) {
+	resp, err := c.remote.Actions.GetRun(
+		genactions.NewGetRunParamsWithContext(ctx).
+			WithRepository(repositoryID).
+			WithRunID(runID),
+		c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
+}
+
+func (c *client) GetRunHookOutput(ctx context.Context, repositoryID string, runID string, hookRunID string, writer io.Writer) error {
+	_, err := c.remote.Actions.GetRunHookOutput(
+		genactions.NewGetRunHookOutputParamsWithContext(ctx).
+			WithRepository(repositoryID).
+			WithRunID(runID).
+			WithHookRunID(hookRunID),
+		c.auth,
+		writer)
+	return err
+}
+
+func (c *client) ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string, amount int) ([]*models.ActionRun, *models.Pagination, error) {
+	resp, err := c.remote.Actions.ListRuns(
+		genactions.NewListRunsParamsWithContext(ctx).
+			WithRepository(repositoryID).
+			WithBranch(branchID).
+			WithAfter(swag.String(after)).
+			WithAmount(swag.Int64(int64(amount))),
+		c.auth)
+	if err != nil {
+		return nil, nil, err
+	}
+	payload := resp.GetPayload()
+	return payload.Results, payload.Pagination, nil
+}
+
+func (c *client) ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) ([]*models.ActionRun, error) {
+	resp, err := c.remote.Commits.ListCommitRuns(
+		commits.NewListCommitRunsParamsWithContext(ctx).
+			WithRepository(repositoryID).
+			WithCommitID(commitID),
+		c.auth)
+	if err != nil {
+		return nil, err
+	}
+	payload := resp.GetPayload()
+	return payload, nil
+}
+
+func (c *client) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string, amount int) ([]*models.HookRun, *models.Pagination, error) {
+	resp, err := c.remote.Actions.ListRunHooks(
+		genactions.NewListRunHooksParamsWithContext(ctx).
+			WithRepository(repositoryID).
+			WithRunID(runID).
+			WithAfter(swag.String(after)).
+			WithAmount(swag.Int64(int64(amount))),
+		c.auth)
+	if err != nil {
+		return nil, nil, err
+	}
+	payload := resp.GetPayload()
+	return payload.Results, payload.Pagination, nil
 }
 
 type ClientOption func(config *ClientConfig)
