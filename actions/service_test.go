@@ -106,7 +106,8 @@ hooks:
 		Return(nil)
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
-		Return(nil)
+		Return(nil).
+		Times(2)
 
 	testSource := mock.NewMockSource(ctrl)
 	testSource.EXPECT().
@@ -133,7 +134,9 @@ hooks:
 	}
 
 	// update commit id
-	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.RunID, "commit1")
+	const expectedCommitID = "commit1"
+	record.CommitID = expectedCommitID
+	err = actionsService.UpdateCommitID(ctx, record)
 	if err != nil {
 		t.Fatalf("UpdateCommitID() failed with err=%s", err)
 	}
@@ -164,7 +167,6 @@ hooks:
 	if runResult.Passed != expectedPassed {
 		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
 	}
-	const expectedCommitID = "commit1"
 	if runResult.CommitID != expectedCommitID {
 		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
