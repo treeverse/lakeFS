@@ -23,16 +23,15 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	const actionName = "actionName"
 	const storageNamespace = "storageNamespace"
 	runID := graveler.NewRunID()
-	outputPath := actions.FormatHookOutputPath(runID, actionName, hookID)
-
+	hookRunID := graveler.NewRunID()
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(ctx, storageNamespace, outputPath, contentReader, int64(len(content))).Return(nil)
+	writer.EXPECT().OutputWrite(ctx, storageNamespace, actions.FormatHookOutputPath(runID, hookRunID), contentReader, int64(len(content))).Return(nil)
 
 	w := &actions.HookOutputWriter{
 		StorageNamespace: storageNamespace,
 		RunID:            runID,
 		HookID:           hookID,
-		HookRunID:        graveler.NewRunID(),
+		HookRunID:        hookRunID,
 		ActionName:       actionName,
 		Writer:           writer,
 	}
@@ -46,19 +45,21 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	ctx := context.Background()
+	runID := graveler.NewRunID()
+	hookRunID := graveler.NewRunID()
 	errSomeError := errors.New("some error")
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errSomeError)
+	writer.EXPECT().OutputWrite(ctx, "storageNamespace", actions.FormatHookOutputPath(runID, hookRunID), gomock.Any(), gomock.Any()).Return(errSomeError)
 
 	w := &actions.HookOutputWriter{
-		RunID:            graveler.NewRunID(),
-		HookRunID:        graveler.NewRunID(),
+		RunID:            runID,
+		HookRunID:        hookRunID,
 		StorageNamespace: "storageNamespace",
 		ActionName:       "actionName",
 		HookID:           "hookID",
 		Writer:           writer,
 	}
-	ctx := context.Background()
 	contentReader := strings.NewReader("content")
 	err := w.OutputWrite(ctx, contentReader, 10)
 	if !errors.Is(err, errSomeError) {
