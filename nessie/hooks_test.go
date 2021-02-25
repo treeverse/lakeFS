@@ -49,7 +49,7 @@ hooks:
       url: "{{.URL}}/pre-commit"
 `
 
-func TestHooks(t *testing.T) {
+func TestHooksSuccess(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	const branch = "feature-1"
 
@@ -146,7 +146,19 @@ func TestHooks(t *testing.T) {
 	require.Equal(t, masterBranch, mergeEvent.BranchID)
 	require.Equal(t, stats.Payload.ID, mergeEvent.SourceRef)
 
-	client.Commits.ListCommitRuns(commits.Listcommitruns)
+	runs, err := client.Commits.ListCommitRuns(&commits.ListCommitRunsParams{
+		Repository: repo,
+		CommitID:   mergeRes.Payload.Reference,
+		Context:    ctx,
+	}, nil)
+
+	require.NoError(t, err)
+	require.Len(t, runs.Payload, 1)
+	run := runs.Payload[0]
+	require.Equal(t, mergeRes.Payload.Reference, *run.CommitID)
+	require.Equal(t, "pre-merge", run.EventType)
+	require.Equal(t, "completed", run.Status)
+	require.Equal(t, "master", *run.Branch)
 }
 
 type webhookEventInfo struct {
