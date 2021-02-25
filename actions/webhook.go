@@ -112,17 +112,16 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 
 	buf := bytes.NewBufferString("Webhook request:\n")
 	defer func() {
-		err = writer.OutputWrite(ctx, buf, int64(buf.Len()))
+		err2 := writer.OutputWrite(ctx, buf, int64(buf.Len()))
+		if err == nil {
+			err = err2
+		}
 	}()
 
 	if dumpReq, err := httputil.DumpRequestOut(req, true); err == nil {
 		buf.Write(dumpReq)
 	} else {
 		buf.WriteString(fmt.Sprintf("Failed dumping request: %s", err))
-	}
-	// seeking after logging the request
-	if _, err := reqReader.Seek(0, 0); err != nil {
-		return err
 	}
 
 	resp, err := client.Do(req)
