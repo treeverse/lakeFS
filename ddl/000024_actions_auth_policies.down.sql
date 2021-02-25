@@ -1,7 +1,15 @@
 BEGIN;
 
-UPDATE auth_policies SET statement=jsonb_set(statement,'{0,"Action"}','["retention:*"]', false) WHERE display_name='RepoManagementFullAccess';
+update auth_policies
+set statement = statement - (select ordinality-1 as index
+        from public.auth_policies cross join jsonb_array_elements(statement) with ordinality
+        where display_name = 'RepoManagementReadAll' and value = '{"Action": ["ci:Read*"], "Effect": "allow", "Resource": "*"}')::int
+    where display_name = 'RepoManagementReadAll' AND statement @> '[{"Action": ["ci:Read*"], "Effect": "allow", "Resource": "*"}]'::jsonb ;
 
-UPDATE auth_policies SET statement=jsonb_set(statement,'{0,"Action"}','["retention:Get*"]', false) WHERE display_name='RepoManagementReadAll';
+update auth_policies
+set statement = statement - (select ordinality-1 as index
+        from public.auth_policies cross join jsonb_array_elements(statement) with ordinality
+        where display_name = 'RepoManagementFullAccess' and value = '{"Action": ["ci:*"], "Effect": "allow", "Resource": "*"}')::int
+    where display_name = 'RepoManagementFullAccess' AND statement @> '[{"Action": ["ci:*"], "Effect": "allow", "Resource": "*"}]'::jsonb ;
 
 COMMIT;
