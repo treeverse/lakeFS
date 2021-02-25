@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/treeverse/lakefs/graveler"
@@ -80,13 +81,15 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
+func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) (err error) {
 	// post event information as json to webhook endpoint
 	eventData, err := w.marshalEventInformation(record)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, w.URL, bytes.NewReader(eventData))
+
+	reqReader := bytes.NewReader(eventData)
+	req, err := http.NewRequest(http.MethodPost, w.URL, reqReader)
 	if err != nil {
 		return err
 	}
@@ -103,8 +106,27 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	client := &http.Client{
 		Timeout: w.Timeout,
 	}
+
 	req = req.WithContext(ctx)
+	start := time.Now()
+
+	buf := bytes.NewBufferString("Webhook request:\n")
+	defer func() {
+		err2 := writer.OutputWrite(ctx, buf, int64(buf.Len()))
+		if err == nil {
+			err = err2
+		}
+	}()
+
+	if dumpReq, err := httputil.DumpRequestOut(req, true); err == nil {
+		buf.Write(dumpReq)
+	} else {
+		buf.WriteString(fmt.Sprintf("Failed dumping request: %s", err))
+	}
+
 	resp, err := client.Do(req)
+	elapsed := time.Since(start)
+	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
 	if err != nil {
 		return err
 	}
@@ -112,11 +134,11 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		_ = resp.Body.Close()
 	}()
 
-	// log response body if needed
-	if resp.Body != nil && resp.ContentLength != 0 {
-		if err := writer.OutputWrite(ctx, resp.Body, resp.ContentLength); err != nil {
-			return err
-		}
+	buf.WriteString("\nWebhook response:\n")
+	if dumpResp, err := httputil.DumpResponse(resp, true); err == nil {
+		buf.Write(dumpResp)
+	} else {
+		buf.WriteString(fmt.Sprintf("Failed dumping response: %s", err))
 	}
 
 	// check status code
