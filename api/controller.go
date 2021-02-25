@@ -444,7 +444,7 @@ func (c *Controller) ListCommitRunsHandler() commits.ListCommitRunsHandler {
 		}
 		defer runsIter.Close()
 
-		payload := []*models.ActionRun{}
+		payload := make([]*models.ActionRun, 0)
 		for runsIter.Next() {
 			payload = append(payload, convertRun(runsIter.Value()))
 		}
@@ -1015,6 +1015,10 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
 		diff, hasMore, err := cataloger.DiffUncommitted(deps.ctx, params.Repository, params.Branch, limit, after)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return branches.NewDiffBranchNotFound().
+				WithPayload(responseError("could not diff branch: %s", err))
+		}
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -1133,7 +1137,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			Path:            params.Path,
 			PhysicalAddress: qk.Format(),
 			PathType:        models.ObjectStatsPathTypeObject,
-			SizeBytes:       entry.Size,
+			SizeBytes:       swag.Int64(entry.Size),
 		}
 
 		if entry.Expired {
@@ -1477,7 +1481,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					Path:            entry.Path,
 					PhysicalAddress: qk.Format(),
 					PathType:        models.ObjectStatsPathTypeObject,
-					SizeBytes:       entry.Size,
+					SizeBytes:       swag.Int64(entry.Size),
 				}
 			}
 			lastID = entry.Path
@@ -1568,7 +1572,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Path:            params.Path,
 			PhysicalAddress: qk.Format(),
 			PathType:        models.ObjectStatsPathTypeObject,
-			SizeBytes:       blob.Size,
+			SizeBytes:       swag.Int64(blob.Size),
 		})
 	})
 }
