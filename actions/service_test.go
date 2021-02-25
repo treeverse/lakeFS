@@ -106,6 +106,7 @@ hooks:
     type: webhook
     properties:
       url: "` + ts.URL + `/hook"
+      timeout: 2m30s
       query_params:
         prefix: public/
         disallow: ["user_", "private_"]

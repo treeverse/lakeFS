@@ -34,9 +34,10 @@ type WebhookEventInfo struct {
 }
 
 const (
-	webhookClientTimeout      = 1 * time.Minute
-	webhookTimeoutPropertyKey = "timeout"
-	queryParamsPropertyKey    = "query_params"
+	webhookClientDefaultTimeout = 1 * time.Minute
+	webhookTimeoutPropertyKey   = "timeout"
+	webhookURLPropertyKey       = "url"
+	queryParamsPropertyKey      = "query_params"
 )
 
 var (
@@ -45,9 +46,13 @@ var (
 )
 
 func NewWebhook(h ActionHook, action *Action) (Hook, error) {
-	webhookURL := h.Properties["url"].(string)
-	if len(webhookURL) == 0 {
+	url, ok := h.Properties[webhookURLPropertyKey]
+	if !ok {
 		return nil, fmt.Errorf("missing url: %w", ErrWebhookWrongFormat)
+	}
+	webhookURL, ok := url.(string)
+	if !ok {
+		return nil, fmt.Errorf("webhook url must be string: %w", ErrWebhookWrongFormat)
 	}
 
 	queryParams, err := extractQueryParams(h.Properties)
@@ -55,15 +60,17 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 		return nil, fmt.Errorf("extracting query params: %w", err)
 	}
 
-	requestTimeout := webhookClientTimeout
-	timeoutDuration, ok := h.Properties[webhookTimeoutPropertyKey]
-	if ok && len(timeoutDuration.(string)) > 0 {
-		d, err := time.ParseDuration(timeoutDuration.(string))
-		if err != nil {
-			return nil, fmt.Errorf("webhook request duration: %w", err)
+	requestTimeout := webhookClientDefaultTimeout
+	if timeoutDuration, ok := h.Properties[webhookTimeoutPropertyKey]; ok {
+		if timeout, ok := timeoutDuration.(string); ok && len(timeout) > 0 {
+			d, err := time.ParseDuration(timeout)
+			if err != nil {
+				return nil, fmt.Errorf("webhook request duration: %w", err)
+			}
+			requestTimeout = d
 		}
-		requestTimeout = d
 	}
+
 	return &Webhook{
 		ID:          h.ID,
 		ActionName:  action.Name,
@@ -151,11 +158,20 @@ func extractQueryParams(props map[string]interface{}) (map[string][]string, erro
 	for k, v := range paramsMap {
 		if ar, ok := v.([]interface{}); ok {
 			for _, v := range ar {
-				res[k] = append(res[k], v.(string))
+				av, ok := v.(string)
+				if !ok {
+					return nil, fmt.Errorf("query params array should contains only strings: %w", ErrWebhookWrongFormat)
+				}
+
+				res[k] = append(res[k], av)
 			}
 			continue
 		}
-		res[k] = []string{v.(string)}
+		av, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("query params single value should be of type string: %w", ErrWebhookWrongFormat)
+		}
+		res[k] = []string{av}
 	}
 
 	return res, nil
