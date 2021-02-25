@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/actions"
@@ -48,6 +50,14 @@ func TestServiceRun(t *testing.T) {
 			t.Error("Failed to read webhook post data", err)
 			return
 		}
+
+		queryParams := map[string][]string(r.URL.Query())
+		require.Len(t, queryParams["prefix"], 1)
+		require.Equal(t, "public/", queryParams["prefix"][0])
+		require.Len(t, queryParams["disallow"], 2)
+		require.Equal(t, "user_", queryParams["disallow"][0])
+		require.Equal(t, "private_", queryParams["disallow"][1])
+
 		var eventInfo actions.WebhookEventInfo
 		err = json.Unmarshal(data, &eventInfo)
 		if err != nil {
@@ -96,6 +106,10 @@ hooks:
     type: webhook
     properties:
       url: "` + ts.URL + `/hook"
+      timeout: 2m30s
+      query_params:
+        prefix: public/
+        disallow: ["user_", "private_"]
 `
 
 	ctx := context.Background()
