@@ -881,7 +881,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if resp.Payload.Path != entry.Path {
 			t.Fatalf("expected to get back our path, got %s", resp.Payload.Path)
 		}
-		if resp.Payload.SizeBytes != entry.Size {
+		if swag.Int64Value(resp.Payload.SizeBytes) != entry.Size {
 			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
 		}
 		if resp.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
@@ -1108,7 +1108,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if resp.Payload.SizeBytes != 38 {
+		if swag.Int64Value(resp.Payload.SizeBytes) != 38 {
 			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
 		}
 
@@ -1175,7 +1175,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if resp.Payload.SizeBytes != 38 {
+		if swag.Int64Value(resp.Payload.SizeBytes) != 38 {
 			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
 		}
 
