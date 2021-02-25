@@ -6,9 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"strings"
+	"net/http/httputil"
 	"time"
 
 	"github.com/treeverse/lakefs/graveler"
@@ -88,7 +87,9 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, w.URL, bytes.NewReader(eventData))
+
+	reqReader := bytes.NewReader(eventData)
+	req, err := http.NewRequest(http.MethodPost, w.URL, reqReader)
 	if err != nil {
 		return err
 	}
@@ -107,7 +108,9 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	}
 
 	req = req.WithContext(ctx)
+	start := time.Now()
 	resp, err := client.Do(req)
+	elapsed := time.Since(start)
 	if err != nil {
 		return err
 	}
@@ -115,8 +118,13 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		_ = resp.Body.Close()
 	}()
 
+	// seeking for logging the request
+	if _, err := reqReader.Seek(0, 0); err != nil {
+		return err
+	}
+
 	// log response body if needed
-	if err := writeOutput(ctx, writer, req, resp, eventData); err != nil {
+	if err := writeOutput(ctx, writer, req, resp, elapsed); err != nil {
 		return err
 	}
 
@@ -127,34 +135,24 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	return nil
 }
 
-func writeOutput(ctx context.Context, writer *HookOutputWriter, req *http.Request, resp *http.Response, reqBody []byte) error {
-	var sb strings.Builder
-	if _, err := sb.WriteString(fmt.Sprintf("Request URL: %v\n", req.URL.String())); err != nil {
-		return err
-	}
-	if _, err := sb.WriteString(fmt.Sprintf("Request Headers: %v\n", req.Header)); err != nil {
-		return err
-	}
-	if _, err := sb.WriteString(fmt.Sprintf("Request Body: %s\n", reqBody)); err != nil {
-		return err
-	}
-	if _, err := sb.WriteString(fmt.Sprintf("Response Headers: %v\n", resp.Header)); err != nil {
-		return err
-	}
+func writeOutput(ctx context.Context, writer *HookOutputWriter, req *http.Request, resp *http.Response, elapsed time.Duration) error {
+	buf := bytes.NewBufferString("Webhook request:\n")
 
-	respBody := []byte("<empty>")
-	if resp.Body != nil && resp.ContentLength != 0 {
-		var err error
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := sb.WriteString(fmt.Sprintf("Response Body: %s", respBody)); err != nil {
+	dumpReq, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
 		return err
 	}
-	return writer.OutputWrite(ctx, strings.NewReader(sb.String()), int64(sb.Len()))
+	_, _ = buf.Write(dumpReq)
+	buf.WriteString("\n\nWebhook response:\n")
+	dumpResp, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		return err
+	}
+	buf.Write(dumpResp)
+
+	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
+
+	return writer.OutputWrite(ctx, buf, int64(buf.Len()))
 }
 
 func (w *Webhook) marshalEventInformation(record graveler.HookRecord) ([]byte, error) {
