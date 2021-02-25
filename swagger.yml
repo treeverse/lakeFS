@@ -115,6 +115,7 @@ definitions:
       size_bytes:
         type: integer
         format: int64
+        x-nullable: true
       path_type:
         type: string
         enum: [ common_prefix, object ]
