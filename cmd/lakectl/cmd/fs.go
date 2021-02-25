@@ -148,7 +148,7 @@ var fsUploadCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
-			totals.Bytes += stat.SizeBytes
+			totals.Bytes += swag.Int64Value(stat.SizeBytes)
 			totals.Count++
 			return nil
 		})
