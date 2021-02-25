@@ -698,6 +698,59 @@ func TestController_GetBranchHandler(t *testing.T) {
 	})
 }
 
+func TestController_BranchesDiffBranchHandler(t *testing.T) {
+	clt, deps := setupClient(t, "")
+
+	// create user
+	creds := createDefaultAdminUser(t, clt)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	ctx := context.Background()
+	const testBranch = "master"
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("diff branch no changes", func(t *testing.T) {
+		diff, err := clt.Branches.DiffBranch(branches.NewDiffBranchParams().
+			WithRepository("repo1").
+			WithBranch(testBranch), bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(diff.Payload.Results) != 0 {
+			t.Fatalf("expected no diff results, got %d", len(diff.Payload.Results))
+		}
+	})
+
+	t.Run("diff branch with writes", func(t *testing.T) {
+		testutil.Must(t, deps.cataloger.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
+		diff, err := clt.Branches.DiffBranch(branches.NewDiffBranchParams().
+			WithRepository("repo1").
+			WithBranch(testBranch), bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(diff.Payload.Results) != 1 {
+			t.Fatalf("expected no diff results, got %d", len(diff.Payload.Results))
+		}
+
+		if diff.Payload.Results[0].Path != "a/b" {
+			t.Fatalf("got wrong diff object, expected a/b, got %s", diff.Payload.Results[0].Path)
+		}
+	})
+
+	t.Run("diff branch that doesn't exist", func(t *testing.T) {
+		_, err := clt.Branches.DiffBranch(branches.NewDiffBranchParams().
+			WithRepository("repo1").
+			WithBranch("some-other-missing-branch"), bauth)
+		if _, ok := err.(*branches.DiffBranchNotFound); !ok {
+			t.Fatalf("expected an 404, got %v", err)
+		}
+
+	})
+}
+
 func TestController_CreateBranchHandler(t *testing.T) {
 	clt, deps := setupClient(t, "")
 
