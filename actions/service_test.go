@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -23,11 +25,12 @@ func TestServiceRun(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 
 	record := graveler.HookRecord{
-		RunID:        graveler.NewRunID(),
-		EventType:    graveler.EventTypePreCommit,
-		RepositoryID: "repoID",
-		BranchID:     "branchID",
-		SourceRef:    "sourceRef",
+		RunID:            graveler.NewRunID(),
+		EventType:        graveler.EventTypePreCommit,
+		StorageNamespace: "storageNamespace",
+		RepositoryID:     "repoID",
+		BranchID:         "branchID",
+		SourceRef:        "sourceRef",
 		Commit: graveler.Commit{
 			Message:   "commitMessage",
 			Committer: "committer",
@@ -36,6 +39,7 @@ func TestServiceRun(t *testing.T) {
 	}
 	const actionName = "test action"
 	const hookID = "hook_id"
+	hookResponse := "OK"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
@@ -77,7 +81,7 @@ func TestServiceRun(t *testing.T) {
 		if diff := deep.Equal(eventInfo.CommitMetadata, map[string]string(record.Commit.Metadata)); diff != nil {
 			t.Errorf("Webhook post Metadata diff=%s", diff)
 		}
-		_, _ = io.WriteString(w, "OK")
+		_, _ = io.WriteString(w, hookResponse)
 	}))
 	defer ts.Close()
 
@@ -96,27 +100,78 @@ hooks:
 
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	testOutputWriter.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	expectedHookRunID := "1"
+	var lastManifest *actions.RunManifest
+	testOutputWriter.EXPECT().
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
+		Return(nil)
+	testOutputWriter.EXPECT().
+		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			data, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+			var manifest actions.RunManifest
+			err = json.Unmarshal(data, &manifest)
+			if err != nil {
+				return err
+			}
+			lastManifest = &manifest
+			return nil
+		}).
+		Times(2)
 
 	testSource := mock.NewMockSource(ctrl)
-	testSource.EXPECT().List(gomock.Any(), gomock.Any()).Return([]string{"act.yaml"}, nil)
-	testSource.EXPECT().Load(gomock.Any(), gomock.Any(), "act.yaml").Return([]byte(actionContent), nil)
+	testSource.EXPECT().
+		List(ctx, record).
+		Return([]string{"act.yaml"}, nil)
+	testSource.EXPECT().
+		Load(ctx, record, "act.yaml").
+		Return([]byte(actionContent), nil)
 
 	// run actions
 	now := time.Now()
 	actionsService := actions.NewService(conn, testSource, testOutputWriter)
+
+	// serial run id generator to have expected results
+	var hookRunIDCounter int64
+	actionsService.RunIDGenerator = func() string {
+		id := atomic.AddInt64(&hookRunIDCounter, 1)
+		return strconv.Itoa(int(id))
+	}
+
 	err := actionsService.Run(ctx, record)
 	if err != nil {
 		t.Fatalf("Run() failed with err=%s", err)
 	}
+	if lastManifest == nil {
+		t.Fatalf("Run() should store manifest")
+	}
+	if lastManifest.Run.RunID != record.RunID {
+		t.Errorf("Run() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
+	}
+	if lastManifest.Run.CommitID != "" {
+		t.Errorf("Run() manifest CommitID %s, expected empty", lastManifest.Run.CommitID)
+	}
+	lastManifest = nil
 
-	// update commit id
-	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.RunID, "commit1")
+	// update commit using post event record
+	err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
 	if err != nil {
 		t.Fatalf("UpdateCommitID() failed with err=%s", err)
 	}
+	if lastManifest == nil {
+		t.Fatalf("UpdateCommitID() should store updated manifest")
+	}
+	if lastManifest.Run.RunID != record.RunID {
+		t.Errorf("UpdateCommitID() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
+	}
+	if lastManifest.Run.CommitID != "commit1" {
+		t.Errorf("UpdateCommitID() manifest CommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
+	}
 
-	// get existing run
+	// get run result
 	runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
 	if err != nil {
 		t.Fatal("GetRunResult() get run result", err)
@@ -138,6 +193,7 @@ hooks:
 	if endTime.Before(startTime) {
 		t.Errorf("GetRunResult() result EndTime should be same or after StartTime %v >= %v", endTime, startTime)
 	}
+
 	const expectedPassed = true
 	if runResult.Passed != expectedPassed {
 		t.Errorf("GetRunResult() result Passed=%t, expect=%t", runResult.Passed, expectedPassed)
@@ -146,6 +202,7 @@ hooks:
 	if runResult.CommitID != expectedCommitID {
 		t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 	}
+
 	// get run - not found
 	runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
 	expectedErr := actions.ErrNotFound
