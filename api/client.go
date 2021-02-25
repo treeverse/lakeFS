@@ -82,6 +82,7 @@ type RepositoryClient interface {
 	ListObjects(ctx context.Context, repository, ref, prefix, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
 	GetObject(ctx context.Context, repository, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
 	UploadObject(ctx context.Context, repository, branchID, path string, r io.Reader) (*models.ObjectStats, error)
+	StageObject(ctx context.Context, repository, branchID, path string, stats *models.ObjectStats) (*models.ObjectStats, error)
 	DeleteObject(ctx context.Context, repository, branchID, path string) error
 
 	DiffRefs(ctx context.Context, repository, leftRef, rightRef string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
@@ -710,6 +711,20 @@ func (c *client) GetObject(ctx context.Context, repoID, ref, path string, writer
 		return nil, err
 	}
 	return resp, nil
+}
+
+func (c *client) StageObject(ctx context.Context, repoID, branchID, path string, stats *models.ObjectStats) (*models.ObjectStats, error) {
+	resp, err := c.remote.Objects.StageObject(&objects.StageObjectParams{
+		Branch:     branchID,
+		Path:       path,
+		Repository: repoID,
+		Stats:      stats,
+		Context:    ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
 }
 
 func (c *client) UploadObject(ctx context.Context, repoID, branchID, path string, r io.Reader) (*models.ObjectStats, error) {

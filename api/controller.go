@@ -174,6 +174,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.ObjectsListObjectsHandler = c.ObjectsListObjectsHandler()
 	api.ObjectsGetObjectHandler = c.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = c.ObjectsUploadObjectHandler()
+	api.ObjectsStageObjectHandler = c.ObjectsStageObjectHandler()
 	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
 
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
@@ -1499,6 +1500,70 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			returnValue.Payload.Pagination.NextOffset = lastID
 		}
 		return returnValue
+	})
+}
+
+func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
+	return objects.StageObjectHandlerFunc(func(params objects.StageObjectParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
+			},
+		})
+		if err != nil {
+			return objects.NewStageObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("stage_object")
+		cataloger := deps.Cataloger
+
+		repo, err := cataloger.GetRepository(deps.ctx, params.Repository)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return objects.NewStageObjectNotFound().WithPayload(responseErrorFrom(err))
+		} else if err != nil {
+			return objects.NewStageObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// write metadata
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Stats.PhysicalAddress)
+		if err != nil {
+			return objects.NewStageObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		if qk.StorageType.String() != deps.BlockAdapter.BlockstoreType() {
+			return objects.NewStageObjectBadRequest().WithPayload(
+				responseError("invalid storage type: %s: current block adapter is %s",
+					qk.StorageType.String(),
+					deps.BlockAdapter.BlockstoreType(),
+				))
+		}
+
+		writeTime := time.Now()
+		entry := catalog.DBEntry{
+			CommonLevel:     false,
+			Path:            params.Path,
+			PhysicalAddress: params.Stats.PhysicalAddress,
+			CreationDate:    writeTime,
+			Size:            swag.Int64Value(params.Stats.SizeBytes),
+			Checksum:        params.Stats.Checksum,
+		}
+
+		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewStageObjectNotFound().WithPayload(responseErrorFrom(err))
+		}
+		if err != nil {
+			return objects.NewStageObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		return objects.NewStageObjectCreated().WithPayload(&models.ObjectStats{
+			Checksum:        params.Stats.Checksum,
+			Mtime:           writeTime.Unix(),
+			Path:            params.Path,
+			PhysicalAddress: qk.Format(),
+			PathType:        models.ObjectStatsPathTypeObject,
+			SizeBytes:       params.Stats.SizeBytes,
+		})
 	})
 }
 

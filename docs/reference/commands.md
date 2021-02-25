@@ -60,6 +60,205 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 
 
 
+### lakectl abuse
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+abuse a running lakeFS instance. See sub commands for more info.
+
+#### Options
+
+```
+  -h, --help   help for abuse
+```
+
+
+
+### lakectl abuse create-branches
+
+Create a lot of branches very quickly.
+
+```
+lakectl abuse create-branches <source ref uri> [flags]
+```
+
+#### Options
+
+```
+      --amount int             amount of things to do (default 1000000)
+      --branch-prefix string   prefix to create branches under (default "abuse-")
+      --clean-only             only clean up past runs
+  -h, --help                   help for create-branches
+      --parallelism int        amount of things to do in parallel (default 100)
+```
+
+
+
+### lakectl abuse help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type abuse help [path to command] for full details.
+
+```
+lakectl abuse help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl abuse random-read
+
+Read keys from a file and generate random reads from the source ref for those keys.
+
+```
+lakectl abuse random-read <source ref uri> [flags]
+```
+
+#### Options
+
+```
+      --amount int         amount of reads to do (default 1000000)
+      --from-file string   read keys from this file ("-" for stdin)
+  -h, --help               help for random-read
+      --parallelism int    amount of reads to do in parallel (default 100)
+```
+
+
+
+### lakectl actions
+
+Manage Actions commands
+
+#### Options
+
+```
+  -h, --help   help for actions
+```
+
+
+
+### lakectl actions help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type actions help [path to command] for full details.
+
+```
+lakectl actions help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl actions runs
+
+Explore runs information
+
+#### Options
+
+```
+  -h, --help   help for runs
+```
+
+
+
+### lakectl actions runs describe
+
+Describe run results
+
+#### Synopsis
+
+Show information about the run and all the hooks that were executed as part of the run
+
+```
+lakectl actions runs describe [flags]
+```
+
+#### Examples
+
+```
+lakectl actions runs describe lakefs://<repository> <run_id>
+```
+
+#### Options
+
+```
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
+  -h, --help           help for describe
+```
+
+
+
+### lakectl actions runs help
+
+Help about any command
+
+#### Synopsis
+
+Help provides help for any command in the application.
+Simply type runs help [path to command] for full details.
+
+```
+lakectl actions runs help [command] [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl actions runs list
+
+List runs
+
+#### Synopsis
+
+List all runs on a repository optional filter by branch or commit
+
+```
+lakectl actions runs list [flags]
+```
+
+#### Examples
+
+```
+lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]
+```
+
+#### Options
+
+```
+      --after string    show results after this value (used for pagination)
+      --amount int      how many results to return, or '-1' for default (used for pagination) (default -1)
+      --branch string   show results for specific branch
+      --commit string   show results for specific commit ID
+  -h, --help            help for list
+```
+
+
+
 ### lakectl auth
 
 manage authentication and authorization
@@ -863,7 +1062,7 @@ lakectl branch list lakefs://<repository>
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
+      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
   -h, --help           help for list
 ```
 
@@ -927,6 +1126,31 @@ lakectl branch show <branch uri> [flags]
 
 ```
   -h, --help   help for show
+```
+
+
+
+### lakectl cat-hook-output
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Cat actions hook output
+
+```
+lakectl cat-hook-output [flags]
+```
+
+#### Examples
+
+```
+lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>
+```
+
+#### Options
+
+```
+  -h, --help   help for cat-hook-output
 ```
 
 
@@ -1175,6 +1399,28 @@ lakectl fs rm <path uri> [flags]
 
 
 
+### lakectl fs stage
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+stage an object at the specified URI
+
+```
+lakectl fs stage <path uri> [flags]
+```
+
+#### Options
+
+```
+      --checksum string   Object MD5 checksum as a hexadecimal string
+  -h, --help              help for stage
+      --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
+      --size int          Object size in bytes
+```
+
+
+
 ### lakectl fs stat
 
 view object metadata
@@ -1242,7 +1488,7 @@ lakectl log <branch uri> [flags]
 
 ```
       --after string         show results after this value (used for pagination)
-      --amount int           how many results to return, or-1 for all results (used for pagination) (default -1)
+      --amount int           how many results to return, or '-1' for default (used for pagination) (default -1)
   -h, --help                 help for log
       --show-meta-range-id   also show meta range ID
 ```
@@ -1409,6 +1655,13 @@ lakectl refs-dump <repository uri> [flags]
 
 restores refs (branches, commits, tags) from the underlying object store to a bare repository
 
+#### Synopsis
+
+restores refs (branches, commits, tags) from the underlying object store to a bare repository.
+
+This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
+Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.
+
 ```
 lakectl refs-restore <repository uri> [flags]
 ```
@@ -1527,7 +1780,7 @@ lakectl repo list [flags]
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
+      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
   -h, --help           help for list
 ```
 
@@ -1638,7 +1891,7 @@ lakectl tag list lakefs://<repository>
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or-1 for all results (used for pagination) (default -1)
+      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
   -h, --help           help for list
 ```
 

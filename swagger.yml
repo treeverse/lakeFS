@@ -2010,6 +2010,36 @@ paths:
         name: path
         required: true
         type: string
+
+    put:
+      tags:
+        - objects
+      operationId: stageObject
+      summary: stage an object's metadata for the given branch
+      parameters:
+        - in: body
+          name: stats
+          schema:
+            $ref: "#/definitions/object_stats"
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        400:
+          description: invalid object metadata
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - objects
