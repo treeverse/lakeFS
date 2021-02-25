@@ -1,6 +1,7 @@
 package actions_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,10 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/actions"
 	"github.com/treeverse/lakefs/actions/mock"
 	"github.com/treeverse/lakefs/graveler"
@@ -116,9 +116,15 @@ hooks:
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
 	expectedHookRunID := "1"
 	var lastManifest *actions.RunManifest
+	var writerBytes []byte
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
-		Return(nil)
+		Return(nil).
+		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			var err error
+			writerBytes, err = ioutil.ReadAll(reader)
+			return err
+		})
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
@@ -226,4 +232,6 @@ hooks:
 	if runResult != nil {
 		t.Errorf("GetRunResult() result=%v, expected nil", runResult)
 	}
+
+	require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
 }
