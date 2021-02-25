@@ -29,10 +29,10 @@ type ActionOn struct {
 }
 
 type ActionHook struct {
-	ID          string            `yaml:"id"`
-	Type        HookType          `yaml:"type"`
-	Description string            `yaml:"description"`
-	Properties  map[string]string `yaml:"properties"`
+	ID          string                 `yaml:"id"`
+	Type        HookType               `yaml:"type"`
+	Description string                 `yaml:"description"`
+	Properties  map[string]interface{} `yaml:"properties"`
 }
 
 type MatchSpec struct {
