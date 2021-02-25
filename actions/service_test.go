@@ -1,6 +1,7 @@
 package actions_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -116,13 +116,13 @@ hooks:
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
 	expectedHookRunID := "1"
 	var lastManifest *actions.RunManifest
-	var data []byte
+	var writerBytes []byte
 	testOutputWriter.EXPECT().
 		OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedHookRunID), gomock.Any(), gomock.Any()).
 		Return(nil).
 		DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
 			var err error
-			data, err = ioutil.ReadAll(reader)
+			writerBytes, err = ioutil.ReadAll(reader)
 			return err
 		})
 	testOutputWriter.EXPECT().
@@ -233,9 +233,5 @@ hooks:
 		t.Errorf("GetRunResult() result=%v, expected nil", runResult)
 	}
 
-	bytes, err := ioutil.ReadAll(outputReader)
-	require.NoError(t, err)
-	str := string(bytes)
-	rows := strings.Split(str, "\n")
-	require.Greater(t, len(rows), 10)
+	require.Greater(t, bytes.Count(writerBytes, []byte("\n")), 10)
 }

@@ -88,7 +88,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
 	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
-	golang.org/x/tools v0.1.0 // indirect
+	golang.org/x/tools v0.1.0
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.36.0
 	google.golang.org/protobuf v1.25.0

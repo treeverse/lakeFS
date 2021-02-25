@@ -81,7 +81,7 @@ func NewWebhook(h ActionHook, action *Action) (Hook, error) {
 	}, nil
 }
 
-func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) error {
+func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *HookOutputWriter) (err error) {
 	// post event information as json to webhook endpoint
 	eventData, err := w.marshalEventInformation(record)
 	if err != nil {
@@ -109,8 +109,25 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 
 	req = req.WithContext(ctx)
 	start := time.Now()
+
+	buf := bytes.NewBufferString("Webhook request:\n")
+	defer func() {
+		err = writer.OutputWrite(ctx, buf, int64(buf.Len()))
+	}()
+
+	if dumpReq, err := httputil.DumpRequestOut(req, true); err == nil {
+		buf.Write(dumpReq)
+	} else {
+		buf.WriteString(fmt.Sprintf("Failed dumping request: %s", err))
+	}
+	// seeking after logging the request
+	if _, err := reqReader.Seek(0, 0); err != nil {
+		return err
+	}
+
 	resp, err := client.Do(req)
 	elapsed := time.Since(start)
+	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
 	if err != nil {
 		return err
 	}
@@ -118,14 +135,11 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		_ = resp.Body.Close()
 	}()
 
-	// seeking for logging the request
-	if _, err := reqReader.Seek(0, 0); err != nil {
-		return err
-	}
-
-	// log response body if needed
-	if err := writeOutput(ctx, writer, req, resp, elapsed); err != nil {
-		return err
+	buf.WriteString("\nWebhook response:\n")
+	if dumpResp, err := httputil.DumpResponse(resp, true); err == nil {
+		buf.Write(dumpResp)
+	} else {
+		buf.WriteString(fmt.Sprintf("Failed dumping response: %s", err))
 	}
 
 	// check status code
@@ -133,26 +147,6 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 		return fmt.Errorf("%w (status code: %d)", ErrWebhookRequestFailed, resp.StatusCode)
 	}
 	return nil
-}
-
-func writeOutput(ctx context.Context, writer *HookOutputWriter, req *http.Request, resp *http.Response, elapsed time.Duration) error {
-	buf := bytes.NewBufferString("Webhook request:\n")
-
-	dumpReq, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		return err
-	}
-	_, _ = buf.Write(dumpReq)
-	buf.WriteString("\n\nWebhook response:\n")
-	dumpResp, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		return err
-	}
-	buf.Write(dumpResp)
-
-	buf.WriteString(fmt.Sprintf("\nRequest duration: %s\n", elapsed))
-
-	return writer.OutputWrite(ctx, buf, int64(buf.Len()))
 }
 
 func (w *Webhook) marshalEventInformation(record graveler.HookRecord) ([]byte, error) {
