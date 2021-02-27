@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -154,11 +153,9 @@ hooks:
 	now := time.Now()
 	actionsService := actions.NewService(conn, testSource, testOutputWriter)
 
-	// serial run id generator to have expected results
-	var hookRunIDCounter int64
-	actionsService.RunIDGenerator = func() string {
-		id := atomic.AddInt64(&hookRunIDCounter, 1)
-		return strconv.Itoa(int(id))
+	// override hook run id generator to remove time from expected results
+	actionsService.HookRunIDGenerator = func(id int) string {
+		return strconv.Itoa(id)
 	}
 
 	err := actionsService.Run(ctx, record)
