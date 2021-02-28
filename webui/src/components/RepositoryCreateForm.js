@@ -9,7 +9,8 @@ import {connect} from "react-redux";
 import {getConfig} from "../actions/config";
 
 
-const DEFAULT_BLOCKSTORE_TYPE = "s3";
+const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
+const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
 export const RepositoryCreateForm = connect(
   ({ repositories, config }) => {
@@ -49,9 +50,9 @@ export const RepositoryCreateForm = connect(
         getConfig()
     }, [getConfig]);
 
-    const blockstoreType = config.payload ? config.payload['blockstore.type'] : DEFAULT_BLOCKSTORE_TYPE;
-    const storageNamespaceValidityRegex = new RegExp(`^(${blockstoreType}):/.*$`);
-    const storageNamespaceExample = `e.g. ${blockstoreType}://example-bucket/`;
+    const storageNamespaceValidityRegexStr = config.payload ? config.payload['blockstore_namespace_ValidityRegex'] : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
+    const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr)
+    const storageNamespaceExample = config.payload ? config.payload['blockstore_namespace_example'] : DEFAULT_BLOCKSTORE_EXAMPLE;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {
             e.preventDefault();

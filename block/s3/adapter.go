@@ -634,3 +634,7 @@ func (a *Adapter) ValidateConfiguration(storageNamespace string) error {
 func (a *Adapter) BlockstoreType() string {
 	return BlockstoreType
 }
+
+func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+}

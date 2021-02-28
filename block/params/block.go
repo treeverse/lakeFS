@@ -35,6 +35,6 @@ type GS struct {
 type Azure struct {
 	StorageAccount   string
 	StorageAccessKey string
-	EndpointURL      string
+	AuthMethod       string
 	TryTimeout       time.Duration
 }

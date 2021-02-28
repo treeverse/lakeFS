@@ -238,7 +238,7 @@ auth:
     secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
 
 blockstore:
-  type: wasb
+  type: azure
   azure:
     storage_account: exampleStorageAcount
     storage_access_key: ExampleAcessKeyMD7nkPOWgV7d4BUjzLw==

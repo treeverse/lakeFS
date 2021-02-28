@@ -95,7 +95,7 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3|gs|wasb|mem|local|transient)://.*$'
+        pattern: '^(s3|gs|https?|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
@@ -386,9 +386,10 @@ definitions:
   config:
     type: object
     properties:
-      blockstore.type:
+      blockstore_namespace_example:
         type: string
-
+      blockstore_namespace_ValidityRegex:
+        type: string
   action_run:
     type: object
     required:
