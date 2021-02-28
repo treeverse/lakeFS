@@ -173,12 +173,18 @@ var fsStageCmd = &cobra.Command{
 		size, _ := cmd.Flags().GetInt64("size")
 		location, _ := cmd.Flags().GetString("location")
 		checksum, _ := cmd.Flags().GetString("checksum")
+		meta, metaErr := getKV(cmd, "meta")
 
-		stat, err := client.StageObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, &models.ObjectStageCreation{
+		obj := &models.ObjectStageCreation{
 			Checksum:        swag.String(checksum),
 			PhysicalAddress: swag.String(location),
 			SizeBytes:       swag.Int64(size),
-		})
+		}
+		if metaErr == nil {
+			obj.Metadata = meta
+		}
+
+		stat, err := client.StageObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, obj)
 		if err != nil {
 			DieErr(err)
 		}
@@ -227,6 +233,7 @@ func init() {
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
+	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
 
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")

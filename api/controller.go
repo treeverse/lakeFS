@@ -1547,6 +1547,9 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 			Size:            swag.Int64Value(params.Object.SizeBytes),
 			Checksum:        swag.StringValue(params.Object.Checksum),
 		}
+		if len(params.Object.Metadata) > 0 {
+			entry.Metadata = params.Object.Metadata
+		}
 
 		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry)
 		if errors.Is(err, db.ErrNotFound) {
