@@ -3,13 +3,7 @@ package nessie
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"net"
-	"net/http"
 	"strings"
 	"testing"
 	"text/template"
@@ -55,9 +49,7 @@ hooks:
       url: "{{.URL}}/pre-commit"
 `
 
-func TestHooks(t *testing.T) {
-	server := startWebhookServer(t)
-
+func TestHooksSuccess(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	const branch = "feature-1"
 
@@ -153,67 +145,20 @@ func TestHooks(t *testing.T) {
 	require.Equal(t, repo, mergeEvent.RepositoryID)
 	require.Equal(t, masterBranch, mergeEvent.BranchID)
 	require.Equal(t, stats.Payload.ID, mergeEvent.SourceRef)
-}
 
-type hookResponse struct {
-	path string
-	err  error
-	data []byte
-}
+	runs, err := client.Commits.ListCommitRuns(&commits.ListCommitRunsParams{
+		Repository: repo,
+		CommitID:   mergeRes.Payload.Reference,
+		Context:    ctx,
+	}, nil)
 
-type server struct {
-	s      *http.Server
-	fail   bool
-	respCh chan hookResponse
-	port   int
-}
-
-func startWebhookServer(t *testing.T) *server {
-	respCh := make(chan hookResponse, 10)
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
-	mux.HandleFunc("/pre-merge", hookHandlerFunc(respCh))
-	listener, err := net.Listen("tcp", ":0")
 	require.NoError(t, err)
-
-	port := listener.Addr().(*net.TCPAddr).Port
-	fmt.Println("Using port:", port)
-	s := &http.Server{
-		Handler: mux,
-	}
-
-	go func() {
-		if err = s.Serve(listener); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen:%s\n", err)
-		}
-	}()
-
-	t.Cleanup(func() {
-		_ = s.Close()
-		close(respCh)
-	})
-
-	return &server{
-		s:      s,
-		respCh: respCh,
-		port:   port,
-	}
-}
-
-func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.Request) {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		data, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			respCh <- hookResponse{path: request.URL.Path, err: err}
-			_, _ = io.WriteString(writer, "Failed")
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		respCh <- hookResponse{path: request.URL.Path, data: data}
-		_, _ = io.WriteString(writer, "OK")
-		writer.WriteHeader(http.StatusOK)
-		return
-	}
+	require.Len(t, runs.Payload, 1)
+	run := runs.Payload[0]
+	require.Equal(t, mergeRes.Payload.Reference, *run.CommitID)
+	require.Equal(t, "pre-merge", run.EventType)
+	require.Equal(t, "completed", run.Status)
+	require.Equal(t, "master", *run.Branch)
 }
 
 type webhookEventInfo struct {
@@ -227,13 +172,4 @@ type webhookEventInfo struct {
 	CommitMessage string            `json:"commit_message"`
 	Committer     string            `json:"committer"`
 	Metadata      map[string]string `json:"metadata"`
-}
-
-func responseWithTimeout(s *server, timeout time.Duration) (*hookResponse, error) {
-	select {
-	case res := <-s.respCh:
-		return &res, nil
-	case <-time.After(timeout):
-		return nil, errors.New("timeout passed waiting for hook")
-	}
 }
