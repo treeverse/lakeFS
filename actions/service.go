@@ -18,10 +18,9 @@ import (
 )
 
 type Service struct {
-	DB             db.Database
-	Source         Source
-	Writer         OutputWriter
-	RunIDGenerator func() string
+	DB     db.Database
+	Source Source
+	Writer OutputWriter
 }
 
 type Task struct {
@@ -85,10 +84,9 @@ var ErrNotFound = errors.New("not found")
 
 func NewService(db db.Database, source Source, writer OutputWriter) *Service {
 	return &Service{
-		DB:             db,
-		Source:         source,
-		Writer:         writer,
-		RunIDGenerator: graveler.NewRunID,
+		DB:     db,
+		Source: source,
+		Writer: writer,
 	}
 }
 
@@ -132,16 +130,16 @@ func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRe
 
 func (s *Service) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
 	var tasks [][]*Task
-	for _, action := range actions {
+	for actionIdx, action := range actions {
 		var actionTasks []*Task
-		for _, hook := range action.Hooks {
+		for hookIdx, hook := range action.Hooks {
 			h, err := NewHook(hook, action)
 			if err != nil {
 				return nil, err
 			}
 			task := &Task{
 				RunID:     runID,
-				HookRunID: s.RunIDGenerator(),
+				HookRunID: NewHookRunID(actionIdx, hookIdx),
 				Action:    action,
 				HookID:    hook.ID,
 				Hook:      h,
@@ -420,4 +418,8 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 	}
 	// post merge actions will be enabled here
 	return nil
+}
+
+func NewHookRunID(actionIdx, hookIdx int) string {
+	return fmt.Sprintf("%04d_%04d", actionIdx, hookIdx)
 }
