@@ -134,10 +134,6 @@ definitions:
       size_bytes:
         type: integer
         format: int64
-      metadata:
-        type: object
-        additionalProperties:
-          type: string
 
   underlying_object_properties:
     type: object

@@ -1546,7 +1546,6 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 			CreationDate:    writeTime,
 			Size:            swag.Int64Value(params.Object.SizeBytes),
 			Checksum:        swag.StringValue(params.Object.Checksum),
-			Metadata:        params.Object.Metadata,
 		}
 
 		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry)

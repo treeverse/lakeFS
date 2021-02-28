@@ -1404,7 +1404,7 @@ lakectl fs rm <path uri> [flags]
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-stage an object at the specified URI
+stages a reference to an existing object, to be managed in lakeFS
 
 ```
 lakectl fs stage <path uri> [flags]
