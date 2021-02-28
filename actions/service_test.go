@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 	"time"
 
@@ -113,7 +112,7 @@ hooks:
 
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	expectedHookRunID := "1"
+	expectedHookRunID := actions.NewHookRunID(0, 0)
 	var lastManifest *actions.RunManifest
 	var writerBytes []byte
 	testOutputWriter.EXPECT().
@@ -152,11 +151,6 @@ hooks:
 	// run actions
 	now := time.Now()
 	actionsService := actions.NewService(conn, testSource, testOutputWriter)
-
-	// override hook run id generator to remove time from expected results
-	actionsService.HookRunIDGenerator = func(id int) string {
-		return strconv.Itoa(id)
-	}
 
 	err := actionsService.Run(ctx, record)
 	if err != nil {

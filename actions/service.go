@@ -18,10 +18,9 @@ import (
 )
 
 type Service struct {
-	DB                 db.Database
-	Source             Source
-	Writer             OutputWriter
-	HookRunIDGenerator func(id int) string
+	DB     db.Database
+	Source Source
+	Writer OutputWriter
 }
 
 type Task struct {
@@ -85,10 +84,9 @@ var ErrNotFound = errors.New("not found")
 
 func NewService(db db.Database, source Source, writer OutputWriter) *Service {
 	return &Service{
-		DB:                 db,
-		Source:             source,
-		Writer:             writer,
-		HookRunIDGenerator: NewHookRunID,
+		DB:     db,
+		Source: source,
+		Writer: writer,
 	}
 }
 
@@ -131,19 +129,17 @@ func (s *Service) loadMatchedActions(ctx context.Context, record graveler.HookRe
 }
 
 func (s *Service) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
-	var id int
 	var tasks [][]*Task
-	for _, action := range actions {
+	for actionIdx, action := range actions {
 		var actionTasks []*Task
-		for _, hook := range action.Hooks {
+		for hookIdx, hook := range action.Hooks {
 			h, err := NewHook(hook, action)
 			if err != nil {
 				return nil, err
 			}
-			id++
 			task := &Task{
 				RunID:     runID,
-				HookRunID: s.HookRunIDGenerator(id),
+				HookRunID: NewHookRunID(actionIdx, hookIdx),
 				Action:    action,
 				HookID:    hook.ID,
 				Hook:      h,
@@ -424,7 +420,6 @@ func (s *Service) PostMergeHook(ctx context.Context, record graveler.HookRecord)
 	return nil
 }
 
-func NewHookRunID(id int) string {
-	tm := time.Now().UTC().Format("02150405")
-	return fmt.Sprintf("H%s%06d", tm, id)
+func NewHookRunID(actionIdx, hookIdx int) string {
+	return fmt.Sprintf("%04d_%04d", actionIdx, hookIdx)
 }
