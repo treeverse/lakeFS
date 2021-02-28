@@ -22,21 +22,9 @@ var (
 	ErrInvalidNamespace = errors.New("invalid namespace")
 )
 
-type QualifiedKey struct {
-	StorageType      StorageType
-	StorageNamespace string
-	Key              string
-}
-
-type QualifiedPrefix struct {
-	StorageType      StorageType
-	StorageNamespace string
-	Prefix           string
-}
-
-func (qk QualifiedKey) Format() string {
+func (s StorageType) String() string {
 	scheme := ""
-	switch qk.StorageType {
+	switch s {
 	case StorageTypeMem:
 		scheme = "mem"
 	case StorageTypeLocal:
@@ -50,8 +38,23 @@ func (qk QualifiedKey) Format() string {
 	default:
 		panic("unknown storage type")
 	}
+	return scheme
+}
 
-	return fmt.Sprintf("%s://%s", scheme, path.Join(qk.StorageNamespace, qk.Key))
+type QualifiedKey struct {
+	StorageType      StorageType
+	StorageNamespace string
+	Key              string
+}
+
+type QualifiedPrefix struct {
+	StorageType      StorageType
+	StorageNamespace string
+	Prefix           string
+}
+
+func (qk QualifiedKey) Format() string {
+	return fmt.Sprintf("%s://%s", qk.StorageType, path.Join(qk.StorageNamespace, qk.Key))
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
