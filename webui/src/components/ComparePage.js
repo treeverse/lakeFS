@@ -8,6 +8,8 @@ import RefDropdown from "./RefDropdown";
 import Changes from "./Changes";
 import ConfirmationModal from "./ConfirmationModal";
 import {PAGINATION_AMOUNT} from "../actions/refs";
+import {API_ENDPOINT} from "../actions/api";
+import ClipboardButton from "./ClipboardButton";
 
 const MergeButton = connect(
     ({ refs }) => ({
@@ -47,16 +49,6 @@ const MergeButton = connect(
         setShow(false);
     };
     
-    // useEffect(() => {
-    //     if (mergeState.error) {
-            // window.alert(mergeState.error);
-            // resetMerge();
-            // TODO(barak): test if we need to reset and refresh diff after merge?!
-        // } else if (mergeState.payload && mergeState.payload.results.length > 0) {
-        //     resetDiff();
-        // }
-    // }, [resetMerge, mergeState]);
-
     const onSubmit = () => {
         if (disabled) return;
         merge(repo.id, sourceBranchId, destinationBranchId);
@@ -179,7 +171,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
                 const m = /^\t\* hook run id '([^']+)' failed/.exec(line);
                 if (m) {
                     const hookRunID = m[1];
-                    const link = `/api/v1/repositories/${repo.id}/actions/runs/${runID}/hooks/${hookRunID}/output`;
+                    const link = `${API_ENDPOINT}/repositories/${repo.id}/actions/runs/${runID}/hooks/${hookRunID}/output`;
                     return <p key={i}><Alert.Link target="_blank" download={hookRunID} href={link}>{line}</Alert.Link></p>;
                 }
             }
@@ -193,7 +185,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
             return '';
         }
         const cmd = `lakectl actions runs describe lakefs://${repo.id} ${runID}`;
-        return <><p>More information by running:</p>{cmd}</>;
+        return <>For detailed information run:<br/>{cmd}<ClipboardButton variant="link" text={cmd} tooltip="Copy"/></>;
     };
 
     const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
