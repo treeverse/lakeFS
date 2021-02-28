@@ -1525,7 +1525,7 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 		}
 
 		// write metadata
-		qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Stats.PhysicalAddress)
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, swag.StringValue(params.Object.PhysicalAddress))
 		if err != nil {
 			return objects.NewStageObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1542,10 +1542,11 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 		entry := catalog.DBEntry{
 			CommonLevel:     false,
 			Path:            params.Path,
-			PhysicalAddress: params.Stats.PhysicalAddress,
+			PhysicalAddress: swag.StringValue(params.Object.PhysicalAddress),
 			CreationDate:    writeTime,
-			Size:            swag.Int64Value(params.Stats.SizeBytes),
-			Checksum:        params.Stats.Checksum,
+			Size:            swag.Int64Value(params.Object.SizeBytes),
+			Checksum:        swag.StringValue(params.Object.Checksum),
+			Metadata:        params.Object.Metadata,
 		}
 
 		err = cataloger.CreateEntry(deps.ctx, repo.Name, params.Branch, entry)
@@ -1557,12 +1558,12 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 		}
 
 		return objects.NewStageObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:        params.Stats.Checksum,
-			Mtime:           writeTime.Unix(),
-			Path:            params.Path,
+			Checksum:        entry.Checksum,
+			Mtime:           entry.CreationDate.Unix(),
+			Path:            entry.Path,
 			PhysicalAddress: qk.Format(),
 			PathType:        models.ObjectStatsPathTypeObject,
-			SizeBytes:       params.Stats.SizeBytes,
+			SizeBytes:       swag.Int64(entry.Size),
 		})
 	})
 }

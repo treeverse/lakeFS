@@ -1219,10 +1219,9 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			WithRepository("repo1").
 			WithBranch("master").
 			WithPath("foo/bar").
-			WithStats(&models.ObjectStats{
-				Checksum:        "afb0689fe58b82c5f762991453edbbec",
-				Path:            "foo/bar",
-				PhysicalAddress: "s3://another-bucket/some/location",
+			WithObject(&models.ObjectStageCreation{
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
+				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
 				SizeBytes:       swag.Int64(38),
 			}), bauth)
 
@@ -1254,10 +1253,9 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			WithRepository("repo1").
 			WithBranch("master1234").
 			WithPath("foo/bar").
-			WithStats(&models.ObjectStats{
-				Checksum:        "afb0689fe58b82c5f762991453edbbec",
-				Path:            "foo/bar",
-				PhysicalAddress: "s3://another-bucket/some/location",
+			WithObject(&models.ObjectStageCreation{
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
+				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
 				SizeBytes:       swag.Int64(38),
 			}), bauth)
 		if _, ok := err.(*objects.StageObjectNotFound); !ok {
@@ -1270,10 +1268,9 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			WithRepository("repo1").
 			WithBranch("master1234").
 			WithPath("foo/bar").
-			WithStats(&models.ObjectStats{
-				Checksum:        "afb0689fe58b82c5f762991453edbbec",
-				Path:            "foo/bar",
-				PhysicalAddress: "gs://another-bucket/some/location",
+			WithObject(&models.ObjectStageCreation{
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
+				PhysicalAddress: swag.String("gs://another-bucket/some/location"),
 				SizeBytes:       swag.Int64(38),
 			}), bauth)
 		if _, ok := err.(*objects.StageObjectBadRequest); !ok {
