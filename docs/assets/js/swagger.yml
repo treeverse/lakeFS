@@ -115,9 +115,29 @@ definitions:
       size_bytes:
         type: integer
         format: int64
+        x-nullable: true
       path_type:
         type: string
         enum: [ common_prefix, object ]
+
+  object_stage_creation:
+    type: object
+    required:
+      - physical_address
+      - checksum
+      - size_bytes
+    properties:
+      physical_address:
+        type: string
+      checksum:
+        type: string
+      size_bytes:
+        type: integer
+        format: int64
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
 
   underlying_object_properties:
     type: object
@@ -1911,6 +1931,40 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/commits/{commitId}/runs:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: commitId
+        required: true
+        type: string
+    get:
+      tags:
+        - commits
+      operationId: listCommitRuns
+      summary: list commit runs
+      responses:
+        200:
+          description: list action runs
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
   /repositories/{repository}/refs/{ref}/objects:
     parameters:
       - in: path
@@ -1977,6 +2031,36 @@ paths:
         name: path
         required: true
         type: string
+
+    put:
+      tags:
+        - objects
+      operationId: stageObject
+      summary: stage an object's metadata for the given branch
+      parameters:
+        - in: body
+          name: object
+          schema:
+            $ref: "#/definitions/object_stage_creation"
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        400:
+          description: invalid object metadata
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - objects
@@ -2341,14 +2425,6 @@ paths:
           description: run hook output
           schema:
             type: file
-          headers:
-            Content-Length:
-              type: integer
-              format: int64
-            Last-Modified:
-              type: string
-            Content-Disposition:
-              type: string
         401:
           $ref: "#/responses/Unauthorized"
         404:

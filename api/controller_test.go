@@ -1199,6 +1199,99 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
+
+	t.Run("upload object missing repo", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world this is my awesome content")
+		_, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithContent(runtime.NamedReader("content", buf)).
+				WithPath("foo/bar").
+				WithRepository("repo55555"),
+			bauth)
+		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
+			t.Fatal("Missing branch should return not found")
+		}
+	})
+
+}
+
+func TestController_ObjectsStageObjectHandler(t *testing.T) {
+	clt, deps := setupClient(t, "s3")
+
+	// create user
+	creds := createDefaultAdminUser(t, clt)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	ctx := context.Background()
+	_, err := deps.cataloger.CreateRepository(ctx, "repo1", "s3://bucket/prefix", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("stage object", func(t *testing.T) {
+		resp, err := clt.Objects.StageObject(objects.NewStageObjectParams().
+			WithRepository("repo1").
+			WithBranch("master").
+			WithPath("foo/bar").
+			WithObject(&models.ObjectStageCreation{
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
+				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
+				SizeBytes:       swag.Int64(38),
+			}), bauth)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if swag.Int64Value(resp.Payload.SizeBytes) != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
+		}
+
+		// get back info
+		got, err := clt.Objects.StatObject(objects.NewStatObjectParams().
+			WithRepository("repo1").
+			WithRef("master").
+			WithPath("foo/bar"), bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got.Payload.PhysicalAddress != "s3://another-bucket/some/location" {
+			t.Fatalf("unexpected physical address: %s", got.Payload.PhysicalAddress)
+		}
+	})
+
+	t.Run("upload object missing branch", func(t *testing.T) {
+		_, err := clt.Objects.StageObject(objects.NewStageObjectParams().
+			WithRepository("repo1").
+			WithBranch("master1234").
+			WithPath("foo/bar").
+			WithObject(&models.ObjectStageCreation{
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
+				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
+				SizeBytes:       swag.Int64(38),
+			}), bauth)
+		if _, ok := err.(*objects.StageObjectNotFound); !ok {
+			t.Fatal("Missing branch should return not found")
+		}
+	})
+
+	t.Run("wrong storage adapter", func(t *testing.T) {
+		_, err := clt.Objects.StageObject(objects.NewStageObjectParams().
+			WithRepository("repo1").
+			WithBranch("master1234").
+			WithPath("foo/bar").
+			WithObject(&models.ObjectStageCreation{
+				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
+				PhysicalAddress: swag.String("gs://another-bucket/some/location"),
+				SizeBytes:       swag.Int64(38),
+			}), bauth)
+		if _, ok := err.(*objects.StageObjectBadRequest); !ok {
+			t.Fatal("Wrong storage adapter should return 400")
+		}
+	})
 }
 
 func TestController_ObjectsDeleteObjectHandler(t *testing.T) {

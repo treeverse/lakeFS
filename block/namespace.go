@@ -22,6 +22,24 @@ var (
 	ErrInvalidNamespace = errors.New("invalid namespace")
 )
 
+func (s StorageType) String() string {
+	scheme := ""
+	switch s {
+	case StorageTypeMem:
+		scheme = "mem"
+	case StorageTypeLocal:
+		scheme = "local"
+	case StorageTypeGS:
+		scheme = "gs"
+	case StorageTypeS3:
+		scheme = "s3"
+	case StorageTypeAzure:
+		scheme = "https"
+	default:
+		panic("unknown storage type")
+	}
+	return scheme
+}
 type StorageNamespaceInfo struct {
 	ValidityRegex string // regex pattern that could be used to validate the namespace
 	Example       string // example of a valid namespace
@@ -40,23 +58,7 @@ type QualifiedPrefix struct {
 }
 
 func (qk QualifiedKey) Format() string {
-	scheme := ""
-	switch qk.StorageType {
-	case StorageTypeMem:
-		scheme = "mem"
-	case StorageTypeLocal:
-		scheme = "local"
-	case StorageTypeGS:
-		scheme = "gs"
-	case StorageTypeS3:
-		scheme = "s3"
-	case StorageTypeAzure:
-		scheme = "https"
-	default:
-		panic("unknown storage type")
-	}
-
-	return fmt.Sprintf("%s://%s", scheme, path.Join(qk.StorageNamespace, qk.Key))
+	return fmt.Sprintf("%s://%s", qk.StorageType, path.Join(qk.StorageNamespace, qk.Key))
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {

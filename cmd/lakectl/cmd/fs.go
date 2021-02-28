@@ -159,6 +159,40 @@ var fsUploadCmd = &cobra.Command{
 	},
 }
 
+var fsStageCmd = &cobra.Command{
+	Use:    "stage <path uri>",
+	Short:  "stages a reference to an existing object, to be managed in lakeFS",
+	Hidden: true,
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		pathURI := uri.Must(uri.Parse(args[0]))
+		size, _ := cmd.Flags().GetInt64("size")
+		location, _ := cmd.Flags().GetString("location")
+		checksum, _ := cmd.Flags().GetString("checksum")
+		meta, metaErr := getKV(cmd, "meta")
+
+		obj := &models.ObjectStageCreation{
+			Checksum:        swag.String(checksum),
+			PhysicalAddress: swag.String(location),
+			SizeBytes:       swag.Int64(size),
+		}
+		if metaErr == nil {
+			obj.Metadata = meta
+		}
+
+		stat, err := client.StageObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, obj)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Write(fsStatTemplate, stat)
+	},
+}
+
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "delete object",
@@ -189,9 +223,19 @@ func init() {
 	fsCmd.AddCommand(fsListCmd)
 	fsCmd.AddCommand(fsCatCmd)
 	fsCmd.AddCommand(fsUploadCmd)
+	fsCmd.AddCommand(fsStageCmd)
 	fsCmd.AddCommand(fsRmCmd)
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	_ = fsUploadCmd.MarkFlagRequired("source")
+
+	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
+	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
+	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
+	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
+
+	_ = fsStageCmd.MarkFlagRequired("location")
+	_ = fsStageCmd.MarkFlagRequired("size")
+	_ = fsStageCmd.MarkFlagRequired("checksum")
 }
