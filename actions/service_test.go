@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -114,7 +112,7 @@ hooks:
 
 	ctx := context.Background()
 	testOutputWriter := mock.NewMockOutputWriter(ctrl)
-	expectedHookRunID := "1"
+	expectedHookRunID := actions.NewHookRunID(0, 0)
 	var lastManifest *actions.RunManifest
 	var writerBytes []byte
 	testOutputWriter.EXPECT().
@@ -153,13 +151,6 @@ hooks:
 	// run actions
 	now := time.Now()
 	actionsService := actions.NewService(conn, testSource, testOutputWriter)
-
-	// serial run id generator to have expected results
-	var hookRunIDCounter int64
-	actionsService.RunIDGenerator = func() string {
-		id := atomic.AddInt64(&hookRunIDCounter, 1)
-		return strconv.Itoa(int(id))
-	}
 
 	err := actionsService.Run(ctx, record)
 	if err != nil {
