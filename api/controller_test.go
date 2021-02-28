@@ -1365,8 +1365,8 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
-	const BlockstoreType = "s3"
-	clt, _ := setupClient(t, BlockstoreType)
+	const BlockstoreNamespaceExample = "mem://example-bucket/"
+	clt, _ := setupClient(t, BlockstoreNamespaceExample)
 
 	// create user
 	creds := createDefaultAdminUser(t, clt)
@@ -1382,8 +1382,8 @@ func TestController_ConfigHandlers(t *testing.T) {
 
 		got := resp.GetPayload()
 
-		if got.BlockstoreType != BlockstoreType {
-			t.Errorf("expected to get %s, got %s", BlockstoreType, got.BlockstoreType)
+		if got.BlockstoreNamespaceExample != BlockstoreNamespaceExample {
+			t.Errorf("expected to get %s, got %s", BlockstoreNamespaceExample, got.BlockstoreNamespaceExample)
 		}
 	})
 }

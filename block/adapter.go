@@ -83,6 +83,7 @@ type Adapter interface {
 	// configuration and returns a validation error or nil.
 	ValidateConfiguration(storageNamespace string) error
 	BlockstoreType() string
+	GetStorageNamespaceInfo() StorageNamespaceInfo
 }
 
 type UploadIDTranslator interface {

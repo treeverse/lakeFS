@@ -22,6 +22,11 @@ var (
 	ErrInvalidNamespace = errors.New("invalid namespace")
 )
 
+type StorageNamespaceInfo struct {
+	ValidityRegex string // regex pattern that could be used to validate the namespace
+	Example       string // example of a valid namespace
+}
+
 type QualifiedKey struct {
 	StorageType      StorageType
 	StorageNamespace string
@@ -46,7 +51,7 @@ func (qk QualifiedKey) Format() string {
 	case StorageTypeS3:
 		scheme = "s3"
 	case StorageTypeAzure:
-		scheme = "wasb"
+		scheme = "https"
 	default:
 		panic("unknown storage type")
 	}
@@ -65,7 +70,7 @@ func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 		return StorageTypeLocal, nil
 	case "gs":
 		return StorageTypeGS, nil
-	case "wasb":
+	case "http", "https":
 		return StorageTypeAzure, nil
 	default:
 		return st, fmt.Errorf("%s: %w", namespaceURL.Scheme, ErrInvalidNamespace)
@@ -136,4 +141,19 @@ func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
 		StorageNamespace: parsedKey.Host,
 		Key:              formatPathWithNamespace("", parsedKey.Path),
 	}, nil
+}
+
+func DefaultExample(scheme string) string {
+	return scheme + "://example-bucket/"
+}
+
+func DefaultValidationRegex(scheme string) string {
+	return fmt.Sprintf("^(%s):/.*$", scheme)
+}
+
+func DefaultStorageNamespaceInfo(scheme string) StorageNamespaceInfo {
+	return StorageNamespaceInfo{
+		ValidityRegex: DefaultValidationRegex(scheme),
+		Example:       DefaultExample(scheme),
+	}
 }

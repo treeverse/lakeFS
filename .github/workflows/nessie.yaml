@@ -206,14 +206,14 @@ jobs:
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: wasb
+          LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           AWS_ACCESS_KEY_ID: ""
           AWS_SECRET_ACCESS_KEY: ""
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
-          NESSIE_STORAGE_NAMESPACE: wasb://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
+          NESSIE_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
         run: |
           docker-compose -f nessie/ops/docker-compose.yaml down -v
           docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie

@@ -61,6 +61,7 @@ const (
 	MetastoreGlueCatalogID = "metastore.glue.catalog_id"
 
 	DefaultAzureTryTimeout = 10 * time.Minute
+	DefaultAzureAuthMethod = "access-key"
 )
 
 var (
@@ -107,7 +108,7 @@ const (
 	BlockstoreAzureTryTimeoutKey                = "blockstore.azure.try_timeout"
 	BlockstoreAzureStorageAccountKey            = "blockstore.azure.storage_account"
 	BlockstoreAzureStorageAccessKey             = "blockstore.azure.storage_access_key"
-	BlockstoreAzureEndpointURLKey               = "blockstore.azure.endpoint"
+	BlockstoreAzureAuthMethod                   = "blockstore.azure.auth_method"
 	CommittedLocalCacheSizeBytesKey             = "committed.local_cache.size_bytes"
 	CommittedLocalCacheDirKey                   = "committed.local_cache.dir"
 	CommittedLocalCacheNumUploadersKey          = "committed.local_cache.max_uploaders_per_writer"
@@ -171,6 +172,7 @@ func setDefaults() {
 	viper.SetDefault(StatsFlushIntervalKey, DefaultStatsFlushInterval)
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultAzureTryTimeout)
+	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
 }
 
 type Configurator interface {
@@ -264,7 +266,7 @@ func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
 		StorageAccount:   viper.GetString(BlockstoreAzureStorageAccountKey),
 		StorageAccessKey: viper.GetString(BlockstoreAzureStorageAccessKey),
-		EndpointURL:      viper.GetString(BlockstoreAzureEndpointURLKey),
+		AuthMethod:       viper.GetString(BlockstoreAzureAuthMethod),
 		TryTimeout:       viper.GetDuration(BlockstoreAzureTryTimeoutKey),
 	}, nil
 }
