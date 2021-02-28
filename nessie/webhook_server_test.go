@@ -56,10 +56,14 @@ func startWebhookServer() (*webhookServer, error) {
 }
 
 func timeoutHandlerFunc(chan hookResponse) func(http.ResponseWriter, *http.Request) {
-	return func(writer http.ResponseWriter, _ *http.Request) {
-		time.Sleep(2 * time.Minute)
-		_, _ = io.WriteString(writer, "OK")
+	return func(writer http.ResponseWriter, req *http.Request) {
+		select {
+		case <-req.Context().Done():
+		case <-time.After(2 * hooksTimeout):
+		}
+
 		writer.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(writer, "OK")
 	}
 }
 

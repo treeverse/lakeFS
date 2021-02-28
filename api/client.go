@@ -545,18 +545,6 @@ func (c *client) GetCommit(ctx context.Context, repository, commitID string) (*m
 	return commit.GetPayload(), nil
 }
 
-func (c *client) ListCommitRuns(ctx context.Context, repository, commitID string) ([]*models.ActionRun, error) {
-	commit, err := c.remote.Commits.ListCommitRuns(&commits.ListCommitRunsParams{
-		CommitID:   commitID,
-		Repository: repository,
-		Context:    ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return commit.GetPayload(), nil
-}
-
 func (c *client) GetCommitLog(ctx context.Context, repository, branchID, after string, amount int) ([]*models.Commit, *models.Pagination, error) {
 	resp, err := c.remote.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
 		Amount:     swag.Int64(int64(amount)),

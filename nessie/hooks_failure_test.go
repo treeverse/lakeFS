@@ -2,10 +2,12 @@ package nessie
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
@@ -16,7 +18,8 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
-const actionPreCommitTemplate = `
+var actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(
+	`
 name: Test Commit
 description: set of checks to verify that branch is good
 on:
@@ -28,7 +31,10 @@ hooks:
     type: webhook
     properties:
       url: "{{.URL}}/{{.Path}}"
-`
+      timeout : {{.Timeout}}
+`))
+
+const hooksTimeout = 2 * time.Second
 
 func TestHooksTimeout(t *testing.T) {
 	hookFailToCommit(t, "timeout")
@@ -39,7 +45,6 @@ func TestHooksFail(t *testing.T) {
 }
 
 func hookFailToCommit(t *testing.T, path string) {
-	t.Helper()
 	ctx, logger, repo := setupTest(t)
 	const branch = "feature-1"
 
@@ -57,15 +62,16 @@ func hookFailToCommit(t *testing.T, path string) {
 
 	// render actions based on templates
 	docData := struct {
-		URL  string
-		Path string
+		URL     string
+		Path    string
+		Timeout string
 	}{
-		URL:  fmt.Sprintf("http://nessie:%d", server.port),
-		Path: path,
+		URL:     fmt.Sprintf("http://nessie:%d", server.port),
+		Path:    path,
+		Timeout: hooksTimeout.String(),
 	}
 
 	var doc bytes.Buffer
-	actionPreCommitTmpl := template.Must(template.New("action-pre-commit").Parse(actionPreCommitTemplate))
 	doc.Reset()
 	err = actionPreCommitTmpl.Execute(&doc, docData)
 	require.NoError(t, err)
@@ -88,5 +94,7 @@ func hookFailToCommit(t *testing.T, path string) {
 		nil)
 	require.Error(t, err, "commit should fail due to webhook")
 	require.Nil(t, stats)
-	require.Contains(t, err.Error(), "412")
+
+	var preconditionFailed *commits.CommitPreconditionFailed
+	require.True(t, errors.As(err, &preconditionFailed))
 }
