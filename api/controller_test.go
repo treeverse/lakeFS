@@ -1199,6 +1199,22 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
+
+	t.Run("upload object missing repo", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world this is my awesome content")
+		_, err := clt.Objects.UploadObject(
+			objects.NewUploadObjectParamsWithTimeout(timeout).
+				WithBranch("master").
+				WithContent(runtime.NamedReader("content", buf)).
+				WithPath("foo/bar").
+				WithRepository("repo55555"),
+			bauth)
+		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
+			t.Fatal("Missing branch should return not found")
+		}
+	})
+
 }
 
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
