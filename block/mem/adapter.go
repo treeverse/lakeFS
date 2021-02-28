@@ -314,3 +314,7 @@ func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ strin
 func (a *Adapter) BlockstoreType() string {
 	return BlockstoreType
 }
+
+func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+	return block.DefaultStorageNamespaceInfo(BlockstoreType)
+}

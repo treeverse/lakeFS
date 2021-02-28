@@ -1256,9 +1256,10 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 		if err != nil {
 			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
+		storageNamespaceInfo := deps.BlockAdapter.GetStorageNamespaceInfo()
 		return configop.NewGetConfigOK().WithPayload(&models.Config{
-			BlockstoreType: deps.BlockAdapter.BlockstoreType(),
+			BlockstoreNamespaceValidityRegex: storageNamespaceInfo.ValidityRegex,
+			BlockstoreNamespaceExample:       storageNamespaceInfo.Example,
 		})
 	})
 }

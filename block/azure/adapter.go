@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-pipeline-go/pipeline"
@@ -20,29 +21,29 @@ var (
 )
 
 const (
-	BlockstoreType          = "wasb"
+	BlockstoreType          = "azure"
 	sizeSuffix              = "_size"
 	idSuffix                = "_id"
 	_1MiB                   = 1024 * 1024
 	MaxBuffers              = 1
 	defaultMaxRetryRequests = 0
+	AuthMethodAccessKey     = "access-key"
+	AuthMethodMSI           = "msi"
 )
 
 type Adapter struct {
 	ctx            context.Context
 	pipeline       pipeline.Pipeline
 	configurations configurations
-	endpointURL    string
 }
 
 type configurations struct {
 	retryReaderOptions azblob.RetryReaderOptions
 }
 
-func NewAdapter(pipeline pipeline.Pipeline, endpointURL string, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(pipeline pipeline.Pipeline, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		ctx:            context.Background(),
-		endpointURL:    endpointURL,
 		pipeline:       pipeline,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
 	}
@@ -54,40 +55,89 @@ func NewAdapter(pipeline pipeline.Pipeline, endpointURL string, opts ...func(a *
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
-		pipeline:    a.pipeline,
-		endpointURL: a.endpointURL,
-		ctx:         ctx,
+		pipeline:       a.pipeline,
+		ctx:            ctx,
+		configurations: a.configurations,
 	}
 }
 
-func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+type BlobURLInfo struct {
+	ContainerURL string
+	BlobURL      string
+}
+
+type PrefixURLInfo struct {
+	ContainerURL string
+	Prefix       string
+}
+
+func resolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
+	var qk BlobURLInfo
+	storageType, err := block.GetStorageType(pathURL)
 	if err != nil {
-		return qualifiedKey, err
+		return qk, err
 	}
-	if qualifiedKey.StorageType != block.StorageTypeAzure {
-		return qualifiedKey, block.ErrInvalidNamespace
+	if storageType != block.StorageTypeAzure {
+		return qk, block.ErrInvalidNamespace
 	}
-	return qualifiedKey, nil
+	// In azure the first part of the path is part of the storage namespace
+	trimmedPath := strings.TrimLeft(pathURL.Path, "/")
+	parts := strings.Split(trimmedPath, "/")
+	if len(parts) == 0 {
+		return qk, block.ErrInvalidNamespace
+	}
+	return BlobURLInfo{
+		ContainerURL: fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, parts[0]),
+		BlobURL:      strings.Join(parts[1:], "/"),
+	}, nil
 }
 
-func resolveNamespacePrefix(lsOpts block.WalkOpts) (block.QualifiedPrefix, error) {
-	qualifiedPrefix, err := block.ResolveNamespacePrefix(lsOpts.StorageNamespace, lsOpts.Prefix)
+func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
+	key := obj.Identifier
+	defaultNamespace := obj.StorageNamespace
+	var qk BlobURLInfo
+	// check if the key is fully qualified
+	parsedKey, err := url.ParseRequestURI(key)
 	if err != nil {
-		return qualifiedPrefix, err
+		// is not fully qualified, treat as key only
+		// if we don't have a trailing slash for the namespace, add it.
+		parsedNamespace, err := url.ParseRequestURI(defaultNamespace)
+		if err != nil {
+			return qk, err
+		}
+		qp, err := resolveBlobURLInfoFromURL(parsedNamespace)
+		if err != nil {
+			return qk, err
+		}
+		return BlobURLInfo{
+			ContainerURL: qp.ContainerURL,
+			BlobURL:      qp.BlobURL + "/" + key,
+		}, nil
 	}
-	if qualifiedPrefix.StorageType != block.StorageTypeAzure {
-		return qualifiedPrefix, block.ErrInvalidNamespace
-	}
-	return qualifiedPrefix, nil
+	return resolveBlobURLInfoFromURL(parsedKey)
 }
 
-func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, inventoryURL string, shouldSort bool, prefixes []string) (block.Inventory, error) {
+func resolveNamespacePrefix(lsOpts block.WalkOpts) (PrefixURLInfo, error) {
+	qualifiedPrefix, err := resolveBlobURLInfo(block.ObjectPointer{
+		StorageNamespace: lsOpts.StorageNamespace,
+		Identifier:       lsOpts.Prefix,
+	})
+	if err != nil {
+		return PrefixURLInfo{}, err
+	}
+
+	return PrefixURLInfo{
+		ContainerURL: qualifiedPrefix.ContainerURL,
+		Prefix:       qualifiedPrefix.BlobURL,
+	}, nil
+}
+
+func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 
-func (a *Adapter) getContainerURL(containerName string) azblob.ContainerURL {
-	u, err := url.Parse(fmt.Sprintf("%s/%s", a.endpointURL, containerName))
+func (a *Adapter) getContainerURL(rawURL string) azblob.ContainerURL {
+	u, err := url.Parse(rawURL)
 	if err != nil {
 		panic(err)
 	}
@@ -105,13 +155,12 @@ func translatePutOpts(opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions 
 func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
-
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return err
 	}
-	container := a.getContainerURL(qualifiedKey.StorageNamespace)
-	blobURL := container.NewBlockBlobURL(qualifiedKey.Key)
+	container := a.getContainerURL(qualifiedKey.ContainerURL)
+	blobURL := container.NewBlockBlobURL(qualifiedKey.BlobURL)
 
 	// TODO(Guys): remove this work around once azure fixes panic issue and use azblob.UploadStreamToBlockBlob
 	transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
@@ -144,12 +193,12 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 }
 
 func (a *Adapter) Download(obj block.ObjectPointer, offset, count int64) (io.ReadCloser, error) {
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return nil, err
 	}
-	container := a.getContainerURL(qualifiedKey.StorageNamespace)
-	blobURL := container.NewBlobURL(qualifiedKey.Key)
+	container := a.getContainerURL(qualifiedKey.ContainerURL)
+	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
 	keyOptions := azblob.ClientProvidedKeyOptions{}
 	downloadResponse, err := blobURL.Download(a.ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
@@ -170,7 +219,7 @@ func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 		return err
 	}
 
-	containerURL := a.getContainerURL(qualifiedPrefix.StorageNamespace)
+	containerURL := a.getContainerURL(qualifiedPrefix.ContainerURL)
 
 	for marker := (azblob.Marker{}); marker.NotDone(); {
 		listBlob, err := containerURL.ListBlobsFlatSegment(a.ctx, marker, azblob.ListBlobsSegmentOptions{Prefix: qualifiedPrefix.Prefix})
@@ -192,13 +241,13 @@ func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return false, err
 	}
 
-	container := a.getContainerURL(qualifiedKey.StorageNamespace)
-	blobURL := container.NewBlobURL(qualifiedKey.Key)
+	container := a.getContainerURL(qualifiedKey.ContainerURL)
+	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(a.ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 	var storageErr azblob.StorageError
@@ -215,13 +264,13 @@ func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return block.Properties{}, err
 	}
 
-	container := a.getContainerURL(qualifiedKey.StorageNamespace)
-	blobURL := container.NewBlobURL(qualifiedKey.Key)
+	container := a.getContainerURL(qualifiedKey.ContainerURL)
+	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
 	props, err := blobURL.GetProperties(a.ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
@@ -235,13 +284,13 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return err
 	}
 
-	container := a.getContainerURL(qualifiedKey.StorageNamespace)
-	blobURL := container.NewBlobURL(qualifiedKey.Key)
+	container := a.getContainerURL(qualifiedKey.ContainerURL)
+	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
 	_, err = blobURL.Delete(a.ctx, "", azblob.BlobAccessConditions{})
 	return err
@@ -251,46 +300,46 @@ func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Copy", time.Now(), nil, &err)
 
-	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
+	qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
 	if err != nil {
 		return err
 	}
-	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
 	if err != nil {
 		return err
 	}
-	sourceContainer := a.getContainerURL(qualifiedSourceKey.StorageNamespace)
-	sourceURL := sourceContainer.NewBlobURL(qualifiedSourceKey.Key)
+	sourceContainer := a.getContainerURL(qualifiedSourceKey.ContainerURL)
+	sourceURL := sourceContainer.NewBlobURL(qualifiedSourceKey.BlobURL)
 
-	destinationContainer := a.getContainerURL(qualifiedDestinationKey.StorageNamespace)
-	destinationURL := destinationContainer.NewBlobURL(qualifiedDestinationKey.Key)
+	destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
+	destinationURL := destinationContainer.NewBlobURL(qualifiedDestinationKey.BlobURL)
 	_, err = destinationURL.StartCopyFromURL(a.ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
 	return err
 }
 
-func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
 	// Azure has no create multipart upload
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
 	}
 
-	return qualifiedKey.Key, nil
+	return qualifiedKey.BlobURL, nil
 }
 
-func (a *Adapter) UploadPart(obj block.ObjectPointer, size int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
 	}
 
-	container := a.getContainerURL(qualifiedKey.StorageNamespace)
+	container := a.getContainerURL(qualifiedKey.ContainerURL)
 	hashReader := block.NewHashingReader(reader, block.HashFunctionMD5)
 
 	transferManager, err := azblob.NewStaticBuffer(_1MiB, MaxBuffers)
@@ -298,7 +347,7 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, size int64, reader io.Read
 		return "", err
 	}
 	defer transferManager.Close()
-	multipartBlockWriter := NewMultipartBlockWriter(hashReader, container, qualifiedKey.Key)
+	multipartBlockWriter := NewMultipartBlockWriter(hashReader, container, qualifiedKey.BlobURL)
 	_, err = copyFromReader(a.ctx, hashReader, multipartBlockWriter, azblob.UploadStreamToBlockBlobOptions{
 		TransferManager: transferManager,
 	})
@@ -308,14 +357,14 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, size int64, reader io.Read
 	return multipartBlockWriter.etag, nil
 }
 
-func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, _ string, _ int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
 	return a.copyPartRange(sourceObj, destinationObj, 0, azblob.CountToEnd)
 }
 
-func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, _ string, _, startPosition, endPosition int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
@@ -323,21 +372,21 @@ func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPoin
 }
 
 func (a *Adapter) copyPartRange(sourceObj, destinationObj block.ObjectPointer, startPosition, count int64) (string, error) {
-	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
 	if err != nil {
 		return "", err
 	}
 
-	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
+	qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
 	if err != nil {
 		return "", err
 	}
 
-	destinationContainer := a.getContainerURL(qualifiedDestinationKey.StorageNamespace)
-	sourceContainer := a.getContainerURL(qualifiedSourceKey.StorageNamespace)
-	sourceBlobURL := sourceContainer.NewBlockBlobURL(qualifiedSourceKey.Key)
+	destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
+	sourceContainer := a.getContainerURL(qualifiedSourceKey.ContainerURL)
+	sourceBlobURL := sourceContainer.NewBlockBlobURL(qualifiedSourceKey.BlobURL)
 
-	return copyPartRange(a.ctx, destinationContainer, qualifiedDestinationKey.Key, sourceBlobURL, startPosition, count)
+	return copyPartRange(a.ctx, destinationContainer, qualifiedDestinationKey.BlobURL, sourceBlobURL, startPosition, count)
 }
 
 func (a *Adapter) AbortMultiPartUpload(_ block.ObjectPointer, _ string) error {
@@ -353,14 +402,21 @@ func (a *Adapter) BlockstoreType() string {
 	return BlockstoreType
 }
 
-func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return nil, 0, err
 	}
-	containerURL := a.getContainerURL(qualifiedKey.StorageNamespace)
+	containerURL := a.getContainerURL(qualifiedKey.ContainerURL)
 
-	return CompleteMultipart(a.ctx, multipartList.Part, containerURL, qualifiedKey.Key, a.configurations.retryReaderOptions)
+	return CompleteMultipart(a.ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
+}
+
+func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+	return block.StorageNamespaceInfo{
+		ValidityRegex: `^https?://`,
+		Example:       "https://mystorageaccount.blob.core.windows.net/mycontainer/",
+	}
 }

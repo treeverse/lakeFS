@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-storage-blob-go/azblob"
@@ -27,7 +26,10 @@ import (
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 
-var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
+var (
+	ErrInvalidBlockStoreType  = errors.New("invalid blockstore type")
+	ErrAuthMethodNotSupported = errors.New("authentication method not supported")
+)
 
 func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.GetBlockstoreType()
@@ -121,20 +123,19 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 func buildAzureAdapter(params params.Azure) (*azure.Adapter, error) {
 	accountName := params.StorageAccount
 	accountKey := params.StorageAccessKey
-	if len(accountName) == 0 && len(accountKey) == 0 {
-		// fallback to Azure environment variables
-		accountName, accountKey = os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+	var credentials azblob.Credential
+	var err error
+	switch params.AuthMethod {
+	case azure.AuthMethodAccessKey:
+		credentials, err = azure.GetAccessKeyCredentials(accountName, accountKey)
+	case azure.AuthMethodMSI:
+		credentials, err = azure.GetMSICredentials()
+	default:
+		err = ErrAuthMethodNotSupported
 	}
-	// Create a default request pipeline using your storage account name and account key.
-	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials : %w", err)
 	}
-	pipeline := azblob.NewPipeline(credential, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}})
-	endpointURL := params.EndpointURL
-
-	if endpointURL == "" {
-		endpointURL = fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
-	}
-	return azure.NewAdapter(pipeline, endpointURL), nil
+	pipeline := azblob.NewPipeline(credentials, azblob.PipelineOptions{Retry: azblob.RetryOptions{TryTimeout: params.TryTimeout}})
+	return azure.NewAdapter(pipeline), nil
 }

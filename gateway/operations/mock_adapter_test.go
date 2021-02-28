@@ -104,3 +104,7 @@ func (a *mockAdapter) GenerateInventory(_ context.Context, _ logging.Logger, _ s
 func (a *mockAdapter) BlockstoreType() string {
 	return "s3"
 }
+
+func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+	panic("try to get storage namespace info")
+}
