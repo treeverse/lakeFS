@@ -115,9 +115,29 @@ definitions:
       size_bytes:
         type: integer
         format: int64
+        x-nullable: true
       path_type:
         type: string
         enum: [ common_prefix, object ]
+
+  object_stage_creation:
+    type: object
+    required:
+      - physical_address
+      - checksum
+      - size_bytes
+    properties:
+      physical_address:
+        type: string
+      checksum:
+        type: string
+      size_bytes:
+        type: integer
+        format: int64
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
 
   underlying_object_properties:
     type: object
@@ -2009,6 +2029,36 @@ paths:
         name: path
         required: true
         type: string
+
+    put:
+      tags:
+        - objects
+      operationId: stageObject
+      summary: stage an object's metadata for the given branch
+      parameters:
+        - in: body
+          name: object
+          schema:
+            $ref: "#/definitions/object_stage_creation"
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        400:
+          description: invalid object metadata
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - objects
