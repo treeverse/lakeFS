@@ -148,7 +148,7 @@ func DefaultExample(scheme string) string {
 }
 
 func DefaultValidationRegex(scheme string) string {
-	return fmt.Sprintf("^(%s):/.*$", scheme)
+	return fmt.Sprintf("^%s://", scheme)
 }
 
 func DefaultStorageNamespaceInfo(scheme string) StorageNamespaceInfo {

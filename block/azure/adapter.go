@@ -416,7 +416,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, _ string, mul
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return block.StorageNamespaceInfo{
-		ValidityRegex: "^(https?):/.*$",
+		ValidityRegex: `^https?://`,
 		Example:       "https://mystorageaccount.blob.core.windows.net/mycontainer/",
 	}
 }

@@ -367,9 +367,9 @@ definitions:
   config:
     type: object
     properties:
-      blockstore.namespace.example:
+      blockstore_namespace_example:
         type: string
-      blockstore.namespace.ValidityRegex:
+      blockstore_namespace_ValidityRegex:
         type: string
   action_run:
     type: object

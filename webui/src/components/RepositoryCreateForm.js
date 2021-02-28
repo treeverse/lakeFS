@@ -10,7 +10,7 @@ import {getConfig} from "../actions/config";
 
 
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
-const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^(s3):/.*$`);
+const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
 export const RepositoryCreateForm = connect(
   ({ repositories, config }) => {
@@ -50,9 +50,9 @@ export const RepositoryCreateForm = connect(
         getConfig()
     }, [getConfig]);
 
-    const storageNamespaceValidityRegexStr = config.payload ? config.payload['blockstore.namespace.ValidityRegex'] : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
+    const storageNamespaceValidityRegexStr = config.payload ? config.payload['blockstore_namespace_ValidityRegex'] : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr)
-    const storageNamespaceExample = config.payload ? config.payload['blockstore.namespace.example'] : DEFAULT_BLOCKSTORE_EXAMPLE;
+    const storageNamespaceExample = config.payload ? config.payload['blockstore_namespace_example'] : DEFAULT_BLOCKSTORE_EXAMPLE;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {
             e.preventDefault();

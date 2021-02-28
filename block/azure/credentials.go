@@ -19,9 +19,8 @@ func getTokenRefresher() (azblob.TokenRefresher, error) {
 		return nil, err
 	}
 	return func(credential azblob.TokenCredential) time.Duration {
-		logging.Default().Warn("called")
 		if err := azureServicePrincipalToken.Refresh(); err != nil {
-			panic(err)
+			logging.Default().Errorf("failed on token refresh: %w", err)
 		}
 		refreshedToken := azureServicePrincipalToken.Token()
 		credential.SetToken(refreshedToken.OAuthToken())
