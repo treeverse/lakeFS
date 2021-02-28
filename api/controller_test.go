@@ -1248,7 +1248,6 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	})
 
 	t.Run("upload object missing branch", func(t *testing.T) {
-
 		_, err := clt.Objects.StageObject(objects.NewStageObjectParams().
 			WithRepository("repo1").
 			WithBranch("master1234").
