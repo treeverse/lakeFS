@@ -2,6 +2,7 @@ package nessie
 
 import (
 	"flag"
+	"log"
 	"os"
 	"testing"
 
@@ -15,6 +16,7 @@ var (
 	logger logging.Logger
 	client *genclient.Lakefs
 	svc    *s3.S3
+	server *webhookServer
 )
 
 func TestMain(m *testing.M) {
@@ -35,7 +37,14 @@ func TestMain(m *testing.M) {
 		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	}
 	logger, client, svc = testutil.SetupTestingEnv(&params)
-	logger.Info("Setup succeeded, running the tests")
+	var err error
+	server, err = startWebhookServer()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	defer func() { _ = server.s.Close() }()
+
+	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
 }
