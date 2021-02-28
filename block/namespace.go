@@ -40,6 +40,7 @@ func (s StorageType) String() string {
 	}
 	return scheme
 }
+
 type StorageNamespaceInfo struct {
 	ValidityRegex string // regex pattern that could be used to validate the namespace
 	Example       string // example of a valid namespace
