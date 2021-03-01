@@ -174,8 +174,8 @@ func (s *Service) runTasks(ctx context.Context, record graveler.HookRecord, task
 
 				if task.Err != nil {
 					// wrap error with more information and return
-					task.Err = fmt.Errorf("run '%s' failed on action '%s' hook '%s': %w",
-						task.RunID, task.Action.Name, task.HookID, task.Err)
+					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
+						task.HookRunID, task.Action.Name, task.HookID, task.Err)
 					return task.Err
 				}
 			}

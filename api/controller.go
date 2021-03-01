@@ -482,7 +482,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 			c.deps.Logger.
 				WithError(err).
 				WithField("run_id", hookAbortErr.RunID).
-				Error("aborted by hooks")
+				Warn("aborted by hooks")
 			return commits.NewCommitPreconditionFailed().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
@@ -952,7 +952,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			c.deps.Logger.
 				WithError(err).
 				WithField("run_id", hookAbortErr.RunID).
-				Error("aborted by hooks")
+				Warn("aborted by hooks")
 			return refs.NewMergeIntoBranchPreconditionFailed().WithPayload(responseErrorFrom(err))
 		}
 		switch {

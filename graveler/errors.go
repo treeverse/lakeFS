@@ -73,7 +73,7 @@ type HookAbortError struct {
 }
 
 func (e *HookAbortError) Error() string {
-	return fmt.Sprintf("%s hook aborted (run id: %s): %s", e.EventType, e.RunID, e.Err)
+	return fmt.Sprintf("%s hook aborted, run id '%s': %s", e.EventType, e.RunID, e.Err)
 }
 
 func (e *HookAbortError) Unwrap() error {
