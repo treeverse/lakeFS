@@ -5,33 +5,23 @@ import (
 	"context"
 
 	"github.com/go-openapi/swag"
+	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
 const actionRunResultTemplate = `
-Run ID: {{ .RunID }}
-	Event: {{ .EventType }}
-	Branch: {{ .Branch }}
-	Start time: {{ .StartTime }}
-	End time: {{ .EndTime }}
-{{if .CommitID}}	Commit ID: {{ .CommitID }}{{end}}
-	Status: {{ .Status }}
+{{ . | table -}}
 `
 
-const actionTaskResultTemplate = `{{ $log := .HookLog }}
-{{ range $val := .Hooks }}
-Hook Run ID: {{ $val.HookRunID }}
-	Hook ID: {{ $val.HookID }}
-	Start time: {{ $val.StartTime }}
-	End time: {{ $val.EndTime }}
-	Action: {{ $val.Action }}
-	Status: {{ $val.Status }}
-Output:
-{{ printf $val.HookRunID | call $log }}
-{{ end }}{{ .Pagination | paginate }}
+const actionTaskResultTemplate = `{{ $r := . }}
+{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}
+{{ printf $val.HookRunID | call $r.HookLog }}
+{{ end }}
+{{ .Pagination | paginate }}
 `
 
 const runsShowRequiredArgs = 2
@@ -59,7 +49,7 @@ var runsDescribeCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		Write(actionRunResultTemplate, runResult)
+		Write(actionRunResultTemplate, convertRunResultTable(runResult))
 
 		// iterator over hooks - print information and output
 		response, pagination, err := client.ListRunTaskResults(ctx, u.Repository, runID, after, amount)
@@ -68,19 +58,13 @@ var runsDescribeCmd = &cobra.Command{
 		}
 		data := struct {
 			Hooks      []*models.HookRun
+			HooksTable []*Table
 			HookLog    func(hookRunID string) (string, error)
 			Pagination *Pagination
 		}{
-			Hooks: response,
-			HookLog: func(hookRunID string) (string, error) {
-				// return output content
-				var buf bytes.Buffer
-				err := client.GetRunHookOutput(ctx, u.Repository, runID, hookRunID, &buf)
-				if err != nil {
-					return "", err
-				}
-				return buf.String(), nil
-			},
+			Hooks:      response,
+			HooksTable: convertHookResultsTables(response),
+			HookLog:    makeHookLog(ctx, client, u.Repository, runID),
 		}
 		if pagination != nil && swag.BoolValue(pagination.HasMore) {
 			data.Pagination = &Pagination{
@@ -91,6 +75,53 @@ var runsDescribeCmd = &cobra.Command{
 		}
 		Write(actionTaskResultTemplate, data)
 	},
+}
+
+func makeHookLog(ctx context.Context, client api.Client, repositoryID string, runID string) func(hookRunID string) (string, error) {
+	return func(hookRunID string) (string, error) {
+		var buf bytes.Buffer
+		err := client.GetRunHookOutput(ctx, repositoryID, runID, hookRunID, &buf)
+		if err != nil {
+			return "", err
+		}
+		return buf.String(), nil
+	}
+}
+
+func convertRunResultTable(r *models.ActionRun) *Table {
+	runID := text.FgYellow.Sprint(swag.StringValue(r.RunID))
+	branch := swag.StringValue(r.Branch)
+	commitID := swag.StringValue(r.CommitID)
+	statusColor := text.FgRed
+	if r.Status == models.ActionRunStatusCompleted {
+		statusColor = text.FgGreen
+	}
+	status := statusColor.Sprint(r.Status)
+	return &Table{
+		Headers: []interface{}{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
+		Rows: [][]interface{}{
+			{runID, r.EventType, branch, r.StartTime, r.EndTime, commitID, status},
+		},
+	}
+}
+
+func convertHookResultsTables(results []*models.HookRun) []*Table {
+	tables := make([]*Table, len(results))
+	for i, r := range results {
+		hookRunID := text.FgYellow.Sprint(swag.StringValue(r.HookRunID))
+		statusColor := text.FgRed
+		if r.Status == models.ActionRunStatusCompleted {
+			statusColor = text.FgGreen
+		}
+		status := statusColor.Sprint(r.Status)
+		tables[i] = &Table{
+			Headers: []interface{}{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
+			Rows: [][]interface{}{
+				{hookRunID, r.HookID, r.StartTime, r.EndTime, r.Action, status},
+			},
+		}
+	}
+	return tables
 }
 
 //nolint:gochecknoinits
