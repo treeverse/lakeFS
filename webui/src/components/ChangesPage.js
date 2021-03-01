@@ -10,6 +10,7 @@ import {resetRevertBranch, revertBranch} from "../actions/branches";
 import ConfirmationModal from "./ConfirmationModal";
 import {doCommit, resetCommit} from "../actions/commits";
 import Alert from "react-bootstrap/Alert";
+import {formatAlertText} from "./PreconditionErr";
 
 const CommitButton = connect(
     ({ commits }) => ({ commitState: commits.commit }),
@@ -27,6 +28,7 @@ const CommitButton = connect(
         if (commitDisabled) return;
         setShow(false);
         setMetadataFields([]);
+        resetCommit();
     };
 
     useEffect(() => {
@@ -52,9 +54,10 @@ const CommitButton = connect(
         return <span/>;
     }
 
+    const alertText = formatAlertText(repo.id, commitState.error);
     return (
         <>
-            <Modal show={show} onHide={onHide}>
+            <Modal show={show} onHide={onHide} size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>Commit Changes</Modal.Title>
                 </Modal.Header>
@@ -104,7 +107,7 @@ const CommitButton = connect(
                             Add Metadata field
                         </Button>
                     </Form>
-                    {(!!commitState.error) ? (<Alert variant="danger">{commitState.error}</Alert>) : (<span/>)}
+                    {(alertText) ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={commitDisabled} onClick={onHide}>
