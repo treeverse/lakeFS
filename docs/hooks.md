@@ -72,7 +72,7 @@ hooks:
 
 ## Run
 A `Run` is an instantiation of the repository's `Action` files when the triggering event occurs. 
-For example, If our repository contains a pre-commit hook, every commit would generate a `Run` for that specific commit.
+For example, if our repository contains a pre-commit hook, every commit would generate a `Run` for that specific commit.
  
 lakeFS will fetch, parse and filter the repository `Action` files and start to execute the `Hooks` under each `Action`.
 All executed `Hooks` (each with `hook_run_id`) exists in the context of that `Run` (`run_id`).   
