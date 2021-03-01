@@ -2822,7 +2822,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 			},
 		}
 		var nextToken string
-		for tasksIter.Next() && len(payload.Results) < amount {
+		for len(payload.Results) < amount && tasksIter.Next() {
 			val := tasksIter.Value()
 			hookRun := &models.HookRun{
 				HookRunID: swag.String(val.HookRunID),
@@ -2904,7 +2904,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 			},
 		}
 		var nextToken string
-		for runsIter.Next() && len(payload.Results) < amount {
+		for len(payload.Results) < amount && runsIter.Next() {
 			val := runsIter.Value()
 			payload.Results = append(payload.Results, convertRun(val))
 			nextToken = val.RunID
