@@ -29,7 +29,7 @@ For more examples and configuration samples, check out [lakeFS-hooks](https://gi
 
 ## Action
 An `Action` is a list of `Hooks` with the same trigger configuration, i.e. an event will trigger all `Hooks` under an `Action`, or none at all.
-The `Hooks` under an `Action` are ordered, and a `Hook` will only be executed if all previous `Hooks` had passed.
+The `Hooks` under an `Action` are ordered and so is their execution. A `Hook` will only be executed if all previous `Hooks` that were triggered with it, had passed.
 
 ### Hook
 A `Hook` is the basic building block of an `Action`. 
