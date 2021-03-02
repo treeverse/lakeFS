@@ -30,7 +30,8 @@ There are 3 big shifts in design:
 
 The change will be made gradually over (at least) 3 releases:
 
-### lakeFS On The Rocks: Milestone #1 - Committed Metadata Extraction
+### ~~lakeFS On The Rocks: Milestone #1 - Committed Metadata Extraction~~ Done
+{: .no_toc }
 The initial release of the new lakeFS design will include the following changes:
 1. Commit metadata stored on S3 in [SSTable format](https://blog.lowentropy.info/topics/deep-into-rocksdb/sstable-format-blockbased)
 1. Uncommitted entries will be stored in PostgreSQL
@@ -59,9 +60,6 @@ This release will mark the completion of project **["lakeFS on the Rocks"](https
 
 ### Kubernetes operator for gateways and Metadata servers
 We see Kubernetes as a first class deployment target for lakeFS. While deploying the stateless components such as the S3 Gateway and the OpenAPI server is relatively easy, deploying the metadata service which is a stateful Raft group is a little more involved. Design is still pending while we learn more about the best practices (for example, the [Consul Kubernetes operator](https://www.consul.io/docs/k8s/installation/install#architecture)).
-
-### Azure Data Lake Storage Support
-Allow lakeFS to run natively on Azure, with full support for storing both metadata and data on [ADLS](https://azure.microsoft.com/en-us/services/storage/data-lake-storage/)
 
 ### Metadata operations security and access model
 Reduce the operational overhead of managing access control: Currently operators working with both lakeFS and the native object store are required to manage a similar set of access controls for both.
