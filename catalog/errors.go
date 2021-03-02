@@ -17,5 +17,4 @@ var (
 	ErrInvalidValue             = errors.New("invalid value")
 	ErrNoDifferenceWasFound     = errors.New("no difference was found")
 	ErrConflictFound            = errors.New("conflict found")
-	ErrUnsupportedRelation      = errors.New("unsupported relation")
 )

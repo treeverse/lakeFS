@@ -1774,6 +1774,10 @@ paths:
           description: merge completed
           schema:
             $ref: "#/definitions/merge_result"
+        400:
+          description: bad request
+          schema:
+            $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
         404:
