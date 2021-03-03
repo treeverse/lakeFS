@@ -62,6 +62,7 @@ var gotoCmd = &cobra.Command{
 	Use:   "goto",
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		version, err := cmd.Flags().GetUint("version")
 		if err != nil {
 			fmt.Printf("Failed to get value for 'version': %s\n", err)
@@ -69,7 +70,7 @@ var gotoCmd = &cobra.Command{
 		}
 		force, _ := cmd.Flags().GetBool("force")
 		uri := cfg.GetDatabaseParams()
-		err = db.MigrateTo(uri, version, force)
+		err = db.MigrateTo(ctx, uri, version, force)
 		if err != nil {
 			fmt.Printf("Failed to migrate to version %d.\n%s\n", version, err)
 			os.Exit(1)

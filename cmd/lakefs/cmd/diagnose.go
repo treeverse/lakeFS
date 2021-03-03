@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -16,9 +15,9 @@ var diagnoseCmd = &cobra.Command{
 	Use:   "diagnose",
 	Short: "Diagnose underlying infrastructure configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		ctx := cmd.Context()
 		logger := logging.Default().WithContext(ctx)
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		adapter, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"log"
 	"os"
 
@@ -17,10 +16,10 @@ var diagnosticsCmd = &cobra.Command{
 	Use:   "diagnostics",
 	Short: "Collect lakeFS diagnostics",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
 		adapter, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {

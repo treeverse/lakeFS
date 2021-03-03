@@ -11,7 +11,8 @@ import (
 
 func getDB(t *testing.T) db.Database {
 	t.Helper()
-	ret, err := db.ConnectDB(params.Database{Driver: "pgx", ConnectionString: databaseURI})
+	ctx := context.Background()
+	ret, err := db.ConnectDB(ctx, params.Database{Driver: "pgx", ConnectionString: databaseURI})
 	if err != nil {
 		t.Fatal("failed to get DB")
 	}

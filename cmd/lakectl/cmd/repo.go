@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -35,7 +34,7 @@ var repoListCmd = &cobra.Command{
 
 		clt := getClient()
 
-		repos, pagination, err := clt.ListRepositories(context.Background(), after, amount)
+		repos, pagination, err := clt.ListRepositories(cmd.Context(), after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -84,7 +83,7 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = clt.CreateRepository(context.Background(), &models.RepositoryCreation{
+		err = clt.CreateRepository(cmd.Context(), &models.RepositoryCreation{
 			StorageNamespace: &args[1],
 			DefaultBranch:    defaultBranch,
 			Name:             &u.Repository,
@@ -92,7 +91,7 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		repo, err := clt.GetRepository(context.Background(), u.Repository)
+		repo, err := clt.GetRepository(cmd.Context(), u.Repository)
 		if err != nil {
 			DieErr(err)
 		}
@@ -119,7 +118,7 @@ var repoCreateBareCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = clt.CreateBareRepository(context.Background(), &models.RepositoryCreation{
+		err = clt.CreateBareRepository(cmd.Context(), &models.RepositoryCreation{
 			StorageNamespace: &args[1],
 			DefaultBranch:    defaultBranch,
 			Name:             &u.Repository,
@@ -127,7 +126,7 @@ var repoCreateBareCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		repo, err := clt.GetRepository(context.Background(), u.Repository)
+		repo, err := clt.GetRepository(cmd.Context(), u.Repository)
 		if err != nil {
 			DieErr(err)
 		}
@@ -152,7 +151,7 @@ var repoDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
-		err = clt.DeleteRepository(context.Background(), u.Repository)
+		err = clt.DeleteRepository(cmd.Context(), u.Repository)
 		if err != nil {
 			DieErr(err)
 		}

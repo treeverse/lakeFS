@@ -71,7 +71,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
-	ctx := context.Background()
+	ctx := cmd.Context()
 	conf := config.NewConfig()
 	err := db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
 	if errors.Is(err, db.ErrSchemaNotCompatible) {
@@ -83,7 +83,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 	logger := logging.FromContext(ctx)
-	dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+	dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 	defer dbPool.Close()
 
 	catalogCfg := catalog.Config{

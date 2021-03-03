@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -22,8 +23,8 @@ var dbCmd = &cobra.Command{
 	Short: "Load test database actions",
 }
 
-func connectToDB(connectionString string) db.Database {
-	database, err := db.ConnectDB(params.Database{Driver: db.DatabaseDriver, ConnectionString: connectionString})
+func connectToDB(ctx context.Context, connectionString string) db.Database {
+	database, err := db.ConnectDB(ctx, params.Database{Driver: db.DatabaseDriver, ConnectionString: connectionString})
 	if err != nil {
 		fmt.Printf("Failed connecting to database: %s\n", err)
 		os.Exit(1)

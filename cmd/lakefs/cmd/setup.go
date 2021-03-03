@@ -29,7 +29,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
 		userName, err := cmd.Flags().GetString("user-name")
@@ -62,7 +62,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ctx, cancelFn := context.WithCancel(context.Background())
+		ctx, cancelFn := context.WithCancel(ctx)
 		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)

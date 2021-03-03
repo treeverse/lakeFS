@@ -62,10 +62,10 @@ var runCmd = &cobra.Command{
 		} else if err != nil {
 			logger.WithError(err).Warn("Failed on schema validation")
 		}
-		dbPool := db.BuildDatabaseConnection(dbParams)
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer dbPool.Close()
 
-		lockdbPool := db.BuildDatabaseConnection(dbParams)
+		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer lockdbPool.Close()
 
 		registerPrometheusCollector(dbPool)
@@ -176,7 +176,7 @@ var runCmd = &cobra.Command{
 			}
 		}()
 
-		go gracefulShutdown(quit, done, server)
+		go gracefulShutdown(cmd.Context(), quit, done, server)
 
 		<-done
 		cancelFn()
@@ -218,7 +218,7 @@ func registerPrometheusCollector(db sqlstats.StatsGetter) {
 	}
 }
 
-func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
+func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
 	logger := logging.Default()
 	logger.WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
 
@@ -227,7 +227,7 @@ func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutte
 	<-quit
 	logger.Warn("shutting down...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 	defer cancel()
 
 	for i, server := range servers {
