@@ -2,7 +2,7 @@
 layout: default
 title: Architecture
 description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.
-nav_order: 7
+nav_order: 40
 has_children: false
 ---
 # Architecture

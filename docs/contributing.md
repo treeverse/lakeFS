@@ -2,7 +2,7 @@
 layout: default
 title: Contributing
 description: lakeFS community welcomes your contribution. To make the process as seamless as possible, we recommend you read this contribution guide.
-nav_order: 10
+nav_order: 55
 has_children: false
 ---
 
