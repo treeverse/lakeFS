@@ -53,6 +53,7 @@ gateway/testdata/recordings/
 
 # Docs
 /docs/_site/
+docs/.jekyll-metadata
 
 # terraform
 # Local .terraform directories
