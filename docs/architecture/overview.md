@@ -47,23 +47,7 @@ See the [roadmap](../roadmap.md) for information on future plans for storage com
 
 ### Metadata Index
 
-lakeFS stores its metadata in two locations:
-
-##### Underlying Object Store
-
-Most of lakeFS' metadata is stored in the underlying object store (e.g. S3).
-When a user commits a set of changes, an immutable snapshot of the entire data lake, including the committed changes are stored to the object store. Of course, this metadata doesn't include the data itself, but only pointers to the objects contained in that version. To make commits scalable and performant, these snapshots are constructued of range files that are reused across different versions, and make up a shallow B+-Tree whose leaves are content-addressable, much like Git's internal Merkle Trees. 
-
-To learn more about the data model, see the [data model section](data-model.md).
-
-##### PostgreSQL
-
-The other form of state that lakeFS manages is commit and branch pointers. Each branch in lakeFS corresponds to a single row in PostgreSQL, that in turn points to a commit row. A commit points to a tree that exists in the object store (see [Underlying Object Store](#underlying-object-store) above). 
-
-For each branch, PostgreSQL is being used to also keep its set of currently uncommitted changes.  
-
-This form of metadata is relatively small in scale, but is stored in postgers since it requires storng consistency guarantees (to support lakeFS' atomicity). When committing a set of changes, a PostgreSQL transaction is used to updated the branch: point at a new commit, and stop referencing the previously uncommitted changes, atomically.
-
+To learn about the data model used to store lakeFS metadata, see the [data model section](data-model.md).
 
 ### Authentication & Authorization Service
 
