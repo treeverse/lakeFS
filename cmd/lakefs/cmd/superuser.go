@@ -21,6 +21,7 @@ var superuserCmd = &cobra.Command{
 	Use:   "superuser",
 	Short: "Create additional user with admin credentials",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer dbPool.Close()
 
@@ -46,8 +47,8 @@ var superuserCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
-		metadata := stats.NewMetadata(logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
-		credentials, err := auth.AddAdminUser(authService, &model.SuperuserConfiguration{
+		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
+		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
 				CreatedAt: time.Now(),
 				Username:  userName,

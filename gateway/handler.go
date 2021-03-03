@@ -235,7 +235,7 @@ func authorize(w http.ResponseWriter, req *http.Request, authService simulator.G
 		}
 	}
 
-	authResp, err := authService.Authorize(&auth.AuthorizationRequest{
+	authResp, err := authService.Authorize(req.Context(), &auth.AuthorizationRequest{
 		Username:            username,
 		RequiredPermissions: perms,
 	})

@@ -49,12 +49,13 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
+		ctx := cmd.Context()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
 
-		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+		if err := db.ValidateSchemaUpToDate(ctx, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
 			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
 		} else if errors.Is(err, migrate.ErrNilVersion) {
 			logger.Debug("No migration, setup required")
@@ -103,7 +104,7 @@ var runCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 
 		// send metadata
@@ -152,7 +153,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			s3FallbackURL,
 		)
-		ctx, cancelFn := context.WithCancel(context.Background())
+		ctx, cancelFn := context.WithCancel(cmd.Context())
 		go bufferedCollector.Run(ctx)
 
 		bufferedCollector.CollectEvent("global", "run")

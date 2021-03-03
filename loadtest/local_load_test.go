@@ -1,6 +1,7 @@
 package loadtest
 
 import (
+	"context"
 	"log"
 	"math"
 	"net/http/httptest"
@@ -55,6 +56,7 @@ func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
+	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	if blockstoreType == "" {
@@ -103,7 +105,7 @@ func TestLocalLoad(t *testing.T) {
 			Username:  "admin",
 		},
 	}
-	credentials, err := auth.SetupAdminUser(authService, superuser)
+	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)
 	testutil.Must(t, err)
 
 	testConfig := Config{

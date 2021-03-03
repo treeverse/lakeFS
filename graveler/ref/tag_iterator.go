@@ -69,7 +69,7 @@ func (ri *TagIterator) maybeFetch() {
 	}
 
 	var buf []*tagRecord
-	err := ri.db.WithContext(ri.ctx).Select(&buf, `
+	err := ri.db.Select(ri.ctx, &buf, `
 			SELECT id, commit_id
 			FROM graveler_tags
 			WHERE repository_id = $1

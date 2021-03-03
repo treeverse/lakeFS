@@ -219,7 +219,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// check if previous setup completed
-		if ts, _ := c.deps.MetadataManager.SetupTimestamp(); !ts.IsZero() {
+		if ts, _ := c.deps.MetadataManager.SetupTimestamp(setupReq.HTTPRequest.Context()); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
 					Message: "lakeFS already initialized",
@@ -239,16 +239,16 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		username := swag.StringValue(setupReq.User.Username)
 		var cred *model.Credential
 		if setupReq.User.Key == nil {
-			cred, err = auth.CreateInitialAdminUser(c.deps.Auth, c.deps.MetadataManager, username)
+			cred, err = auth.CreateInitialAdminUser(ctx, c.deps.Auth, c.deps.MetadataManager, username)
 		} else {
-			cred, err = auth.CreateInitialAdminUserWithKeys(c.deps.Auth, c.deps.MetadataManager, username, setupReq.User.Key.AccessKeyID, setupReq.User.Key.SecretAccessKey)
+			cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.deps.Auth, c.deps.MetadataManager, username, setupReq.User.Key.AccessKeyID, setupReq.User.Key.SecretAccessKey)
 		}
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
 
-		meta := stats.NewMetadata(c.deps.Logger, c.deps.BlockAdapter.BlockstoreType(), c.deps.MetadataManager, c.deps.CloudMetadataProvider)
+		meta := stats.NewMetadata(ctx, c.deps.Logger, c.deps.BlockAdapter.BlockstoreType(), c.deps.MetadataManager, c.deps.CloudMetadataProvider)
 		c.deps.Collector.SetInstallationID(meta.InstallationID)
 		c.deps.Collector.CollectMetadata(meta)
 		c.deps.Collector.CollectEvent("global", "init")
@@ -452,7 +452,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "create_commit")
-		userModel, err := c.deps.Auth.GetUser(user.ID)
+		userModel, err := c.deps.Auth.GetUser(ctx, user.ID)
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -914,7 +914,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "merge_branches")
-		userModel, err := c.deps.Auth.GetUser(user.ID)
+		userModel, err := c.deps.Auth.GetUser(ctx, user.ID)
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -1667,7 +1667,7 @@ func (c *Controller) RevertHandler() branches.RevertHandler {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "revert_branch")
-		userModel, err := c.deps.Auth.GetUser(user.ID)
+		userModel, err := c.deps.Auth.GetUser(ctx, user.ID)
 		if err != nil {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -1740,7 +1740,7 @@ func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 			CreatedAt: time.Now(),
 			Username:  swag.StringValue(params.User.ID),
 		}
-		err = c.deps.Auth.CreateUser(u)
+		err = c.deps.Auth.CreateUser(ctx, u)
 		c.deps.LogAction(ctx, "create_user")
 		if err != nil {
 			return authop.NewCreateUserDefault(http.StatusInternalServerError).
@@ -1769,7 +1769,7 @@ func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
 		}
 
 		c.deps.LogAction(ctx, "list_users")
-		users, paginator, err := c.deps.Auth.ListUsers(&model.PaginationParams{
+		users, paginator, err := c.deps.Auth.ListUsers(ctx, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -1807,7 +1807,7 @@ func (c *Controller) GetUserHandler() authop.GetUserHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "get_user")
-		u, err := c.deps.Auth.GetUser(params.UserID)
+		u, err := c.deps.Auth.GetUser(ctx, params.UserID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetUserNotFound().
 				WithPayload(responseError("user not found"))
@@ -1839,7 +1839,7 @@ func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
 		}
 
 		c.deps.LogAction(ctx, "delete_user")
-		err = c.deps.Auth.DeleteUser(params.UserID)
+		err = c.deps.Auth.DeleteUser(ctx, params.UserID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeleteUserNotFound().
 				WithPayload(responseError("user not found"))
@@ -1866,7 +1866,7 @@ func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "get_group")
-		g, err := c.deps.Auth.GetGroup(params.GroupID)
+		g, err := c.deps.Auth.GetGroup(ctx, params.GroupID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetGroupNotFound().
 				WithPayload(responseError("group not found"))
@@ -1898,7 +1898,7 @@ func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
 		}
 
 		c.deps.LogAction(ctx, "list_groups")
-		groups, paginator, err := c.deps.Auth.ListGroups(&model.PaginationParams{
+		groups, paginator, err := c.deps.Auth.ListGroups(ctx, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -1942,7 +1942,7 @@ func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
 		}
 
 		c.deps.LogAction(ctx, "create_group")
-		err = c.deps.Auth.CreateGroup(g)
+		err = c.deps.Auth.CreateGroup(ctx, g)
 		if err != nil {
 			return authop.NewCreateGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -1970,7 +1970,7 @@ func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
 		}
 
 		c.deps.LogAction(ctx, "delete_group")
-		err = c.deps.Auth.DeleteGroup(params.GroupID)
+		err = c.deps.Auth.DeleteGroup(ctx, params.GroupID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeleteGroupNotFound().
 				WithPayload(responseError("group not found"))
@@ -2013,7 +2013,7 @@ func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
 		}
 
 		c.deps.LogAction(ctx, "list_policies")
-		policies, paginator, err := c.deps.Auth.ListPolicies(&model.PaginationParams{
+		policies, paginator, err := c.deps.Auth.ListPolicies(ctx, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2064,7 +2064,7 @@ func (c *Controller) CreatePolicyHandler() authop.CreatePolicyHandler {
 		}
 
 		c.deps.LogAction(ctx, "create_policy")
-		err = c.deps.Auth.WritePolicy(p)
+		err = c.deps.Auth.WritePolicy(ctx, p)
 		if err != nil {
 			return authop.NewCreatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2088,7 +2088,7 @@ func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "get_policy")
-		p, err := c.deps.Auth.GetPolicy(params.PolicyID)
+		p, err := c.deps.Auth.GetPolicy(ctx, params.PolicyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetPolicyNotFound().
 				WithPayload(responseError("policy not found"))
@@ -2132,7 +2132,7 @@ func (c *Controller) UpdatePolicyHandler() authop.UpdatePolicyHandler {
 		}
 
 		c.deps.LogAction(ctx, "update_policy")
-		err = c.deps.Auth.WritePolicy(p)
+		err = c.deps.Auth.WritePolicy(ctx, p)
 		if err != nil {
 			return authop.NewUpdatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2157,7 +2157,7 @@ func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
 		}
 
 		c.deps.LogAction(ctx, "delete_policy")
-		err = c.deps.Auth.DeletePolicy(params.PolicyID)
+		err = c.deps.Auth.DeletePolicy(ctx, params.PolicyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeletePolicyNotFound().
 				WithPayload(responseError("policy not found"))
@@ -2184,7 +2184,7 @@ func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 		}
 
 		c.deps.LogAction(ctx, "list_group_users")
-		users, paginator, err := c.deps.Auth.ListGroupUsers(params.GroupID, &model.PaginationParams{
+		users, paginator, err := c.deps.Auth.ListGroupUsers(ctx, params.GroupID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2223,7 +2223,7 @@ func (c *Controller) AddGroupMembershipHandler() authop.AddGroupMembershipHandle
 		}
 
 		c.deps.LogAction(ctx, "add_user_to_group")
-		err = c.deps.Auth.AddUserToGroup(params.UserID, params.GroupID)
+		err = c.deps.Auth.AddUserToGroup(ctx, params.UserID, params.GroupID)
 		if err != nil {
 			return authop.NewAddGroupMembershipDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2247,7 +2247,7 @@ func (c *Controller) DeleteGroupMembershipHandler() authop.DeleteGroupMembership
 		}
 
 		c.deps.LogAction(ctx, "remove_user_from_group")
-		err = c.deps.Auth.RemoveUserFromGroup(params.UserID, params.GroupID)
+		err = c.deps.Auth.RemoveUserFromGroup(ctx, params.UserID, params.GroupID)
 		if err != nil {
 			return authop.NewDeleteGroupMembershipDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2271,7 +2271,7 @@ func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHand
 		}
 
 		c.deps.LogAction(ctx, "list_user_credentials")
-		credentials, paginator, err := c.deps.Auth.ListUserCredentials(params.UserID, &model.PaginationParams{
+		credentials, paginator, err := c.deps.Auth.ListUserCredentials(ctx, params.UserID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2310,7 +2310,7 @@ func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler 
 		}
 
 		c.deps.LogAction(ctx, "create_credentials")
-		credentials, err := c.deps.Auth.CreateCredentials(params.UserID)
+		credentials, err := c.deps.Auth.CreateCredentials(ctx, params.UserID)
 		if err != nil {
 			return authop.NewCreateCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2339,7 +2339,7 @@ func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler 
 		}
 
 		c.deps.LogAction(ctx, "delete_credentials")
-		err = c.deps.Auth.DeleteCredentials(params.UserID, params.AccessKeyID)
+		err = c.deps.Auth.DeleteCredentials(ctx, params.UserID, params.AccessKeyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeleteCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
@@ -2366,7 +2366,7 @@ func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		c.deps.LogAction(ctx, "get_credentials_for_user")
-		credentials, err := c.deps.Auth.GetCredentialsForUser(params.UserID, params.AccessKeyID)
+		credentials, err := c.deps.Auth.GetCredentialsForUser(ctx, params.UserID, params.AccessKeyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
@@ -2398,7 +2398,7 @@ func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
 		}
 
 		c.deps.LogAction(ctx, "list_user_groups")
-		groups, paginator, err := c.deps.Auth.ListUserGroups(params.UserID, &model.PaginationParams{
+		groups, paginator, err := c.deps.Auth.ListUserGroups(ctx, params.UserID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2440,12 +2440,12 @@ func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
 		var policies []*model.Policy
 		var paginator *model.Paginator
 		if swag.BoolValue(params.Effective) {
-			policies, paginator, err = c.deps.Auth.ListEffectivePolicies(params.UserID, &model.PaginationParams{
+			policies, paginator, err = c.deps.Auth.ListEffectivePolicies(ctx, params.UserID, &model.PaginationParams{
 				After:  swag.StringValue(params.After),
 				Amount: pageAmount(params.Amount),
 			})
 		} else {
-			policies, paginator, err = c.deps.Auth.ListUserPolicies(params.UserID, &model.PaginationParams{
+			policies, paginator, err = c.deps.Auth.ListUserPolicies(ctx, params.UserID, &model.PaginationParams{
 				After:  swag.StringValue(params.After),
 				Amount: pageAmount(params.Amount),
 			})
@@ -2483,7 +2483,7 @@ func (c *Controller) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandle
 		}
 
 		c.deps.LogAction(ctx, "attach_policy_to_user")
-		err = c.deps.Auth.AttachPolicyToUser(params.PolicyID, params.UserID)
+		err = c.deps.Auth.AttachPolicyToUser(ctx, params.PolicyID, params.UserID)
 		if err != nil {
 			return authop.NewAttachPolicyToUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2507,7 +2507,7 @@ func (c *Controller) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHa
 		}
 
 		c.deps.LogAction(ctx, "detach_policy_from_user")
-		err = c.deps.Auth.DetachPolicyFromUser(params.PolicyID, params.UserID)
+		err = c.deps.Auth.DetachPolicyFromUser(ctx, params.PolicyID, params.UserID)
 		if err != nil {
 			return authop.NewDetachPolicyFromUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2531,7 +2531,7 @@ func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler 
 		}
 
 		c.deps.LogAction(ctx, "list_user_policies")
-		policies, paginator, err := c.deps.Auth.ListGroupPolicies(params.GroupID, &model.PaginationParams{
+		policies, paginator, err := c.deps.Auth.ListGroupPolicies(ctx, params.GroupID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2567,7 +2567,7 @@ func (c *Controller) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHand
 		}
 
 		c.deps.LogAction(ctx, "attach_policy_to_group")
-		err = c.deps.Auth.AttachPolicyToGroup(params.PolicyID, params.GroupID)
+		err = c.deps.Auth.AttachPolicyToGroup(ctx, params.PolicyID, params.GroupID)
 		if err != nil {
 			return authop.NewAttachPolicyToGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2591,7 +2591,7 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 		}
 
 		c.deps.LogAction(ctx, "detach_policy_from_group")
-		err = c.deps.Auth.DetachPolicyFromGroup(params.PolicyID, params.GroupID)
+		err = c.deps.Auth.DetachPolicyFromGroup(ctx, params.PolicyID, params.GroupID)
 		if err != nil {
 			return authop.NewDetachPolicyFromGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,7 +23,9 @@ var (
 func NewBasicAuthHandler(authService auth.Service) func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
-		credentials, err := authService.GetCredentials(accessKey)
+		// Unfortunately, go-swagger doesn't expose the request or the request context to authentication handlers
+		ctx := context.Background()
+		credentials, err := authService.GetCredentials(ctx, accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Debug("could not get access key for login")
 			return nil, ErrAuthenticationFailed
@@ -31,7 +34,7 @@ func NewBasicAuthHandler(authService auth.Service) func(accessKey, secretKey str
 			logger.WithField("access_key", accessKey).Debug("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := authService.GetUserByID(credentials.UserID)
+		userData, err := authService.GetUserByID(ctx, credentials.UserID)
 		if err != nil {
 			logger.WithField("access_key", accessKey).Debug("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
@@ -48,6 +51,9 @@ func NewBasicAuthHandler(authService auth.Service) func(accessKey, secretKey str
 func NewJwtTokenAuthHandler(authService auth.Service) func(string) (*models.User, error) {
 	logger := logging.Default().WithField("auth", "jwt")
 	return func(tokenString string) (*models.User, error) {
+		// Unfortunately, go-swagger doesn't expose the request or the request context to authentication handlers
+		ctx := context.Background()
+
 		claims := &jwt.StandardClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -62,12 +68,12 @@ func NewJwtTokenAuthHandler(authService auth.Service) func(string) (*models.User
 		if !ok || !token.Valid {
 			return nil, ErrAuthenticationFailed
 		}
-		cred, err := authService.GetCredentials(claims.Subject)
+		cred, err := authService.GetCredentials(ctx, claims.Subject)
 		if err != nil {
 			logger.WithField("subject", claims.Subject).Debug("could not find credentials for token")
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := authService.GetUserByID(cred.UserID)
+		userData, err := authService.GetUserByID(ctx, cred.UserID)
 		if err != nil {
 			logger.WithFields(logging.Fields{
 				"user_id": cred.UserID,

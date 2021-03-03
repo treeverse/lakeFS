@@ -36,7 +36,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 			return
 		}
 		accessKeyID := authContext.GetAccessKeyID()
-		creds, err := authService.GetCredentials(accessKeyID)
+		creds, err := authService.GetCredentials(ctx, accessKeyID)
 		logger := o.Log(req).WithField("key", accessKeyID)
 		if err != nil {
 			if !errors.Is(err, db.ErrNotFound) {
@@ -55,7 +55,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
-		user, err := authService.GetUserByID(creds.UserID)
+		user, err := authService.GetUserByID(ctx, creds.UserID)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
@@ -127,7 +127,7 @@ func EnrichWithRepositoryOrFallback(cataloger catalog.Cataloger, authService sim
 		}
 		repo, err := cataloger.GetRepository(ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
-			authResp, authErr := authService.Authorize(&auth.AuthorizationRequest{
+			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username:            username,
 				RequiredPermissions: []permissions.Permission{{Action: permissions.ListRepositoriesAction, Resource: "*"}},
 			})

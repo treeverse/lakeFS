@@ -73,7 +73,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 
 	ctx := context.Background()
 	conf := config.NewConfig()
-	err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
+	err := db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
 	if errors.Is(err, db.ErrSchemaNotCompatible) {
 		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
 		return 1

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"runtime"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 )
 
 type MetadataManager interface {
-	SetupTimestamp() (time.Time, error)
-	UpdateSetupTimestamp(time.Time) error
-	Write() (map[string]string, error)
+	SetupTimestamp(context.Context) (time.Time, error)
+	UpdateSetupTimestamp(context.Context, time.Time) error
+	Write(context.Context) (map[string]string, error)
 }
 
 type DBMetadataManager struct {
@@ -88,8 +89,8 @@ func writeMetadata(tx db.Tx, items map[string]string) error {
 	return nil
 }
 
-func (d *DBMetadataManager) UpdateSetupTimestamp(ts time.Time) error {
-	_, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (d *DBMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Time) error {
+	_, err := d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, writeMetadata(tx, map[string]string{
 			SetupTimestampKeyName: ts.UTC().Format(time.RFC3339),
 		})
@@ -97,8 +98,8 @@ func (d *DBMetadataManager) UpdateSetupTimestamp(ts time.Time) error {
 	return err
 }
 
-func (d *DBMetadataManager) SetupTimestamp() (time.Time, error) {
-	setupTimestamp, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (d *DBMetadataManager) SetupTimestamp(ctx context.Context) (time.Time, error) {
+	setupTimestamp, err := d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getSetupTimestamp(tx)
 	}, db.WithLogger(logging.Dummy()), db.ReadOnly())
 	if err != nil {
@@ -107,7 +108,7 @@ func (d *DBMetadataManager) SetupTimestamp() (time.Time, error) {
 	return setupTimestamp.(time.Time), nil
 }
 
-func (d *DBMetadataManager) Write() (map[string]string, error) {
+func (d *DBMetadataManager) Write(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = d.version
 	metadata["golang_version"] = runtime.Version()
@@ -119,7 +120,7 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 			metadata[k] = v
 		}
 	}
-	_, err = d.db.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err = d.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		// write metadata
 		err = writeMetadata(tx, metadata)
 		if err != nil {
