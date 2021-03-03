@@ -213,7 +213,7 @@ func (c *Collector) rangesStats(ctx context.Context, writer *zip.Writer) error {
 			return nil
 		}
 
-		if err := c.adapter.Walk(block.WalkOpts{
+		if err := c.adapter.Walk(ctx, block.WalkOpts{
 			StorageNamespace: repo.StorageNamespace,
 			Prefix:           c.pyramidCfg.BlockStoragePrefix,
 		}, counter); err != nil {

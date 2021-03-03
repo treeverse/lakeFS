@@ -48,7 +48,7 @@ var diagnoseCmd = &cobra.Command{
 				continue
 			}
 			bucket := parsedRepo.Host
-			err = adapter.ValidateConfiguration(bucket)
+			err = adapter.ValidateConfiguration(ctx, bucket)
 			if err != nil {
 				logger.WithFields(logging.Fields{
 					"error":      err,

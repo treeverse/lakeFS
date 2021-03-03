@@ -153,7 +153,7 @@ func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, f
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if err := tfs.adapter.WithContext(ctx).Put(tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	if err := tfs.adapter.Put(ctx, tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
 		return fmt.Errorf("adapter put %s: %w", filename, err)
 	}
 
@@ -243,7 +243,7 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 
 func (tfs *TierFS) Exists(ctx context.Context, namespace, filename string) (bool, error) {
 	cacheAccess.WithLabelValues(tfs.fsName, "Exists").Inc()
-	return tfs.adapter.WithContext(ctx).Exists(tfs.objPointer(namespace, filename))
+	return tfs.adapter.Exists(ctx, tfs.objPointer(namespace, filename))
 }
 
 // openFile converts an os.File to pyramid.ROFile and updates the eviction control.
@@ -312,7 +312,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 				"fullpath":  fileRef.fullPath,
 			}).Trace("get file from block storage")
 		}
-		reader, err := tfs.adapter.WithContext(ctx).Get(tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
+		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
