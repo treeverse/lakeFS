@@ -205,13 +205,16 @@
     padding:0;
 }
 
-.table .tree-row .tree-row-actions .btn {
+.table .tree-row .tree-row-actions .btn,
+.actions-runs-list .table tbody tr td .btn {
     visibility: hidden;
     font-size: 0.7rem;
 }
 
 .table .tree-row:hover .tree-row-actions .btn,
-.table .tree-row:focus .tree-row-actions .btn {
+.table .tree-row:focus .tree-row-actions .btn,
+.actions-runs-list .table tbody tr:hover td .btn,
+.actions-runs-list .table tbody tr:focus td .btn {
     visibility: visible;
     display: inline-block;
 }
