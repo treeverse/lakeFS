@@ -8,8 +8,7 @@ import RefDropdown from "./RefDropdown";
 import Changes from "./Changes";
 import ConfirmationModal from "./ConfirmationModal";
 import {PAGINATION_AMOUNT} from "../actions/refs";
-import {API_ENDPOINT} from "../actions/api";
-import ClipboardButton from "./ClipboardButton";
+import {formatAlertText} from "./PreconditionErr";
 
 const MergeButton = connect(
     ({ refs }) => ({
@@ -146,53 +145,10 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
         refreshData();
     }, [refreshData, repo.id, refId.id, diff, diffPaginate, compareRef]);
 
-    const getRunID = (err) => {
-        if (!err) {
-            return '';
-        }
-        const m = /^Error: (\S+) hook aborted, run id '([^']+)'/.exec(err);
-        if (!m) {
-            return '';
-        }
-        return m[2];
-    };
-
-    const formatAlertText = (err) => {
-        if (!err) {
-            return '';
-        }
-        const lines = err.split('\n');
-        if (lines.length === 1) {
-            return <Alert.Heading>{err}</Alert.Heading>;
-        }
-        const runID = getRunID(err);
-        return lines.map((line, i) => {
-            if (runID) {
-                const m = /^\t\* hook run id '([^']+)' failed/.exec(line);
-                if (m) {
-                    const hookRunID = m[1];
-                    const link = `${API_ENDPOINT}/repositories/${repo.id}/actions/runs/${runID}/hooks/${hookRunID}/output`;
-                    return <p key={i}><Alert.Link target="_blank" download={hookRunID} href={link}>{line}</Alert.Link></p>;
-                }
-            }
-            return <p key={i}>{line}</p>;
-        });
-    };
-
-    const formatMoreInformation = (err) => {
-        const runID = getRunID(err);
-        if (!runID) {
-            return '';
-        }
-        const cmd = `lakectl actions runs describe lakefs://${repo.id} ${runID}`;
-        return <>For detailed information run:<br/>{cmd}<ClipboardButton variant="link" text={cmd} tooltip="Copy"/></>;
-    };
-
     const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     const compareWith = !compareRef || (refId.type === compareRef.type && refId.id === compareRef.id);
-    const alertText = formatAlertText(diffResults.error || mergeResults.error);
-    const alertMoreInformation = formatMoreInformation(mergeResults.error);
+    const alertText = formatAlertText(repo.id, diffResults.error || mergeResults.error);
     return (
         <div className="mt-3">
             <div className="action-bar">
@@ -210,12 +166,6 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
 
             <Alert variant="danger" show={!!alertText}>
                 {alertText}
-                {alertMoreInformation &&
-                    (<>
-                        <hr/>
-                        {alertMoreInformation}
-                    </>)
-                }
             </Alert>
 
             {!(compareWith || alertText) &&
