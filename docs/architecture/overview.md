@@ -20,8 +20,9 @@ has_children: false
 
 lakeFS is distributed as a single binary encapsulating several logical services:
 
-The server itself is stateless, meaning you can easily add more instances to handle bigger load
-lakeFS stores data in an underlying [S3 bucket](https://aws.amazon.com/s3/){:target="_blank"} and metadata in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}.
+The server itself is stateless, meaning you can easily add more instances to handle bigger load.
+
+lakeFS stores data in an underlying [S3 bucket](https://aws.amazon.com/s3/){:target="_blank"} with some of its metadata stored in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}. (see [Data Model](data-model.md))
 
 ![Architecture](../assets/img/arch.png)
 
