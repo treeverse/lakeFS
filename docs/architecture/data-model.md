@@ -48,15 +48,15 @@ A Graveler file itself is content-addressable, i.e. similarly to Git, the name o
 File identity is calculated based on the identity of the ValueRecords the file contains:
 
 
-<b>valueRecordID = h(h(valueRecord.key) + h(valueRecord.Identity))</b><br/>
+<b>valueRecordID = h(h(valueRecord.key) || h(valueRecord.Identity))</b><br/>
 <b>fileID = h(valueRecordID<sub>1</sub> + … + valueRecordID<sub>N</sub>)</b>
 
 ## Constructing a consistent view of the keyspace (i.e., a commit)
 
 We have 2 additional requirements for the storage format:
 
-1. Be space and time efficient when creating a commit - assuming a commit changes a single object out of a billion, we don’t want to write a full snapshot of the entire repository. Ideally, we’ll be able to reuse some data files that haven’t changed to make the commit operations (in both space and time) proportional to the changeset as opposed to the total size of the repository
-1. Allow an efficient diff between commits which is proportional to the difference and not their absolute sizes
+1. Be space and time efficient when creating a commit - assuming a commit changes a single object out of a billion, we don’t want to write a full snapshot of the entire repository. Ideally, we’ll be able to reuse some data files that haven’t changed to make the commit operations (in both space and time) proportional to the size of the difference as opposed to the total size of the repository.
+1. Allow an efficient diff between commits which runs in time proportional to the size of their difference and not their absolute sizes.
 
 To support these requirements, we decided to essentially build a 2-layer [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree){: target="_blank" } composed of a set of leaf nodes (**"Range"**) addressed by their content address, and a **"Meta Range"**, which is a special range containing all ranges, thus representing an entire consistent view of the keyspace:
 
