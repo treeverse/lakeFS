@@ -127,7 +127,7 @@ const HookPage = connect(
                 return <p>Loading...</p>;
             }
             return (
-                <Card>
+                <Card border={run.payload.status !== 'completed' && 'danger'}>
                     <Card.Header>
                         <strong>Run ID:</strong> {run.payload.run_id}<br/>
                         <strong>Branch:</strong> {run.payload.branch}<br/>
@@ -158,7 +158,7 @@ const HookPage = connect(
         }
         const completed = hook.status === "completed";
         return (
-            <Card border={completed?'':'danger'}>
+            <Card border={!completed && 'danger'}>
                 <Card.Header>
                     <strong>Hook Run ID:</strong> {hook.hook_run_id}<br/>
                     <strong>Start Time:</strong> {moment(hook.start_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
