@@ -49,15 +49,11 @@ export const ActionsRunsPage = connect(
                                 (<Link to={`/repositories/${repo.id}/actions/${entity.run_id}`}>{entity.run_id.substr(4)}</Link>),
                                 (<strong style={{'color': (entity.status === "completed") ? 'green':'red'}}>{entity.status}</strong>),
                                 entity.event_type,
-                                (<Button variant="link" href={`/repositories/${repo.id}/tree?branch=${entity.branch}`}>
-                                    {entity.branch}
-                                </Button>),
+                                (<Link to={`/repositories/${repo.id}/tree?branch=${entity.branch}`}>{entity.branch}</Link>),
                                 moment(entity.start_time).format("MM/DD/YYYY HH:mm:ss"),
                                 moment(entity.end_time).format("MM/DD/YYYY HH:mm:ss"),
                                 entity.commit_id && (<>
-                                    <Button variant="link" href={`/repositories/${repo.id}/tree?commit=${entity.commit_id}`}>
-                                        {entity.commit_id.substr(0, 16)}
-                                    </Button>
+                                    <Link to={`/repositories/${repo.id}/tree?commit=${entity.commit_id}`}>{entity.commit_id.substr(0, 16)}</Link>
                                     <span className={"clipboard-copy"}><ClipboardButton variant="link" text={entity.commit_id} tooltip={"Copy Commit ID"}/></span>
                                 </>),
                             ]
