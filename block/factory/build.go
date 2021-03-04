@@ -31,7 +31,7 @@ var (
 	ErrAuthMethodNotSupported = errors.New("authentication method not supported")
 )
 
-func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.GetBlockstoreType()
 	logging.Default().
 		WithField("type", blockstore).
@@ -58,7 +58,7 @@ func BuildBlockAdapter(c params.AdapterConfig) (block.Adapter, error) {
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(p)
+		return buildGSAdapter(ctx, p)
 	case azure.BlockstoreType:
 		p, err := c.GetBlockAdapterAzureParams()
 		if err != nil {
@@ -98,19 +98,17 @@ func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
 	return adapter, nil
 }
 
-func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
+func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
 		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
 	} else if params.CredentialsJSON != "" {
-		ctx := context.Background()
 		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), googleAuthCloudPlatform)
 		if err != nil {
 			return nil, err
 		}
 		opts = append(opts, option.WithCredentials(cred))
 	}
-	ctx := context.Background()
 	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err

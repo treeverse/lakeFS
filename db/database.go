@@ -220,7 +220,7 @@ func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (i
 
 func (d *PgxDatabase) Metadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
-	version, err := d.getVersion()
+	version, err := d.getVersion(ctx)
 	if err == nil {
 		metadata["postgresql_version"] = version
 	}
@@ -269,8 +269,7 @@ func (d *PgxDatabase) Metadata(ctx context.Context) (map[string]string, error) {
 	return metadata, nil
 }
 
-func (d *PgxDatabase) getVersion() (string, error) {
-	ctx := context.Background()
+func (d *PgxDatabase) getVersion(ctx context.Context) (string, error) {
 	v, err := d.Transact(ctx, func(tx Tx) (interface{}, error) {
 		type ver struct {
 			Version string `db:"version"`

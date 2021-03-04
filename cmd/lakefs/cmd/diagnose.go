@@ -18,11 +18,11 @@ var diagnoseCmd = &cobra.Command{
 		ctx := cmd.Context()
 		logger := logging.Default().WithContext(ctx)
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
-		adapter, err := factory.BuildBlockAdapter(cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-		cataloger, err := catalog.NewCataloger(catalog.Config{
+		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 		})

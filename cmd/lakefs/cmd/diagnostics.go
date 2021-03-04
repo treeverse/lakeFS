@@ -21,18 +21,18 @@ var diagnosticsCmd = &cobra.Command{
 
 		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
-		adapter, err := factory.BuildBlockAdapter(cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
-		cataloger, err := catalog.NewCataloger(catalog.Config{
+		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 		})
 		if err != nil {
 			log.Printf("Failed to create cataloger: %s", err)
 		}
-		pyrmaidParams, err := cfg.GetCommittedTierFSParams()
+		pyrmaidParams, err := cfg.GetCommittedTierFSParams(ctx)
 		if err != nil {
 			log.Printf("Failed to get pyramid params: %s", err)
 		}

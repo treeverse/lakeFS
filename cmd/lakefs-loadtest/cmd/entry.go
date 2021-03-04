@@ -55,7 +55,7 @@ var entryCmd = &cobra.Command{
 		defer lockDB.Close()
 
 		conf := config.NewConfig()
-		c, err := catalog.NewCataloger(catalog.Config{
+		c, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: conf,
 			DB:     database,
 			LockDB: lockDB,

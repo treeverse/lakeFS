@@ -71,7 +71,7 @@ var runCmd = &cobra.Command{
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger, err := catalog.NewCataloger(catalog.Config{
+		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 			LockDB: lockdbPool,
@@ -92,7 +92,7 @@ var runCmd = &cobra.Command{
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init block store
-		blockStore, err := factory.BuildBlockAdapter(cfg)
+		blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}

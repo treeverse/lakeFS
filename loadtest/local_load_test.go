@@ -63,7 +63,7 @@ func TestLocalLoad(t *testing.T) {
 		blockstoreType = "mem"
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalog.NewCataloger(catalog.Config{
+	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})

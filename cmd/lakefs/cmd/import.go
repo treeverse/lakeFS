@@ -90,7 +90,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		Config: cfg,
 		DB:     dbPool,
 	}
-	cataloger, err := catalog.NewCataloger(catalogCfg)
+	cataloger, err := catalog.NewCataloger(ctx, catalogCfg)
 	if err != nil {
 		fmt.Printf("Failed to create cataloger: %s\n", err)
 		return 1
@@ -98,7 +98,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	defer func() { _ = cataloger.Close() }()
 
 	// TODO(barak): do we need to create a new entry catalog or extract the one we have from the cataloger
-	entryCataloger, err := catalog.NewEntryCatalog(catalogCfg)
+	entryCataloger, err := catalog.NewEntryCatalog(ctx, catalogCfg)
 	if err != nil {
 		fmt.Printf("Failed to build entry catalog: %s\n", err)
 		return 1
@@ -113,7 +113,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	entryCataloger.SetHooksHandler(actionsService)
 
 	u := uri.Must(uri.Parse(args[0]))
-	blockStore, err := factory.BuildBlockAdapter(cfg)
+	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
 	if err != nil {
 		fmt.Printf("Failed to create block adapter: %s\n", err)
 		return 1

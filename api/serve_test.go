@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -67,6 +68,7 @@ func createDefaultAdminUser(t *testing.T, clt *client.Lakefs) *authmodel.Credent
 
 func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	t.Helper()
+	ctx := context.Background()
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	if blockstoreType == "" {
 		blockstoreType = os.Getenv(testutil.EnvKeyUseBlockAdapter)
@@ -79,7 +81,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	cfg.Override(func(configurator config.Configurator) {
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
-	cataloger, err := catalog.NewCataloger(catalog.Config{
+	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 		Config: cfg,
 		DB:     conn,
 	})
