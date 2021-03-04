@@ -9,21 +9,111 @@ has_children: false
 
 # Using lakeFS with EMR
 
-EMR is AWS big data platform for processing data using open source tools such as Spark, Hive and more.
+[Amazon EMR](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-what-is-emr.html) is a managed cluster platform that simplifies running big data frameworks, such as Apache Hadoop and Apache Spark.
 
-Once you have your EMR cluster up and running, you can configure it to use your lakeFS installation as the s3 gateway.
-
-
-## Configuration
-In order to configure EMR to work with lakeFS we will set the lakeFS credentials and endpoint in the appropriate fields.
+## Configuration 
+In order to configure Spark on EMR to work with lakeFS we will set the lakeFS credentials and endpoint in the appropriate fields.
+The exact configuration keys depends on the application running in EMR, but their format is of the form:
     
-lakeFS endpoint: ```spark.hadoop.fs.s3a.endpoint``` 
+lakeFS endpoint: ```*.fs.s3a.endpoint``` 
 
-lakeFS access key: ```spark.hadoop.fs.s3a.access.key```
+lakeFS access key: ```*.fs.s3a.access.key```
 
-lakeFS secret key: ```spark.hadoop.fs.s3a.secret.key```
+lakeFS secret key: ```*.fs.s3a.secret.key```
 
-## aws cli Spark Example 
+EMR will encourage users to use s3:// with Spark as it will use EMR's proprietary driver. Users need to use s3a:// for this guide to work.
+{: .note}
+
+The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../architecture.md#S3 Gateway).
+
+There are 2 options for configuring an EMR cluster to work with lakeFS:
+1. When you create a cluster - All steps will use the cluster configuration.
+   No specific configuration needed when adding a step.
+2. Configuring on each step - cluster is created with the default s3 configuration.
+   Each step using lakeFS should pass the appropriate config params.
+
+## Configuration on cluster creation 
+Use the below configuration when creating the cluster. You may delete any app configuration which is irrelavant for your use-case.
+ ```json
+[
+  {
+    "Classification": "presto-connector-hive",
+    "Properties": {
+      "hive.s3.aws-secret-key": "$LAKEFS_SECRET_KEY",
+      "hive.s3.aws-access-key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "hive.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "hive.s3-file-system-type": "PRESTO"
+    }
+  },
+  {
+    "Classification": "hive-site",
+    "Properties": {
+      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+    }
+  },
+  {
+    "Classification": "hdfs-site",
+    "Properties": {
+      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+    }
+  },
+  {
+    "Classification": "core-site",
+    "Properties": {
+      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+    }
+  },
+  {
+    "Classification": "emrfs-site",
+    "Properties": {
+      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+    }
+  },
+  {
+    "Classification": "mapred-site",
+    "Properties": {
+      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
+      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
+      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+    }
+  },
+  {
+    "Classification": "spark-defaults",
+    "Properties": {
+      "spark.sql.catalogImplementation": "hive"
+    }
+  }
+]
+
+```
+
+## Configuration on adding a step
+When a cluster was created without the above configuration, you can still use lakeFS when adding a step.
+
+For example, when creating a Spark job: 
 
 ```shell
 aws emr add-steps --cluster-id j-197B3AEGQ9XE4 \
@@ -33,8 +123,6 @@ Args=[--conf,spark.hadoop.fs.s3a.access.key=AKIAIOSFODNN7EXAMPLE,\
 --conf,spark.hadoop.fs.s3a.endpoint=https://s3.lakefs.example.com,\
 s3a://<lakefs-repo>/<lakefs-branch>/path/to/jar]"
 ```
-
-The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../architecture.md#S3 Gateway).
 
 The Spark context in the running job will already be initialized to use the provided lakeFS configuration.
 There's no need to repeat the configuration steps mentioned in [Using lakeFS with Spark](spark.md#Configuration)    
