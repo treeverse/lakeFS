@@ -49,12 +49,16 @@ export const ActionsRunsPage = connect(
                                 (<Link to={`/repositories/${repo.id}/actions/${entity.run_id}`}>{entity.run_id.substr(4)}</Link>),
                                 (<strong style={{'color': (entity.status === "completed") ? 'green':'red'}}>{entity.status}</strong>),
                                 entity.event_type,
-                                entity.branch,
+                                (<Button variant="link" href={`/repositories/${repo.id}/tree?branch=${entity.branch}`}>
+                                    {entity.branch}
+                                </Button>),
                                 moment(entity.start_time).format("MM/DD/YYYY HH:mm:ss"),
                                 moment(entity.end_time).format("MM/DD/YYYY HH:mm:ss"),
                                 entity.commit_id && (<>
-                                    {entity.commit_id.substr(0, 16)}
-                                    <ClipboardButton variant="link" text={entity.commit_id} tooltip={"Copy Commit ID"}/>
+                                    <Button variant="link" href={`/repositories/${repo.id}/tree?commit=${entity.commit_id}`}>
+                                        {entity.commit_id.substr(0, 16)}
+                                    </Button>
+                                    <span className={"clipboard-copy"}><ClipboardButton variant="link" text={entity.commit_id} tooltip={"Copy Commit ID"}/></span>
                                 </>),
                             ]
                         }
@@ -89,7 +93,7 @@ const HooksPage = ({ repo, runId, hookRunId, runHooks }) => {
                                             ? <span style={{color: "green"}}><CheckCircleFillIcon/> </span>
                                             : <span style={{color: "red"}}><XCircleFillIcon/> </span>
                                         }
-                                        &nbsp;{hook.action} {hook.hook_id}
+                                        {hook.action} {hook.hook_id}
                                     </Nav.Link>
                                 </Nav.Item>
                             );
@@ -216,10 +220,10 @@ export const ActionsRunPage = connect(
                     }
                 </Breadcrumb>
                 <Row>
-                    <Col xs={3}>
+                    <Col md={3}>
                         <HooksPage repo={repo} runId={runId} hookRunId={hookRunId} runHooks={runHooks}/>
                     </Col>
-                    <Col xs={9}>
+                    <Col md={9}>
                         <HookPage repo={repo} runId={runId} hookRunId={hookRunId} runHooks={runHooks}/>
                     </Col>
                 </Row>
