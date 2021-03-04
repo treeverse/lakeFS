@@ -5,19 +5,7 @@ import React, {useCallback, useEffect, useState} from "react";
 import {SyncIcon} from "@primer/octicons-react";
 import {PaginatedEntryList} from "./auth/entities";
 import * as moment from "moment";
-import {
-    Alert,
-    Breadcrumb,
-    Card,
-    Col,
-    Container,
-    Button,
-    Form,
-    Row,
-    Nav,
-    ButtonToolbar,
-    FormText
-} from "react-bootstrap";
+import {Alert, Container, Breadcrumb, Row, Col, Card, Button, Form, Nav, ButtonToolbar} from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 
@@ -107,7 +95,6 @@ const HooksPage = ({ repo, runId, hookRunId, runHooks }) => {
                             );
                         })}
                     </Nav>
-
                 </Card.Body>
             </Card>
         );
