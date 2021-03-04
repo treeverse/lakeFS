@@ -122,17 +122,17 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-		apiHandler := api.Serve(api.Dependencies{
-			Cataloger:             cataloger,
-			Auth:                  authService,
-			BlockAdapter:          blockStore,
-			MetadataManager:       authMetadataManager,
-			CloudMetadataProvider: cloudMetadataProvider,
-			Migrator:              migrator,
-			Collector:             bufferedCollector,
-			Actions:               actionsService,
-			Logger:                logger.WithField("service", "api_gateway"),
-		})
+		apiHandler := api.Serve(
+			cataloger,
+			authService,
+			blockStore,
+			authMetadataManager,
+			migrator,
+			bufferedCollector,
+			cloudMetadataProvider,
+			actionsService,
+			logger.WithField("service", "api_gateway"),
+		)
 
 		// init gateway server
 		s3Fallback := cfg.GetS3GatewayFallbackURL()

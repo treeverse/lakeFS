@@ -107,16 +107,17 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 
 	collector := &nullCollector{}
 
-	handler := api.Serve(api.Dependencies{
-		Cataloger:       cataloger,
-		Auth:            authService,
-		BlockAdapter:    blockAdapter,
-		MetadataManager: meta,
-		Migrator:        migrator,
-		Collector:       collector,
-		Actions:         actionsService,
-		Logger:          logging.Default(),
-	})
+	handler := api.Serve(
+		cataloger,
+		authService,
+		blockAdapter,
+		meta,
+		migrator,
+		collector,
+		nil,
+		actionsService,
+		logging.Default(),
+	)
 
 	return handler, &dependencies{
 		blocks:      blockAdapter,

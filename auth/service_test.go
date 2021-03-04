@@ -80,7 +80,7 @@ func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	ctx := context.Background()
 	userName := uuid.New().String()
-	err := s.CreateUser(context.Background(), &model.User{
+	err := s.CreateUser(ctx, &model.User{
 		Username: userName,
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	adb, _ := testutil.GetDB(t, databaseURI)
 	type row struct{ A string }
-	if _, err := adb.Exec(context.Background(), `CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
+	if _, err := adb.Exec(ctx, `CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
 		t.Fatalf("CREATE TABLE test_pages: %s", err)
 	}
 	insert := psql.Insert("test_pages")

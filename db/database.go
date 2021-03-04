@@ -31,7 +31,7 @@ type Database interface {
 	Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (interface{}, error)
 
 	Close()
-	Metadata() (map[string]string, error)
+	Metadata(ctx context.Context) (map[string]string, error)
 	Stats() sql.DBStats
 	Pool() *pgxpool.Pool
 }
@@ -218,7 +218,7 @@ func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (i
 	return nil, ErrSerialization
 }
 
-func (d *PgxDatabase) Metadata() (map[string]string, error) {
+func (d *PgxDatabase) Metadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	version, err := d.getVersion()
 	if err == nil {
@@ -228,7 +228,6 @@ func (d *PgxDatabase) Metadata() (map[string]string, error) {
 	if err == nil {
 		metadata["postgresql_aurora_version"] = auroraVersion
 	}
-	ctx := context.Background()
 
 	m, err := d.Transact(ctx, func(tx Tx) (interface{}, error) {
 		// select name,setting from pg_settings

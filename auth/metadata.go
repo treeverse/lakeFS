@@ -114,7 +114,7 @@ func (d *DBMetadataManager) Write(ctx context.Context) (map[string]string, error
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
-	dbMeta, err := d.db.Metadata()
+	dbMeta, err := d.db.Metadata(ctx)
 	if err == nil {
 		for k, v := range dbMeta {
 			metadata[k] = v

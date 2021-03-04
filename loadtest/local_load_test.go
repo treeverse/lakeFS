@@ -85,16 +85,17 @@ func TestLocalLoad(t *testing.T) {
 		_ = cataloger.Close()
 	})
 
-	handler := api.Serve(api.Dependencies{
-		Cataloger:       cataloger,
-		Auth:            authService,
-		BlockAdapter:    blockAdapter,
-		MetadataManager: meta,
-		Migrator:        migrator,
-		Collector:       &nullCollector{},
-		Actions:         actionsService,
-		Logger:          logging.Default(),
-	})
+	handler := api.Serve(
+		cataloger,
+		authService,
+		blockAdapter,
+		meta,
+		migrator,
+		&nullCollector{},
+		nil,
+		actionsService,
+		logging.Default(),
+	)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

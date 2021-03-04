@@ -63,7 +63,7 @@ type actionsHandler interface {
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
-type Dependencies struct {
+type Controller struct {
 	Cataloger             catalog.Cataloger
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
@@ -75,20 +75,36 @@ type Dependencies struct {
 	Logger                logging.Logger
 }
 
-func (d *Dependencies) LogAction(ctx context.Context, action string) {
-	logging.FromContext(ctx).
+func NewController(
+	cataloger catalog.Cataloger,
+	authService auth.Service,
+	blockAdapter block.Adapter,
+	metadataManager auth.MetadataManager,
+	migrator db.Migrator,
+	collector stats.Collector,
+	cloudMetadataProvider cloud.MetadataProvider,
+	actions actionsHandler,
+	logger logging.Logger,
+) *Controller {
+	return &Controller{
+		Cataloger:             cataloger,
+		Auth:                  authService,
+		BlockAdapter:          blockAdapter,
+		MetadataManager:       metadataManager,
+		Migrator:              migrator,
+		Collector:             collector,
+		CloudMetadataProvider: cloudMetadataProvider,
+		Actions:               actions,
+		Logger:                logger,
+	}
+}
+
+func (c *Controller) LogAction(ctx context.Context, action string) {
+	c.Logger.WithContext(ctx).
 		WithField("action", action).
 		WithField("message_type", "action").
 		Debug("performing API action")
-	d.Collector.CollectEvent("api_server", action)
-}
-
-type Controller struct {
-	deps *Dependencies
-}
-
-func NewController(deps Dependencies) *Controller {
-	return &Controller{deps: &deps}
+	c.Collector.CollectEvent("api_server", action)
 }
 
 // Configure attaches our API operations to a generated swagger API stub
@@ -180,7 +196,7 @@ func (c *Controller) setupRequest(user *models.User, r *http.Request, permission
 	// add user to context
 	ctx := logging.AddFields(r.Context(), logging.Fields{"user": user.ID})
 	ctx = context.WithValue(ctx, UserContextKey, user)
-	return ctx, authorize(ctx, c.deps.Auth, user, permissions)
+	return ctx, authorize(ctx, c.Auth, user, permissions)
 }
 
 func createPaginator(nextToken string, amountResults int) *models.Pagination {
@@ -219,7 +235,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// check if previous setup completed
-		if ts, _ := c.deps.MetadataManager.SetupTimestamp(setupReq.HTTPRequest.Context()); !ts.IsZero() {
+		if ts, _ := c.MetadataManager.SetupTimestamp(setupReq.HTTPRequest.Context()); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
 					Message: "lakeFS already initialized",
@@ -228,7 +244,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 
 		// migrate the database if needed
 		ctx := setupReq.HTTPRequest.Context()
-		err := c.deps.Migrator.Migrate(ctx)
+		err := c.Migrator.Migrate(ctx)
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{
@@ -239,19 +255,19 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		username := swag.StringValue(setupReq.User.Username)
 		var cred *model.Credential
 		if setupReq.User.Key == nil {
-			cred, err = auth.CreateInitialAdminUser(ctx, c.deps.Auth, c.deps.MetadataManager, username)
+			cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, username)
 		} else {
-			cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.deps.Auth, c.deps.MetadataManager, username, setupReq.User.Key.AccessKeyID, setupReq.User.Key.SecretAccessKey)
+			cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, username, setupReq.User.Key.AccessKeyID, setupReq.User.Key.SecretAccessKey)
 		}
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{Message: err.Error()})
 		}
 
-		meta := stats.NewMetadata(ctx, c.deps.Logger, c.deps.BlockAdapter.BlockstoreType(), c.deps.MetadataManager, c.deps.CloudMetadataProvider)
-		c.deps.Collector.SetInstallationID(meta.InstallationID)
-		c.deps.Collector.CollectMetadata(meta)
-		c.deps.Collector.CollectEvent("global", "init")
+		meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
+		c.Collector.SetInstallationID(meta.InstallationID)
+		c.Collector.CollectMetadata(meta)
+		c.Collector.CollectEvent("global", "init")
 
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
@@ -281,11 +297,11 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 		if err != nil {
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "list_repos")
+		c.LogAction(ctx, "list_repos")
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		repos, hasMore, err := c.deps.Cataloger.ListRepositories(ctx, amount, after)
+		repos, hasMore, err := c.Cataloger.ListRepositories(ctx, amount, after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error listing repositories: %s", err))
@@ -341,8 +357,8 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_repo")
-		repo, err := c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		c.LogAction(ctx, "get_repo")
+		repo, err := c.Cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -373,8 +389,8 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_commit")
-		commit, err := c.deps.Cataloger.GetCommit(ctx, params.Repository, params.CommitID)
+		c.LogAction(ctx, "get_commit")
+		commit, err := c.Cataloger.GetCommit(ctx, params.Repository, params.CommitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
@@ -408,8 +424,8 @@ func (c *Controller) ListCommitRunsHandler() commits.ListCommitRunsHandler {
 		if err != nil {
 			return commits.NewListCommitRunsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "list_commit_runs")
-		_, err = c.deps.Cataloger.GetCommit(ctx, params.Repository, params.CommitID)
+		c.LogAction(ctx, "list_commit_runs")
+		_, err = c.Cataloger.GetCommit(ctx, params.Repository, params.CommitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewListCommitRunsNotFound().WithPayload(responseError("commit not found"))
 		}
@@ -417,7 +433,7 @@ func (c *Controller) ListCommitRunsHandler() commits.ListCommitRunsHandler {
 			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		runsIter, err := c.deps.Actions.ListCommitRunResults(ctx, params.Repository, params.CommitID)
+		runsIter, err := c.Actions.ListCommitRunResults(ctx, params.Repository, params.CommitID)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return commits.NewListCommitRunsNotFound().
@@ -451,18 +467,18 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "create_commit")
-		userModel, err := c.deps.Auth.GetUser(ctx, user.ID)
+		c.LogAction(ctx, "create_commit")
+		userModel, err := c.Auth.GetUser(ctx, user.ID)
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		committer := userModel.Username
 		commitMessage := swag.StringValue(params.Commit.Message)
-		commit, err := c.deps.Cataloger.Commit(ctx, params.Repository,
+		commit, err := c.Cataloger.Commit(ctx, params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
 		var hookAbortErr *graveler.HookAbortError
 		if errors.As(err, &hookAbortErr) {
-			c.deps.Logger.
+			c.Logger.
 				WithError(err).
 				WithField("run_id", hookAbortErr.RunID).
 				Warn("aborted by hooks")
@@ -493,8 +509,8 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_branch_commit_log")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "get_branch_commit_log")
+		cataloger := c.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
@@ -568,17 +584,17 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "create_repo")
+		c.LogAction(ctx, "create_repo")
 
 		if swag.BoolValue(params.Bare) {
 			// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 			// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-			repo, err := c.deps.Cataloger.CreateBareRepository(ctx,
+			repo, err := c.Cataloger.CreateBareRepository(ctx,
 				swag.StringValue(params.Repository.Name),
 				swag.StringValue(params.Repository.StorageNamespace),
 				params.Repository.DefaultBranch)
 			if err != nil {
-				c.deps.Logger.
+				c.Logger.
 					WithError(err).
 					WithField("storage_namespace", swag.StringValue(params.Repository.StorageNamespace)).
 					Warn("Could not access storage namespace")
@@ -593,16 +609,16 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 			})
 		}
 
-		err = ensureStorageNamespaceRW(ctx, c.deps.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
+		err = ensureStorageNamespaceRW(ctx, c.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
 		if err != nil {
-			c.deps.Logger.
+			c.Logger.
 				WithError(err).
 				WithField("storage_namespace", swag.StringValue(params.Repository.StorageNamespace)).
 				Warn("Could not access storage namespace")
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
-		repo, err := c.deps.Cataloger.CreateRepository(ctx,
+		repo, err := c.Cataloger.CreateRepository(ctx,
 			swag.StringValue(params.Repository.Name),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
@@ -631,8 +647,8 @@ func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHand
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "delete_repo")
-		err = c.deps.Cataloger.DeleteRepository(ctx, params.Repository)
+		c.LogAction(ctx, "delete_repo")
+		err = c.Cataloger.DeleteRepository(ctx, params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().WithPayload(responseError("repository not found"))
 		}
@@ -655,8 +671,8 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 		if err != nil {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "list_branches")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "list_branches")
+		cataloger := c.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
@@ -703,8 +719,8 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_branch")
-		reference, err := c.deps.Cataloger.GetBranchReference(ctx, params.Repository, params.Branch)
+		c.LogAction(ctx, "get_branch")
+		reference, err := c.Cataloger.GetBranchReference(ctx, params.Repository, params.Branch)
 
 		switch {
 		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
@@ -735,8 +751,8 @@ func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "create_branch")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "create_branch")
+		cataloger := c.Cataloger
 		sourceRef := swag.StringValue(params.Branch.Source)
 		commitLog, err := cataloger.CreateBranch(ctx, repository, branch, sourceRef)
 		if err != nil {
@@ -757,8 +773,8 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "delete_branch")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "delete_branch")
+		cataloger := c.Cataloger
 		err = cataloger.DeleteBranch(ctx, params.Repository, params.Branch)
 		switch {
 		case errors.Is(err, catalog.ErrBranchNotFound) || errors.Is(err, graveler.ErrBranchNotFound):
@@ -784,8 +800,8 @@ func (c *Controller) ListTagsHandler() tags.ListTagsHandler {
 		if err != nil {
 			return tags.NewListTagsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "list_tags")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "list_tags")
+		cataloger := c.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
@@ -830,8 +846,8 @@ func (c *Controller) GetTagHandler() tags.GetTagHandler {
 		if err != nil {
 			return tags.NewGetTagUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_tag")
-		reference, err := c.deps.Cataloger.GetTag(ctx, params.Repository, params.Tag)
+		c.LogAction(ctx, "get_tag")
+		reference, err := c.Cataloger.GetTag(ctx, params.Repository, params.Tag)
 
 		switch {
 		case errors.Is(err, graveler.ErrTagNotFound):
@@ -862,8 +878,8 @@ func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
 		if err != nil {
 			return tags.NewCreateTagUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "create_tag")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "create_tag")
+		cataloger := c.Cataloger
 		tagRef := swag.StringValue(params.Tag.Ref)
 		commitID, err := cataloger.CreateTag(ctx, repository, tagID, tagRef)
 		if err != nil {
@@ -887,8 +903,8 @@ func (c *Controller) DeleteTagHandler() tags.DeleteTagHandler {
 		if err != nil {
 			return tags.NewDeleteTagUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "delete_tag")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "delete_tag")
+		cataloger := c.Cataloger
 		err = cataloger.DeleteTag(ctx, params.Repository, params.Tag)
 		switch {
 		case errors.Is(err, graveler.ErrTagNotFound):
@@ -913,8 +929,8 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "merge_branches")
-		userModel, err := c.deps.Auth.GetUser(ctx, user.ID)
+		c.LogAction(ctx, "merge_branches")
+		userModel, err := c.Auth.GetUser(ctx, user.ID)
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -924,7 +940,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message = params.Merge.Message
 			meta = params.Merge.Metadata
 		}
-		res, err := c.deps.Cataloger.Merge(ctx,
+		res, err := c.Cataloger.Merge(ctx,
 			params.Repository, params.DestinationBranch, params.SourceRef,
 			userModel.Username,
 			message,
@@ -932,7 +948,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 
 		var hookAbortErr *graveler.HookAbortError
 		if errors.As(err, &hookAbortErr) {
-			c.deps.Logger.
+			c.Logger.
 				WithError(err).
 				WithField("run_id", hookAbortErr.RunID).
 				Warn("aborted by hooks")
@@ -994,8 +1010,8 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		if err != nil {
 			return branches.NewDiffBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "diff_workspace")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "diff_workspace")
+		cataloger := c.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
 		diff, hasMore, err := cataloger.DiffUncommitted(ctx, params.Repository, params.Branch, limit, after)
@@ -1039,8 +1055,8 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		if err != nil {
 			return refs.NewDiffRefsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "diff_refs")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "diff_refs")
+		cataloger := c.Cataloger
 		limit := int(swag.Int64Value(params.Amount))
 		after := swag.StringValue(params.After)
 		diffFunc := cataloger.Compare // default diff type is three-dot
@@ -1093,8 +1109,8 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if err != nil {
 			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "stat_object")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "stat_object")
+		cataloger := c.Cataloger
 
 		entry, err := cataloger.GetEntry(ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
@@ -1142,8 +1158,8 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		if err != nil {
 			return objects.NewGetUnderlyingPropertiesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "object_underlying_properties")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "object_underlying_properties")
+		cataloger := c.Cataloger
 
 		// read repo
 		repo, err := cataloger.GetRepository(ctx, params.Repository)
@@ -1163,7 +1179,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		}
 
 		// read object properties from underlying storage
-		properties, err := c.deps.BlockAdapter.GetProperties(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
+		properties, err := c.BlockAdapter.GetProperties(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
 		if err != nil {
 			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1186,8 +1202,8 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		if err != nil {
 			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_object")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "get_object")
+		cataloger := c.Cataloger
 
 		// read repo
 		repo, err := cataloger.GetRepository(ctx, params.Repository)
@@ -1217,7 +1233,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = entry.Size
-		reader, err := c.deps.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
+		reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1239,7 +1255,7 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 		if err != nil {
 			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		storageNamespaceInfo := c.deps.BlockAdapter.GetStorageNamespaceInfo()
+		storageNamespaceInfo := c.BlockAdapter.GetStorageNamespaceInfo()
 		return configop.NewGetConfigOK().WithPayload(&models.Config{
 			BlockstoreNamespaceValidityRegex: storageNamespaceInfo.ValidityRegex,
 			BlockstoreNamespaceExample:       storageNamespaceInfo.Example,
@@ -1258,8 +1274,8 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 		if err != nil {
 			return metadata.NewCreateSymlinkUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "create_symlink")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "create_symlink")
+		cataloger := c.Cataloger
 
 		// read repo
 		repo, err := cataloger.GetRepository(ctx, params.Repository)
@@ -1301,7 +1317,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 				}
 				if path != currentPath {
 					// push current
-					err := writeSymlink(ctx, params, repo, path, currentAddresses, c.deps.BlockAdapter)
+					err := writeSymlink(ctx, params, repo, path, currentAddresses, c.BlockAdapter)
 					if err != nil {
 						return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
 							WithPayload(responseError("error while writing symlinks: %s", err))
@@ -1315,7 +1331,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 			after = entries[len(entries)-1].Path
 		}
 		if len(currentAddresses) > 0 {
-			err = writeSymlink(ctx, params, repo, currentPath, currentAddresses, c.deps.BlockAdapter)
+			err = writeSymlink(ctx, params, repo, currentPath, currentAddresses, c.BlockAdapter)
 			if err != nil {
 				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
 					WithPayload(responseError("error while writing symlinks: %s", err))
@@ -1352,8 +1368,8 @@ func (c *Controller) MetadataGetMetarangeHandler() metadata.GetMetaRangeHandler 
 		if err != nil {
 			return metadata.NewGetMetaRangeUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "metadata_get_metarange")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "metadata_get_metarange")
+		cataloger := c.Cataloger
 
 		metarange, err := cataloger.GetMetaRange(ctx, params.Repository, params.MetaRange)
 		if err != nil {
@@ -1380,8 +1396,8 @@ func (c *Controller) MetadataGetRangeHandler() metadata.GetRangeHandler {
 		if err != nil {
 			return metadata.NewGetRangeUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "metadata_get_range")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "metadata_get_range")
+		cataloger := c.Cataloger
 
 		rng, err := cataloger.GetRange(ctx, params.Repository, params.Range)
 		if err != nil {
@@ -1404,8 +1420,8 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		if err != nil {
 			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "list_objects")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "list_objects")
+		cataloger := c.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
@@ -1497,8 +1513,8 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 		if err != nil {
 			return objects.NewStageObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "stage_object")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "stage_object")
+		cataloger := c.Cataloger
 
 		repo, err := cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrNotFound) {
@@ -1513,7 +1529,7 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 			return objects.NewStageObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		blockStoreType := c.deps.BlockAdapter.BlockstoreType()
+		blockStoreType := c.BlockAdapter.BlockstoreType()
 		if qk.StorageType.String() != blockStoreType {
 			return objects.NewStageObjectBadRequest().WithPayload(
 				responseError("invalid storage type: %s: current block adapter is %s",
@@ -1565,8 +1581,8 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "put_object")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "put_object")
+		cataloger := c.Cataloger
 
 		repo, err := cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
@@ -1591,7 +1607,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// write the content
-		blob, err := upload.WriteBlob(ctx, c.deps.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
+		blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -1640,8 +1656,8 @@ func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		if err != nil {
 			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "delete_object")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "delete_object")
+		cataloger := c.Cataloger
 
 		err = cataloger.DeleteEntry(ctx, params.Repository, params.Branch, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
@@ -1666,13 +1682,13 @@ func (c *Controller) RevertHandler() branches.RevertHandler {
 		if err != nil {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "revert_branch")
-		userModel, err := c.deps.Auth.GetUser(ctx, user.ID)
+		c.LogAction(ctx, "revert_branch")
+		userModel, err := c.Auth.GetUser(ctx, user.ID)
 		if err != nil {
 			return branches.NewRevertUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		committer := userModel.Username
-		err = c.deps.Cataloger.Revert(ctx, params.Repository, params.Branch, catalog.RevertParams{
+		err = c.Cataloger.Revert(ctx, params.Repository, params.Branch, catalog.RevertParams{
 			Reference:    params.Revert.Ref,
 			Committer:    committer,
 			ParentNumber: int(params.Revert.ParentNumber),
@@ -1698,8 +1714,8 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 		if err != nil {
 			return branches.NewResetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "reset_branch")
-		cataloger := c.deps.Cataloger
+		c.LogAction(ctx, "reset_branch")
+		cataloger := c.Cataloger
 		switch swag.StringValue(params.Reset.Type) {
 		case models.ResetCreationTypeCommit:
 			err = cataloger.RollbackCommit(ctx, params.Repository, params.Branch, params.Reset.Commit)
@@ -1740,8 +1756,8 @@ func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 			CreatedAt: time.Now(),
 			Username:  swag.StringValue(params.User.ID),
 		}
-		err = c.deps.Auth.CreateUser(ctx, u)
-		c.deps.LogAction(ctx, "create_user")
+		err = c.Auth.CreateUser(ctx, u)
+		c.LogAction(ctx, "create_user")
 		if err != nil {
 			return authop.NewCreateUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -1768,8 +1784,8 @@ func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_users")
-		users, paginator, err := c.deps.Auth.ListUsers(ctx, &model.PaginationParams{
+		c.LogAction(ctx, "list_users")
+		users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -1806,8 +1822,8 @@ func (c *Controller) GetUserHandler() authop.GetUserHandler {
 			return authop.NewGetUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_user")
-		u, err := c.deps.Auth.GetUser(ctx, params.UserID)
+		c.LogAction(ctx, "get_user")
+		u, err := c.Auth.GetUser(ctx, params.UserID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetUserNotFound().
 				WithPayload(responseError("user not found"))
@@ -1838,8 +1854,8 @@ func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "delete_user")
-		err = c.deps.Auth.DeleteUser(ctx, params.UserID)
+		c.LogAction(ctx, "delete_user")
+		err = c.Auth.DeleteUser(ctx, params.UserID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeleteUserNotFound().
 				WithPayload(responseError("user not found"))
@@ -1865,8 +1881,8 @@ func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
 			return authop.NewGetGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_group")
-		g, err := c.deps.Auth.GetGroup(ctx, params.GroupID)
+		c.LogAction(ctx, "get_group")
+		g, err := c.Auth.GetGroup(ctx, params.GroupID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetGroupNotFound().
 				WithPayload(responseError("group not found"))
@@ -1897,8 +1913,8 @@ func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_groups")
-		groups, paginator, err := c.deps.Auth.ListGroups(ctx, &model.PaginationParams{
+		c.LogAction(ctx, "list_groups")
+		groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -1941,8 +1957,8 @@ func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
 			DisplayName: swag.StringValue(params.Group.ID),
 		}
 
-		c.deps.LogAction(ctx, "create_group")
-		err = c.deps.Auth.CreateGroup(ctx, g)
+		c.LogAction(ctx, "create_group")
+		err = c.Auth.CreateGroup(ctx, g)
 		if err != nil {
 			return authop.NewCreateGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -1969,8 +1985,8 @@ func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "delete_group")
-		err = c.deps.Auth.DeleteGroup(ctx, params.GroupID)
+		c.LogAction(ctx, "delete_group")
+		err = c.Auth.DeleteGroup(ctx, params.GroupID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeleteGroupNotFound().
 				WithPayload(responseError("group not found"))
@@ -2012,8 +2028,8 @@ func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_policies")
-		policies, paginator, err := c.deps.Auth.ListPolicies(ctx, &model.PaginationParams{
+		c.LogAction(ctx, "list_policies")
+		policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2063,8 +2079,8 @@ func (c *Controller) CreatePolicyHandler() authop.CreatePolicyHandler {
 			Statement:   stmts,
 		}
 
-		c.deps.LogAction(ctx, "create_policy")
-		err = c.deps.Auth.WritePolicy(ctx, p)
+		c.LogAction(ctx, "create_policy")
+		err = c.Auth.WritePolicy(ctx, p)
 		if err != nil {
 			return authop.NewCreatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2087,8 +2103,8 @@ func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
 			return authop.NewGetPolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_policy")
-		p, err := c.deps.Auth.GetPolicy(ctx, params.PolicyID)
+		c.LogAction(ctx, "get_policy")
+		p, err := c.Auth.GetPolicy(ctx, params.PolicyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetPolicyNotFound().
 				WithPayload(responseError("policy not found"))
@@ -2131,8 +2147,8 @@ func (c *Controller) UpdatePolicyHandler() authop.UpdatePolicyHandler {
 			Statement:   stmts,
 		}
 
-		c.deps.LogAction(ctx, "update_policy")
-		err = c.deps.Auth.WritePolicy(ctx, p)
+		c.LogAction(ctx, "update_policy")
+		err = c.Auth.WritePolicy(ctx, p)
 		if err != nil {
 			return authop.NewUpdatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2156,8 +2172,8 @@ func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "delete_policy")
-		err = c.deps.Auth.DeletePolicy(ctx, params.PolicyID)
+		c.LogAction(ctx, "delete_policy")
+		err = c.Auth.DeletePolicy(ctx, params.PolicyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeletePolicyNotFound().
 				WithPayload(responseError("policy not found"))
@@ -2183,8 +2199,8 @@ func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_group_users")
-		users, paginator, err := c.deps.Auth.ListGroupUsers(ctx, params.GroupID, &model.PaginationParams{
+		c.LogAction(ctx, "list_group_users")
+		users, paginator, err := c.Auth.ListGroupUsers(ctx, params.GroupID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2222,8 +2238,8 @@ func (c *Controller) AddGroupMembershipHandler() authop.AddGroupMembershipHandle
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "add_user_to_group")
-		err = c.deps.Auth.AddUserToGroup(ctx, params.UserID, params.GroupID)
+		c.LogAction(ctx, "add_user_to_group")
+		err = c.Auth.AddUserToGroup(ctx, params.UserID, params.GroupID)
 		if err != nil {
 			return authop.NewAddGroupMembershipDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2246,8 +2262,8 @@ func (c *Controller) DeleteGroupMembershipHandler() authop.DeleteGroupMembership
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "remove_user_from_group")
-		err = c.deps.Auth.RemoveUserFromGroup(ctx, params.UserID, params.GroupID)
+		c.LogAction(ctx, "remove_user_from_group")
+		err = c.Auth.RemoveUserFromGroup(ctx, params.UserID, params.GroupID)
 		if err != nil {
 			return authop.NewDeleteGroupMembershipDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2270,8 +2286,8 @@ func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHand
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_user_credentials")
-		credentials, paginator, err := c.deps.Auth.ListUserCredentials(ctx, params.UserID, &model.PaginationParams{
+		c.LogAction(ctx, "list_user_credentials")
+		credentials, paginator, err := c.Auth.ListUserCredentials(ctx, params.UserID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2309,8 +2325,8 @@ func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler 
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "create_credentials")
-		credentials, err := c.deps.Auth.CreateCredentials(ctx, params.UserID)
+		c.LogAction(ctx, "create_credentials")
+		credentials, err := c.Auth.CreateCredentials(ctx, params.UserID)
 		if err != nil {
 			return authop.NewCreateCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2338,8 +2354,8 @@ func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler 
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "delete_credentials")
-		err = c.deps.Auth.DeleteCredentials(ctx, params.UserID, params.AccessKeyID)
+		c.LogAction(ctx, "delete_credentials")
+		err = c.Auth.DeleteCredentials(ctx, params.UserID, params.AccessKeyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewDeleteCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
@@ -2365,8 +2381,8 @@ func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 			return authop.NewGetCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "get_credentials_for_user")
-		credentials, err := c.deps.Auth.GetCredentialsForUser(ctx, params.UserID, params.AccessKeyID)
+		c.LogAction(ctx, "get_credentials_for_user")
+		credentials, err := c.Auth.GetCredentialsForUser(ctx, params.UserID, params.AccessKeyID)
 		if errors.Is(err, db.ErrNotFound) {
 			return authop.NewGetCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
@@ -2397,8 +2413,8 @@ func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_user_groups")
-		groups, paginator, err := c.deps.Auth.ListUserGroups(ctx, params.UserID, &model.PaginationParams{
+		c.LogAction(ctx, "list_user_groups")
+		groups, paginator, err := c.Auth.ListUserGroups(ctx, params.UserID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2436,16 +2452,16 @@ func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_user_policies")
+		c.LogAction(ctx, "list_user_policies")
 		var policies []*model.Policy
 		var paginator *model.Paginator
 		if swag.BoolValue(params.Effective) {
-			policies, paginator, err = c.deps.Auth.ListEffectivePolicies(ctx, params.UserID, &model.PaginationParams{
+			policies, paginator, err = c.Auth.ListEffectivePolicies(ctx, params.UserID, &model.PaginationParams{
 				After:  swag.StringValue(params.After),
 				Amount: pageAmount(params.Amount),
 			})
 		} else {
-			policies, paginator, err = c.deps.Auth.ListUserPolicies(ctx, params.UserID, &model.PaginationParams{
+			policies, paginator, err = c.Auth.ListUserPolicies(ctx, params.UserID, &model.PaginationParams{
 				After:  swag.StringValue(params.After),
 				Amount: pageAmount(params.Amount),
 			})
@@ -2482,8 +2498,8 @@ func (c *Controller) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandle
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "attach_policy_to_user")
-		err = c.deps.Auth.AttachPolicyToUser(ctx, params.PolicyID, params.UserID)
+		c.LogAction(ctx, "attach_policy_to_user")
+		err = c.Auth.AttachPolicyToUser(ctx, params.PolicyID, params.UserID)
 		if err != nil {
 			return authop.NewAttachPolicyToUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2506,8 +2522,8 @@ func (c *Controller) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHa
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "detach_policy_from_user")
-		err = c.deps.Auth.DetachPolicyFromUser(ctx, params.PolicyID, params.UserID)
+		c.LogAction(ctx, "detach_policy_from_user")
+		err = c.Auth.DetachPolicyFromUser(ctx, params.PolicyID, params.UserID)
 		if err != nil {
 			return authop.NewDetachPolicyFromUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2530,8 +2546,8 @@ func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler 
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "list_user_policies")
-		policies, paginator, err := c.deps.Auth.ListGroupPolicies(ctx, params.GroupID, &model.PaginationParams{
+		c.LogAction(ctx, "list_user_policies")
+		policies, paginator, err := c.Auth.ListGroupPolicies(ctx, params.GroupID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
@@ -2566,8 +2582,8 @@ func (c *Controller) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHand
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "attach_policy_to_group")
-		err = c.deps.Auth.AttachPolicyToGroup(ctx, params.PolicyID, params.GroupID)
+		c.LogAction(ctx, "attach_policy_to_group")
+		err = c.Auth.AttachPolicyToGroup(ctx, params.PolicyID, params.GroupID)
 		if err != nil {
 			return authop.NewAttachPolicyToGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2590,8 +2606,8 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 				WithPayload(responseErrorFrom(err))
 		}
 
-		c.deps.LogAction(ctx, "detach_policy_from_group")
-		err = c.deps.Auth.DetachPolicyFromGroup(ctx, params.PolicyID, params.GroupID)
+		c.LogAction(ctx, "detach_policy_from_group")
+		err = c.Auth.DetachPolicyFromGroup(ctx, params.PolicyID, params.GroupID)
 		if err != nil {
 			return authop.NewDetachPolicyFromGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2621,9 +2637,9 @@ func (c *Controller) RefsRestoreHandler() refs.RestoreHandler {
 			return refs.NewRestoreUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "restore_repository_refs")
+		c.LogAction(ctx, "restore_repository_refs")
 
-		repo, err := c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		repo, err := c.Cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) {
 			return refs.NewRestoreNotFound().
 				WithPayload(responseErrorFrom(err))
@@ -2633,26 +2649,26 @@ func (c *Controller) RefsRestoreHandler() refs.RestoreHandler {
 		}
 
 		// ensure no refs currently found
-		_, _, err = c.deps.Cataloger.ListCommits(ctx, repo.Name, repo.DefaultBranch, "", 1)
+		_, _, err = c.Cataloger.ListCommits(ctx, repo.Name, repo.DefaultBranch, "", 1)
 		if !errors.Is(err, graveler.ErrNotFound) {
 			return refs.NewRestoreBadRequest().
 				WithPayload(responseError("can only restore into a bare repository"))
 		}
 
 		// load commits
-		err = c.deps.Cataloger.LoadCommits(ctx, repo.Name, params.Manifest.CommitsMetaRangeID)
+		err = c.Cataloger.LoadCommits(ctx, repo.Name, params.Manifest.CommitsMetaRangeID)
 		if err != nil {
 			return refs.NewRestoreDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = c.deps.Cataloger.LoadBranches(ctx, repo.Name, params.Manifest.BranchesMetaRangeID)
+		err = c.Cataloger.LoadBranches(ctx, repo.Name, params.Manifest.BranchesMetaRangeID)
 		if err != nil {
 			return refs.NewRestoreDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = c.deps.Cataloger.LoadTags(ctx, repo.Name, params.Manifest.TagsMetaRangeID)
+		err = c.Cataloger.LoadTags(ctx, repo.Name, params.Manifest.TagsMetaRangeID)
 		if err != nil {
 			return refs.NewRestoreDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2683,9 +2699,9 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 			return refs.NewDumpUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		c.deps.LogAction(ctx, "dump_repository_refs")
+		c.LogAction(ctx, "dump_repository_refs")
 
-		repo, err := c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		repo, err := c.Cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) {
 			return refs.NewDumpNotFound().
 				WithPayload(responseErrorFrom(err))
@@ -2695,17 +2711,17 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 		}
 
 		// dump all types:
-		tagsID, err := c.deps.Cataloger.DumpTags(ctx, params.Repository)
+		tagsID, err := c.Cataloger.DumpTags(ctx, params.Repository)
 		if err != nil {
 			return refs.NewDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		branchesID, err := c.deps.Cataloger.DumpBranches(ctx, params.Repository)
+		branchesID, err := c.Cataloger.DumpBranches(ctx, params.Repository)
 		if err != nil {
 			return refs.NewDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		commitsID, err := c.deps.Cataloger.DumpCommits(ctx, params.Repository)
+		commitsID, err := c.Cataloger.DumpCommits(ctx, params.Repository)
 		if err != nil {
 			return refs.NewDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -2722,7 +2738,7 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 			return refs.NewDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		err = c.deps.BlockAdapter.Put(ctx, block.ObjectPointer{
+		err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       "_lakefs/refs_manifest.json",
 		}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
@@ -2748,7 +2764,7 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		_, err = c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		_, err = c.Cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) {
 			return actionsop.NewListRunsNotFound().
 				WithPayload(responseErrorFrom(catalog.ErrRepositoryNotFound))
@@ -2758,7 +2774,7 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		runResult, err := c.deps.Actions.GetRunResult(ctx, params.Repository, params.RunID)
+		runResult, err := c.Actions.GetRunResult(ctx, params.Repository, params.RunID)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewGetRunNotFound().
@@ -2808,18 +2824,18 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 				WithPayload(responseErrorFrom(err))
 		}
 
-		repo, err := c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		repo, err := c.Cataloger.GetRepository(ctx, params.Repository)
 		if err != nil {
 			return handleErr(err, catalog.ErrRepositoryNotFound)
 		}
 
-		taskResult, err := c.deps.Actions.GetTaskResult(ctx, repo.Name, params.RunID, params.HookRunID)
+		taskResult, err := c.Actions.GetTaskResult(ctx, repo.Name, params.RunID, params.HookRunID)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
 		}
 
 		logPath := taskResult.LogPath()
-		reader, err := c.deps.BlockAdapter.Get(ctx, block.ObjectPointer{
+		reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       logPath,
 		}, -1)
@@ -2854,13 +2870,13 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 				WithPayload(responseErrorFrom(err))
 		}
 
-		repo, err := c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		repo, err := c.Cataloger.GetRepository(ctx, params.Repository)
 		if err != nil {
 			return handleErr(err, catalog.ErrRepositoryNotFound)
 		}
 
 		after, amount := getPaginationParams(params.After, params.Amount)
-		tasksIter, err := c.deps.Actions.ListRunTaskResults(ctx, repo.Name, params.RunID, after)
+		tasksIter, err := c.Actions.ListRunTaskResults(ctx, repo.Name, params.RunID, after)
 		if err != nil {
 			return handleErr(err, actions.ErrNotFound)
 		}
@@ -2916,7 +2932,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		_, err = c.deps.Cataloger.GetRepository(ctx, params.Repository)
+		_, err = c.Cataloger.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrRepositoryNotFound) {
 			return actionsop.NewListRunsNotFound().
 				WithPayload(responseErrorFrom(catalog.ErrRepositoryNotFound))
@@ -2926,7 +2942,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		if params.Branch != nil {
-			exists, err := c.deps.Cataloger.BranchExists(ctx, params.Repository, swag.StringValue(params.Branch))
+			exists, err := c.Cataloger.BranchExists(ctx, params.Repository, swag.StringValue(params.Branch))
 			if err != nil {
 				return actionsop.NewListRunsDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2938,7 +2954,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		after, amount := getPaginationParams(params.After, params.Amount)
-		runsIter, err := c.deps.Actions.ListRunResults(ctx, params.Repository, params.Branch, after)
+		runsIter, err := c.Actions.ListRunResults(ctx, params.Repository, params.Branch, after)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewListRunsNotFound().

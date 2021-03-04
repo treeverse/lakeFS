@@ -6,6 +6,13 @@ package api
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cloud"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/stats"
+
 	"github.com/go-openapi/loads"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/api/gen/restapi"
@@ -21,19 +28,38 @@ const (
 	LoggerServiceName   = "rest_api"
 )
 
-func Serve(deps Dependencies) http.Handler {
-	deps.Logger.Info("initialize OpenAPI server")
+func Serve(
+	cataloger catalog.Cataloger,
+	authService auth.Service,
+	blockAdapter block.Adapter,
+	metadataManager auth.MetadataManager,
+	migrator db.Migrator,
+	collector stats.Collector,
+	cloudMetadataProvider cloud.MetadataProvider,
+	actions actionsHandler,
+	logger logging.Logger,
+) http.Handler {
+	logger.Info("initialize OpenAPI server")
 	swaggerSpec, _ := loads.Analyzed(restapi.SwaggerJSON, "")
 
 	api := operations.NewLakefsAPI(swaggerSpec)
 	api.Logger = func(msg string, ctx ...interface{}) {
 		logging.Default().WithField("logger", "swagger").Debugf(msg, ctx)
 	}
-	api.BasicAuthAuth = NewBasicAuthHandler(deps.Auth)
-	api.JwtTokenAuth = NewJwtTokenAuthHandler(deps.Auth)
+	api.BasicAuthAuth = NewBasicAuthHandler(authService)
+	api.JwtTokenAuth = NewJwtTokenAuthHandler(authService)
 
 	// bind our handlers to the server
-	controller := NewController(deps)
+	controller := NewController(
+		cataloger,
+		authService,
+		blockAdapter,
+		metadataManager,
+		migrator, collector,
+		cloudMetadataProvider,
+		actions,
+		logger,
+	)
 	controller.Configure(api)
 
 	api.UseSwaggerUI()
@@ -46,7 +72,7 @@ func Serve(deps Dependencies) http.Handler {
 				MetricsHandler(api.Context(),
 					NewCookieAPIHandler(handler))))
 	})
-	uiHandler := NewUIHandler(deps.Auth)
+	uiHandler := NewUIHandler(authService)
 
 	mux := http.NewServeMux()
 	mux.Handle("/_health", httputil.ServeHealth())
