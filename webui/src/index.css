@@ -154,7 +154,8 @@
     height: 45px;
 }
 
-.table .tree-row td {
+.table .tree-row td,
+.actions-runs-list .table td {
     padding-top: 10px;
     padding-bottom: 10px;
     vertical-align: middle;
