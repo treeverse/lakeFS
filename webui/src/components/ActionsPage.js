@@ -5,7 +5,19 @@ import React, {useCallback, useEffect, useState} from "react";
 import {SyncIcon} from "@primer/octicons-react";
 import {PaginatedEntryList} from "./auth/entities";
 import * as moment from "moment";
-import {Alert, Breadcrumb, Card, Col, Container, Button, Form, Row, Nav, ButtonToolbar} from "react-bootstrap";
+import {
+    Alert,
+    Breadcrumb,
+    Card,
+    Col,
+    Container,
+    Button,
+    Form,
+    Row,
+    Nav,
+    ButtonToolbar,
+    FormText
+} from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 
@@ -86,8 +98,8 @@ const HooksPage = ({ repo, runId, hookRunId, runHooks }) => {
                                 <Nav.Item key={'hook_'+number}>
                                     <Nav.Link eventKey={hook.hook_run_id} onSelect={onSelect}>
                                         {hook.status === "completed"
-                                            ? <span style={{color: "green"}}><CheckCircleFillIcon /></span>
-                                            : <span style={{color: "red"}}><XCircleFillIcon/></span>
+                                            ? <span style={{color: "green"}}><CheckCircleFillIcon/> </span>
+                                            : <span style={{color: "red"}}><XCircleFillIcon/> </span>
                                         }
                                         &nbsp;{hook.action} {hook.hook_id}
                                     </Nav.Link>
@@ -161,6 +173,8 @@ const HookPage = connect(
             <Card border={!completed && 'danger'}>
                 <Card.Header>
                     <strong>Hook Run ID:</strong> {hook.hook_run_id}<br/>
+                    <strong>Action:</strong> {hook.action}<br/>
+                    <strong>Hook ID:</strong> {hook.hook_id}<br/>
                     <strong>Start Time:</strong> {moment(hook.start_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
                     <strong>End Time:</strong> {moment(hook.end_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
                     <strong>Status:</strong> <strong style={{'color': completed ? 'green':'red'}}>{hook.status}</strong>
