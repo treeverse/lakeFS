@@ -1,6 +1,7 @@
 package local_test
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -40,6 +41,7 @@ func makePointer(path string) block.ObjectPointer {
 }
 
 func TestLocalPutExistsGet(t *testing.T) {
+	ctx := context.Background()
 	a := makeAdapter(t)
 
 	cases := []struct {
@@ -54,13 +56,13 @@ func TestLocalPutExistsGet(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			testutil.MustDo(t, "Put", a.Put(makePointer(c.path), 0, strings.NewReader(contents), block.PutOpts{}))
-			ok, err := a.Exists(makePointer(c.path))
+			testutil.MustDo(t, "Put", a.Put(ctx, makePointer(c.path), 0, strings.NewReader(contents), block.PutOpts{}))
+			ok, err := a.Exists(ctx, makePointer(c.path))
 			testutil.MustDo(t, "Exists", err)
 			if !ok {
 				t.Errorf("expected to detect existence of %s", c.path)
 			}
-			reader, err := a.Get(makePointer(c.path), 0)
+			reader, err := a.Get(ctx, makePointer(c.path), 0)
 			testutil.MustDo(t, "Get", err)
 			got, err := ioutil.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
@@ -73,11 +75,12 @@ func TestLocalPutExistsGet(t *testing.T) {
 
 func TestLocalNotExists(t *testing.T) {
 	a := makeAdapter(t)
+	ctx := context.Background()
 
 	cases := []string{"missing", "nested/down", "nested/quite/deeply/and/missing"}
 	for _, c := range cases {
 		t.Run(c, func(t *testing.T) {
-			ok, err := a.Exists(makePointer(c))
+			ok, err := a.Exists(ctx, makePointer(c))
 			testutil.MustDo(t, "Exists", err)
 			if ok {
 				t.Errorf("expected not to find %s", c)
@@ -88,6 +91,7 @@ func TestLocalNotExists(t *testing.T) {
 
 func TestLocalMultipartUpload(t *testing.T) {
 	a := makeAdapter(t)
+	ctx := context.Background()
 
 	cases := []struct {
 		name     string
@@ -101,22 +105,22 @@ func TestLocalMultipartUpload(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			pointer := makePointer(c.path)
-			uploadID, err := a.CreateMultiPartUpload(pointer, nil, block.CreateMultiPartUploadOpts{})
+			uploadID, err := a.CreateMultiPartUpload(ctx, pointer, nil, block.CreateMultiPartUploadOpts{})
 			testutil.MustDo(t, "CreateMultiPartUpload", err)
 			parts := make([]*s3.CompletedPart, 0)
 			for partNumber, content := range c.partData {
-				cs, err := a.UploadPart(pointer, 0, strings.NewReader(content), uploadID, int64(partNumber))
+				cs, err := a.UploadPart(ctx, pointer, 0, strings.NewReader(content), uploadID, int64(partNumber))
 				testutil.MustDo(t, "UploadPart", err)
 				parts = append(parts, &s3.CompletedPart{
 					ETag:       aws.String(cs),
 					PartNumber: aws.Int64(int64(partNumber)),
 				})
 			}
-			_, _, err = a.CompleteMultiPartUpload(pointer, uploadID, &block.MultipartUploadCompletion{
+			_, _, err = a.CompleteMultiPartUpload(ctx, pointer, uploadID, &block.MultipartUploadCompletion{
 				Part: parts,
 			})
 			testutil.MustDo(t, "CompleteMultiPartUpload", err)
-			reader, err := a.Get(pointer, 0)
+			reader, err := a.Get(ctx, pointer, 0)
 			testutil.MustDo(t, "Get", err)
 			got, err := ioutil.ReadAll(reader)
 			testutil.MustDo(t, "ReadAll", err)
@@ -130,13 +134,14 @@ func TestLocalMultipartUpload(t *testing.T) {
 
 func TestLocalCopy(t *testing.T) {
 	a := makeAdapter(t)
+	ctx := context.Background()
 
 	contents := "foo bar baz quux"
 
-	testutil.MustDo(t, "Put", a.Put(makePointer("src"), 0, strings.NewReader(contents), block.PutOpts{}))
+	testutil.MustDo(t, "Put", a.Put(ctx, makePointer("src"), 0, strings.NewReader(contents), block.PutOpts{}))
 
-	testutil.MustDo(t, "Copy", a.Copy(makePointer("src"), makePointer("export/to/dst")))
-	reader, err := a.Get(makePointer("export/to/dst"), 0)
+	testutil.MustDo(t, "Copy", a.Copy(ctx, makePointer("src"), makePointer("export/to/dst")))
+	reader, err := a.Get(ctx, makePointer("export/to/dst"), 0)
 	testutil.MustDo(t, "Get", err)
 	got, err := ioutil.ReadAll(reader)
 	testutil.MustDo(t, "ReadAll", err)
@@ -164,6 +169,7 @@ func dumpPathTree(t testing.TB, root string) []string {
 }
 
 func TestAdapter_Remove(t *testing.T) {
+	ctx := context.Background()
 	const content = "Content used for testing"
 	tests := []struct {
 		name              string
@@ -207,11 +213,11 @@ func TestAdapter_Remove(t *testing.T) {
 			envObjects := append(tt.additionalObjects, tt.path)
 			for _, o := range envObjects {
 				obj := makePointer(o)
-				testutil.MustDo(t, "Put", adp.Put(obj, 0, strings.NewReader(content), block.PutOpts{}))
+				testutil.MustDo(t, "Put", adp.Put(ctx, obj, 0, strings.NewReader(content), block.PutOpts{}))
 			}
 			// test Remove with remove empty folders
 			obj := makePointer(tt.path)
-			if err := adp.Remove(obj); (err != nil) != tt.wantErr {
+			if err := adp.Remove(ctx, obj); (err != nil) != tt.wantErr {
 				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			tree := dumpPathTree(t, adp.Path())

@@ -32,7 +32,6 @@ const (
 )
 
 type Adapter struct {
-	ctx            context.Context
 	pipeline       pipeline.Pipeline
 	configurations configurations
 }
@@ -43,7 +42,6 @@ type configurations struct {
 
 func NewAdapter(pipeline pipeline.Pipeline, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		ctx:            context.Background(),
 		pipeline:       pipeline,
 		configurations: configurations{retryReaderOptions: azblob.RetryReaderOptions{MaxRetryRequests: defaultMaxRetryRequests}},
 	}
@@ -51,14 +49,6 @@ func NewAdapter(pipeline pipeline.Pipeline, opts ...func(a *Adapter)) *Adapter {
 		opt(a)
 	}
 	return a
-}
-
-func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
-	return &Adapter{
-		pipeline:       a.pipeline,
-		ctx:            ctx,
-		configurations: a.configurations,
-	}
 }
 
 type BlobURLInfo struct {
@@ -152,7 +142,7 @@ func translatePutOpts(opts block.PutOpts) azblob.UploadStreamToBlockBlobOptions 
 	return res
 }
 
-func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
@@ -170,7 +160,7 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	uploadOpts := translatePutOpts(opts)
 	uploadOpts.TransferManager = transferManager
 	defer transferManager.Close()
-	resp, err := copyFromReader(a.ctx, reader, blobURL, uploadOpts)
+	resp, err := copyFromReader(ctx, reader, blobURL, uploadOpts)
 	if err != nil {
 		return err
 	}
@@ -178,21 +168,21 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	return nil
 }
 
-func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	var err error
 	defer reportMetrics("Get", time.Now(), nil, &err)
 
-	return a.Download(obj, 0, azblob.CountToEnd)
+	return a.Download(ctx, obj, 0, azblob.CountToEnd)
 }
 
-func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
 	defer reportMetrics("GetRange", time.Now(), nil, &err)
 
-	return a.Download(obj, startPosition, endPosition-startPosition+1)
+	return a.Download(ctx, obj, startPosition, endPosition-startPosition+1)
 }
 
-func (a *Adapter) Download(obj block.ObjectPointer, offset, count int64) (io.ReadCloser, error) {
+func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset, count int64) (io.ReadCloser, error) {
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return nil, err
@@ -201,7 +191,7 @@ func (a *Adapter) Download(obj block.ObjectPointer, offset, count int64) (io.Rea
 	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
 	keyOptions := azblob.ClientProvidedKeyOptions{}
-	downloadResponse, err := blobURL.Download(a.ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
+	downloadResponse, err := blobURL.Download(ctx, offset, count, azblob.BlobAccessConditions{}, false, keyOptions)
 
 	if err != nil {
 		return nil, err
@@ -210,7 +200,7 @@ func (a *Adapter) Download(obj block.ObjectPointer, offset, count int64) (io.Rea
 	return bodyStream, nil
 }
 
-func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	var err error
 	defer reportMetrics("Walk", time.Now(), nil, &err)
 
@@ -222,7 +212,7 @@ func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	containerURL := a.getContainerURL(qualifiedPrefix.ContainerURL)
 
 	for marker := (azblob.Marker{}); marker.NotDone(); {
-		listBlob, err := containerURL.ListBlobsFlatSegment(a.ctx, marker, azblob.ListBlobsSegmentOptions{Prefix: qualifiedPrefix.Prefix})
+		listBlob, err := containerURL.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{Prefix: qualifiedPrefix.Prefix})
 		if err != nil {
 			return err
 		}
@@ -237,7 +227,7 @@ func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	return nil
 }
 
-func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
 
@@ -249,7 +239,7 @@ func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 	container := a.getContainerURL(qualifiedKey.ContainerURL)
 	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
-	_, err = blobURL.GetProperties(a.ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	_, err = blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 	var storageErr azblob.StorageError
 
 	if errors.As(err, &storageErr) && storageErr.ServiceCode() == azblob.ServiceCodeBlobNotFound {
@@ -260,7 +250,7 @@ func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 	return true, nil
 }
 
-func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
 
@@ -272,7 +262,7 @@ func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 	container := a.getContainerURL(qualifiedKey.ContainerURL)
 	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
-	props, err := blobURL.GetProperties(a.ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	props, err := blobURL.GetProperties(ctx, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -280,7 +270,7 @@ func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 	return block.Properties{StorageClass: &storageClass}, nil
 }
 
-func (a *Adapter) Remove(obj block.ObjectPointer) error {
+func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
 
@@ -292,11 +282,11 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	container := a.getContainerURL(qualifiedKey.ContainerURL)
 	blobURL := container.NewBlobURL(qualifiedKey.BlobURL)
 
-	_, err = blobURL.Delete(a.ctx, "", azblob.BlobAccessConditions{})
+	_, err = blobURL.Delete(ctx, "", azblob.BlobAccessConditions{})
 	return err
 }
 
-func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
+func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Copy", time.Now(), nil, &err)
 
@@ -313,11 +303,11 @@ func (a *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 
 	destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
 	destinationURL := destinationContainer.NewBlobURL(qualifiedDestinationKey.BlobURL)
-	_, err = destinationURL.StartCopyFromURL(a.ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
+	_, err = destinationURL.StartCopyFromURL(ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
 	return err
 }
 
-func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
 	// Azure has no create multipart upload
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
@@ -330,7 +320,7 @@ func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request
 	return qualifiedKey.BlobURL, nil
 }
 
-func (a *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int64) (string, error) {
+func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
@@ -348,7 +338,7 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader,
 	}
 	defer transferManager.Close()
 	multipartBlockWriter := NewMultipartBlockWriter(hashReader, container, qualifiedKey.BlobURL)
-	_, err = copyFromReader(a.ctx, hashReader, multipartBlockWriter, azblob.UploadStreamToBlockBlobOptions{
+	_, err = copyFromReader(ctx, hashReader, multipartBlockWriter, azblob.UploadStreamToBlockBlobOptions{
 		TransferManager: transferManager,
 	})
 	if err != nil {
@@ -357,21 +347,21 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader,
 	return multipartBlockWriter.etag, nil
 }
 
-func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, _ string, _ int64) (string, error) {
+func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
-	return a.copyPartRange(sourceObj, destinationObj, 0, azblob.CountToEnd)
+	return a.copyPartRange(ctx, sourceObj, destinationObj, 0, azblob.CountToEnd)
 }
 
-func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, _ string, _, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _, startPosition, endPosition int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), nil, &err)
 
-	return a.copyPartRange(sourceObj, destinationObj, startPosition, endPosition-startPosition+1)
+	return a.copyPartRange(ctx, sourceObj, destinationObj, startPosition, endPosition-startPosition+1)
 }
 
-func (a *Adapter) copyPartRange(sourceObj, destinationObj block.ObjectPointer, startPosition, count int64) (string, error) {
+func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, startPosition, count int64) (string, error) {
 	qualifiedSourceKey, err := resolveBlobURLInfo(sourceObj)
 	if err != nil {
 		return "", err
@@ -386,15 +376,15 @@ func (a *Adapter) copyPartRange(sourceObj, destinationObj block.ObjectPointer, s
 	sourceContainer := a.getContainerURL(qualifiedSourceKey.ContainerURL)
 	sourceBlobURL := sourceContainer.NewBlockBlobURL(qualifiedSourceKey.BlobURL)
 
-	return copyPartRange(a.ctx, destinationContainer, qualifiedDestinationKey.BlobURL, sourceBlobURL, startPosition, count)
+	return copyPartRange(ctx, destinationContainer, qualifiedDestinationKey.BlobURL, sourceBlobURL, startPosition, count)
 }
 
-func (a *Adapter) AbortMultiPartUpload(_ block.ObjectPointer, _ string) error {
+func (a *Adapter) AbortMultiPartUpload(ctx context.Context, _ block.ObjectPointer, _ string) error {
 	// Azure has no abort, in case of commit, uncommitted parts are erased, otherwise staged data is erased after 7 days
 	return nil
 }
 
-func (a *Adapter) ValidateConfiguration(_ string) error {
+func (a *Adapter) ValidateConfiguration(ctx context.Context, _ string) error {
 	return nil
 }
 
@@ -402,7 +392,7 @@ func (a *Adapter) BlockstoreType() string {
 	return BlockstoreType
 }
 
-func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
@@ -411,7 +401,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, _ string, mul
 	}
 	containerURL := a.getContainerURL(qualifiedKey.ContainerURL)
 
-	return CompleteMultipart(a.ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
+	return CompleteMultipart(ctx, multipartList.Part, containerURL, qualifiedKey.BlobURL, a.configurations.retryReaderOptions)
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {

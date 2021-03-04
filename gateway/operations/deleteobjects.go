@@ -41,7 +41,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 			continue
 		}
 		// authorize this object deletion
-		authResp, err := o.Auth.Authorize(&auth.AuthorizationRequest{
+		authResp, err := o.Auth.Authorize(req.Context(), &auth.AuthorizationRequest{
 			Username: o.Principal,
 			RequiredPermissions: []permissions.Permission{
 				{

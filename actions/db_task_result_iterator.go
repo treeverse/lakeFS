@@ -71,7 +71,7 @@ func (it *DBTaskResultIterator) maybeFetch() {
 	if it.err != nil {
 		return
 	}
-	it.err = it.db.WithContext(it.ctx).Select(&it.buf, sql, args...)
+	it.err = it.db.Select(it.ctx, &it.buf, sql, args...)
 	if it.err != nil {
 		return
 	}

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -44,7 +43,7 @@ var commitCmd = &cobra.Command{
 
 		// do commit
 		client := getClient()
-		commit, err := client.Commit(context.Background(), branchURI.Repository, branchURI.Ref, message, kvPairs)
+		commit, err := client.Commit(cmd.Context(), branchURI.Repository, branchURI.Ref, message, kvPairs)
 		if err != nil {
 			DieErr(err)
 		}

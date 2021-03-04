@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -49,14 +48,14 @@ var entryCmd = &cobra.Command{
 
 		rand.Seed(time.Now().UTC().UnixNano()) // make it special
 
-		ctx := context.Background()
-		database := connectToDB(connectionString)
+		ctx := cmd.Context()
+		database := connectToDB(ctx, connectionString)
 		defer database.Close()
-		lockDB := connectToDB(connectionString)
+		lockDB := connectToDB(ctx, connectionString)
 		defer lockDB.Close()
 
 		conf := config.NewConfig()
-		c, err := catalog.NewCataloger(catalog.Config{
+		c, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: conf,
 			DB:     database,
 			LockDB: lockDB,

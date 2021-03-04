@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -78,9 +79,10 @@ func TestNewFromFile(t *testing.T) {
 }
 
 func TestConfig_BuildBlockAdapter(t *testing.T) {
+	ctx := context.Background()
 	t.Run("local block adapter", func(t *testing.T) {
 		c := newConfigFromFile("testdata/valid_config.yaml")
-		adapter, err := factory.BuildBlockAdapter(c)
+		adapter, err := factory.BuildBlockAdapter(ctx, c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
@@ -90,7 +92,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("s3 block adapter", func(t *testing.T) {
 		newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		c := config.NewConfig()
-		adapter, err := factory.BuildBlockAdapter(c)
+		adapter, err := factory.BuildBlockAdapter(ctx, c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
@@ -100,7 +102,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("gs block adapter", func(t *testing.T) {
 		newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
 		c := config.NewConfig()
-		adapter, err := factory.BuildBlockAdapter(c)
+		adapter, err := factory.BuildBlockAdapter(ctx, c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*gs.Adapter); !ok {
 			t.Fatalf("expected an gs block adapter, got something else instead")

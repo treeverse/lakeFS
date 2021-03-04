@@ -28,6 +28,7 @@ type Tx interface {
 
 type dbTx struct {
 	tx     pgx.Tx
+	ctx    context.Context
 	logger logging.Logger
 }
 
@@ -37,7 +38,7 @@ func queryToString(q string) string {
 
 func (d *dbTx) Query(query string, args ...interface{}) (pgx.Rows, error) {
 	start := time.Now()
-	rows, err := d.tx.Query(context.Background(), query, args...)
+	rows, err := d.tx.Query(d.ctx, query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "query",
 		"args":  args,
@@ -72,7 +73,7 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	err := pgxscan.Get(context.Background(), d.tx, dest, query, args...)
+	err := pgxscan.Get(d.ctx, d.tx, dest, query, args...)
 	if pgxscan.NotFound(err) {
 		// This err comes directly from scany, not directly from pgx, so *must* use
 		// pgxscan.NotFound.
@@ -96,7 +97,7 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	row := d.tx.QueryRow(context.Background(), query, args...)
+	row := d.tx.QueryRow(d.ctx, query, args...)
 	err := row.Scan(dest)
 	if errors.Is(err, pgx.ErrNoRows) {
 		log.Trace("SQL query returned no results")
@@ -113,7 +114,7 @@ func (d *dbTx) GetPrimitive(dest interface{}, query string, args ...interface{})
 
 func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error) {
 	start := time.Now()
-	res, err := d.tx.Exec(context.Background(), query, args...)
+	res, err := d.tx.Exec(d.ctx, query, args...)
 	log := d.logger.WithFields(logging.Fields{
 		"type":  "exec",
 		"args":  args,
@@ -133,7 +134,6 @@ type TxOpt func(*TxOptions)
 
 type TxOptions struct {
 	logger         logging.Logger
-	ctx            context.Context
 	isolationLevel pgx.TxIsoLevel
 	accessMode     pgx.TxAccessMode
 }
@@ -141,7 +141,6 @@ type TxOptions struct {
 func DefaultTxOptions() *TxOptions {
 	return &TxOptions{
 		logger:         logging.Default(),
-		ctx:            context.Background(),
 		isolationLevel: pgx.Serializable,
 		accessMode:     pgx.ReadWrite,
 	}
@@ -150,12 +149,6 @@ func DefaultTxOptions() *TxOptions {
 func WithLogger(logger logging.Logger) TxOpt {
 	return func(o *TxOptions) {
 		o.logger = logger
-	}
-}
-
-func WithContext(ctx context.Context) TxOpt {
-	return func(o *TxOptions) {
-		o.ctx = ctx
 	}
 }
 

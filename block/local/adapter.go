@@ -26,7 +26,6 @@ const BlockstoreType = "local"
 
 type Adapter struct {
 	path               string
-	ctx                context.Context
 	uploadIDTranslator block.UploadIDTranslator
 	removeEmptyDir     bool
 }
@@ -36,15 +35,6 @@ var (
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 )
-
-func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
-	return &Adapter{
-		path:               l.path,
-		ctx:                ctx,
-		uploadIDTranslator: l.uploadIDTranslator,
-		removeEmptyDir:     l.removeEmptyDir,
-	}
-}
 
 func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
@@ -69,7 +59,6 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	}
 	adapter := &Adapter{
 		path:               path,
-		ctx:                context.Background(),
 		uploadIDTranslator: &block.NoOpTranslator{},
 		removeEmptyDir:     true,
 	}
@@ -117,7 +106,7 @@ func (l *Adapter) Path() string {
 	return l.path
 }
 
-func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
+func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
 	p, err := l.getPath(obj)
 	if err != nil {
 		return err
@@ -134,7 +123,7 @@ func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ bloc
 	return err
 }
 
-func (l *Adapter) Remove(obj block.ObjectPointer) error {
+func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
 	p, err := l.getPath(obj)
 	if err != nil {
 		return err
@@ -170,7 +159,7 @@ func removeEmptyDirUntil(dir string, stopAt string) {
 	}
 }
 
-func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
+func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	source, err := l.getPath(sourceObj)
 	if err != nil {
 		return err
@@ -197,37 +186,37 @@ func (l *Adapter) Copy(sourceObj, destinationObj block.ObjectPointer) error {
 	return err
 }
 
-func (l *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return "", err
 	}
-	r, err := l.Get(sourceObj, 0)
+	r, err := l.Get(ctx, sourceObj, 0)
 	if err != nil {
 		return "", err
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	err = l.Put(block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return etag, err
 }
 
-func (l *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return "", err
 	}
-	r, err := l.GetRange(sourceObj, startPosition, endPosition)
+	r, err := l.GetRange(ctx, sourceObj, startPosition, endPosition)
 	if err != nil {
 		return "", err
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	err = l.Put(block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return etag, err
 }
 
-func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
+func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
 	p, err := l.getPath(obj)
 	if err != nil {
 		return nil, err
@@ -239,7 +228,7 @@ func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, e
 	return f, nil
 }
 
-func (l *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+func (l *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	p := filepath.Clean(path.Join(l.path, walkOpt.StorageNamespace, walkOpt.Prefix))
 	return filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -250,7 +239,7 @@ func (l *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	})
 }
 
-func (l *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
 	p, err := l.getPath(obj)
 	if err != nil {
 		return false, err
@@ -265,7 +254,7 @@ func (l *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
 	return true, nil
 }
 
-func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
+func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
 	p, err := l.getPath(obj)
 	if err != nil {
 		return nil, err
@@ -283,7 +272,7 @@ func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.
 	}, nil
 }
 
-func (l *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	p, err := l.getPath(obj)
 	if err != nil {
 		return block.Properties{}, err
@@ -310,7 +299,7 @@ func isDirectoryWritable(pth string) bool {
 	return true
 }
 
-func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
+func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
 	if strings.Contains(obj.Identifier, "/") {
 		fullPath, err := l.getPath(obj)
 		if err != nil {
@@ -328,18 +317,18 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, _ *http.Request
 	return uploadID, nil
 }
 
-func (l *Adapter) UploadPart(obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return "", err
 	}
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	err := l.Put(block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	err := l.Put(ctx, block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return etag, err
 }
 
-func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
+func (l *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string) error {
 	if err := isValidUploadID(uploadID); err != nil {
 		return err
 	}
@@ -351,7 +340,7 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	return nil
 }
 
-func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, -1, err
 	}
@@ -436,7 +425,7 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 	return names, nil
 }
 
-func (l *Adapter) ValidateConfiguration(_ string) error {
+func (l *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
 	return nil
 }
 

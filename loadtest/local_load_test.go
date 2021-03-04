@@ -1,6 +1,7 @@
 package loadtest
 
 import (
+	"context"
 	"log"
 	"math"
 	"net/http/httptest"
@@ -55,13 +56,14 @@ func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
+	ctx := context.Background()
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	if blockstoreType == "" {
 		blockstoreType = "mem"
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalog.NewCataloger(catalog.Config{
+	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})
@@ -83,16 +85,17 @@ func TestLocalLoad(t *testing.T) {
 		_ = cataloger.Close()
 	})
 
-	handler := api.Serve(api.Dependencies{
-		Cataloger:       cataloger,
-		Auth:            authService,
-		BlockAdapter:    blockAdapter,
-		MetadataManager: meta,
-		Migrator:        migrator,
-		Collector:       &nullCollector{},
-		Actions:         actionsService,
-		Logger:          logging.Default(),
-	})
+	handler := api.Serve(
+		cataloger,
+		authService,
+		blockAdapter,
+		meta,
+		migrator,
+		&nullCollector{},
+		nil,
+		actionsService,
+		logging.Default(),
+	)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
@@ -103,7 +106,7 @@ func TestLocalLoad(t *testing.T) {
 			Username:  "admin",
 		},
 	}
-	credentials, err := auth.SetupAdminUser(authService, superuser)
+	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)
 	testutil.Must(t, err)
 
 	testConfig := Config{

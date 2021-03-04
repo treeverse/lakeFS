@@ -41,10 +41,10 @@ var diffCmd = &cobra.Command{
 			if leftRefURI.Repository != rightRefURI.Repository {
 				Die("both references must belong to the same repository", 1)
 			}
-			printDiffRefs(client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		} else {
 			branchURI := uri.Must(uri.Parse(args[0]))
-			printDiffBranch(client, branchURI.Repository, branchURI.Ref)
+			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 		}
 	},
 }
@@ -61,11 +61,11 @@ func (p *pageSize) Next() int {
 	return p.Value()
 }
 
-func printDiffBranch(client api.Client, repository string, branch string) {
+func printDiffBranch(ctx context.Context, client api.Client, repository string, branch string) {
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		diff, pagination, err := client.DiffBranch(context.Background(), repository, branch, after, pageSize.Value())
+		diff, pagination, err := client.DiffBranch(ctx, repository, branch, after, pageSize.Value())
 		if err != nil {
 			DieErr(err)
 		}
@@ -80,11 +80,11 @@ func printDiffBranch(client api.Client, repository string, branch string) {
 	}
 }
 
-func printDiffRefs(client api.Client, repository string, leftRef string, rightRef string) {
+func printDiffRefs(ctx context.Context, client api.Client, repository string, leftRef string, rightRef string) {
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		diff, pagination, err := client.DiffRefs(context.Background(), repository, leftRef, rightRef,
+		diff, pagination, err := client.DiffRefs(ctx, repository, leftRef, rightRef,
 			after, pageSize.Value())
 		if err != nil {
 			DieErr(err)

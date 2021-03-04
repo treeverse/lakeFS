@@ -77,12 +77,12 @@ func (s *Iterator) Close() {
 }
 
 func (s *Iterator) loadBuffer() bool {
-	queryResult, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+	queryResult, err := s.db.Transact(s.ctx, func(tx db.Tx) (interface{}, error) {
 		var res []*graveler.ValueRecord
 		err := tx.Select(&res, "SELECT key, identity, data "+
 			"FROM graveler_staging_kv WHERE staging_token=$1 AND key >= $2 ORDER BY key LIMIT $3", s.st, s.nextFrom, batchSize+1)
 		return res, err
-	}, db.WithLogger(s.log), db.WithContext(s.ctx), db.ReadOnly())
+	}, db.WithLogger(s.log), db.ReadOnly())
 	if err != nil {
 		s.err = err
 		return false

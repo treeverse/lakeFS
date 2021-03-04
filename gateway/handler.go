@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"net/http"
 	gohttputil "net/http/httputil"
 	"net/url"
@@ -50,7 +49,6 @@ type handler struct {
 }
 
 type ServerContext struct {
-	ctx               context.Context
 	region            string
 	bareDomain        string
 	cataloger         catalog.Cataloger
@@ -58,19 +56,6 @@ type ServerContext struct {
 	blockStore        block.Adapter
 	authService       simulator.GatewayAuthService
 	stats             stats.Collector
-}
-
-func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
-	return &ServerContext{
-		ctx:               ctx,
-		region:            c.region,
-		bareDomain:        c.bareDomain,
-		cataloger:         c.cataloger,
-		multipartsTracker: c.multipartsTracker,
-		blockStore:        c.blockStore.WithContext(ctx),
-		authService:       c.authService,
-		stats:             c.stats,
-	}
 }
 
 func NewHandler(
@@ -92,7 +77,6 @@ func NewHandler(
 		})
 	}
 	sc := &ServerContext{
-		ctx:               context.Background(),
 		cataloger:         cataloger,
 		multipartsTracker: multipartsTracker,
 		region:            region,
@@ -251,7 +235,7 @@ func authorize(w http.ResponseWriter, req *http.Request, authService simulator.G
 		}
 	}
 
-	authResp, err := authService.Authorize(&auth.AuthorizationRequest{
+	authResp, err := authService.Authorize(req.Context(), &auth.AuthorizationRequest{
 		Username:            username,
 		RequiredPermissions: perms,
 	})

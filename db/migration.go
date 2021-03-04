@@ -58,8 +58,8 @@ func getStatikSrc() (source.Driver, error) {
 	return httpfs.New(migrationFs, "/")
 }
 
-func ValidateSchemaUpToDate(params params.Database) error {
-	version, _, err := MigrateVersion(params)
+func ValidateSchemaUpToDate(ctx context.Context, params params.Database) error {
+	version, _, err := MigrateVersion(ctx, params)
 	if err != nil {
 		return err
 	}
@@ -152,9 +152,9 @@ func MigrateDown(params params.Database) error {
 	return nil
 }
 
-func MigrateTo(p params.Database, version uint, force bool) error {
+func MigrateTo(ctx context.Context, p params.Database, version uint, force bool) error {
 	// make sure we have schema by calling connect
-	mdb, err := ConnectDB(p)
+	mdb, err := ConnectDB(ctx, p)
 	if err != nil {
 		return err
 	}
@@ -175,13 +175,13 @@ func MigrateTo(p params.Database, version uint, force bool) error {
 	return nil
 }
 
-func MigrateVersion(params params.Database) (uint, bool, error) {
+func MigrateVersion(ctx context.Context, params params.Database) (uint, bool, error) {
 	// validate that default migrations table exists with information - a workaround
 	// so we will not create the migration table as the package will ensure the table exists
-	dbPool := BuildDatabaseConnection(params)
+	dbPool := BuildDatabaseConnection(ctx, params)
 	defer dbPool.Close()
 	var rows int
-	err := dbPool.Get(&rows, `SELECT COUNT(*) FROM `+postgres.DefaultMigrationsTable)
+	err := dbPool.Get(ctx, &rows, `SELECT COUNT(*) FROM `+postgres.DefaultMigrationsTable)
 	if err != nil || rows == 0 {
 		return 0, false, migrate.ErrNilVersion
 	}

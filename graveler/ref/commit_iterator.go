@@ -71,8 +71,8 @@ func NewCommitIterator(ctx context.Context, db db.Database, repositoryID gravele
 
 func (ci *CommitIterator) getCommitRecord(commitID graveler.CommitID) (*graveler.CommitRecord, error) {
 	var rec commitRecord
-	err := ci.db.WithContext(ci.ctx).
-		Get(&rec, `SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
+	err := ci.db.
+		Get(ci.ctx, &rec, `SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
 			FROM graveler_commits
 			WHERE repository_id = $1 AND id = $2`,
 			ci.repositoryID, commitID)

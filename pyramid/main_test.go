@@ -34,14 +34,10 @@ func (a *memAdapter) GetCount() int64 {
 	return atomic.LoadInt64(&a.gets)
 }
 
-func (a *memAdapter) Get(obj block.ObjectPointer, size int64) (io.ReadCloser, error) {
+func (a *memAdapter) Get(ctx context.Context, obj block.ObjectPointer, size int64) (io.ReadCloser, error) {
 	atomic.AddInt64(&a.gets, 1)
 	<-a.wait
-	return a.Adapter.Get(obj, size)
-}
-
-func (a *memAdapter) WithContext(context.Context) block.Adapter {
-	return a
+	return a.Adapter.Get(ctx, obj, size)
 }
 
 func createFSWithEviction(ev params.Eviction) (FS, string) {

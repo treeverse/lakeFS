@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 
@@ -54,7 +53,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 
 		// execute the restore operation
 		client := getClient()
-		err = client.RefsRestore(context.Background(), repoURI.Repository, manifest)
+		err = client.RefsRestore(cmd.Context(), repoURI.Repository, manifest)
 		if err != nil {
 			DieErr(err)
 		}
@@ -74,7 +73,7 @@ var refsDumpCmd = &cobra.Command{
 		repoURI := uri.Must(uri.Parse(args[0]))
 
 		client := getClient()
-		resp, err := client.RefsDump(context.Background(), repoURI.Repository)
+		resp, err := client.RefsDump(cmd.Context(), repoURI.Repository)
 		if err != nil {
 			DieErr(err)
 		}

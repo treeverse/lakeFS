@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -48,7 +47,7 @@ var mergeCmd = &cobra.Command{
 			Die("both references must belong to the same repository", 1)
 		}
 
-		result, err := client.Merge(context.Background(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
+		result, err := client.Merge(cmd.Context(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
 		if errors.Is(err, catalog.ErrConflictFound) {
 			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
 			return

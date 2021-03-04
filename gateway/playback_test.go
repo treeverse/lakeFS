@@ -107,13 +107,14 @@ func getBasicHandlerPlayback(t *testing.T) (http.Handler, *dependencies) {
 }
 
 func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (http.Handler, *dependencies) {
+	ctx := context.Background()
 	IdTranslator = &testutil.UploadIDTranslator{TransMap: make(map[string]string),
 		ExpectedID: "",
 		T:          t,
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	cataloger, err := catalog.NewCataloger(catalog.Config{
+	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})
@@ -127,7 +128,6 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		_ = cataloger.Close()
 	})
 
-	ctx := context.Background()
 	storageNamespace := os.Getenv("USE_STORAGE_NAMESPACE")
 	if storageNamespace == "" {
 		storageNamespace = "replay"
