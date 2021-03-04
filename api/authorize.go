@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -11,8 +12,8 @@ import (
 
 var ErrAuthorization = errors.New("authorization error")
 
-func authorize(a auth.Service, user *models.User, permissions []permissions.Permission) error {
-	authResp, err := a.Authorize(&auth.AuthorizationRequest{
+func authorize(ctx context.Context, a auth.Service, user *models.User, permissions []permissions.Permission) error {
+	authResp, err := a.Authorize(ctx, &auth.AuthorizationRequest{
 		Username:            user.ID,
 		RequiredPermissions: permissions,
 	})

@@ -20,8 +20,8 @@ const (
 
 // BuildDatabaseConnection returns a database connection based on a pool for the configuration
 // in c.
-func BuildDatabaseConnection(dbParams params.Database) Database {
-	database, err := ConnectDB(dbParams)
+func BuildDatabaseConnection(ctx context.Context, dbParams params.Database) Database {
+	database, err := ConnectDB(ctx, dbParams)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,7 @@ func Ping(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 // ConnectDBPool connects to a database using the database params and returns a connection pool
-func ConnectDBPool(p params.Database) (*pgxpool.Pool, error) {
+func ConnectDBPool(ctx context.Context, p params.Database) (*pgxpool.Pool, error) {
 	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
 		"driver":            p.Driver,
@@ -60,11 +60,11 @@ func ConnectDBPool(p params.Database) (*pgxpool.Pool, error) {
 	config.MinConns = p.MaxIdleConnections
 	config.MaxConnLifetime = p.ConnectionMaxLifetime
 
-	pool, err := pgxpool.ConnectConfig(context.Background(), config)
+	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("could not open DB: %w", err)
 	}
-	err = Ping(context.Background(), pool)
+	err = Ping(ctx, pool)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -75,8 +75,8 @@ func ConnectDBPool(p params.Database) (*pgxpool.Pool, error) {
 }
 
 // ConnectDB connects to a database using the database params and returns Database
-func ConnectDB(p params.Database) (Database, error) {
-	pool, err := ConnectDBPool(p)
+func ConnectDB(ctx context.Context, p params.Database) (Database, error) {
+	pool, err := ConnectDBPool(ctx, p)
 	if err != nil {
 		return nil, err
 	}

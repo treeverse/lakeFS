@@ -25,27 +25,23 @@ func New() *Adapter {
 	return &Adapter{}
 }
 
-func (a *Adapter) WithContext(context.Context) block.Adapter {
-	return &Adapter{}
-}
-
-func (a *Adapter) Put(_ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
+func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
 	_, err := io.Copy(ioutil.Discard, reader)
 	return err
 }
 
-func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	if expectedSize < 0 {
 		return nil, io.ErrUnexpectedEOF
 	}
 	return ioutil.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
 }
 
-func (a *Adapter) Exists(obj block.ObjectPointer) (bool, error) {
+func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
 	return true, nil
 }
 
-func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -57,25 +53,25 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return ioutil.NopCloser(reader), nil
 }
 
-func (a *Adapter) GetProperties(_ block.ObjectPointer) (block.Properties, error) {
+func (a *Adapter) GetProperties(_ context.Context, _ block.ObjectPointer) (block.Properties, error) {
 	return block.Properties{}, nil
 }
 
-func (a *Adapter) Remove(_ block.ObjectPointer) error {
+func (a *Adapter) Remove(_ context.Context, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) Copy(_, _ block.ObjectPointer) error {
+func (a *Adapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int64) (string, error) {
 	h := sha256.New()
 	code := h.Sum(nil)
 	return hex.EncodeToString(code), nil
 }
 
-func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber, startPosition, endPosition int64) (string, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return "", io.ErrUnexpectedEOF
@@ -85,17 +81,17 @@ func (a *Adapter) UploadCopyPartRange(sourceObj, destinationObj block.ObjectPoin
 	return hex.EncodeToString(code), nil
 }
 
-func (a *Adapter) Walk(walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
+func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
 	return uploadID, nil
 }
 
-func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return "", err
@@ -109,11 +105,11 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	return hex.EncodeToString(code), nil
 }
 
-func (a *Adapter) AbortMultiPartUpload(block.ObjectPointer, string) error {
+func (a *Adapter) AbortMultiPartUpload(context.Context, block.ObjectPointer, string) error {
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(block.ObjectPointer, string, *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, string, *block.MultipartUploadCompletion) (*string, int64, error) {
 	const dataSize = 1024
 	data := make([]byte, dataSize)
 	if _, err := rand.Read(data); err != nil {
@@ -130,7 +126,7 @@ func (a *Adapter) CompleteMultiPartUpload(block.ObjectPointer, string, *block.Mu
 	return &codeHex, dataSize, nil
 }
 
-func (a *Adapter) ValidateConfiguration(_ string) error {
+func (a *Adapter) ValidateConfiguration(_ context.Context, _ string) error {
 	return nil
 }
 

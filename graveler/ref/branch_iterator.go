@@ -69,7 +69,7 @@ func (ri *BranchIterator) maybeFetch() {
 	}
 
 	var buf []*branchRecord
-	err := ri.db.WithContext(ri.ctx).Select(&buf, `
+	err := ri.db.Select(ri.ctx, &buf, `
 			SELECT id, staging_token, commit_id
 			FROM graveler_branches
 			WHERE repository_id = $1

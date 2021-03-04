@@ -71,9 +71,9 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
-	ctx := context.Background()
+	ctx := cmd.Context()
 	conf := config.NewConfig()
-	err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
+	err := db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
 	if errors.Is(err, db.ErrSchemaNotCompatible) {
 		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
 		return 1
@@ -83,14 +83,14 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 	logger := logging.FromContext(ctx)
-	dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+	dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 	defer dbPool.Close()
 
 	catalogCfg := catalog.Config{
 		Config: cfg,
 		DB:     dbPool,
 	}
-	cataloger, err := catalog.NewCataloger(catalogCfg)
+	cataloger, err := catalog.NewCataloger(ctx, catalogCfg)
 	if err != nil {
 		fmt.Printf("Failed to create cataloger: %s\n", err)
 		return 1
@@ -98,7 +98,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	defer func() { _ = cataloger.Close() }()
 
 	// TODO(barak): do we need to create a new entry catalog or extract the one we have from the cataloger
-	entryCataloger, err := catalog.NewEntryCatalog(catalogCfg)
+	entryCataloger, err := catalog.NewEntryCatalog(ctx, catalogCfg)
 	if err != nil {
 		fmt.Printf("Failed to build entry catalog: %s\n", err)
 		return 1
@@ -113,7 +113,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	entryCataloger.SetHooksHandler(actionsService)
 
 	u := uri.Must(uri.Parse(args[0]))
-	blockStore, err := factory.BuildBlockAdapter(cfg)
+	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
 	if err != nil {
 		fmt.Printf("Failed to create block adapter: %s\n", err)
 		return 1

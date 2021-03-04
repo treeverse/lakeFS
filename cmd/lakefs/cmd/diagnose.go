@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -16,14 +15,14 @@ var diagnoseCmd = &cobra.Command{
 	Use:   "diagnose",
 	Short: "Diagnose underlying infrastructure configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		ctx := cmd.Context()
 		logger := logging.Default().WithContext(ctx)
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		adapter, err := factory.BuildBlockAdapter(cfg)
+		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
+		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-		cataloger, err := catalog.NewCataloger(catalog.Config{
+		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 		})
@@ -48,7 +47,7 @@ var diagnoseCmd = &cobra.Command{
 				continue
 			}
 			bucket := parsedRepo.Host
-			err = adapter.ValidateConfiguration(bucket)
+			err = adapter.ValidateConfiguration(ctx, bucket)
 			if err != nil {
 				logger.WithFields(logging.Fields{
 					"error":      err,

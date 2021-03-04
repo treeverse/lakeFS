@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -49,7 +47,7 @@ var logCmd = &cobra.Command{
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		commits, pagination, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Ref, after, amount)
+		commits, pagination, err := client.GetCommitLog(cmd.Context(), branchURI.Repository, branchURI.Ref, after, amount)
 		if err != nil {
 			DieErr(err)
 		}

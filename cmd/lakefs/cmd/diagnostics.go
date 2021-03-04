@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"log"
 	"os"
 
@@ -17,23 +16,23 @@ var diagnosticsCmd = &cobra.Command{
 	Use:   "diagnostics",
 	Short: "Collect lakeFS diagnostics",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
-		adapter, err := factory.BuildBlockAdapter(cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
-		cataloger, err := catalog.NewCataloger(catalog.Config{
+		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 		})
 		if err != nil {
 			log.Printf("Failed to create cataloger: %s", err)
 		}
-		pyrmaidParams, err := cfg.GetCommittedTierFSParams()
+		pyrmaidParams, err := cfg.GetCommittedTierFSParams(ctx)
 		if err != nil {
 			log.Printf("Failed to get pyramid params: %s", err)
 		}

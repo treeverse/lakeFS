@@ -60,7 +60,7 @@ func (ri *RepositoryIterator) maybeFetch() {
 	} else {
 		offsetCondition = iteratorOffsetCondition(false)
 	}
-	ri.err = ri.db.WithContext(ri.ctx).Select(&ri.buf, `
+	ri.err = ri.db.Select(ri.ctx, &ri.buf, `
 			SELECT id, storage_namespace, creation_date, default_branch
 			FROM graveler_repositories
 			WHERE id `+offsetCondition+` $1

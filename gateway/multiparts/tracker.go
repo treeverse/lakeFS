@@ -41,12 +41,12 @@ func (m *tracker) Create(ctx context.Context, uploadID, path, physicalAddress st
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`INSERT INTO gateway_multiparts (upload_id,path,creation_date,physical_address)
 			VALUES ($1, $2, $3, $4)`,
 			uploadID, path, creationTime, physicalAddress)
 		return nil, err
-	}, db.WithContext(ctx))
+	})
 	return err
 }
 
@@ -54,7 +54,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 	if uploadID == "" {
 		return nil, ErrInvalidUploadID
 	}
-	res, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+	res, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		var m MultipartUpload
 		if err := tx.Get(&m, `
 			SELECT upload_id, path, creation_date, physical_address 
@@ -64,7 +64,7 @@ func (m *tracker) Get(ctx context.Context, uploadID string) (*MultipartUpload, e
 			return nil, err
 		}
 		return &m, nil
-	}, db.WithContext(ctx))
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	_, err := m.db.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		res, err := tx.Exec(`DELETE FROM gateway_multiparts WHERE upload_id = $1`, uploadID)
 		if err != nil {
 			return nil, err

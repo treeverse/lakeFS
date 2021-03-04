@@ -139,13 +139,13 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 			parsedRange, parseErr := ghttp.ParseRange(rang, ent.Size)
 			if parseErr != nil {
 				// invalid range will silently fallback to copying the entire object. ¯\_(ツ)_/¯
-				etag, err = o.BlockStore.UploadCopyPart(src, dst, uploadID, partNumber)
+				etag, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
 			} else {
-				etag, err = o.BlockStore.UploadCopyPartRange(src, dst, uploadID, partNumber, parsedRange.StartOffset, parsedRange.EndOffset)
+				etag, err = o.BlockStore.UploadCopyPartRange(req.Context(), src, dst, uploadID, partNumber, parsedRange.StartOffset, parsedRange.EndOffset)
 			}
 		} else {
 			// normal copy part that accepts another object and no byte range:
-			etag, err = o.BlockStore.UploadCopyPart(src, dst, uploadID, partNumber)
+			etag, err = o.BlockStore.UploadCopyPart(req.Context(), src, dst, uploadID, partNumber)
 		}
 
 		if err != nil {
@@ -162,7 +162,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	}
 
 	byteSize := req.ContentLength
-	etag, err := o.BlockStore.UploadPart(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
+	etag, err := o.BlockStore.UploadPart(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
 		byteSize, req.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log(req).WithError(err).Error("part " + partNumberStr + " upload failed")
@@ -217,7 +217,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object")
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	blob, err := upload.WriteBlob(o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
+	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))

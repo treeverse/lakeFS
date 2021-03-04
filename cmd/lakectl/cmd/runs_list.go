@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -35,7 +33,7 @@ var runsListCmd = &cobra.Command{
 		}
 
 		client := getClient()
-		ctx := context.Background()
+		ctx := cmd.Context()
 		var err error
 		var results []*models.ActionRun
 		var pagination *models.Pagination

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/cmdutils"
@@ -35,7 +33,7 @@ var tagListCmd = &cobra.Command{
 		after, _ := cmd.Flags().GetString("after")
 
 		u := uri.Must(uri.Parse(args[0]))
-		ctx := context.Background()
+		ctx := cmd.Context()
 		client := getClient()
 		response, pagination, err := client.ListTags(ctx, u.Repository, after, amount)
 		if err != nil {
@@ -79,7 +77,7 @@ var tagCreateCmd = &cobra.Command{
 		tagURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
 		commitRef := args[1]
-		ctx := context.Background()
+		ctx := cmd.Context()
 		commitID, err := client.CreateTag(ctx, tagURI.Repository, tagURI.Ref, commitRef)
 		if err != nil {
 			DieErr(err)
@@ -102,7 +100,7 @@ var tagDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		ctx := context.Background()
+		ctx := cmd.Context()
 		err = client.DeleteTag(ctx, u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
@@ -120,7 +118,7 @@ var tagShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		ctx := context.Background()
+		ctx := cmd.Context()
 		ref, err := client.GetTag(ctx, u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
