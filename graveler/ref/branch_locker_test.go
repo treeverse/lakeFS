@@ -7,12 +7,15 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/testutil"
 	tu "github.com/treeverse/lakefs/testutil"
 )
+
+var errUnexpectedCall = errors.New("this function should not have been called")
 
 func TestBranchLock(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
@@ -48,13 +51,14 @@ func TestBranchLock(t *testing.T) {
 		}
 	})
 
-	t.Run("committer_blocks_all", func(t *testing.T) {
-		chAcquired := make(chan struct{})
+	t.Run("committer_blocks_writer", func(t *testing.T) {
 		chReleaseAcquired := make(chan struct{})
-		chDone := make(chan struct{})
+		chAcquired := make(chan struct{})
+		defer close(chReleaseAcquired)
+		// call writer and wait on channel
+		ctx := context.Background()
 		go func() {
-			ctx := context.Background()
-			_, err := bl.MetadataUpdater(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
+			_, err := bl.MetadataUpdater(ctx, "committer_blocks_writer", testutil.DefaultBranchID, func() (interface{}, error) {
 				close(chAcquired)
 				<-chReleaseAcquired
 				return nil, nil
@@ -62,120 +66,46 @@ func TestBranchLock(t *testing.T) {
 			if err != nil {
 				t.Error("Metadata updater request failed:", err)
 			}
-			close(chDone)
 		}()
-
-		ctx := context.Background()
-		// wait until we acquire metadata update lock
 		<-chAcquired
-		// try to acquire writer
-		_, err := bl.Writer(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
-			return nil, nil
+		// check Writer waits (context gets to deadline before Writer callback is called)
+		timeToDeadline := time.Now().Add(time.Second)
+		ctxWithDeadline, _ := context.WithDeadline(ctx, timeToDeadline)
+		_, err := bl.Writer(ctxWithDeadline, "committer_blocks_writer", testutil.DefaultBranchID, func() (interface{}, error) {
+			return nil, errUnexpectedCall
 		})
-		if !errors.Is(err, graveler.ErrAlreadyLocked) {
-			t.Fatalf("Writer should be locked during metadata updater, err=%v", err)
-		}
-		// try to acquire committer
-		_, err = bl.MetadataUpdater(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
-			return nil, nil
-		})
-		if !errors.Is(err, graveler.ErrAlreadyLocked) {
-			t.Fatalf("Committer should be locked during metadata updater, err=%s", err)
-		}
-		// release acquired lock
-		close(chReleaseAcquired)
-		<-chDone
-		// check we can write
-		_, err = bl.Writer(ctx, "b", testutil.DefaultBranchID, func() (interface{}, error) {
-			return nil, nil
-		})
-		if err != nil {
-			t.Fatalf("Failed to acquire writer, err=%s", err)
+		if !errors.Is(err, graveler.ErrLockNotAcquired) {
+			t.Errorf("unexpected error got: %v expected: %s", err, graveler.ErrLockNotAcquired)
 		}
 	})
 
-	t.Run("committer_wait_for_writers", func(t *testing.T) {
-		// start a writer and block it
-		chAcquireWriter := make(chan struct{})
-		chReleaseWriter := make(chan struct{})
-		chDoneWriter := make(chan struct{})
+	t.Run("writer_blocks_commiter", func(t *testing.T) {
+		chReleaseAcquired := make(chan struct{})
+		defer close(chReleaseAcquired)
+		chAcquired := make(chan struct{})
+		// call writer and wait on channel
+		ctx := context.Background()
 		go func() {
-			ctx := context.Background()
-			_, err := bl.Writer(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
-				close(chAcquireWriter)
-				<-chReleaseWriter
+			_, err := bl.Writer(ctx, "writer_blocks_commiter", testutil.DefaultBranchID, func() (interface{}, error) {
+				close(chAcquired)
+				<-chReleaseAcquired
 				return nil, nil
 			})
 			if err != nil {
-				t.Errorf("Failed to acquire writer: %s", err)
+				t.Error("Metadata updater request failed:", err)
 			}
-			close(chDoneWriter)
 		}()
-		<-chAcquireWriter
+		<-chAcquired
+		// check MetadataUpdater waits ( context gets to deadline before MetadataUpdater callback is called)
+		timeToDeadline := time.Now().Add(time.Second)
+		ctxWithDeadline, cancel := context.WithDeadline(ctx, timeToDeadline)
+		defer cancel()
 
-		// start two committers and wait until one of them will fail to know that the first one is blocked
-		var metadataUpdates int64
-		chDoneCommitter := make([]chan struct{}, 2)
-		chReleaseCommitter := make(chan struct{})
-		committersErr := make([]error, 2)
-		for i := 0; i < len(chDoneCommitter); i++ {
-			chDoneCommitter[i] = make(chan struct{})
-			go func(pos int) {
-				ctx := context.Background()
-				_, committersErr[pos] = bl.MetadataUpdater(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
-					atomic.AddInt64(&metadataUpdates, 1)
-					<-chReleaseCommitter
-					return nil, nil
-				})
-				close(chDoneCommitter[pos])
-			}(i)
-		}
-
-		// wait for one of the committers
-		var failedCommitterPos int
-		select {
-		case <-chDoneCommitter[0]:
-			failedCommitterPos = 0
-		case <-chDoneCommitter[1]:
-			failedCommitterPos = 1
-		}
-
-		// check that the one that failed - failed with the right reason
-		if err := committersErr[failedCommitterPos]; !errors.Is(err, graveler.ErrAlreadyLocked) {
-			t.Errorf("Failed committer (%d) should failed to acquire, err=%v", failedCommitterPos, err)
-		}
-		updates := atomic.LoadInt64(&metadataUpdates)
-		if updates != 0 {
-			t.Errorf("No update should be done at this point, updates=%d", updates)
-		}
-
-		// verify that another writer can't start while committer is waiting
-		ctx := context.Background()
-		_, err := bl.Writer(ctx, "c", testutil.DefaultBranchID, func() (interface{}, error) {
-			return nil, nil
+		_, err := bl.MetadataUpdater(ctxWithDeadline, "writer_blocks_commiter", testutil.DefaultBranchID, func() (interface{}, error) {
+			return nil, errUnexpectedCall
 		})
-		if !errors.Is(err, graveler.ErrAlreadyLocked) {
-			t.Errorf("Should not acquire writer while committer is waiting, err=%v", err)
-		}
-
-		// release the last writer and wait for it
-		close(chReleaseWriter)
-		<-chDoneWriter
-
-		// release that running committer
-		close(chReleaseCommitter)
-
-		// wait for the second committer
-		secondCommitterPos := (failedCommitterPos + 1) % 2
-		<-chDoneCommitter[secondCommitterPos]
-
-		// verify no error and one update
-		if err := committersErr[secondCommitterPos]; err != nil {
-			t.Errorf("Committer should ended without an error, err=%v", err)
-		}
-		updates = atomic.LoadInt64(&metadataUpdates)
-		if updates != 1 {
-			t.Errorf("Expected one update, updates=%d", updates)
+		if !errors.Is(err, graveler.ErrLockNotAcquired) {
+			t.Errorf("unexpected error got: %v expected: %s", err, graveler.ErrLockNotAcquired)
 		}
 	})
 }
