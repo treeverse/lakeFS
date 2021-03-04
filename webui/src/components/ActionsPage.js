@@ -159,11 +159,11 @@ const HookPage = connect(
         return (
             <Card border={!completed && 'danger'}>
                 <Card.Header>
-                    <strong>Hook Run ID:</strong> {hook.hook_run_id}<br/>
                     <strong>Action:</strong> {hook.action}<br/>
                     <strong>Hook ID:</strong> {hook.hook_id}<br/>
                     <strong>Start Time:</strong> {moment(hook.start_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
                     <strong>End Time:</strong> {moment(hook.end_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
+                    <strong>Hook Run ID:</strong> {hook.hook_run_id}<br/>
                     <strong>Status:</strong> <strong style={{'color': completed ? 'green':'red'}}>{hook.status}</strong>
                 </Card.Header>
                 <Card.Body>
