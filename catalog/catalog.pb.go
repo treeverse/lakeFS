@@ -2,18 +2,17 @@
 // versions:
 // 	protoc-gen-go v1.25.0
 // 	protoc        v3.14.0
-// source: cataloger.proto
+// source: catalog.proto
 
 package catalog
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	proto "github.com/golang/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -148,13 +147,13 @@ func file_catalog_proto_rawDescGZIP() []byte {
 
 var file_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_catalog_proto_goTypes = []interface{}{
-	(*Entry)(nil),                 // 0: cataloger.Entry
-	nil,                           // 1: cataloger.Entry.MetadataEntry
+	(*Entry)(nil),                 // 0: catalog.Entry
+	nil,                           // 1: catalog.Entry.MetadataEntry
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_catalog_proto_depIdxs = []int32{
-	2, // 0: cataloger.Entry.last_modified:type_name -> google.protobuf.Timestamp
-	1, // 1: cataloger.Entry.metadata:type_name -> cataloger.Entry.MetadataEntry
+	2, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
+	1, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
