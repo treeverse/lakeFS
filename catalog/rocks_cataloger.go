@@ -2,17 +2,105 @@ package catalog
 
 import (
 	"context"
+	"crypto"
+	_ "crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
+
+	"github.com/cockroachdb/pebble"
+	"github.com/treeverse/lakefs/graveler/committed"
+	"github.com/treeverse/lakefs/graveler/ref"
+	"github.com/treeverse/lakefs/graveler/sstable"
+	"github.com/treeverse/lakefs/graveler/staging"
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/pyramid"
+	"github.com/treeverse/lakefs/pyramid/params"
+
+	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type cataloger struct {
-	EntryCatalog *EntryCatalog
+// hashAlg is the hashing algorithm to use to generate graveler identifiers.  Changing it
+// causes all old identifiers to change, so while existing installations will continue to
+// function they will be unable to re-use any existing objects.
+const hashAlg = crypto.SHA256
+
+type Path string
+
+type EntryRecord struct {
+	Path Path
+	*Entry
+}
+
+type EntryListing struct {
+	CommonPrefix bool
+	Path
+	*Entry
+}
+
+type EntryDiff struct {
+	Type  graveler.DiffType
+	Path  Path
+	Entry *Entry
+}
+
+type EntryIterator interface {
+	Next() bool
+	SeekGE(id Path)
+	Value() *EntryRecord
+	Err() error
+	Close()
+}
+
+type EntryListingIterator interface {
+	Next() bool
+	SeekGE(id Path)
+	Value() *EntryListing
+	Err() error
+	Close()
+}
+
+type EntryDiffIterator interface {
+	Next() bool
+	SeekGE(id Path)
+	Value() *EntryDiff
+	Err() error
+	Close()
+}
+
+func (id Path) String() string {
+	return string(id)
+}
+
+type Store interface {
+	graveler.KeyValueStore
+	graveler.VersionController
+	graveler.Dumper
+	graveler.Plumbing
+	graveler.Loader
+}
+
+const (
+	RangeFSName     = "range"
+	MetaRangeFSName = "meta-range"
+)
+
+type Config struct {
+	Config *config.Config
+	DB     db.Database
+	LockDB db.Database
+}
+
+type RocksCataloger struct {
+	BlockAdapter block.Adapter
+	Store        Store
 	log          logging.Logger
 }
 
@@ -26,27 +114,77 @@ const (
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
-func NewCataloger(ctx context.Context, cfg Config) (Cataloger, error) {
-	entryCatalog, err := NewEntryCatalog(ctx, cfg)
-	if err != nil {
-		return nil, err
+func NewCataloger(ctx context.Context, cfg Config) (*RocksCataloger, error) {
+	if cfg.LockDB == nil {
+		cfg.LockDB = cfg.DB
 	}
-	return &cataloger{
-		EntryCatalog: entryCatalog,
+
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
+	}
+	metaRangeFS, err := pyramid.NewFS(&params.InstanceParams{
+		SharedParams:        tierFSParams.SharedParams,
+		FSName:              MetaRangeFSName,
+		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create tiered FS for committed metaranges: %w", err)
+	}
+
+	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
+		SharedParams:        tierFSParams.SharedParams,
+		FSName:              RangeFSName,
+		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create tiered FS for committed ranges: %w", err)
+	}
+
+	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
+	defer pebbleSSTableCache.Unref()
+
+	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
+	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
+		*cfg.Config.GetCommittedParams(),
+		// TODO(ariels): Use separate range managers for metaranges and ranges
+		sstableMetaManager,
+		sstableManager,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+	}
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
+
+	stagingManager := staging.NewManager(cfg.DB)
+	refManager := ref.NewPGRefManager(cfg.DB, ident.NewHexAddressProvider())
+	branchLocker := ref.NewBranchLocker(cfg.LockDB)
+	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
+
+	return &RocksCataloger{
+		BlockAdapter: tierFSParams.Adapter,
+		Store:        store,
 		log:          logging.Default().WithField("service_name", "entry_catalog"),
 	}, nil
 }
 
-func (c *cataloger) GetEntryCatalog() *EntryCatalog {
-	return c.EntryCatalog
+func (c *RocksCataloger) SetHooksHandler(hooks graveler.HooksHandler) {
+	c.Store.SetHooksHandler(hooks)
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
+func (c *RocksCataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
-	repo, err := c.EntryCatalog.CreateRepository(ctx, repositoryID, storageNS, branchID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"storageNamespace", storageNS, ValidateStorageNamespace},
+	}); err != nil {
+		return nil, err
+	}
+	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageNS, branchID)
 	if err != nil {
 		return nil, err
 	}
@@ -60,11 +198,17 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 }
 
 // CreateBareRepository creates a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
-func (c *cataloger) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
+func (c *RocksCataloger) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(defaultBranchID)
-	repo, err := c.EntryCatalog.CreateBareRepository(ctx, repositoryID, storageNS, branchID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"storageNamespace", storageNS, ValidateStorageNamespace},
+	}); err != nil {
+		return nil, err
+	}
+	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageNS, branchID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +222,14 @@ func (c *cataloger) CreateBareRepository(ctx context.Context, repository string,
 }
 
 // GetRepository get repository information
-func (c *cataloger) GetRepository(ctx context.Context, repository string) (*Repository, error) {
+func (c *RocksCataloger) GetRepository(ctx context.Context, repository string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	repo, err := c.EntryCatalog.GetRepository(ctx, repositoryID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return nil, err
+	}
+	repo, err := c.Store.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,20 +243,25 @@ func (c *cataloger) GetRepository(ctx context.Context, repository string) (*Repo
 }
 
 // DeleteRepository delete a repository
-func (c *cataloger) DeleteRepository(ctx context.Context, repository string) error {
+func (c *RocksCataloger) DeleteRepository(ctx context.Context, repository string) error {
 	repositoryID := graveler.RepositoryID(repository)
-	return c.EntryCatalog.DeleteRepository(ctx, repositoryID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return err
+	}
+	return c.Store.DeleteRepository(ctx, repositoryID)
 }
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
-func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
+func (c *RocksCataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
 	}
 	// get list repositories iterator
-	it, err := c.EntryCatalog.ListRepositories(ctx)
+	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
 		return nil, false, fmt.Errorf("get iterator: %w", err)
 	}
@@ -146,15 +300,22 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 	return repos, hasMore, nil
 }
 
-func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
+func (c *RocksCataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	sourceRef := graveler.Ref(sourceBranch)
-	newBranch, err := c.EntryCatalog.CreateBranch(ctx, repositoryID, branchID, sourceRef)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+		{"ref", sourceRef, ValidateRef},
+	}); err != nil {
+		return nil, err
+	}
+	newBranch, err := c.Store.CreateBranch(ctx, repositoryID, branchID, sourceRef)
 	if err != nil {
 		return nil, err
 	}
-	commit, err := c.EntryCatalog.GetCommit(ctx, repositoryID, newBranch.CommitID)
+	commit, err := c.Store.GetCommit(ctx, repositoryID, newBranch.CommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -170,23 +331,35 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch 
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
+func (c *RocksCataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	return c.EntryCatalog.DeleteBranch(ctx, repositoryID, branchID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return err
+	}
+	return c.Store.DeleteBranch(ctx, repositoryID, branchID)
 }
 
-func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
+func (c *RocksCataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	afterBranch := graveler.BranchID(after)
+	prefixBranch := graveler.BranchID(prefix)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return nil, false, err
+	}
 	// normalize limit
 	if limit < 0 || limit > ListBranchesLimitMax {
 		limit = ListBranchesLimitMax
 	}
-	it, err := c.EntryCatalog.ListBranches(ctx, graveler.RepositoryID(repository))
+	it, err := c.Store.ListBranches(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
-	afterBranch := graveler.BranchID(after)
-	prefixBranch := graveler.BranchID(prefix)
 	if afterBranch < prefixBranch {
 		it.SeekGE(prefixBranch)
 	} else {
@@ -224,10 +397,16 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	return branches, hasMore, nil
 }
 
-func (c *cataloger) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
+func (c *RocksCataloger) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	_, err := c.EntryCatalog.GetBranch(ctx, repositoryID, branchID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return false, err
+	}
+	_, err := c.Store.GetBranch(ctx, repositoryID, branchID)
 	if errors.Is(err, graveler.ErrNotFound) {
 		return false, nil
 	}
@@ -237,48 +416,77 @@ func (c *cataloger) BranchExists(ctx context.Context, repository string, branch 
 	return true, nil
 }
 
-func (c *cataloger) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
+func (c *RocksCataloger) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	b, err := c.EntryCatalog.GetBranch(ctx, repositoryID, branchID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return "", err
+	}
+	b, err := c.Store.GetBranch(ctx, repositoryID, branchID)
 	if err != nil {
 		return "", err
 	}
 	return string(b.CommitID), nil
 }
 
-func (c *cataloger) ResetBranch(ctx context.Context, repository string, branch string) error {
+func (c *RocksCataloger) ResetBranch(ctx context.Context, repository string, branch string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	return c.EntryCatalog.Reset(ctx, repositoryID, branchID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return err
+	}
+	return c.Store.Reset(ctx, repositoryID, branchID)
 }
 
-func (c *cataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
+func (c *RocksCataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
-	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(ref))
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"tagID", tag, ValidateTagID},
+	}); err != nil {
+		return "", err
+	}
+	commitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(ref))
 	if err != nil {
 		return "", err
 	}
-	err = c.EntryCatalog.CreateTag(ctx, repositoryID, tag, commitID)
+	err = c.Store.CreateTag(ctx, repositoryID, tag, commitID)
 	if err != nil {
 		return "", err
 	}
 	return commitID.String(), nil
 }
 
-func (c *cataloger) DeleteTag(ctx context.Context, repository string, tagID string) error {
+func (c *RocksCataloger) DeleteTag(ctx context.Context, repository string, tagID string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
-	return c.EntryCatalog.DeleteTag(ctx, repositoryID, tag)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"tagID", tag, ValidateTagID},
+	}); err != nil {
+		return err
+	}
+	return c.Store.DeleteTag(ctx, repositoryID, tag)
 }
 
-func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
+func (c *RocksCataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
 	if limit < 0 || limit > ListTagsLimitMax {
 		limit = ListTagsLimitMax
 	}
 	repositoryID := graveler.RepositoryID(repository)
-	it, err := c.EntryCatalog.ListTags(ctx, repositoryID)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return nil, false, err
+	}
+	it, err := c.Store.ListTags(ctx, repositoryID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -312,10 +520,16 @@ func (c *cataloger) ListTags(ctx context.Context, repository string, limit int, 
 	return tags, hasMore, nil
 }
 
-func (c *cataloger) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
+func (c *RocksCataloger) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
-	commit, err := c.EntryCatalog.GetTag(ctx, repositoryID, tag)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"tagID", tag, ValidateTagID},
+	}); err != nil {
+		return "", err
+	}
+	commit, err := c.Store.GetTag(ctx, repositoryID, tag)
 	if err != nil {
 		return "", err
 	}
@@ -324,11 +538,22 @@ func (c *cataloger) GetTag(ctx context.Context, repository string, tagID string)
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
-func (c *cataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
+func (c *RocksCataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	ref := graveler.Ref(reference)
 	p := Path(path)
-	ent, err := c.EntryCatalog.GetEntry(ctx, repositoryID, ref, p)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"ref", ref, ValidateRef},
+		{"path", p, ValidatePath},
+	}); err != nil {
+		return nil, err
+	}
+	val, err := c.Store.Get(ctx, repositoryID, ref, graveler.Key(p))
+	if err != nil {
+		return nil, err
+	}
+	ent, err := ValueToEntry(val)
 	if err != nil {
 		return nil, err
 	}
@@ -346,33 +571,51 @@ func EntryFromCatalogEntry(entry DBEntry) *Entry {
 	}
 }
 
-func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
+func (c *RocksCataloger) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
-	return c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent)
+	path := Path(entry.Path)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+		{"path", path, ValidatePath},
+	}); err != nil {
+		return err
+	}
+	key := graveler.Key(path)
+	value, err := EntryToValue(ent)
+	if err != nil {
+		return err
+	}
+	return c.Store.Set(ctx, repositoryID, branchID, key, *value)
 }
 
-func (c *cataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
-	repositoryID := graveler.RepositoryID(repository)
-	branchID := graveler.BranchID(branch)
+func (c *RocksCataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
 	for _, entry := range entries {
-		ent := EntryFromCatalogEntry(entry)
-		if err := c.EntryCatalog.SetEntry(ctx, repositoryID, branchID, Path(entry.Path), ent); err != nil {
+		if err := c.CreateEntry(ctx, repository, branch, entry); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *cataloger) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
+func (c *RocksCataloger) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	p := Path(path)
-	return c.EntryCatalog.DeleteEntry(ctx, repositoryID, branchID, p)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+		{"path", p, ValidatePath},
+	}); err != nil {
+		return err
+	}
+	key := graveler.Key(p)
+	return c.Store.Delete(ctx, repositoryID, branchID, key)
 }
 
-func (c *cataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*DBEntry, bool, error) {
+func (c *RocksCataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*DBEntry, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListEntriesLimitMax {
 		limit = ListEntriesLimitMax
@@ -380,10 +623,22 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, referenc
 	prefixPath := Path(prefix)
 	afterPath := Path(after)
 	delimiterPath := Path(delimiter)
-	it, err := c.EntryCatalog.ListEntries(ctx, graveler.RepositoryID(repository), graveler.Ref(reference), prefixPath, delimiterPath)
+	repositoryID := graveler.RepositoryID(repository)
+	ref := graveler.Ref(reference)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"ref", ref, ValidateRef},
+		{"prefix", prefixPath, ValidatePathOptional},
+		{"delimiter", delimiterPath, ValidatePathOptional},
+	}); err != nil {
+		return nil, false, err
+	}
+	iter, err := c.Store.List(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, false, err
 	}
+	it := NewEntryListingIterator(NewValueToEntryIterator(iter), prefixPath, delimiterPath)
+
 	it.SeekGE(afterPath)
 	var entries []*DBEntry
 	for it.Next() {
@@ -409,24 +664,45 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, referenc
 	return entries, hasMore, nil
 }
 
-func (c *cataloger) ResetEntry(ctx context.Context, repository string, branch string, path string) error {
+func (c *RocksCataloger) ResetEntry(ctx context.Context, repository string, branch string, path string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	entryPath := Path(path)
-	return c.EntryCatalog.ResetKey(ctx, repositoryID, branchID, entryPath)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+		{"path", entryPath, ValidatePath},
+	}); err != nil {
+		return err
+	}
+	key := graveler.Key(entryPath)
+	return c.Store.ResetKey(ctx, repositoryID, branchID, key)
 }
 
-func (c *cataloger) ResetEntries(ctx context.Context, repository string, branch string, prefix string) error {
+func (c *RocksCataloger) ResetEntries(ctx context.Context, repository string, branch string, prefix string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	prefixPath := Path(prefix)
-	return c.EntryCatalog.ResetPrefix(ctx, repositoryID, branchID, prefixPath)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return err
+	}
+	keyPrefix := graveler.Key(prefixPath)
+	return c.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
+func (c *RocksCataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
-	commitID, err := c.EntryCatalog.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return nil, err
+	}
+	commitID, err := c.Store.Commit(ctx, repositoryID, branchID, graveler.CommitParams{
 		Committer: committer,
 		Message:   message,
 		Metadata:  map[string]string(metadata),
@@ -441,7 +717,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 		Metadata:  metadata,
 	}
 	// in order to return commit log we need the commit creation time and parents
-	commit, err := c.EntryCatalog.GetCommit(ctx, repositoryID, commitID)
+	commit, err := c.Store.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return catalogCommitLog, graveler.ErrCommitNotFound
 	}
@@ -452,14 +728,20 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
+func (c *RocksCataloger) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	ref := graveler.Ref(reference)
-	commitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, ref)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+	}); err != nil {
+		return nil, err
+	}
+	commitID, err := c.Store.Dereference(ctx, repositoryID, ref)
 	if err != nil {
 		return nil, err
 	}
-	commit, err := c.EntryCatalog.GetCommit(ctx, repositoryID, commitID)
+
+	commit, err := c.Store.GetCommit(ctx, repositoryID, commitID)
 	if err != nil {
 		return nil, err
 	}
@@ -477,9 +759,16 @@ func (c *cataloger) GetCommit(ctx context.Context, repository string, reference 
 	return catalogCommitLog, nil
 }
 
-func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
+func (c *RocksCataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	branchCommitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(branch))
+	branchRef := graveler.BranchID(branch)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branch", branchRef, ValidateBranchID},
+	}); err != nil {
+		return nil, false, err
+	}
+	branchCommitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(branchRef))
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
@@ -487,13 +776,13 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 		// return empty log if there is no commit on branch yet
 		return make([]*CommitLog, 0), false, nil
 	}
-	it, err := c.EntryCatalog.Log(ctx, repositoryID, branchCommitID)
+	it, err := c.Store.Log(ctx, repositoryID, branchCommitID)
 	if err != nil {
 		return nil, false, err
 	}
 	// skip until 'fromReference' if needed
 	if fromReference != "" {
-		fromCommitID, err := c.EntryCatalog.Dereference(ctx, repositoryID, graveler.Ref(fromReference))
+		fromCommitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(fromReference))
 		if err != nil {
 			return nil, false, fmt.Errorf("from ref: %w", err)
 		}
@@ -539,45 +828,88 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 	return commits, hasMore, nil
 }
 
-func (c *cataloger) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
+func (c *RocksCataloger) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(params.Reference)
-	_, _, err := c.EntryCatalog.Revert(ctx, repositoryID, branchID, ref, params.ParentNumber, graveler.CommitParams{
+	commitParams := graveler.CommitParams{
 		Committer: params.Committer,
 		Message:   fmt.Sprintf("Revert %s", params.Reference),
-	})
+	}
+	parentNumber := params.ParentNumber
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+		{"ref", ref, ValidateRef},
+		{"committer", commitParams.Committer, ValidateRequiredString},
+		{"message", commitParams.Message, ValidateRequiredString},
+		{"parentNumber", parentNumber, ValidateNonNegativeInt},
+	}); err != nil {
+		return err
+	}
+	_, _, err := c.Store.Revert(ctx, repositoryID, branchID, ref, parentNumber, commitParams)
 	return err
 }
 
-func (c *cataloger) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
+func (c *RocksCataloger) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
 	c.log.Debug("rollback to commit is not supported in rocks implementation")
 	return ErrFeatureNotSupported
 }
 
-func (c *cataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
-	it, err := c.EntryCatalog.Diff(ctx, graveler.RepositoryID(repository), graveler.Ref(leftReference), graveler.Ref(rightReference))
+func (c *RocksCataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	left := graveler.Ref(leftReference)
+	right := graveler.Ref(rightReference)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"left", left, ValidateRef},
+		{"right", right, ValidateRef},
+	}); err != nil {
+		return nil, false, err
+	}
+	iter, err := c.Store.Diff(ctx, repositoryID, left, right)
 	if err != nil {
 		return nil, false, err
 	}
+	it := NewEntryDiffIterator(iter)
 	defer it.Close()
 	return listDiffHelper(it, params.Limit, params.After)
 }
 
-func (c *cataloger) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
-	it, err := c.EntryCatalog.Compare(ctx, graveler.RepositoryID(repository), graveler.Ref(leftReference), graveler.Ref(rightReference))
+func (c *RocksCataloger) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	from := graveler.Ref(leftReference)
+	to := graveler.Ref(rightReference)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"from", from, ValidateRef},
+		{"to", to, ValidateRef},
+	}); err != nil {
+		return nil, false, err
+	}
+	iter, err := c.Store.Compare(ctx, repositoryID, from, to)
 	if err != nil {
 		return nil, false, err
 	}
+	it := NewEntryDiffIterator(iter)
 	defer it.Close()
 	return listDiffHelper(it, params.Limit, params.After)
 }
 
-func (c *cataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
-	it, err := c.EntryCatalog.DiffUncommitted(ctx, graveler.RepositoryID(repository), graveler.BranchID(branch))
+func (c *RocksCataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	branchID := graveler.BranchID(branch)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return nil, false, err
+	}
+	iter, err := c.Store.DiffUncommitted(ctx, repositoryID, branchID)
 	if err != nil {
 		return nil, false, err
 	}
+	it := NewEntryDiffIterator(iter)
 	defer it.Close()
 	return listDiffHelper(it, limit, after)
 }
@@ -616,18 +948,31 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (Differences,
 	return diffs, hasMore, nil
 }
 
-func (c *cataloger) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
+func (c *RocksCataloger) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
 	repositoryID := graveler.RepositoryID(repository)
-	dest := graveler.BranchID(destinationBranch)
+	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
 	meta := graveler.Metadata(metadata)
-	commitID, summary, err := c.EntryCatalog.Merge(ctx, repositoryID, dest, source, graveler.CommitParams{
+	commitParams := graveler.CommitParams{
 		Committer: committer,
 		Message:   message,
 		Metadata:  meta,
-	})
+	}
+	if commitParams.Message == "" {
+		commitParams.Message = fmt.Sprintf("Merge '%s' into '%s'", source, destination)
+	}
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"destination", destination, ValidateBranchID},
+		{"source", source, ValidateRef},
+		{"committer", commitParams.Committer, ValidateRequiredString},
+		{"message", commitParams.Message, ValidateRequiredString},
+	}); err != nil {
+		return nil, err
+	}
+	commitID, summary, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
 	if errors.Is(err, graveler.ErrConflictFound) {
-		// for compatibility with old cataloger
+		// for compatibility with old RocksCataloger
 		return &MergeResult{
 			Summary: map[DifferenceType]int{DifferenceTypeConflict: 1},
 		}, err
@@ -649,51 +994,51 @@ func (c *cataloger) Merge(ctx context.Context, repository string, destinationBra
 	}, nil
 }
 
-func (c *cataloger) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
-	metaRangeID, err := c.EntryCatalog.DumpCommits(ctx, graveler.RepositoryID(repositoryID))
+func (c *RocksCataloger) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
+	metaRangeID, err := c.Store.DumpCommits(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return "", err
 	}
 	return string(*metaRangeID), nil
 }
 
-func (c *cataloger) DumpBranches(ctx context.Context, repositoryID string) (string, error) {
-	metaRangeID, err := c.EntryCatalog.DumpBranches(ctx, graveler.RepositoryID(repositoryID))
+func (c *RocksCataloger) DumpBranches(ctx context.Context, repositoryID string) (string, error) {
+	metaRangeID, err := c.Store.DumpBranches(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return "", err
 	}
 	return string(*metaRangeID), nil
 }
 
-func (c *cataloger) DumpTags(ctx context.Context, repositoryID string) (string, error) {
-	metaRangeID, err := c.EntryCatalog.DumpTags(ctx, graveler.RepositoryID(repositoryID))
+func (c *RocksCataloger) DumpTags(ctx context.Context, repositoryID string) (string, error) {
+	metaRangeID, err := c.Store.DumpTags(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return "", err
 	}
 	return string(*metaRangeID), nil
 }
 
-func (c *cataloger) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
-	return c.EntryCatalog.LoadCommits(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(commitsMetaRangeID))
+func (c *RocksCataloger) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
+	return c.Store.LoadCommits(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(commitsMetaRangeID))
 }
 
-func (c *cataloger) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
-	return c.EntryCatalog.LoadBranches(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(branchesMetaRangeID))
+func (c *RocksCataloger) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
+	return c.Store.LoadBranches(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(branchesMetaRangeID))
 }
 
-func (c *cataloger) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
-	return c.EntryCatalog.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
+func (c *RocksCataloger) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
+	return c.Store.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
 }
 
-func (c *cataloger) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error) {
-	return c.EntryCatalog.GetMetaRange(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(metaRangeID))
+func (c *RocksCataloger) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error) {
+	return c.Store.GetMetaRange(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(metaRangeID))
 }
 
-func (c *cataloger) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
-	return c.EntryCatalog.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
+func (c *RocksCataloger) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
+	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
 }
 
-func (c *cataloger) Close() error {
+func (c *RocksCataloger) Close() error {
 	return nil
 }
 

@@ -81,13 +81,12 @@ var runCmd = &cobra.Command{
 		}
 
 		// wire actions
-		entryCatalog := cataloger.GetEntryCatalog()
 		actionsService := actions.NewService(
 			dbPool,
-			catalog.NewActionsSource(entryCatalog),
-			catalog.NewActionsOutputWriter(entryCatalog.BlockAdapter),
+			catalog.NewActionsSource(cataloger),
+			catalog.NewActionsOutputWriter(cataloger.BlockAdapter),
 		)
-		entryCatalog.SetHooksHandler(actionsService)
+		cataloger.SetHooksHandler(actionsService)
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 

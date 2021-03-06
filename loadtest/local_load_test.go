@@ -70,13 +70,12 @@ func TestLocalLoad(t *testing.T) {
 	testutil.MustDo(t, "build cataloger", err)
 
 	// wire actions
-	entryCatalog := cataloger.GetEntryCatalog()
 	actionsService := actions.NewService(
 		conn,
-		catalog.NewActionsSource(entryCatalog),
-		catalog.NewActionsOutputWriter(entryCatalog.BlockAdapter),
+		catalog.NewActionsSource(cataloger),
+		catalog.NewActionsOutputWriter(cataloger.BlockAdapter),
 	)
-	entryCatalog.SetHooksHandler(actionsService)
+	cataloger.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	meta := auth.NewDBMetadataManager("dev", conn)

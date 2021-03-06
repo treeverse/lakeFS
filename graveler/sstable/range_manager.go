@@ -110,8 +110,8 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 	}, nil
 }
 
-// GetEntry returns the entry matching the path in the SSTable referenced by the id.
-// If path not found, (nil, ErrPathNotFound) is returned.
+// GetValue returns the Record matching the key in the SSTable referenced by the id.
+// If key is not found, (nil, ErrKeyNotFound) is returned.
 func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
 	reader, err := m.newReader(ctx, ns, id)
 	if err != nil {

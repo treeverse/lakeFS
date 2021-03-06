@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/logging"
@@ -32,10 +31,9 @@ type Config struct {
 	RepositoryID       graveler.RepositoryID
 	DefaultBranchID    graveler.BranchID
 	InventoryGenerator block.InventoryGenerator
-	Cataloger          catalog.Cataloger
+	Store              EntryCatalog
 	CatalogActions     RepoActions
 	KeyPrefixes        []string
-	EntryCatalog       entryCataloger
 
 	// BaseCommit is available only for import-plumbing command
 	BaseCommit graveler.CommitID

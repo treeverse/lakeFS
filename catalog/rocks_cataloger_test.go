@@ -85,14 +85,12 @@ func TestCataloger_ListRepositories(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup cataloger
+			// setup RocksCataloger
 			gravelerMock := &FakeGraveler{
 				RepositoryIteratorFactory: NewFakeRepositoryIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &RocksCataloger{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()
@@ -126,14 +124,12 @@ func TestCataloger_BranchExists(t *testing.T) {
 	}{{"branch1", true}, {"branch2", true}, {"branch-foo", false}}
 	for _, tt := range tests {
 		t.Run(tt.Branch, func(t *testing.T) {
-			// setup cataloger
+			// setup RocksCataloger
 			gravelerMock := &FakeGraveler{
 				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &RocksCataloger{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()
@@ -228,14 +224,12 @@ func TestCataloger_ListBranches(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup cataloger
+			// setup RocksCataloger
 			gravelerMock := &FakeGraveler{
 				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &RocksCataloger{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()
@@ -332,10 +326,8 @@ func TestCataloger_ListTags(t *testing.T) {
 			gravelerMock := &FakeGraveler{
 				TagIteratorFactory: NewFakeTagIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &RocksCataloger{
+				Store: gravelerMock,
 			}
 			ctx := context.Background()
 			got, hasMore, err := c.ListTags(ctx, "repo", tt.args.limit, tt.args.after)
@@ -450,14 +442,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup cataloger
+			// setup RocksCataloger
 			gravelerMock := &FakeGraveler{
 				ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &RocksCataloger{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()

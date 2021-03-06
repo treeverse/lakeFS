@@ -97,20 +97,13 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	}
 	defer func() { _ = cataloger.Close() }()
 
-	// TODO(barak): do we need to create a new entry catalog or extract the one we have from the cataloger
-	entryCataloger, err := catalog.NewEntryCatalog(ctx, catalogCfg)
-	if err != nil {
-		fmt.Printf("Failed to build entry catalog: %s\n", err)
-		return 1
-	}
-
 	// wire actions into entry catalog
 	actionsService := actions.NewService(
 		dbPool,
-		catalog.NewActionsSource(entryCataloger),
-		catalog.NewActionsOutputWriter(entryCataloger.BlockAdapter),
+		catalog.NewActionsSource(cataloger),
+		catalog.NewActionsOutputWriter(cataloger.BlockAdapter),
 	)
-	entryCataloger.SetHooksHandler(actionsService)
+	cataloger.SetHooksHandler(actionsService)
 
 	u := uri.Must(uri.Parse(args[0]))
 	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
@@ -168,9 +161,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		RepositoryID:       graveler.RepositoryID(repoName),
 		DefaultBranchID:    graveler.BranchID(repo.DefaultBranch),
 		InventoryGenerator: blockStore,
-		Cataloger:          cataloger,
+		Store:              cataloger.Store,
 		KeyPrefixes:        prefixes,
-		EntryCatalog:       entryCataloger,
 		BaseCommit:         graveler.CommitID(baseCommit),
 	}
 
