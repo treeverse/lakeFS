@@ -25,7 +25,7 @@ func NewBranchLocker(db db.Database) *BranchLocker {
 // Writer tries to acquire a write lock using a Postgres advisory lock for the span of calling `lockedFn`.
 // Returns ErrLockNotAcquired if it cannot acquire the lock.
 func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
-	writerLockKey := calculateBranchLockerKeys(repositoryID, branchID)
+	writerLockKey := calculateBranchLockerKey(repositoryID, branchID)
 	return l.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		// try to get a shared lock on the writer key
 		_, err := tx.Exec(`SELECT pg_advisory_xact_lock_shared($1);`, writerLockKey)
@@ -39,7 +39,7 @@ func (l *BranchLocker) Writer(ctx context.Context, repositoryID graveler.Reposit
 // MetadataUpdater tries to lock as committer using a Postgres advisory lock for the span of calling `lockedFn`.
 // It returns ErrLockNotAcquired if it fails to acquire the lock.
 func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
-	writerLockKey := calculateBranchLockerKeys(repositoryID, branchID)
+	writerLockKey := calculateBranchLockerKey(repositoryID, branchID)
 	return l.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`SELECT pg_advisory_xact_lock($1);`, writerLockKey)
 		if err != nil {
@@ -49,7 +49,7 @@ func (l *BranchLocker) MetadataUpdater(ctx context.Context, repositoryID gravele
 	}, db.WithIsolationLevel(pgx.ReadCommitted))
 }
 
-func calculateBranchLockerKeys(repositoryID graveler.RepositoryID, branchID graveler.BranchID) int64 {
+func calculateBranchLockerKey(repositoryID graveler.RepositoryID, branchID graveler.BranchID) int64 {
 	h := fnv.New64()
 	_, _ = h.Write([]byte(repositoryID))
 	_, _ = h.Write([]byte{0})
