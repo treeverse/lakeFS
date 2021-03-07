@@ -38,6 +38,7 @@ func Serve(
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,
 	logger logging.Logger,
+	gatewayDomain string,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swaggerSpec, _ := loads.Analyzed(restapi.SwaggerJSON, "")
@@ -73,7 +74,7 @@ func Serve(
 				MetricsHandler(api.Context(),
 					NewCookieAPIHandler(handler))))
 	})
-	uiHandler := NewUIHandler(authService)
+	uiHandler := NewUIHandler(authService, gatewayDomain)
 
 	mux := http.NewServeMux()
 	mux.Handle("/_health", httputil.ServeHealth())

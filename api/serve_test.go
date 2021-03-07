@@ -119,6 +119,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		nil,
 		actionsService,
 		logging.Default(),
+		"",
 	)
 
 	return handler, &dependencies{
