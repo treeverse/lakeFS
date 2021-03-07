@@ -265,6 +265,7 @@ func (c *RocksCataloger) ListRepositories(ctx context.Context, limit int, after 
 	if err != nil {
 		return nil, false, fmt.Errorf("get iterator: %w", err)
 	}
+	defer it.Close()
 	// seek for first item
 	afterRepositoryID := graveler.RepositoryID(after)
 	if afterRepositoryID != "" {
@@ -360,6 +361,7 @@ func (c *RocksCataloger) ListBranches(ctx context.Context, repository string, pr
 	if err != nil {
 		return nil, false, err
 	}
+	defer it.Close()
 	if afterBranch < prefixBranch {
 		it.SeekGE(prefixBranch)
 	} else {
@@ -490,6 +492,7 @@ func (c *RocksCataloger) ListTags(ctx context.Context, repository string, limit 
 	if err != nil {
 		return nil, false, err
 	}
+	defer it.Close()
 	afterTagID := graveler.TagID(after)
 	it.SeekGE(afterTagID)
 
@@ -638,6 +641,7 @@ func (c *RocksCataloger) ListEntries(ctx context.Context, repository string, ref
 		return nil, false, err
 	}
 	it := NewEntryListingIterator(NewValueToEntryIterator(iter), prefixPath, delimiterPath)
+	defer it.Close()
 
 	it.SeekGE(afterPath)
 	var entries []*DBEntry
@@ -780,6 +784,7 @@ func (c *RocksCataloger) ListCommits(ctx context.Context, repository string, bra
 	if err != nil {
 		return nil, false, err
 	}
+	defer it.Close()
 	// skip until 'fromReference' if needed
 	if fromReference != "" {
 		fromCommitID, err := c.Store.Dereference(ctx, repositoryID, graveler.Ref(fromReference))
