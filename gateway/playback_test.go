@@ -114,18 +114,18 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	catalog, err := catalog.New(ctx, catalog.Config{
+	c, err := catalog.New(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})
-	testutil.MustDo(t, "build catalog", err)
+	testutil.MustDo(t, "build c", err)
 	multipartsTracker := multiparts.NewTracker(conn)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
 
 	t.Cleanup(func() {
-		_ = catalog.Close()
+		_ = c.Close()
 	})
 
 	storageNamespace := os.Getenv("USE_STORAGE_NAMESPACE")
@@ -133,12 +133,12 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		storageNamespace = "replay"
 	}
 
-	_, err = catalog.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
+	_, err = c.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
 
 	handler := gateway.NewHandler(
 		authService.Region,
-		catalog,
+		c,
 		multipartsTracker,
 		blockAdapter,
 		authService,
@@ -150,7 +150,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	return handler, &dependencies{
 		blocks:  blockAdapter,
 		auth:    authService,
-		catalog: catalog,
+		catalog: c,
 	}
 }
 

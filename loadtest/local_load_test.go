@@ -63,7 +63,7 @@ func TestLocalLoad(t *testing.T) {
 		blockstoreType = "mem"
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	ctlg, err := catalog.New(ctx, catalog.Config{
+	c, err := catalog.New(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})
@@ -72,20 +72,20 @@ func TestLocalLoad(t *testing.T) {
 	// wire actions
 	actionsService := actions.NewService(
 		conn,
-		catalog.NewActionsSource(ctlg),
-		catalog.NewActionsOutputWriter(ctlg.BlockAdapter),
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
 	)
-	ctlg.SetHooksHandler(actionsService)
+	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 	t.Cleanup(func() {
-		_ = ctlg.Close()
+		_ = c.Close()
 	})
 
 	handler := api.Serve(
-		ctlg,
+		c,
 		authService,
 		blockAdapter,
 		meta,

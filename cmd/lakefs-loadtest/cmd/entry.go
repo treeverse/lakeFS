@@ -64,6 +64,7 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("Cannot create catalog: %s\n", err)
 			os.Exit(1)
 		}
+		defer func() { _ = c.Close() }()
 
 		// validate repository and branch
 		_, err = c.GetRepository(ctx, u.Repository)

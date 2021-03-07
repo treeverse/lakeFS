@@ -6,6 +6,7 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/treeverse/lakefs/config"
@@ -101,7 +102,9 @@ type Config struct {
 type Catalog struct {
 	BlockAdapter block.Adapter
 	Store        Store
-	log          logging.Logger
+
+	log      logging.Logger
+	managers []io.Closer
 }
 
 const (
@@ -166,6 +169,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
 		log:          logging.Default().WithField("service_name", "entry_catalog"),
+		managers:     []io.Closer{sstableManager, sstableMetaManager},
 	}, nil
 }
 
@@ -1044,6 +1048,12 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 }
 
 func (c *Catalog) Close() error {
+	for _, manager := range c.managers {
+		err := manager.Close()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

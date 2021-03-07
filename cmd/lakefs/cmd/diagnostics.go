@@ -32,6 +32,8 @@ var diagnosticsCmd = &cobra.Command{
 		if err != nil {
 			log.Printf("Failed to create c: %s", err)
 		}
+		defer func() { _ = c.Close() }()
+
 		pyrmaidParams, err := cfg.GetCommittedTierFSParams(ctx)
 		if err != nil {
 			log.Printf("Failed to get pyramid params: %s", err)

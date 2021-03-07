@@ -79,6 +79,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create c")
 		}
+		defer func() { _ = c.Close() }()
 
 		// wire actions
 		actionsService := actions.NewService(
@@ -111,10 +112,6 @@ var runCmd = &cobra.Command{
 
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
-
-		defer func() {
-			_ = c.Close()
-		}()
 
 		// start API server
 		done := make(chan bool, 1)

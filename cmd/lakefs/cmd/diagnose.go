@@ -22,16 +22,17 @@ var diagnoseCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-		catalog, err := catalog.New(ctx, catalog.Config{
+		c, err := catalog.New(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 		})
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to create catalog")
+			logger.WithError(err).Fatal("Failed to create c")
 		}
+		defer func() { _ = c.Close() }()
 
 		numFailures := 0
-		repos, _, err := catalog.ListRepositories(ctx, -1, "")
+		repos, _, err := c.ListRepositories(ctx, -1, "")
 		if err != nil {
 			// Cannot advance last so fail everything
 			logger.WithField("error", err).Fatal("Failed to list repositories")
