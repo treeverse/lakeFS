@@ -149,26 +149,34 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     const compareWith = !compareRef || (refId.type === compareRef.type && refId.id === compareRef.id);
     const alertText = formatAlertText(repo.id, diffResults.error || mergeResults.error);
+    let alertComponent;
+    if (compareWith) {
+        alertComponent = (
+            <Alert variant="warning">
+                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
+                You’ll need to use two different sources to get a valid comparison.
+            </Alert>);
+    } else if (showMergeCompleted) {
+        alertComponent = (
+            <Alert variant="success" onClick={() => {
+                resetMerge();
+                refreshData();
+            }} dismissible>
+                Merge completed
+            </Alert>);
+    } else if (alertText) {
+        alertComponent = (
+            <Alert variant="danger" show={!!alertText}>
+                {alertText}
+            </Alert>);
+    }
     return (
         <div className="mt-3">
             <div className="action-bar">
                 <CompareToolbar refId={refId} repo={repo} compare={compareRef} refresh={refreshData}/>
             </div>
 
-            <Alert variant="warning" show={compareWith}>
-                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-                You’ll need to use two different sources to get a valid comparison.
-            </Alert>
-
-            <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
-                Merge completed
-            </Alert>
-
-            <Alert variant="danger" show={!!alertText}>
-                {alertText}
-            </Alert>
-
-            {!(compareWith || alertText) &&
+            {alertComponent ||
                 <>
                 <Changes
                     repo={repo}
