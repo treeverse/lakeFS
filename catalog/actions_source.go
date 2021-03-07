@@ -29,7 +29,7 @@ func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([
 	for hasMore {
 		var res []*DBEntry
 		var err error
-		res, hasMore, err = s.cataloger.ListEntries(ctx, string(record.RepositoryID), string(record.BranchID), repositoryLocation, after, DefaultPathDelimiter, amount)
+		res, hasMore, err = s.cataloger.ListEntries(ctx, record.RepositoryID.String(), record.SourceRef.String(), repositoryLocation, after, DefaultPathDelimiter, amount)
 		if err != nil {
 			return nil, fmt.Errorf("listing actions: %w", err)
 		}
