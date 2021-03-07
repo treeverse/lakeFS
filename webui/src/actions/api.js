@@ -562,6 +562,49 @@ class Refs {
     }
 }
 
+class Actions {
+
+    async listRuns(repoId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs?${query}`);
+        if (response.status !== 200) {
+            throw new Error(`could not list actions runs: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
+    async getRun(repoId, runId) {
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}`);
+        if (response.status !== 200) {
+            throw new Error(`could not get actions run: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
+    async listRunHooks(repoId, runId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks?${query}`);
+        if (response.status !== 200) {
+            throw new Error(`could not list actions run hooks: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
+    async getRunHookOutput(repoId, runId, hookRunId) {
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks/${hookRunId}/output`, {
+            headers: {
+                "Content-Type": "application/octet-stream",
+            },
+        })
+        if (response.status !== 200) {
+            throw new Error(`could not get actions run hook output: ${await extractError(response)}`)
+        }
+        return response.text();
+    }
+
+}
+
+
 class Setup {
     async lakeFS(username) {
         const response = await apiRequest('/setup_lakefs', {
@@ -607,4 +650,5 @@ export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
 export const auth = new Auth();
+export const actions = new Actions();
 export const config = new Config();

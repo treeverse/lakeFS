@@ -65,6 +65,7 @@
     color: #0f6674;
     text-decoration: underline;
 }
+
 .lakefs-uri {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: .9rem;
@@ -154,10 +155,15 @@
     height: 45px;
 }
 
-.table .tree-row td {
+.table .tree-row td,
+.actions-runs-list .table td {
     padding-top: 10px;
     padding-bottom: 10px;
     vertical-align: middle;
+}
+
+#run-details {
+    margin-bottom: 20px;
 }
 
 .table .tree-row td:first-child {
@@ -205,13 +211,16 @@
     padding:0;
 }
 
-.table .tree-row .tree-row-actions .btn {
+.table .tree-row .tree-row-actions .btn,
+.actions-runs-list .table tbody tr td .clipboard-copy button {
     visibility: hidden;
     font-size: 0.7rem;
 }
 
 .table .tree-row:hover .tree-row-actions .btn,
-.table .tree-row:focus .tree-row-actions .btn {
+.table .tree-row:focus .tree-row-actions .btn,
+.actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
+.actions-runs-list .table tbody tr:focus td .clipboard-copy button {
     visibility: visible;
     display: inline-block;
 }

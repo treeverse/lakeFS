@@ -11,7 +11,7 @@ import {
 } from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon} from "@primer/octicons-react";
+import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon, PlayIcon} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import ChangesPage from './ChangesPage';
@@ -22,6 +22,7 @@ import Nav from "react-bootstrap/Nav";
 import Alert from "react-bootstrap/Alert";
 import BranchesPage from "./BranchesPage";
 import ComparePage from "./ComparePage";
+import {ActionsRunsPage, ActionsRunPage} from "./ActionsPage";
 import RepoSettingsPage from "./RepoSettingsPage";
 
 
@@ -72,6 +73,9 @@ const RepositoryTabs = () => {
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/compare" passInQuery={['branch']}><GitCompareIcon/>  Compare</RoutedTab>
+            </Nav.Item>
+            <Nav.Item>
+                <RoutedTab url="/repositories/:repoId/actions" passInQuery={['branch']}><PlayIcon/>  Actions</RoutedTab>
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/settings"><SettingsIcon/>  Settings</RoutedTab>
@@ -159,6 +163,15 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                 </Route>
                 <Route exact path="/repositories/:repoId/compare">
                     <ComparePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
+                </Route>
+                <Route exact path="/repositories/:repoId/actions">
+                    <ActionsRunsPage repo={repo.payload} refId={refId}/>
+                </Route>
+                <Route exact path="/repositories/:repoId/actions/:runId">
+                    <ActionsRunPage repo={repo.payload} refId={refId}/>
+                </Route>
+                <Route exact path="/repositories/:repoId/actions/:runId/:hookRunId">
+                    <ActionsRunPage repo={repo.payload} refId={refId}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/settings">
                     <RepoSettingsPage repo={repo.payload}/>
