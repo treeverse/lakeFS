@@ -55,13 +55,13 @@ var entryCmd = &cobra.Command{
 		defer lockDB.Close()
 
 		conf := config.NewConfig()
-		c, err := catalog.NewCataloger(ctx, catalog.Config{
+		c, err := catalog.New(ctx, catalog.Config{
 			Config: conf,
 			DB:     database,
 			LockDB: lockDB,
 		})
 		if err != nil {
-			fmt.Printf("Cannot create cataloger: %s\n", err)
+			fmt.Printf("Cannot create catalog: %s\n", err)
 			os.Exit(1)
 		}
 

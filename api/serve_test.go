@@ -34,7 +34,7 @@ const ServerTimeout = 30 * time.Second
 
 type dependencies struct {
 	blocks      block.Adapter
-	cataloger   catalog.Interface
+	catalog     catalog.Interface
 	authService *auth.DBAuthService
 	collector   *nullCollector
 }
@@ -81,19 +81,19 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	cfg.Override(func(configurator config.Configurator) {
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})
-	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
+	c, err := catalog.New(ctx, catalog.Config{
 		Config: cfg,
 		DB:     conn,
 	})
-	testutil.MustDo(t, "build cataloger", err)
+	testutil.MustDo(t, "build catalog", err)
 
 	// wire actions
 	actionsService := actions.NewService(
 		conn,
-		catalog.NewActionsSource(cataloger),
+		catalog.NewActionsSource(c),
 		catalog.NewActionsOutputWriter(blockAdapter),
 	)
-	cataloger.SetHooksHandler(actionsService)
+	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
@@ -102,13 +102,13 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
 	t.Cleanup(func() {
-		_ = cataloger.Close()
+		_ = c.Close()
 	})
 
 	collector := &nullCollector{}
 
 	handler := api.Serve(
-		cataloger,
+		c,
 		authService,
 		blockAdapter,
 		meta,
@@ -122,7 +122,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	return handler, &dependencies{
 		blocks:      blockAdapter,
 		authService: authService,
-		cataloger:   cataloger,
+		catalog:     c,
 		collector:   collector,
 	}
 }

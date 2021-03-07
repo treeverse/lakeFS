@@ -83,8 +83,8 @@ type Store interface {
 	graveler.KeyValueStore
 	graveler.VersionController
 	graveler.Dumper
-	graveler.Plumbing
 	graveler.Loader
+	graveler.Plumbing
 }
 
 const (
@@ -98,7 +98,7 @@ type Config struct {
 	LockDB db.Database
 }
 
-type RocksCataloger struct {
+type Catalog struct {
 	BlockAdapter block.Adapter
 	Store        Store
 	log          logging.Logger
@@ -114,7 +114,7 @@ const (
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
-func NewCataloger(ctx context.Context, cfg Config) (*RocksCataloger, error) {
+func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	if cfg.LockDB == nil {
 		cfg.LockDB = cfg.DB
 	}
@@ -162,19 +162,19 @@ func NewCataloger(ctx context.Context, cfg Config) (*RocksCataloger, error) {
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
 
-	return &RocksCataloger{
+	return &Catalog{
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
 		log:          logging.Default().WithField("service_name", "entry_catalog"),
 	}, nil
 }
 
-func (c *RocksCataloger) SetHooksHandler(hooks graveler.HooksHandler) {
+func (c *Catalog) SetHooksHandler(hooks graveler.HooksHandler) {
 	c.Store.SetHooksHandler(hooks)
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *RocksCataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
+func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
@@ -198,7 +198,7 @@ func (c *RocksCataloger) CreateRepository(ctx context.Context, repository string
 }
 
 // CreateBareRepository creates a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
-func (c *RocksCataloger) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
+func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(defaultBranchID)
@@ -222,7 +222,7 @@ func (c *RocksCataloger) CreateBareRepository(ctx context.Context, repository st
 }
 
 // GetRepository get repository information
-func (c *RocksCataloger) GetRepository(ctx context.Context, repository string) (*Repository, error) {
+func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
@@ -243,7 +243,7 @@ func (c *RocksCataloger) GetRepository(ctx context.Context, repository string) (
 }
 
 // DeleteRepository delete a repository
-func (c *RocksCataloger) DeleteRepository(ctx context.Context, repository string) error {
+func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := Validate([]ValidateArg{
 		{"repositoryID", repositoryID, ValidateRepositoryID},
@@ -255,7 +255,7 @@ func (c *RocksCataloger) DeleteRepository(ctx context.Context, repository string
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
-func (c *RocksCataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -301,7 +301,7 @@ func (c *RocksCataloger) ListRepositories(ctx context.Context, limit int, after 
 	return repos, hasMore, nil
 }
 
-func (c *RocksCataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
+func (c *Catalog) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	sourceRef := graveler.Ref(sourceBranch)
@@ -332,7 +332,7 @@ func (c *RocksCataloger) CreateBranch(ctx context.Context, repository string, br
 	return catalogCommitLog, nil
 }
 
-func (c *RocksCataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
+func (c *Catalog) DeleteBranch(ctx context.Context, repository string, branch string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -344,7 +344,7 @@ func (c *RocksCataloger) DeleteBranch(ctx context.Context, repository string, br
 	return c.Store.DeleteBranch(ctx, repositoryID, branchID)
 }
 
-func (c *RocksCataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
+func (c *Catalog) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	afterBranch := graveler.BranchID(after)
 	prefixBranch := graveler.BranchID(prefix)
@@ -399,7 +399,7 @@ func (c *RocksCataloger) ListBranches(ctx context.Context, repository string, pr
 	return branches, hasMore, nil
 }
 
-func (c *RocksCataloger) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
+func (c *Catalog) BranchExists(ctx context.Context, repository string, branch string) (bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -418,7 +418,7 @@ func (c *RocksCataloger) BranchExists(ctx context.Context, repository string, br
 	return true, nil
 }
 
-func (c *RocksCataloger) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
+func (c *Catalog) GetBranchReference(ctx context.Context, repository string, branch string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -434,7 +434,7 @@ func (c *RocksCataloger) GetBranchReference(ctx context.Context, repository stri
 	return string(b.CommitID), nil
 }
 
-func (c *RocksCataloger) ResetBranch(ctx context.Context, repository string, branch string) error {
+func (c *Catalog) ResetBranch(ctx context.Context, repository string, branch string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -446,7 +446,7 @@ func (c *RocksCataloger) ResetBranch(ctx context.Context, repository string, bra
 	return c.Store.Reset(ctx, repositoryID, branchID)
 }
 
-func (c *RocksCataloger) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
+func (c *Catalog) CreateTag(ctx context.Context, repository string, tagID string, ref string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
 	if err := Validate([]ValidateArg{
@@ -466,7 +466,7 @@ func (c *RocksCataloger) CreateTag(ctx context.Context, repository string, tagID
 	return commitID.String(), nil
 }
 
-func (c *RocksCataloger) DeleteTag(ctx context.Context, repository string, tagID string) error {
+func (c *Catalog) DeleteTag(ctx context.Context, repository string, tagID string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
 	if err := Validate([]ValidateArg{
@@ -478,7 +478,7 @@ func (c *RocksCataloger) DeleteTag(ctx context.Context, repository string, tagID
 	return c.Store.DeleteTag(ctx, repositoryID, tag)
 }
 
-func (c *RocksCataloger) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
+func (c *Catalog) ListTags(ctx context.Context, repository string, limit int, after string) ([]*Tag, bool, error) {
 	if limit < 0 || limit > ListTagsLimitMax {
 		limit = ListTagsLimitMax
 	}
@@ -523,7 +523,7 @@ func (c *RocksCataloger) ListTags(ctx context.Context, repository string, limit 
 	return tags, hasMore, nil
 }
 
-func (c *RocksCataloger) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
+func (c *Catalog) GetTag(ctx context.Context, repository string, tagID string) (string, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	tag := graveler.TagID(tagID)
 	if err := Validate([]ValidateArg{
@@ -541,7 +541,7 @@ func (c *RocksCataloger) GetTag(ctx context.Context, repository string, tagID st
 
 // GetEntry returns the current entry for path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
-func (c *RocksCataloger) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
+func (c *Catalog) GetEntry(ctx context.Context, repository string, reference string, path string, _ GetEntryParams) (*DBEntry, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	ref := graveler.Ref(reference)
 	p := Path(path)
@@ -574,7 +574,7 @@ func EntryFromCatalogEntry(entry DBEntry) *Entry {
 	}
 }
 
-func (c *RocksCataloger) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
+func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
@@ -594,7 +594,7 @@ func (c *RocksCataloger) CreateEntry(ctx context.Context, repository string, bra
 	return c.Store.Set(ctx, repositoryID, branchID, key, *value)
 }
 
-func (c *RocksCataloger) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
+func (c *Catalog) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {
 	for _, entry := range entries {
 		if err := c.CreateEntry(ctx, repository, branch, entry); err != nil {
 			return err
@@ -603,7 +603,7 @@ func (c *RocksCataloger) CreateEntries(ctx context.Context, repository string, b
 	return nil
 }
 
-func (c *RocksCataloger) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
+func (c *Catalog) DeleteEntry(ctx context.Context, repository string, branch string, path string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	p := Path(path)
@@ -618,7 +618,7 @@ func (c *RocksCataloger) DeleteEntry(ctx context.Context, repository string, bra
 	return c.Store.Delete(ctx, repositoryID, branchID, key)
 }
 
-func (c *RocksCataloger) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*DBEntry, bool, error) {
+func (c *Catalog) ListEntries(ctx context.Context, repository string, reference string, prefix string, after string, delimiter string, limit int) ([]*DBEntry, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListEntriesLimitMax {
 		limit = ListEntriesLimitMax
@@ -668,7 +668,7 @@ func (c *RocksCataloger) ListEntries(ctx context.Context, repository string, ref
 	return entries, hasMore, nil
 }
 
-func (c *RocksCataloger) ResetEntry(ctx context.Context, repository string, branch string, path string) error {
+func (c *Catalog) ResetEntry(ctx context.Context, repository string, branch string, path string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	entryPath := Path(path)
@@ -683,7 +683,7 @@ func (c *RocksCataloger) ResetEntry(ctx context.Context, repository string, bran
 	return c.Store.ResetKey(ctx, repositoryID, branchID, key)
 }
 
-func (c *RocksCataloger) ResetEntries(ctx context.Context, repository string, branch string, prefix string) error {
+func (c *Catalog) ResetEntries(ctx context.Context, repository string, branch string, prefix string) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	prefixPath := Path(prefix)
@@ -697,7 +697,7 @@ func (c *RocksCataloger) ResetEntries(ctx context.Context, repository string, br
 	return c.Store.ResetPrefix(ctx, repositoryID, branchID, keyPrefix)
 }
 
-func (c *RocksCataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
+func (c *Catalog) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -732,7 +732,7 @@ func (c *RocksCataloger) Commit(ctx context.Context, repository string, branch s
 	return catalogCommitLog, nil
 }
 
-func (c *RocksCataloger) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
+func (c *Catalog) GetCommit(ctx context.Context, repository string, reference string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	ref := graveler.Ref(reference)
 	if err := Validate([]ValidateArg{
@@ -763,7 +763,7 @@ func (c *RocksCataloger) GetCommit(ctx context.Context, repository string, refer
 	return catalogCommitLog, nil
 }
 
-func (c *RocksCataloger) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
+func (c *Catalog) ListCommits(ctx context.Context, repository string, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchRef := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -833,7 +833,7 @@ func (c *RocksCataloger) ListCommits(ctx context.Context, repository string, bra
 	return commits, hasMore, nil
 }
 
-func (c *RocksCataloger) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
+func (c *Catalog) Revert(ctx context.Context, repository string, branch string, params RevertParams) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ref := graveler.Ref(params.Reference)
@@ -856,12 +856,12 @@ func (c *RocksCataloger) Revert(ctx context.Context, repository string, branch s
 	return err
 }
 
-func (c *RocksCataloger) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
+func (c *Catalog) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
 	c.log.Debug("rollback to commit is not supported in rocks implementation")
 	return ErrFeatureNotSupported
 }
 
-func (c *RocksCataloger) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
+func (c *Catalog) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	left := graveler.Ref(leftReference)
 	right := graveler.Ref(rightReference)
@@ -881,7 +881,7 @@ func (c *RocksCataloger) Diff(ctx context.Context, repository string, leftRefere
 	return listDiffHelper(it, params.Limit, params.After)
 }
 
-func (c *RocksCataloger) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
+func (c *Catalog) Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	from := graveler.Ref(leftReference)
 	to := graveler.Ref(rightReference)
@@ -901,7 +901,7 @@ func (c *RocksCataloger) Compare(ctx context.Context, repository, leftReference 
 	return listDiffHelper(it, params.Limit, params.After)
 }
 
-func (c *RocksCataloger) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
+func (c *Catalog) DiffUncommitted(ctx context.Context, repository string, branch string, limit int, after string) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	if err := Validate([]ValidateArg{
@@ -953,7 +953,7 @@ func listDiffHelper(it EntryDiffIterator, limit int, after string) (Differences,
 	return diffs, hasMore, nil
 }
 
-func (c *RocksCataloger) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
+func (c *Catalog) Merge(ctx context.Context, repository string, destinationBranch string, sourceRef string, committer string, message string, metadata Metadata) (*MergeResult, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	destination := graveler.BranchID(destinationBranch)
 	source := graveler.Ref(sourceRef)
@@ -977,7 +977,7 @@ func (c *RocksCataloger) Merge(ctx context.Context, repository string, destinati
 	}
 	commitID, summary, err := c.Store.Merge(ctx, repositoryID, destination, source, commitParams)
 	if errors.Is(err, graveler.ErrConflictFound) {
-		// for compatibility with old RocksCataloger
+		// for compatibility with old Catalog
 		return &MergeResult{
 			Summary: map[DifferenceType]int{DifferenceTypeConflict: 1},
 		}, err
@@ -999,7 +999,7 @@ func (c *RocksCataloger) Merge(ctx context.Context, repository string, destinati
 	}, nil
 }
 
-func (c *RocksCataloger) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
+func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
 	metaRangeID, err := c.Store.DumpCommits(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return "", err
@@ -1007,7 +1007,7 @@ func (c *RocksCataloger) DumpCommits(ctx context.Context, repositoryID string) (
 	return string(*metaRangeID), nil
 }
 
-func (c *RocksCataloger) DumpBranches(ctx context.Context, repositoryID string) (string, error) {
+func (c *Catalog) DumpBranches(ctx context.Context, repositoryID string) (string, error) {
 	metaRangeID, err := c.Store.DumpBranches(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return "", err
@@ -1015,7 +1015,7 @@ func (c *RocksCataloger) DumpBranches(ctx context.Context, repositoryID string) 
 	return string(*metaRangeID), nil
 }
 
-func (c *RocksCataloger) DumpTags(ctx context.Context, repositoryID string) (string, error) {
+func (c *Catalog) DumpTags(ctx context.Context, repositoryID string) (string, error) {
 	metaRangeID, err := c.Store.DumpTags(ctx, graveler.RepositoryID(repositoryID))
 	if err != nil {
 		return "", err
@@ -1023,27 +1023,27 @@ func (c *RocksCataloger) DumpTags(ctx context.Context, repositoryID string) (str
 	return string(*metaRangeID), nil
 }
 
-func (c *RocksCataloger) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
+func (c *Catalog) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
 	return c.Store.LoadCommits(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(commitsMetaRangeID))
 }
 
-func (c *RocksCataloger) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
+func (c *Catalog) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
 	return c.Store.LoadBranches(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(branchesMetaRangeID))
 }
 
-func (c *RocksCataloger) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
+func (c *Catalog) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
 	return c.Store.LoadTags(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(tagsMetaRangeID))
 }
 
-func (c *RocksCataloger) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error) {
+func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error) {
 	return c.Store.GetMetaRange(ctx, graveler.RepositoryID(repositoryID), graveler.MetaRangeID(metaRangeID))
 }
 
-func (c *RocksCataloger) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
+func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error) {
 	return c.Store.GetRange(ctx, graveler.RepositoryID(repositoryID), graveler.RangeID(rangeID))
 }
 
-func (c *RocksCataloger) Close() error {
+func (c *Catalog) Close() error {
 	return nil
 }
 

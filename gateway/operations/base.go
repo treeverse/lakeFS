@@ -44,7 +44,7 @@ type Operation struct {
 	OperationID       OperationID
 	Region            string
 	FQDN              string
-	Cataloger         catalog.Interface
+	Catalog           catalog.Interface
 	MultipartsTracker multiparts.Tracker
 	BlockStore        block.Adapter
 	Auth              simulator.GatewayAuthService

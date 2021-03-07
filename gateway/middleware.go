@@ -87,7 +87,7 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 		o := &operations.Operation{
 			Region:            sc.region,
 			FQDN:              sc.bareDomain,
-			Cataloger:         sc.cataloger,
+			Catalog:           sc.catalog,
 			MultipartsTracker: sc.multipartsTracker,
 			BlockStore:        sc.blockStore,
 			Auth:              sc.authService,
@@ -114,7 +114,7 @@ func DurationHandler(next http.Handler) http.Handler {
 	})
 }
 
-func EnrichWithRepositoryOrFallback(cataloger catalog.Interface, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepositoryOrFallback(catalog catalog.Interface, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
@@ -125,7 +125,7 @@ func EnrichWithRepositoryOrFallback(cataloger catalog.Interface, authService sim
 			next.ServeHTTP(w, req)
 			return
 		}
-		repo, err := cataloger.GetRepository(ctx, repoID)
+		repo, err := catalog.GetRepository(ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username:            username,

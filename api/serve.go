@@ -29,7 +29,7 @@ const (
 )
 
 func Serve(
-	cataloger catalog.Interface,
+	catalog catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -51,7 +51,7 @@ func Serve(
 
 	// bind our handlers to the server
 	controller := NewController(
-		cataloger,
+		catalog,
 		authService,
 		blockAdapter,
 		metadataManager,

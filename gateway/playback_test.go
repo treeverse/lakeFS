@@ -27,9 +27,9 @@ import (
 )
 
 type dependencies struct {
-	blocks    block.Adapter
-	auth      simulator.GatewayAuthService
-	cataloger catalog.Interface
+	blocks  block.Adapter
+	auth    simulator.GatewayAuthService
+	catalog catalog.Interface
 }
 
 type mockCollector struct{}
@@ -114,18 +114,18 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
+	catalog, err := catalog.New(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})
-	testutil.MustDo(t, "build cataloger", err)
+	testutil.MustDo(t, "build catalog", err)
 	multipartsTracker := multiparts.NewTracker(conn)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
 
 	t.Cleanup(func() {
-		_ = cataloger.Close()
+		_ = catalog.Close()
 	})
 
 	storageNamespace := os.Getenv("USE_STORAGE_NAMESPACE")
@@ -133,12 +133,12 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		storageNamespace = "replay"
 	}
 
-	_, err = cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
+	_, err = catalog.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
 
 	handler := gateway.NewHandler(
 		authService.Region,
-		cataloger,
+		catalog,
 		multipartsTracker,
 		blockAdapter,
 		authService,
@@ -148,9 +148,9 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	)
 
 	return handler, &dependencies{
-		blocks:    blockAdapter,
-		auth:      authService,
-		cataloger: cataloger,
+		blocks:  blockAdapter,
+		auth:    authService,
+		catalog: catalog,
 	}
 }
 

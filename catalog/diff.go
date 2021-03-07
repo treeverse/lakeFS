@@ -18,7 +18,7 @@ type Difference struct {
 type DiffResultRecord struct {
 	TargetEntryNotInDirectBranch bool // the entry is reflected via lineage, NOT in the branch itself
 	Difference
-	EntryCtid *string // CTID of the modified/added entry. Do not use outside of cataloger diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
+	EntryCtid *string // CTID of the modified/added entry. Do not use outside of catalog diff-by-iterators. https://github.com/treeverse/lakeFS/issues/831
 }
 
 func (d Difference) String() string {

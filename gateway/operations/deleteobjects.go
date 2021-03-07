@@ -59,7 +59,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		}
 
 		lg := o.Log(req).WithField("key", obj.Key)
-		err = o.Cataloger.DeleteEntry(req.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
+		err = o.Catalog.DeleteEntry(req.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
 		switch {
 		case errors.Is(err, db.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")

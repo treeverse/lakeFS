@@ -20,16 +20,16 @@ import (
 
 // Collector collects diagnostics information and write the collected content into a writer in a zip format
 type Collector struct {
-	cataloger  catalog.Interface
+	catalog    catalog.Interface
 	adapter    block.Adapter
 	pyramidCfg *pyramidparams.ExtParams
 	db         db.Database
 }
 
 // NewCollector accepts database to work with during collect
-func NewCollector(adb db.Database, cataloger catalog.Interface, cfg *pyramidparams.ExtParams, adapter block.Adapter) *Collector {
+func NewCollector(adb db.Database, catalog catalog.Interface, cfg *pyramidparams.ExtParams, adapter block.Adapter) *Collector {
 	return &Collector{
-		cataloger:  cataloger,
+		catalog:    catalog,
 		pyramidCfg: cfg,
 		adapter:    adapter,
 		db:         adb,
@@ -187,7 +187,7 @@ func (c *Collector) writeTableCount(ctx context.Context, writer *zip.Writer, nam
 
 func (c *Collector) rangesStats(ctx context.Context, writer *zip.Writer) error {
 	var combinedErr error
-	repos, _, err := c.cataloger.ListRepositories(ctx, -1, "")
+	repos, _, err := c.catalog.ListRepositories(ctx, -1, "")
 	if err != nil {
 		// Cannot list repos, nothing to do..
 		combinedErr = multierror.Append(combinedErr, fmt.Errorf("listing repositories: %w", err))

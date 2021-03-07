@@ -71,22 +71,22 @@ var runCmd = &cobra.Command{
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
+		c, err := catalog.New(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 			LockDB: lockdbPool,
 		})
 		if err != nil {
-			logger.WithError(err).Fatal("failed to create cataloger")
+			logger.WithError(err).Fatal("failed to create c")
 		}
 
 		// wire actions
 		actionsService := actions.NewService(
 			dbPool,
-			catalog.NewActionsSource(cataloger),
-			catalog.NewActionsOutputWriter(cataloger.BlockAdapter),
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
 		)
-		cataloger.SetHooksHandler(actionsService)
+		c.SetHooksHandler(actionsService)
 
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
@@ -113,7 +113,7 @@ var runCmd = &cobra.Command{
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
 		defer func() {
-			_ = cataloger.Close()
+			_ = c.Close()
 		}()
 
 		// start API server
@@ -122,7 +122,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.Serve(
-			cataloger,
+			c,
 			authService,
 			blockStore,
 			authMetadataManager,
@@ -144,7 +144,7 @@ var runCmd = &cobra.Command{
 		}
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
-			cataloger,
+			c,
 			multipartsTracker,
 			blockStore,
 			authService,
