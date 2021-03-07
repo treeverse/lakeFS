@@ -39,65 +39,65 @@ Use the below configuration when creating the cluster. You may delete any app co
   {
     "Classification": "presto-connector-hive",
     "Properties": {
-      "hive.s3.aws-secret-key": "$LAKEFS_SECRET_KEY",
-      "hive.s3.aws-access-key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "hive.s3.endpoint": "$LAKEFS_ENDPOINT",
+      "hive.s3.aws-access-key": "AKIAIOSFODNN7EXAMPLE",
+      "hive.s3.aws-secret-key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "hive.s3.endpoint": "https://s3.lakefs.example.com",
       "hive.s3-file-system-type": "PRESTO"
     }
   },
   {
     "Classification": "hive-site",
     "Properties": {
-      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
-      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3.endpoint": "https://s3.lakefs.example.com",
+      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
     }
   },
   {
     "Classification": "hdfs-site",
     "Properties": {
-      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
-      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3.endpoint": "https://s3.lakefs.example.com",
+      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
     }
   },
   {
     "Classification": "core-site",
     "Properties": {
-      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
-      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3.endpoint": "https://s3.lakefs.example.com",
+      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
     }
   },
   {
     "Classification": "emrfs-site",
     "Properties": {
-      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
-      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3.endpoint": "https://s3.lakefs.example.com",
+      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
     }
   },
   {
     "Classification": "mapred-site",
     "Properties": {
-      "fs.s3.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3.endpoint": "$LAKEFS_ENDPOINT",
-      "fs.s3a.access.key": "$LAKEFS_SECRET_ACCESS_KEY",
-      "fs.s3a.secret.key": "$LAKEFS_SECRET_KEY",
-      "fs.s3a.endpoint": "$LAKEFS_ENDPOINT"
+      "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3.endpoint": "https://s3.lakefs.example.com",
+      "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
+      "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "fs.s3a.endpoint": "https://s3.lakefs.example.com"
     }
   },
   {
