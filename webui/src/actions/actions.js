@@ -16,6 +16,8 @@ export const getActionsRun = (repoId, runId) =>
 export const listActionsRunHooks = (repoId, runId) =>
     ACTIONS_RUN_HOOKS.execute(async () => api.actions.listRunHooks(repoId, runId, "", -1));
 
-
 export const getActionsRunHookOutput = (repoId, runId, hookRunId) =>
     ACTIONS_RUN_HOOK_OUTPUT.execute(async () => api.actions.getRunHookOutput(repoId, runId, hookRunId));
+
+export const resetActionsRunHookOutput = () =>
+    ACTIONS_RUN_HOOK_OUTPUT.resetAction();

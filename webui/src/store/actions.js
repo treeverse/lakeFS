@@ -12,7 +12,7 @@ const initialState = {
     runs: async.initialState,
     run: async.initialState,
     runHooks: async.initialState,
-    runHookOutput: async.initialState,
+    runHookOutput: async.actionInitialState,
 };
 
 const store = (state = initialState, action) => {
@@ -21,7 +21,7 @@ const store = (state = initialState, action) => {
         runs: async.reduce(ACTIONS_RUNS, state.runs, action),
         run: async.reduce(ACTIONS_RUN, state.run, action),
         runHooks: async.reduce(ACTIONS_RUN_HOOKS, state.runHooks, action),
-        runHookOutput: async.reduce(ACTIONS_RUN_HOOK_OUTPUT, state.runHookOutput, action),
+        runHookOutput: async.actionReduce(ACTIONS_RUN_HOOK_OUTPUT, state.runHookOutput, action),
     };
     return state;
 };
