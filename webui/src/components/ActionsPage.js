@@ -141,7 +141,7 @@ export const ActionsRunPage = connect(
                                             ? <span style={{color: "green"}}><CheckCircleFillIcon/> </span>
                                             : <span style={{color: "red"}}><XCircleFillIcon/> </span>
                                         }
-                                        {hook.action} / {hook.hook_id}
+                                        &nbsp;{hook.action} / {hook.hook_id}
                                     </Accordion.Toggle>
                                 </Card.Header>
                                 <Accordion.Collapse
@@ -150,6 +150,15 @@ export const ActionsRunPage = connect(
                                     onExit={() => history.replace(`/repositories/${repo.id}/actions/${runId}`)}
                                 >
                                     <Card.Body>
+                                        <Card.Text>
+                                            <strong>Status:</strong> <strong style={{'color': (hook.status === 'completed') ? 'green':'red'}}>{hook.status}</strong><br/>
+                                            <strong>Action:</strong> {hook.action}<br/>
+                                            <strong>Hook ID:</strong> {hook.hook_id}<br/>
+                                            <strong>Start time:</strong> {moment(hook.start_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
+                                            <strong>End time:</strong> {moment(hook.end_time).format("MM/DD/YYYY HH:mm:ss")}<br/>
+                                            <strong>Hook Run ID:</strong> {hook.hook_run_id}<br/>
+                                            <hr/>
+                                        </Card.Text>
                                         {runHookOutput.error
                                             ? <Alert variant="warning">Failed to load hook output</Alert>
                                             : runHookOutput.inProgress
