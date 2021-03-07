@@ -65,6 +65,7 @@
     color: #0f6674;
     text-decoration: underline;
 }
+
 .lakefs-uri {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: .9rem;
@@ -159,6 +160,10 @@
     padding-top: 10px;
     padding-bottom: 10px;
     vertical-align: middle;
+}
+
+#run-details {
+    margin-bottom: 20px;
 }
 
 .table .tree-row td:first-child {

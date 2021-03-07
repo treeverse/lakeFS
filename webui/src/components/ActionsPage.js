@@ -1,8 +1,8 @@
 import {connect} from "react-redux";
 import {listActionsRuns, listActionsRunHooks, getActionsRun, getActionsRunHookOutput, resetActionsRunHookOutput} from '../actions/actions';
 import {Link, useHistory, useParams} from "react-router-dom";
-import React, {useCallback, useEffect, useState} from "react";
-import {SyncIcon} from "@primer/octicons-react";
+import React, {useCallback, useContext, useEffect, useState} from "react";
+import {SyncIcon, TriangleDownIcon, TriangleRightIcon} from "@primer/octicons-react";
 import {PaginatedEntryList} from "./auth/entities";
 import * as moment from "moment";
 import {
@@ -13,7 +13,7 @@ import {
     Button,
     Form,
     ButtonToolbar,
-    Accordion
+    Accordion, useAccordionToggle, AccordionContext
 } from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
@@ -74,6 +74,20 @@ export const ActionsRunsPage = connect(
     );
 });
 
+function HookDetailsToggle({ children, eventKey, callback }) {
+    const currentEventKey = useContext(AccordionContext);
+    const decoratedOnClick = useAccordionToggle(
+        eventKey,
+        () => callback && callback(eventKey),
+    );
+    const isCurrentEventKey = currentEventKey === eventKey;
+    return (
+        <Link onClick={decoratedOnClick}>
+            {isCurrentEventKey ? <TriangleDownIcon/> : <TriangleRightIcon/>}
+            {children}
+        </Link>
+    );
+}
 
 export const ActionsRunPage = connect(
     ({ actions }) => ({
@@ -136,13 +150,13 @@ export const ActionsRunPage = connect(
                         return (
                             <Card key={"hook_"+hook.hook_run_id}>
                                 <Card.Header>
-                                    <Accordion.Toggle as={Button} variant="link" eventKey={hook.hook_run_id}>
+                                    <HookDetailsToggle variant="link" eventKey={hook.hook_run_id}>
                                         {hook.status === "completed"
                                             ? <span style={{color: "green"}}><CheckCircleFillIcon/> </span>
                                             : <span style={{color: "red"}}><XCircleFillIcon/> </span>
                                         }
                                         &nbsp;{hook.action} / {hook.hook_id}
-                                    </Accordion.Toggle>
+                                    </HookDetailsToggle>
                                 </Card.Header>
                                 <Accordion.Collapse
                                     eventKey={hook.hook_run_id}
@@ -180,7 +194,7 @@ export const ActionsRunPage = connect(
 
 const RunDetails = ({ runDetails }) => {
     return (
-        <Card border={runDetails.status !== 'completed' && 'danger'}>
+        <Card id="run-details" border={runDetails.status !== 'completed' && 'danger'}>
             <Card.Header>
                 <strong>Run ID:</strong> {runDetails.run_id}<br/>
                 <strong>Branch:</strong> {runDetails.branch}<br/>
