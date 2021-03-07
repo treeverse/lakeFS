@@ -186,7 +186,8 @@ func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (i
 		if err != nil {
 			rollbackErr := tx.Rollback(ctx)
 			if rollbackErr != nil {
-				return nil, rollbackErr
+				// returning the original error and not the rollbackErr
+				return nil, err
 			}
 			// retry on serialization error
 			if IsSerializationError(err) {
