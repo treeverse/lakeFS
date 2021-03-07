@@ -64,7 +64,7 @@ type actionsHandler interface {
 }
 
 type Controller struct {
-	Cataloger             catalog.Cataloger
+	Cataloger             catalog.Interface
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
@@ -76,7 +76,7 @@ type Controller struct {
 }
 
 func NewController(
-	cataloger catalog.Cataloger,
+	cataloger catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,

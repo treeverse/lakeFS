@@ -29,7 +29,7 @@ const (
 )
 
 func Serve(
-	cataloger catalog.Cataloger,
+	cataloger catalog.Interface,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,

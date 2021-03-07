@@ -221,7 +221,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	return 0
 }
 
-func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string) (*catalog.Repository, error) {
+func getRepository(ctx context.Context, cataloger catalog.Interface, repoName string) (*catalog.Repository, error) {
 	repo, err := cataloger.GetRepository(ctx, repoName)
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)

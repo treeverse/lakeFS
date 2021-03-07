@@ -34,7 +34,7 @@ const ServerTimeout = 30 * time.Second
 
 type dependencies struct {
 	blocks      block.Adapter
-	cataloger   catalog.Cataloger
+	cataloger   catalog.Interface
 	authService *auth.DBAuthService
 	collector   *nullCollector
 }

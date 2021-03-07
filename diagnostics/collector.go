@@ -20,14 +20,14 @@ import (
 
 // Collector collects diagnostics information and write the collected content into a writer in a zip format
 type Collector struct {
-	cataloger  catalog.Cataloger
+	cataloger  catalog.Interface
 	adapter    block.Adapter
 	pyramidCfg *pyramidparams.ExtParams
 	db         db.Database
 }
 
 // NewCollector accepts database to work with during collect
-func NewCollector(adb db.Database, cataloger catalog.Cataloger, cfg *pyramidparams.ExtParams, adapter block.Adapter) *Collector {
+func NewCollector(adb db.Database, cataloger catalog.Interface, cfg *pyramidparams.ExtParams, adapter block.Adapter) *Collector {
 	return &Collector{
 		cataloger:  cataloger,
 		pyramidCfg: cfg,

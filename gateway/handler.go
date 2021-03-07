@@ -51,7 +51,7 @@ type handler struct {
 type ServerContext struct {
 	region            string
 	bareDomain        string
-	cataloger         catalog.Cataloger
+	cataloger         catalog.Interface
 	multipartsTracker multiparts.Tracker
 	blockStore        block.Adapter
 	authService       simulator.GatewayAuthService
@@ -60,7 +60,7 @@ type ServerContext struct {
 
 func NewHandler(
 	region string,
-	cataloger catalog.Cataloger,
+	cataloger catalog.Interface,
 	multipartsTracker multiparts.Tracker,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,

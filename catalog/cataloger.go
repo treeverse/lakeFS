@@ -47,7 +47,7 @@ type GetEntryParams struct {
 	ReturnExpired bool
 }
 
-type Cataloger interface {
+type Interface interface {
 	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 

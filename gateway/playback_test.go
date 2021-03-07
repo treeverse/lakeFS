@@ -29,7 +29,7 @@ import (
 type dependencies struct {
 	blocks    block.Adapter
 	auth      simulator.GatewayAuthService
-	cataloger catalog.Cataloger
+	cataloger catalog.Interface
 }
 
 type mockCollector struct{}
