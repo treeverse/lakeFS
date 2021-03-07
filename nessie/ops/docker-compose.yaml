@@ -28,7 +28,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   nessie:
-    image: "golang:1.15.2-alpine"
+    image: "golang:1.16.0-alpine"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
