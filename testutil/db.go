@@ -179,7 +179,7 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 	})
 
 	database := db.NewPgxDatabase(pool)
-	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err = database.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
 	})
 	if err != nil {

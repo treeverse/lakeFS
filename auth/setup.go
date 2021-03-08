@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,9 +10,9 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 )
 
-func createGroups(authService Service, groups []*model.Group) error {
+func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
 	for _, group := range groups {
-		err := authService.CreateGroup(group)
+		err := authService.CreateGroup(ctx, group)
 		if err != nil {
 			return err
 		}
@@ -19,9 +20,9 @@ func createGroups(authService Service, groups []*model.Group) error {
 	return nil
 }
 
-func createPolicies(authService Service, policies []*model.Policy) error {
+func createPolicies(ctx context.Context, authService Service, policies []*model.Policy) error {
 	for _, policy := range policies {
-		err := authService.WritePolicy(policy)
+		err := authService.WritePolicy(ctx, policy)
 		if err != nil {
 			return err
 		}
@@ -29,9 +30,9 @@ func createPolicies(authService Service, policies []*model.Policy) error {
 	return nil
 }
 
-func attachPolicies(authService Service, groupID string, policyIDs []string) error {
+func attachPolicies(ctx context.Context, authService Service, groupID string, policyIDs []string) error {
 	for _, policyID := range policyIDs {
-		err := authService.AttachPolicyToGroup(policyID, groupID)
+		err := authService.AttachPolicyToGroup(ctx, policyID, groupID)
 		if err != nil {
 			return err
 		}
@@ -39,10 +40,10 @@ func attachPolicies(authService Service, groupID string, policyIDs []string) err
 	return nil
 }
 
-func SetupBaseGroups(authService Service, ts time.Time) error {
+func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
 	var err error
 
-	err = createGroups(authService, []*model.Group{
+	err = createGroups(ctx, authService, []*model.Group{
 		{CreatedAt: ts, DisplayName: "Admins"},
 		{CreatedAt: ts, DisplayName: "SuperUsers"},
 		{CreatedAt: ts, DisplayName: "Developers"},
@@ -52,7 +53,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = createPolicies(authService, []*model.Policy{
+	err = createPolicies(ctx, authService, []*model.Policy{
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
@@ -182,19 +183,19 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess", "ExportSetConfiguration"})
+	err = attachPolicies(ctx, authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess", "ExportSetConfiguration"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"})
+	err = attachPolicies(ctx, authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
+	err = attachPolicies(ctx, authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
+	err = attachPolicies(ctx, authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
 	if err != nil {
 		return err
 	}
@@ -202,33 +203,33 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 	return nil
 }
 
-func SetupAdminUser(authService Service, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
+func SetupAdminUser(ctx context.Context, authService Service, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
 	// Setup the basic groups and policies
-	err := SetupBaseGroups(authService, now)
+	err := SetupBaseGroups(ctx, authService, now)
 	if err != nil {
 		return nil, err
 	}
 
-	return AddAdminUser(authService, superuser)
+	return AddAdminUser(ctx, authService, superuser)
 }
 
-func AddAdminUser(authService Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
+func AddAdminUser(ctx context.Context, authService Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
 	const adminGroupName = "Admins"
 
 	// verify admin group exists
-	_, err := authService.GetGroup(adminGroupName)
+	_, err := authService.GetGroup(ctx, adminGroupName)
 	if err != nil {
 		return nil, fmt.Errorf("admin group - %w", err)
 	}
 
 	// create admin user
-	err = authService.CreateUser(&user.User)
+	err = authService.CreateUser(ctx, &user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
-	err = authService.AddUserToGroup(user.Username, adminGroupName)
+	err = authService.AddUserToGroup(ctx, user.Username, adminGroupName)
 	if err != nil {
 		return nil, fmt.Errorf("add user to group - %w", err)
 	}
@@ -236,12 +237,12 @@ func AddAdminUser(authService Service, user *model.SuperuserConfiguration) (*mod
 	var creds *model.Credential
 	if user.AccessKeyID == "" {
 		// Generate and return a key pair
-		creds, err = authService.CreateCredentials(user.Username)
+		creds, err = authService.CreateCredentials(ctx, user.Username)
 		if err != nil {
 			return nil, fmt.Errorf("create credentials for %s: %w", user.Username, err)
 		}
 	} else {
-		creds, err = authService.AddCredentials(user.Username, user.AccessKeyID, user.SecretAccessKey)
+		creds, err = authService.AddCredentials(ctx, user.Username, user.AccessKeyID, user.SecretAccessKey)
 		if err != nil {
 			return nil, fmt.Errorf("add credentials for %s: %w", user.Username, err)
 		}
@@ -249,11 +250,11 @@ func AddAdminUser(authService Service, user *model.SuperuserConfiguration) (*mod
 	return creds, nil
 }
 
-func CreateInitialAdminUser(authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
-	return CreateInitialAdminUserWithKeys(authService, metadataManger, username, nil, nil)
+func CreateInitialAdminUser(ctx context.Context, authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
+	return CreateInitialAdminUserWithKeys(ctx, authService, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{User: model.User{
 		CreatedAt: time.Now(),
 		Username:  username,
@@ -263,13 +264,13 @@ func CreateInitialAdminUserWithKeys(authService Service, metadataManger Metadata
 		adminUser.SecretAccessKey = *secretAccessKey
 	}
 	// create first admin user
-	cred, err := SetupAdminUser(authService, adminUser)
+	cred, err := SetupAdminUser(ctx, authService, adminUser)
 	if err != nil {
 		return nil, err
 	}
 
 	// update setup timestamp
-	if err := metadataManger.UpdateSetupTimestamp(time.Now()); err != nil {
+	if err := metadataManger.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
 		logging.Default().WithError(err).Error("Failed the update setup timestamp")
 	}
 	return cred, err

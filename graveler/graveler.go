@@ -558,11 +558,6 @@ type StagingManager interface {
 // BranchLockerFunc
 type BranchLockerFunc func() (interface{}, error)
 
-// BranchLocker enforces the branch locking logic
-// The logic is as follows:
-// - Allow concurrent writers to acquire the lock.
-// - A Metadata update waits for all current writers to release the lock, and then gets the lock.
-// - While a metadata update has the lock or is waiting for the lock, any other operation fails to acquire the lock.
 type BranchLocker interface {
 	Writer(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockedFn BranchLockerFunc) (interface{}, error)
 	MetadataUpdater(ctx context.Context, repositoryID RepositoryID, branchID BranchID, lockeFn BranchLockerFunc) (interface{}, error)

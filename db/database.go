@@ -18,13 +18,21 @@ import (
 
 type TxFunc func(tx Tx) (interface{}, error)
 
+type Querier interface {
+	Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
+}
+
 type Database interface {
-	Tx
+	Querier
+	Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	Get(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	GetPrimitive(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error)
+	Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (interface{}, error)
+
 	Close()
-	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
-	Metadata() (map[string]string, error)
+	Metadata(ctx context.Context) (map[string]string, error)
 	Stats() sql.DBStats
-	WithContext(ctx context.Context) Database
 	Pool() *pgxpool.Pool
 }
 
@@ -35,7 +43,6 @@ func Void(fn func(tx Tx) error) TxFunc {
 
 type QueryOptions struct {
 	logger logging.Logger
-	ctx    context.Context
 }
 
 type PgxDatabase struct {
@@ -52,23 +59,6 @@ func (d *PgxDatabase) getLogger() logging.Logger {
 		return d.queryOptions.logger
 	}
 	return logging.Default()
-}
-
-func (d *PgxDatabase) getContext() context.Context {
-	if d.queryOptions != nil {
-		return d.queryOptions.ctx
-	}
-	return context.Background()
-}
-
-func (d *PgxDatabase) WithContext(ctx context.Context) Database {
-	return &PgxDatabase{
-		db: d.db,
-		queryOptions: &QueryOptions{
-			logger: logging.Default().WithContext(ctx),
-			ctx:    ctx,
-		},
-	}
 }
 
 func (d *PgxDatabase) Close() {
@@ -94,19 +84,19 @@ func (d *PgxDatabase) performAndReport(fields logging.Fields, fn func() (interfa
 	return ret, err
 }
 
-func (d *PgxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+func (d *PgxDatabase) Get(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	_, err := d.performAndReport(logging.Fields{
 		"type":  "get",
 		"query": query,
 		"args":  args,
 	}, func() (interface{}, error) {
-		return nil, pgxscan.Get(d.getContext(), d.db, dest, query, args...)
+		return nil, pgxscan.Get(ctx, d.db, dest, query, args...)
 	})
 	return err
 }
 
-func (d *PgxDatabase) GetPrimitive(dest interface{}, query string, args ...interface{}) error {
-	row := d.db.QueryRow(context.Background(), query, args...)
+func (d *PgxDatabase) GetPrimitive(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	row := d.db.QueryRow(ctx, query, args...)
 	err := row.Scan(dest)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
@@ -116,30 +106,35 @@ func (d *PgxDatabase) GetPrimitive(dest interface{}, query string, args ...inter
 	}
 	return nil
 }
-func (d *PgxDatabase) Query(query string, args ...interface{}) (rows pgx.Rows, err error) {
+func (d *PgxDatabase) Query(ctx context.Context, query string, args ...interface{}) (rows pgx.Rows, err error) {
 	l := d.getLogger().WithFields(logging.Fields{
 		"type":  "start query",
 		"query": query,
 		"args":  args,
 	})
 	start := time.Now()
-	ret, err := d.db.Query(d.getContext(), query, args...)
+	ret, err := d.db.Query(ctx, query, args...)
 	if ret == nil {
 		return nil, err
 	}
 	return Logged(ret, start, l), err
 }
 
-func (d *PgxDatabase) Select(results interface{}, query string, args ...interface{}) error {
-	return Select(d, results, query, args...)
+func (d *PgxDatabase) Select(ctx context.Context, results interface{}, query string, args ...interface{}) error {
+	rows, err := d.Query(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	return pgxscan.ScanAll(results, rows)
 }
 
-func (d *PgxDatabase) Exec(query string, args ...interface{}) (pgconn.CommandTag, error) {
+func (d *PgxDatabase) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "exec",
 		"query": query,
 		"args":  args,
-	}, func() (interface{}, error) { return d.db.Exec(d.getContext(), query, args...) })
+	}, func() (interface{}, error) { return d.db.Exec(ctx, query, args...) })
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +145,11 @@ func (d *PgxDatabase) getTxOptions() *TxOptions {
 	options := DefaultTxOptions()
 	if d.queryOptions != nil {
 		options.logger = d.queryOptions.logger
-		options.ctx = d.queryOptions.ctx
 	}
 	return options
 }
 
-func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
+func (d *PgxDatabase) Transact(ctx context.Context, fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	options := d.getTxOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -166,7 +160,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	var tx pgx.Tx
 	defer func() {
 		if p := recover(); p != nil && tx != nil {
-			_ = tx.Rollback(options.ctx)
+			_ = tx.Rollback(ctx)
 			panic(p)
 		}
 	}()
@@ -181,18 +175,19 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			time.Sleep(duration)
 		}
 
-		tx, err = d.db.BeginTx(options.ctx, pgx.TxOptions{
+		tx, err = d.db.BeginTx(ctx, pgx.TxOptions{
 			IsoLevel:   options.isolationLevel,
 			AccessMode: options.accessMode,
 		})
 		if err != nil {
 			return nil, err
 		}
-		ret, err = fn(&dbTx{tx: tx, logger: options.logger})
+		ret, err = fn(&dbTx{tx: tx, logger: options.logger, ctx: ctx})
 		if err != nil {
-			rollbackErr := tx.Rollback(options.ctx)
+			rollbackErr := tx.Rollback(ctx)
 			if rollbackErr != nil {
-				return nil, rollbackErr
+				// returning the original error and not the rollbackErr
+				return nil, err
 			}
 			// retry on serialization error
 			if IsSerializationError(err) {
@@ -202,7 +197,7 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			}
 			return nil, err
 		} else {
-			err = tx.Commit(options.ctx)
+			err = tx.Commit(ctx)
 			if err != nil {
 				// retry on serialization error
 				if IsSerializationError(err) {
@@ -224,9 +219,9 @@ func (d *PgxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	return nil, ErrSerialization
 }
 
-func (d *PgxDatabase) Metadata() (map[string]string, error) {
+func (d *PgxDatabase) Metadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
-	version, err := d.getVersion()
+	version, err := d.getVersion(ctx)
 	if err == nil {
 		metadata["postgresql_version"] = version
 	}
@@ -235,7 +230,7 @@ func (d *PgxDatabase) Metadata() (map[string]string, error) {
 		metadata["postgresql_aurora_version"] = auroraVersion
 	}
 
-	m, err := d.Transact(func(tx Tx) (interface{}, error) {
+	m, err := d.Transact(ctx, func(tx Tx) (interface{}, error) {
 		// select name,setting from pg_settings
 		// where name in ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')
 		type pgSettings struct {
@@ -275,8 +270,8 @@ func (d *PgxDatabase) Metadata() (map[string]string, error) {
 	return metadata, nil
 }
 
-func (d *PgxDatabase) getVersion() (string, error) {
-	v, err := d.Transact(func(tx Tx) (interface{}, error) {
+func (d *PgxDatabase) getVersion(ctx context.Context) (string, error) {
+	v, err := d.Transact(ctx, func(tx Tx) (interface{}, error) {
 		type ver struct {
 			Version string `db:"version"`
 		}
@@ -294,7 +289,8 @@ func (d *PgxDatabase) getVersion() (string, error) {
 }
 
 func (d *PgxDatabase) getAuroraVersion() (string, error) {
-	v, err := d.Transact(func(tx Tx) (interface{}, error) {
+	ctx := context.Background()
+	v, err := d.Transact(ctx, func(tx Tx) (interface{}, error) {
 		var v string
 		err := tx.Get(&v, "SELECT aurora_version()")
 		if err != nil {

@@ -42,7 +42,7 @@ var runsDescribeCmd = &cobra.Command{
 		runID := args[1]
 
 		client := getClient()
-		ctx := context.Background()
+		ctx := cmd.Context()
 
 		// run result information
 		runResult, err := client.GetRunResult(ctx, u.Repository, runID)

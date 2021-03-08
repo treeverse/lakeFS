@@ -212,7 +212,7 @@ func (s *Service) saveRunManifestObjectStore(ctx context.Context, manifest RunMa
 }
 
 func (s *Service) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
-	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		// insert run information
 		run := manifest.Run
 		_, err := tx.Exec(`INSERT INTO actions_runs(repository_id, run_id, event_type, start_time, end_time, branch_id, source_ref, commit_id, passed)
@@ -232,7 +232,7 @@ func (s *Service) saveRunManifestDB(ctx context.Context, repositoryID graveler.R
 			}
 		}
 		return nil, nil
-	}, db.WithContext(ctx))
+	})
 	return err
 }
 
@@ -289,7 +289,7 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 
 	// update database and re-read the run manifest
 	var manifest RunManifest
-	_, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		// update commit id
 		res, err := tx.Exec(`UPDATE actions_runs SET commit_id=$3 WHERE repository_id=$1 AND run_id=$2`,
 			repositoryID, runID, commitID)
@@ -317,7 +317,7 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 			return nil, fmt.Errorf("get tasks result: %w", err)
 		}
 		return nil, nil
-	}, db.WithContext(ctx))
+	})
 	if errors.Is(err, db.ErrNotFound) {
 		return ErrNotFound
 	}
@@ -330,9 +330,9 @@ func (s *Service) UpdateCommitID(ctx context.Context, repositoryID string, stora
 }
 
 func (s *Service) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
-	res, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
+	res, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return s.getRunResultTx(tx, repositoryID, runID)
-	}, db.WithContext(ctx), db.ReadOnly())
+	}, db.ReadOnly())
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, fmt.Errorf("run id %s: %w", runID, ErrNotFound)
 	}
@@ -357,7 +357,7 @@ func (s *Service) getRunResultTx(tx db.Tx, repositoryID string, runID string) (*
 }
 
 func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error) {
-	res, err := s.DB.Transact(func(tx db.Tx) (interface{}, error) {
+	res, err := s.DB.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		result := &TaskResult{
 			RunID:     runID,
 			HookRunID: hookRunID,
@@ -370,7 +370,7 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 			return nil, fmt.Errorf("get task result: %w", err)
 		}
 		return result, nil
-	}, db.WithContext(ctx), db.ReadOnly())
+	}, db.ReadOnly())
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, fmt.Errorf("hook run id %s/%s: %w", runID, hookRunID, ErrNotFound)
 	}

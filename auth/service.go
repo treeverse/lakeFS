@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -32,56 +33,56 @@ type Service interface {
 	SecretStore() crypt.SecretStore
 
 	// users
-	CreateUser(user *model.User) error
-	DeleteUser(username string) error
-	GetUserByID(userID int) (*model.User, error)
-	GetUser(username string) (*model.User, error)
-	ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+	CreateUser(ctx context.Context, user *model.User) error
+	DeleteUser(ctx context.Context, username string) error
+	GetUserByID(ctx context.Context, userID int) (*model.User, error)
+	GetUser(ctx context.Context, username string) (*model.User, error)
+	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
-	CreateGroup(group *model.Group) error
-	DeleteGroup(groupDisplayName string) error
-	GetGroup(groupDisplayName string) (*model.Group, error)
-	ListGroups(params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
+	CreateGroup(ctx context.Context, group *model.Group) error
+	DeleteGroup(ctx context.Context, groupDisplayName string) error
+	GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error)
+	ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
 
 	// group<->user memberships
-	AddUserToGroup(username, groupDisplayName string) error
-	RemoveUserFromGroup(username, groupDisplayName string) error
-	ListUserGroups(username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
-	ListGroupUsers(groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+	AddUserToGroup(ctx context.Context, username, groupDisplayName string) error
+	RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error
+	ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
+	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
-	WritePolicy(policy *model.Policy) error
-	GetPolicy(policyDisplayName string) (*model.Policy, error)
-	DeletePolicy(policyDisplayName string) error
-	ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	WritePolicy(ctx context.Context, policy *model.Policy) error
+	GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error)
+	DeletePolicy(ctx context.Context, policyDisplayName string) error
+	ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
-	CreateCredentials(username string) (*model.Credential, error)
-	AddCredentials(username, accessKeyID, secretAccessKey string) (*model.Credential, error)
-	DeleteCredentials(username, accessKeyID string) error
-	GetCredentialsForUser(username, accessKeyID string) (*model.Credential, error)
-	GetCredentials(accessKeyID string) (*model.Credential, error)
-	ListUserCredentials(username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
+	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
+	AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error)
+	DeleteCredentials(ctx context.Context, username, accessKeyID string) error
+	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
+	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
+	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
 
 	// policy<->user attachments
-	AttachPolicyToUser(policyDisplayName, username string) error
-	DetachPolicyFromUser(policyDisplayName, username string) error
-	ListUserPolicies(username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
-	ListEffectivePolicies(username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
+	DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error
+	ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// policy<->group attachments
-	AttachPolicyToGroup(policyDisplayName, groupDisplayName string) error
-	DetachPolicyFromGroup(policyDisplayName, groupDisplayName string) error
-	ListGroupPolicies(groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
+	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
+	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// authorize user for an action
-	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
+	Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
+func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
 	ptrType := reflect.PtrTo(retType)
 	slice := reflect.MakeSlice(reflect.SliceOf(ptrType), 0, 0)
 	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
@@ -95,7 +96,7 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 	if err != nil {
 		return nil, nil, fmt.Errorf("convert to SQL: %w", err)
 	}
-	rows, err := db.Query(query, args...)
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("query DB: %w", err)
 	}
@@ -214,27 +215,28 @@ func (s *DBAuthService) DB() db.Database {
 	return s.db
 }
 
-func (s *DBAuthService) CreateUser(user *model.User) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) CreateUser(ctx context.Context, user *model.User) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(user.Username); err != nil {
 			return nil, err
 		}
-		err := tx.Get(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
+		err := tx.Get(user,
+			`INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.Username, user.CreatedAt)
 		return nil, err
 	})
 	return err
 }
 
-func (s *DBAuthService) DeleteUser(username string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) DeleteUser(ctx context.Context, username string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, deleteOrNotFound(tx, `DELETE FROM auth_users WHERE display_name = $1`, username)
 	})
 	return err
 }
 
-func (s *DBAuthService) GetUser(username string) (*model.User, error) {
+func (s *DBAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
 	return s.cache.GetUser(username, func() (*model.User, error) {
-		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			return getUser(tx, username)
 		}, db.ReadOnly())
 		if err != nil {
@@ -244,9 +246,9 @@ func (s *DBAuthService) GetUser(username string) (*model.User, error) {
 	})
 }
 
-func (s *DBAuthService) GetUserByID(userID int) (*model.User, error) {
+func (s *DBAuthService) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
 	return s.cache.GetUserByID(userID, func() (*model.User, error) {
-		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		user, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			user := &model.User{}
 			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
 			if err != nil {
@@ -261,18 +263,18 @@ func (s *DBAuthService) GetUserByID(userID int) (*model.User, error) {
 	})
 }
 
-func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	var user model.User
-	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(user), params, "display_name", psql.Select("*").From("auth_users"))
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(user), params, "display_name", psql.Select("*").From("auth_users"))
 	if slice == nil {
 		return nil, paginator, err
 	}
 	return slice.Interface().([]*model.User), paginator, err
 }
 
-func (s *DBAuthService) ListUserCredentials(username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
+func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.Credential
-	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(credential), params, "auth_credentials.access_key_id", psql.Select("auth_credentials.*").
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "auth_credentials.access_key_id", psql.Select("auth_credentials.*").
 		From("auth_credentials").
 		Join("auth_users ON (auth_credentials.user_id = auth_users.id)").
 		Where(sq.Eq{"auth_users.display_name": username}))
@@ -282,8 +284,8 @@ func (s *DBAuthService) ListUserCredentials(username string, params *model.Pagin
 	return slice.Interface().([]*model.Credential), paginator, err
 }
 
-func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, username string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, username); err != nil {
 			return nil, fmt.Errorf("%s: %w", username, err)
 		}
@@ -304,8 +306,8 @@ func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, username string) e
 	return err
 }
 
-func (s *DBAuthService) DetachPolicyFromUser(policyDisplayName, username string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, username); err != nil {
 			return nil, fmt.Errorf("%s: %w", username, err)
 		}
@@ -323,9 +325,9 @@ func (s *DBAuthService) DetachPolicyFromUser(policyDisplayName, username string)
 	return err
 }
 
-func (s *DBAuthService) ListUserPolicies(username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(policy), params, "auth_policies.display_name", psql.Select("auth_policies.*").
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "auth_policies.display_name", psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
 		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
@@ -336,7 +338,7 @@ func (s *DBAuthService) ListUserPolicies(username string, params *model.Paginati
 	return slice.Interface().([]*model.Policy), paginator, nil
 }
 
-func (s *DBAuthService) getEffectivePolicies(username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	// resolve all policies attached to the user and its groups
 	resolvedCte := `
 	    WITH resolved_policies_view AS (
@@ -353,7 +355,7 @@ func (s *DBAuthService) getEffectivePolicies(username string, params *model.Pagi
 		     auth_users ON (auth_users.id = auth_user_groups.user_id)
 	    )`
 	var policy model.Policy
-	slice, paginator, err := ListPaged(
+	slice, paginator, err := ListPaged(ctx,
 		s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("id", "created_at", "display_name", "statement").
 			Prefix(resolvedCte).
@@ -366,11 +368,11 @@ func (s *DBAuthService) getEffectivePolicies(username string, params *model.Pagi
 	return slice.Interface().([]*model.Policy), paginator, nil
 }
 
-func (s *DBAuthService) ListEffectivePolicies(username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := s.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
-			policies, _, err := s.getEffectivePolicies(username, params)
+			policies, _, err := s.getEffectivePolicies(ctx, username, params)
 			return policies, err
 		})
 		if err != nil {
@@ -379,12 +381,12 @@ func (s *DBAuthService) ListEffectivePolicies(username string, params *model.Pag
 		return policies, &model.Paginator{Amount: len(policies)}, nil
 	}
 
-	return s.getEffectivePolicies(username, params)
+	return s.getEffectivePolicies(ctx, username, params)
 }
 
-func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(policy), params, "auth_policies.display_name",
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "auth_policies.display_name",
 		psql.Select("auth_policies.*").
 			From("auth_policies").
 			Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
@@ -396,8 +398,8 @@ func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model
 	return slice.Interface().([]*model.Policy), paginator, nil
 }
 
-func (s *DBAuthService) CreateGroup(group *model.Group) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 			return nil, err
 		}
@@ -407,15 +409,15 @@ func (s *DBAuthService) CreateGroup(group *model.Group) error {
 	return err
 }
 
-func (s *DBAuthService) DeleteGroup(groupDisplayName string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, deleteOrNotFound(tx, `DELETE FROM auth_groups WHERE display_name = $1`, groupDisplayName)
 	})
 	return err
 }
 
-func (s *DBAuthService) GetGroup(groupDisplayName string) (*model.Group, error) {
-	group, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
+	group, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getGroup(tx, groupDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
@@ -424,9 +426,9 @@ func (s *DBAuthService) GetGroup(groupDisplayName string) (*model.Group, error) 
 	return group.(*model.Group), nil
 }
 
-func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+func (s *DBAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	var group model.Group
-	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(group), params, "display_name",
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(group), params, "display_name",
 		psql.Select("*").From("auth_groups"))
 	if err != nil {
 		return nil, paginator, err
@@ -434,8 +436,8 @@ func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Gro
 	return slice.Interface().([]*model.Group), paginator, nil
 }
 
-func (s *DBAuthService) AddUserToGroup(username, groupDisplayName string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, username); err != nil {
 			return nil, fmt.Errorf("%s: %w", username, err)
 		}
@@ -456,8 +458,8 @@ func (s *DBAuthService) AddUserToGroup(username, groupDisplayName string) error 
 	return err
 }
 
-func (s *DBAuthService) RemoveUserFromGroup(username, groupDisplayName string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, username); err != nil {
 			return nil, fmt.Errorf("%s: %w", username, err)
 		}
@@ -475,12 +477,12 @@ func (s *DBAuthService) RemoveUserFromGroup(username, groupDisplayName string) e
 	return err
 }
 
-func (s *DBAuthService) ListUserGroups(username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	type res struct {
 		groups    []*model.Group
 		paginator *model.Paginator
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, username); err != nil {
 			return nil, err
 		}
@@ -516,12 +518,12 @@ func (s *DBAuthService) ListUserGroups(username string, params *model.Pagination
 	return result.(*res).groups, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	type res struct {
 		users     []*model.User
 		paginator *model.Paginator
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getGroup(tx, groupDisplayName); err != nil {
 			return nil, err
 		}
@@ -557,8 +559,8 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 	return result.(*res).users, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) WritePolicy(ctx context.Context, policy *model.Policy) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 			return nil, err
 		}
@@ -586,8 +588,8 @@ func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 	return err
 }
 
-func (s *DBAuthService) GetPolicy(policyDisplayName string) (*model.Policy, error) {
-	policy, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+	policy, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return getPolicy(tx, policyDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
@@ -596,19 +598,19 @@ func (s *DBAuthService) GetPolicy(policyDisplayName string) (*model.Policy, erro
 	return policy.(*model.Policy), nil
 }
 
-func (s *DBAuthService) DeletePolicy(policyDisplayName string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, deleteOrNotFound(tx, `DELETE FROM auth_policies WHERE display_name = $1`, policyDisplayName)
 	})
 	return err
 }
 
-func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	type res struct {
 		policies  []*model.Policy
 		paginator *model.Paginator
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+	result, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
 			SELECT *
@@ -639,19 +641,19 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 	return result.(*res).policies, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) CreateCredentials(username string) (*model.Credential, error) {
+func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := genAccessKeyID()
 	secretAccessKey := genAccessSecretKey()
-	return s.AddCredentials(username, accessKeyID, secretAccessKey)
+	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
-func (s *DBAuthService) AddCredentials(username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
 	now := time.Now()
 	encryptedKey, err := s.encryptSecret(secretAccessKey)
 	if err != nil {
 		return nil, err
 	}
-	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+	credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		user, err := getUser(tx, username)
 		if err != nil {
 			return nil, err
@@ -679,8 +681,8 @@ func (s *DBAuthService) AddCredentials(username, accessKeyID, secretAccessKey st
 	return credentials.(*model.Credential), err
 }
 
-func (s *DBAuthService) DeleteCredentials(username, accessKeyID string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM auth_credentials USING auth_users
 			WHERE auth_credentials.user_id = auth_users.id
@@ -691,8 +693,8 @@ func (s *DBAuthService) DeleteCredentials(username, accessKeyID string) error {
 	return err
 }
 
-func (s *DBAuthService) AttachPolicyToGroup(policyDisplayName, groupDisplayName string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getGroup(tx, groupDisplayName); err != nil {
 			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
 		}
@@ -713,8 +715,8 @@ func (s *DBAuthService) AttachPolicyToGroup(policyDisplayName, groupDisplayName 
 	return err
 }
 
-func (s *DBAuthService) DetachPolicyFromGroup(policyDisplayName, groupDisplayName string) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
+	_, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getGroup(tx, groupDisplayName); err != nil {
 			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
 		}
@@ -732,8 +734,8 @@ func (s *DBAuthService) DetachPolicyFromGroup(policyDisplayName, groupDisplayNam
 	return err
 }
 
-func (s *DBAuthService) GetCredentialsForUser(username, accessKeyID string) (*model.Credential, error) {
-	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+func (s *DBAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, username); err != nil {
 			return nil, err
 		}
@@ -755,9 +757,9 @@ func (s *DBAuthService) GetCredentialsForUser(username, accessKeyID string) (*mo
 	return credentials.(*model.Credential), nil
 }
 
-func (s *DBAuthService) GetCredentials(accessKeyID string) (*model.Credential, error) {
+func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
-		credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			credentials := &model.Credential{}
 			err := tx.Get(credentials, `
 			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyID)
@@ -782,8 +784,8 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
-func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	policies, _, err := s.ListEffectivePolicies(req.Username, &model.PaginationParams{
+func (s *DBAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
+	policies, _, err := s.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
 		Amount: -1, // all
 	})

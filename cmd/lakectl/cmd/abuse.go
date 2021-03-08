@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -78,7 +77,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 
 		// execute the things!
 		generator.Run(func(input chan string, output chan stress.Result) {
-			ctx := context.Background()
+			ctx := cmd.Context()
 			client := getClient()
 			for work := range input {
 				start := time.Now()
@@ -114,7 +113,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 			client := getClient()
 			currentOffset := branchPrefix
 			for {
-				branches, pagination, err := client.ListBranches(context.Background(), u.Repository, currentOffset, 1000)
+				branches, pagination, err := client.ListBranches(cmd.Context(), u.Repository, currentOffset, 1000)
 				if err != nil {
 					DieErr(err)
 				}
@@ -137,7 +136,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 			client := getClient()
 			for branch := range input {
 				start := time.Now()
-				err := client.DeleteBranch(context.Background(), u.Repository, branch)
+				err := client.DeleteBranch(cmd.Context(), u.Repository, branch)
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
@@ -161,7 +160,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		generator.Run(func(input chan string, output chan stress.Result) {
 			client := getClient()
-			ctx := context.Background()
+			ctx := cmd.Context()
 			for branch := range input {
 				start := time.Now()
 				_, err := client.CreateBranch(

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/go-openapi/swag"
@@ -41,7 +40,7 @@ var branchListCmd = &cobra.Command{
 		after, _ := cmd.Flags().GetString("after")
 		u := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		response, pagination, err := client.ListBranches(context.Background(), u.Repository, after, amount)
+		response, pagination, err := client.ListBranches(cmd.Context(), u.Repository, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -91,7 +90,7 @@ var branchCreateCmd = &cobra.Command{
 			Die("source branch must be in the same repository", 1)
 		}
 
-		_, err = client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
+		_, err = client.CreateBranch(cmd.Context(), u.Repository, &models.BranchCreation{
 			Name:   swag.String(u.Ref),
 			Source: swag.String(sourceURI.Ref),
 		})
@@ -117,7 +116,7 @@ var branchDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		err = client.DeleteBranch(context.Background(), u.Repository, u.Ref)
+		err = client.DeleteBranch(cmd.Context(), u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
 		}
@@ -145,7 +144,7 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
-		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, commitRef, parentNumber)
+		err = clt.RevertBranch(cmd.Context(), u.Repository, u.Ref, commitRef, parentNumber)
 		if err != nil {
 			DieErr(err)
 		}
@@ -215,7 +214,7 @@ var branchResetCmd = &cobra.Command{
 			Die("Reset aborted", 1)
 			return
 		}
-		err = clt.ResetBranch(context.Background(), u.Repository, u.Ref, &reset)
+		err = clt.ResetBranch(cmd.Context(), u.Repository, u.Ref, &reset)
 		if err != nil {
 			DieErr(err)
 		}
@@ -232,7 +231,7 @@ var branchShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		ref, err := client.GetBranch(context.Background(), u.Repository, u.Ref)
+		ref, err := client.GetBranch(cmd.Context(), u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
 		}

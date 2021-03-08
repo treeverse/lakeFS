@@ -129,7 +129,7 @@ func (c *Collector) writeQueryContent(ctx context.Context, writer *zip.Writer, n
 }
 
 func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer, name string, query string, args ...interface{}) error {
-	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err := c.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		rows, err := tx.Query(query, args...)
 		if err != nil {
 			return nil, fmt.Errorf("execute query: %w", err)
@@ -176,7 +176,7 @@ func (c *Collector) writeRawQueryContent(ctx context.Context, writer *zip.Writer
 			}
 		}
 		return nil, rows.Err()
-	}, db.WithContext(ctx), db.ReadOnly())
+	}, db.ReadOnly())
 	return err
 }
 
@@ -213,7 +213,7 @@ func (c *Collector) rangesStats(ctx context.Context, writer *zip.Writer) error {
 			return nil
 		}
 
-		if err := c.adapter.Walk(block.WalkOpts{
+		if err := c.adapter.Walk(ctx, block.WalkOpts{
 			StorageNamespace: repo.StorageNamespace,
 			Prefix:           c.pyramidCfg.BlockStoragePrefix,
 		}, counter); err != nil {

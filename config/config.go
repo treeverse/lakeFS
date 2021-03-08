@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -320,8 +321,8 @@ const floatSumTolerance = 1e-6
 
 // GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
 // build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams() (*pyramidparams.ExtParams, error) {
-	adapter, err := factory.BuildBlockAdapter(c)
+func (c *Config) GetCommittedTierFSParams(ctx context.Context) (*pyramidparams.ExtParams, error) {
+	adapter, err := factory.BuildBlockAdapter(ctx, c)
 	if err != nil {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}

@@ -1,6 +1,7 @@
 package simulator
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -25,9 +26,9 @@ type PlayBackMockConf struct {
 
 // a limited service interface for the gateway, used by simulation playback
 type GatewayAuthService interface {
-	GetCredentials(accessKey string) (*model.Credential, error)
-	GetUserByID(userID int) (*model.User, error)
-	Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
+	GetCredentials(ctx context.Context, accessKey string) (*model.Credential, error)
+	GetUserByID(ctx context.Context, userID int) (*model.User, error)
+	Authorize(ctx context.Context, req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
 }
 
 const (
@@ -138,7 +139,7 @@ func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.OriginalWriter.WriteHeader(statusCode)
 }
 
-func (m *PlayBackMockConf) GetCredentials(accessKey string) (*model.Credential, error) {
+func (m *PlayBackMockConf) GetCredentials(_ context.Context, accessKey string) (*model.Credential, error) {
 	if accessKey != m.AccessKeyID {
 		logging.Default().Fatal("access key in recording different than configuration")
 	}
@@ -149,13 +150,13 @@ func (m *PlayBackMockConf) GetCredentials(accessKey string) (*model.Credential, 
 	return aCred, nil
 }
 
-func (m *PlayBackMockConf) GetUserByID(userID int) (*model.User, error) {
+func (m *PlayBackMockConf) GetUserByID(_ context.Context, userID int) (*model.User, error) {
 	return &model.User{
 		CreatedAt: time.Now(),
 		Username:  "user",
 	}, nil
 }
 
-func (m *PlayBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
+func (m *PlayBackMockConf) Authorize(_ context.Context, req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
 	return &auth.AuthorizationResponse{Allowed: true}, nil
 }

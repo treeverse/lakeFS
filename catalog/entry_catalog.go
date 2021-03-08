@@ -96,12 +96,12 @@ type Config struct {
 	LockDB db.Database
 }
 
-func NewEntryCatalog(cfg Config) (*EntryCatalog, error) {
+func NewEntryCatalog(ctx context.Context, cfg Config) (*EntryCatalog, error) {
 	if cfg.LockDB == nil {
 		cfg.LockDB = cfg.DB
 	}
 
-	tierFSParams, err := cfg.Config.GetCommittedTierFSParams()
+	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}

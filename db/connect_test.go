@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/treeverse/lakefs/db/params"
@@ -9,6 +10,7 @@ import (
 )
 
 func TestConnectDB(t *testing.T) {
+	ctx := context.Background()
 	type args struct {
 		driver string
 		uri    string
@@ -24,7 +26,7 @@ func TestConnectDB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.ConnectDB(params.Database{Driver: tt.args.driver, ConnectionString: tt.args.uri})
+			got, err := db.ConnectDB(ctx, params.Database{Driver: tt.args.driver, ConnectionString: tt.args.uri})
 			if (err != nil) && !tt.wantErr {
 				t.Errorf("ConnectDB() error = %v, unexpected error", err)
 				return

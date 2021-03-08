@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -10,7 +11,8 @@ import (
 
 func getDB(t *testing.T) db.Database {
 	t.Helper()
-	ret, err := db.ConnectDB(params.Database{Driver: "pgx", ConnectionString: databaseURI})
+	ctx := context.Background()
+	ret, err := db.ConnectDB(ctx, params.Database{Driver: "pgx", ConnectionString: databaseURI})
 	if err != nil {
 		t.Fatal("failed to get DB")
 	}
@@ -19,9 +21,10 @@ func getDB(t *testing.T) db.Database {
 
 func TestGetPrimitive(t *testing.T) {
 	d := getDB(t)
+	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
-		ret, err := d.Transact(func(tx db.Tx) (interface{}, error) {
+		ret, err := d.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var i int64
 			err := tx.GetPrimitive(&i, "SELECT 17")
 			return i, err
@@ -37,7 +40,7 @@ func TestGetPrimitive(t *testing.T) {
 	})
 
 	t.Run("failure", func(t *testing.T) {
-		_, err := d.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := d.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var i int64
 			err := tx.GetPrimitive(&i, "SELECT 17 WHERE 2=1")
 			return i, err
@@ -56,9 +59,10 @@ func TestGet(t *testing.T) {
 	}
 
 	d := getDB(t)
+	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
-		ret, err := d.Transact(func(tx db.Tx) (interface{}, error) {
+		ret, err := d.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var r R
 			err := tx.Get(&r, "SELECT 17 A, 'foo' B")
 			return &r, err
@@ -77,7 +81,7 @@ func TestGet(t *testing.T) {
 	})
 
 	t.Run("failure", func(t *testing.T) {
-		_, err := d.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := d.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var r R
 			err := tx.Get(&r, "SELECT 17 A, 'foo' B WHERE 2=1")
 			return &r, err

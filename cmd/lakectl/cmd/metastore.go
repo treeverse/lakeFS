@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -159,7 +158,7 @@ var glueSymlinkCmd = &cobra.Command{
 		toTable, _ := cmd.Flags().GetString("to-table")
 
 		client := getClient()
-		location, err := client.Symlink(context.Background(), repo, branch, path)
+		location, err := client.Symlink(cmd.Context(), repo, branch, path)
 		if err != nil {
 			DieErr(err)
 		}

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -60,7 +59,7 @@ var authUsersList = &cobra.Command{
 
 		clt := getClient()
 
-		users, pagination, err := clt.ListUsers(context.Background(), after, amount)
+		users, pagination, err := clt.ListUsers(cmd.Context(), after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -82,7 +81,7 @@ var authUsersCreate = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		user, err := clt.CreateUser(context.Background(), id)
+		user, err := clt.CreateUser(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -98,7 +97,7 @@ var authUsersDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		err := clt.DeleteUser(context.Background(), id)
+		err := clt.DeleteUser(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -122,7 +121,7 @@ var authUsersGroupsList = &cobra.Command{
 
 		clt := getClient()
 
-		groups, pagination, err := clt.ListUserGroups(context.Background(), id, after, amount)
+		groups, pagination, err := clt.ListUserGroups(cmd.Context(), id, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -153,7 +152,7 @@ var authUsersPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListUserPolicies(context.Background(), id, effective, after, amount)
+		policies, pagination, err := clt.ListUserPolicies(cmd.Context(), id, effective, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -179,7 +178,7 @@ var authUsersPoliciesAttach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.AttachPolicyToUser(context.Background(), id, policy)
+		err := clt.AttachPolicyToUser(cmd.Context(), id, policy)
 		if err != nil {
 			DieErr(err)
 		}
@@ -196,7 +195,7 @@ var authUsersPoliciesDetach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.DetachPolicyFromUser(context.Background(), id, policy)
+		err := clt.DetachPolicyFromUser(cmd.Context(), id, policy)
 		if err != nil {
 			DieErr(err)
 		}
@@ -218,14 +217,14 @@ var authUsersCredentialsCreate = &cobra.Command{
 		clt := getClient()
 
 		if id == "" {
-			user, err := clt.GetCurrentUser(context.Background())
+			user, err := clt.GetCurrentUser(cmd.Context())
 			if err != nil {
 				DieErr(err)
 			}
 			id = user.ID
 		}
 
-		credentials, err := clt.CreateCredentials(context.Background(), id)
+		credentials, err := clt.CreateCredentials(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -243,14 +242,14 @@ var authUsersCredentialsDelete = &cobra.Command{
 		clt := getClient()
 
 		if id == "" {
-			user, err := clt.GetCurrentUser(context.Background())
+			user, err := clt.GetCurrentUser(cmd.Context())
 			if err != nil {
 				DieErr(err)
 			}
 			id = user.ID
 		}
 
-		err := clt.DeleteCredentials(context.Background(), id, accessKeyID)
+		err := clt.DeleteCredentials(cmd.Context(), id, accessKeyID)
 		if err != nil {
 			DieErr(err)
 		}
@@ -269,14 +268,14 @@ var authUsersCredentialsList = &cobra.Command{
 
 		clt := getClient()
 		if id == "" {
-			user, err := clt.GetCurrentUser(context.Background())
+			user, err := clt.GetCurrentUser(cmd.Context())
 			if err != nil {
 				DieErr(err)
 			}
 			id = user.ID
 		}
 
-		credentials, pagination, err := clt.ListUserCredentials(context.Background(), id, after, amount)
+		credentials, pagination, err := clt.ListUserCredentials(cmd.Context(), id, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -307,7 +306,7 @@ var authGroupsList = &cobra.Command{
 
 		clt := getClient()
 
-		groups, pagination, err := clt.ListGroups(context.Background(), after, amount)
+		groups, pagination, err := clt.ListGroups(cmd.Context(), after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -329,7 +328,7 @@ var authGroupsCreate = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		user, err := clt.CreateGroup(context.Background(), id)
+		user, err := clt.CreateGroup(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -345,7 +344,7 @@ var authGroupsDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		err := clt.DeleteGroup(context.Background(), id)
+		err := clt.DeleteGroup(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -369,7 +368,7 @@ var authGroupsListMembers = &cobra.Command{
 
 		clt := getClient()
 
-		users, pagination, err := clt.ListGroupMembers(context.Background(), id, after, amount)
+		users, pagination, err := clt.ListGroupMembers(cmd.Context(), id, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -391,7 +390,7 @@ var authGroupsAddMember = &cobra.Command{
 		user, _ := cmd.Flags().GetString("user")
 		clt := getClient()
 
-		err := clt.AddGroupMembership(context.Background(), id, user)
+		err := clt.AddGroupMembership(cmd.Context(), id, user)
 		if err != nil {
 			DieErr(err)
 		}
@@ -408,7 +407,7 @@ var authGroupsRemoveMember = &cobra.Command{
 		user, _ := cmd.Flags().GetString("user")
 		clt := getClient()
 
-		err := clt.DeleteGroupMembership(context.Background(), id, user)
+		err := clt.DeleteGroupMembership(cmd.Context(), id, user)
 		if err != nil {
 			DieErr(err)
 		}
@@ -432,7 +431,7 @@ var authGroupsPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListGroupPolicies(context.Background(), id, after, amount)
+		policies, pagination, err := clt.ListGroupPolicies(cmd.Context(), id, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -458,7 +457,7 @@ var authGroupsPoliciesAttach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.AttachPolicyToGroup(context.Background(), id, policy)
+		err := clt.AttachPolicyToGroup(cmd.Context(), id, policy)
 		if err != nil {
 			DieErr(err)
 		}
@@ -475,7 +474,7 @@ var authGroupsPoliciesDetach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.DetachPolicyFromGroup(context.Background(), id, policy)
+		err := clt.DetachPolicyFromGroup(cmd.Context(), id, policy)
 		if err != nil {
 			DieErr(err)
 		}
@@ -499,7 +498,7 @@ var authPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListPolicies(context.Background(), after, amount)
+		policies, pagination, err := clt.ListPolicies(cmd.Context(), after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -538,7 +537,7 @@ var authPoliciesCreate = &cobra.Command{
 			DieFmt("could not parse statement JSON document: %v", err)
 		}
 
-		createdPolicy, err := clt.CreatePolicy(context.Background(), &models.Policy{ID: &id, Statement: doc.Statement})
+		createdPolicy, err := clt.CreatePolicy(cmd.Context(), &models.Policy{ID: &id, Statement: doc.Statement})
 		if err != nil {
 			DieErr(err)
 		}
@@ -566,7 +565,7 @@ var authPoliciesShow = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		policy, err := clt.GetPolicy(context.Background(), id)
+		policy, err := clt.GetPolicy(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -590,7 +589,7 @@ var authPoliciesDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		err := clt.DeletePolicy(context.Background(), id)
+		err := clt.DeletePolicy(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}

@@ -1,6 +1,8 @@
 package stats
 
 import (
+	"context"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block/gs"
 	s3a "github.com/treeverse/lakefs/block/s3"
@@ -23,9 +25,9 @@ type Metadata struct {
 	Entries        []MetadataEntry `json:"entries"`
 }
 
-func NewMetadata(logger logging.Logger, blockstoreType string, authMetadataManager auth.MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, authMetadataManager auth.MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
 	res := &Metadata{}
-	authMetadata, err := authMetadataManager.Write()
+	authMetadata, err := authMetadataManager.Write(ctx)
 	if err != nil {
 		logger.WithError(err).Debug("failed to collect account metadata")
 	}

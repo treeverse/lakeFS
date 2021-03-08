@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -77,8 +78,9 @@ func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 }
 
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
+	ctx := context.Background()
 	userName := uuid.New().String()
-	err := s.CreateUser(&model.User{
+	err := s.CreateUser(ctx, &model.User{
 		Username: userName,
 	})
 	if err != nil {
@@ -89,11 +91,11 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 			DisplayName: uuid.New().String(),
 			Statement:   policy.Statement,
 		}
-		err := s.WritePolicy(p)
+		err := s.WritePolicy(ctx, p)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = s.AttachPolicyToUser(p.DisplayName, userName)
+		err = s.AttachPolicyToUser(ctx, p.DisplayName, userName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -103,10 +105,11 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 }
 
 func TestDBAuthService_ListPaged(t *testing.T) {
+	ctx := context.Background()
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	adb, _ := testutil.GetDB(t, databaseURI)
 	type row struct{ A string }
-	if _, err := adb.Exec(`CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
+	if _, err := adb.Exec(ctx, `CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
 		t.Fatalf("CREATE TABLE test_pages: %s", err)
 	}
 	insert := psql.Insert("test_pages")
@@ -117,7 +120,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create insert statement %v: %s", insert, err)
 	}
-	if _, err = adb.Exec(insertSql, args...); err != nil {
+	if _, err = adb.Exec(ctx, insertSql, args...); err != nil {
 		t.Fatalf("%s [%v]: %s", insertSql, args, err)
 	}
 
@@ -129,7 +132,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 			}
 			got := ""
 			for {
-				values, paginator, err := auth.ListPaged(
+				values, paginator, err := auth.ListPaged(ctx,
 					adb, reflect.TypeOf(row{}), pagination, "A", psql.Select("a").From("test_pages"))
 				if err != nil {
 					t.Errorf("ListPaged: %s", err)
@@ -161,6 +164,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 }
 
 func TestDBAuthService_Authorize(t *testing.T) {
+	ctx := context.Background()
 	s := setupService(t)
 
 	cases := []struct {
@@ -456,7 +460,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			uid := userWithPolicies(t, s, testCase.policies)
 			request := testCase.request(uid)
-			response, err := s.Authorize(request)
+			response, err := s.Authorize(ctx, request)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -471,6 +475,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 }
 
 func TestDBAuthService_ListUsers(t *testing.T) {
+	ctx := context.Background()
 	cases := []struct {
 		name      string
 		userNames []string
@@ -490,11 +495,11 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, userName := range testCase.userNames {
-				if err := s.CreateUser(&model.User{Username: userName}); err != nil {
+				if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 					t.Fatalf("CreateUser(%s): %s", userName, err)
 				}
 			}
-			gotList, _, err := s.ListUsers(&model.PaginationParams{Amount: -1})
+			gotList, _, err := s.ListUsers(ctx, &model.PaginationParams{Amount: -1})
 			if err != nil {
 				t.Fatalf("ListUsers: %s", err)
 			}
@@ -514,14 +519,15 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	const userName = "accredited"
 	s := setupService(t)
-	if err := s.CreateUser(&model.User{Username: userName}); err != nil {
+	ctx := context.Background()
+	if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
-	credential, err := s.CreateCredentials(userName)
+	credential, err := s.CreateCredentials(ctx, userName)
 	if err != nil {
 		t.Errorf("CreateCredentials(%s): %s", userName, err)
 	}
-	credentials, _, err := s.ListUserCredentials(userName, &model.PaginationParams{Amount: -1})
+	credentials, _, err := s.ListUserCredentials(ctx, userName, &model.PaginationParams{Amount: -1})
 	if err != nil {
 		t.Errorf("ListUserCredentials(%s): %s", userName, err)
 	}
@@ -544,6 +550,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 }
 
 func TestDBAuthService_ListGroups(t *testing.T) {
+	ctx := context.Background()
 	cases := []struct {
 		name       string
 		groupNames []string
@@ -563,12 +570,12 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, groupName := range testCase.groupNames {
-				if err := s.CreateGroup(&model.Group{DisplayName: groupName}); err != nil {
+				if err := s.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 					t.Fatalf("CreateGroup(%s): %s", groupName, err)
 				}
 			}
 			gotGroupNames := make([]string, 0, len(testCase.groupNames))
-			groups, _, err := s.ListGroups(&model.PaginationParams{Amount: -1})
+			groups, _, err := s.ListGroups(ctx, &model.PaginationParams{Amount: -1})
 			if err != nil {
 				t.Errorf("ListGroups: %s", err)
 			}
@@ -586,14 +593,15 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 
 func TestDbAuthService_GetUser(t *testing.T) {
 	s := setupService(t)
+	ctx := context.Background()
 	const userName = "foo"
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
-	user, err := s.GetUser(userName)
+	user, err := s.GetUser(ctx, userName)
 	if err != nil {
 		t.Fatalf("GetUser(%s): %s", userName, err)
 	}
@@ -610,18 +618,19 @@ func TestDbAuthService_GetUser(t *testing.T) {
 
 func TestDbAuthService_GetUserById(t *testing.T) {
 	s := setupService(t)
+	ctx := context.Background()
 	const userName = "foo"
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
+	if err := s.CreateUser(ctx, &model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
-	user, err := s.GetUser(userName)
+	user, err := s.GetUser(ctx, userName)
 	if err != nil {
 		t.Fatalf("GetUser(%s): %s", userName, err)
 	}
-	gotUser, err := s.GetUserByID(user.ID)
+	gotUser, err := s.GetUserByID(ctx, user.ID)
 	if err != nil {
 		t.Errorf("GetUserById(%d): %s", user.ID, err)
 	}
@@ -633,17 +642,18 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 func TestDBAuthService_DeleteUser(t *testing.T) {
 	s := setupService(t)
 	const userName = "foo"
-	if err := s.CreateUser(&model.User{Username: userName}); err != nil {
+	ctx := context.Background()
+	if err := s.CreateUser(ctx, &model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
-	_, err := s.GetUser(userName)
+	_, err := s.GetUser(ctx, userName)
 	if err != nil {
 		t.Fatalf("GetUser(%s) before deletion: %s", userName, err)
 	}
-	if err = s.DeleteUser(userName); err != nil {
+	if err = s.DeleteUser(ctx, userName); err != nil {
 		t.Errorf("DeleteUser(%s): %s", userName, err)
 	}
-	_, err = s.GetUser(userName)
+	_, err = s.GetUser(ctx, userName)
 	if err == nil {
 		t.Errorf("GetUser(%s) succeeded after DeleteUser", userName)
 	} else if !errors.Is(err, db.ErrNotFound) {
@@ -684,8 +694,9 @@ func BenchmarkDBAuthService_ListEffectivePolicies(b *testing.B) {
 
 func benchmarkListEffectivePolicies(b *testing.B, s *auth.DBAuthService, userName string) {
 	b.ResetTimer()
+	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
-		_, _, err := s.ListEffectivePolicies(userName, &model.PaginationParams{Amount: -1})
+		_, _, err := s.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: -1})
 		if err != nil {
 			b.Fatal("Failed to list effective policies", err)
 		}

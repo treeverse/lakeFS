@@ -48,14 +48,14 @@ func NewLoginHandler(authService auth.Service) http.Handler {
 		}
 
 		// load credentials by access key
-		credentials, err := authService.GetCredentials(login.AccessKeyID)
+		credentials, err := authService.GetCredentials(r.Context(), login.AccessKeyID)
 		if err != nil || credentials.AccessSecretKey != login.SecretAccessKey {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		// verify user associated with credentials exists
-		_, err = authService.GetUserByID(credentials.UserID)
+		_, err = authService.GetUserByID(r.Context(), credentials.UserID)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
