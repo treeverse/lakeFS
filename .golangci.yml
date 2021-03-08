@@ -41,3 +41,7 @@ linters:
     - varcheck
     - whitespace
 
+issues:
+  exclude-rules:
+    - path: "oa3"
+      text: "ST1003"

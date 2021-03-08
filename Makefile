@@ -91,6 +91,12 @@ go-install: go-mod-download ## Install dependencies
 gen-api: go-install del-gen-api ## Run the go-swagger code generator
 	$(GOGENERATE) ./api
 
+gen-oa3:
+	oapi-codegen -package oa3 -generate types ./swagger3.yaml > oa3/generated_types.go
+	oapi-codegen -package oa3 -generate spec ./swagger3.yaml > oa3/generated_spec.go
+	oapi-codegen -package oa3 -generate server ./swagger3.yaml > oa3/generated_server.go
+	oapi-codegen -package oa3 -generate client ./swagger3.yaml > oa3/generated_client.go
+
 del-gen-api:
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
