@@ -20,8 +20,8 @@ has_children: false
 
 Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.
 The only changes we need to consider are:
-1. Setting the configurations to access lakeFSshow
-1. Accessing objects using the lakeFS path convention
+1. Setting the configurations to access lakeFS.
+1. Accessing objects using the lakeFS path convention.
 
 ## Configuration
 In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
