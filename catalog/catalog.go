@@ -9,22 +9,21 @@ import (
 	"io"
 	"strings"
 
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/graveler"
 	"github.com/treeverse/lakefs/graveler/committed"
 	"github.com/treeverse/lakefs/graveler/ref"
 	"github.com/treeverse/lakefs/graveler/sstable"
 	"github.com/treeverse/lakefs/graveler/staging"
 	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/pyramid"
 	"github.com/treeverse/lakefs/pyramid/params"
-
-	"github.com/treeverse/lakefs/block"
-
-	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -1048,13 +1047,14 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 }
 
 func (c *Catalog) Close() error {
+	var errs error
 	for _, manager := range c.managers {
 		err := manager.Close()
 		if err != nil {
-			return err
+			_ = multierror.Append(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {

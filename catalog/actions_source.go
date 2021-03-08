@@ -43,12 +43,12 @@ func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
 	// get name's address
 	repositoryID := record.RepositoryID
-	ent, err := s.catalog.GetEntry(ctx, string(repositoryID), string(record.SourceRef), name, GetEntryParams{})
+	ent, err := s.catalog.GetEntry(ctx, repositoryID.String(), record.SourceRef.String(), name, GetEntryParams{})
 	if err != nil {
 		return nil, fmt.Errorf("get action file metadata %s: %w", name, err)
 	}
 	// get repo storage namespace
-	repo, err := s.catalog.GetRepository(ctx, string(repositoryID))
+	repo, err := s.catalog.GetRepository(ctx, repositoryID.String())
 	if err != nil {
 		return nil, fmt.Errorf("get repository %s: %w", repositoryID, err)
 	}
