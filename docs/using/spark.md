@@ -20,56 +20,50 @@ has_children: false
 
 Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.
 The only changes we need to consider are:
-1. Setting the configurations to access lakeFS
-2. Accessing Objects with the lakeFS path convention
-
-
+1. Setting the configurations to access lakeFSshow
+1. Accessing objects using the lakeFS path convention
 
 ## Configuration
-In order to configure Spark to work with lakeFS we will set the lakeFS credentials in the corresponding S3 credential fields.
-    
-lakeFS endpoint: ```fs.s3a.endpoint``` 
+In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
 
-lakeFS access key: ```fs.s3a.access.key```
-
-lakeFS secret key: ```fs.s3a.secret.key```
+| Hadoop Configuration | Value                        |
+|----------------------|------------------------------|
+| `fs.s3a.endpoint`    | Set to the lakeFS endpoint   |
+| `fs.s3a.access.key`  | Set to the lakeFS access key |
+| `fs.s3a.secret.key`  | Set to the lakeFS secret key |
 
 **Note** 
-In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
+In the following example we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
 {: .note}
 
-For example if we would like to Specify the credentials at run time 
+Here is how to do it in Spark code: 
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.lakefs.example.com")
 ```
-
-   
-   
-## Accessing Objects
+  
+## Reading Data
 In order for us to access objects in lakeFS we will need to use the lakeFS path conventions:
     ```s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT```
 
-For example: 
-Lets assume we want to read a parquet file: 
+Here is an example for reading a parquet file from lakeFS to a Spark DataFrame:
 
-from repository: ```example-repo```
-branch: ```master```
-in the path: ```example-path```
-      
 ```scala
 val repo = "example-repo"
 val branch = "master"
 val dataPath = s"s3a://${repo}/${branch}/example-path/example-file.parquet"
-...
-...
-val basics = spark.read.parquet(dataPath)
+
+val df = spark.read.parquet(dataPath)
 ```
 
-## Creating Objects
+You can now use this DataFrame like you would normally do.
 
-If we would like to create new parquet files partitioned by column `example-column`
+## Writing Data
+
+Now simply write your results back to a lakeFS path:
 ```scala
-basics.write.partitionBy("example-column").parquet(outputPath)
+df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-path/")
 ```
+
+The data is now created in lakeFS as new changes in your branch. You can now commit these changes, or revert them.
