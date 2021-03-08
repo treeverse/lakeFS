@@ -35,7 +35,7 @@ Note that an older version of lakeFS cannot run on a migrated database.
 Starting version 0.30.0, lakeFS handles your committed metadata in a [new way](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){: target="_blank" }, which is more robust and has better performance.
 To move your existing data, you will need to run the following upgrade commands.
 
-Verify lakeFS version == 0.30.0:
+Verify lakeFS version == 0.30.0 (can skip if using Docker)
 
 ```shell
 lakefs --version
@@ -45,6 +45,12 @@ Migrate data from previous format:
 
 ```shell
 lakefs migrate db
+```
+
+Or migrate using Docker image:
+
+```shell
+docker run --rm -it -e LAKEFS_DATABASE_CONNECTION_STRING=<database connection string> treeverse/lakefs:rocks-migrate migrate db
 ```
 
 Once migrated, it is possible to now use more recent lakeFS versions. Please refer to their release notes for more information on ugrading and usage).
