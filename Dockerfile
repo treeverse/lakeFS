@@ -1,4 +1,4 @@
-FROM golang:1.15.2-alpine AS build
+FROM golang:1.16.0-alpine AS build
 
 ARG VERSION=dev
 
