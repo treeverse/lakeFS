@@ -145,7 +145,7 @@ const BranchesPage = connect(
     } else {
         let deleteBranchConfirmMsg = <>Are you sure you wish to delete branch <strong>{selectedBranch}</strong> ?</>;
         if (selectedBranch === ImportBranchName) {
-            deleteBranchConfirmMsg = <>{deleteBranchConfirmMsg}<br/><Badge variant="warning">Warning</Badge> this is a specail branch used for import!</>;
+            deleteBranchConfirmMsg = <>{deleteBranchConfirmMsg}<br/><Badge variant="warning">Warning</Badge> this is a system branch used for importing data to lakeFS</>;
         }
         body = (
             <>
