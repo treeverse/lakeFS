@@ -169,6 +169,7 @@ const (
 
 	// Lakefs errors
 	ERRLakeFSNotSupported
+	ERRLakeFSWrongEndpoint
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -744,5 +745,10 @@ var Codes = errorCodeMap{
 		Code:           "ERRLakeFSNotSupported",
 		Description:    "This operation is not supported in LakeFS",
 		HTTPStatusCode: http.StatusMethodNotAllowed,
+	},
+	ERRLakeFSWrongEndpoint: {
+		Code:           "ERRLakeFSWrongEndpoint",
+		Description:    "S3 request received in UI handler, did you forget to set your s3 gateway domain name?",
+		HTTPStatusCode: http.StatusNotFound,
 	},
 }

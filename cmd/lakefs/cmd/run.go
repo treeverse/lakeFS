@@ -128,6 +128,7 @@ var runCmd = &cobra.Command{
 			cloudMetadataProvider,
 			actionsService,
 			logger.WithField("service", "api_gateway"),
+			cfg.GetS3GatewayDomainName(),
 		)
 
 		// init gateway server
