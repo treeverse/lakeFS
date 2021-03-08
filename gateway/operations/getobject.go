@@ -42,7 +42,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Cataloger.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+	entry, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
 	o.Log(req).
 		WithField("took", metaTook).

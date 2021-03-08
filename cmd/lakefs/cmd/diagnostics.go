@@ -25,19 +25,21 @@ var diagnosticsCmd = &cobra.Command{
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
-		cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
+		c, err := catalog.New(ctx, catalog.Config{
 			Config: cfg,
 			DB:     dbPool,
 		})
 		if err != nil {
-			log.Printf("Failed to create cataloger: %s", err)
+			log.Printf("Failed to create c: %s", err)
 		}
+		defer func() { _ = c.Close() }()
+
 		pyrmaidParams, err := cfg.GetCommittedTierFSParams(ctx)
 		if err != nil {
 			log.Printf("Failed to get pyramid params: %s", err)
 		}
 
-		c := diagnostics.NewCollector(dbPool, cataloger, pyrmaidParams, adapter)
+		collector := diagnostics.NewCollector(dbPool, c, pyrmaidParams, adapter)
 
 		f, err := os.Create(output)
 		if err != nil {
@@ -46,7 +48,7 @@ var diagnosticsCmd = &cobra.Command{
 		defer func() { _ = f.Close() }()
 
 		log.Printf("Collecting data")
-		err = c.Collect(ctx, f)
+		err = collector.Collect(ctx, f)
 		if err != nil {
 			log.Fatalf("Failed to collect data: %s", err)
 		}

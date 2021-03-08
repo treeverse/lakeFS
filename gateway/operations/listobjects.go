@@ -136,7 +136,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
 		o.Log(req).WithField("prefix", branchPrefix).Debug("listing branches with prefix")
-		branches, hasMore, err := o.Cataloger.ListBranches(req.Context(), o.Repository.Name, branchPrefix, maxKeys, fromStr)
+		branches, hasMore, err := o.Catalog.ListBranches(req.Context(), o.Repository.Name, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log(req).WithError(err).Error("could not list branches")
 			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -181,7 +181,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 			}
 		}
 
-		results, hasMore, err = o.Cataloger.ListEntries(
+		results, hasMore, err = o.Catalog.ListEntries(
 			req.Context(),
 			o.Repository.Name,
 			prefix.Ref,
@@ -264,7 +264,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 
 	if !prefix.WithPath {
 		// list branches then.
-		branches, hasMore, err := o.Cataloger.ListBranches(req.Context(), o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
+		branches, hasMore, err := o.Catalog.ListBranches(req.Context(), o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log(req).WithError(err).Error("could not list branches")
@@ -317,7 +317,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 				return
 			}
 		}
-		results, hasMore, err = o.Cataloger.ListEntries(
+		results, hasMore, err = o.Catalog.ListEntries(
 			req.Context(),
 			o.Repository.Name,
 			prefix.Ref,

@@ -63,30 +63,29 @@ func TestLocalLoad(t *testing.T) {
 		blockstoreType = "mem"
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cataloger, err := catalog.NewCataloger(ctx, catalog.Config{
+	c, err := catalog.New(ctx, catalog.Config{
 		Config: config.NewConfig(),
 		DB:     conn,
 	})
-	testutil.MustDo(t, "build cataloger", err)
+	testutil.MustDo(t, "build catalog", err)
 
 	// wire actions
-	entryCatalog := cataloger.GetEntryCatalog()
 	actionsService := actions.NewService(
 		conn,
-		catalog.NewActionsSource(entryCatalog),
-		catalog.NewActionsOutputWriter(entryCatalog.BlockAdapter),
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
 	)
-	entryCatalog.SetHooksHandler(actionsService)
+	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 	t.Cleanup(func() {
-		_ = cataloger.Close()
+		_ = c.Close()
 	})
 
 	handler := api.Serve(
-		cataloger,
+		c,
 		authService,
 		blockAdapter,
 		meta,

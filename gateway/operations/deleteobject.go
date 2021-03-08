@@ -50,7 +50,7 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 
 	o.Incr("delete_object")
 	lg := o.Log(req).WithField("key", o.Path)
-	err := o.Cataloger.DeleteEntry(req.Context(), o.Repository.Name, o.Reference, o.Path)
+	err := o.Catalog.DeleteEntry(req.Context(), o.Repository.Name, o.Reference, o.Path)
 	switch {
 	case errors.Is(err, db.ErrNotFound) || errors.Is(err, graveler.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")

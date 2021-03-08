@@ -58,7 +58,7 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	ent, err := o.Cataloger.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+	ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read copy source")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
@@ -75,7 +75,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	}
 	ent.CreationDate = time.Now()
 	ent.Path = o.Path
-	err := o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent)
+	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write copy destination")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -175,7 +175,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 
 func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// verify branch before we upload data - fail early
-	branchExists, err := o.Cataloger.BranchExists(req.Context(), o.Repository.Name, o.Reference)
+	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not check if branch exists")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
