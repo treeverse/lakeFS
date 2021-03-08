@@ -22,7 +22,7 @@ func (controller *ListBuckets) RequiredPermissions(_ *http.Request) ([]permissio
 
 func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, o *AuthorizedOperation) {
 	o.Incr("list_repos")
-	repos, _, err := o.Cataloger.ListRepositories(req.Context(), -1, "")
+	repos, _, err := o.Catalog.ListRepositories(req.Context(), -1, "")
 	if err != nil {
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

@@ -51,7 +51,7 @@ type handler struct {
 type ServerContext struct {
 	region            string
 	bareDomain        string
-	cataloger         catalog.Cataloger
+	catalog           catalog.Interface
 	multipartsTracker multiparts.Tracker
 	blockStore        block.Adapter
 	authService       simulator.GatewayAuthService
@@ -60,7 +60,7 @@ type ServerContext struct {
 
 func NewHandler(
 	region string,
-	cataloger catalog.Cataloger,
+	catalog catalog.Interface,
 	multipartsTracker multiparts.Tracker,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
@@ -77,7 +77,7 @@ func NewHandler(
 		})
 	}
 	sc := &ServerContext{
-		cataloger:         cataloger,
+		catalog:           catalog,
 		multipartsTracker: multipartsTracker,
 		region:            region,
 		bareDomain:        bareDomain,
@@ -112,7 +112,7 @@ func NewHandler(
 		DurationHandler(
 			AuthenticationHandler(authService, bareDomain,
 				EnrichWithParts(bareDomain,
-					EnrichWithRepositoryOrFallback(cataloger, authService, fallbackHandler,
+					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
 						OperationLookupHandler(
 							h))))))
 	logging.Default().WithFields(logging.Fields{

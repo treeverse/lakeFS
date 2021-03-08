@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestCataloger_ListRepositories(t *testing.T) {
+func TestCatalog_ListRepositories(t *testing.T) {
 	// prepare data tests
 	now := time.Now()
 	gravelerData := []*graveler.RepositoryRecord{
@@ -85,14 +85,12 @@ func TestCataloger_ListRepositories(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup cataloger
+			// setup Catalog
 			gravelerMock := &FakeGraveler{
 				RepositoryIteratorFactory: NewFakeRepositoryIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &Catalog{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()
@@ -113,7 +111,7 @@ func TestCataloger_ListRepositories(t *testing.T) {
 	}
 }
 
-func TestCataloger_BranchExists(t *testing.T) {
+func TestCatalog_BranchExists(t *testing.T) {
 	// prepare branch data
 	gravelerData := []*graveler.BranchRecord{
 		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
@@ -126,14 +124,12 @@ func TestCataloger_BranchExists(t *testing.T) {
 	}{{"branch1", true}, {"branch2", true}, {"branch-foo", false}}
 	for _, tt := range tests {
 		t.Run(tt.Branch, func(t *testing.T) {
-			// setup cataloger
+			// setup Catalog
 			gravelerMock := &FakeGraveler{
 				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &Catalog{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()
@@ -150,7 +146,7 @@ func TestCataloger_BranchExists(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListBranches(t *testing.T) {
+func TestCatalog_ListBranches(t *testing.T) {
 	// prepare branch data
 	gravelerData := []*graveler.BranchRecord{
 		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
@@ -228,14 +224,12 @@ func TestCataloger_ListBranches(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup cataloger
+			// setup Catalog
 			gravelerMock := &FakeGraveler{
 				BranchIteratorFactory: NewFakeBranchIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &Catalog{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()
@@ -253,7 +247,7 @@ func TestCataloger_ListBranches(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListTags(t *testing.T) {
+func TestCatalog_ListTags(t *testing.T) {
 	gravelerData := []*graveler.TagRecord{
 		{TagID: "t1", CommitID: "c1"},
 		{TagID: "t2", CommitID: "c2"},
@@ -332,10 +326,8 @@ func TestCataloger_ListTags(t *testing.T) {
 			gravelerMock := &FakeGraveler{
 				TagIteratorFactory: NewFakeTagIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &Catalog{
+				Store: gravelerMock,
 			}
 			ctx := context.Background()
 			got, hasMore, err := c.ListTags(ctx, "repo", tt.args.limit, tt.args.after)
@@ -352,7 +344,7 @@ func TestCataloger_ListTags(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListEntries(t *testing.T) {
+func TestCatalog_ListEntries(t *testing.T) {
 	// prepare branch data
 	now := time.Now()
 	gravelerData := []*graveler.ValueRecord{
@@ -450,14 +442,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup cataloger
+			// setup Catalog
 			gravelerMock := &FakeGraveler{
 				ListIteratorFactory: NewFakeValueIteratorFactory(gravelerData),
 			}
-			c := &cataloger{
-				EntryCatalog: &EntryCatalog{
-					Store: gravelerMock,
-				},
+			c := &Catalog{
+				Store: gravelerMock,
 			}
 			// test method
 			ctx := context.Background()

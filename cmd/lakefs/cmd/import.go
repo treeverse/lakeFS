@@ -90,27 +90,20 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		Config: cfg,
 		DB:     dbPool,
 	}
-	cataloger, err := catalog.NewCataloger(ctx, catalogCfg)
+	c, err := catalog.New(ctx, catalogCfg)
 	if err != nil {
-		fmt.Printf("Failed to create cataloger: %s\n", err)
+		fmt.Printf("Failed to create c: %s\n", err)
 		return 1
 	}
-	defer func() { _ = cataloger.Close() }()
-
-	// TODO(barak): do we need to create a new entry catalog or extract the one we have from the cataloger
-	entryCataloger, err := catalog.NewEntryCatalog(ctx, catalogCfg)
-	if err != nil {
-		fmt.Printf("Failed to build entry catalog: %s\n", err)
-		return 1
-	}
+	defer func() { _ = c.Close() }()
 
 	// wire actions into entry catalog
 	actionsService := actions.NewService(
 		dbPool,
-		catalog.NewActionsSource(entryCataloger),
-		catalog.NewActionsOutputWriter(entryCataloger.BlockAdapter),
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
 	)
-	entryCataloger.SetHooksHandler(actionsService)
+	c.SetHooksHandler(actionsService)
 
 	u := uri.Must(uri.Parse(args[0]))
 	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
@@ -129,7 +122,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 
-	repo, err := getRepository(ctx, cataloger, repoName)
+	repo, err := getRepository(ctx, c, repoName)
 	if err != nil {
 		fmt.Println("Error getting repository", err)
 		return 1
@@ -168,9 +161,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		RepositoryID:       graveler.RepositoryID(repoName),
 		DefaultBranchID:    graveler.BranchID(repo.DefaultBranch),
 		InventoryGenerator: blockStore,
-		Cataloger:          cataloger,
+		Store:              c.Store,
 		KeyPrefixes:        prefixes,
-		EntryCatalog:       entryCataloger,
 		BaseCommit:         graveler.CommitID(baseCommit),
 	}
 
@@ -214,7 +206,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	if withMerge {
 		fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-		commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
 		if err != nil {
 			fmt.Printf("Merge failed: %s\n", err)
 			return 1
@@ -229,8 +221,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	return 0
 }
 
-func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string) (*catalog.Repository, error) {
-	repo, err := cataloger.GetRepository(ctx, repoName)
+func getRepository(ctx context.Context, c catalog.Interface, repoName string) (*catalog.Repository, error) {
+	repo, err := c.GetRepository(ctx, repoName)
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
 	}

@@ -6,7 +6,6 @@ import (
 	"crypto"
 	"errors"
 	"fmt"
-	"runtime"
 
 	"github.com/treeverse/lakefs/graveler"
 
@@ -19,10 +18,15 @@ import (
 
 type NewSSTableReaderFn func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)
 
+type Unrefer interface {
+	Unref()
+}
+
 type RangeManager struct {
 	newReader NewSSTableReaderFn
 	fs        pyramid.FS
 	hash      crypto.Hash
+	cache     Unrefer
 }
 
 func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
@@ -33,21 +37,7 @@ func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypt
 	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
 		return newReader(ctx, fs, ns, id, opts)
 	}
-	ret := NewPebbleSSTableRangeManagerWithNewReader(newReader, fs, hash)
-	// pebble cache enforces morality at finalization time.  This is always broken -- gc
-	// need not ever run, and might not (cannot) run in dependency order if there is any
-	// loop.  In a language with so-called "explicit" resource management there would be
-	// no need for explicit Ref and Unref operations on the cache, which would side-step
-	// the issue.  Do the best that we can here, by unreffing the cache at finalization.
-	// But note that this *can* crash if we _ever_ manage to introduce a link from cache
-	// back to this RangeManager or any object holding it.  (Note that when running with
-	// the race detector pebble switches off this check.  This shows that the concept of
-	// enforcing correctness in a finalizer is fairly broken.  Finalizers are not a good
-	// language feature to replace destructors.
-	//
-	// Sample reference: https://crawshaw.io/blog/tragedy-of-finalizers
-	runtime.SetFinalizer(ret, func(interface{}) { cache.Unref() })
-	return ret
+	return NewPebbleSSTableRangeManagerWithNewReader(newReader, opts.Cache, fs, hash)
 }
 
 func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
@@ -62,11 +52,12 @@ func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id co
 	return r, nil
 }
 
-func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, cache Unrefer, fs pyramid.FS, hash crypto.Hash) *RangeManager {
 	return &RangeManager{
 		fs:        fs,
 		hash:      hash,
 		newReader: newReader,
+		cache:     cache,
 	}
 }
 
@@ -110,8 +101,8 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 	}, nil
 }
 
-// GetEntry returns the entry matching the path in the SSTable referenced by the id.
-// If path not found, (nil, ErrPathNotFound) is returned.
+// GetValue returns the Record matching the key in the SSTable referenced by the id.
+// If key is not found, (nil, ErrKeyNotFound) is returned.
 func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
 	reader, err := m.newReader(ctx, ns, id)
 	if err != nil {
@@ -178,4 +169,9 @@ func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg strin
 	if err := f(); err != nil {
 		logging.FromContext(ctx).WithError(err).Error(msg)
 	}
+}
+
+func (m *RangeManager) Close() error {
+	m.cache.Unref()
+	return nil
 }

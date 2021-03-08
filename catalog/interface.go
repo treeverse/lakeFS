@@ -47,7 +47,7 @@ type GetEntryParams struct {
 	ReturnExpired bool
 }
 
-type Cataloger interface {
+type Interface interface {
 	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
 
@@ -113,9 +113,6 @@ type Cataloger interface {
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeInfo, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeInfo, error)
-
-	// GetEntryCatalog return underlying EntryCatalog until Cataloger is removed
-	GetEntryCatalog() *EntryCatalog
 
 	io.Closer
 }

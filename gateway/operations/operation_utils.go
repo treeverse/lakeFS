@@ -20,7 +20,7 @@ func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddres
 		CreationDate:    writeTime,
 	}
 
-	err := o.Cataloger.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry)
+	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not update metadata")
 		return err
