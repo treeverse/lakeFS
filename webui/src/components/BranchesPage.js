@@ -21,6 +21,8 @@ import ConfirmationModal from "./ConfirmationModal"
 import {Link} from "react-router-dom";
 
 
+const ImportBranchName = 'import-from-inventory';
+
 
 const CreateBranchButton = connect(
     ({ branches }) => ({ status: branches.create }),
@@ -141,6 +143,10 @@ const BranchesPage = connect(
     } else if (!!branches.error) {
         body = (<Alert variant="danger">{branches.error}</Alert> );
     } else {
+        let deleteBranchConfirmMsg = <>Are you sure you wish to delete branch <strong>{selectedBranch}</strong> ?</>;
+        if (selectedBranch === ImportBranchName) {
+            deleteBranchConfirmMsg = <>{deleteBranchConfirmMsg}<br/><Badge variant="warning">Warning</Badge> this is a system branch used for importing data to lakeFS</>;
+        }
         body = (
             <>
                 <ListGroup className="branches-list pagination-group">
@@ -182,7 +188,7 @@ const BranchesPage = connect(
                                             </Button>
                                         </OverlayTrigger>
                                     </ButtonGroup>
-                                    <ConfirmationModal show={show} onHide={handleClose} msg={`are you sure you wish to delete branch ${selectedBranch}?`} onConfirm={onSubmit}/>
+                                    <ConfirmationModal show={show} onHide={handleClose} msg={deleteBranchConfirmMsg} onConfirm={onSubmit}/>
                                 </div>
                             </div>
                         </ListGroupItem>
