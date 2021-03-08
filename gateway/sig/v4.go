@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	v4authHeaderName        = "Authorization"
-	v4authHeaderPrefix      = "AWS4-HMAC-SHA256"
+	V4authHeaderName        = "Authorization"
+	V4authHeaderPrefix      = "AWS4-HMAC-SHA256"
 	AmzDecodedContentLength = "X-Amz-Decoded-Content-Length"
 	v4StreamingPayloadHash  = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
 	v4UnsignedPayload       = "UNSIGNED-PAYLOAD"
@@ -62,7 +62,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	var ctx V4Auth
 
 	// start by trying to extract the data from the Authorization header
-	headerValue := r.Header.Get(v4authHeaderName)
+	headerValue := r.Header.Get(V4authHeaderName)
 	if len(headerValue) > 0 {
 		match := V4AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
@@ -90,7 +90,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	// otherwise, see if we have all the required query parameters
 	query := r.URL.Query()
 	algorithm := query.Get("X-Amz-Algorithm")
-	if len(algorithm) == 0 || !strings.EqualFold(algorithm, v4authHeaderPrefix) {
+	if len(algorithm) == 0 || !strings.EqualFold(algorithm, V4authHeaderPrefix) {
 		return ctx, errors.ErrInvalidQuerySignatureAlgo
 	}
 	credentialScope := query.Get("X-Amz-Credential")
@@ -304,7 +304,7 @@ func createSignature(key, dateStamp, region, service string) []byte {
 
 func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, error) {
 	// Step 2: Create string to sign
-	algorithm := v4authHeaderPrefix
+	algorithm := V4authHeaderPrefix
 	credentialScope := strings.Join([]string{
 		ctx.AuthValue.Date,
 		ctx.AuthValue.Region,
