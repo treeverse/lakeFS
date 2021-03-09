@@ -17,6 +17,10 @@ import {
 } from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
+import DismissButton from "./DismissButton";
+import FilterButton from "./FilterButton";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 export const ActionsRunsPage = connect(
     ({ actions }) => ({
@@ -24,17 +28,25 @@ export const ActionsRunsPage = connect(
     }),
     ({ listActionsRuns })
 )(
-({repo, runs, listActionsRuns }) => {
+({repo, runs, listActionsRuns, branch, commit }) => {
     const [update, setUpdate] = useState(Date.now());
 
     const listActionsRunsFn = useCallback((after, amount) => {
-        listActionsRuns(repo.id, after, amount);
-    }, [repo.id, listActionsRuns]);
+        listActionsRuns(repo.id, branch, commit, after, amount);
+    }, [repo.id, listActionsRuns, branch, commit]);
+
+    const filterLabel = branch ? <><strong>Branch</strong> {branch}</>: commit ? <><strong>Commit</strong> {commit.substring(0,16)}</> : null;
 
     return (
         <div className="mt-3">
             <div className="action-bar">
-                <ButtonToolbar className="float-right mb-2 pr-1">
+                <ButtonToolbar className="float-left">
+                    {filterLabel && (
+                        <DismissButton variant="link" label={filterLabel} tooltip={"Dismiss filter"} to={`/repositories/${repo.id}/actions`} />
+                    )}
+                </ButtonToolbar>
+
+                <ButtonToolbar className="float-right">
                     <Button variant="outline-dark" onClick={() => {
                         setUpdate(Date.now())
                     }}>
@@ -57,12 +69,24 @@ export const ActionsRunsPage = connect(
                                 (<Link to={`/repositories/${repo.id}/actions/${entity.run_id}`}>{entity.run_id.substr(4)}</Link>),
                                 (<strong style={{'color': (entity.status === "completed") ? 'green':'red'}}>{entity.status}</strong>),
                                 entity.event_type,
-                                (<Link to={`/repositories/${repo.id}/tree?branch=${entity.branch}`}>{entity.branch}</Link>),
+                                (
+                                    <span className={"clipboard-copy"}>
+                                    <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore branch objects</Tooltip>}>
+                                        <Link to={`/repositories/${repo.id}/tree?branch=${entity.branch}`}>{entity.branch}</Link>
+                                    </OverlayTrigger>
+                                        <FilterButton variant="link" text={entity.branch} tooltip={"Filter runs by branch"} to={`/repositories/${repo.id}/actions?branch=${entity.branch}`} />
+                                    </span>
+                                ),
                                 moment(entity.start_time).format("MM/DD/YYYY HH:mm:ss"),
                                 moment(entity.end_time).format("MM/DD/YYYY HH:mm:ss"),
                                 entity.commit_id && (<>
-                                    <Link to={`/repositories/${repo.id}/tree?commit=${entity.commit_id}`}>{entity.commit_id.substr(0, 16)}</Link>
-                                    <span className={"clipboard-copy"}><ClipboardButton variant="link" text={entity.commit_id} tooltip={"Copy Commit ID"}/></span>
+                                    <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore commit objects</Tooltip>}>
+                                            <Link className={"run-commit"} to={`/repositories/${repo.id}/tree?commit=${entity.commit_id}`}>{entity.commit_id.substr(0, 16)}</Link>
+                                    </OverlayTrigger>
+                                    <span className={"clipboard-copy"}>
+                                        <ClipboardButton variant="link" text={entity.commit_id} tooltip={"Copy Commit ID"}/>
+                                        <FilterButton variant="link" text={entity.commit_id} tooltip={"Filter runs by Commit"} to={`/repositories/${repo.id}/actions?commit=${entity.commit_id}`} />
+                                    </span>
                                 </>),
                             ]
                         }
@@ -98,8 +122,6 @@ export const ActionsRunPage = connect(
     ({ listActionsRunHooks, getActionsRun, getActionsRunHookOutput, resetActionsRunHookOutput })
 )(
     ({repo, run, runHooks, getActionsRun, listActionsRunHooks, runHookOutput, getActionsRunHookOutput, resetActionsRunHookOutput}) => {
-        // const {runId, hookRunId: hookRunIdParam} = useParams();
-        // const [hookRunId, setHookRunId] = useState(hookRunIdParam);
         const {runId, hookRunId} = useParams();
         const history = useHistory();
 
