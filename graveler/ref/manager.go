@@ -95,12 +95,9 @@ func (m *Manager) ListRepositories(ctx context.Context) (graveler.RepositoryIter
 func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 		var err error
-		x, err := tx.Exec(`DELETE FROM graveler_branches WHERE repository_id = $1`, repositoryID)
+		_, err = tx.Exec(`DELETE FROM graveler_branches WHERE repository_id = $1`, repositoryID)
 		if err != nil {
 			return nil, err
-		}
-		if x.RowsAffected() == 0 {
-			return nil, db.ErrNotFound
 		}
 		_, err = tx.Exec(`DELETE FROM graveler_tags WHERE repository_id = $1`, repositoryID)
 		if err != nil {
@@ -110,8 +107,14 @@ func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.Re
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`DELETE FROM graveler_repositories WHERE id = $1`, repositoryID)
-		return nil, err
+		r, err := tx.Exec(`DELETE FROM graveler_repositories WHERE id = $1`, repositoryID)
+		if err != nil {
+			return nil, err
+		}
+		if r.RowsAffected() == 0 {
+			return nil, db.ErrNotFound
+		}
+		return nil, nil
 	})
 	if errors.Is(err, db.ErrNotFound) {
 		return graveler.ErrRepositoryNotFound
