@@ -104,9 +104,9 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/actions
 
 validate-swagger: go-install ## Validate swagger.yaml
-	$(GOBINPATH)/swagger validate swagger.yml
+	$(GOBINPATH)/swagger validate api/swagger.yml
 	# Run python validation as well
-	$(GOBINPATH)/swagger expand --format=json swagger.yml > swagger.json
+	$(GOBINPATH)/swagger expand --format=json api/swagger.yml > swagger.json
 	$(SWAGGER_VALIDATOR) /mnt/swagger.json
 	@rm swagger.json
 
