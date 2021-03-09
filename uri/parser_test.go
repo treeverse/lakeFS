@@ -8,6 +8,10 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
+func strp(v string) *string {
+	return &v
+}
+
 func TestParse(t *testing.T) {
 	cases := []struct {
 		Input    string
@@ -18,29 +22,35 @@ func TestParse(t *testing.T) {
 			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
-			Path:       "baz",
+			Path:       strp("baz"),
 		}},
 		{"lakefs://foo@bar/baz/path", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
-			Path:       "baz/path",
+			Path:       strp("baz/path"),
 		}},
 		{"lakefs://foo@bar/baz/path@withappendix.foo", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
-			Path:       "baz/path@withappendix.foo",
+			Path:       strp("baz/path@withappendix.foo"),
 		}},
 		{"lakefs://fo/o@bar/baz/path@withappendix.foo", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "fo/o",
 			Ref:        "bar",
-			Path:       "baz/path@withappendix.foo",
+			Path:       strp("baz/path@withappendix.foo"),
 		}},
 		{"lakefs://foo", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
+		}},
+		{"lakefs://foo@bar/", nil, &uri.URI{
+			Protocol:   "lakefs",
+			Repository: "foo",
+			Ref:        "bar",
+			Path:       strp(""),
 		}},
 		{"lakefs://foo@bar", nil, &uri.URI{
 			Protocol:   "lakefs",
@@ -76,8 +86,14 @@ func TestURI_String(t *testing.T) {
 			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
-			Path:       "baz/file.csv",
+			Path:       strp("baz/file.csv"),
 		}, "lakefs://foo@bar/baz/file.csv"},
+		{&uri.URI{
+			Protocol:   "lakefs",
+			Repository: "foo",
+			Ref:        "bar",
+			Path:       strp(""),
+		}, "lakefs://foo@bar/"},
 		{&uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
@@ -119,7 +135,7 @@ func TestMust(t *testing.T) {
 		Protocol:   "lakefs",
 		Repository: "foo",
 		Ref:        "bar",
-		Path:       "baz",
+		Path:       strp("baz"),
 	}) {
 		t.Fatalf("expected a parsed URI according to input, instead got %s", u.String())
 	}
