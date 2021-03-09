@@ -43,9 +43,9 @@
 /webui/node_modules
 
 # server excludes
-/api/gen
-/statik
-/ddl/statik.go
+/pkg/api/gen
+/pkg/webui
+/pkg/ddl/statik.go
 .DS_Store
 
 # recordings

@@ -11,16 +11,16 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/actions"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/onboard"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/onboard"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (

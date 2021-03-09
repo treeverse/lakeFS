@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/pkg/config"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"

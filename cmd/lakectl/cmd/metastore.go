@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/metastore"
-	"github.com/treeverse/lakefs/metastore/glue"
-	"github.com/treeverse/lakefs/metastore/hive"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/metastore"
+	"github.com/treeverse/lakefs/pkg/metastore/glue"
+	"github.com/treeverse/lakefs/pkg/metastore/hive"
 )
 
 var metastoreCmd = &cobra.Command{
