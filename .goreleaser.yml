@@ -16,6 +16,7 @@ builds:
   - -s -w -X github.com/treeverse/lakefs/pkg/config.Version={{.Version}} -X github.com/treeverse/lakefs/pkg/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/pkg/config.Date={{.Date}}
   goarch:
   - amd64
+  - arm64
   goos:
   - darwin
   - linux
@@ -29,6 +30,7 @@ builds:
   - -s -w -X github.com/treeverse/lakefs/pkg/config.Version={{.Version}} -X github.com/treeverse/lakefs/pkg/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/pkg/config.Date={{.Date}}
   goarch:
   - amd64
+  - arm64
   goos:
   - darwin
   - linux
