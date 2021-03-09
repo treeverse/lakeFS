@@ -13,7 +13,9 @@ Upgrading lakeFS from a previous version usually just requires re-deploying with
 There are cases where the database will require a migration - check whether the [release](https://github.com/treeverse/lakeFS/releases) you are upgrading to requires that.
 
 
-# Migrating from lakeFS >= 0.30.0
+## When DB migrations are required
+
+### lakeFS 0.30.0 or greater
 
 In case a migration is required, first stop the running lakeFS service.
 Using the `lakefs` binary for the new version, run the following:
@@ -27,7 +29,7 @@ Deploy (or run) the new version of lakeFS.
 Note that an older version of lakeFS cannot run on a migrated database.
 
 
-# Migrating from lakeFS < 0.30.0
+### Prior to lakeFS 0.30.0
 
 **Note:** users of lakeFS < 0.30.0 should first upgrade to 0.30.0 following this guide, before upgrading to any higher version
 {: .note .pb-3 }
