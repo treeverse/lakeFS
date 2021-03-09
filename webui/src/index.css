@@ -35,6 +35,11 @@
     margin-left: 10px;
 }
 
+.dismiss-btn{
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
 .navbar a.dropdown-toggle {
     color: #DDDDDD;
 }

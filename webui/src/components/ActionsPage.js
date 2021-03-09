@@ -16,7 +16,7 @@ import {
     Accordion, useAccordionToggle, AccordionContext
 } from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
-import {ClipboardButton, RunFilterButton} from "./ClipboardButton";
+import {ClipboardButton, DismissButton, RunFilterButton} from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
@@ -28,30 +28,29 @@ export const ActionsRunsPage = connect(
 )(
 ({repo, runs, listActionsRuns, branch, commit }) => {
     const [update, setUpdate] = useState(Date.now());
-    const history = useHistory();
 
     const listActionsRunsFn = useCallback((after, amount) => {
         listActionsRuns(repo.id, branch, commit, after, amount);
     }, [repo.id, listActionsRuns, branch, commit]);
 
+    const filterLabel = branch ? <><strong>Branch</strong> {branch}</>: commit ? <><strong>Commit</strong> {commit.substring(0,16)}</> : null;
+
     return (
         <div className="mt-3">
             <div className="action-bar">
-                <ButtonToolbar className="float-right mb-2 pr-1">
+                <ButtonToolbar className="float-left">
+                    {filterLabel && (
+                        <DismissButton variant="link" label={filterLabel} tooltip={"Dismiss filter"} to={`/repositories/${repo.id}/actions`} />
+                    )}
+                </ButtonToolbar>
+
+                <ButtonToolbar className="float-right">
                     <Button variant="outline-dark" onClick={() => {
                         setUpdate(Date.now())
                     }}>
                         <SyncIcon/>
                     </Button>
                 </ButtonToolbar>
-                {(branch || commit) && <Alert variant="light" onClose={() => history.push(`/repositories/${repo.id}/actions`)} dismissible>
-                    {(branch) && <p> Filtered by branch:
-                        <Link to={`/repositories/${repo.id}/tree?branch=${branch}`}> {branch}</Link>
-                    </p>}
-                    {(!branch && commit) && <p> Filtered by commit:
-                        <Link to={`/repositories/${repo.id}/tree?commit=${commit}`}> {commit.substring(0, 16)}</Link>
-                    </p>}
-                </Alert>}
             </div>
             <Form>
                 <div className="actions-runs-list">
