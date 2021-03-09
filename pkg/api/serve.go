@@ -1,7 +1,7 @@
 package api
 
-//go:generate swagger generate client -q -A lakefs -f ../../swagger.yml -P models.User -t gen
-//go:generate swagger generate server -q -A lakefs -f ../../swagger.yml -P models.User -t gen --exclude-main
+//go:generate swagger generate client -q -A lakefs -f ../../api/swagger.yml -P models.User -t gen
+//go:generate swagger generate server -q -A lakefs -f ../../api/swagger.yml -P models.User -t gen --exclude-main
 
 import (
 	"net/http"
@@ -60,6 +60,7 @@ func Serve(
 	controller.Configure(api)
 
 	api.UseSwaggerUI()
+
 	apiHandler := api.Serve(func(handler http.Handler) http.Handler {
 		// build handler for our REST API
 		return httputil.LoggingMiddleware(
@@ -75,10 +76,7 @@ func Serve(
 	mux.Handle("/_health", httputil.ServeHealth())
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
-	mux.Handle("/api/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logging.Default().Info("api called!")
-		apiHandler.ServeHTTP(w, r)
-	}))
+	mux.Handle("/api/", apiHandler)
 	mux.Handle("/swagger.json", apiHandler)
 	mux.Handle("/", uiHandler)
 	return mux
