@@ -58,7 +58,7 @@ const (
 type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
-	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID *string, after string) (actions.RunResultIterator, error)
+	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (actions.RunResultIterator, error)
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
@@ -2884,7 +2884,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		after, amount := getPaginationParams(params.After, params.Amount)
-		runsIter, err := c.Actions.ListRunResults(ctx, params.Repository, params.Branch, params.Commit, after)
+		runsIter, err := c.Actions.ListRunResults(ctx, params.Repository, swag.StringValue(params.Branch), swag.StringValue(params.Commit), after)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewListRunsNotFound().

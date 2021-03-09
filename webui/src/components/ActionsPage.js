@@ -16,7 +16,9 @@ import {
     Accordion, useAccordionToggle, AccordionContext
 } from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
-import {ClipboardButton, DismissButton, RunFilterButton} from "./ClipboardButton";
+import ClipboardButton from "./ClipboardButton";
+import DismissButton from "./DismissButton";
+import FilterButton from "./FilterButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
@@ -72,7 +74,7 @@ export const ActionsRunsPage = connect(
                                     <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore branch objects</Tooltip>}>
                                         <Link to={`/repositories/${repo.id}/tree?branch=${entity.branch}`}>{entity.branch}</Link>
                                     </OverlayTrigger>
-                                        <RunFilterButton variant="link" text={entity.branch} tooltip={"Filter runs by branch"} to={`/repositories/${repo.id}/actions?branch=${entity.branch}`} />
+                                        <FilterButton variant="link" text={entity.branch} tooltip={"Filter runs by branch"} to={`/repositories/${repo.id}/actions?branch=${entity.branch}`} />
                                     </span>
                                 ),
                                 moment(entity.start_time).format("MM/DD/YYYY HH:mm:ss"),
@@ -83,7 +85,7 @@ export const ActionsRunsPage = connect(
                                     </OverlayTrigger>
                                     <span className={"clipboard-copy"}>
                                         <ClipboardButton variant="link" text={entity.commit_id} tooltip={"Copy Commit ID"}/>
-                                        <RunFilterButton variant="link" text={entity.commit_id} tooltip={"Filter runs by Commit"} to={`/repositories/${repo.id}/actions?commit=${entity.commit_id}`} />
+                                        <FilterButton variant="link" text={entity.commit_id} tooltip={"Filter runs by Commit"} to={`/repositories/${repo.id}/actions?commit=${entity.commit_id}`} />
                                     </span>
                                 </>),
                             ]

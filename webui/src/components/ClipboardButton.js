@@ -1,11 +1,8 @@
 import React, {useEffect, useRef, useState} from "react";
 import Button from "react-bootstrap/Button";
-import {ClippyIcon, FilterIcon, XIcon} from "@primer/octicons-react";
+import {ClippyIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
-import {Link} from "react-router-dom";
-import Container from "react-bootstrap/Container";
-
 
 const copyTextToClipboard = (text, onSuccess, onError) => {
     const textArea = document.createElement('textarea');
@@ -128,43 +125,5 @@ const ClipboardButton = ({ text, variant, onSuccess, onError, icon = <ClippyIcon
     );
 };
 
-
-const RunFilterButton = ({ variant, to, icon = <FilterIcon/>,  tooltip}) => {
-    const [tooltipText, setTooltipText] = useState(tooltip);
-    const [target, isHovered] = useHover();
-
-    return (
-        <>
-            <Link to={to}>
-            <Overlay placement="bottom" show={isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
-                {props => { props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
-            </Overlay>
-            <Button variant={variant} ref={target} >
-                {icon}
-            </Button>
-            </Link>
-        </>
-    );
-};
-
-const DismissButton = ({ variant, to, icon = <XIcon/>, label,  tooltip}) => {
-    const [tooltipText, setTooltipText] = useState(tooltip);
-    const [target, isHovered] = useHover();
-
-    return (
-        <Container>
-            {label}
-            <Link to={to}>
-                <Overlay placement="bottom" show={isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
-                    {props => { props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
-                </Overlay>
-                <Button size="sm" className="dismiss-btn" variant={variant} ref={target} >
-                    {icon}
-                </Button>
-            </Link>
-        </Container>
-    );
-};
-
-export {ClipboardButton, RunFilterButton, DismissButton}
+export {useHover}
 export default ClipboardButton

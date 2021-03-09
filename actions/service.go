@@ -380,7 +380,7 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 	return res.(*TaskResult), nil
 }
 
-func (s *Service) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID *string, after string) (RunResultIterator, error) {
+func (s *Service) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
 	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, commitID, after), nil
 }
 

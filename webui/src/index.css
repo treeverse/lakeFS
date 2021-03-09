@@ -35,7 +35,7 @@
     margin-left: 10px;
 }
 
-.dismiss-btn{
+.dismiss-btn {
     padding-left: 2px;
     padding-right: 2px;
 }
@@ -218,7 +218,7 @@
 
 .table .tree-row .tree-row-actions .btn,
 .actions-runs-list .table tbody tr td .clipboard-copy button,
-.actions-runs-list .table tbody tr td .run-filter .link{
+.actions-runs-list .table tbody tr td .run-filter .link {
     visibility: hidden;
     font-size: 0.7rem;
 }
@@ -228,7 +228,7 @@
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
 .actions-runs-list .table tbody tr:hover td .run-filter .link ,
-.actions-runs-list .table tbody tr:focus td .run-filter .link{
+.actions-runs-list .table tbody tr:focus td .run-filter .link {
     visibility: visible;
     display: inline-block;
 }

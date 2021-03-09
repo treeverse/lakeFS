@@ -52,9 +52,6 @@ var runsListCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		if err != nil {
-			DieErr(err)
-		}
 
 		rows := make([][]interface{}, len(results))
 		for i, row := range results {
