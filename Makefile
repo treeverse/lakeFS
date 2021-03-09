@@ -175,9 +175,9 @@ gen-ddl: go-install ## Embed data migration files into the resulting binary
 	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -dest pkg -src pkg/ddl -include '*.sql'
 
 proto: ## Build proto (Protocol Buffers) files
-	$(PROTOC) --proto_path=catalog --go_out=catalog --go_opt=paths=source_relative catalog.proto
-	$(PROTOC) --proto_path=graveler/committed --go_out=graveler/committed --go_opt=paths=source_relative committed.proto
-	$(PROTOC) --proto_path=graveler --go_out=graveler --go_opt=paths=source_relative graveler.proto
+	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
+	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
