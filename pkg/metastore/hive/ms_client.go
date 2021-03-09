@@ -45,6 +45,7 @@ func (c *MSClient) Open(addr string, secure bool) (ThriftHiveMetastoreClient, er
 	cfg := &thrift.TConfiguration{}
 	if secure {
 		cfg.TLSConfig = &tls.Config{
+			//nolint:gosec
 			InsecureSkipVerify: true,
 		}
 		c.transport, err = thrift.NewTSSLSocketConf(addr, cfg)
