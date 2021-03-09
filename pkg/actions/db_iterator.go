@@ -8,6 +8,4 @@ import (
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-var (
-	ErrIteratorClosed = errors.New("iterator closed")
-)
+var ErrIteratorClosed = errors.New("iterator closed")
