@@ -42,12 +42,14 @@ func NewMSClient(addr string, secure bool) (*MSClient, error) {
 
 func (c *MSClient) Open(addr string, secure bool) (ThriftHiveMetastoreClient, error) {
 	var err error
+	cfg := &thrift.TConfiguration{}
 	if secure {
-		cfg := new(tls.Config)
-		cfg.InsecureSkipVerify = true
-		c.transport, err = thrift.NewTSSLSocket(addr, cfg)
+		cfg.TLSConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		c.transport, err = thrift.NewTSSLSocketConf(addr, cfg)
 	} else {
-		c.transport, err = thrift.NewTSocket(addr)
+		c.transport, err = thrift.NewTSocketConf(addr, cfg)
 	}
 	if err != nil {
 		return nil, err
@@ -57,7 +59,7 @@ func (c *MSClient) Open(addr string, secure bool) (ThriftHiveMetastoreClient, er
 		return nil, err
 	}
 
-	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
+	protocolFactory := thrift.NewTBinaryProtocolFactoryConf(cfg)
 	iprot := protocolFactory.GetProtocol(c.transport)
 	oprot := protocolFactory.GetProtocol(c.transport)
 	return hive_metastore.NewThriftHiveMetastoreClient(thrift.NewTStandardClient(iprot, oprot)), nil
