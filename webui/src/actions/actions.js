@@ -7,8 +7,8 @@ export const ACTIONS_RUN = new AsyncActionType('ACTIONS_RUN');
 export const ACTIONS_RUN_HOOKS = new AsyncActionType('ACTION_RUN_HOOKS');
 export const ACTIONS_RUN_HOOK_OUTPUT = new AsyncActionType('ACTIONS_RUN_HOOK_OUTPUT');
 
-export const listActionsRuns = (repoId, after = "", amount = DEFAULT_LISTING_AMOUNT) =>
-    ACTIONS_RUNS.execute(async () => api.actions.listRuns(repoId, after, amount));
+export const listActionsRuns = (repoId, branch = "", commit = "", after = "", amount = DEFAULT_LISTING_AMOUNT) =>
+    ACTIONS_RUNS.execute(async () => api.actions.listRuns(repoId, branch, commit, after, amount));
 
 export const getActionsRun = (repoId, runId) =>
     ACTIONS_RUN.execute(async () => api.actions.getRun(repoId, runId));
