@@ -35,13 +35,13 @@ type TestObject struct {
 
 func parquetSchema(fieldToRemove string) *schema.JSONSchemaItemType {
 	fieldMap := map[string]string{
-		bucketFieldName:           "name=bucket, inname=Bucket, type=UTF8, repetitiontype=REQUIRED, fieldid=1",
-		keyFieldName:              "name=key, inname=Key, type=UTF8, repetitiontype=REQUIRED, fieldid=2",
+		bucketFieldName:           "name=bucket, inname=Bucket, type=BYTE_ARRAY, convertedtype=UTF8, repetitiontype=REQUIRED, fieldid=1",
+		keyFieldName:              "name=key, inname=Key, type=BYTE_ARRAY, convertedtype=UTF8, repetitiontype=REQUIRED, fieldid=2",
 		isLatestFieldName:         "name=is_latest, inname=IsLatest, type=BOOLEAN, repetitiontype=OPTIONAL, fieldid=3",
 		isDeleteMarkerFieldName:   "name=is_delete_marker, inname=IsDeleteMarker, type=BOOLEAN, repetitiontype=OPTIONAL, fieldid=4",
 		sizeFieldName:             "name=size, inname=Size, type=INT64, repetitiontype=OPTIONAL, fieldid=5",
 		lastModifiedDateFieldName: "name=last_modified_date, inname=LastModifiedMillis, type=INT64, repetitiontype=OPTIONAL, fieldid=6",
-		eTagFieldName:             "name=e_tag, inname=Checksum, type=UTF8, repetitiontype=OPTIONAL, fieldid=7",
+		eTagFieldName:             "name=e_tag, inname=Checksum, type=BYTE_ARRAY, convertedtype=UTF8, repetitiontype=OPTIONAL, fieldid=7",
 	}
 	fields := make([]*schema.JSONSchemaItemType, 0, len(fieldMap))
 	for field, tag := range fieldMap {

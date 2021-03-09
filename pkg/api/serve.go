@@ -6,9 +6,11 @@ package api
 import (
 	"net/http"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
-	"github.com/go-swagger/go-swagger/examples/oauth2/restapi"
+	"github.com/go-openapi/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/treeverse/lakefs/pkg/api/gen/restapi"
 	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -47,6 +49,16 @@ func Serve(
 	api.BasicAuthAuth = NewBasicAuthHandler(authService)
 	api.JwtTokenAuth = NewJwtTokenAuthHandler(authService)
 
+	api.UseSwaggerUI()
+
+	api.ServeError = errors.ServeError
+
+	api.JSONConsumer = runtime.JSONConsumer()
+	api.MultipartformConsumer = runtime.DiscardConsumer
+
+	api.BinProducer = runtime.ByteStreamProducer()
+	api.JSONProducer = runtime.JSONProducer()
+
 	// bind our handlers to the server
 	controller := NewController(
 		catalog,
@@ -60,8 +72,6 @@ func Serve(
 		logger,
 	)
 	controller.Configure(api)
-
-	api.UseSwaggerUI()
 
 	apiHandler := api.Serve(func(handler http.Handler) http.Handler {
 		// build handler for our REST API

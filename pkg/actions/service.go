@@ -10,11 +10,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Service struct {
