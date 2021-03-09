@@ -8,14 +8,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/treeverse/lakefs/oa3"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/oa3"
 )
 
 // runCmd represents the run command

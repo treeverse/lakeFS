@@ -48,6 +48,42 @@ func paginationAmount(v *PaginationAmount) int {
 	return i
 }
 
+func (c *Controller) internalError(ctx echo.Context, e error) error {
+	return ctx.JSON(http.StatusInternalServerError, Error{
+		Message: e.Error(),
+	})
+}
+
+func (c *Controller) paginationFor(next string, hasMore bool, length int) Pagination {
+	return Pagination{
+		HasMore:    hasMore,
+		MaxPerPage: DefaultMaxPerPage,
+		NextOffset: next,
+		Results:    length,
+	}
+}
+func (c *Controller) authorize(ctx echo.Context, perms []permissions.Permission) (bool, error) {
+	user := ctx.Get("user").(*model.User)
+	resp, err := c.Auth.Authorize(ctx.Request().Context(), &auth.AuthorizationRequest{
+		Username:            user.Username,
+		RequiredPermissions: perms,
+	})
+	if err != nil {
+		return false, c.internalError(ctx, err)
+	}
+	if resp.Error != nil {
+		return false, ctx.JSON(http.StatusUnauthorized, Error{
+			Message: resp.Error.Error(),
+		})
+	}
+	if !resp.Allowed {
+		return false, ctx.JSON(http.StatusUnauthorized, Error{
+			Message: "User does not have the required permissions",
+		})
+	}
+	return true, nil
+}
+
 func (c *Controller) ListGroups(ctx echo.Context, params ListGroupsParams) error {
 	if authorized, err := c.authorize(ctx, []permissions.Permission{
 		{
@@ -380,39 +416,3 @@ func NewServer(authService auth.Service) http.Handler {
 
 // ensure we meet ServerInterface
 var _ ServerInterface = &Controller{}
-
-func (c *Controller) internalError(ctx echo.Context, e error) error {
-	return ctx.JSON(http.StatusInternalServerError, Error{
-		Message: e.Error(),
-	})
-}
-
-func (c *Controller) paginationFor(next string, hasMore bool, length int) Pagination {
-	return Pagination{
-		HasMore:    hasMore,
-		MaxPerPage: DefaultMaxPerPage,
-		NextOffset: next,
-		Results:    length,
-	}
-}
-func (c *Controller) authorize(ctx echo.Context, perms []permissions.Permission) (bool, error) {
-	user := ctx.Get("user").(*model.User)
-	resp, err := c.Auth.Authorize(ctx.Request().Context(), &auth.AuthorizationRequest{
-		Username:            user.Username,
-		RequiredPermissions: perms,
-	})
-	if err != nil {
-		return false, c.internalError(ctx, err)
-	}
-	if resp.Error != nil {
-		return false, ctx.JSON(http.StatusUnauthorized, Error{
-			Message: resp.Error.Error(),
-		})
-	}
-	if !resp.Allowed {
-		return false, ctx.JSON(http.StatusUnauthorized, Error{
-			Message: "User does not have the required permissions",
-		})
-	}
-	return true, nil
-}
