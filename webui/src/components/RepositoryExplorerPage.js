@@ -165,7 +165,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                     <ComparePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/actions">
-                    <ActionsRunsPage repo={repo.payload} refId={refId}/>
+                    <ActionsRunsPage repo={repo.payload} refId={refId} branch={query.get('branch') || ""} commit={query.get('commit') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/actions/:runId">
                     <ActionsRunPage repo={repo.payload} refId={refId}/>

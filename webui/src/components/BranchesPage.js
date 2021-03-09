@@ -6,7 +6,7 @@ import {listBranches, listBranchesPaginate, createBranch, resetBranch, deleteBra
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {GitBranchIcon, LinkIcon, LinkExternalIcon, BrowserIcon, TrashcanIcon} from "@primer/octicons-react";
+import {GitBranchIcon, LinkIcon, LinkExternalIcon, BrowserIcon, TrashcanIcon, PlayIcon} from "@primer/octicons-react";
 import Alert from "react-bootstrap/Alert";
 import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
@@ -177,6 +177,11 @@ const BranchesPage = connect(
                                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
+                                        <OverlayTrigger placement="bottom" overlay={<Tooltip>View branch runs</Tooltip>}>
+                                            <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/actions?branch=${branch.id}`} >
+                                                <PlayIcon/>
+                                            </Button>
+                                        </OverlayTrigger>
                                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects</Tooltip>}>
                                             <Button href={`/repositories/${repo.id}/tree?branch=${branch.id}`} variant={buttonVariant}>
                                                 <BrowserIcon/>

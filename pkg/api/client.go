@@ -96,8 +96,7 @@ type RepositoryClient interface {
 	RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error
 
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*models.ActionRun, error)
-	ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string, amount int) ([]*models.ActionRun, *models.Pagination, error)
-	ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) ([]*models.ActionRun, error)
+	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID *string, after string, amount int) ([]*models.ActionRun, *models.Pagination, error)
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string, amount int) ([]*models.HookRun, *models.Pagination, error)
 	GetRunHookOutput(ctx context.Context, repositoryID string, runID string, hookRunID string, writer io.Writer) error
 }
@@ -794,11 +793,12 @@ func (c *client) GetRunHookOutput(ctx context.Context, repositoryID string, runI
 	return err
 }
 
-func (c *client) ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string, amount int) ([]*models.ActionRun, *models.Pagination, error) {
+func (c *client) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID *string, after string, amount int) ([]*models.ActionRun, *models.Pagination, error) {
 	resp, err := c.remote.Actions.ListRuns(
 		genactions.NewListRunsParamsWithContext(ctx).
 			WithRepository(repositoryID).
 			WithBranch(branchID).
+			WithCommit(commitID).
 			WithAfter(swag.String(after)).
 			WithAmount(swag.Int64(int64(amount))),
 		c.auth)
@@ -807,19 +807,6 @@ func (c *client) ListRunResults(ctx context.Context, repositoryID string, branch
 	}
 	payload := resp.GetPayload()
 	return payload.Results, payload.Pagination, nil
-}
-
-func (c *client) ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) ([]*models.ActionRun, error) {
-	resp, err := c.remote.Commits.ListCommitRuns(
-		commits.NewListCommitRunsParamsWithContext(ctx).
-			WithRepository(repositoryID).
-			WithCommitID(commitID),
-		c.auth)
-	if err != nil {
-		return nil, err
-	}
-	payload := resp.GetPayload()
-	return payload, nil
 }
 
 func (c *client) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string, amount int) ([]*models.HookRun, *models.Pagination, error) {

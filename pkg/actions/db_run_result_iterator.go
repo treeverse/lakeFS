@@ -17,11 +17,11 @@ type DBRunResultIterator struct {
 	err          error
 	done         bool
 	repositoryID string
-	branchID     *string
-	commitID     *string
+	branchID     string
+	commitID     string
 }
 
-func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID string, branchID, commitID *string, after string) *DBRunResultIterator {
+func NewDBRunResultIterator(ctx context.Context, db db.Database, fetchSize int, repositoryID string, branchID, commitID string, after string) *DBRunResultIterator {
 	return &DBRunResultIterator{
 		db:           db,
 		ctx:          ctx,
@@ -65,10 +65,10 @@ func (it *DBRunResultIterator) maybeFetch() {
 		Where(sq.Eq{"repository_id": it.repositoryID}).
 		OrderBy("run_id DESC").
 		Limit(uint64(it.fetchSize))
-	if it.branchID != nil {
-		q = q.Where(sq.Eq{"branch_id": *it.branchID})
-	} else if it.commitID != nil {
-		q = q.Where(sq.Eq{"commit_id": *it.commitID})
+	if it.branchID != "" {
+		q = q.Where(sq.Eq{"branch_id": it.branchID})
+	} else if it.commitID != "" {
+		q = q.Where(sq.Eq{"commit_id": it.commitID})
 	}
 
 	if it.offset != "" {

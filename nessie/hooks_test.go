@@ -12,6 +12,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/actions"
 	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
 	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
 	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
@@ -146,15 +147,15 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, masterBranch, mergeEvent.BranchID)
 	require.Equal(t, stats.Payload.ID, mergeEvent.SourceRef)
 
-	runs, err := client.Commits.ListCommitRuns(&commits.ListCommitRunsParams{
+	runs, err := client.Actions.ListRuns(&actions.ListRunsParams{
 		Repository: repo,
-		CommitID:   mergeRes.Payload.Reference,
+		Commit:     &mergeRes.Payload.Reference,
 		Context:    ctx,
 	}, nil)
 
 	require.NoError(t, err)
-	require.Len(t, runs.Payload, 1)
-	run := runs.Payload[0]
+	require.Len(t, runs.Payload.Results, 1)
+	run := runs.Payload.Results[0]
 	require.Equal(t, mergeRes.Payload.Reference, *run.CommitID)
 	require.Equal(t, "pre-merge", run.EventType)
 	require.Equal(t, "completed", run.Status)

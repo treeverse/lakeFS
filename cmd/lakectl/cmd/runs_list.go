@@ -37,20 +37,18 @@ var runsListCmd = &cobra.Command{
 		var err error
 		var results []*models.ActionRun
 		var pagination *models.Pagination
-		if commit != "" {
-			// list runs based on commit
-			results, err = client.ListCommitRunResults(ctx, u.Repository, commit)
-		} else {
-			// list runs with optional branch filter
-			var optionalBranch *string
-			if branch != "" {
-				optionalBranch = &branch
-			}
-			results, pagination, err = client.ListRunResults(ctx, u.Repository, optionalBranch, after, amount)
-			if err != nil {
-				DieErr(err)
-			}
+
+		// list runs with optional branch filter
+		var optionalBranch *string
+		if branch != "" {
+			optionalBranch = &branch
 		}
+		var optionalCommit *string
+		if commit != "" {
+			optionalCommit = &commit
+		}
+
+		results, pagination, err = client.ListRunResults(ctx, u.Repository, optionalBranch, optionalCommit, after, amount)
 		if err != nil {
 			DieErr(err)
 		}

@@ -379,12 +379,8 @@ func (s *Service) GetTaskResult(ctx context.Context, repositoryID string, runID 
 	return res.(*TaskResult), nil
 }
 
-func (s *Service) ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string) (RunResultIterator, error) {
-	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, nil, after), nil
-}
-
-func (s *Service) ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) (RunResultIterator, error) {
-	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, nil, &commitID, ""), nil
+func (s *Service) ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error) {
+	return NewDBRunResultIterator(ctx, s.DB, defaultFetchSize, repositoryID, branchID, commitID, after), nil
 }
 
 func (s *Service) ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error) {

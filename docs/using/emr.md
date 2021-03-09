@@ -1,7 +1,7 @@
 ---
 layout: default
 title: EMR
-description: This section covers how you can start using lakeFS with EMR, an AWS service that uses open-source frameworks to process vast amounts of data.
+description: This section covers how you can start using lakeFS with Amazon EMR, an AWS managed service that simplifies running open-source big data frameworks.
 parent: Using lakeFS with...
 nav_order: 6
 has_children: false
@@ -33,7 +33,7 @@ There are 2 options for configuring an EMR cluster to work with lakeFS:
    Each step using lakeFS should pass the appropriate config params.
 
 ## Configuration on cluster creation 
-Use the below configuration when creating the cluster. You may delete any app configuration which is irrelavant for your use-case.
+Use the below configuration when creating the cluster. You may delete any app configuration which is not suitable for your use-case.
  ```json
 [
   {
