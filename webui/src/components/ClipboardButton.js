@@ -1,9 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
 import Button from "react-bootstrap/Button";
-import {ClippyIcon} from "@primer/octicons-react";
+import {ClippyIcon, FilterIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
-
+import {Link} from "react-router-dom";
 
 
 const copyTextToClipboard = (text, onSuccess, onError) => {
@@ -127,4 +127,28 @@ const ClipboardButton = ({ text, variant, onSuccess, onError, icon = <ClippyIcon
     );
 };
 
-export default ClipboardButton;
+
+const RunFilterButton = ({ variant, to, icon = <FilterIcon/>,  tooltip}) => {
+    const [show, setShow] = useState(false);
+    const [tooltipText, setTooltipText] = useState(tooltip);
+
+    const [target, isHovered] = useHover();
+
+    let updater = null;
+
+    return (
+        <>
+            <Link to={to}>
+            <Overlay placement="bottom" show={show || isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
+                {props => {updater = props.scheduleUpdate; props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
+            </Overlay>
+            <Button variant={variant} ref={target} >
+                {icon}
+            </Button>
+            </Link>
+        </>
+    );
+};
+
+export {ClipboardButton, RunFilterButton}
+export default ClipboardButton

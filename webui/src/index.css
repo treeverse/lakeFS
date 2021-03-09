@@ -50,7 +50,7 @@
     background-color: #FBFBFB;
 }
 
-.commit-actions .btn, .branch-actions .btn {
+.commit-actions .btn, .branch-actions .btn, .run-commit {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: .8rem;
     vertical-align: center;
@@ -212,7 +212,8 @@
 }
 
 .table .tree-row .tree-row-actions .btn,
-.actions-runs-list .table tbody tr td .clipboard-copy button {
+.actions-runs-list .table tbody tr td .clipboard-copy button,
+.actions-runs-list .table tbody tr td .run-filter .link{
     visibility: hidden;
     font-size: 0.7rem;
 }
@@ -220,7 +221,9 @@
 .table .tree-row:hover .tree-row-actions .btn,
 .table .tree-row:focus .tree-row-actions .btn,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,
-.actions-runs-list .table tbody tr:focus td .clipboard-copy button {
+.actions-runs-list .table tbody tr:focus td .clipboard-copy button ,
+.actions-runs-list .table tbody tr:hover td .run-filter .link ,
+.actions-runs-list .table tbody tr:focus td .run-filter .link{
     visibility: visible;
     display: inline-block;
 }

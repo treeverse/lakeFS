@@ -58,8 +58,7 @@ const (
 type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*actions.TaskResult, error)
-	ListRunResults(ctx context.Context, repositoryID string, branchID *string, after string) (actions.RunResultIterator, error)
-	ListCommitRunResults(ctx context.Context, repositoryID string, commitID string) (actions.RunResultIterator, error)
+	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID *string, after string) (actions.RunResultIterator, error)
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (actions.TaskResultIterator, error)
 }
 
@@ -162,7 +161,6 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.CommitsCommitHandler = c.CommitHandler()
 	api.CommitsGetCommitHandler = c.GetCommitHandler()
-	api.CommitsListCommitRunsHandler = c.ListCommitRunsHandler()
 	api.CommitsGetBranchCommitLogHandler = c.CommitsGetBranchCommitLogHandler()
 
 	api.RefsDiffRefsHandler = c.RefsDiffRefsHandler()
@@ -406,53 +404,6 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 			Parents:      commit.Parents,
 			MetaRangeID:  commit.MetaRangeID,
 		})
-	})
-}
-
-func (c *Controller) ListCommitRunsHandler() commits.ListCommitRunsHandler {
-	return commits.ListCommitRunsHandlerFunc(func(params commits.ListCommitRunsParams, user *models.User) middleware.Responder {
-		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
-			{
-				Action:   permissions.ReadCommitAction,
-				Resource: permissions.RepoArn(params.Repository),
-			},
-			{
-				Action:   permissions.ReadActionsAction,
-				Resource: permissions.RepoArn(params.Repository),
-			},
-		})
-		if err != nil {
-			return commits.NewListCommitRunsUnauthorized().WithPayload(responseErrorFrom(err))
-		}
-		c.LogAction(ctx, "list_commit_runs")
-		_, err = c.Catalog.GetCommit(ctx, params.Repository, params.CommitID)
-		if errors.Is(err, db.ErrNotFound) {
-			return commits.NewListCommitRunsNotFound().WithPayload(responseError("commit not found"))
-		}
-		if err != nil {
-			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-		}
-
-		runsIter, err := c.Actions.ListCommitRunResults(ctx, params.Repository, params.CommitID)
-		if err != nil {
-			if errors.Is(err, actions.ErrNotFound) {
-				return commits.NewListCommitRunsNotFound().
-					WithPayload(responseErrorFrom(err))
-			}
-			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-		defer runsIter.Close()
-
-		payload := make([]*models.ActionRun, 0)
-		for runsIter.Next() {
-			payload = append(payload, convertRun(runsIter.Value()))
-		}
-		if err := runsIter.Err(); err != nil {
-			return commits.NewListCommitRunsDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-		return commits.NewListCommitRunsOK().WithPayload(payload)
 	})
 }
 
@@ -2933,7 +2884,7 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		after, amount := getPaginationParams(params.After, params.Amount)
-		runsIter, err := c.Actions.ListRunResults(ctx, params.Repository, params.Branch, after)
+		runsIter, err := c.Actions.ListRunResults(ctx, params.Repository, params.Branch, params.Commit, after)
 		if err != nil {
 			if errors.Is(err, actions.ErrNotFound) {
 				return actionsop.NewListRunsNotFound().

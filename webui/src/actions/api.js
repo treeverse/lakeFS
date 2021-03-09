@@ -564,8 +564,8 @@ class Refs {
 
 class Actions {
 
-    async listRuns(repoId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async listRuns(repoId, branch, commit, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({branch, commit, after, amount});
         const response = await apiRequest(`/repositories/${repoId}/actions/runs?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list actions runs: ${await extractError(response)}`)
