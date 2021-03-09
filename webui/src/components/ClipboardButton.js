@@ -129,18 +129,14 @@ const ClipboardButton = ({ text, variant, onSuccess, onError, icon = <ClippyIcon
 
 
 const RunFilterButton = ({ variant, to, icon = <FilterIcon/>,  tooltip}) => {
-    const [show, setShow] = useState(false);
     const [tooltipText, setTooltipText] = useState(tooltip);
-
     const [target, isHovered] = useHover();
-
-    let updater = null;
 
     return (
         <>
             <Link to={to}>
-            <Overlay placement="bottom" show={show || isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
-                {props => {updater = props.scheduleUpdate; props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
+            <Overlay placement="bottom" show={isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
+                {props => { props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
             </Overlay>
             <Button variant={variant} ref={target} >
                 {icon}

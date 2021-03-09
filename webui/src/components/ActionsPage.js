@@ -13,7 +13,6 @@ import {
     Button,
     Form,
     ButtonToolbar,
-    FormText,
     Accordion, useAccordionToggle, AccordionContext
 } from "react-bootstrap";
 import {CheckCircleFillIcon, XCircleFillIcon} from "@primer/octicons-react";
