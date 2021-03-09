@@ -166,7 +166,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
             </Alert>);
     } else if (alertText) {
         alertComponent = (
-            <Alert variant="danger" show={!!alertText}>
+            <Alert variant="danger">
                 {alertText}
             </Alert>);
     }
