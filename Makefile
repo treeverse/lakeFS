@@ -142,7 +142,7 @@ gofmt:  ## gofmt code formating
 
 validate-fmt:  ## Validate go format
 	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o \( -path ./statik \) -prune -o \( -path ./api/gen \) -prune -o -name '*.go' -print)); \
+	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -o \( -path ./pkg/ddl \) -prune -o \( -path ./pkg/webui \) -prune -o \( -path ./pkg/api/gen \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
 		echo checking gofmt fail... ; \
 		echo "$${res}"; \
