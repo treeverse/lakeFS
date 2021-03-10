@@ -154,7 +154,7 @@ func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 	}
 	numRows := res.RowsAffected()
 	if numRows == 0 {
-		return db.ErrNotFound
+		return ErrNotFound
 	}
 	return nil
 }
@@ -299,7 +299,7 @@ func (s *DBAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNam
 				(SELECT id FROM auth_policies WHERE display_name = $2)
 			)`, username, policyDisplayName)
 		if db.IsUniqueViolation(err) {
-			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
+			return nil, fmt.Errorf("policy attachment: %w", ErrAlreadyExists)
 		}
 		return nil, err
 	})
@@ -451,7 +451,7 @@ func (s *DBAuthService) AddUserToGroup(ctx context.Context, username, groupDispl
 				(SELECT id FROM auth_groups WHERE display_name = $2)
 			)`, username, groupDisplayName)
 		if db.IsUniqueViolation(err) {
-			return nil, fmt.Errorf("group membership: %w", db.ErrAlreadyExists)
+			return nil, fmt.Errorf("group membership: %w", ErrAlreadyExists)
 		}
 		return nil, err
 	})
@@ -708,7 +708,7 @@ func (s *DBAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayNa
 				(SELECT id FROM auth_policies WHERE display_name = $2)
 			)`, groupDisplayName, policyDisplayName)
 		if db.IsUniqueViolation(err) {
-			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
+			return nil, fmt.Errorf("policy attachment: %w", ErrAlreadyExists)
 		}
 		return nil, err
 	})

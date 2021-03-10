@@ -20,7 +20,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -655,7 +654,7 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 	_, err = s.GetUser(ctx, userName)
 	if err == nil {
 		t.Errorf("GetUser(%s) succeeded after DeleteUser", userName)
-	} else if !errors.Is(err, db.ErrNotFound) {
+	} else if !errors.Is(err, auth.ErrNotFound) {
 		t.Errorf("GetUser(%s) after deletion: %s", userName, err)
 	}
 }
