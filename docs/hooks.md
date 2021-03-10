@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Hooks
-nav_order: 7
+nav_order: 40
 has_children: false
 ---
 
@@ -69,6 +69,10 @@ hooks:
     properties:
       url: "https://your.domain.io/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
 ```
+
+**Note:** lakeFS will validate action files only when an `Event` occurred. <br/>
+Use `lakectl actions validate <path>` to validate your action files locally. 
+{: .note }
 
 ## Run
 A `Run` is an instantiation of the repository's `Action` files when the triggering event occurs. 
