@@ -48,7 +48,7 @@ var fsStatCmd = &cobra.Command{
 }
 
 const fsLsTemplate = `{{ range $val := . -}}
-{{ $val.PathType|ljust 6 }}    {{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}    {{ $val.Path|yellow }}
+{{ $val.PathType|ljust 12 }}    {{ if eq $val.PathType "object" }}{{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}{{ else }}                                            {{ end }}    {{ $val.Path|yellow }}
 {{ end -}}
 `
 
@@ -65,9 +65,11 @@ var fsListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
+		recursive, _ := cmd.Flags().GetBool("recursive")
+
 		var from string
 		for {
-			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, pathURI.Path, from, -1)
+			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, recursive, pathURI.Path, from, -1)
 			if err != nil {
 				DieErr(err)
 			}
@@ -238,4 +240,6 @@ func init() {
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")
 	_ = fsStageCmd.MarkFlagRequired("checksum")
+
+	fsListCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
 }
