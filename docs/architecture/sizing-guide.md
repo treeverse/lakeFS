@@ -38,7 +38,7 @@ at roughly 1Kb per request.
 ### Disk
 lakeFS greatly benefits from fast local disks. 
 A lakeFS instance doesn't require any strong durability guarantees from the underlying storage, 
-as the disk is only ever used as a local caching layer, and not for long-term storage.
+as the disk is only ever used as a local caching layer for lakeFS metadata, and not for long-term storage.
 lakeFS is designed to work with [ephemeral disks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ssd-instance-store.html){: target="_blank" } - 
 these are usually based on NVMe and are tied to the machine's lifecycle. 
 Using ephemeral disks lakeFS can provide a very high throughput/cost ratio, 
@@ -117,7 +117,7 @@ on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-reg
 The PostgreSQL instance that was used is a [db.m6g.2xlarge](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html){: target="_blank" }
 
 The example repository we tested against contains the metadata of a large lakeFS installation, 
-where each commit contains **~180,000,000** objects.
+where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes of data).
 
 All tests are reproducible using the [lakectl abuse command](../reference/commands.md#lakectl-abuse), 
 so do use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
@@ -125,7 +125,8 @@ so do use it to properly size and tune your setup. All tests are accompanied by 
 ### Random reads
 
 This test generates random read requests to lakeFS, 
-in a given commit. paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
+in a given commit. Paths are requested randomly from a file containing a set of preconfigured (and existing) paths.
+
 
 **command executed:** 
 

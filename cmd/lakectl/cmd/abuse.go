@@ -92,8 +92,8 @@ var abuseRandomReadsCmd = &cobra.Command{
 }
 
 var abuseRandomWritesCmd = &cobra.Command{
-	Use:    "random-write <source ref uri>",
-	Short:  "Read keys from a file and generate random writes to the source branch for those keys.",
+	Use:    "random-write <source branch uri>",
+	Short:  "Generate random writes to the source branch",
 	Hidden: false,
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
@@ -247,6 +247,6 @@ func init() {
 
 	abuseCmd.AddCommand(abuseRandomWritesCmd)
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
-	abuseRandomWritesCmd.Flags().Int("amount", 1000000, "amount of reads to do")
-	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
+	abuseRandomWritesCmd.Flags().Int("amount", 1000000, "amount of writes to do")
+	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of writes to do in parallel")
 }
