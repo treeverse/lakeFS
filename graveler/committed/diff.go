@@ -114,7 +114,7 @@ func (d *diffIterator) Next() bool {
 	}
 	select {
 	case <-d.ctx.Done():
-		d.err = d.Err()
+		d.err = d.ctx.Err()
 		return false
 	default:
 	}

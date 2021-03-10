@@ -224,6 +224,21 @@ func TestDiff(t *testing.T) {
 	}
 }
 
+func TestDiffCancelContext(t *testing.T) {
+	left := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
+	right := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	it := committed.NewDiffIterator(ctx, left, right)
+	defer it.Close()
+	if it.Next() {
+		t.Fatal("Next() should return false")
+	}
+	if err := it.Err(); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Err() returned %v, should return context.Canceled", err)
+	}
+}
+
 func TestDiffSeek(t *testing.T) {
 	const (
 		added   = graveler.DiffTypeAdded
