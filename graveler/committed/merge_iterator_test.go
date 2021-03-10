@@ -156,6 +156,23 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+func TestMergeCancelContext(t *testing.T) {
+	diffs := []graveler.Diff{testMergeNewDiff(added, "k3", "i3", "")}
+	diffIt := testutil.NewDiffIter(diffs)
+	defer diffIt.Close()
+	baseKeys := []string{"k1", "k2"}
+	base := makeBaseIterator(baseKeys)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	it := committed.NewMergeIterator(ctx, diffIt, base)
+	if it.Next() {
+		t.Fatal("Next() should return false")
+	}
+	if err := it.Err(); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Err() returned %v, expected context.Canceled", err)
+	}
+}
+
 func TestMergeSeek(t *testing.T) {
 	diffs := []graveler.Diff{
 		testMergeNewDiff(added, "k1", "i1", ""),
