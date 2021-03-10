@@ -2,6 +2,7 @@ package committed_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -211,4 +212,47 @@ func TestApplyNoChangesFails(t *testing.T) {
 
 	_, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
 	assert.Error(t, err, graveler.ErrNoChanges)
+}
+
+func TestApplyCancelContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("source", func(t *testing.T) {
+		source := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
+			AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c"))
+		diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{})
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Apply(ctx, writer, source, diffs, &committed.ApplyOptions{})
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
+
+	t.Run("diff", func(t *testing.T) {
+		source := testutil.NewFakeIterator()
+		diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+			*makeV("b", "dest:b"),
+		})
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Apply(ctx, writer, source, diffs, &committed.ApplyOptions{})
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
+
+	t.Run("source_and_diff", func(t *testing.T) {
+		source := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
+			AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c"))
+		diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
+			*makeV("b", "dest:b"),
+		})
+		writer := mock.NewMockMetaRangeWriter(ctrl)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := committed.Apply(ctx, writer, source, diffs, &committed.ApplyOptions{})
+		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
+	})
 }
