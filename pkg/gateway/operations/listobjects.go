@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/db"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
@@ -326,7 +325,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 			delimiter,
 			maxKeys,
 		)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			results = make([]*catalog.DBEntry, 0) // no results found
 		} else if err != nil {
 			o.Log(req).WithError(err).WithFields(logging.Fields{

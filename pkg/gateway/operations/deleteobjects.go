@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	gerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
@@ -61,7 +61,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		lg := o.Log(req).WithField("key", obj.Key)
 		err = o.Catalog.DeleteEntry(req.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
 		switch {
-		case errors.Is(err, db.ErrNotFound):
+		case errors.Is(err, catalog.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")
 		case err != nil:
 			lg.WithError(err).Error("failed deleting object")

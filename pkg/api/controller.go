@@ -357,7 +357,7 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 		}
 		c.LogAction(ctx, "get_repo")
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
 		}
@@ -389,7 +389,7 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 		}
 		c.LogAction(ctx, "get_commit")
 		commit, err := c.Catalog.GetCommit(ctx, params.Repository, params.CommitID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
 		if err != nil {
@@ -599,7 +599,7 @@ func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHand
 		}
 		c.LogAction(ctx, "delete_repo")
 		err = c.Catalog.DeleteRepository(ctx, params.Repository)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
@@ -1053,7 +1053,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		c.LogAction(ctx, "stat_object")
 
 		entry, err := c.Catalog.GetEntry(ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
@@ -1102,7 +1102,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 
 		// read repo
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
@@ -1110,7 +1110,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		}
 
 		entry, err := c.Catalog.GetEntry(ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
@@ -1145,7 +1145,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// read repo
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
@@ -1154,7 +1154,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// read the FS entry
 		entry, err := c.Catalog.GetEntry(ctx, params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
 		if entry.Expired {
@@ -1216,7 +1216,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 
 		// read repo
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
@@ -1237,7 +1237,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 				after,
 				"",
 				-1)
-			if errors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, catalog.ErrNotFound) {
 				return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
 			}
 			if err != nil {
@@ -1378,7 +1378,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			after,
 			delimiter,
 			amount)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
 		}
 		if err != nil {
@@ -1485,7 +1485,7 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 		}
 
 		err = c.Catalog.CreateEntry(ctx, repo.Name, params.Branch, entry)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewStageObjectNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
@@ -1517,7 +1517,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		c.LogAction(ctx, "put_object")
 
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
@@ -1554,7 +1554,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Checksum:        blob.Checksum,
 		}
 		err = c.Catalog.CreateEntry(ctx, repo.Name, params.Branch, entry)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
@@ -1591,7 +1591,7 @@ func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		c.LogAction(ctx, "delete_object")
 
 		err = c.Catalog.DeleteEntry(ctx, params.Repository, params.Branch, params.Path)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
@@ -1659,7 +1659,7 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 			return branches.NewResetBranchNotFound().
 				WithPayload(responseError("reset type not found"))
 		}
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, catalog.ErrNotFound) {
 			return branches.NewResetBranchNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
@@ -1754,7 +1754,7 @@ func (c *Controller) GetUserHandler() authop.GetUserHandler {
 		}
 		c.LogAction(ctx, "get_user")
 		u, err := c.Auth.GetUser(ctx, params.UserID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewGetUserNotFound().
 				WithPayload(responseError("user not found"))
 		}
@@ -1786,7 +1786,7 @@ func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
 
 		c.LogAction(ctx, "delete_user")
 		err = c.Auth.DeleteUser(ctx, params.UserID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewDeleteUserNotFound().
 				WithPayload(responseError("user not found"))
 		}
@@ -1813,7 +1813,7 @@ func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
 		}
 		c.LogAction(ctx, "get_group")
 		g, err := c.Auth.GetGroup(ctx, params.GroupID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewGetGroupNotFound().
 				WithPayload(responseError("group not found"))
 		}
@@ -1917,7 +1917,7 @@ func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
 
 		c.LogAction(ctx, "delete_group")
 		err = c.Auth.DeleteGroup(ctx, params.GroupID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewDeleteGroupNotFound().
 				WithPayload(responseError("group not found"))
 		}
@@ -2035,7 +2035,7 @@ func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
 		}
 		c.LogAction(ctx, "get_policy")
 		p, err := c.Auth.GetPolicy(ctx, params.PolicyID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewGetPolicyNotFound().
 				WithPayload(responseError("policy not found"))
 		}
@@ -2104,7 +2104,7 @@ func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
 
 		c.LogAction(ctx, "delete_policy")
 		err = c.Auth.DeletePolicy(ctx, params.PolicyID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewDeletePolicyNotFound().
 				WithPayload(responseError("policy not found"))
 		}
@@ -2286,7 +2286,7 @@ func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler 
 
 		c.LogAction(ctx, "delete_credentials")
 		err = c.Auth.DeleteCredentials(ctx, params.UserID, params.AccessKeyID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewDeleteCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
 		}
@@ -2313,7 +2313,7 @@ func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 		}
 		c.LogAction(ctx, "get_credentials_for_user")
 		credentials, err := c.Auth.GetCredentialsForUser(ctx, params.UserID, params.AccessKeyID)
-		if errors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, auth.ErrNotFound) {
 			return authop.NewGetCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
 		}

@@ -27,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -412,7 +411,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 		}
 
 		_, err = deps.catalog.GetRepository(ctx, "my-new-repo")
-		if !errors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, catalog.ErrNotFound) {
 			t.Fatalf("expected repo to be gone, instead got error: %s", err)
 		}
 	})
@@ -876,7 +875,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		}
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "master2")
-		if !errors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, catalog.ErrNotFound) {
 			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})
