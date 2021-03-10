@@ -91,6 +91,62 @@ var abuseRandomReadsCmd = &cobra.Command{
 	},
 }
 
+var abuseRandomWritesCmd = &cobra.Command{
+	Use:    "random-write <source ref uri>",
+	Short:  "Read keys from a file and generate random writes to the source branch for those keys.",
+	Hidden: false,
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		u := uri.Must(uri.Parse(args[0]))
+
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
+		prefix := MustString(cmd.Flags().GetString("prefix"))
+
+		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
+
+		// generate randomly selected keys as input
+		rand.Seed(time.Now().Unix())
+		generator.Setup(func(add stress.GeneratorAddFn) {
+			for i := 0; i < amount; i++ {
+				add(fmt.Sprintf("%sfile-%d", prefix, i))
+			}
+		})
+
+		client := getClient()
+		repo, err := client.GetRepository(cmd.Context(), u.Repository)
+		if err != nil {
+			DieErr(err)
+		}
+		storagePrefix := repo.StorageNamespace
+		var size int64
+		var checksum = "00695c7307b0480c7b6bdc873cf05c15"
+		addr := storagePrefix + "/random-write"
+		creationInfo := &models.ObjectStageCreation{
+			Checksum:        &checksum,
+			PhysicalAddress: &addr,
+			SizeBytes:       &size,
+		}
+
+		// execute the things!
+		generator.Run(func(input chan string, output chan stress.Result) {
+			ctx := cmd.Context()
+			client := getClient()
+			for work := range input {
+				start := time.Now()
+				_, err := client.StageObject(ctx, u.Repository, u.Ref, work, creationInfo)
+				output <- stress.Result{
+					Error: err,
+					Took:  time.Since(start),
+				}
+			}
+		})
+	},
+}
+
 var abuseCreateBranchesCmd = &cobra.Command{
 	Use:    "create-branches <source ref uri>",
 	Short:  "Create a lot of branches very quickly.",
@@ -188,4 +244,9 @@ func init() {
 	abuseRandomReadsCmd.Flags().String("from-file", "", "read keys from this file (\"-\" for stdin)")
 	abuseRandomReadsCmd.Flags().Int("amount", 1000000, "amount of reads to do")
 	abuseRandomReadsCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
+
+	abuseCmd.AddCommand(abuseRandomWritesCmd)
+	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
+	abuseRandomWritesCmd.Flags().Int("amount", 1000000, "amount of reads to do")
+	abuseRandomWritesCmd.Flags().Int("parallelism", 100, "amount of reads to do in parallel")
 }
