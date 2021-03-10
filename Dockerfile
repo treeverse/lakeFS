@@ -43,7 +43,7 @@ FROM alpine:3.12.0 AS lakefs
 RUN apk add netcat-openbsd
 
 WORKDIR /app
-COPY ./wait-for ./
+COPY ./scripts/wait-for ./
 ENV PATH /app:$PATH
 COPY --from=build /build/lakefs /build/lakectl ./
 
