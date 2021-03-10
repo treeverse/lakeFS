@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const tagListTemplate = `{{.TagTable | table -}}

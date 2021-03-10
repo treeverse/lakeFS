@@ -51,7 +51,7 @@ export const RepositoryCreateForm = connect(
     }, [getConfig]);
 
     const storageNamespaceValidityRegexStr = config.payload ? config.payload['blockstore_namespace_ValidityRegex'] : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
-    const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr)
+    const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const storageNamespaceExample = config.payload ? config.payload['blockstore_namespace_example'] : DEFAULT_BLOCKSTORE_EXAMPLE;
     return (
         <Form className={"mt-5"} onSubmit={(e) => {

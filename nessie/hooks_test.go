@@ -12,12 +12,12 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/api/gen/client/actions"
-	"github.com/treeverse/lakefs/api/gen/client/branches"
-	"github.com/treeverse/lakefs/api/gen/client/commits"
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-	"github.com/treeverse/lakefs/api/gen/client/refs"
-	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/actions"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 const actionPreMergeYaml = `

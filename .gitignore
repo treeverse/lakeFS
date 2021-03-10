@@ -43,13 +43,13 @@
 /webui/node_modules
 
 # server excludes
-/api/gen
-/statik
-/ddl/statik.go
+/pkg/api/gen
+/pkg/webui
+/pkg/ddl/statik.go
 .DS_Store
 
 # recordings
-gateway/testdata/recordings/
+/pkg/gateway/testdata/recordings/
 
 # Docs
 /docs/_site/
@@ -73,10 +73,10 @@ crash.log
 terraform.rc
 
 # generated mock files
-/graveler/committed/mock/
-/graveler/sstable/mock/
-/pyramid/mock/
-/onboard/mock/
-/actions/mock/
+/pkg/graveler/committed/mock/
+/pkg/graveler/sstable/mock/
+/pkg/pyramid/mock/
+/pkg/onboard/mock/
+/pkg/actions/mock/
 
 .eslintcache
