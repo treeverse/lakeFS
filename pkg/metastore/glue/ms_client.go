@@ -1,6 +1,7 @@
 package glue
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,29 +13,31 @@ import (
 )
 
 type MSClient struct {
+	ctx       context.Context
 	client    glueiface.GlueAPI
 	catalogID string
 }
 
 const MaxParts = 1000 // max possible 1000
 
-func NewMSClient(cfg *aws.Config, catalogID string) (*MSClient, error) {
+func NewMSClient(ctx context.Context, cfg *aws.Config, catalogID string) (*MSClient, error) {
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig("glue")
 	gl := glue.New(sess)
 	return &MSClient{
+		ctx:       ctx,
 		client:    gl,
 		catalogID: catalogID,
 	}, nil
 }
 
 func (g *MSClient) getTable(dbName string, tblName string) (*glue.TableData, error) {
-	table, err := g.client.GetTable(&glue.GetTableInput{
-		CatalogId:    aws.String(g.catalogID),
-		DatabaseName: aws.String(dbName),
-		Name:         aws.String(tblName),
-	})
-
+	table, err := g.client.GetTableWithContext(g.ctx,
+		&glue.GetTableInput{
+			CatalogId:    aws.String(g.catalogID),
+			DatabaseName: aws.String(dbName),
+			Name:         aws.String(tblName),
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -69,29 +72,32 @@ func getAsPartitionInput(t *glue.Partition) *glue.PartitionInput {
 }
 
 func (g *MSClient) createTable(dbName string, tbl *glue.TableData) error {
-	_, err := g.client.CreateTable(&glue.CreateTableInput{
-		CatalogId:    aws.String(g.catalogID),
-		DatabaseName: aws.String(dbName),
-		TableInput:   getAsTableInput(tbl),
-	})
+	_, err := g.client.CreateTableWithContext(g.ctx,
+		&glue.CreateTableInput{
+			CatalogId:    aws.String(g.catalogID),
+			DatabaseName: aws.String(dbName),
+			TableInput:   getAsTableInput(tbl),
+		})
 	return err
 }
 
 func (g *MSClient) updateTable(dbName string, tbl *glue.TableData) error {
-	_, err := g.client.UpdateTable(&glue.UpdateTableInput{
-		CatalogId:    aws.String(g.catalogID),
-		DatabaseName: aws.String(dbName),
-		TableInput:   getAsTableInput(tbl),
-	})
+	_, err := g.client.UpdateTableWithContext(g.ctx,
+		&glue.UpdateTableInput{
+			CatalogId:    aws.String(g.catalogID),
+			DatabaseName: aws.String(dbName),
+			TableInput:   getAsTableInput(tbl),
+		})
 	return err
 }
 func (g *MSClient) getPartition(dbName, tableName string, partitionValues []string) (*glue.Partition, error) {
-	output, err := g.client.GetPartition(&glue.GetPartitionInput{
-		CatalogId:       aws.String(g.catalogID),
-		DatabaseName:    aws.String(dbName),
-		PartitionValues: aws.StringSlice(partitionValues),
-		TableName:       aws.String(tableName),
-	})
+	output, err := g.client.GetPartitionWithContext(g.ctx,
+		&glue.GetPartitionInput{
+			CatalogId:       aws.String(g.catalogID),
+			DatabaseName:    aws.String(dbName),
+			PartitionValues: aws.StringSlice(partitionValues),
+			TableName:       aws.String(tableName),
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +105,14 @@ func (g *MSClient) getPartition(dbName, tableName string, partitionValues []stri
 }
 
 func (g *MSClient) getPartitions(dbName, tableName string, nextToken *string, maxParts int16) (*glue.GetPartitionsOutput, error) {
-	return g.client.GetPartitions(&glue.GetPartitionsInput{
-		CatalogId:    aws.String(g.catalogID),
-		DatabaseName: aws.String(dbName),
-		MaxResults:   aws.Int64(int64(maxParts)),
-		NextToken:    nextToken,
-		TableName:    aws.String(tableName),
-	})
+	return g.client.GetPartitionsWithContext(g.ctx,
+		&glue.GetPartitionsInput{
+			CatalogId:    aws.String(g.catalogID),
+			DatabaseName: aws.String(dbName),
+			MaxResults:   aws.Int64(int64(maxParts)),
+			NextToken:    nextToken,
+			TableName:    aws.String(tableName),
+		})
 }
 
 func (g *MSClient) getAllPartitions(dbName, tableName string) ([]*glue.Partition, error) {
@@ -127,12 +134,13 @@ func (g *MSClient) getAllPartitions(dbName, tableName string) ([]*glue.Partition
 }
 
 func (g *MSClient) addPartition(dbName, tableName string, partition *glue.Partition) error {
-	_, err := g.client.CreatePartition(&glue.CreatePartitionInput{
-		CatalogId:      aws.String(g.catalogID),
-		DatabaseName:   aws.String(dbName),
-		PartitionInput: getAsPartitionInput(partition),
-		TableName:      aws.String(tableName),
-	})
+	_, err := g.client.CreatePartitionWithContext(g.ctx,
+		&glue.CreatePartitionInput{
+			CatalogId:      aws.String(g.catalogID),
+			DatabaseName:   aws.String(dbName),
+			PartitionInput: getAsPartitionInput(partition),
+			TableName:      aws.String(tableName),
+		})
 	return err
 }
 
@@ -147,31 +155,33 @@ func (g *MSClient) addPartitions(dbName, tableName string, partitions []*glue.Pa
 			Values:            partition.Values,
 		})
 	}
-	_, err := g.client.BatchCreatePartition(&glue.BatchCreatePartitionInput{
-		CatalogId:          aws.String(g.catalogID),
-		DatabaseName:       aws.String(dbName),
-		PartitionInputList: partitionList,
-		TableName:          aws.String(tableName),
-	})
+	_, err := g.client.BatchCreatePartitionWithContext(g.ctx,
+		&glue.BatchCreatePartitionInput{
+			CatalogId:          aws.String(g.catalogID),
+			DatabaseName:       aws.String(dbName),
+			PartitionInputList: partitionList,
+			TableName:          aws.String(tableName),
+		})
 	return err
 }
 
 func (g *MSClient) alterPartition(dbName, tableName string, partition *glue.Partition) error {
 	// No batch alter partitions we will need to do it one by one
 
-	_, err := g.client.UpdatePartition(&glue.UpdatePartitionInput{
-		CatalogId:    aws.String(g.catalogID),
-		DatabaseName: aws.String(dbName),
-		PartitionInput: &glue.PartitionInput{
-			LastAccessTime:    partition.LastAccessTime,
-			LastAnalyzedTime:  partition.LastAnalyzedTime,
-			Parameters:        partition.Parameters,
-			StorageDescriptor: partition.StorageDescriptor,
-			Values:            partition.Values,
-		},
-		PartitionValueList: partition.Values,
-		TableName:          aws.String(tableName),
-	})
+	_, err := g.client.UpdatePartitionWithContext(g.ctx,
+		&glue.UpdatePartitionInput{
+			CatalogId:    aws.String(g.catalogID),
+			DatabaseName: aws.String(dbName),
+			PartitionInput: &glue.PartitionInput{
+				LastAccessTime:    partition.LastAccessTime,
+				LastAnalyzedTime:  partition.LastAnalyzedTime,
+				Parameters:        partition.Parameters,
+				StorageDescriptor: partition.StorageDescriptor,
+				Values:            partition.Values,
+			},
+			PartitionValueList: partition.Values,
+			TableName:          aws.String(tableName),
+		})
 	return err
 }
 
@@ -192,12 +202,13 @@ func (g *MSClient) removePartitions(dbName, tableName string, partitions []*glue
 	for _, partition := range partitions {
 		partitionsToDelete = append(partitionsToDelete, &glue.PartitionValueList{Values: partition.Values})
 	}
-	_, err := g.client.BatchDeletePartition(&glue.BatchDeletePartitionInput{
-		CatalogId:          aws.String(g.catalogID),
-		DatabaseName:       aws.String(dbName),
-		PartitionsToDelete: partitionsToDelete,
-		TableName:          aws.String(tableName),
-	})
+	_, err := g.client.BatchDeletePartitionWithContext(g.ctx,
+		&glue.BatchDeletePartitionInput{
+			CatalogId:          aws.String(g.catalogID),
+			DatabaseName:       aws.String(dbName),
+			PartitionsToDelete: partitionsToDelete,
+			TableName:          aws.String(tableName),
+		})
 	return err
 }
 

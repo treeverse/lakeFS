@@ -39,7 +39,7 @@ var metastoreCopyCmd = &cobra.Command{
 		msType := config.GetMetastoreType()
 		switch msType {
 		case "hive":
-			hiveClient, err := hive.NewMSClient(config.GetMetastoreHiveURI(), false)
+			hiveClient, err := hive.NewMSClient(nil, config.GetMetastoreHiveURI(), false)
 			if err != nil {
 				DieErr(err)
 			}
@@ -52,7 +52,7 @@ var metastoreCopyCmd = &cobra.Command{
 			client = hiveClient
 
 		case "glue":
-			client, err = glue.NewMSClient(config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+			client, err = glue.NewMSClient(nil, config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 			if err != nil {
 				DieErr(err)
 			}
@@ -93,7 +93,7 @@ var metastoreDiffCmd = &cobra.Command{
 		switch msType {
 		case "hive":
 			var hiveClient *hive.MSClient
-			hiveClient, err = hive.NewMSClient(config.GetMetastoreHiveURI(), false)
+			hiveClient, err = hive.NewMSClient(cmd.Context(), config.GetMetastoreHiveURI(), false)
 			if err != nil {
 				DieErr(err)
 			}
@@ -106,7 +106,7 @@ var metastoreDiffCmd = &cobra.Command{
 			client = hiveClient
 
 		case "glue":
-			client, err = glue.NewMSClient(config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+			client, err = glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 			if err != nil {
 				DieErr(err)
 			}
@@ -162,7 +162,7 @@ var glueSymlinkCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		msClient, err := glue.NewMSClient(config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+		msClient, err := glue.NewMSClient(nil, config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 		if err != nil {
 			DieErr(err)
 		}

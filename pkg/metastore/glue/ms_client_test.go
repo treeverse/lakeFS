@@ -1,12 +1,15 @@
 package glue
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws/request"
 
 	"github.com/treeverse/lakefs/pkg/testutil"
 
@@ -125,7 +128,7 @@ func MockToPartitions(mockPartitions []*mock.MetastoreObject) []*glue.Partition 
 	return partitions
 }
 
-func (h GlueMsMock) GetPartition(partitionInput *glue.GetPartitionInput) (*glue.GetPartitionOutput, error) {
+func (h GlueMsMock) GetPartitionWithContext(_ aws.Context, partitionInput *glue.GetPartitionInput, _ ...request.Option) (*glue.GetPartitionOutput, error) {
 	partition, err := h.MockStore.GetPartition(aws.StringValue(partitionInput.DatabaseName), aws.StringValue(partitionInput.TableName), aws.StringValueSlice(partitionInput.PartitionValues))
 	if err != nil {
 		if errors.Is(err, mock.ErrNotFound) {
@@ -136,23 +139,23 @@ func (h GlueMsMock) GetPartition(partitionInput *glue.GetPartitionInput) (*glue.
 	return &glue.GetPartitionOutput{Partition: MockToPartition(partition)}, nil
 }
 
-func (h GlueMsMock) UpdatePartition(input *glue.UpdatePartitionInput) (*glue.UpdatePartitionOutput, error) {
+func (h GlueMsMock) UpdatePartitionWithContext(_ aws.Context, input *glue.UpdatePartitionInput, _ ...request.Option) (*glue.UpdatePartitionOutput, error) {
 	return nil, h.MockStore.AlterPartition(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableName), partitionInputToMock(input.DatabaseName, input.TableName, input.PartitionInput))
 }
 
-func (h GlueMsMock) CreatePartition(partition *glue.CreatePartitionInput) (*glue.CreatePartitionOutput, error) {
+func (h GlueMsMock) CreatePartitionWithContext(_ aws.Context, partition *glue.CreatePartitionInput, _ ...request.Option) (*glue.CreatePartitionOutput, error) {
 	return nil, h.MockStore.AddPartition(partitionInputToMock(partition.DatabaseName, partition.TableName, partition.PartitionInput))
 }
 
-func (h GlueMsMock) DeletePartition(input *glue.DeletePartitionInput) (*glue.DeletePartitionOutput, error) {
+func (h GlueMsMock) DeletePartitionWithContext(_ aws.Context, input *glue.DeletePartitionInput, _ ...request.Option) (*glue.DeletePartitionOutput, error) {
 	return nil, h.MockStore.DropPartition(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableName), aws.StringValueSlice(input.PartitionValues))
 }
 
-func (h GlueMsMock) CreateTable(tbl *glue.CreateTableInput) (*glue.CreateTableOutput, error) {
+func (h GlueMsMock) CreateTableWithContext(_ aws.Context, tbl *glue.CreateTableInput, _ ...request.Option) (*glue.CreateTableOutput, error) {
 	return nil, h.MockStore.CreateTable(aws.StringValue(tbl.DatabaseName), aws.StringValue(tbl.TableInput.Name), tableToMock(tbl.DatabaseName, tbl.TableInput))
 }
 
-func (h GlueMsMock) GetTable(input *glue.GetTableInput) (*glue.GetTableOutput, error) {
+func (h GlueMsMock) GetTableWithContext(_ aws.Context, input *glue.GetTableInput, _ ...request.Option) (*glue.GetTableOutput, error) {
 	mockTable, err := h.MockStore.GetTable(aws.StringValue(input.DatabaseName), aws.StringValue(input.Name))
 	if err != nil {
 		if errors.Is(err, mock.ErrNotFound) {
@@ -163,7 +166,7 @@ func (h GlueMsMock) GetTable(input *glue.GetTableInput) (*glue.GetTableOutput, e
 	return &glue.GetTableOutput{Table: MockToTable(mockTable)}, nil
 }
 
-func (h GlueMsMock) BatchDeletePartition(input *glue.BatchDeletePartitionInput) (*glue.BatchDeletePartitionOutput, error) {
+func (h GlueMsMock) BatchDeletePartitionWithContext(_ aws.Context, input *glue.BatchDeletePartitionInput, _ ...request.Option) (*glue.BatchDeletePartitionOutput, error) {
 	for _, partition := range input.PartitionsToDelete {
 		err := h.MockStore.DropPartition(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableName), aws.StringValueSlice(partition.Values))
 		if err != nil {
@@ -173,15 +176,15 @@ func (h GlueMsMock) BatchDeletePartition(input *glue.BatchDeletePartitionInput) 
 	return nil, nil
 }
 
-func (h GlueMsMock) UpdateTable(input *glue.UpdateTableInput) (*glue.UpdateTableOutput, error) {
+func (h GlueMsMock) UpdateTableWithContext(_ aws.Context, input *glue.UpdateTableInput, _ ...request.Option) (*glue.UpdateTableOutput, error) {
 	return nil, h.MockStore.AlterTable(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableInput.Name), tableToMock(input.DatabaseName, input.TableInput))
 }
 
-func (h GlueMsMock) BatchCreatePartition(input *glue.BatchCreatePartitionInput) (*glue.BatchCreatePartitionOutput, error) {
+func (h GlueMsMock) BatchCreatePartitionWithContext(_ aws.Context, input *glue.BatchCreatePartitionInput, _ ...request.Option) (*glue.BatchCreatePartitionOutput, error) {
 	return nil, h.MockStore.AddPartitions(partitionsToMock(input.DatabaseName, input.TableName, input.PartitionInputList))
 }
 
-func (h GlueMsMock) GetPartitions(input *glue.GetPartitionsInput) (*glue.GetPartitionsOutput, error) {
+func (h GlueMsMock) GetPartitionsWithContext(_ aws.Context, input *glue.GetPartitionsInput, _ ...request.Option) (*glue.GetPartitionsOutput, error) {
 	partitions := h.MockStore.GetPartitions(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableName))
 	return &glue.GetPartitionsOutput{
 		Partitions: MockToPartitions(partitions),
@@ -272,9 +275,11 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	numOfPartitions := 20
 	initialPartitions := getNPartitions(tableName, location, numOfPartitions)
 
+	ctx := context.Background()
 	client := &MSClient{
 		client:    NewGlueMsMock(),
 		catalogID: "",
+		ctx:       ctx,
 	}
 
 	err := client.createTable(dbName, initialTable)

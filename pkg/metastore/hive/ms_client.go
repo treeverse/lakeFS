@@ -25,22 +25,23 @@ type ThriftHiveMetastoreClient interface {
 }
 
 type MSClient struct {
-	context   context.Context
+	ctx       context.Context
 	client    ThriftHiveMetastoreClient
 	transport thrift.TTransport
 }
 
-func NewMSClient(addr string, secure bool) (*MSClient, error) {
-	msClient := &MSClient{}
-	client, err := msClient.Open(addr, secure)
+func NewMSClient(ctx context.Context, addr string, secure bool) (*MSClient, error) {
+	msClient := &MSClient{
+		ctx: ctx,
+	}
+	err := msClient.open(addr, secure)
 	if err != nil {
 		return nil, err
 	}
-	msClient.client = client
 	return msClient, nil
 }
 
-func (c *MSClient) Open(addr string, secure bool) (ThriftHiveMetastoreClient, error) {
+func (c *MSClient) open(addr string, secure bool) error {
 	var err error
 	cfg := &thrift.TConfiguration{}
 	if secure {
@@ -53,17 +54,18 @@ func (c *MSClient) Open(addr string, secure bool) (ThriftHiveMetastoreClient, er
 		c.transport, err = thrift.NewTSocketConf(addr, cfg)
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = c.transport.Open()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	protocolFactory := thrift.NewTBinaryProtocolFactoryConf(cfg)
 	iprot := protocolFactory.GetProtocol(c.transport)
 	oprot := protocolFactory.GetProtocol(c.transport)
-	return hive_metastore.NewThriftHiveMetastoreClient(thrift.NewTStandardClient(iprot, oprot)), nil
+	c.client = hive_metastore.NewThriftHiveMetastoreClient(thrift.NewTStandardClient(iprot, oprot))
+	return nil
 }
 
 func (c *MSClient) Close() error {
@@ -77,7 +79,7 @@ func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde
 	if len(partition) > 0 {
 		return c.CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 	}
-	table, err := c.client.GetTable(c.context, toDB, toTable)
+	table, err := c.client.GetTable(c.ctx, toDB, toTable)
 	if err != nil {
 		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
 			return err
@@ -90,7 +92,7 @@ func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde
 }
 
 func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
-	table, err := c.client.GetTable(c.context, fromDB, fromTable)
+	table, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return err
 	}
@@ -105,7 +107,7 @@ func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string
 			return err
 		}
 	}
-	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
+	partitions, err := c.client.GetPartitions(c.ctx, fromDB, fromTable, -1)
 	if err != nil {
 		return err
 	}
@@ -122,16 +124,16 @@ func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string
 			}
 		}
 	}
-	err = c.client.CreateTable(c.context, table)
+	err = c.client.CreateTable(c.ctx, table)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddPartitions(c.context, partitions)
+	_, err = c.client.AddPartitions(c.ctx, partitions)
 	return err
 }
 
 func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
-	table, err := c.client.GetTable(c.context, fromDB, fromTable)
+	table, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return err
 	}
@@ -146,11 +148,11 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 	if err != nil {
 		return err
 	}
-	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
+	partitions, err := c.client.GetPartitions(c.ctx, fromDB, fromTable, -1)
 	if err != nil {
 		return err
 	}
-	toPartitions, err := c.client.GetPartitions(c.context, toDB, toTable, -1)
+	toPartitions, err := c.client.GetPartitions(c.ctx, toDB, toTable, -1)
 	if err != nil {
 		return err
 	}
@@ -189,21 +191,21 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 		return err
 	}
 
-	err = c.client.AlterTable(c.context, toDB, toTable, table)
+	err = c.client.AlterTable(c.ctx, toDB, toTable, table)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddPartitions(c.context, addPartitions)
+	_, err = c.client.AddPartitions(c.ctx, addPartitions)
 	if err != nil {
 		return err
 	}
-	err = c.client.AlterPartitions(c.context, toDB, toTable, alterPartitions)
+	err = c.client.AlterPartitions(c.ctx, toDB, toTable, alterPartitions)
 	if err != nil {
 		return err
 	}
 	// drop one by one
 	for _, partition := range removePartitions {
-		_, err = c.client.DropPartition(c.context, toDB, toTable, partition.Values, true)
+		_, err = c.client.DropPartition(c.ctx, toDB, toTable, partition.Values, true)
 		if err != nil {
 			return err
 		}
@@ -212,11 +214,11 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 }
 
 func (c *MSClient) CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
-	p1, err := c.client.GetPartition(c.context, fromDB, fromTable, partition)
+	p1, err := c.client.GetPartition(c.ctx, fromDB, fromTable, partition)
 	if err != nil {
 		return err
 	}
-	p2, err := c.client.GetPartition(c.context, toDB, toTable, partition)
+	p2, err := c.client.GetPartition(c.ctx, toDB, toTable, partition)
 	if err != nil {
 		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
 			return err
@@ -234,9 +236,9 @@ func (c *MSClient) CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, ser
 		return err
 	}
 	if p2 == nil {
-		_, err = c.client.AddPartition(c.context, p1)
+		_, err = c.client.AddPartition(c.ctx, p1)
 	} else {
-		err = c.client.AlterPartition(c.context, toDB, toTable, p1)
+		err = c.client.AlterPartition(c.ctx, toDB, toTable, p1)
 	}
 	return err
 }
@@ -257,11 +259,11 @@ func (c *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.Met
 }
 
 func (c *MSClient) getPartitionsDiff(fromDB string, fromTable string, toDB string, toTable string) (catalog.Differences, error) {
-	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
+	partitions, err := c.client.GetPartitions(c.ctx, fromDB, fromTable, -1)
 	if err != nil {
 		return nil, err
 	}
-	toPartitions, err := c.client.GetPartitions(c.context, toDB, toTable, -1)
+	toPartitions, err := c.client.GetPartitions(c.ctx, toDB, toTable, -1)
 	if err != nil {
 		return nil, err
 	}
@@ -271,11 +273,11 @@ func (c *MSClient) getPartitionsDiff(fromDB string, fromTable string, toDB strin
 }
 
 func (c *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catalog.Differences, error) {
-	tableFrom, err := c.client.GetTable(c.context, fromDB, fromTable)
+	tableFrom, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return nil, err
 	}
-	tableTo, err := c.client.GetTable(c.context, toDB, toTable)
+	tableTo, err := c.client.GetTable(c.ctx, toDB, toTable)
 	if err != nil {
 		return nil, err
 	}

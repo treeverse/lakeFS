@@ -275,15 +275,15 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	initialPartitions := getNPartitions(dbName, tableName, location, numOfPartitions)
 
 	client := &MSClient{
-		context: context.Background(),
-		client:  NewHiveMsMock(),
+		ctx:    context.Background(),
+		client: NewHiveMsMock(),
 	}
 
-	err := client.client.CreateTable(client.context, initialTable)
+	err := client.client.CreateTable(client.ctx, initialTable)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.client.AddPartitions(client.context, initialPartitions)
+	_, err = client.client.AddPartitions(client.ctx, initialPartitions)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,7 +296,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copiedTable, err := client.client.GetTable(client.context, toDBName, toTableName)
+	copiedTable, err := client.client.GetTable(client.ctx, toDBName, toTableName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +320,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatalf("wrong serde info name. expected: %s, got:%s", toTableName, copiedTable.GetSd().GetSerdeInfo().Name)
 	}
 
-	copiedPartitions, err := client.client.GetPartitions(client.context, toDBName, toTableName, 1000)
+	copiedPartitions, err := client.client.GetPartitions(client.ctx, toDBName, toTableName, 1000)
 	testutil.Must(t, err)
 	//compare partitions
 	if len(copiedPartitions) != numOfPartitions {
@@ -350,7 +350,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	partition17 := copiedPartitions[17]
-	_, err = client.client.DropPartition(client.context, toDBName, toTableName, partition17.Values, true)
+	_, err = client.client.DropPartition(client.ctx, toDBName, toTableName, partition17.Values, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,12 +367,12 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	// add column
 	partition20.GetSd().Cols = append(partition20.GetSd().Cols, addColumn)
 
-	_, err = client.client.AddPartitions(client.context, []*hive_metastore.Partition{partition20})
+	_, err = client.client.AddPartitions(client.ctx, []*hive_metastore.Partition{partition20})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = client.client.AlterPartitions(client.context, toDBName, toTableName, []*hive_metastore.Partition{partition19})
+	err = client.client.AlterPartitions(client.ctx, toDBName, toTableName, []*hive_metastore.Partition{partition19})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,9 +381,9 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	merged, err := client.client.GetTable(client.context, dbName, tableName)
+	merged, err := client.client.GetTable(client.ctx, dbName, tableName)
 	testutil.Must(t, err)
-	mergedPartitions, err := client.client.GetPartitions(client.context, dbName, tableName, 1000)
+	mergedPartitions, err := client.client.GetPartitions(client.ctx, dbName, tableName, 1000)
 	testutil.Must(t, err)
 	if merged.Sd.GetLocation() != location {
 		t.Errorf("wrong location expected:%s got:%s", location, merged.Sd.GetLocation())
