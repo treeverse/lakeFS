@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	genclient "github.com/treeverse/lakefs/api/gen/client"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/testutil"
+	genclient "github.com/treeverse/lakefs/pkg/api/gen/client"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var (

@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/diagnostics"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/diagnostics"
 )
 
 // diagnosticsCmd represents the diagnostics command

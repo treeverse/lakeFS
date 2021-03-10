@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 var userCreatedTemplate = `{{ "User created successfully." | green }}
