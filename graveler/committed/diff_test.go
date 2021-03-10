@@ -2,6 +2,7 @@ package committed_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"encoding/hex"
 	"errors"
@@ -190,7 +191,8 @@ func TestDiff(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fakeLeft := newFakeMetaRangeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
-			it := committed.NewDiffIterator(fakeLeft, fakeRight)
+			ctx := context.Background()
+			it := committed.NewDiffIterator(ctx, fakeLeft, fakeRight)
 			defer it.Close()
 			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
@@ -234,11 +236,8 @@ func TestDiffSeek(t *testing.T) {
 	rightIdentities := [][]string{{"i1", "i3"}, {"i4", "i5"}, {"i6", "i7a"}}
 	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3": added, "k7": changed}
 	diffIdentityByKey := map[string]string{"k2": "i2", "k3": "i3", "k7": "i7a"}
-
-	it := committed.NewDiffIterator(
-		newFakeMetaRangeIterator(left, leftIdentities),
-		newFakeMetaRangeIterator(right, rightIdentities),
-	)
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
 	defer it.Close()
 
 	tests := []struct {
@@ -291,9 +290,8 @@ func TestDiffSeek(t *testing.T) {
 }
 
 func TestNextOnClose(t *testing.T) {
-	it := committed.NewDiffIterator(
-		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
-		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
 		t.Fatal("expected iterator to have value")
 	}
@@ -308,7 +306,8 @@ func TestDiffErr(t *testing.T) {
 	leftIt := newFakeMetaRangeIterator([][]string{{"k1"}, {"k2"}}, [][]string{{"i1"}, {"i2"}})
 	leftIt.SetErr(leftErr)
 	rightIt := newFakeMetaRangeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
-	it := committed.NewDiffIterator(leftIt, rightIt)
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx, leftIt, rightIt)
 	defer it.Close()
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")

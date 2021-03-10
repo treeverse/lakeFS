@@ -2,6 +2,7 @@ package committed
 
 import (
 	"bytes"
+	"context"
 
 	"github.com/treeverse/lakefs/graveler"
 )
@@ -20,6 +21,7 @@ type diffIterator struct {
 	currentDiff *graveler.Diff
 	err         error
 	state       diffIteratorState
+	ctx         context.Context
 }
 
 type diffIteratorState int
@@ -44,10 +46,11 @@ const (
 	diffItCompareResultRightBeforeLeft
 )
 
-func NewDiffIterator(left Iterator, right Iterator) graveler.DiffIterator {
+func NewDiffIterator(ctx context.Context, left Iterator, right Iterator) graveler.DiffIterator {
 	return &diffIterator{
 		left:  left,
 		right: right,
+		ctx:   ctx,
 	}
 }
 
@@ -106,8 +109,14 @@ func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
 }
 
 func (d *diffIterator) Next() bool {
-	if d.state == diffIteratorStateClosed {
+	if d.state == diffIteratorStateClosed || d.err != nil {
 		return false
+	}
+	select {
+	case <-d.ctx.Done():
+		d.err = d.Err()
+		return false
+	default:
 	}
 	if d.state == diffIteratorStatePreInit {
 		d.state = diffIteratorStateOpen

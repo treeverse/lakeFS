@@ -2,11 +2,13 @@ package committed
 
 import (
 	"bytes"
+	"context"
 
 	"github.com/treeverse/lakefs/graveler"
 )
 
 type compareIterator struct {
+	ctx             context.Context
 	errorOnConflict bool
 	diffIt          graveler.DiffIterator
 	val             *graveler.Diff
@@ -22,16 +24,28 @@ type compareValueIterator struct {
 // It returns a graveler.ValueIterator with the changes to perform on the destination branch, in order to merge the source into it,
 // relative to base as the merge base.
 // When reaching a conflict, the iterator will enter an error state with the graveler.ErrConflictFound error.
-func NewMergeIterator(diffDestToSource graveler.DiffIterator, base Iterator) *compareValueIterator {
-	return &compareValueIterator{compareIterator: &compareIterator{diffIt: diffDestToSource, base: base, errorOnConflict: true}}
+func NewMergeIterator(ctx context.Context, diffDestToSource graveler.DiffIterator, base Iterator) *compareValueIterator {
+	return &compareValueIterator{
+		compareIterator: &compareIterator{
+			ctx:             ctx,
+			diffIt:          diffDestToSource,
+			base:            base,
+			errorOnConflict: true,
+		},
+	}
 }
 
 // NewCompareIterator accepts an iterator describing a diff from the merge destination to the source.
 // It returns a graveler.DiffIterator with the changes to perform on the destination branch, in order to merge the source into it,
 // relative to base as the merge base.
 // When reaching a conflict, the returned Diff will be of type graveler.DiffTypeConflict.
-func NewCompareIterator(diffDestToSource graveler.DiffIterator, base Iterator) *compareIterator {
-	return &compareIterator{diffIt: diffDestToSource, base: base, errorOnConflict: false}
+func NewCompareIterator(ctx context.Context, diffDestToSource graveler.DiffIterator, base Iterator) *compareIterator {
+	return &compareIterator{
+		ctx:             ctx,
+		diffIt:          diffDestToSource,
+		base:            base,
+		errorOnConflict: false,
+	}
 }
 
 func (d *compareIterator) valueFromBase(key graveler.Key) (*graveler.ValueRecord, error) {
@@ -60,7 +74,18 @@ func (d *compareIterator) handleConflict() bool {
 }
 
 func (d *compareIterator) Next() bool {
-	for d.diffIt.Next() {
+	for {
+		// get next value or return with context/iterator error (if any)
+		select {
+		case <-d.ctx.Done():
+			d.err = d.ctx.Err()
+			return false
+		default:
+			if !d.diffIt.Next() {
+				d.err = d.diffIt.Err()
+				return false
+			}
+		}
 		val := d.diffIt.Value()
 		key := val.Key
 		typ := val.Type
@@ -112,8 +137,6 @@ func (d *compareIterator) Next() bool {
 			// added on dest, but not on source - continue
 		}
 	}
-	d.err = d.diffIt.Err()
-	return false
 }
 
 func (d *compareIterator) SeekGE(id graveler.Key) {
