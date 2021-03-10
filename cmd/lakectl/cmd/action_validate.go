@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/actions"
-	"github.com/treeverse/lakefs/cmdutils"
+	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 const actionsValidateRequiredArgs = 1
