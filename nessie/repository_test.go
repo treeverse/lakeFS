@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
 )
 
 func TestRepositoryBasicOps(t *testing.T) {

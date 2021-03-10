@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/pkg/db/params"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/pkg/db"
 )
 
 type ReqResult struct {

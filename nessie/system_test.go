@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-	"github.com/treeverse/lakefs/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (

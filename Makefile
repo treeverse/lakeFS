@@ -23,14 +23,14 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
+GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/pkg/api/gen/')
 
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
 UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/build
-API_BUILD_DIR=api/gen
+API_BUILD_DIR=pkg/api/gen
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
@@ -63,8 +63,8 @@ check-licenses-npm:
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
-docs/assets/js/swagger.yml: swagger.yml
-	@cp swagger.yml docs/assets/js/swagger.yml
+docs/assets/js/swagger.yml: api/swagger.yml
+	@cp api/swagger.yml docs/assets/js/swagger.yml
 
 docs: docs/assets/js/swagger.yml
 
@@ -75,7 +75,7 @@ gen-docs: go-install ## Generate CLI docs automatically
 	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/commands.md
 
 gen-metastore: ## Run Metastore Code generation
-	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
+	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
 
 go-mod-download: ## Download module dependencies
 	$(GOCMD) mod download
@@ -89,7 +89,7 @@ go-install: go-mod-download ## Install dependencies
 
 
 gen-api: go-install del-gen-api ## Run the go-swagger code generator
-	$(GOGENERATE) ./api
+	$(GOGENERATE) ./pkg/api
 
 del-gen-api:
 	@rm -rf $(API_BUILD_DIR)
@@ -97,20 +97,20 @@ del-gen-api:
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands
-	$(GOGENERATE) ./graveler/sstable
-	$(GOGENERATE) ./graveler/committed
-	$(GOGENERATE) ./pyramid
-	$(GOGENERATE) ./onboard
-	$(GOGENERATE) ./actions
+	$(GOGENERATE) ./pkg/graveler/sstable
+	$(GOGENERATE) ./pkg/graveler/committed
+	$(GOGENERATE) ./pkg/pyramid
+	$(GOGENERATE) ./pkg/onboard
+	$(GOGENERATE) ./pkg/actions
 
 validate-swagger: go-install ## Validate swagger.yaml
-	$(GOBINPATH)/swagger validate swagger.yml
+	$(GOBINPATH)/swagger validate api/swagger.yml
 	# Run python validation as well
-	$(GOBINPATH)/swagger expand --format=json swagger.yml > swagger.json
+	$(GOBINPATH)/swagger expand --format=json api/swagger.yml > swagger.json
 	$(SWAGGER_VALIDATOR) /mnt/swagger.json
 	@rm swagger.json
 
-LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
+LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/config.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
@@ -142,7 +142,7 @@ gofmt:  ## gofmt code formating
 
 validate-fmt:  ## Validate go format
 	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o \( -path ./statik \) -prune -o \( -path ./api/gen \) -prune -o -name '*.go' -print)); \
+	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -o \( -path ./pkg/ddl \) -prune -o \( -path ./pkg/webui \) -prune -o \( -path ./pkg/api/gen \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
 		echo checking gofmt fail... ; \
 		echo "$${res}"; \
@@ -153,9 +153,9 @@ validate-fmt:  ## Validate go format
 
 .PHONY: validate-proto
 validate-proto: proto  ## build proto and check if diff found
-	git diff --quiet -- catalog/catalog.pb.go
-	git diff --quiet -- graveler/committed/committed.pb.go
-	git diff --quiet -- graveler/graveler.pb.go
+	git diff --quiet -- pkg/catalog/catalog.pb.go
+	git diff --quiet -- pkg/graveler/committed/committed.pb.go
+	git diff --quiet -- pkg/graveler/graveler.pb.go
 
 checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
 
@@ -167,17 +167,17 @@ ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
 ui-bundle: ui-build go-install ## Bundle static built UI app
-	$(GOBINPATH)/statik -ns webui -f -src=$(UI_BUILD_DIR)
+	$(GOBINPATH)/statik -ns webui -p webui -dest pkg -c -f -src=$(UI_BUILD_DIR)
 
 gen-ui: ui-bundle
 
 gen-ddl: go-install ## Embed data migration files into the resulting binary
-	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
+	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -dest pkg -src pkg/ddl -include '*.sql'
 
 proto: ## Build proto (Protocol Buffers) files
-	$(PROTOC) --proto_path=catalog --go_out=catalog --go_opt=paths=source_relative catalog.proto
-	$(PROTOC) --proto_path=graveler/committed --go_out=graveler/committed --go_opt=paths=source_relative committed.proto
-	$(PROTOC) --proto_path=graveler --go_out=graveler --go_opt=paths=source_relative graveler.proto
+	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
+	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
+	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

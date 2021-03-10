@@ -4,10 +4,10 @@ import (
 	"net/url"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // diagnoseCmd implements the diagnose command

@@ -10,12 +10,11 @@ import (
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/graveler/committed"
-	"github.com/treeverse/lakefs/graveler/sstable"
 )
 
 func isSeekable(f io.Seeker) bool {
