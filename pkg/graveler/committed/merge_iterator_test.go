@@ -1,6 +1,7 @@
 package committed_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -122,7 +123,8 @@ func TestMerge(t *testing.T) {
 			diffIt := testutil.NewDiffIter(tst.diffs)
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
-			it := committed.NewMergeIterator(diffIt, base)
+			ctx := context.Background()
+			it := committed.NewMergeIterator(ctx, diffIt, base)
 			var gotValues, gotKeys []string
 			idx := 0
 			for it.Next() {
@@ -154,6 +156,23 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+func TestMergeCancelContext(t *testing.T) {
+	diffs := []graveler.Diff{testMergeNewDiff(added, "k3", "i3", "")}
+	diffIt := testutil.NewDiffIter(diffs)
+	defer diffIt.Close()
+	baseKeys := []string{"k1", "k2"}
+	base := makeBaseIterator(baseKeys)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	it := committed.NewMergeIterator(ctx, diffIt, base)
+	if it.Next() {
+		t.Fatal("Next() should return false")
+	}
+	if err := it.Err(); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Err() returned %v, expected context.Canceled", err)
+	}
+}
+
 func TestMergeSeek(t *testing.T) {
 	diffs := []graveler.Diff{
 		testMergeNewDiff(added, "k1", "i1", ""),
@@ -169,7 +188,8 @@ func TestMergeSeek(t *testing.T) {
 	diffIt := testutil.NewDiffIter(diffs)
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
 	base := makeBaseIterator(baseKeys)
-	it := committed.NewMergeIterator(diffIt, base)
+	ctx := context.Background()
+	it := committed.NewMergeIterator(ctx, diffIt, base)
 	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {
@@ -359,7 +379,8 @@ func TestCompare(t *testing.T) {
 			diffIt := testutil.NewDiffIter(tst.diffs)
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
-			it := committed.NewCompareIterator(diffIt, base)
+			ctx := context.Background()
+			it := committed.NewCompareIterator(ctx, diffIt, base)
 			var gotValues, gotKeys []string
 			var gotDiffTypes []graveler.DiffType
 			idx := 0
@@ -401,7 +422,8 @@ func TestCompareSeek(t *testing.T) {
 	diffIt := testutil.NewDiffIter(diffs)
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
 	base := makeBaseIterator(baseKeys)
-	it := committed.NewCompareIterator(diffIt, base)
+	ctx := context.Background()
+	it := committed.NewCompareIterator(ctx, diffIt, base)
 	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {

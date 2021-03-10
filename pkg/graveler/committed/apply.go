@@ -27,8 +27,14 @@ func incrementDiffSummary(d *graveler.DiffSummary, typ graveler.DiffType) {
 // ReferenceType represents the type of the reference
 
 // applyFromSource applies all changes from source to writer.
-func applyFromSource(logger logging.Logger, writer MetaRangeWriter, source Iterator) error {
+func applyFromSource(ctx context.Context, logger logging.Logger, writer MetaRangeWriter, source Iterator) error {
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		sourceValue, sourceRange := source.Value()
 		if sourceValue == nil {
 			if logger.IsTracing() {
@@ -64,9 +70,15 @@ func applyFromSource(logger logging.Logger, writer MetaRangeWriter, source Itera
 
 // applyFromDiffs applies all changes from diffs to writer and returns the number elements it
 // added.
-func applyFromDiffs(logger logging.Logger, writer MetaRangeWriter, diffs graveler.ValueIterator) (int, error) {
+func applyFromDiffs(ctx context.Context, logger logging.Logger, writer MetaRangeWriter, diffs graveler.ValueIterator) (int, error) {
 	numAdded := 0
 	for {
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		default:
+		}
+
 		diffValue, haveDiffs := diffs.Value(), diffs.Next()
 		if diffValue.IsTombstone() {
 			// internal error but no data lost: deletion requested of a
@@ -98,6 +110,12 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 	haveSource, haveDiffs := source.Next(), diffs.Next()
 	changed := false
 	for haveSource && haveDiffs {
+		select {
+		case <-ctx.Done():
+			return ret, ctx.Err()
+		default:
+		}
+
 		sourceValue, sourceRange := source.Value()
 		diffValue := diffs.Value()
 		if sourceValue == nil {
@@ -179,13 +197,13 @@ func Apply(ctx context.Context, writer MetaRangeWriter, source Iterator, diffs g
 		return ret, err
 	}
 	if haveSource {
-		if err := applyFromSource(logger, writer, source); err != nil {
+		if err := applyFromSource(ctx, logger, writer, source); err != nil {
 			return ret, err
 		}
 	}
 
 	if haveDiffs {
-		numAdded, err := applyFromDiffs(logger, writer, diffs)
+		numAdded, err := applyFromDiffs(ctx, logger, writer, diffs)
 		if err != nil {
 			return ret, err
 		}
