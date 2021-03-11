@@ -31,6 +31,7 @@ For high throughput, additional CPUs help scale requests across different cores.
 ### Network
 If using the data APIs such as the [S3 Gateway](overview.md#s3-gateway), 
 lakeFS will require enough network bandwidth to support the planned concurrent network upload/download operations.
+For most cloud providers, "stronger" machines (i.e. more expensive and usually with more CPU cores) also provide increased network bandwidth.
 
 If using only the metadata APIs (for example, only using the Hadoop/Spark clients), network bandwidth is minimal, 
 at roughly 1Kb per request.
@@ -44,10 +45,11 @@ these are usually based on NVMe and are tied to the machine's lifecycle.
 Using ephemeral disks lakeFS can provide a very high throughput/cost ratio, 
 probably the best that could be achieved on a public cloud, so we recommend those.
 
-a local cache of at least 512 MiB should be provided. 
+A local cache of at least 512 MiB should be provided. 
 For large installations (managing >100 concurrently active branches, with >100M objects per commit),
-we recommend allocating at least 25 GiB - since it's a caching layer over a relatively slow storage (the object store), 
-the more the better - see [Important metrics](#important-metrics) below to understand how to do proper sizing.
+we recommend allocating at least 10 GiB - since it's a caching layer over a relatively slow storage (the object store), 
+see [Important metrics](#important-metrics) below to understand how to size this: it should be big enough to hold all commit metadata for actively referenced commits.
+
 
 ### PostgreSQL database
 
@@ -68,20 +70,20 @@ Ideally configure [shared_buffers](https://www.postgresql.org/docs/current/runti
 of your PostgreSQL instances to be large enough to contain the currently active dataset. 
 Pick a database instance with enough RAM to accommodate this buffer size, at roughly x4 the size given for `shared_buffers` 
 (so for example, if an installation has ~500,000 uncommitted writes at any given time, it would require about 750 MiB of `shared_buffers`, 
-that would require about 3 GiB of RAM. 
+that would require about 3 GiB of RAM). 
 
 On AWS RDS, the default PostgreSQL parameter groups configure `shared_buffers` to be 25% of the chosen instance's available RAM, 
 so RDS users do not need to manually configure this.
 
 #### CPU
 
-PostgreSQL CPU cores help scale concurrent requests. Ideally 1 CPU core for every 5,000 requests/second is ideal.
+PostgreSQL CPU cores help scale concurrent requests. 1 CPU core for every 5,000 requests/second is ideal.
 
 
 ## Scaling factors
 
-Scaling lakeFS, like most data systems, moves across 2 axis: 
-concurrency (throughput of requests at a given timeframe), and latency (time to complete a single request).
+Scaling lakeFS, like most data systems, moves across 2 axes: 
+throughput of requests (amount per given timeframe), and latency (time to complete a single request).
 
 ### Understanding latency and throughput considerations
 
@@ -141,7 +143,7 @@ lakectl abuse random-read \
 **Result Histogram (raw):**
 
 ```
-Historgram (ms):
+Histogram (ms):
 1	0
 2	0
 5	37945
@@ -186,7 +188,7 @@ lakectl abuse random-write \
 **Result Histogram (raw):**
 
 ```
-Historgram (ms):
+Histogram (ms):
 1	0
 2	0
 5	30715
@@ -231,7 +233,7 @@ lakectl abuse create-branches \
 **Result Histogram (raw):**
 
 ```
-Historgram (ms):
+Histogram (ms):
 1	0
 2	1
 5	5901
