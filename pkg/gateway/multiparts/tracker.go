@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/db"
 )
 
@@ -27,7 +28,7 @@ type tracker struct {
 }
 
 var (
-	ErrMultipartUploadNotFound = fmt.Errorf("multipart upload %w", db.ErrNotFound)
+	ErrMultipartUploadNotFound = fmt.Errorf("multipart upload %w", catalog.ErrNotFound)
 	ErrInvalidUploadID         = errors.New("invalid upload id")
 )
 

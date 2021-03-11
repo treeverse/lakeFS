@@ -11,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/db"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -39,7 +38,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 		creds, err := authService.GetCredentials(ctx, accessKeyID)
 		logger := o.Log(req).WithField("key", accessKeyID)
 		if err != nil {
-			if !errors.Is(err, db.ErrNotFound) {
+			if !errors.Is(err, auth.ErrNotFound) {
 				logger.WithError(err).Warn("error getting access key")
 				_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
@@ -114,7 +113,7 @@ func DurationHandler(next http.Handler) http.Handler {
 	})
 }
 
-func EnrichWithRepositoryOrFallback(catalog catalog.Interface, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepositoryOrFallback(c catalog.Interface, authService simulator.GatewayAuthService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
@@ -125,8 +124,8 @@ func EnrichWithRepositoryOrFallback(catalog catalog.Interface, authService simul
 			next.ServeHTTP(w, req)
 			return
 		}
-		repo, err := catalog.GetRepository(ctx, repoID)
-		if errors.Is(err, db.ErrNotFound) {
+		repo, err := c.GetRepository(ctx, repoID)
+		if errors.Is(err, catalog.ErrNotFound) {
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username:            username,
 				RequiredPermissions: []permissions.Permission{{Action: permissions.ListRepositoriesAction, Resource: "*"}},

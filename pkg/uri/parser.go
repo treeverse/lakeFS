@@ -27,22 +27,28 @@ var (
 )
 
 type URI struct {
-	Protocol   string
+	// Protocol must always match "lakefs" to be considered valid
+	Protocol string
+	// Repository is the name of the repository being addressed
 	Repository string
-	Ref        string
-	Path       string
+	// Ref represents the reference in the repository (commit, tag, branch, etc.)
+	Ref string
+	// Path is a path to an object (or prefix of such) in lakeFS. It *could* be null since there's a difference between
+	// 	an empty path ("lakefs://repo@branch/", and no path at all e.g. "lakefs://repo@branch").
+	// 	Since path is the only URI part that is allowed to be empty, it is represented as a pointer.
+	Path *string
 }
 
 func (u *URI) IsRepository() bool {
-	return len(u.Repository) > 0 && len(u.Ref) == 0 && len(u.Path) == 0
+	return len(u.Repository) > 0 && len(u.Ref) == 0 && u.Path == nil
 }
 
 func (u *URI) IsRef() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && len(u.Path) == 0
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil
 }
 
 func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && len(u.Path) > 0
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil
 }
 
 func (u *URI) String() string {
@@ -57,11 +63,11 @@ func (u *URI) String() string {
 	buf.WriteRune(RefSeparator)
 	buf.WriteString(u.Ref)
 
-	if len(u.Path) == 0 {
+	if u.Path == nil {
 		return buf.String()
 	}
 	buf.WriteRune(PathSeparator)
-	buf.WriteString(u.Path)
+	buf.WriteString(*u.Path)
 
 	return buf.String()
 }
@@ -79,6 +85,7 @@ func Parse(str string) (*URI, error) {
 
 	var uri URI
 	uri.Protocol = protoParts[0]
+	var path string
 
 	var state = stateInRepo
 	var buf strings.Builder
@@ -91,6 +98,7 @@ func Parse(str string) (*URI, error) {
 		case ch == PathSeparator && state == stateInRef:
 			uri.Ref = buf.String()
 			state = stateInPath
+			uri.Path = &path
 			buf.Reset()
 		default:
 			buf.WriteRune(ch)
@@ -103,17 +111,23 @@ func Parse(str string) (*URI, error) {
 		case stateInRef:
 			uri.Ref = buf.String()
 		case stateInPath:
-			uri.Path = buf.String()
+			path = buf.String()
+			uri.Path = &path
 		}
 	}
 	return &uri, nil
 }
 
 func Equals(a, b *URI) bool {
+	// same protocol
 	return strings.EqualFold(a.Protocol, b.Protocol) &&
+		// same repository
 		strings.EqualFold(a.Repository, b.Repository) &&
+		// same ref
 		strings.EqualFold(a.Ref, b.Ref) &&
-		strings.EqualFold(a.Path, b.Path)
+		// either both contain no path, or both do, and that path is equal
+		((a.Path == nil && b.Path == nil) ||
+			(a.Path != nil && b.Path != nil && *a.Path == *b.Path))
 }
 
 func ValidateRepoURI(str string) error {
