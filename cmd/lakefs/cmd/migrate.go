@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/pkg/db"
 )
 
 // migrateCmd represents the migrate command

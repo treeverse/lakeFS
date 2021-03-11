@@ -13,7 +13,7 @@ builds:
   env:
   - CGO_ENABLED=0
   ldflags:
-  - -s -w -X github.com/treeverse/lakefs/config.Version={{.Version}} -X github.com/treeverse/lakefs/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/config.Date={{.Date}}
+  - -s -w -X github.com/treeverse/lakefs/pkg/config.Version={{.Version}} -X github.com/treeverse/lakefs/pkg/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/pkg/config.Date={{.Date}}
   goarch:
   - amd64
   - arm64
@@ -27,7 +27,7 @@ builds:
   env:
   - CGO_ENABLED=0
   ldflags:
-  - -s -w -X github.com/treeverse/lakefs/config.Version={{.Version}} -X github.com/treeverse/lakefs/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/config.Date={{.Date}}
+  - -s -w -X github.com/treeverse/lakefs/pkg/config.Version={{.Version}} -X github.com/treeverse/lakefs/pkg/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/pkg/config.Date={{.Date}}
   goarch:
   - amd64
   - arm64

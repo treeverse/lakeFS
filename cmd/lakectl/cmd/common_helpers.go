@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
-	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"golang.org/x/term"
 )
 

@@ -16,20 +16,20 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/actions"
-	"github.com/treeverse/lakefs/api"
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/gateway/multiparts"
-	"github.com/treeverse/lakefs/gateway/simulator"
-	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/stats"
+	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/gateway"
+	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/simulator"
+	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
@@ -56,7 +56,7 @@ var runCmd = &cobra.Command{
 		dbParams := cfg.GetDatabaseParams()
 
 		if err := db.ValidateSchemaUpToDate(ctx, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
-			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
+			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		} else if errors.Is(err, migrate.ErrNilVersion) {
 			logger.Debug("No migration, setup required")
 		} else if err != nil {

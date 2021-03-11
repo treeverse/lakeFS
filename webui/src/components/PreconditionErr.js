@@ -1,6 +1,4 @@
 import {Alert} from "react-bootstrap";
-import {API_ENDPOINT} from "../actions/api";
-import ClipboardButton from "./ClipboardButton";
 import React from "react";
 
 
@@ -19,23 +17,21 @@ export function formatAlertText(repositoryId, err) {
         return '';
     }
     const lines = err.split('\n');
+    const runID = extractActionRunID(err);
     if (lines.length === 1) {
         return <Alert.Heading>{err}</Alert.Heading>;
     }
-    const runID = extractActionRunID(err);
     let result = lines.map((line, i) => {
         if (runID) {
             const hookRunID = extractActionHookRunID(line);
+            let link =  `/repositories/${repositoryId}/actions/${runID}`
             if (hookRunID) {
-                const link = `${API_ENDPOINT}/repositories/${repositoryId}/actions/runs/${runID}/hooks/${hookRunID}/output`;
-                return <p key={i}><Alert.Link target="_blank" download={runID+'-'+hookRunID+'.log'} href={link}>{line}</Alert.Link></p>;
+                link = `/repositories/${repositoryId}/actions/${runID}/${hookRunID}`
             }
+            return <p key={i}><Alert.Link href={link}>{line}</Alert.Link></p>;
         }
         return <p key={i}>{line}</p>;
     });
-    if (runID) {
-        const cmd = `lakectl actions runs describe lakefs://${repositoryId} ${runID}`;
-        result = <>{result}<hr/>For detailed information run:<br/>{cmd}<ClipboardButton variant="link" text={cmd} tooltip="Copy"/></>;
-    }
+
     return result;
 }

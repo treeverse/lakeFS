@@ -15,9 +15,9 @@ RUN go mod download
 COPY . ./
 
 # Build a binaries
-RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakefs ./cmd/lakefs
-RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakectl ./cmd/lakectl
-RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o benchmark-executor ./benchmarks
+RUN go build -ldflags "-X github.com/treeverse/lakefs/pkg/config.Version=${VERSION}" -o lakefs ./cmd/lakefs
+RUN go build -ldflags "-X github.com/treeverse/lakefs/pkg/config.Version=${VERSION}" -o lakectl ./cmd/lakectl
+RUN go build -ldflags "-X github.com/treeverse/lakefs/pkg/config.Version=${VERSION}" -o benchmark-executor ./benchmarks
 
 # lakectl image
 FROM alpine:3.12.0 AS lakectl
@@ -43,7 +43,7 @@ FROM alpine:3.12.0 AS lakefs
 RUN apk add netcat-openbsd
 
 WORKDIR /app
-COPY ./wait-for ./
+COPY ./scripts/wait-for ./
 ENV PATH /app:$PATH
 COPY --from=build /build/lakefs /build/lakectl ./
 
