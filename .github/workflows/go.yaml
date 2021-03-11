@@ -4,7 +4,7 @@ on:
     paths-ignore:
       - "docs/*"
       - "webui/*"
-      - - "design/*"
+      - "design/*"
     branches:
       - master
   pull_request:
