@@ -67,15 +67,26 @@ var fsListCmd = &cobra.Command{
 		pathURI := uri.Must(uri.Parse(args[0]))
 		recursive, _ := cmd.Flags().GetBool("recursive")
 
+		// prefix we need to trim in ls output (non recursive)
+		var trimPrefix string
+		if idx := strings.LastIndex(pathURI.Path, "/"); idx != -1 {
+			trimPrefix = pathURI.Path[:idx]
+		}
+
 		var from string
 		for {
 			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, recursive, pathURI.Path, from, -1)
 			if err != nil {
 				DieErr(err)
 			}
-			if len(results) > 0 {
-				Write(fsLsTemplate, results)
+			// trim prefix if non recursive
+			if !recursive {
+				for i := range results {
+					results[i].Path = strings.TrimPrefix(results[i].Path, trimPrefix)
+				}
 			}
+
+			Write(fsLsTemplate, results)
 			if !swag.BoolValue(more.HasMore) {
 				break
 			}
