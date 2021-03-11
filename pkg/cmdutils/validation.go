@@ -35,14 +35,3 @@ func ValidationChain(funcs ...cobra.PositionalArgs) cobra.PositionalArgs {
 		return nil
 	}
 }
-
-func Or(funcs ...cobra.PositionalArgs) cobra.PositionalArgs {
-	return func(cmd *cobra.Command, args []string) error {
-		for _, f := range funcs {
-			if err := f(cmd, args); err == nil {
-				return nil
-			}
-		}
-		return ErrNoValidation
-	}
-}
