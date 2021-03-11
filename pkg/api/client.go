@@ -79,7 +79,7 @@ type RepositoryClient interface {
 	GetCommitLog(ctx context.Context, repository, branchID, after string, amount int) ([]*models.Commit, *models.Pagination, error)
 
 	StatObject(ctx context.Context, repository, ref, path string) (*models.ObjectStats, error)
-	ListObjects(ctx context.Context, repository, ref, prefix, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
+	ListObjects(ctx context.Context, repository, ref string, recursive bool, prefix, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
 	GetObject(ctx context.Context, repository, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
 	UploadObject(ctx context.Context, repository, branchID, path string, r io.Reader) (*models.ObjectStats, error)
 	StageObject(ctx context.Context, repository, branchID, path string, object *models.ObjectStageCreation) (*models.ObjectStats, error)
@@ -683,19 +683,25 @@ func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*mod
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListObjects(ctx context.Context, repoID, ref, prefix, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
-	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
-		After:      swag.String(after),
-		Amount:     swag.Int64(int64(amount)),
-		Ref:        ref,
-		Repository: repoID,
-		Prefix:     swag.String(prefix),
-		Context:    ctx,
-	}, c.auth)
+func (c *client) ListObjects(ctx context.Context, repository, ref string, recursive bool, prefix, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
+	params := objects.NewListObjectsParamsWithContext(ctx).
+		WithDefaults().
+		WithRepository(repository).
+		WithRef(ref).
+		WithPrefix(swag.String(prefix)).
+		WithAmount(swag.Int64(int64(amount))).
+		WithAfter(swag.String(from))
+	if recursive {
+		params.WithDelimiter("")
+	}
+	resp, err := c.remote.Objects.ListObjects(
+		params,
+		c.auth)
 	if err != nil {
 		return nil, nil, err
 	}
-	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
+	payload := resp.GetPayload()
+	return payload.Results, payload.Pagination, nil
 }
 
 func (c *client) GetObject(ctx context.Context, repoID, ref, path string, writer io.Writer) (*objects.GetObjectOK, error) {
