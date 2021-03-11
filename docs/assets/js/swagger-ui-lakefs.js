@@ -12,11 +12,7 @@ window.onload = function() {
             SwaggerUIStandalonePreset
         ],
         plugins: [],
-        layout: "BaseLayout",
-        onComplete: () => {
-            if (!window.frameElement) return;
-            window.frameElement.style.height = window.frameElement.contentWindow.document.documentElement.scrollHeight + 'px';
-        },
+        layout: "BaseLayout"
     })
     // End Swagger UI call region
 
