@@ -7,4 +7,4 @@ nav_order: 0
 has_children: false
 ---
 
-{% include ./swagger.html }
+{% include swagger.html %}
