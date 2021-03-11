@@ -2,12 +2,12 @@ name: Node
 on: 
   push:
     paths:
-      - "webui/*"
+      - "webui/**"
     branches:
       - master
   pull_request:
     paths:
-      - "webui/*"
+      - "webui/**"
 jobs:
   test:
     name: Test React App

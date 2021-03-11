@@ -2,16 +2,18 @@ name: Go
 on:
   push:
     paths-ignore:
-      - "docs/*"
-      - "webui/*"
-      - "design/*"
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
     branches:
       - master
   pull_request:
     paths-ignore:
-      - "docs/*"
-      - "webui/*"
-      - "design/*"
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
 jobs:
   validator:
     name: Run Linters and Checkers

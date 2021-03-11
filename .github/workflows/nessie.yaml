@@ -2,14 +2,16 @@ name: Nessie
 on:
   pull_request:
     paths-ignore:
-      - "docs/*"
-      - "webui/*"
-      - "design/*"
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
   push:
     paths-ignore:
-      - "docs/*"
-      - "webui/*"
-      - "design/*"
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
     branches:
       - master
 
