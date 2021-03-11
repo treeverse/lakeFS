@@ -22,7 +22,7 @@ const (
 	ConfigServerEndpointURL  = "server.endpoint_url"
 	DefaultServerEndpointURL = "http://127.0.0.1:8000"
 
-	DefaultMaxIdleConnsPerHost = 100
+	DefaultMaxIdleConnsPerHost = 1000
 )
 
 var (
