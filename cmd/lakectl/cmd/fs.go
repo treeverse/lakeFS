@@ -38,7 +38,7 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		stat, err := client.StatObject(cmd.Context(), pathURI.Repository, pathURI.Ref, pathURI.Path)
+		stat, err := client.StatObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
@@ -57,17 +57,14 @@ var fsListCmd = &cobra.Command{
 	Short: "list entries under a given tree",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
-		cmdutils.Or(
-			cmdutils.FuncValidator(0, uri.ValidatePathURI),
-			cmdutils.FuncValidator(0, uri.ValidateRefURI),
-		),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
 		var from string
 		for {
-			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, pathURI.Path, from, -1)
+			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, from, -1)
 			if err != nil {
 				DieErr(err)
 			}
@@ -92,7 +89,7 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		_, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, pathURI.Path, os.Stdout)
+		_, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, os.Stdout)
 		if err != nil {
 			DieErr(err)
 		}
@@ -106,7 +103,7 @@ func upload(ctx context.Context, client api.Client, sourcePathname string, destU
 	}()
 
 	// read
-	return client.UploadObject(ctx, destURI.Repository, destURI.Ref, destURI.Path, fp)
+	return client.UploadObject(ctx, destURI.Repository, destURI.Ref, *destURI.Path, fp)
 }
 
 var fsUploadCmd = &cobra.Command{
@@ -143,7 +140,8 @@ var fsUploadCmd = &cobra.Command{
 			}
 			relPath := strings.TrimPrefix(path, source)
 			uri := *pathURI
-			uri.Path = filepath.Join(uri.Path, relPath)
+			p := filepath.Join(*uri.Path, relPath)
+			uri.Path = &p
 			stat, err := upload(cmd.Context(), client, path, &uri)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
@@ -184,7 +182,7 @@ var fsStageCmd = &cobra.Command{
 			obj.Metadata = meta
 		}
 
-		stat, err := client.StageObject(cmd.Context(), pathURI.Repository, pathURI.Ref, pathURI.Path, obj)
+		stat, err := client.StageObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, obj)
 		if err != nil {
 			DieErr(err)
 		}
@@ -203,7 +201,7 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		err := client.DeleteObject(cmd.Context(), pathURI.Repository, pathURI.Ref, pathURI.Path)
+		err := client.DeleteObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
