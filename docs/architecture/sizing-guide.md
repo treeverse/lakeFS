@@ -31,7 +31,7 @@ For high throughput, additional CPUs help scale requests across different cores.
 ### Network
 If using the data APIs such as the [S3 Gateway](overview.md#s3-gateway), 
 lakeFS will require enough network bandwidth to support the planned concurrent network upload/download operations.
-For most cloud providers, "stronger" machines (i.e. more expensive and usually with more CPU cores) also provide increased network bandwidth.
+For most cloud providers, more powerful machines (i.e. more expensive and usually with more CPU cores) also provide increased network bandwidth.
 
 If using only the metadata APIs (for example, only using the Hadoop/Spark clients), network bandwidth is minimal, 
 at roughly 1Kb per request.
