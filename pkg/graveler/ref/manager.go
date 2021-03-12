@@ -3,7 +3,12 @@ package ref
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/logging"
+
+	"github.com/treeverse/lakefs/pkg/batch"
 
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -13,26 +18,36 @@ import (
 // IteratorPrefetchSize is the amount of records to maybeFetch from PG
 const IteratorPrefetchSize = 1000
 
+const MaxBatchDelay = time.Millisecond * 3
+
 type Manager struct {
 	db              db.Database
 	addressProvider ident.AddressProvider
+	batchExecutor   batch.Batcher
 }
 
 func NewPGRefManager(db db.Database, addressProvider ident.AddressProvider) *Manager {
-	return &Manager{db: db, addressProvider: addressProvider}
+	return &Manager{
+		db:              db,
+		addressProvider: addressProvider,
+		batchExecutor:   batch.NewExecutor(logging.Default()),
+	}
 }
 
 func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.Repository, error) {
-	repository, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		repository := &graveler.Repository{}
-		err := tx.Get(repository,
-			`SELECT storage_namespace, creation_date, default_branch FROM graveler_repositories WHERE id = $1`,
-			repositoryID)
-		if err != nil {
-			return nil, err
-		}
-		return repository, nil
-	}, db.ReadOnly())
+	key := fmt.Sprintf("GetRepository:%s", repositoryID)
+	repository, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, func() (interface{}, error) {
+		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			repository := &graveler.Repository{}
+			err := tx.Get(repository,
+				`SELECT storage_namespace, creation_date, default_branch FROM graveler_repositories WHERE id = $1`,
+				repositoryID)
+			if err != nil {
+				return nil, err
+			}
+			return repository, nil
+		}, db.ReadOnly())
+	})
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrRepositoryNotFound
 	}
@@ -127,18 +142,21 @@ func (m *Manager) RevParse(ctx context.Context, repositoryID graveler.Repository
 }
 
 func (m *Manager) GetBranch(ctx context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID) (*graveler.Branch, error) {
-	branch, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		var rec branchRecord
-		err := tx.Get(&rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
-			repositoryID, branchID)
-		if err != nil {
-			return nil, err
-		}
-		return &graveler.Branch{
-			CommitID:     rec.CommitID,
-			StagingToken: rec.StagingToken,
-		}, nil
-	}, db.ReadOnly())
+	key := fmt.Sprintf("GetBranch:%s:%s", repositoryID, branchID)
+	branch, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, func() (interface{}, error) {
+		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			var rec branchRecord
+			err := tx.Get(&rec, `SELECT commit_id, staging_token FROM graveler_branches WHERE repository_id = $1 AND id = $2`,
+				repositoryID, branchID)
+			if err != nil {
+				return nil, err
+			}
+			return &graveler.Branch{
+				CommitID:     rec.CommitID,
+				StagingToken: rec.StagingToken,
+			}, nil
+		}, db.ReadOnly())
+	})
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrBranchNotFound
 	}
@@ -185,15 +203,18 @@ func (m *Manager) ListBranches(ctx context.Context, repositoryID graveler.Reposi
 }
 
 func (m *Manager) GetTag(ctx context.Context, repositoryID graveler.RepositoryID, tagID graveler.TagID) (*graveler.CommitID, error) {
-	commitID, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		var commitID graveler.CommitID
-		err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
-			repositoryID, tagID)
-		if err != nil {
-			return nil, err
-		}
-		return &commitID, nil
-	}, db.ReadOnly())
+	key := fmt.Sprintf("GetTag:%s:%s", repositoryID, tagID)
+	commitID, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, func() (interface{}, error) {
+		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			var commitID graveler.CommitID
+			err := tx.Get(&commitID, `SELECT commit_id FROM graveler_tags WHERE repository_id = $1 AND id = $2`,
+				repositoryID, tagID)
+			if err != nil {
+				return nil, err
+			}
+			return &commitID, nil
+		}, db.ReadOnly())
+	})
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrTagNotFound
 	}
@@ -243,30 +264,34 @@ func (m *Manager) ListTags(ctx context.Context, repositoryID graveler.Repository
 }
 
 func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.RepositoryID, prefix graveler.CommitID) (*graveler.Commit, error) {
-	commit, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		records := make([]*commitRecord, 0)
-		// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
-		// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
-		err := tx.Select(&records, `
+	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repositoryID, prefix)
+
+	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, func() (interface{}, error) {
+		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			records := make([]*commitRecord, 0)
+			// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
+			// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
+			err := tx.Select(&records, `
 					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits
 					WHERE repository_id = $1 AND id LIKE $2 || '%'
 					LIMIT 2`,
-			repositoryID, prefix)
-		if errors.Is(err, db.ErrNotFound) {
-			return nil, graveler.ErrNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		if len(records) == 0 {
-			return "", graveler.ErrNotFound
-		}
-		if len(records) > 1 {
-			return "", graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
-		}
-		return records[0].toGravelerCommit(), nil
-	}, db.ReadOnly())
+				repositoryID, prefix)
+			if errors.Is(err, db.ErrNotFound) {
+				return nil, graveler.ErrNotFound
+			}
+			if err != nil {
+				return nil, err
+			}
+			if len(records) == 0 {
+				return "", graveler.ErrNotFound
+			}
+			if len(records) > 1 {
+				return "", graveler.ErrRefAmbiguous // more than 1 commit starts with the ID prefix
+			}
+			return records[0].toGravelerCommit(), nil
+		}, db.ReadOnly())
+	})
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrCommitNotFound
 	}
@@ -277,17 +302,20 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 }
 
 func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
-	commit, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
-		var rec commitRecord
-		err := tx.Get(&rec, `
+	key := fmt.Sprintf("GetCommit:%s:%s", repositoryID, commitID)
+	commit, err := m.batchExecutor.BatchFor(key, MaxBatchDelay, func() (interface{}, error) {
+		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+			var rec commitRecord
+			err := tx.Get(&rec, `
 					SELECT committer, message, creation_date, parents, meta_range_id, metadata
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
-			repositoryID, commitID)
-		if err != nil {
-			return nil, err
-		}
-		return rec.toGravelerCommit(), nil
-	}, db.ReadOnly())
+				repositoryID, commitID)
+			if err != nil {
+				return nil, err
+			}
+			return rec.toGravelerCommit(), nil
+		}, db.ReadOnly())
+	})
 	if errors.Is(err, db.ErrNotFound) {
 		return nil, graveler.ErrCommitNotFound
 	}
