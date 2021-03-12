@@ -12,6 +12,24 @@ type Range struct {
 	Count         int64
 }
 
+func (r Range) Copy() *Range {
+	return &Range{
+		ID:            r.ID,
+		MinKey:        r.MinKey.Copy(),
+		MaxKey:        r.MaxKey.Copy(),
+		EstimatedSize: r.EstimatedSize,
+		Count:         r.Count,
+	}
+}
+
+func (r Range) IsTombstone() bool {
+	return r.EstimatedSize == 0
+}
+
+func (r *Range) SetTombstone() {
+	r.EstimatedSize = 0
+}
+
 func MarshalRange(r Range) ([]byte, error) {
 	return proto.Marshal(&RangeData{
 		MinKey:        r.MinKey,

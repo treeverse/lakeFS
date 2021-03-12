@@ -124,16 +124,18 @@ func TestMerge(t *testing.T) {
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
 			ctx := context.Background()
-			it := committed.NewMergeIterator(ctx, diffIt, base)
+			it := committed.NewMergeIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 			var gotValues, gotKeys []string
 			idx := 0
 			for it.Next() {
 				idx++
-				gotKeys = append(gotKeys, string(it.Value().Key))
-				if it.Value().Value == nil {
+				// TODO(Guys): support and test ranges
+				val, _ := it.Value()
+				gotKeys = append(gotKeys, string(val.Key))
+				if val.Value == nil {
 					gotValues = append(gotValues, "")
 				} else {
-					gotValues = append(gotValues, string(it.Value().Identity))
+					gotValues = append(gotValues, string(val.Identity))
 				}
 			}
 			if tst.conflictExpectedIdx != nil {
@@ -164,7 +166,7 @@ func TestMergeCancelContext(t *testing.T) {
 	base := makeBaseIterator(baseKeys)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	it := committed.NewMergeIterator(ctx, diffIt, base)
+	it := committed.NewMergeIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 	if it.Next() {
 		t.Fatal("Next() should return false")
 	}
@@ -189,7 +191,7 @@ func TestMergeSeek(t *testing.T) {
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
 	base := makeBaseIterator(baseKeys)
 	ctx := context.Background()
-	it := committed.NewMergeIterator(ctx, diffIt, base)
+	it := committed.NewMergeIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {
@@ -246,18 +248,20 @@ func TestMergeSeek(t *testing.T) {
 	for _, tst := range tests {
 		t.Run(fmt.Sprintf("seek to %s", tst.seekTo), func(t *testing.T) {
 			it.SeekGE([]byte(tst.seekTo))
-			if it.Value() != nil {
-				t.Fatalf("value expected to be nil after SeekGE. got=%v", it.Value())
+			val, _ := it.Value()
+			if val != nil {
+				t.Fatalf("value expected to be nil after SeekGE. got=%v", val)
 			}
 			idx := 0
 			var gotValues, gotKeys []string
 			for it.Next() {
+				val, _ := it.Value()
 				idx++
-				gotKeys = append(gotKeys, string(it.Value().Key))
-				if it.Value().Value == nil {
+				gotKeys = append(gotKeys, string(val.Key))
+				if val.Value == nil {
 					gotValues = append(gotValues, "")
 				} else {
-					gotValues = append(gotValues, string(it.Value().Identity))
+					gotValues = append(gotValues, string(val.Identity))
 				}
 			}
 			if tst.conflictExpectedIdx != nil {
@@ -380,7 +384,7 @@ func TestCompare(t *testing.T) {
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
 			ctx := context.Background()
-			it := committed.NewCompareIterator(ctx, diffIt, base)
+			it := committed.NewCompareIteratorFlat(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 			var gotValues, gotKeys []string
 			var gotDiffTypes []graveler.DiffType
 			idx := 0
@@ -423,7 +427,7 @@ func TestCompareSeek(t *testing.T) {
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
 	base := makeBaseIterator(baseKeys)
 	ctx := context.Background()
-	it := committed.NewCompareIterator(ctx, diffIt, base)
+	it := committed.NewCompareIteratorFlat(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {

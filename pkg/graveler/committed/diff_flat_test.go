@@ -192,7 +192,7 @@ func TestDiff(t *testing.T) {
 			fakeLeft := newFakeMetaRangeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
 			ctx := context.Background()
-			it := committed.NewDiffIterator(ctx, fakeLeft, fakeRight)
+			it := committed.NewFlatDiffIterator(ctx, fakeLeft, fakeRight)
 			defer it.Close()
 			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
@@ -229,7 +229,7 @@ func TestDiffCancelContext(t *testing.T) {
 	right := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	it := committed.NewDiffIterator(ctx, left, right)
+	it := committed.NewFlatDiffIterator(ctx, left, right)
 	defer it.Close()
 	if it.Next() {
 		t.Fatal("Next() should return false")
@@ -252,7 +252,7 @@ func TestDiffSeek(t *testing.T) {
 	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3": added, "k7": changed}
 	diffIdentityByKey := map[string]string{"k2": "i2", "k3": "i3", "k7": "i7a"}
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
+	it := committed.NewFlatDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
 	defer it.Close()
 
 	tests := []struct {
@@ -306,7 +306,7 @@ func TestDiffSeek(t *testing.T) {
 
 func TestNextOnClose(t *testing.T) {
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	it := committed.NewFlatDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
 		t.Fatal("expected iterator to have value")
 	}
@@ -322,7 +322,7 @@ func TestDiffErr(t *testing.T) {
 	leftIt.SetErr(leftErr)
 	rightIt := newFakeMetaRangeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
 	ctx := context.Background()
-	it := committed.NewDiffIterator(ctx, leftIt, rightIt)
+	it := committed.NewFlatDiffIterator(ctx, leftIt, rightIt)
 	defer it.Close()
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")

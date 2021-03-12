@@ -32,11 +32,10 @@ func TestApplyAdd(t *testing.T) {
 		AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c")).
 		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d"))
-	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
-		*makeV("b", "dest:b"),
-		*makeV("e", "dest:e"),
-		*makeV("f", "dest:f"),
-	})
+	diffs := testutil.NewFakeIterator()
+	diffs.
+		AddRange(&committed.Range{ID: "b", MaxKey: committed.Key("e")}).
+		AddValueRecords(makeV("b", "dest:b"), makeV("e", "dest:e"), makeV("f", "dest:f"))
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
@@ -59,19 +58,19 @@ func TestApplyReplace(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz"), Count: 1, EstimatedSize: 1020}
 	source := testutil.NewFakeIterator()
 	source.
-		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz"), Count: 1, EstimatedSize: 1020}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
+		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez"), Count: 1, EstimatedSize: 1020}).
 		AddValueRecords(makeV("e", "source:e"))
-	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
-		*makeV("b", "dest:b"),
-		*makeV("e", "dest:e"),
-	})
+	diffs := testutil.NewFakeIterator()
+	diffs.
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("e"), Count: 1, EstimatedSize: 1020}).
+		AddValueRecords(makeV("b", "dest:b"), makeV("e", "dest:e"))
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
@@ -102,10 +101,10 @@ func TestApplyDelete(t *testing.T) {
 		AddValueRecords(makeV("d", "source:d")).
 		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
 		AddValueRecords(makeV("e", "source:e"))
-	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
-		*makeTombstoneV("b"),
-		*makeTombstoneV("e"),
-	})
+	diffs := testutil.NewFakeIterator()
+	diffs.
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("e")}).
+		AddValueRecords(makeTombstoneV("b"), makeTombstoneV("e"))
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
@@ -125,18 +124,17 @@ func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz,Count: 1, EstimatedSize: 1020")}
 	source := testutil.NewFakeIterator()
 	source.
-		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz"), Count: 1, EstimatedSize: 1020}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d"))
-	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
-		*makeV("b", "dest:b"),
-		*makeV("e", "dest:e"),
-		*makeV("f", "dest:f"),
-	})
+	diffs := testutil.NewFakeIterator()
+	diffs.
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("f"), Count: 1, EstimatedSize: 1020}).
+		AddValueRecords(makeV("b", "dest:b"), makeV("e", "dest:e"), makeV("f", "dest:f"))
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
@@ -160,16 +158,16 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz")}
-	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
-	range4 := &committed.Range{ID: "four", MaxKey: committed.Key("hz")}
+	range1 := &committed.Range{ID: "one", MaxKey: committed.Key("cz,Count: 1, EstimatedSize: 1020"), Count: 1, EstimatedSize: 1020}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz,Count: 1, EstimatedSize: 1020"), Count: 1, EstimatedSize: 1020}
+	range4 := &committed.Range{ID: "four", MaxKey: committed.Key("hz,Count: 1, EstimatedSize: 1020"), Count: 1, EstimatedSize: 1020}
 	source := testutil.NewFakeIterator()
 	source.
 		AddRange(range1).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
+		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez"), Count: 1, EstimatedSize: 1020}).
 		AddValueRecords(makeV("e", "source:e"), makeV("f", "source:f")).
 		AddRange(range4).
 		AddValueRecords(makeV("g", "source:g"), makeV("h", "source:h"))
@@ -184,7 +182,7 @@ func TestApplyCopiesLeftoverSources(t *testing.T) {
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("f", "source:f")))
 	writer.EXPECT().WriteRange(gomock.Eq(*range4))
 
-	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	summary, err := committed.Apply(context.Background(), writer, source, committed.NewIteratorWrapper(diffs), &committed.ApplyOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, graveler.DiffSummary{
 		Count: map[graveler.DiffType]int{
@@ -205,7 +203,7 @@ func TestApplyNoChangesFails(t *testing.T) {
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddRange(range2)
 
-	diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{})
+	diffs := testutil.NewFakeIterator()
 
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRange(gomock.Any()).AnyTimes()
@@ -222,7 +220,7 @@ func TestApplyCancelContext(t *testing.T) {
 		source := testutil.NewFakeIterator().
 			AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 			AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c"))
-		diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{})
+		diffs := testutil.NewFakeIterator()
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -232,9 +230,9 @@ func TestApplyCancelContext(t *testing.T) {
 
 	t.Run("diff", func(t *testing.T) {
 		source := testutil.NewFakeIterator()
-		diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
-			*makeV("b", "dest:b"),
-		})
+		diffs := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("b")}).
+			AddValueRecords(makeV("b", "dest:b"))
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -246,9 +244,9 @@ func TestApplyCancelContext(t *testing.T) {
 		source := testutil.NewFakeIterator().
 			AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
 			AddValueRecords(makeV("a", "source:a"), makeV("c", "source:c"))
-		diffs := testutil.NewValueIteratorFake([]graveler.ValueRecord{
-			*makeV("b", "dest:b"),
-		})
+		diffs := testutil.NewFakeIterator().
+			AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("b")}).
+			AddValueRecords(makeV("b", "dest:b"))
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()

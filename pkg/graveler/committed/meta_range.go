@@ -24,6 +24,29 @@ type Iterator interface {
 	Close()
 }
 
+// DiffIterator iterates over all Range headers and values of a Diff, allowing seeking by entire
+// ranges.
+type DiffIterator interface {
+	// Next moves to look at the next value in the current Range, or a header for the next Range if the current Range is over and a next range exists.
+	Next() bool
+	// NextRange skips the current range
+	// possible only if we are currently inside a range
+	// the next value could be Range or Value
+	NextRange() bool
+	// Value returns a nil ValueRecord and a Range before starting a Range, or a Value and that Range when inside a Range.
+	// In contrast to Iterator, the DiffIterator might not have a current range
+	Value() (*graveler.Diff, *RangeDiff)
+	SeekGE(id graveler.Key)
+	Err() error
+	Close()
+}
+
+// RangeDiff represents a change in Range
+type RangeDiff struct {
+	Type  graveler.DiffType
+	Range *Range
+}
+
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
 	Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error)
