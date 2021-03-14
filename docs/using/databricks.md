@@ -16,19 +16,22 @@ has_children: false
 {: .no_toc .text-delta }
 
 1. TOC
-   {:toc .pb-5 }
-   
+{:toc}
+
 ## Configuration
 
-For Databricks to work with lakeFS, set the S3 Hadoop configuration to the lakeFS endpoint and credentials.
-You can do so from the cluster configuration in Databricks:
+For Databricks to work with lakeFS, set the S3 Hadoop configuration to the lakeFS endpoint and credentials:
+1. In databricks, go to your cluster configuration page.
+1. Click **Edit**.
+1. Expand **Advanced Options**
+1. Under the **Spark** tab, add the following configurations:
 
-![Configuring lakeFS on Databricks](../assets/img/databricks_lakefs_conf.png)
 ```
 spark.hadoop.fs.s3a.access.key AKIAIOSFODNN7EXAMPLE
 spark.hadoop.fs.s3a.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 spark.hadoop.fs.s3a.endpoint https://s3.lakefs.example.com
 ```
+
 For more information, see the [documentation](https://docs.databricks.com/data/data-sources/aws/amazon-s3.html#configuration) from Databricks.
 
 ### Per-bucket configuration

@@ -16,7 +16,7 @@ has_children: false
 {: .no_toc .text-delta }
 
 1. TOC
-{:toc .pb-5 }
+{:toc}
 
 Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.
 The only changes we need to consider are:
