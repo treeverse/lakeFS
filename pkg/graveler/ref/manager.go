@@ -15,7 +15,7 @@ import (
 // IteratorPrefetchSize is the amount of records to maybeFetch from PG
 const IteratorPrefetchSize = 1000
 
-// MaxBatchDelay wait time before perform database read operation, it enables batching requests at that period of time
+// MaxBatchDelay is the time to wait before performing a database read operation, batching requests during that time
 const MaxBatchDelay = 3 * time.Millisecond
 
 type Manager struct {
