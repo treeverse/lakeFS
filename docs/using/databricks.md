@@ -24,42 +24,23 @@ For Databricks to work with lakeFS, set the S3 Hadoop configuration to the lakeF
 1. In databricks, go to your cluster configuration page.
 1. Click **Edit**.
 1. Expand **Advanced Options**
-1. Under the **Spark** tab, add the following configurations:
-
+1. Under the **Spark** tab, add the following configurations, replacing `<repo-name>` with your lakeFS repository name.
+Also replace the credentials and endpoint with those of your lakeFS installation.
+   
 ```
-spark.hadoop.fs.s3a.access.key AKIAIOSFODNN7EXAMPLE
-spark.hadoop.fs.s3a.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-spark.hadoop.fs.s3a.endpoint https://s3.lakefs.example.com
+spark.hadoop.fs.s3a.bucket.<repo-name>.access.key AKIAIOSFODNN7EXAMPLE
+spark.hadoop.fs.s3a.bucket.<repo-name>.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+spark.hadoop.fs.s3a.bucket.<repo-name>.endpoint https://s3.lakefs.example.com
 ```
 
 When using DeltaLake tables, the following is also needed in some versions of Databricks:
 
 ```
-spark.hadoop.fs.s3a.aws.credentials.provider shaded.databricks.org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider
-spark.hadoop.fs.s3a.session.token lakefs
+spark.hadoop.fs.s3a.bucket.<repo-name>.aws.credentials.provider shaded.databricks.org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider
+spark.hadoop.fs.s3a.bucket.<repo-name>.session.token lakefs
 ```
 
 For more information, see the [documentation](https://docs.databricks.com/data/data-sources/aws/amazon-s3.html#configuration) from Databricks.
-
-### Per-bucket configuration
-
-The above configuration will use lakeFS as the sole S3 endpoint. To use lakeFS in parallel with S3, you can configure Spark to use lakeFS only for specific bucket names.
-For example, to configure only `example-repo` to use lakeFS, set the following configurations:
-
-```
-spark.hadoop.fs.s3a.bucket.example-repo.endpoint AKIAIOSFODNN7EXAMPLE
-spark.hadoop.fs.s3a.bucket.example-repo.access.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-spark.hadoop.fs.s3a.bucket.example-repo.secret.key https://s3.lakefs.example.com
-```
-
-When using DeltaLake tables, the following is also needed in some versions of Databricks:
-
-```
-spark.hadoop.fs.s3a.bucket.example-repo.aws.credentials.provider shaded.databricks.org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider
-spark.hadoop.fs.s3a.bucket.example-repo.session.token lakefs
-```
-
-With this configuration set , reading s3a paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
 
 ## Reading Data
 In order for us to access objects in lakeFS we will need to use the lakeFS path conventions: `s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT`
