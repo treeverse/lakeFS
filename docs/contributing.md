@@ -50,7 +50,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    
    Make sure `(go env GOPATH)/bin` is in your `$PATH` (or at least, that the `statik` binary is). 
    
-1. Clone the repository from https://github.com/treeverse/lakeFS
+1. Clone the repository from https://github.com/treeverse/lakeFS (gives you read-only access to the repository. To contribute, see the next section).
 1. Build the project:
    
    ```shell
