@@ -103,8 +103,8 @@ lazy val sharedSettings = commonSettings ++ assemblySettings ++ publishSettings
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/treeverse/spark-client"),
-    "scm:git@github.com:treeverse/spark-client.git"
+    url("https://github.com/treeverse/lakeFS/clients/spark"),
+    "scm:git@github.com:treeverse/lakeFS.git"
   )
 )
 ThisBuild / developers := List(
