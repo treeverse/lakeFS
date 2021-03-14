@@ -90,6 +90,6 @@ lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code
 
 ## After submitting your pull request
 
-After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.16.
+After submitting your pull request, [GitHub Actions](https://github.com/treeverse/lakeFS/actions) will automatically run tests on your changes and make sure that your updated code builds and runs on Go 1.16.2.
 
 Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.
