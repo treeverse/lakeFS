@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/api"
+
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 var userCreatedTemplate = `{{ "User created successfully." | green }}
@@ -59,17 +60,22 @@ var authUsersList = &cobra.Command{
 
 		clt := getClient()
 
-		users, pagination, err := clt.ListUsers(cmd.Context(), after, amount)
+		res, err := clt.ListUsersWithResponse(cmd.Context(), &api.ListUsersParams{
+			After:  &after,
+			Amount: &amount,
+		})
 		if err != nil {
 			DieErr(err)
 		}
 
+		users := *res.JSON200.Results
 		rows := make([][]interface{}, len(users))
 		for i, user := range users {
-			ts := time.Unix(user.CreationDate, 0).String()
-			rows[i] = []interface{}{user.ID, ts}
+			ts := time.Unix(*user.CreationDate, 0).String()
+			rows[i] = []interface{}{user.Id, ts}
 		}
 
+		pagination := res.JSON200.Pagination
 		PrintTable(rows, []interface{}{"User ID", "Creation Date"}, pagination, amount)
 	},
 }
@@ -81,11 +87,13 @@ var authUsersCreate = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		user, err := clt.CreateUser(cmd.Context(), id)
+		res, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
+			Id: id,
+		})
 		if err != nil {
 			DieErr(err)
 		}
-
+		user := res.JSON201
 		Write(userCreatedTemplate, user)
 	},
 }
@@ -97,7 +105,7 @@ var authUsersDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		err := clt.DeleteUser(cmd.Context(), id)
+		_, err := clt.DeleteUserWithResponse(cmd.Context(), id)
 		if err != nil {
 			DieErr(err)
 		}
@@ -121,17 +129,22 @@ var authUsersGroupsList = &cobra.Command{
 
 		clt := getClient()
 
-		groups, pagination, err := clt.ListUserGroups(cmd.Context(), id, after, amount)
+		res, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &api.ListUserGroupsParams{
+			After:  &after,
+			Amount: &amount,
+		})
 		if err != nil {
 			DieErr(err)
 		}
 
+		groups := *res.JSON200.Results
 		rows := make([][]interface{}, len(groups))
 		for i, group := range groups {
-			ts := time.Unix(group.CreationDate, 0).String()
-			rows[i] = []interface{}{group.ID, ts}
+			ts := time.Unix(*group.CreationDate, 0).String()
+			rows[i] = []interface{}{group.Id, ts}
 		}
 
+		pagination := res.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, pagination, amount)
 	},
 }

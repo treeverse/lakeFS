@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -38,11 +38,14 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		stat, err := client.StatObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
+		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
+			Path: *pathURI.Path,
+		})
 		if err != nil {
 			DieErr(err)
 		}
 
+		stat := res.JSON200
 		Write(fsStatTemplate, stat)
 	},
 }
@@ -66,14 +69,26 @@ var fsListCmd = &cobra.Command{
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non recursive)
+		const delimiter = "/"
 		var trimPrefix string
-		if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
 			trimPrefix = prefix[:idx]
 		}
-
+		// delimiter used for listing
+		var paramsDelimiter *string
+		if recursive {
+			paramsDelimiter = api.StringPtr("")
+		} else {
+			paramsDelimiter = api.StringPtr(delimiter)
+		}
 		var from string
 		for {
-			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, recursive, prefix, from, -1)
+			params := &api.ListObjectsParams{
+				Prefix:    &prefix,
+				After:     &from,
+				Delimiter: paramsDelimiter,
+			}
+			res, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
 			if err != nil {
 				DieErr(err)
 			}

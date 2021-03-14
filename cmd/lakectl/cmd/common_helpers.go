@@ -10,10 +10,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"golang.org/x/term"
 )
 
@@ -151,14 +150,14 @@ func DieFmt(msg string, args ...interface{}) {
 }
 
 type APIError interface {
-	GetPayload() *models.Error
+	GetPayload() *api.Error
 }
 
 func DieErr(err error) {
 	errData := struct{ Error string }{}
 	apiError, isAPIError := err.(APIError)
 	if isAPIError {
-		errData.Error = apiError.GetPayload().Message
+		errData.Error = *apiError.GetPayload().Message
 	}
 	if errData.Error == "" {
 		errData.Error = err.Error()
@@ -171,7 +170,7 @@ func Fmt(msg string, args ...interface{}) {
 	fmt.Printf(msg, args...)
 }
 
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.Pagination, amount int) {
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination
@@ -181,11 +180,11 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.P
 			Rows:    rows,
 		},
 	}
-	if paginator != nil && swag.BoolValue(paginator.HasMore) {
+	if paginator.HasMore {
 		ctx.Pagination = &Pagination{
 			Amount:  amount,
 			HasNext: true,
-			After:   paginator.NextOffset,
+			After:   *paginator.NextOffset,
 		}
 	}
 

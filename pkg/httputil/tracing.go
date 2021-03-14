@@ -107,41 +107,43 @@ func presentBody(body []byte) string {
 	return string(body)
 }
 
-func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
-		responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
-		r, reqID := RequestID(r)
+func TracingMiddleware(requestIDHeaderName string, fields logging.Fields) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			startTime := time.Now()
+			responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
+			r, reqID := RequestID(r)
 
-		// add default fields to context
-		requestFields := logging.Fields{
-			"path":       r.RequestURI,
-			"method":     r.Method,
-			"host":       r.Host,
-			"request_id": reqID,
-		}
-		for k, v := range fields {
-			requestFields[k] = v
-		}
-		r = r.WithContext(logging.AddFields(r.Context(), requestFields))
-		responseWriter.Header().Set(requestIDHeaderName, reqID)
+			// add default fields to context
+			requestFields := logging.Fields{
+				"path":       r.RequestURI,
+				"method":     r.Method,
+				"host":       r.Host,
+				"request_id": reqID,
+			}
+			for k, v := range fields {
+				requestFields[k] = v
+			}
+			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
+			responseWriter.Header().Set(requestIDHeaderName, reqID)
 
-		// record request body as well
-		requestBodyTracer := newRequestBodyTracer(r.Body, RequestTracingMaxRequestBodySize)
-		r.Body = requestBodyTracer
+			// record request body as well
+			requestBodyTracer := newRequestBodyTracer(r.Body, RequestTracingMaxRequestBodySize)
+			r.Body = requestBodyTracer
 
-		next.ServeHTTP(responseWriter, r) // handle the request
+			next.ServeHTTP(responseWriter, r) // handle the request
 
-		if logging.Default().IsTracing() {
-			logging.FromContext(r.Context()).WithFields(logging.Fields{
-				"took":             time.Since(startTime),
-				"status_code":      responseWriter.StatusCode,
-				"sent_bytes":       responseWriter.ResponseSize,
-				"request_body":     requestBodyTracer.bodyRecorder.Buffer,
-				"request_headers":  r.Header,
-				"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
-				"response_headers": responseWriter.Header(),
-			}).Trace("HTTP call ended")
-		}
-	})
+			if logging.Default().IsTracing() {
+				logging.FromContext(r.Context()).WithFields(logging.Fields{
+					"took":             time.Since(startTime),
+					"status_code":      responseWriter.StatusCode,
+					"sent_bytes":       responseWriter.ResponseSize,
+					"request_body":     requestBodyTracer.bodyRecorder.Buffer,
+					"request_headers":  r.Header,
+					"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
+					"response_headers": responseWriter.Header(),
+				}).Trace("HTTP call ended")
+			}
+		})
+	}
 }

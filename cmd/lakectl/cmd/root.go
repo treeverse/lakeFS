@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,7 +62,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	Version: config.Version,
 }
 
-func getClient() api.Client {
+func getClient() api.ClientWithResponsesInterface {
 	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately repoened.
@@ -68,11 +70,15 @@ func getClient() api.Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	client, err := api.NewClient(
-		viper.GetString(ConfigServerEndpointURL),
-		viper.GetString(ConfigAccessKeyID),
-		viper.GetString(ConfigSecretAccessKey),
-		api.WithHTTPClient(&http.Client{Transport: transport}),
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(ConfigAccessKeyID, ConfigSecretAccessKey)
+	if err != nil {
+		DieErr(err)
+	}
+
+	server := viper.GetString(ConfigServerEndpointURL)
+	client, err := api.NewClientWithResponses(
+		server,
+		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)

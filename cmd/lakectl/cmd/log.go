@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -47,23 +46,27 @@ var logCmd = &cobra.Command{
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		commits, pagination, err := client.GetCommitLog(cmd.Context(), branchURI.Repository, branchURI.Ref, after, amount)
+		res, err := client.GetBranchCommitLogWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.GetBranchCommitLogParams{
+			After:  &after,
+			Amount: &amount,
+		})
 		if err != nil {
 			DieErr(err)
 		}
 		ctx := struct {
-			Commits         []*models.Commit
+			Commits         []api.Commit
 			Pagination      *Pagination
 			ShowMetaRangeID bool
 		}{
-			Commits:         commits,
+			Commits:         *res.JSON200.Results,
 			ShowMetaRangeID: showMetaRangeID,
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+		pagination := res.JSON200.Pagination
+		if pagination.HasMore {
 			ctx.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
-				After:   pagination.NextOffset,
+				After:   *pagination.NextOffset,
 			}
 		}
 		Write(commitsTemplate, ctx)

@@ -5,16 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 var ErrAuthorization = errors.New("authorization error")
 
-func authorize(ctx context.Context, a auth.Service, user *models.User, permissions []permissions.Permission) error {
+func authorize(ctx context.Context, a auth.Service, user *User, permissions []permissions.Permission) error {
 	authResp, err := a.Authorize(ctx, &auth.AuthorizationRequest{
-		Username:            user.ID,
+		Username:            *user.Id,
 		RequiredPermissions: permissions,
 	})
 	if err != nil {

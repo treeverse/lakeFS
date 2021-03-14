@@ -22,11 +22,15 @@ require (
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
+	github.com/deepmap/oapi-codegen v1.5.1 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/georgysavva/scany v0.2.7
+	github.com/getkin/kin-openapi v0.49.0 // indirect
+	github.com/go-chi/chi v4.0.2+incompatible // indirect
+	github.com/go-chi/chi/v5 v5.0.1 // indirect
 	github.com/go-openapi/errors v0.20.0
 	github.com/go-openapi/loads v0.20.2
 	github.com/go-openapi/runtime v0.19.26
@@ -36,6 +40,7 @@ require (
 	github.com/go-openapi/validate v0.20.2
 	github.com/go-swagger/go-swagger v0.26.1
 	github.com/go-test/deep v1.0.7
+	github.com/gobuffalo/logger v1.0.3 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.1
@@ -62,6 +67,7 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/ory/dockertest/v3 v3.6.3
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.9.0
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/xid v1.2.1

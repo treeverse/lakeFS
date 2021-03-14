@@ -1,48 +1,17 @@
 package api
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"path/filepath"
-	"strings"
-	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/runtime/middleware"
-	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/actions"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations"
-	actionsop "github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/actions"
-	authop "github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/auth"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/branches"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/commits"
-	configop "github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/config"
-	hcop "github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/health_check"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/metadata"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/refs"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/repositories"
-	setupop "github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/setup"
-	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/tags"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/db"
-	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 type contextKey string
@@ -72,6 +41,282 @@ type Controller struct {
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
 	Logger                logging.Logger
+}
+
+func StringPtr(s string) *string {
+	return &s
+}
+
+func IntPtr(n int) *int {
+	return &n
+}
+
+func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupId string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params ListGroupMembersParams) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupId string, userId string) {
+	panic("implement me")
+}
+
+func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupId string, userId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupId string, params ListGroupPoliciesParams) {
+	panic("implement me")
+}
+
+func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupId string, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupId string, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
+}
+
+func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userId string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request, userId string, params ListUserCredentialsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, userId string) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, userId string, accessKeyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userId string, accessKeyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, userId string, params ListUserGroupsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userId string, params ListUserPoliciesParams) {
+	panic("implement me")
+}
+
+func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userId string, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userId string, policyId string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
+}
+
+func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
+}
+
+func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, params ListRepositoriesParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, params CreateRepositoryParams) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRunsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository string, runId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository string, runId string, params ListRunHooksParams) {
+	panic("implement me")
+}
+
+func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository string, runId string, hookRunId string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, repository string, params ListBranchesParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, repository string) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+	panic("implement me")
+}
+
+func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetBranchCommitLog(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetBranchCommitLogParams) {
+	panic("implement me")
+}
+
+func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+	panic("implement me")
+}
+
+func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, repository string, branch string, params DiffBranchParams) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params DeleteObjectParams) {
+	panic("implement me")
+}
+
+func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params UploadObjectParams) {
+	panic("implement me")
+}
+
+func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params StageObjectParams) {
+	panic("implement me")
+}
+
+func (c *Controller) Revert(w http.ResponseWriter, r *http.Request, repository string, branch string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository string, commitId string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository string, pRange string) {
+	panic("implement me")
+}
+
+func (c *Controller) Dump(w http.ResponseWriter, r *http.Request, repository string) {
+	panic("implement me")
+}
+
+func (c *Controller) Restore(w http.ResponseWriter, r *http.Request, repository string) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateSymlink(w http.ResponseWriter, r *http.Request, repository string, branch string, params CreateSymlinkParams) {
+	panic("implement me")
+}
+
+func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository string, leftRef string, rightRef string, params DiffRefsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetObjectParams) {
+	panic("implement me")
+}
+
+func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, repository string, ref string, params ListObjectsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, repository string, ref string, params StatObjectParams) {
+	panic("implement me")
+}
+
+func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository string, ref string, params GetUnderlyingPropertiesParams) {
+	panic("implement me")
+}
+
+func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationBranch string) {
+	panic("implement me")
+}
+
+func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository string, params ListTagsParams) {
+	panic("implement me")
+}
+
+func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, repository string) {
+	panic("implement me")
+}
+
+func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {
+	panic("implement me")
+}
+
+func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {
+	panic("implement me")
+}
+
+func (c *Controller) SetupLakeFS(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
+}
+
+func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
 
 func NewController(
@@ -106,103 +351,105 @@ func (c *Controller) LogAction(ctx context.Context, action string) {
 	c.Collector.CollectEvent("api_server", action)
 }
 
-// Configure attaches our API operations to a generated swagger API stub
-// Adding new handlers requires also adding them here so that the generated server will use them
-func (c *Controller) Configure(api *operations.LakefsAPI) {
-	// Register operations here
-	api.HealthCheckHealthCheckHandler = c.GetHealthCheckHandler()
-	api.SetupSetupLakeFSHandler = c.SetupLakeFSHandler()
+//
+//// Configure attaches our API operations to a generated swagger API stub
+//// Adding new handlers requires also adding them here so that the generated server will use them
+//func (c *Controller) Configure(api *operations.LakefsAPI) {
+//	// Register operations here
+//	api.HealthCheckHealthCheckHandler = c.GetHealthCheckHandler()
+//	api.SetupSetupLakeFSHandler = c.SetupLakeFSHandler()
+//
+//	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
+//	api.AuthListUsersHandler = c.ListUsersHandler()
+//	api.AuthGetUserHandler = c.GetUserHandler()
+//	api.AuthCreateUserHandler = c.CreateUserHandler()
+//	api.AuthDeleteUserHandler = c.DeleteUserHandler()
+//	api.AuthGetGroupHandler = c.GetGroupHandler()
+//	api.AuthListGroupsHandler = c.ListGroupsHandler()
+//	api.AuthCreateGroupHandler = c.CreateGroupHandler()
+//	api.AuthDeleteGroupHandler = c.DeleteGroupHandler()
+//	api.AuthListPoliciesHandler = c.ListPoliciesHandler()
+//	api.AuthCreatePolicyHandler = c.CreatePolicyHandler()
+//	api.AuthGetPolicyHandler = c.GetPolicyHandler()
+//	api.AuthDeletePolicyHandler = c.DeletePolicyHandler()
+//	api.AuthUpdatePolicyHandler = c.UpdatePolicyHandler()
+//	api.AuthListGroupMembersHandler = c.ListGroupMembersHandler()
+//	api.AuthAddGroupMembershipHandler = c.AddGroupMembershipHandler()
+//	api.AuthDeleteGroupMembershipHandler = c.DeleteGroupMembershipHandler()
+//	api.AuthListUserCredentialsHandler = c.ListUserCredentialsHandler()
+//	api.AuthCreateCredentialsHandler = c.CreateCredentialsHandler()
+//	api.AuthDeleteCredentialsHandler = c.DeleteCredentialsHandler()
+//	api.AuthGetCredentialsHandler = c.GetCredentialsHandler()
+//	api.AuthListUserGroupsHandler = c.ListUserGroupsHandler()
+//	api.AuthListUserPoliciesHandler = c.ListUserPoliciesHandler()
+//	api.AuthAttachPolicyToUserHandler = c.AttachPolicyToUserHandler()
+//	api.AuthDetachPolicyFromUserHandler = c.DetachPolicyFromUserHandler()
+//	api.AuthListGroupPoliciesHandler = c.ListGroupPoliciesHandler()
+//	api.AuthAttachPolicyToGroupHandler = c.AttachPolicyToGroupHandler()
+//	api.AuthDetachPolicyFromGroupHandler = c.DetachPolicyFromGroupHandler()
+//
+//	api.RepositoriesListRepositoriesHandler = c.ListRepositoriesHandler()
+//	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
+//	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
+//	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
+//
+//	api.BranchesListBranchesHandler = c.ListBranchesHandler()
+//	api.BranchesGetBranchHandler = c.GetBranchHandler()
+//	api.BranchesCreateBranchHandler = c.CreateBranchHandler()
+//	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
+//	api.BranchesResetBranchHandler = c.ResetBranchHandler()
+//	api.BranchesRevertHandler = c.RevertHandler()
+//
+//	api.TagsListTagsHandler = c.ListTagsHandler()
+//	api.TagsGetTagHandler = c.GetTagHandler()
+//	api.TagsCreateTagHandler = c.CreateTagHandler()
+//	api.TagsDeleteTagHandler = c.DeleteTagHandler()
+//
+//	api.CommitsCommitHandler = c.CommitHandler()
+//	api.CommitsGetCommitHandler = c.GetCommitHandler()
+//	api.CommitsGetBranchCommitLogHandler = c.CommitsGetBranchCommitLogHandler()
+//
+//	api.RefsDiffRefsHandler = c.RefsDiffRefsHandler()
+//	api.BranchesDiffBranchHandler = c.BranchesDiffBranchHandler()
+//	api.RefsMergeIntoBranchHandler = c.MergeMergeIntoBranchHandler()
+//
+//	api.ObjectsStatObjectHandler = c.ObjectsStatObjectHandler()
+//	api.ObjectsGetUnderlyingPropertiesHandler = c.ObjectsGetUnderlyingPropertiesHandler()
+//	api.ObjectsListObjectsHandler = c.ObjectsListObjectsHandler()
+//	api.ObjectsGetObjectHandler = c.ObjectsGetObjectHandler()
+//	api.ObjectsUploadObjectHandler = c.ObjectsUploadObjectHandler()
+//	api.ObjectsStageObjectHandler = c.ObjectsStageObjectHandler()
+//	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
+//
+//	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
+//	api.MetadataGetRangeHandler = c.MetadataGetRangeHandler()
+//	api.MetadataGetMetaRangeHandler = c.MetadataGetMetarangeHandler()
+//
+//	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
+//
+//	api.RefsDumpHandler = c.RefsDumpHandler()
+//	api.RefsRestoreHandler = c.RefsRestoreHandler()
+//
+//	api.ActionsGetRunHandler = c.ActionsGetRunHandler()
+//	api.ActionsGetRunHookOutputHandler = c.ActionsGetRunHookOutputHandler()
+//	api.ActionsListRunHooksHandler = c.ActionsListRunHooksHandler()
+//	api.ActionsListRunsHandler = c.ActionsListRunsHandler()
+//}
 
-	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
-	api.AuthListUsersHandler = c.ListUsersHandler()
-	api.AuthGetUserHandler = c.GetUserHandler()
-	api.AuthCreateUserHandler = c.CreateUserHandler()
-	api.AuthDeleteUserHandler = c.DeleteUserHandler()
-	api.AuthGetGroupHandler = c.GetGroupHandler()
-	api.AuthListGroupsHandler = c.ListGroupsHandler()
-	api.AuthCreateGroupHandler = c.CreateGroupHandler()
-	api.AuthDeleteGroupHandler = c.DeleteGroupHandler()
-	api.AuthListPoliciesHandler = c.ListPoliciesHandler()
-	api.AuthCreatePolicyHandler = c.CreatePolicyHandler()
-	api.AuthGetPolicyHandler = c.GetPolicyHandler()
-	api.AuthDeletePolicyHandler = c.DeletePolicyHandler()
-	api.AuthUpdatePolicyHandler = c.UpdatePolicyHandler()
-	api.AuthListGroupMembersHandler = c.ListGroupMembersHandler()
-	api.AuthAddGroupMembershipHandler = c.AddGroupMembershipHandler()
-	api.AuthDeleteGroupMembershipHandler = c.DeleteGroupMembershipHandler()
-	api.AuthListUserCredentialsHandler = c.ListUserCredentialsHandler()
-	api.AuthCreateCredentialsHandler = c.CreateCredentialsHandler()
-	api.AuthDeleteCredentialsHandler = c.DeleteCredentialsHandler()
-	api.AuthGetCredentialsHandler = c.GetCredentialsHandler()
-	api.AuthListUserGroupsHandler = c.ListUserGroupsHandler()
-	api.AuthListUserPoliciesHandler = c.ListUserPoliciesHandler()
-	api.AuthAttachPolicyToUserHandler = c.AttachPolicyToUserHandler()
-	api.AuthDetachPolicyFromUserHandler = c.DetachPolicyFromUserHandler()
-	api.AuthListGroupPoliciesHandler = c.ListGroupPoliciesHandler()
-	api.AuthAttachPolicyToGroupHandler = c.AttachPolicyToGroupHandler()
-	api.AuthDetachPolicyFromGroupHandler = c.DetachPolicyFromGroupHandler()
-
-	api.RepositoriesListRepositoriesHandler = c.ListRepositoriesHandler()
-	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
-	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
-	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
-
-	api.BranchesListBranchesHandler = c.ListBranchesHandler()
-	api.BranchesGetBranchHandler = c.GetBranchHandler()
-	api.BranchesCreateBranchHandler = c.CreateBranchHandler()
-	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
-	api.BranchesResetBranchHandler = c.ResetBranchHandler()
-	api.BranchesRevertHandler = c.RevertHandler()
-
-	api.TagsListTagsHandler = c.ListTagsHandler()
-	api.TagsGetTagHandler = c.GetTagHandler()
-	api.TagsCreateTagHandler = c.CreateTagHandler()
-	api.TagsDeleteTagHandler = c.DeleteTagHandler()
-
-	api.CommitsCommitHandler = c.CommitHandler()
-	api.CommitsGetCommitHandler = c.GetCommitHandler()
-	api.CommitsGetBranchCommitLogHandler = c.CommitsGetBranchCommitLogHandler()
-
-	api.RefsDiffRefsHandler = c.RefsDiffRefsHandler()
-	api.BranchesDiffBranchHandler = c.BranchesDiffBranchHandler()
-	api.RefsMergeIntoBranchHandler = c.MergeMergeIntoBranchHandler()
-
-	api.ObjectsStatObjectHandler = c.ObjectsStatObjectHandler()
-	api.ObjectsGetUnderlyingPropertiesHandler = c.ObjectsGetUnderlyingPropertiesHandler()
-	api.ObjectsListObjectsHandler = c.ObjectsListObjectsHandler()
-	api.ObjectsGetObjectHandler = c.ObjectsGetObjectHandler()
-	api.ObjectsUploadObjectHandler = c.ObjectsUploadObjectHandler()
-	api.ObjectsStageObjectHandler = c.ObjectsStageObjectHandler()
-	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
-
-	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
-	api.MetadataGetRangeHandler = c.MetadataGetRangeHandler()
-	api.MetadataGetMetaRangeHandler = c.MetadataGetMetarangeHandler()
-
-	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
-
-	api.RefsDumpHandler = c.RefsDumpHandler()
-	api.RefsRestoreHandler = c.RefsRestoreHandler()
-
-	api.ActionsGetRunHandler = c.ActionsGetRunHandler()
-	api.ActionsGetRunHookOutputHandler = c.ActionsGetRunHookOutputHandler()
-	api.ActionsListRunHooksHandler = c.ActionsListRunHooksHandler()
-	api.ActionsListRunsHandler = c.ActionsListRunsHandler()
-}
-
-func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (context.Context, error) {
+/*
+func (c *Controller) setupRequest(user *User, r *http.Request, permissions []permissions.Permission) (context.Context, error) {
 	// add user to context
-	ctx := logging.AddFields(r.Context(), logging.Fields{"user": user.ID})
+	ctx := logging.AddFields(r.Context(), logging.Fields{"user": user.Id})
 	ctx = context.WithValue(ctx, UserContextKey, user)
 	return ctx, authorize(ctx, c.Auth, user, permissions)
 }
 
-func createPaginator(nextToken string, amountResults int) *models.Pagination {
-	return &models.Pagination{
-		HasMore:    swag.Bool(nextToken != ""),
-		MaxPerPage: swag.Int64(MaxResultsPerPage),
-		NextOffset: nextToken,
-		Results:    swag.Int64(int64(amountResults)),
+func createPaginator(nextToken string, amountResults int) *Pagination {
+	return &Pagination{
+		HasMore:    nextToken != "",
+		MaxPerPage: IntPtr(MaxResultsPerPage),
+		NextOffset: StringPtr(nextToken),
+		Results:    IntPtr(amountResults),
 	}
 }
 
@@ -227,7 +474,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 	return setupop.SetupLakeFSHandlerFunc(func(setupReq setupop.SetupLakeFSParams) middleware.Responder {
 		if len(*setupReq.User.Username) == 0 {
 			return setupop.NewSetupLakeFSBadRequest().
-				WithPayload(&models.Error{
+				WithPayload(&Error{
 					Message: "empty display name",
 				})
 		}
@@ -235,7 +482,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		// check if previous setup completed
 		if ts, _ := c.MetadataManager.SetupTimestamp(setupReq.HTTPRequest.Context()); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
-				WithPayload(&models.Error{
+				WithPayload(&Error{
 					Message: "lakeFS already initialized",
 				})
 		}
@@ -245,7 +492,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		err := c.Migrator.Migrate(ctx)
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
-				WithPayload(&models.Error{
+				WithPayload(&Error{
 					Message: err.Error(),
 				})
 		}
@@ -259,7 +506,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
-				WithPayload(&models.Error{Message: err.Error()})
+				WithPayload(&Error{Message: err.Error()})
 		}
 
 		meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
@@ -267,7 +514,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		c.Collector.CollectMetadata(meta)
 		c.Collector.CollectEvent("global", "init")
 
-		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
+		return setupop.NewSetupLakeFSOK().WithPayload(&CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
 			CreationDate:    cred.IssuedDate.Unix(),
@@ -276,7 +523,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 }
 
 func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
-	return authop.GetCurrentUserHandlerFunc(func(params authop.GetCurrentUserParams, user *models.User) middleware.Responder {
+	return authop.GetCurrentUserHandlerFunc(func(params authop.GetCurrentUserParams, user *User) middleware.Responder {
 		return authop.NewGetCurrentUserOK().WithPayload(&authop.GetCurrentUserOKBody{
 			User: user,
 		})
@@ -284,7 +531,7 @@ func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
 }
 
 func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
-	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
+	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListRepositoriesAction,
@@ -305,10 +552,10 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 				WithPayload(responseError("error listing repositories: %s", err))
 		}
 
-		repoList := make([]*models.Repository, len(repos))
+		repoList := make([]*Repository, len(repos))
 		var lastID string
 		for i, repo := range repos {
-			repoList[i] = &models.Repository{
+			repoList[i] = &Repository{
 				StorageNamespace: repo.StorageNamespace,
 				CreationDate:     repo.CreationDate.Unix(),
 				DefaultBranch:    repo.DefaultBranch,
@@ -317,7 +564,7 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 			lastID = repo.Name
 		}
 		returnValue := repositories.NewListRepositoriesOK().WithPayload(&repositories.ListRepositoriesOKBody{
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(repoList))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
@@ -345,7 +592,7 @@ func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 }
 
 func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
-	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
+	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadRepositoryAction,
@@ -367,7 +614,7 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 		}
 
 		return repositories.NewGetRepositoryOK().
-			WithPayload(&models.Repository{
+			WithPayload(&Repository{
 				StorageNamespace: repo.StorageNamespace,
 				CreationDate:     repo.CreationDate.Unix(),
 				DefaultBranch:    repo.DefaultBranch,
@@ -377,7 +624,7 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 }
 
 func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
-	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
+	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadCommitAction,
@@ -395,7 +642,7 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 		if err != nil {
 			return commits.NewGetCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		return commits.NewGetCommitOK().WithPayload(&models.Commit{
+		return commits.NewGetCommitOK().WithPayload(&Commit{
 			Committer:    commit.Committer,
 			CreationDate: commit.CreationDate.Unix(),
 			ID:           params.CommitID,
@@ -408,7 +655,7 @@ func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 }
 
 func (c *Controller) CommitHandler() commits.CommitHandler {
-	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
+	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
@@ -438,7 +685,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		return commits.NewCommitCreated().WithPayload(&models.Commit{
+		return commits.NewCommitCreated().WithPayload(&Commit{
 			Committer:    commit.Committer,
 			CreationDate: commit.CreationDate.Unix(),
 			ID:           commit.Reference,
@@ -450,7 +697,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 }
 
 func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
-	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *models.User) middleware.Responder {
+	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
@@ -474,10 +721,10 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		serializedCommits := make([]*models.Commit, len(commitLog))
+		serializedCommits := make([]*Commit, len(commitLog))
 		lastID := ""
 		for i, commit := range commitLog {
-			serializedCommits[i] = &models.Commit{
+			serializedCommits[i] = &Commit{
 				Committer:    commit.Committer,
 				CreationDate: commit.CreationDate.Unix(),
 				ID:           commit.Reference,
@@ -490,7 +737,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		}
 
 		returnValue := commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(serializedCommits))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
@@ -524,7 +771,7 @@ func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storag
 }
 
 func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
-	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
+	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
@@ -551,7 +798,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 				return repositories.NewCreateRepositoryBadRequest().
 					WithPayload(responseError("error creating repository: could not access storage namespace"))
 			}
-			return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
+			return repositories.NewCreateRepositoryCreated().WithPayload(&Repository{
 				StorageNamespace: repo.StorageNamespace,
 				CreationDate:     repo.CreationDate.Unix(),
 				DefaultBranch:    repo.DefaultBranch,
@@ -577,7 +824,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
-		return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
+		return repositories.NewCreateRepositoryCreated().WithPayload(&Repository{
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
@@ -587,7 +834,7 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 }
 
 func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
-	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
+	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteRepositoryAction,
@@ -611,7 +858,7 @@ func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHand
 }
 
 func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
-	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
+	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListBranchesAction,
@@ -631,17 +878,17 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 				WithPayload(responseError("could not list branches: %s", err))
 		}
 
-		branchList := make([]*models.Ref, len(res))
+		branchList := make([]*Ref, len(res))
 		var lastID string
 		for i, branch := range res {
-			branchList[i] = &models.Ref{
+			branchList[i] = &Ref{
 				CommitID: swag.String(branch.Reference),
 				ID:       swag.String(branch.Name),
 			}
 			lastID = branch.Name
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(branchList))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
@@ -658,7 +905,7 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 }
 
 func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
-	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
+	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
@@ -680,7 +927,7 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return branches.NewGetBranchOK().WithPayload(&models.Ref{
+		return branches.NewGetBranchOK().WithPayload(&Ref{
 			CommitID: swag.String(reference),
 			ID:       swag.String(params.Branch),
 		})
@@ -688,7 +935,7 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 }
 
 func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
-	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
+	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *User) middleware.Responder {
 		repository := params.Repository
 		branch := swag.StringValue(params.Branch.Name)
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
@@ -711,7 +958,7 @@ func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 }
 
 func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
-	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
+	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteBranchAction,
@@ -737,7 +984,7 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 }
 
 func (c *Controller) ListTagsHandler() tags.ListTagsHandler {
-	return tags.ListTagsHandlerFunc(func(params tags.ListTagsParams, user *models.User) middleware.Responder {
+	return tags.ListTagsHandlerFunc(func(params tags.ListTagsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListTagsAction,
@@ -756,17 +1003,17 @@ func (c *Controller) ListTagsHandler() tags.ListTagsHandler {
 				WithPayload(responseError("could not list tags: %s", err))
 		}
 
-		tagList := make([]*models.Ref, len(res))
+		tagList := make([]*Ref, len(res))
 		var lastID string
 		for i, tag := range res {
-			tagList[i] = &models.Ref{
+			tagList[i] = &Ref{
 				CommitID: swag.String(tag.CommitID),
 				ID:       swag.String(tag.ID),
 			}
 			lastID = tag.ID
 		}
 		returnValue := tags.NewListTagsOK().WithPayload(&tags.ListTagsOKBody{
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(tagList))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
@@ -781,7 +1028,7 @@ func (c *Controller) ListTagsHandler() tags.ListTagsHandler {
 }
 
 func (c *Controller) GetTagHandler() tags.GetTagHandler {
-	return tags.GetTagHandlerFunc(func(params tags.GetTagParams, user *models.User) middleware.Responder {
+	return tags.GetTagHandlerFunc(func(params tags.GetTagParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadTagAction,
@@ -803,7 +1050,7 @@ func (c *Controller) GetTagHandler() tags.GetTagHandler {
 			return tags.NewGetTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return tags.NewGetTagOK().WithPayload(&models.Ref{
+		return tags.NewGetTagOK().WithPayload(&Ref{
 			CommitID: swag.String(reference),
 			ID:       swag.String(params.Tag),
 		})
@@ -811,7 +1058,7 @@ func (c *Controller) GetTagHandler() tags.GetTagHandler {
 }
 
 func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
-	return tags.CreateTagHandlerFunc(func(params tags.CreateTagParams, user *models.User) middleware.Responder {
+	return tags.CreateTagHandlerFunc(func(params tags.CreateTagParams, user *User) middleware.Responder {
 		repository := params.Repository
 		tagID := swag.StringValue(params.Tag.ID)
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
@@ -829,7 +1076,7 @@ func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
 		if err != nil {
 			return tags.NewCreateTagDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		return tags.NewCreateTagCreated().WithPayload(&models.Ref{
+		return tags.NewCreateTagCreated().WithPayload(&Ref{
 			CommitID: swag.String(commitID),
 			ID:       swag.String(tagID),
 		})
@@ -837,7 +1084,7 @@ func (c *Controller) CreateTagHandler() tags.CreateTagHandler {
 }
 
 func (c *Controller) DeleteTagHandler() tags.DeleteTagHandler {
-	return tags.DeleteTagHandlerFunc(func(params tags.DeleteTagParams, user *models.User) middleware.Responder {
+	return tags.DeleteTagHandlerFunc(func(params tags.DeleteTagParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteTagAction,
@@ -862,7 +1109,7 @@ func (c *Controller) DeleteTagHandler() tags.DeleteTagHandler {
 }
 
 func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
-	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
+	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
@@ -918,11 +1165,11 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 	})
 }
 
-func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
+func newMergeResultFromCatalog(res *catalog.MergeResult) *MergeResult {
 	if res == nil {
-		return &models.MergeResult{}
+		return &MergeResult{}
 	}
-	var summary models.MergeResultSummary
+	var summary MergeResultSummary
 	for k, v := range res.Summary {
 		val := int64(v)
 		switch k {
@@ -936,14 +1183,14 @@ func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
 			summary.Conflict = val
 		}
 	}
-	return &models.MergeResult{
+	return &MergeResult{
 		Reference: res.Reference,
 		Summary:   &summary,
 	}
 }
 
 func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
-	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
+	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
@@ -966,7 +1213,7 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 				WithPayload(responseError("could not diff branch: %s", err))
 		}
 
-		results := make([]*models.Diff, len(diff))
+		results := make([]*Diff, len(diff))
 		for i, d := range diff {
 			results[i] = transformDifferenceToDiff(d)
 		}
@@ -976,7 +1223,7 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		}
 		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{
 			Results: results,
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				NextOffset: nextOffset,
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(diff))),
@@ -987,7 +1234,7 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 }
 
 func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
-	return refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, user *models.User) middleware.Responder {
+	return refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
@@ -1019,7 +1266,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 				WithPayload(responseError("could not diff references: %s", err))
 		}
 
-		results := make([]*models.Diff, len(diff))
+		results := make([]*Diff, len(diff))
 		for i, d := range diff {
 			results[i] = transformDifferenceToDiff(d)
 		}
@@ -1029,7 +1276,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		}
 		return refs.NewDiffRefsOK().WithPayload(&refs.DiffRefsOKBody{
 			Results: results,
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				NextOffset: nextOffset,
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(diff))),
@@ -1040,7 +1287,7 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 }
 
 func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
-	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *models.User) middleware.Responder {
+	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
@@ -1071,12 +1318,12 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		}
 
 		// serialize entry
-		obj := &models.ObjectStats{
+		obj := &ObjectStats{
 			Checksum:        entry.Checksum,
 			Mtime:           entry.CreationDate.Unix(),
 			Path:            params.Path,
 			PhysicalAddress: qk.Format(),
-			PathType:        models.ObjectStatsPathTypeObject,
+			PathType:        ObjectStatsPathTypeObject,
 			SizeBytes:       swag.Int64(entry.Size),
 		}
 
@@ -1088,7 +1335,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 }
 
 func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingPropertiesHandler {
-	return objects.GetUnderlyingPropertiesHandlerFunc(func(params objects.GetUnderlyingPropertiesParams, user *models.User) middleware.Responder {
+	return objects.GetUnderlyingPropertiesHandlerFunc(func(params objects.GetUnderlyingPropertiesParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
@@ -1124,14 +1371,14 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		}
 
 		// serialize properties
-		return objects.NewGetUnderlyingPropertiesOK().WithPayload(&models.UnderlyingObjectProperties{
+		return objects.NewGetUnderlyingPropertiesOK().WithPayload(&UnderlyingObjectProperties{
 			StorageClass: properties.StorageClass,
 		})
 	})
 }
 
 func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
-	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
+	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
@@ -1182,7 +1429,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	})
 }
 func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
-	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
+	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *User) middleware.Responder {
 		_, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadConfigAction,
@@ -1194,7 +1441,7 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		storageNamespaceInfo := c.BlockAdapter.GetStorageNamespaceInfo()
-		return configop.NewGetConfigOK().WithPayload(&models.Config{
+		return configop.NewGetConfigOK().WithPayload(&Config{
 			BlockstoreNamespaceValidityRegex: storageNamespaceInfo.ValidityRegex,
 			BlockstoreNamespaceExample:       storageNamespaceInfo.Example,
 		})
@@ -1202,7 +1449,7 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 }
 
 func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
-	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *models.User) middleware.Responder {
+	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -1291,7 +1538,7 @@ func writeSymlink(ctx context.Context, params metadata.CreateSymlinkParams, repo
 }
 
 func (c *Controller) MetadataGetMetarangeHandler() metadata.GetMetaRangeHandler {
-	return metadata.GetMetaRangeHandlerFunc(func(params metadata.GetMetaRangeParams, user *models.User) middleware.Responder {
+	return metadata.GetMetaRangeHandlerFunc(func(params metadata.GetMetaRangeParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
@@ -1318,7 +1565,7 @@ func (c *Controller) MetadataGetMetarangeHandler() metadata.GetMetaRangeHandler 
 }
 
 func (c *Controller) MetadataGetRangeHandler() metadata.GetRangeHandler {
-	return metadata.GetRangeHandlerFunc(func(params metadata.GetRangeParams, user *models.User) middleware.Responder {
+	return metadata.GetRangeHandlerFunc(func(params metadata.GetRangeParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
@@ -1345,7 +1592,7 @@ func (c *Controller) MetadataGetRangeHandler() metadata.GetRangeHandler {
 }
 
 func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
-	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
+	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
@@ -1391,7 +1638,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		objList := make([]*models.ObjectStats, len(res))
+		objList := make([]*ObjectStats, len(res))
 		var lastID string
 		for i, entry := range res {
 			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
@@ -1400,28 +1647,28 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			}
 
 			if entry.CommonLevel {
-				objList[i] = &models.ObjectStats{
+				objList[i] = &ObjectStats{
 					Path:     entry.Path,
-					PathType: models.ObjectStatsPathTypeCommonPrefix,
+					PathType: ObjectStatsPathTypeCommonPrefix,
 				}
 			} else {
 				var mtime int64
 				if !entry.CreationDate.IsZero() {
 					mtime = entry.CreationDate.Unix()
 				}
-				objList[i] = &models.ObjectStats{
+				objList[i] = &ObjectStats{
 					Checksum:        entry.Checksum,
 					Mtime:           mtime,
 					Path:            entry.Path,
 					PhysicalAddress: qk.Format(),
-					PathType:        models.ObjectStatsPathTypeObject,
+					PathType:        ObjectStatsPathTypeObject,
 					SizeBytes:       swag.Int64(entry.Size),
 				}
 			}
 			lastID = entry.Path
 		}
 		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
-			Pagination: &models.Pagination{
+			Pagination: &Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(objList))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
@@ -1437,7 +1684,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 }
 
 func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
-	return objects.StageObjectHandlerFunc(func(params objects.StageObjectParams, user *models.User) middleware.Responder {
+	return objects.StageObjectHandlerFunc(func(params objects.StageObjectParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -1492,19 +1739,19 @@ func (c *Controller) ObjectsStageObjectHandler() objects.StageObjectHandler {
 			return objects.NewStageObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return objects.NewStageObjectCreated().WithPayload(&models.ObjectStats{
+		return objects.NewStageObjectCreated().WithPayload(&ObjectStats{
 			Checksum:        entry.Checksum,
 			Mtime:           entry.CreationDate.Unix(),
 			Path:            entry.Path,
 			PhysicalAddress: qk.Format(),
-			PathType:        models.ObjectStatsPathTypeObject,
+			PathType:        ObjectStatsPathTypeObject,
 			SizeBytes:       swag.Int64(entry.Size),
 		})
 	})
 }
 
 func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
-	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
+	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -1566,19 +1813,19 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+		return objects.NewUploadObjectCreated().WithPayload(&ObjectStats{
 			Checksum:        blob.Checksum,
 			Mtime:           writeTime.Unix(),
 			Path:            params.Path,
 			PhysicalAddress: qk.Format(),
-			PathType:        models.ObjectStatsPathTypeObject,
+			PathType:        ObjectStatsPathTypeObject,
 			SizeBytes:       swag.Int64(blob.Size),
 		})
 	})
 }
 
 func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
-	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *models.User) middleware.Responder {
+	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteObjectAction,
@@ -1603,7 +1850,7 @@ func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 }
 
 func (c *Controller) RevertHandler() branches.RevertHandler {
-	return branches.RevertHandlerFunc(func(params branches.RevertParams, user *models.User) middleware.Responder {
+	return branches.RevertHandlerFunc(func(params branches.RevertParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RevertBranchAction,
@@ -1635,7 +1882,7 @@ func (c *Controller) RevertHandler() branches.RevertHandler {
 }
 
 func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
-	return branches.ResetBranchHandlerFunc(func(params branches.ResetBranchParams, user *models.User) middleware.Responder {
+	return branches.ResetBranchHandlerFunc(func(params branches.ResetBranchParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RevertBranchAction,
@@ -1647,13 +1894,13 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 		}
 		c.LogAction(ctx, "reset_branch")
 		switch swag.StringValue(params.Reset.Type) {
-		case models.ResetCreationTypeCommit:
+		case ResetCreationTypeCommit:
 			err = c.Catalog.RollbackCommit(ctx, params.Repository, params.Branch, params.Reset.Commit)
-		case models.ResetCreationTypeCommonPrefix:
+		case ResetCreationTypeCommonPrefix:
 			err = c.Catalog.ResetEntries(ctx, params.Repository, params.Branch, params.Reset.Path)
-		case models.ResetCreationTypeReset:
+		case ResetCreationTypeReset:
 			err = c.Catalog.ResetBranch(ctx, params.Repository, params.Branch)
-		case models.ResetCreationTypeObject:
+		case ResetCreationTypeObject:
 			err = c.Catalog.ResetEntry(ctx, params.Repository, params.Branch, params.Reset.Path)
 		default:
 			return branches.NewResetBranchNotFound().
@@ -1671,7 +1918,7 @@ func (c *Controller) ResetBranchHandler() branches.ResetBranchHandler {
 }
 
 func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
-	return authop.CreateUserHandlerFunc(func(params authop.CreateUserParams, user *models.User) middleware.Responder {
+	return authop.CreateUserHandlerFunc(func(params authop.CreateUserParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateUserAction,
@@ -1694,7 +1941,7 @@ func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 		}
 
 		return authop.NewCreateUserCreated().
-			WithPayload(&models.User{
+			WithPayload(&User{
 				CreationDate: u.CreatedAt.Unix(),
 				ID:           u.Username,
 			})
@@ -1702,7 +1949,7 @@ func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 }
 
 func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
-	return authop.ListUsersHandlerFunc(func(params authop.ListUsersParams, user *models.User) middleware.Responder {
+	return authop.ListUsersHandlerFunc(func(params authop.ListUsersParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListUsersAction,
@@ -1724,9 +1971,9 @@ func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.User, len(users))
+		response := make([]*User, len(users))
 		for i, u := range users {
-			response[i] = &models.User{
+			response[i] = &User{
 				CreationDate: u.CreatedAt.Unix(),
 				ID:           u.Username,
 			}
@@ -1741,7 +1988,7 @@ func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
 }
 
 func (c *Controller) GetUserHandler() authop.GetUserHandler {
-	return authop.GetUserHandlerFunc(func(params authop.GetUserParams, user *models.User) middleware.Responder {
+	return authop.GetUserHandlerFunc(func(params authop.GetUserParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
@@ -1764,7 +2011,7 @@ func (c *Controller) GetUserHandler() authop.GetUserHandler {
 		}
 
 		return authop.NewGetUserOK().
-			WithPayload(&models.User{
+			WithPayload(&User{
 				CreationDate: u.CreatedAt.Unix(),
 				ID:           u.Username,
 			})
@@ -1772,7 +2019,7 @@ func (c *Controller) GetUserHandler() authop.GetUserHandler {
 }
 
 func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
-	return authop.DeleteUserHandlerFunc(func(params authop.DeleteUserParams, user *models.User) middleware.Responder {
+	return authop.DeleteUserHandlerFunc(func(params authop.DeleteUserParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteUserAction,
@@ -1800,7 +2047,7 @@ func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
 }
 
 func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
-	return authop.GetGroupHandlerFunc(func(params authop.GetGroupParams, user *models.User) middleware.Responder {
+	return authop.GetGroupHandlerFunc(func(params authop.GetGroupParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
@@ -1823,7 +2070,7 @@ func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
 		}
 
 		return authop.NewGetGroupOK().
-			WithPayload(&models.Group{
+			WithPayload(&Group{
 				CreationDate: g.CreatedAt.Unix(),
 				ID:           g.DisplayName,
 			})
@@ -1831,7 +2078,7 @@ func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
 }
 
 func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
-	return authop.ListGroupsHandlerFunc(func(params authop.ListGroupsParams, user *models.User) middleware.Responder {
+	return authop.ListGroupsHandlerFunc(func(params authop.ListGroupsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListGroupsAction,
@@ -1854,9 +2101,9 @@ func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.Group, len(groups))
+		response := make([]*Group, len(groups))
 		for i, g := range groups {
-			response[i] = &models.Group{
+			response[i] = &Group{
 				CreationDate: g.CreatedAt.Unix(),
 				ID:           g.DisplayName,
 			}
@@ -1871,7 +2118,7 @@ func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
 }
 
 func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
-	return authop.CreateGroupHandlerFunc(func(params authop.CreateGroupParams, user *models.User) middleware.Responder {
+	return authop.CreateGroupHandlerFunc(func(params authop.CreateGroupParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateGroupAction,
@@ -1895,7 +2142,7 @@ func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
 		}
 
 		return authop.NewCreateGroupCreated().
-			WithPayload(&models.Group{
+			WithPayload(&Group{
 				CreationDate: g.CreatedAt.Unix(),
 				ID:           g.DisplayName,
 			})
@@ -1903,7 +2150,7 @@ func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
 }
 
 func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
-	return authop.DeleteGroupHandlerFunc(func(params authop.DeleteGroupParams, user *models.User) middleware.Responder {
+	return authop.DeleteGroupHandlerFunc(func(params authop.DeleteGroupParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteGroupAction,
@@ -1929,16 +2176,16 @@ func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
 	})
 }
 
-func serializePolicy(p *model.Policy) *models.Policy {
-	stmts := make([]*models.Statement, len(p.Statement))
+func serializePolicy(p *model.Policy) *Policy {
+	stmts := make([]*Statement, len(p.Statement))
 	for i, s := range p.Statement {
-		stmts[i] = &models.Statement{
+		stmts[i] = &Statement{
 			Action:   s.Action,
 			Effect:   swag.String(s.Effect),
 			Resource: swag.String(s.Resource),
 		}
 	}
-	return &models.Policy{
+	return &Policy{
 		ID:           swag.String(p.DisplayName),
 		CreationDate: p.CreatedAt.Unix(),
 		Statement:    stmts,
@@ -1946,7 +2193,7 @@ func serializePolicy(p *model.Policy) *models.Policy {
 }
 
 func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
-	return authop.ListPoliciesHandlerFunc(func(params authop.ListPoliciesParams, user *models.User) middleware.Responder {
+	return authop.ListPoliciesHandlerFunc(func(params authop.ListPoliciesParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListPoliciesAction,
@@ -1968,7 +2215,7 @@ func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.Policy, len(policies))
+		response := make([]*Policy, len(policies))
 		for i, p := range policies {
 			response[i] = serializePolicy(p)
 		}
@@ -1982,7 +2229,7 @@ func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
 }
 
 func (c *Controller) CreatePolicyHandler() authop.CreatePolicyHandler {
-	return authop.CreatePolicyHandlerFunc(func(params authop.CreatePolicyParams, user *models.User) middleware.Responder {
+	return authop.CreatePolicyHandlerFunc(func(params authop.CreatePolicyParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreatePolicyAction,
@@ -2022,7 +2269,7 @@ func (c *Controller) CreatePolicyHandler() authop.CreatePolicyHandler {
 }
 
 func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
-	return authop.GetPolicyHandlerFunc(func(params authop.GetPolicyParams, user *models.User) middleware.Responder {
+	return authop.GetPolicyHandlerFunc(func(params authop.GetPolicyParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadPolicyAction,
@@ -2050,7 +2297,7 @@ func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
 }
 
 func (c *Controller) UpdatePolicyHandler() authop.UpdatePolicyHandler {
-	return authop.UpdatePolicyHandlerFunc(func(params authop.UpdatePolicyParams, user *models.User) middleware.Responder {
+	return authop.UpdatePolicyHandlerFunc(func(params authop.UpdatePolicyParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.UpdatePolicyAction,
@@ -2090,7 +2337,7 @@ func (c *Controller) UpdatePolicyHandler() authop.UpdatePolicyHandler {
 }
 
 func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
-	return authop.DeletePolicyHandlerFunc(func(params authop.DeletePolicyParams, user *models.User) middleware.Responder {
+	return authop.DeletePolicyHandlerFunc(func(params authop.DeletePolicyParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeletePolicyAction,
@@ -2117,7 +2364,7 @@ func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
 }
 
 func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
-	return authop.ListGroupMembersHandlerFunc(func(params authop.ListGroupMembersParams, user *models.User) middleware.Responder {
+	return authop.ListGroupMembersHandlerFunc(func(params authop.ListGroupMembersParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
@@ -2139,9 +2386,9 @@ func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.User, len(users))
+		response := make([]*User, len(users))
 		for i, u := range users {
-			response[i] = &models.User{
+			response[i] = &User{
 				CreationDate: u.CreatedAt.Unix(),
 				ID:           u.Username,
 			}
@@ -2156,7 +2403,7 @@ func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 }
 
 func (c *Controller) AddGroupMembershipHandler() authop.AddGroupMembershipHandler {
-	return authop.AddGroupMembershipHandlerFunc(func(params authop.AddGroupMembershipParams, user *models.User) middleware.Responder {
+	return authop.AddGroupMembershipHandlerFunc(func(params authop.AddGroupMembershipParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AddGroupMemberAction,
@@ -2180,7 +2427,7 @@ func (c *Controller) AddGroupMembershipHandler() authop.AddGroupMembershipHandle
 }
 
 func (c *Controller) DeleteGroupMembershipHandler() authop.DeleteGroupMembershipHandler {
-	return authop.DeleteGroupMembershipHandlerFunc(func(params authop.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
+	return authop.DeleteGroupMembershipHandlerFunc(func(params authop.DeleteGroupMembershipParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RemoveGroupMemberAction,
@@ -2204,7 +2451,7 @@ func (c *Controller) DeleteGroupMembershipHandler() authop.DeleteGroupMembership
 }
 
 func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHandler {
-	return authop.ListUserCredentialsHandlerFunc(func(params authop.ListUserCredentialsParams, user *models.User) middleware.Responder {
+	return authop.ListUserCredentialsHandlerFunc(func(params authop.ListUserCredentialsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListCredentialsAction,
@@ -2226,9 +2473,9 @@ func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHand
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.Credentials, len(credentials))
+		response := make([]*Credentials, len(credentials))
 		for i, c := range credentials {
-			response[i] = &models.Credentials{
+			response[i] = &Credentials{
 				AccessKeyID:  c.AccessKeyID,
 				CreationDate: c.IssuedDate.Unix(),
 			}
@@ -2243,7 +2490,7 @@ func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHand
 }
 
 func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler {
-	return authop.CreateCredentialsHandlerFunc(func(params authop.CreateCredentialsParams, user *models.User) middleware.Responder {
+	return authop.CreateCredentialsHandlerFunc(func(params authop.CreateCredentialsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCredentialsAction,
@@ -2263,7 +2510,7 @@ func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler 
 		}
 
 		return authop.NewCreateCredentialsCreated().
-			WithPayload(&models.CredentialsWithSecret{
+			WithPayload(&CredentialsWithSecret{
 				AccessKeyID:     credentials.AccessKeyID,
 				AccessSecretKey: credentials.AccessSecretKey,
 				CreationDate:    credentials.IssuedDate.Unix(),
@@ -2272,7 +2519,7 @@ func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler 
 }
 
 func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler {
-	return authop.DeleteCredentialsHandlerFunc(func(params authop.DeleteCredentialsParams, user *models.User) middleware.Responder {
+	return authop.DeleteCredentialsHandlerFunc(func(params authop.DeleteCredentialsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteCredentialsAction,
@@ -2300,7 +2547,7 @@ func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler 
 }
 
 func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
-	return authop.GetCredentialsHandlerFunc(func(params authop.GetCredentialsParams, user *models.User) middleware.Responder {
+	return authop.GetCredentialsHandlerFunc(func(params authop.GetCredentialsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadCredentialsAction,
@@ -2323,7 +2570,7 @@ func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 		}
 
 		return authop.NewGetCredentialsOK().
-			WithPayload(&models.Credentials{
+			WithPayload(&Credentials{
 				AccessKeyID:  credentials.AccessKeyID,
 				CreationDate: credentials.IssuedDate.Unix(),
 			})
@@ -2331,7 +2578,7 @@ func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 }
 
 func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
-	return authop.ListUserGroupsHandlerFunc(func(params authop.ListUserGroupsParams, user *models.User) middleware.Responder {
+	return authop.ListUserGroupsHandlerFunc(func(params authop.ListUserGroupsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
@@ -2353,9 +2600,9 @@ func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.Group, len(groups))
+		response := make([]*Group, len(groups))
 		for i, g := range groups {
-			response[i] = &models.Group{
+			response[i] = &Group{
 				CreationDate: g.CreatedAt.Unix(),
 				ID:           g.DisplayName,
 			}
@@ -2370,7 +2617,7 @@ func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
 }
 
 func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
-	return authop.ListUserPoliciesHandlerFunc(func(params authop.ListUserPoliciesParams, user *models.User) middleware.Responder {
+	return authop.ListUserPoliciesHandlerFunc(func(params authop.ListUserPoliciesParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
@@ -2402,7 +2649,7 @@ func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.Policy, len(policies))
+		response := make([]*Policy, len(policies))
 		for i, p := range policies {
 			response[i] = serializePolicy(p)
 		}
@@ -2416,7 +2663,7 @@ func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
 }
 
 func (c *Controller) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandler {
-	return authop.AttachPolicyToUserHandlerFunc(func(params authop.AttachPolicyToUserParams, user *models.User) middleware.Responder {
+	return authop.AttachPolicyToUserHandlerFunc(func(params authop.AttachPolicyToUserParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AttachPolicyAction,
@@ -2440,7 +2687,7 @@ func (c *Controller) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandle
 }
 
 func (c *Controller) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHandler {
-	return authop.DetachPolicyFromUserHandlerFunc(func(params authop.DetachPolicyFromUserParams, user *models.User) middleware.Responder {
+	return authop.DetachPolicyFromUserHandlerFunc(func(params authop.DetachPolicyFromUserParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DetachPolicyAction,
@@ -2464,7 +2711,7 @@ func (c *Controller) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHa
 }
 
 func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler {
-	return authop.ListGroupPoliciesHandlerFunc(func(params authop.ListGroupPoliciesParams, user *models.User) middleware.Responder {
+	return authop.ListGroupPoliciesHandlerFunc(func(params authop.ListGroupPoliciesParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
@@ -2486,7 +2733,7 @@ func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler 
 				WithPayload(responseErrorFrom(err))
 		}
 
-		response := make([]*models.Policy, len(policies))
+		response := make([]*Policy, len(policies))
 		for i, p := range policies {
 			response[i] = serializePolicy(p)
 		}
@@ -2500,7 +2747,7 @@ func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler 
 }
 
 func (c *Controller) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHandler {
-	return authop.AttachPolicyToGroupHandlerFunc(func(params authop.AttachPolicyToGroupParams, user *models.User) middleware.Responder {
+	return authop.AttachPolicyToGroupHandlerFunc(func(params authop.AttachPolicyToGroupParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AttachPolicyAction,
@@ -2524,7 +2771,7 @@ func (c *Controller) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHand
 }
 
 func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroupHandler {
-	return authop.DetachPolicyFromGroupHandlerFunc(func(params authop.DetachPolicyFromGroupParams, user *models.User) middleware.Responder {
+	return authop.DetachPolicyFromGroupHandlerFunc(func(params authop.DetachPolicyFromGroupParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DetachPolicyAction,
@@ -2548,7 +2795,7 @@ func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroup
 }
 
 func (c *Controller) RefsRestoreHandler() refs.RestoreHandler {
-	return refs.RestoreHandlerFunc(func(params refs.RestoreParams, user *models.User) middleware.Responder {
+	return refs.RestoreHandlerFunc(func(params refs.RestoreParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateTagAction,
@@ -2610,7 +2857,7 @@ func (c *Controller) RefsRestoreHandler() refs.RestoreHandler {
 }
 
 func (c *Controller) RefsDumpHandler() refs.DumpHandler {
-	return refs.DumpHandlerFunc(func(params refs.DumpParams, user *models.User) middleware.Responder {
+	return refs.DumpHandlerFunc(func(params refs.DumpParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListTagsAction,
@@ -2656,7 +2903,7 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 			return refs.NewDumpDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		manifestData := &models.RefsDump{
+		manifestData := &RefsDump{
 			BranchesMetaRangeID: branchesID,
 			CommitsMetaRangeID:  commitsID,
 			TagsMetaRangeID:     tagsID,
@@ -2682,7 +2929,7 @@ func (c *Controller) RefsDumpHandler() refs.DumpHandler {
 }
 
 func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
-	return actionsop.GetRunHandlerFunc(func(params actionsop.GetRunParams, user *models.User) middleware.Responder {
+	return actionsop.GetRunHandlerFunc(func(params actionsop.GetRunParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2715,11 +2962,11 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		status := models.ActionRunStatusCompleted
+		status := ActionRunStatusCompleted
 		if !runResult.Passed {
-			status = models.ActionRunStatusFailed
+			status = ActionRunStatusFailed
 		}
-		res := &models.ActionRun{
+		res := &ActionRun{
 			RunID:     swag.String(runResult.RunID),
 			EventType: runResult.EventType,
 			StartTime: strfmt.DateTime(runResult.StartTime),
@@ -2733,7 +2980,7 @@ func (c *Controller) ActionsGetRunHandler() actionsop.GetRunHandler {
 }
 
 func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutputHandler {
-	return actionsop.GetRunHookOutputHandlerFunc(func(params actionsop.GetRunHookOutputParams, user *models.User) middleware.Responder {
+	return actionsop.GetRunHookOutputHandlerFunc(func(params actionsop.GetRunHookOutputParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2779,7 +3026,7 @@ func (c *Controller) ActionsGetRunHookOutputHandler() actionsop.GetRunHookOutput
 }
 
 func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler {
-	return actionsop.ListRunHooksHandlerFunc(func(params actionsop.ListRunHooksParams, user *models.User) middleware.Responder {
+	return actionsop.ListRunHooksHandlerFunc(func(params actionsop.ListRunHooksParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2813,15 +3060,15 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 		defer tasksIter.Close()
 
 		payload := &actionsop.ListRunHooksOKBody{
-			Results: make([]*models.HookRun, 0),
-			Pagination: &models.Pagination{
+			Results: make([]*HookRun, 0),
+			Pagination: &Pagination{
 				HasMore: swag.Bool(false),
 			},
 		}
 		var nextToken string
 		for len(payload.Results) < amount && tasksIter.Next() {
 			val := tasksIter.Value()
-			hookRun := &models.HookRun{
+			hookRun := &HookRun{
 				HookRunID: swag.String(val.HookRunID),
 				Action:    val.ActionName,
 				HookID:    val.HookID,
@@ -2829,9 +3076,9 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 				EndTime:   strfmt.DateTime(val.EndTime),
 			}
 			if val.Passed {
-				hookRun.Status = models.HookRunStatusCompleted
+				hookRun.Status = HookRunStatusCompleted
 			} else {
-				hookRun.Status = models.HookRunStatusFailed
+				hookRun.Status = HookRunStatusFailed
 			}
 			payload.Results = append(payload.Results, hookRun)
 			nextToken = val.HookRunID
@@ -2850,7 +3097,7 @@ func (c *Controller) ActionsListRunHooksHandler() actionsop.ListRunHooksHandler 
 }
 
 func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
-	return actionsop.ListRunsHandlerFunc(func(params actionsop.ListRunsParams, user *models.User) middleware.Responder {
+	return actionsop.ListRunsHandlerFunc(func(params actionsop.ListRunsParams, user *User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadActionsAction,
@@ -2895,8 +3142,8 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 		}
 
 		payload := &actionsop.ListRunsOKBody{
-			Results: make([]*models.ActionRun, 0),
-			Pagination: &models.Pagination{
+			Results: make([]*ActionRun, 0),
+			Pagination: &Pagination{
 				HasMore: swag.Bool(false),
 			},
 		}
@@ -2919,8 +3166,8 @@ func (c *Controller) ActionsListRunsHandler() actionsop.ListRunsHandler {
 	})
 }
 
-func convertRun(val *actions.RunResult) *models.ActionRun {
-	runResult := &models.ActionRun{
+func convertRun(val *actions.RunResult) *ActionRun {
+	runResult := &ActionRun{
 		Branch:    swag.String(val.BranchID),
 		CommitID:  swag.String(val.CommitID),
 		RunID:     swag.String(val.RunID),
@@ -2929,9 +3176,10 @@ func convertRun(val *actions.RunResult) *models.ActionRun {
 		EventType: val.EventType,
 	}
 	if val.Passed {
-		runResult.Status = models.HookRunStatusCompleted
+		runResult.Status = HookRunStatusCompleted
 	} else {
-		runResult.Status = models.HookRunStatusFailed
+		runResult.Status = HookRunStatusFailed
 	}
 	return runResult
 }
+*/
