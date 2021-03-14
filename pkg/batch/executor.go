@@ -7,6 +7,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+// RequestBufferSize is the amount of requests users can dispatch that haven't been processed yet before
+// dispatching new ones would start blocking.
+const RequestBufferSize = 1 << 17
+
 type BatchFn func() (interface{}, error)
 
 type DelayFn func(dur time.Duration)
@@ -48,8 +52,8 @@ func NopExecutor() *nonBatchingExecutor {
 
 func NewExecutor(logger logging.Logger) *Executor {
 	return &Executor{
-		requests: make(chan *request),
-		execs:    make(chan string),
+		requests: make(chan *request, RequestBufferSize),
+		execs:    make(chan string, RequestBufferSize),
 		keys:     make(map[string][]*request),
 		Logger:   logger,
 		Delayer:  time.Sleep,
