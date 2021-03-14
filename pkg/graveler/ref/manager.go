@@ -309,7 +309,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 }
 
 func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.RepositoryID, commitID graveler.CommitID) (*graveler.Commit, error) {
-	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repositoryID, commitID)
+	key := fmt.Sprintf("GetCommit:%s:%s", repositoryID, commitID)
 	commit, err, _ := m.group.Do(key, batchDelayCall(ctx, func() (interface{}, error) {
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var rec commitRecord
