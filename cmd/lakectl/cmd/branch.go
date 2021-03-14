@@ -3,9 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
