@@ -1,3 +1,4 @@
+
 # lakeFS Spark Client
 
 Utilize the power of Spark to interact with the metadata on lakeFS. Possible use-cases include:
@@ -8,6 +9,7 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 * Bulk operations on underlying storage.
 
 ## Getting Started
+
 Start Spark Shell / PySpark with the `--packages` flag:
 
 ```bash
@@ -35,7 +37,7 @@ For instance, running as a user with a personal account on S3 (not in production
 ## Examples
 
 1. Get a DataFrame for listing all objects in a commit:
-    
+
     ```scala
     import io.treeverse.clients.LakeFSContext
     
@@ -53,8 +55,9 @@ For instance, running as a user with a personal account on S3 (not in production
        +------------+--------------------+--------------------+-------------------+----+
      */
     ```
+
 1. Run SQL queries on your metadata:
-   
+
    ```scala
     df.createOrReplaceTempView("files")
     spark.sql("SELECT DATE(last_modified), COUNT(*) FROM files GROUP BY 1 ORDER BY 1")
@@ -67,5 +70,4 @@ For instance, running as a user with a personal account on S3 (not in production
        +----------+--------+
      */
    ```
-
 
