@@ -16,7 +16,7 @@ import (
 const IteratorPrefetchSize = 1000
 
 // MaxBatchDelay is the time to wait before performing a database read operation, batching requests during that time
-const MaxBatchDelay = 3 * time.Millisecond
+const BatchDelay = 3 * time.Millisecond
 
 type Manager struct {
 	db              db.Database
