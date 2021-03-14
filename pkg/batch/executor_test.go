@@ -11,14 +11,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func TestExecutor_BatchFor(t *testing.T) {
+func testReadAfterWrite(t *testing.T) {
 	// Setup executor
-	exec := batch.NewExecutor(logging.Dummy())
+	exec := batch.NewExecutor(logging.Default())
 	go exec.Run(context.Background())
 	// Prove the executor does not violate read-after-write consistency.
 	// First, let's define read-after-write consistency:
 	// 	Any read that started after a successful write has returned, must return the updated value.
-	// to test this, let's simulate the following scenario:
+	// To test this, let's simulate the following scenario:
 	// 1. reader (r1) starts (Current version: v0)
 	// 2. writer (w1) writes v1
 	// 3. writer (w1) returns (Current version: v1)
@@ -42,7 +42,7 @@ func TestExecutor_BatchFor(t *testing.T) {
 		}
 		time.Sleep(dur)
 	}
-	exec.Delayer = delayFn
+	exec.Delay = delayFn
 
 	// reader1 starts
 	go func() {
@@ -70,6 +70,7 @@ func TestExecutor_BatchFor(t *testing.T) {
 	go func() {
 		<-write1Done // ensure we start AFTER write1 has completed
 		r2, _ := exec.BatchFor("k", time.Millisecond*50, func() (interface{}, error) {
+			t.Error("this should not be called, only r1's")
 			version, _ := db.Load("v")
 			return version, nil
 		})
@@ -82,4 +83,16 @@ func TestExecutor_BatchFor(t *testing.T) {
 
 	<-read1Done
 	<-read2Done
+}
+
+func TestExecutor_BatchFor(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(50)
+	for i := 0; i < 50; i++ {
+		go func() {
+			defer wg.Done()
+			testReadAfterWrite(t)
+		}()
+	}
+	wg.Wait()
 }

@@ -118,11 +118,11 @@ const (
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
 type ctxCloser struct {
-	fn context.CancelFunc
+	close context.CancelFunc
 }
 
 func (c *ctxCloser) Close() error {
-	go c.fn()
+	go c.close()
 	return nil
 }
 
