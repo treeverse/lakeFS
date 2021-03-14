@@ -15,7 +15,7 @@ import (
 // IteratorPrefetchSize is the amount of records to maybeFetch from PG
 const IteratorPrefetchSize = 1000
 
-// MaxBatchDelay is the time to wait before performing a database read operation, batching requests during that time
+// BatchDelay is the time to wait before performing a database read operation, batching requests during that time
 const BatchDelay = 3 * time.Millisecond
 
 type Manager struct {
@@ -36,7 +36,7 @@ func batchDelayCall(ctx context.Context, fn func() (interface{}, error)) func() 
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-time.After(MaxBatchDelay):
+		case <-time.After(BatchDelay):
 			return fn()
 		}
 	}
