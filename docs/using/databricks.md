@@ -3,7 +3,7 @@ layout: default
 title: Databricks
 description: Interact with your lakeFS data from Databricks
 parent: Using lakeFS with...
-nav_order: 4
+nav_order: 60
 has_children: false
 ---
 
@@ -32,6 +32,13 @@ spark.hadoop.fs.s3a.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 spark.hadoop.fs.s3a.endpoint https://s3.lakefs.example.com
 ```
 
+When using DeltaLake tables, the following is also needed in some versions of Databricks:
+
+```
+spark.hadoop.fs.s3a.aws.credentials.provider shaded.databricks.org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider
+spark.hadoop.fs.s3a.session.token lakefs
+```
+
 For more information, see the [documentation](https://docs.databricks.com/data/data-sources/aws/amazon-s3.html#configuration) from Databricks.
 
 ### Per-bucket configuration
@@ -45,11 +52,17 @@ spark.hadoop.fs.s3a.bucket.example-repo.access.key wJalrXUtnFEMI/K7MDENG/bPxRfiC
 spark.hadoop.fs.s3a.bucket.example-repo.secret.key https://s3.lakefs.example.com
 ```
 
+When using DeltaLake tables, the following is also needed in some versions of Databricks:
+
+```
+spark.hadoop.fs.s3a.bucket.example-repo.aws.credentials.provider shaded.databricks.org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider
+spark.hadoop.fs.s3a.bucket.example-repo.session.token lakefs
+```
+
 With this configuration set , reading s3a paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
 
 ## Reading Data
-In order for us to access objects in lakeFS we will need to use the lakeFS path conventions:
-```s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT```
+In order for us to access objects in lakeFS we will need to use the lakeFS path conventions: `s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT`
 
 Here is an example for reading a parquet file from lakeFS to a Spark DataFrame:
 
