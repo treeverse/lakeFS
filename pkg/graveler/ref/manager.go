@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/treeverse/lakefs/pkg/batch"
 
 	"github.com/treeverse/lakefs/pkg/db"
@@ -26,11 +24,11 @@ type Manager struct {
 	batchExecutor   batch.Batcher
 }
 
-func NewPGRefManager(db db.Database, addressProvider ident.AddressProvider) *Manager {
+func NewPGRefManager(executor batch.Batcher, db db.Database, addressProvider ident.AddressProvider) *Manager {
 	return &Manager{
 		db:              db,
 		addressProvider: addressProvider,
-		batchExecutor:   batch.NewExecutor(logging.Default()),
+		batchExecutor:   executor,
 	}
 }
 

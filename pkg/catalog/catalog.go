@@ -9,6 +9,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/batch"
+
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -115,13 +117,25 @@ const (
 
 var ErrUnknownDiffType = errors.New("unknown graveler difference type")
 
+type ctxCloser struct {
+	fn context.CancelFunc
+}
+
+func (c *ctxCloser) Close() error {
+	go c.fn()
+	return nil
+}
+
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	if cfg.LockDB == nil {
 		cfg.LockDB = cfg.DB
 	}
 
+	ctx, cancelFn := context.WithCancel(ctx)
+
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(ctx)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
 	metaRangeFS, err := pyramid.NewFS(&params.InstanceParams{
@@ -130,6 +144,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
 	})
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("create tiered FS for committed metaranges: %w", err)
 	}
 
@@ -139,6 +154,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
 	})
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("create tiered FS for committed ranges: %w", err)
 	}
 
@@ -154,12 +170,17 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		sstableManager,
 	)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager)
 
 	stagingManager := staging.NewManager(cfg.DB)
-	refManager := ref.NewPGRefManager(cfg.DB, ident.NewHexAddressProvider())
+
+	executor := batch.NewExecutor(logging.Default())
+	go executor.Run(ctx)
+
+	refManager := ref.NewPGRefManager(executor, cfg.DB, ident.NewHexAddressProvider())
 	branchLocker := ref.NewBranchLocker(cfg.LockDB)
 	store := graveler.NewGraveler(branchLocker, committedManager, stagingManager, refManager)
 
@@ -167,7 +188,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		BlockAdapter: tierFSParams.Adapter,
 		Store:        store,
 		log:          logging.Default().WithField("service_name", "entry_catalog"),
-		managers:     []io.Closer{sstableManager, sstableMetaManager},
+		managers:     []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 	}, nil
 }
 

@@ -1,6 +1,7 @@
 package batch
 
 import (
+	"context"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -8,8 +9,17 @@ import (
 
 type BatchFn func() (interface{}, error)
 
+type DelayFn func(dur time.Duration)
+
 type Batcher interface {
 	BatchFor(key string, dur time.Duration, fn BatchFn) (interface{}, error)
+}
+
+type nonBatchingExecutor struct {
+}
+
+func (n *nonBatchingExecutor) BatchFor(key string, dur time.Duration, fn BatchFn) (interface{}, error) {
+	return fn()
 }
 
 type response struct {
@@ -28,18 +38,22 @@ type Executor struct {
 	requests chan *request
 	execs    chan string
 	keys     map[string][]*request
-	logger   logging.Logger
+	Logger   logging.Logger
+	Delayer  DelayFn
+}
+
+func NopExecutor() *nonBatchingExecutor {
+	return &nonBatchingExecutor{}
 }
 
 func NewExecutor(logger logging.Logger) *Executor {
-	e := &Executor{
+	return &Executor{
 		requests: make(chan *request),
 		execs:    make(chan string),
 		keys:     make(map[string][]*request),
-		logger:   logger,
+		Logger:   logger,
+		Delayer:  time.Sleep,
 	}
-	go e.Run() // TODO(ozkatz): should probably be managed by the user (also, allow stopping it)
-	return e
 }
 
 func (e *Executor) BatchFor(key string, dur time.Duration, fn BatchFn) (interface{}, error) {
@@ -54,15 +68,17 @@ func (e *Executor) BatchFor(key string, dur time.Duration, fn BatchFn) (interfac
 	return response.v, response.err
 }
 
-func (e *Executor) Run() {
+func (e *Executor) Run(ctx context.Context) {
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case req := <-e.requests:
 			// see if we have it scheduled already
 			if _, exists := e.keys[req.key]; !exists {
 				// this is a new key, let's fire a timer for it
 				go func(req *request) {
-					time.Sleep(req.dur)
+					e.Delayer(req.dur)
 					e.execs <- req.key
 				}(req)
 			}
@@ -74,7 +90,7 @@ func (e *Executor) Run() {
 			go func(key string) {
 				// execute and call all mapped callbacks
 				v, err := waiters[0].fn()
-				e.logger.WithFields(logging.Fields{
+				e.Logger.WithFields(logging.Fields{
 					"waiters": len(waiters),
 					"key":     key,
 				}).Trace("dispatched BatchFn")
