@@ -50,7 +50,7 @@ def generateExamplesProject(buildType: BuildType) =
   Project(s"${baseName}-examples-${buildType.name}", file(s"target/examples-${buildType.name}"))
     .settings(
       sharedSettings,
-      settingsToCompileIn("core"),
+      settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
       libraryDependencies += "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
       mainClass in assembly := Some("io.treeverse.examples.List"),
