@@ -50,7 +50,7 @@ lazy val examples =
       name := "lakefs-spark-example",
       sharedSettings,
       settingsToCompileIn("examples"),
-      mainClass in assembly := Some("io.treeverse.examples.List"),
+      assembly / mainClass := Some("io.treeverse.examples.List"),
     ).dependsOn(core)
 
 //lazy val core3 = generateCoreProject(spark3Type)
