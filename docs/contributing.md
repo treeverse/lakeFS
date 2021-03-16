@@ -33,7 +33,8 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 
 *This section was tested on macOS and Linux (Fedora 32, Ubuntu 20.04) - Your mileage may vary*
 
-Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds under _go-version_ the Go version we currently use.
+   
+Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly.
 
 1. Install the required dependencies for your OS:
     1. [Git](https://git-scm.com/downloads)
