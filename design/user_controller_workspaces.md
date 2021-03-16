@@ -2,24 +2,24 @@
 
 ## Overview
 
-The main idea is to change the API slightly to work around the need to synchronize state between object store paths or object store / DB.
+The main idea is to change the API slightly to work around the need to synchronize state between Object Store paths or Object Store <--> DB.
 
-To acheieve this, I suggest introducing another Git concept: the "working tree". When writing, users need to get a **"workspace ID"** from lakeFS,
+To achieve this, I suggest introducing another Git concept: the "working tree". When writing, users need to get a **"workspace ID"** from lakeFS,
 write/read through it, and then either `git add && git commit`, or `git commit -a` the changes in that workspace.
 
-This moves some of the concurrency control from lakeFS to the user.
+This moves some concurrency control from lakeFS to the user.
 I believe this new responsibility could be mostly abstracted away from the user.
 
 ## Benefits
 
 - closer in model to Git
 - as scalable as the underlying object store - millions of ops/second are possible.
-- state in external DB: only HEADs (they require CAS/conditional writes/some form of concurrency control)
-- Users can rely on IAM permisssions!
+- state in an external DB: only HEADs (they require CAS/conditional writes/some form of concurrency control)
+- Users can rely on IAM permissions!
 - Users can rely on S3 lifecycle!
 - Users can start using lakeFS with no external DB at all, on a single instance (i.e. `docker run` instead of current compose)
 - Makes it easier to integrate with things like Kinesis Firehose, Kafka Connect, other managed ingest tools
-- Much much simpler than Raft: both operationally for the user, for us to develop/maintain and for the community to reason about
+- Much simpler than Raft: both operationally for the user, for us to develop/maintain and for the community to reason about
 
 ## Downsides
 
@@ -28,37 +28,58 @@ I believe this new responsibility could be mostly abstracted away from the user.
 
 ## Pseudo API:
 
-```scala
-master : = lakefs.repo("my-repo").branch("master")
-ws = new Workspace(master)
+```python
+import spark, lakefs
 
-// read
+branch = lakefs.repo("my-repo").branch("main")
+ws = lakefs.workspace(branch, name="daily-ingest-13042021")
+# read
 df = spark.read.parquet(ws.path("my/collection"))
-
-// write
+# write
 df.write.parquet(ws.path("another/location"))
 
-// commit!
+# commit it!
 ws.all().commit("commit everything!")
-
-// or add stuff
-ws.add("**/*.parquet", "**/*.json", "another/location/_SUCCESS")
-    .commit("a commit of only some of the stuff!")
-
-// or revert it
+# or revert it
 ws.revert()
 ```
 
+## Pseudo CLI
+
+```sh
+$ lakectl fs upload ./foo.parquet lakefs://my-repo/main
+No workspace ID found, created one: ozkatz-main-2021031522000
+Upload complete. You can see your uncommitted changes by doing `lakectl diff lakefs://my-repo/main+ozkatz-main-2021031522000` 
+$
+$ lakectl fs upload ./another.parquet lakefs://my-repo/main
+Using workspace ID from ~./lakectl/workspaces/main: ozkatz-main-2021031522000
+Upload complete. You can see your uncommitted changes by doing `lakectl diff lakefs://my-repo/main+ozkatz-main-2021031522000`
+$ lakectl fs commit lakefs://my-repo/main
+Using workspace ID from ~./lakectl/workspaces/main: ozkatz-main-2021031522000
+Commit successful, wrote 2 files, deleted 0. Removing workspace ID: ~./lakectl/workspaces/main
+$ # alternatively, pass an explicit workspace ID
+$ lakectl fs upload ./another.parquet lakefs://my-repo/main+ozkatz-main-2021031522000
+$ # see workspaces per branch
+$ lakectl branch list-workspaces lakefs://my-repo/main
+ozkatz-main-2021031522000
+ozkatz-main-2021031422000
+spark-daily-aggregation-20210314
+```
+
+## Pseudo UI
+
+![Changes tab](workspace.png)
+
 ## How does it work?
 
-basically, when calling `new Workspace(Branch)`, lakeFS returns a path with a newly generated UUID: `s3://${storageNamespace}/${uuid.New()}`
+basically, when calling `lakefs.workspace(Branch)`, lakeFS returns a path with a newly generated UUID: `s3://${storageNamespace}/${branch}/${currentCommitID}/${optionalName}${uuid.New()}`
  That's it. It doesn't keep track of it (more on that later).
 
 Writes just append the path to be written to the workspace path: `${workspaceAddr}/${writePath}`
 Deletes are also writes, but of a sentinel tombstone value.
 Reads are now a getObject/listObjects call on that prefix, implementing our "DiffIterator".
 
-When calling `commit`, we take that diffIterator and apply it. Once we have a commit ID, we do a `CAS` on the ref: if no one else committed so far, this completes the commit process successfully. Otherwise, its an `ErrConcurrentCommit` and should be retried/aborted.
+When calling `commit`, we take that `diffIterator` and apply it. Once we have a commit ID, we do a `CAS` on the ref: if no one else committed so far, this completes the commit process successfully. Otherwise, it's an `ErrConcurrentCommit` and should be retried/aborted.
 Reading these refs is done using the same batching method we currently do for PG, so we could support pretty much ANY external storage for this as long as it is:
 
 * Read-after-write consistent
@@ -71,7 +92,7 @@ It is the user's responsibility to ensure they commit at the end of their job/pi
 but it's possible to pass around that `workspaceID` between jobs and processes, even if reading/writing concurrently.
 
 Once a commit is done for a given workspace, it should no longer be used. if using the lakeFS SDK (as shown above),
-calling any operation on a `commit()`ed `Workspace` object will raise an error. We can go further and place a "lockfile" (`_lakefs_committed/${workspaceID}`) and check it before writing if we think this is neccesary (on a best effort basis).
+calling any operation on a `commit()`ed `Workspace` object will raise an error. We can go further and place a "lockfile" (`_lakefs_committed/${workspaceID}`) and check it before writing if we think this is necessary (on a best effort basis).
 
 ## Using the S3 gateway
 
@@ -94,7 +115,7 @@ $ lakectl ingest commit \
 # Or just see what changes would be introduced
 $ lakectl ingest diff \
     --from-path "s3://bucket/kafka/events/2021/" \
-    --to-path "lakefs://my-repo@ingest-branch/kafka/events/2021/" \
+    --to-path "lakefs://my-repo@ingest-branch/kafka/events/2021/"
 ```
 Here, instead of treating the given object store location as a diffIterator, we look at it as a subtree, to be diffed with the underlying commit.
 
