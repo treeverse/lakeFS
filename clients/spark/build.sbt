@@ -29,7 +29,7 @@ lazy val core =
       sharedSettings,
       settingsToCompileIn("core"),
       PB.targets := Seq(
-        scalapb.gen() -> (Compile / sourceManaged).value / "scalapb",
+        scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
         "org.rocksdb" % "rocksdbjni" % "6.6.4",
@@ -41,7 +41,7 @@ lazy val core =
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
-      ),
+      )
     )
 
 lazy val examples =
@@ -52,9 +52,6 @@ lazy val examples =
       settingsToCompileIn("examples"),
       assembly / mainClass := Some("io.treeverse.examples.List"),
     ).dependsOn(core)
-
-//lazy val core3 = generateCoreProject(spark3Type)
-//lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 
 lazy val root = (project in file(".")).aggregate(core, examples)
 
@@ -95,14 +92,13 @@ lazy val commonSettings = Seq(
           "org.apache.spark" %% "spark-sql" % "2.4.7" % "provided"
         )
     }
-  },
+  }
 )
 
 lazy val publishSettings = Seq(
   publishTo := {
     val nexus = "https://s01.oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+    if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
     else Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
   // Remove all additional repository other than Maven Central from POM
@@ -114,33 +110,33 @@ lazy val sharedSettings = commonSettings ++ assemblySettings ++ publishSettings
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/treeverse/lakeFS/clients/spark"),
-    "scm:git@github.com:treeverse/lakeFS.git",
-  ),
+    "scm:git@github.com:treeverse/lakeFS.git"
+  )
 )
 ThisBuild / developers := List(
   Developer(
-    id = "ariels",
-    name = "Ariel Shaqed (Scolnicov)",
+    id    = "ariels",
+    name  = "Ariel Shaqed (Scolnicov)",
     email = "ariels@treeverse.io",
-    url = url("https://github.com/arielshaqed"),
+    url   = url("https://github.com/arielshaqed")
   ),
   Developer(
-    id = "baraktr",
-    name = "B. A.",
+    id    = "baraktr",
+    name  = "B. A.",
     email = "barak.amar@treeverse.io",
-    url = url("https://github.com/nopcoder"),
+    url   = url("https://github.com/nopcoder"),
   ),
   Developer(
-    id = "ozkatz",
-    name = "Oz Katz",
+    id    = "ozkatz",
+    name  = "Oz Katz",
     email = "oz.katz@treeverse.io",
-    url = url("https://github.com/ozkatz"),
+    url   = url("https://github.com/ozkatz"),
   ),
   Developer(
-    id = "johnnyaug",
-    name = "J. A.",
+    id    = "johnnyaug",
+    name  = "J. A.",
     email = "yoni.augarten@treeverse.io",
-    url = url("https://github.com/johnnyaug"),
+    url   = url("https://github.com/johnnyaug"),
   ),
 )
 
@@ -154,7 +150,5 @@ ThisBuild / organization := "io.treeverse"
 ThisBuild / organizationName := "Treeverse Labs"
 ThisBuild / organizationHomepage := Some(url("http://treeverse.io"))
 ThisBuild / description := "Spark client for lakeFS object metadata."
-ThisBuild / licenses := List(
-  "Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"),
-)
+ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 ThisBuild / homepage := Some(url("https://github.com/treeverse/spark-client"))
