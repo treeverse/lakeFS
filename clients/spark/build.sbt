@@ -1,9 +1,7 @@
-import build.BuildType
-
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.1.0-SNAPSHOT.4"
-isSnapshot := true
+lazy val projectVersion = "0.1.0-SNAPSHOT"
+ThisBuild / isSnapshot := true
 
 // Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
 // change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
@@ -24,21 +22,21 @@ def settingsToCompileIn(dir: String) = {
   )
 }
 
-def generateCoreProject(buildType: BuildType) =
-  Project(s"${baseName}-client-${buildType.name}", file(s"target/core-${buildType.name}"))
+lazy val core =
+  (project in file(s"core"))
     .settings(
+      name := "lakefs-spark-client",
       sharedSettings,
       settingsToCompileIn("core"),
-      scalaVersion := buildType.scalaVersion,
       PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
-      libraryDependencies ++= Seq("org.rocksdb" % "rocksdbjni" % "6.6.4",
+      libraryDependencies ++= Seq(
+        "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
-        "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-        "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
-        "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
+        "org.apache.hadoop" % "hadoop-aws" % "2.7.7",
+        "org.apache.hadoop" % "hadoop-common" % "2.7.7",
         "org.scalaj" %% "scalaj-http" % "2.4.2",
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
         "com.google.guava" % "guava" % "16.0.1",
@@ -46,25 +44,16 @@ def generateCoreProject(buildType: BuildType) =
       )
     )
 
-def generateExamplesProject(buildType: BuildType) =
-  Project(s"${baseName}-examples-${buildType.name}", file(s"target/examples-${buildType.name}"))
+lazy val examples =
+  (project in file(s"examples"))
     .settings(
+      name := "lakefs-spark-example",
       sharedSettings,
       settingsToCompileIn("examples"),
-      scalaVersion := buildType.scalaVersion,
-      libraryDependencies += "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
       assembly / mainClass := Some("io.treeverse.examples.List"),
-    )
+    ).dependsOn(core)
 
-lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
-lazy val spark3Type = new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7")
-
-lazy val core2 = generateCoreProject(spark2Type)
-lazy val core3 = generateCoreProject(spark3Type)
-lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
-lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
-
-lazy val root = (project in file(".")).aggregate(core2, core3, examples2, examples3)
+lazy val root = (project in file(".")).aggregate(core, examples).disablePlugins(PublishMore)
 
 // Use an older JDK to be Spark compatible
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
@@ -86,17 +75,40 @@ lazy val assemblySettings = Seq(
 root / publish / skip := true
 
 lazy val commonSettings = Seq(
-  version := projectVersion
+  version := projectVersion,
+  crossScalaVersions := Seq(scala211Version, scala212Version),
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, scalaMajor)) if scalaMajor >= 12 =>
+        Seq(
+          "org.apache.spark" %% "spark-sql" % "3.0.1" % "provided"
+        )
+      case Some((2, scalaMajor)) if scalaMajor >= 11 =>
+        libraryDependencies.value ++ Seq(
+          "org.apache.spark" %% "spark-sql" % "2.4.7" % "provided"
+        )
+    }
+  }
 )
 
+val nexus = "https://s01.oss.sonatype.org"
 lazy val publishSettings = Seq(
+  publishResolvers := Seq(
+    if (isSnapshot.value)
+      MavenRepository("lakefs-snapshots", s"$nexus/content/repositories/snapshots")
+    else MavenRepository("lakefs-releases", s"$nexus/service/local/staging/deploy/maven2"),
+    MavenRepository("lakefs-s3-repo", "s3://treeverse-clients-us-east/"),
+  ),
   publishTo := {
-    val nexus = "https://s01.oss.sonatype.org/"
     if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
     else Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
   // Remove all additional repository other than Maven Central from POM
   pomIncludeRepository := { _ => false },
+  credentials ++= Seq(
+    Credentials(Path.userHome / ".sbt" / "credentials"),
+    Credentials(Path.userHome / ".sbt" / "sonatype_credentials"),
+  )
 )
 
 lazy val sharedSettings = commonSettings ++ assemblySettings ++ publishSettings
@@ -132,11 +144,6 @@ ThisBuild / developers := List(
     email = "yoni.augarten@treeverse.io",
     url   = url("https://github.com/johnnyaug"),
   ),
-)
-
-credentials ++= Seq(
-  Credentials(Path.userHome / ".sbt" / "credentials"),
-  Credentials(Path.userHome / ".sbt" / "sonatype_credentials"),
 )
 
 ThisBuild / versionScheme := Some("early-semver")
