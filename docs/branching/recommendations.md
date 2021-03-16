@@ -38,16 +38,16 @@ _Creating a testing branch:_
 
    ```shell
    lakectl branch create \
-      lakefs://example-repo@testing-spark-3.0 \
+      lakefs://example-repo@testing-spark-3 \
       --source lakefs://example-repo@main
    # output:
-   # created branch 'testing-spark-3.0', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   # created branch 'testing-spark-3', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
 
 _Resetting changes to a branch:_
 
    ```shell
-   lakectl branch reset lakefs://example-repo@testing-spark-3.0
+   lakectl branch reset lakefs://example-repo@testing-spark-3
    # are you sure you want to reset all uncommitted changes?: y█
    ```
 
