@@ -53,7 +53,7 @@ def generateExamplesProject(buildType: BuildType) =
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
       libraryDependencies += "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
-      mainClass in assembly := Some("io.treeverse.examples.List"),
+      assembly / mainClass := Some("io.treeverse.examples.List"),
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
