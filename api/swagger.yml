@@ -122,7 +122,7 @@ definitions:
 
   staging_location:
     type: object
-    description: location for placing an object before staging it
+    description: location for placing an object when staging it
     properties:
       physical_address:
         type: string
@@ -131,6 +131,28 @@ definitions:
         description: opaque staging token to use to link uploaded object
     required:
       - token
+
+  staging_metadata:
+    type: object
+    description: information about uploaded object
+    properties:
+      staging:
+        type: object
+        $ref: "#/definitions/staging_location"
+      checksum:
+        type: string
+        description: unique identifier of object content on backing store (typically ETag)
+      mtime:
+        type: integer
+        format: int64
+      size_bytes:
+        type: integer
+        format: int64
+    required:
+      - staging
+      - checksum
+      - mtime
+      - size_bytes
 
   object_stage_creation:
     type: object
@@ -2042,12 +2064,10 @@ paths:
         physical address with the supplied path.  Otherwise return a conflict and hint where
         to place the object to try again.
       parameters:
-        # TODO(ariels): Don't need a sub-object to use a schema if we switch to OpenAPI 3.0
-        #     before release.
         - in: body
-          name: staging
+          name: metadata
           schema:
-            $ref: "#/definitions/staging_location"
+            $ref: "#/definitions/staging_metadata"
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was
