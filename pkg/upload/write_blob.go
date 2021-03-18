@@ -27,9 +27,15 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName string, bo
 	if err != nil {
 		return nil, err
 	}
+
+	qk, err := block.ResolveNamespaceWithScheme(adapter.BlockstoreType(), bucketName, address)
+	if err != nil {
+		return nil, err
+	}
+
 	checksum := hex.EncodeToString(hashReader.Md5.Sum(nil))
 	return &Blob{
-		PhysicalAddress: address,
+		PhysicalAddress: qk.Format(),
 		Checksum:        checksum,
 		Size:            hashReader.CopiedSize,
 	}, nil

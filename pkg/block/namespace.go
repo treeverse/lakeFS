@@ -111,6 +111,15 @@ func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, e
 	}, nil
 }
 
+func ResolveNamespaceWithScheme(scheme, defaultNamespace, key string) (QualifiedKey, error) {
+	prefix := fmt.Sprintf("%s://", scheme)
+	if strings.HasPrefix(defaultNamespace, prefix) {
+		return ResolveNamespace(defaultNamespace, key)
+	}
+
+	return ResolveNamespace(prefix+defaultNamespace, key)
+}
+
 func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
 	// check if the key is fully qualified
 	parsedKey, err := url.ParseRequestURI(key)

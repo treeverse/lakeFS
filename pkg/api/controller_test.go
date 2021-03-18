@@ -1213,7 +1213,6 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
-
 }
 
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
@@ -1606,4 +1605,103 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestController_RelativePhysicalAddressSupport(t *testing.T) {
+	// This test guarantees that lakeFS will always continue to support entries
+	// which their PhysicalAddress is relative to the repo's storage namespace (See issue #1650).
+	// If this test fails, it means that sstables from before this change will not be readable
+	// by the lakeFS server and supported clients.
+	// Do NOT delete this test.
+	clt, deps := setupClient(t, "local")
+
+	// create user
+	creds := createDefaultAdminUser(t, clt)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expensiveString := "EXPENSIVE"
+
+	buf := new(bytes.Buffer)
+	buf.WriteString("this is file content made up of bytes")
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, "ns1", buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := catalog.DBEntry{
+		Path:            "foo/bar",
+		PhysicalAddress: blob.PhysicalAddress,
+		CreationDate:    time.Now(),
+		Size:            blob.Size,
+		Checksum:        blob.Checksum,
+	}
+	testutil.Must(t,
+		deps.catalog.CreateEntry(ctx, "repo1", "master", entry))
+
+	expired := catalog.DBEntry{
+		Path:            "foo/expired",
+		PhysicalAddress: "an_expired_physical_address",
+		CreationDate:    time.Now(),
+		Size:            99999,
+		Checksum:        "b10b",
+		Expired:         true,
+	}
+	testutil.Must(t,
+		deps.catalog.CreateEntry(ctx, "repo1", "master", expired))
+
+	t.Run("get object", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		resp, err := clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth, buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if resp.ContentLength != 37 {
+			t.Fatalf("expected 37 bytes in content length, got back %d", resp.ContentLength)
+		}
+		if resp.ETag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Fatalf("got unexpected etag: %s", resp.ETag)
+		}
+
+		body := buf.String()
+		if !strings.EqualFold(body, "this is file content made up of bytes") {
+			t.Fatalf("got unexpected body: '%s'", body)
+		}
+
+		_, err = clt.Objects.GetObject(
+			objects.NewGetObjectParamsWithTimeout(timeout).
+				WithRef("master:HEAD").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth, buf)
+		if _, ok := err.(*objects.GetObjectNotFound); !ok {
+			t.Fatalf("expected object not found error, got %v", err)
+		}
+	})
+
+	t.Run("get properties", func(t *testing.T) {
+		properties, err := clt.Objects.GetUnderlyingProperties(
+			objects.NewGetUnderlyingPropertiesParamsWithTimeout(timeout).
+				WithRef("master").
+				WithPath("foo/bar").
+				WithRepository("repo1"),
+			bauth)
+		if err != nil {
+			t.Fatalf("expected to get underlying properties, got %v", err)
+		}
+		if *properties.Payload.StorageClass != expensiveString {
+			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
+		}
+	})
 }

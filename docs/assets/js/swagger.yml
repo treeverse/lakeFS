@@ -148,6 +148,11 @@ definitions:
       size_bytes:
         type: integer
         format: int64
+    required:
+      - staging
+      - checksum
+      - mtime
+      - size_bytes
 
   object_stage_creation:
     type: object
