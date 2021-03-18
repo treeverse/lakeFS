@@ -108,17 +108,14 @@ func (d *compareIterator) Step() bool {
 			switch typ {
 			case graveler.DiffTypeAdded:
 				// exists on source, but not on dest
-				if baseRange == nil || bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 { // TODO(Guys): change this - maybe change d.range from base that it will return
+				if baseRange == nil || bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 {
 					// added only on source
 					d.rng = rngDiff
 					d.val = nil
 					return true
 				}
-				if baseRange.ID != rng.ID {
-					// removed on dest, but changed on source
-					hasNext = d.diffIt.Next()
-				}
-				d.diffIt.Next()
+
+				hasNext = d.diffIt.Next()
 			case graveler.DiffTypeRemoved:
 				// exists on dest, but not on source
 				if baseRange != nil {
@@ -129,10 +126,11 @@ func (d *compareIterator) Step() bool {
 						return true
 					}
 					// changed on dest, removed on source
-					d.diffIt.Next() // go in
+					hasNext = d.diffIt.Next() // go in
+					continue
 				}
 				// added on dest, but not on source - continue -> nextRange
-				hasNext = d.diffIt.Next()
+				hasNext = d.diffIt.NextRange()
 			}
 		}
 		if val != nil {

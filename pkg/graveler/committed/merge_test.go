@@ -320,6 +320,79 @@ func Test_merge(t *testing.T) {
 			expectedErr:     nil,
 			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 2, removed: 1}},
 		},
+		"source range - overlapping ranges": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+				}},
+			},
+			sourceRange: []testRange{
+				{rng: committed.Range{ID: "source:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k4", "source:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"}, {"k10", "source:k10"},
+				}},
+			},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+				}},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{action: actionTypeWriteRecord, key: "k1", identity: "base:k1"},
+				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+				{action: actionTypeWriteRecord, key: "k4", identity: "source:k4"},
+				{action: actionTypeWriteRecord, key: "k5", identity: "base:k5"},
+				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+				{action: actionTypeWriteRecord, key: "k10", identity: "source:k10"},
+			},
+			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 2}},
+		},
+		"dest range - overlapping ranges": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+				}},
+			},
+			sourceRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+				}},
+			},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k4", "dest:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"}, {"k10", "dest:k10"},
+				}},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}},
+			},
+			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedErr:     graveler.ErrNoChanges,
+		},
+		"source - remove at end of range": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+				}},
+			},
+			sourceRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 4444}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+				}},
+			},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}, records: []testValueRecord{
+					{"k1", "base:k1"}, {"k3", "base:k3"}, {"k4", "dest:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"}, {"k10", "dest:k10"},
+				}},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k1-k10", MinKey: committed.Key("k1"), MaxKey: committed.Key("k10"), Count: 6, EstimatedSize: 66666}},
+			},
+			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedErr:     graveler.ErrNoChanges,
+		},
 		"both added key to range": {
 			baseRange: []testRange{
 				{rng: committed.Range{ID: "base:k1-k6", MinKey: committed.Key("k1"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
@@ -365,6 +438,117 @@ func Test_merge(t *testing.T) {
 				},
 			},
 			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{added: 1}},
+		},
+		"source range removed": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			sourceRange: []testRange{{
+				rng:     committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+				records: nil,
+			}},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+				},
+			},
+			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{removed: 2}},
+			expectedErr:     nil,
+		},
+		"dest range removed": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			sourceRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+				},
+			},
+			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedErr:     graveler.ErrNoChanges,
+		},
+		"source key removed from range": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 1234},
+					records: []testValueRecord{
+						{"k3", "base:k3"}, {"k4", "base:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+					},
+				},
+			},
+			sourceRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "source:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					records: []testValueRecord{
+						{"k3", "base:k3"}, {"k6", "base:k6"},
+					},
+				},
+			},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 1234},
+					records: []testValueRecord{
+						{"k3", "base:k3"}, {"k4", "base:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+					},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{action: actionTypeWriteRecord, key: "k3", identity: "base:k3"},
+				{action: actionTypeWriteRecord, key: "k6", identity: "base:k6"},
+			},
+			expectedSummary: graveler.DiffSummary{Count: map[graveler.DiffType]int{removed: 2}},
+		},
+		"dest key removed from range": {
+			baseRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 1234},
+					records: []testValueRecord{
+						{"k3", "base:k3"}, {"k4", "base:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+					},
+				},
+			},
+			sourceRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 4, EstimatedSize: 1234},
+					records: []testValueRecord{
+						{"k3", "base:k3"}, {"k4", "base:k4"}, {"k5", "base:k5"}, {"k6", "base:k6"},
+					},
+				},
+			},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "dest:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+					records: []testValueRecord{
+						{"k3", "base:k3"}, {"k6", "base:k6"},
+					},
+				},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{action: actionTypeWriteRange, rng: committed.Range{ID: "base:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{action: actionTypeWriteRange, rng: committed.Range{ID: "dest:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			expectedSummary: graveler.DiffSummary{},
+			expectedErr:     graveler.ErrNoChanges,
 		},
 	}
 

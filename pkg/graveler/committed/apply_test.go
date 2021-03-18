@@ -92,20 +92,19 @@ func TestApplyDelete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz")}
+	range2 := &committed.Range{ID: "two", MaxKey: committed.Key("dz"), Count: 3, EstimatedSize: 2012}
 	source := testutil.NewFakeIterator()
 	source.
-		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("cz")}).
+		AddRange(&committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3, EstimatedSize: 2012}).
 		AddValueRecords(makeV("a", "source:a"), makeV("b", "source:b"), makeV("c", "source:c")).
 		AddRange(range2).
 		AddValueRecords(makeV("d", "source:d")).
-		AddRange(&committed.Range{ID: "three", MaxKey: committed.Key("ez")}).
+		AddRange(&committed.Range{ID: "three", MinKey: committed.Key("ez"), MaxKey: committed.Key("ez"), EstimatedSize: 10, Count: 1}).
 		AddValueRecords(makeV("e", "source:e"))
 	diffs := testutil.NewFakeIterator()
 	diffs.
-		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("e")}).
+		AddRange(&committed.Range{ID: "one", MaxKey: committed.Key("e"), Count: 2, EstimatedSize: 2012}).
 		AddValueRecords(makeTombstoneV("b"), makeTombstoneV("e"))
-
 	writer := mock.NewMockMetaRangeWriter(ctrl)
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("a", "source:a")))
 	writer.EXPECT().WriteRecord(gomock.Eq(*makeV("c", "source:c")))
