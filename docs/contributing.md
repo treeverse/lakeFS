@@ -27,16 +27,17 @@ Before you get started, we ask that you:
 
 Want to report a bug or request a feature? Please [open an issue](https://github.com/treeverse/lakeFS/issues/new)
 
-Working on your first Pull Request? You can learn how from this free series, [How to Contribute to an Open Source Project on GitHub](https://egghead.io/series/how-to-contribute-to-an-open-source-project-on-github).
+Working on your first Pull Request? You can learn how from this free series, [How to Contribute to an Open Source Project on GitHub](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github).
 
 ## Setting up an Environment
 
 *This section was tested on macOS and Linux (Fedora 32, Ubuntu 20.04) - Your mileage may vary*
 
-Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds under _go-version_ the Go version we currently use.
+   
+Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly.
 
 1. Install the required dependencies for your OS:
-    1. [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+    1. [Git](https://git-scm.com/downloads)
     1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as apt or brew)
     1. [Docker](https://docs.docker.com/get-docker/)
     1. [Go](https://golang.org/doc/install)
@@ -50,7 +51,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    
    Make sure `(go env GOPATH)/bin` is in your `$PATH` (or at least, that the `statik` binary is). 
    
-1. Clone the repository from https://github.com/treeverse/lakeFS
+1. Clone the repository from https://github.com/treeverse/lakeFS (gives you read-only access to the repository. To contribute, see the next section).
 1. Build the project:
    
    ```shell

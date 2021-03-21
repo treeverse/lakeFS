@@ -17,7 +17,7 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     def call(): String = fn()
   }
 
-  private def getStorageNamespace(repoName: String): String = {
+  def getStorageNamespace(repoName: String): String = {
     storageNamespaceCache.get(repoName, new CallableFn(() => {
       val getRepositoryURI = URI.create("%s/repositories/%s".format(apiUrl, repoName)).normalize()
       val resp = Http(getRepositoryURI.toString).header("Accept", "application/json").auth(accessKey, secretKey).asString

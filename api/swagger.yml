@@ -120,6 +120,40 @@ definitions:
         type: string
         enum: [ common_prefix, object ]
 
+  staging_location:
+    type: object
+    description: location for placing an object when staging it
+    properties:
+      physical_address:
+        type: string
+      token:
+        type: string
+        description: opaque staging token to use to link uploaded object
+    required:
+      - token
+
+  staging_metadata:
+    type: object
+    description: information about uploaded object
+    properties:
+      staging:
+        type: object
+        $ref: "#/definitions/staging_location"
+      checksum:
+        type: string
+        description: unique identifier of object content on backing store (typically ETag)
+      mtime:
+        type: integer
+        format: int64
+      size_bytes:
+        type: integer
+        format: int64
+    required:
+      - staging
+      - checksum
+      - mtime
+      - size_bytes
+
   object_stage_creation:
     type: object
     required:
@@ -1985,6 +2019,76 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
+  /repositories/{repository}/branches/{branch}/staging/backing:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
+    get:
+      tags:
+        - staging
+      operationId: getPhysicalAddress
+      summary: get a physical address and a return token to write object to underlying storage
+      responses:
+        200:
+          description: physical address for staging area
+          schema:
+            $ref: "#/definitions/staging_location"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags: 
+       - staging
+      operationId: linkPhysicalAddress
+      summary: associate staging on this physical address with a path
+      description: |
+        If the supplied token matches the current staging token, associate the object as the
+        physical address with the supplied path.  Otherwise return a conflict and hint where
+        to place the object to try again.
+      parameters:
+        - in: body
+          name: metadata
+          schema:
+            $ref: "#/definitions/staging_metadata"
+      responses:
+        200:
+          # This actually violates HTTP, which requires returning 201 if a new object was
+          # created or 200 if an existing object was modified,
+          # https://tools.ietf.org/html/rfc7231#section-4.3.4
+          description: successfully linked
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        409:
+          description: conflict with a commit, try here
+          schema:
+            $ref: "#/definitions/staging_location"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+      
 
   /repositories/{repository}/branches/{branch}/objects:
     parameters:
