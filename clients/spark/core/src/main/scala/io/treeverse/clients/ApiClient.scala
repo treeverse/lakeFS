@@ -65,4 +65,21 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     }
     URI.create(getStorageNamespace(repoName) + "/" + resp.header("Location").get).normalize().toString
   }
+
+  def getBranchHEADCommit(repoName: String, branch: String): String = {
+    val getBranchURI = URI.create("%s/repositories/%s/branches/%s".format(apiUrl, repoName, branch)).normalize()
+    val resp = Http(getBranchURI.toString).header("Accept", "application/json").auth(accessKey, secretKey).asString
+    if (resp.isError) {
+      throw new RuntimeException(s"failed to get branch ${getBranchURI}: [${resp.code}] ${resp.body}")
+    }
+    val branchResp = parse(resp.body)
+
+    val commitID = branchResp \ "commit_id" match {
+      case JString(commitID) => commitID
+      case _ =>
+        throw new RuntimeException(s"expected string commit_id in ${resp.body}")
+    }
+
+    commitID
+  }
 }
