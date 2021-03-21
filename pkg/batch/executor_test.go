@@ -158,6 +158,7 @@ func testBatchExpiration(t *testing.T) {
 			t.Errorf("r1 should have triggered a single db call, but access count= #{ac}")
 		}
 		close(read1Done)
+
 	}()
 
 	go func() {
@@ -237,8 +238,8 @@ func testBatchByKey(t *testing.T) {
 
 func TestExecutor_BatchFor(t *testing.T) {
 	var wg sync.WaitGroup
-	wg.Add(1)
-	for i := 0; i < 1; i++ {
+	wg.Add(50)
+	for i := 0; i < 50; i++ {
 		go func() {
 			defer wg.Done()
 			testReadAfterWrite(t)
