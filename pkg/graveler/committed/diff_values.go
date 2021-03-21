@@ -6,18 +6,18 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-// flatDiffIterator wraps a diffIterator in order to return only values
-type flatDiffIterator struct {
+// diffValuesIterator wraps a diffIterator in order to return only values
+type diffValuesIterator struct {
 	rangeDiffIter DiffIterator
 }
 
 func NewFlatDiffIterator(ctx context.Context, left Iterator, right Iterator) graveler.DiffIterator {
-	return &flatDiffIterator{
+	return &diffValuesIterator{
 		rangeDiffIter: NewDiffIterator(ctx, left, right),
 	}
 }
 
-func (d flatDiffIterator) Next() bool {
+func (d diffValuesIterator) Next() bool {
 	for d.rangeDiffIter.Next() {
 		if d.rangeDiffIter.Err() != nil {
 			return false
@@ -30,19 +30,19 @@ func (d flatDiffIterator) Next() bool {
 	return false
 }
 
-func (d flatDiffIterator) SeekGE(id graveler.Key) {
+func (d diffValuesIterator) SeekGE(id graveler.Key) {
 	d.rangeDiffIter.SeekGE(id)
 }
 
-func (d flatDiffIterator) Value() *graveler.Diff {
+func (d diffValuesIterator) Value() *graveler.Diff {
 	val, _ := d.rangeDiffIter.Value()
 	return val
 }
 
-func (d flatDiffIterator) Err() error {
+func (d diffValuesIterator) Err() error {
 	return d.rangeDiffIter.Err()
 }
 
-func (d flatDiffIterator) Close() {
+func (d diffValuesIterator) Close() {
 	d.rangeDiffIter.Close()
 }

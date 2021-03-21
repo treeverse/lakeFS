@@ -159,7 +159,7 @@ func (c *committedManager) Compare(ctx context.Context, ns graveler.StorageNames
 	if err != nil {
 		return nil, fmt.Errorf("get base iterator: %w", err)
 	}
-	return NewCompareIteratorFlat(ctx, NewDiffIteratorWrapper(diffIt), baseIt), nil
+	return NewCompareValueIterator(ctx, NewDiffIteratorWrapper(diffIt), baseIt), nil
 }
 
 func (c *committedManager) GetMetaRange(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (graveler.MetaRangeInfo, error) {

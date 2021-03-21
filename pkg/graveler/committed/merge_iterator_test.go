@@ -384,7 +384,7 @@ func TestCompare(t *testing.T) {
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
 			ctx := context.Background()
-			it := committed.NewCompareIteratorFlat(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
+			it := committed.NewCompareValueIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 			var gotValues, gotKeys []string
 			var gotDiffTypes []graveler.DiffType
 			idx := 0
@@ -427,7 +427,7 @@ func TestCompareSeek(t *testing.T) {
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
 	base := makeBaseIterator(baseKeys)
 	ctx := context.Background()
-	it := committed.NewCompareIteratorFlat(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
+	it := committed.NewCompareValueIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()
 	tests := []struct {

@@ -17,16 +17,16 @@ type compareIterator struct {
 	err             error
 }
 
-type compareValueIterator struct {
+type mergeIterator struct {
 	*compareIterator
 }
 
 // NewMergeIterator accepts an iterator describing a diff from the merge destination to the source.
-// It returns a graveler.ValueIterator with the changes to perform on the destination branch, in order to merge the source into it,
+// It returns a Iterator with the changes to perform on the destination branch, in order to merge the source into it,
 // relative to base as the merge base.
 // When reaching a conflict, the iterator will enter an error state with the graveler.ErrConflictFound error.
-func NewMergeIterator(ctx context.Context, diffDestToSource DiffIterator, base Iterator) *compareValueIterator {
-	return &compareValueIterator{
+func NewMergeIterator(ctx context.Context, diffDestToSource DiffIterator, base Iterator) *mergeIterator {
+	return &mergeIterator{
 		compareIterator: &compareIterator{
 			ctx:             ctx,
 			diffIt:          diffDestToSource,
@@ -37,7 +37,7 @@ func NewMergeIterator(ctx context.Context, diffDestToSource DiffIterator, base I
 }
 
 // NewCompareIterator accepts an iterator describing a diff from the merge destination to the source.
-// It returns a graveler.DiffIterator with the changes to perform on the destination branch, in order to merge the source into it,
+// It returns a DiffIterator with the changes to perform on the destination branch, in order to merge the source into it,
 // relative to base as the merge base.
 // When reaching a conflict, the returned Diff will be of type graveler.DiffTypeConflict.
 func NewCompareIterator(ctx context.Context, diffDestToSource DiffIterator, base Iterator) *compareIterator {
@@ -52,10 +52,7 @@ func NewCompareIterator(ctx context.Context, diffDestToSource DiffIterator, base
 func (d *compareIterator) rangeFromBase(key graveler.Key) (*Range, error) {
 	d.base.SeekGE(key)
 	if !d.base.Next() {
-		if d.err != nil {
-			return nil, d.err
-		}
-		return nil, nil
+		return nil, d.err
 	}
 	_, baseRange := d.base.Value()
 	return baseRange, nil
@@ -97,7 +94,7 @@ func (d *compareIterator) Step() bool {
 		default:
 		}
 		val, rngDiff := d.diffIt.Value()
-		if rngDiff != nil {
+		if rngDiff != nil && val == nil {
 			typ := rngDiff.Type
 			rng := rngDiff.Range
 			baseRange, err := d.rangeFromBase(graveler.Key(rng.MinKey))
@@ -233,7 +230,7 @@ func (d *compareIterator) Close() {
 	d.base.Close()
 }
 
-func (c *compareValueIterator) Value() (*graveler.ValueRecord, *Range) {
+func (c *mergeIterator) Value() (*graveler.ValueRecord, *Range) {
 	value, rng := c.compareIterator.Value()
 	if value != nil {
 		res := &graveler.ValueRecord{

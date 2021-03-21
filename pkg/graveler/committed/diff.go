@@ -14,6 +14,7 @@ type iteratorValue struct {
 	err    error
 }
 
+// ErrNoRange occurs when calling nextRange while not in a range, could happen when the diff is currently comparing keys in two different ranges
 var ErrNoRange = errors.New("diff is not currently in a range")
 
 // currentRangeData holds state of the current RangeDiff
@@ -21,7 +22,6 @@ type currentRangeData struct {
 	iter             Iterator
 	value            *iteratorValue
 	currentRangeDiff *RangeDiff
-	isLeft           bool
 }
 
 type diffIterator struct {
@@ -34,6 +34,15 @@ type diffIterator struct {
 	currentDiff  *graveler.Diff
 	err          error
 	state        diffIteratorState
+}
+
+// currentRangeLeftIdentity returns the current range identity in case the current range is the left range, otherwise returns nil
+func (d diffIterator) currentRangeLeftIdentity() (res []byte) {
+	if d.currentRange.iter == d.left {
+		res = make([]byte, len(d.currentRange.value.record.Identity))
+		copy(res, d.currentRange.value.record.Identity)
+	}
+	return
 }
 
 type diffIteratorState int
@@ -91,9 +100,6 @@ func (d *diffIterator) setCurrentRangeRight() {
 		Type:  graveler.DiffTypeAdded,
 		Range: d.rightValue.rng.Copy(),
 	}
-	d.currentRange.iter = d.right
-	d.currentRange.value = &d.rightValue
-	d.currentRange.isLeft = false
 	d.currentDiff = nil
 }
 
@@ -105,9 +111,6 @@ func (d *diffIterator) setCurrentRangeLeft() {
 		Range: d.leftValue.rng.Copy(),
 	}
 	d.leftValue.record = nil
-	d.currentRange.iter = d.left
-	d.currentRange.value = &d.leftValue
-	d.currentRange.isLeft = true
 	d.currentDiff = nil
 }
 
@@ -138,16 +141,17 @@ func (d *diffIterator) compareDiffIterators() diffIteratorCompareResult {
 	}
 	leftStartRange := leftRange != nil && d.leftValue.record == nil
 	rightStartRange := rightRange != nil && d.rightValue.record == nil
-	rightBeforeLeft, leftBeforeRight := false, false
+	leftBeforeRight := leftStartRange && rightRange == nil
+	rightBeforeLeft := rightStartRange && leftRange == nil
 	if leftStartRange && rightStartRange {
-		rightBeforeLeft = bytes.Compare(leftRange.MaxKey, rightRange.MinKey) < 0
-		leftBeforeRight = bytes.Compare(rightRange.MaxKey, leftRange.MinKey) < 0
+		leftBeforeRight = bytes.Compare(leftRange.MaxKey, rightRange.MinKey) < 0
+		rightBeforeLeft = bytes.Compare(rightRange.MaxKey, leftRange.MinKey) < 0
 	}
 	comp := d.compareDiffKeys()
 	switch {
-	case leftStartRange && rightStartRange && rightBeforeLeft:
+	case leftBeforeRight:
 		return diffItCompareResultLeftRangeBeforeRight
-	case leftStartRange && rightStartRange && leftBeforeRight:
+	case rightBeforeLeft:
 		return diffItCompareResultRightRangeBeforeLeft
 	case leftStartRange && rightStartRange && comp == 0:
 		return diffItCompareResultNeedStartRangeBoth
@@ -173,14 +177,18 @@ func (d *diffIterator) Next() bool {
 	if d.currentRange.iter != nil {
 		// we are currently inside a range
 		d.currentRange.value.record, d.currentRange.value.rng, d.currentRange.value.err = diffIteratorNextValue(d.currentRange.iter)
+		if d.currentRange.value.err != nil {
+			d.err = d.currentRange.value.err
+			d.currentDiff = nil
+			d.emptyCurrentRange()
+			return false
+		}
 		if d.currentRange.value.record != nil {
-			var leftIdentity []byte
-			if d.currentRange.isLeft {
-				leftIdentity = d.currentRange.value.record.Identity
-			}
+			leftIdentity := d.currentRangeLeftIdentity()
 			d.currentDiff = &graveler.Diff{Type: d.currentRange.currentRangeDiff.Type, Key: d.currentRange.value.record.Key.Copy(), Value: d.currentRange.value.record.Value, LeftIdentity: leftIdentity}
 			return true
 		}
+		// current diff range
 		d.emptyCurrentRange()
 	}
 	select {

@@ -124,7 +124,7 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 		case sourceValue == nil && diffValue != nil:
 			err = a.applySourceRangeDiffKey(sourceRange, diffValue)
 		default:
-			err = a.bothKeys(sourceValue, diffValue)
+			err = a.applyBothKeys(sourceValue, diffValue)
 		}
 		if err != nil {
 			return a.summary, err
@@ -156,7 +156,7 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 	return a.summary, a.diffs.Err()
 }
 
-func (a *applier) bothKeys(sourceValue *graveler.ValueRecord, diffValue *graveler.ValueRecord) error {
+func (a *applier) applyBothKeys(sourceValue *graveler.ValueRecord, diffValue *graveler.ValueRecord) error {
 	c := bytes.Compare(sourceValue.Key, diffValue.Key)
 	if c < 0 {
 		// select record from source

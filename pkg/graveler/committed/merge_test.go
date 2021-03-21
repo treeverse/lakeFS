@@ -550,6 +550,27 @@ func Test_merge(t *testing.T) {
 			expectedSummary: graveler.DiffSummary{},
 			expectedErr:     graveler.ErrNoChanges,
 		},
+		"empty dest and base": {
+			baseRange:   []testRange{},
+			sourceRange: []testRange{},
+			destRange: []testRange{
+				{rng: committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234}},
+				{rng: committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234}},
+			},
+			conflictExpectedIdx: nil,
+			expectedActions: []writeAction{
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "dest:k1-k2", MinKey: committed.Key("k1"), MaxKey: committed.Key("k2"), Count: 2, EstimatedSize: 1234},
+				},
+				{
+					action: actionTypeWriteRange,
+					rng:    committed.Range{ID: "base:k3-k6", MinKey: committed.Key("k3"), MaxKey: committed.Key("k6"), Count: 2, EstimatedSize: 1234},
+				},
+			},
+			expectedSummary: graveler.DiffSummary{Count: nil},
+			expectedErr:     graveler.ErrNoChanges,
+		},
 	}
 
 	for name, tst := range tests {
