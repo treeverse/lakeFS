@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -143,7 +142,7 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 		apiErrors := []*api.Error{resp.JSON400, resp.JSON401, resp.JSON404, resp.JSONDefault}
 		for _, apiErr := range apiErrors {
 			if apiErr != nil {
-				return nil, errors.New(apiErr.Message)
+				return nil, fmt.Errorf("%w: %s", ErrRequestFailed, apiErr.Message)
 			}
 		}
 	}

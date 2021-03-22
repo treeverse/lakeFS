@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
+
+var ErrRequestFailed = errors.New("request failed")
 
 var abuseCmd = &cobra.Command{
 	Use:    "abuse <sub command>",
@@ -83,7 +86,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 					Path: work,
 				})
 				if err == nil && resp.StatusCode() != http.StatusOK {
-					err = fmt.Errorf("request failed %s", resp.Status())
+					err = fmt.Errorf("%w: %s (%d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
 				}
 				output <- stress.Result{
 					Error: err,
@@ -143,7 +146,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: work},
 					api.StageObjectJSONRequestBody(creationInfo))
 				if err == nil && resp.StatusCode() != http.StatusOK {
-					err = fmt.Errorf("request failed %s", resp.Status())
+					err = fmt.Errorf("%w: %s (%d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
 				}
 				output <- stress.Result{
 					Error: err,
@@ -172,10 +175,11 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		deleteGen := stress.NewGenerator(parallelism)
 
+		const paginationAmount = 1000
 		deleteGen.Setup(func(add stress.GeneratorAddFn) {
 			client := getClient()
 			currentOffset := api.PaginationAfter(branchPrefix)
-			amount := api.PaginationAmount(1000)
+			amount := api.PaginationAmount(paginationAmount)
 			for {
 				res, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
 					After:  &currentOffset,
@@ -235,7 +239,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 						Source: u.Ref,
 					})
 				if err == nil && resp.StatusCode() != http.StatusCreated {
-					err = fmt.Errorf("request failed %s", resp.Status())
+					err = fmt.Errorf("%w: %s (%d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
 				}
 				output <- stress.Result{
 					Error: err,

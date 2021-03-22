@@ -125,20 +125,11 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body Cr
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func readRequest(w http.ResponseWriter, r *http.Request, v interface{}) bool {
-	err := json.NewDecoder(r.Body).Decode(&v)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid body format")
-		return false
-	}
-	return true
-}
-
-func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupId string) {
+func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.DeleteGroupAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
@@ -146,7 +137,7 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupId
 
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_group")
-	err := c.Auth.DeleteGroup(ctx, groupId)
+	err := c.Auth.DeleteGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "group not found")
 		return
@@ -156,18 +147,18 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupId
 	}
 }
 
-func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupId string) {
+func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadGroupAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_group")
-	g, err := c.Auth.GetGroup(ctx, groupId)
+	g, err := c.Auth.GetGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "group not found")
 		return
@@ -183,18 +174,18 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupId st
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params ListGroupMembersParams) {
+func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupMembersParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadGroupAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "list_group_users")
-	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupId, &model.PaginationParams{
+	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -218,11 +209,11 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupId string, userId string) {
+func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.RemoveGroupMemberAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
@@ -230,35 +221,35 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 	c.LogAction(ctx, "remove_user_from_group")
-	err := c.Auth.RemoveUserFromGroup(ctx, userId, groupId)
+	err := c.Auth.RemoveUserFromGroup(ctx, userID, groupID)
 	if handleAPIError(w, err) {
 		return
 	}
 }
 
-func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupId string, userId string) {
+func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.AddGroupMemberAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "add_user_to_group")
-	err := c.Auth.AddUserToGroup(ctx, userId, groupId)
+	err := c.Auth.AddUserToGroup(ctx, userID, groupID)
 	if handleAPIError(w, err) {
 		return
 	}
 	writeResponse(w, http.StatusCreated, nil)
 }
 
-func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupId string, params ListGroupPoliciesParams) {
+func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupPoliciesParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadGroupAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
@@ -266,7 +257,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_policies")
-	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupId, &model.PaginationParams{
+	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -305,28 +296,28 @@ func serializePolicy(p *model.Policy) Policy {
 	}
 }
 
-func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupId string, policyId string) {
+func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.DetachPolicyAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "detach_policy_from_group")
-	err := c.Auth.DetachPolicyFromGroup(ctx, policyId, groupId)
+	err := c.Auth.DetachPolicyFromGroup(ctx, policyID, groupID)
 	if handleAPIError(w, err) {
 		return
 	}
 }
 
-func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupId string, policyId string) {
+func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.AttachPolicyAction,
-			Resource: permissions.GroupArn(groupId),
+			Resource: permissions.GroupArn(groupID),
 		},
 	}) {
 		return
@@ -334,7 +325,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 
 	ctx := r.Context()
 	c.LogAction(ctx, "attach_policy_to_group")
-	err := c.Auth.AttachPolicyToGroup(ctx, policyId, groupId)
+	err := c.Auth.AttachPolicyToGroup(ctx, policyID, groupID)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -408,18 +399,18 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 	writeResponse(w, http.StatusCreated, serializePolicy(p))
 }
 
-func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyId string) {
+func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.DeletePolicyAction,
-			Resource: permissions.PolicyArn(policyId),
+			Resource: permissions.PolicyArn(policyID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_policy")
-	err := c.Auth.DeletePolicy(ctx, policyId)
+	err := c.Auth.DeletePolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "policy not found")
 		return
@@ -429,18 +420,18 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 	}
 }
 
-func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyId string) {
+func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadPolicyAction,
-			Resource: permissions.PolicyArn(policyId),
+			Resource: permissions.PolicyArn(policyID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_policy")
-	p, err := c.Auth.GetPolicy(ctx, policyId)
+	p, err := c.Auth.GetPolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "policy not found")
 		return
@@ -453,11 +444,11 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyId 
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyId string) {
+func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.UpdatePolicyAction,
-			Resource: permissions.PolicyArn(policyId),
+			Resource: permissions.PolicyArn(policyID),
 		},
 	}) {
 		return
@@ -476,7 +467,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body U
 
 	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
-		DisplayName: policyId,
+		DisplayName: policyID,
 		Statement:   stmts,
 	}
 	err := c.Auth.WritePolicy(ctx, p)
@@ -548,11 +539,11 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userId string) {
+func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.DeleteUserAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
@@ -560,7 +551,7 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userId s
 
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_user")
-	err := c.Auth.DeleteUser(ctx, userId)
+	err := c.Auth.DeleteUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
@@ -570,18 +561,18 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userId s
 	}
 }
 
-func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userId string) {
+func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadUserAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_user")
-	u, err := c.Auth.GetUser(ctx, userId)
+	u, err := c.Auth.GetUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
@@ -596,18 +587,18 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userId stri
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request, userId string, params ListUserCredentialsParams) {
+func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request, userID string, params ListUserCredentialsParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ListCredentialsAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_credentials")
-	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userId, &model.PaginationParams{
+	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -631,18 +622,18 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, userId string) {
+func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, userID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.CreateCredentialsAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_credentials")
-	credentials, err := c.Auth.CreateCredentials(ctx, userId)
+	credentials, err := c.Auth.CreateCredentials(ctx, userID)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -654,11 +645,11 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 	writeResponse(w, http.StatusCreated, response)
 }
 
-func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, userId string, accessKeyId string) {
+func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.DeleteCredentialsAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
@@ -666,7 +657,7 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_credentials")
-	err := c.Auth.DeleteCredentials(ctx, userId, accessKeyId)
+	err := c.Auth.DeleteCredentials(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "credentials not found")
 		return
@@ -676,18 +667,18 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 	}
 }
 
-func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userId string, accessKeyId string) {
+func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadCredentialsAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_credentials_for_user")
-	credentials, err := c.Auth.GetCredentialsForUser(ctx, userId, accessKeyId)
+	credentials, err := c.Auth.GetCredentialsForUser(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "credentials not found")
 		return
@@ -703,18 +694,18 @@ func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, user
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, userId string, params ListUserGroupsParams) {
+func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, userID string, params ListUserGroupsParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadUserAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_groups")
-	groups, paginator, err := c.Auth.ListUserGroups(ctx, userId, &model.PaginationParams{
+	groups, paginator, err := c.Auth.ListUserGroups(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -739,11 +730,11 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userId string, params ListUserPoliciesParams) {
+func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params ListUserPoliciesParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadUserAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
@@ -757,7 +748,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	} else {
 		listPolicies = c.Auth.ListUserPolicies
 	}
-	policies, paginator, err := listPolicies(ctx, userId, &model.PaginationParams{
+	policies, paginator, err := listPolicies(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -778,28 +769,28 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userId string, policyId string) {
+func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.DetachPolicyAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "detach_policy_from_user")
-	err := c.Auth.DetachPolicyFromUser(ctx, policyId, userId)
+	err := c.Auth.DetachPolicyFromUser(ctx, policyID, userID)
 	if handleAPIError(w, err) {
 		return
 	}
 }
 
-func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userId string, policyId string) {
+func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.AttachPolicyAction,
-			Resource: permissions.UserArn(userId),
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
@@ -807,7 +798,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 
 	ctx := r.Context()
 	c.LogAction(ctx, "attach_policy_to_user")
-	err := c.Auth.AttachPolicyToUser(ctx, policyId, userId)
+	err := c.Auth.AttachPolicyToUser(ctx, policyID, userID)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1088,7 +1079,7 @@ func runResultToActionRun(val *actions.RunResult) ActionRun {
 	return runResult
 }
 
-func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository string, runId string) {
+func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository string, runID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadActionsAction,
@@ -1104,7 +1095,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository s
 		return
 	}
 
-	runResult, err := c.Actions.GetRunResult(ctx, repository, runId)
+	runResult, err := c.Actions.GetRunResult(ctx, repository, runID)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1127,7 +1118,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository s
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository string, runId string, params ListRunHooksParams) {
+func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository string, runID string, params ListRunHooksParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadActionsAction,
@@ -1144,7 +1135,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	tasksIter, err := c.Actions.ListRunTaskResults(ctx, repo.Name, runId, paginationAfter(params.After))
+	tasksIter, err := c.Actions.ListRunTaskResults(ctx, repo.Name, runID, paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1188,7 +1179,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository string, runId string, hookRunId string) {
+func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository string, runID string, hookRunID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadActionsAction,
@@ -1205,7 +1196,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 
-	taskResult, err := c.Actions.GetTaskResult(ctx, repo.Name, runId, hookRunId)
+	taskResult, err := c.Actions.GetTaskResult(ctx, repo.Name, runID, hookRunID)
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1633,7 +1624,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	_ = handleAPIError(w, err)
 }
 
-func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository string, commitId string) {
+func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository string, commitID string) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadCommitAction,
@@ -1644,7 +1635,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_commit")
-	commit, err := c.Catalog.GetCommit(ctx, repository, commitId)
+	commit, err := c.Catalog.GetCommit(ctx, repository, commitID)
 	if errors.Is(err, catalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "commit not found")
 		return
@@ -1659,7 +1650,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	response := Commit{
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
-		Id:           commitId,
+		Id:           commitID,
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
 		Metadata:     &metadata,
@@ -2447,15 +2438,12 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func StringPtr(s string) *string {
 	return &s
 }
+
 func StringValue(s *string) string {
 	if s == nil {
 		return ""
 	}
 	return *s
-}
-
-func IntPtr(n int) *int {
-	return &n
 }
 
 func Int64Value(p *int64) int64 {
