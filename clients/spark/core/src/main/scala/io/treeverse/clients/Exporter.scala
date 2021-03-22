@@ -29,8 +29,9 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     actionsDF.foreach { row =>
       Exporter.handleRow(ns, rel, serializedConf, row)
     }
-}
-def exportFrom(branch: String, prevCommitID: String): Unit = {
+  }
+
+  def exportFrom(branch: String, prevCommitID: String): Unit = {
     val commitID = apiClient.getBranchHEADCommit(repoName, branch)
     val ns = apiClient.getStorageNamespace(repoName)
 
@@ -42,15 +43,18 @@ def exportFrom(branch: String, prevCommitID: String): Unit = {
 
     // pin Exporter field to avoid serialization
     val dst = dstRoot
-    val actionsDF = spark.sql("SELECT 'copy' as action, new_commit.* FROM new_commit " +
-      "LEFT JOIN prev_commit " +
-      "ON (new_commit.etag = prev_commit.etag AND new_commit.key = prev_commit.key) " +
-      "WHERE prev_commit.key is NULL " +
-      "UNION " +
-      "SELECT 'delete' as action, prev_commit.* FROM prev_commit " +
-      "LEFT OUTER JOIN new_commit " +
-      "ON (new_commit.key = prev_commit.key) " +
-      "WHERE new_commit.key is NULL")
+
+    val actionsDF = spark.sql("WITH raw_rows AS (SELECT n.key as nkey, n.address as naddress, n.etag as netag, " +
+      "p.key as pkey, p.address as paddress, p.etag as petag " +
+      "FROM new_commit n " +
+      "FULL OUTER JOIN prev_commit p " +
+      "ON n.key = p.key " +
+      "WHERE n.etag <> p.etag OR n.etag is null or p.etag is null) " +
+      "SELECT " +
+      "CASE WHEN nkey is null THEN 'delete' ELSE 'copy' END as action, " +
+      "CASE WHEN nkey is null THEN pkey ELSE nkey END as key, " +
+      "CASE WHEN naddress is null THEN paddress ELSE naddress END as address, " +
+      "CASE WHEN netag is null THEN petag ELSE netag END as etag ")
 
     export(ns, dst, actionsDF)
     spark.sparkContext.stop()
