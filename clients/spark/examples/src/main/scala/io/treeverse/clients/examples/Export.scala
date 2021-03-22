@@ -3,6 +3,11 @@ package io.treeverse.clients.examples
 import io.treeverse.clients.{ApiClient, Exporter}
 import org.apache.spark.sql.SparkSession
 
+// This example Export program copies all files from a lakeFS branch in a lakeFS repository
+// to the specified s3 bucket. When the export ends, file structure under the bucket will match
+// the one in the branch.
+// This example supports continuous exports - provided with <prev_commit_id>, it will handle only the files
+// that were changed since that commit and avoid copying unnecessary data.
 object Export extends App {
   override def main(args: Array[String]) {
     if (args.length != 4) {
@@ -13,8 +18,6 @@ object Export extends App {
     val endpoint = "http://<LAKEFS_ENDPOINT>/api/v1"
     val accessKey = "<LAKEFS_ACCESS_KEY_ID>"
     val secretKey = "<LAKEFS_SECRET_ACCESS_KEY>"
-    val s3accessKey = "<S3_ACCESS_KEY_ID>"
-    val s3secretKey = "<S3_SECRET_ACCESS_KEY>"
 
     val repo = args(0)
     val branch = args(1)
@@ -27,14 +30,12 @@ object Export extends App {
     sc.hadoopConfiguration.set("lakefs.api.url", endpoint)
     sc.hadoopConfiguration.set("lakefs.api.access_key", accessKey)
     sc.hadoopConfiguration.set("lakefs.api.secret_key", secretKey)
-    sc.hadoopConfiguration.set("fs.s3a.access.key", s3accessKey)
-    sc.hadoopConfiguration.set("fs.s3a.secret.key",s3secretKey)
 
     val apiClient = new ApiClient(endpoint, accessKey, secretKey)
-    val exporter = new Exporter(apiClient, repo, rootLocation)
+    val exporter = new Exporter(spark, apiClient, repo, rootLocation)
 
-    exporter.exportAllFromCommit(spark, prevCommitID)
-    exporter.exportAllFromBranch(spark, branch)
-    exporter.exportFrom(spark, branch, prevCommitID)
+    exporter.exportAllFromBranch(branch)
+//    exporter.exportAllFromCommit(prevCommitID)
+//    exporter.exportFrom(branch, prevCommitID)
   }
 }

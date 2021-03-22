@@ -74,12 +74,10 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     }
     val branchResp = parse(resp.body)
 
-    val commitID = branchResp \ "commit_id" match {
+    branchResp \ "commit_id" match {
       case JString(commitID) => commitID
       case _ =>
         throw new RuntimeException(s"expected string commit_id in ${resp.body}")
     }
-
-    commitID
   }
 }

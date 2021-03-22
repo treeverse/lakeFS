@@ -3,33 +3,34 @@ package io.treeverse.clients
 import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
-class Exporter(apiClient: ApiClient, repoName: String, rootExportLocation: String) {
-  def exportAllFromBranch(spark : SparkSession, branch: String): Unit = {
+class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
+  def exportAllFromBranch(branch: String): Unit = {
     val commitID = apiClient.getBranchHEADCommit(repoName, branch)
-    exportAllFromCommit(spark, commitID)
+    exportAllFromCommit(commitID)
   }
 
-  def exportAllFromCommit(spark : SparkSession, commitID: String): Unit = {
+  def exportAllFromCommit(commitID: String): Unit = {
     val ns = apiClient.getStorageNamespace(repoName)
     val df = LakeFSContext.newDF(spark, repoName, commitID)
     df.createOrReplaceTempView("commit")
 
-    val rel = rootExportLocation
+    // pin Exporter field to avoid serialization
+    val dst = dstRoot
     val actionsDF = spark.sql("SELECT 'copy' as action, * FROM commit")
 
-    export(spark, ns, rel, actionsDF)
+    export(ns, dst, actionsDF)
     spark.sparkContext.stop()
   }
 
-  private def export(spark: SparkSession, ns: String, rel: String, actionsDF: DataFrame) =  {
+  private def export(ns: String, rel: String, actionsDF: DataFrame) =  {
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
 
     actionsDF.foreach { row =>
-      RowHandler.handle(ns, rel, serializedConf, row)
+      Exporter.handleRow(ns, rel, serializedConf, row)
     }
 }
-def exportFrom(spark : SparkSession, branch: String, prevCommitID: String): Unit = {
+def exportFrom(branch: String, prevCommitID: String): Unit = {
     val commitID = apiClient.getBranchHEADCommit(repoName, branch)
     val ns = apiClient.getStorageNamespace(repoName)
 
@@ -40,7 +41,7 @@ def exportFrom(spark : SparkSession, branch: String, prevCommitID: String): Unit
     prevDF.createOrReplaceTempView("prev_commit")
 
     // pin Exporter field to avoid serialization
-    val rel = rootExportLocation
+    val dst = dstRoot
     val actionsDF = spark.sql("SELECT 'copy' as action, new_commit.* FROM new_commit " +
       "LEFT JOIN prev_commit " +
       "ON (new_commit.etag = prev_commit.etag AND new_commit.key = prev_commit.key) " +
@@ -51,13 +52,13 @@ def exportFrom(spark : SparkSession, branch: String, prevCommitID: String): Unit
       "ON (new_commit.key = prev_commit.key) " +
       "WHERE new_commit.key is NULL")
 
-    export(spark, ns, rel, actionsDF)
+    export(ns, dst, actionsDF)
     spark.sparkContext.stop()
   }
 }
 
-object RowHandler {
-  def handle(ns: String, rel: String, serializedConf: SerializableWritable[org.apache.hadoop.conf.Configuration], row: Row) =  {
+object Exporter {
+  private def handleRow(ns: String, rel: String, serializedConf: SerializableWritable[org.apache.hadoop.conf.Configuration], row: Row): Unit =  {
     val action = row(0)
     val key = row(1)
     val address = row(2).toString()
