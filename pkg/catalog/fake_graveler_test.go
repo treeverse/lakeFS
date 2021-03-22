@@ -245,6 +245,10 @@ func (g *FakeGraveler) WriteMetaRange(_ context.Context, _ graveler.RepositoryID
 	panic("implement me")
 }
 
+func (g *FakeGraveler) GetStagingToken(_ context.Context, _ graveler.RepositoryID, _ graveler.BranchID) (*graveler.StagingToken, error) {
+	panic("implement me")
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int

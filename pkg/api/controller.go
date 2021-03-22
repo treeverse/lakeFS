@@ -177,6 +177,9 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.ObjectsStageObjectHandler = c.ObjectsStageObjectHandler()
 	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
 
+	api.StagingGetPhysicalAddressHandler = c.StagingGetPhysicalAddressHandler()
+	api.StagingLinkPhysicalAddressHandler = c.StagingLinkPhysicalAddressHandler()
+
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
 	api.MetadataGetRangeHandler = c.MetadataGetRangeHandler()
 	api.MetadataGetMetaRangeHandler = c.MetadataGetMetarangeHandler()
@@ -1447,11 +1450,13 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 			},
 		})
 		if err != nil {
+			c.Logger.Infof("[DEBUG] error: %s", err.Error())
 			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		c.LogAction(ctx, "generate_physical_address")
 
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
+		c.Logger.Infof("[DEBUG] repo %+v error %v", repo, err)
 		if errors.Is(err, catalog.ErrNotFound) {
 			return staging.NewGetPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
 		} else if err != nil {
@@ -1459,6 +1464,7 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 		}
 
 		token, err := c.Catalog.GetStagingToken(ctx, params.Repository, params.Branch)
+		c.Logger.Infof("[DEBUG] token %s error %v", *token, err)
 		if errors.Is(err, catalog.ErrNotFound) {
 			return staging.NewGetPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
 		} else if err != nil {
@@ -1475,10 +1481,13 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 		if token != nil {
 			tokenPart = *token + "/"
 		}
-		qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("%s%s", tokenPart, name))
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("staging/%s%s", tokenPart, name))
 		if err != nil {
+			c.Logger.Infof("[DEBUG] resolve error %v", err)
 			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+
+		c.Logger.Infof("[DEBUG] OK addr %s token %s", qk.Format(), token)
 
 		return staging.NewGetPhysicalAddressOK().WithPayload(&models.StagingLocation{
 			PhysicalAddress: qk.Format(),
@@ -1523,6 +1532,9 @@ func (c *Controller) StagingLinkPhysicalAddressHandler() staging.LinkPhysicalAdd
 		}
 
 		writeTime := time.Now()
+		// Because CreateEntry tracks staging on a database with atomic operations,
+		// _ignore_ the staging token here: no harm done even if a race was lost
+		// against a commit.
 		entry := catalog.DBEntry{
 			CommonLevel:     false,
 			Path:            params.Path,
