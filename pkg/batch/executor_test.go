@@ -14,11 +14,10 @@ import (
 const accessedOnce = 1
 const accessedTwice = 2
 
-
 type reader struct {
 	Ch         chan bool
 	IsExecuted bool
-	Fn ExecFn
+	Fn         ExecFn
 }
 
 type ExecFn func() (interface{}, error)
@@ -33,7 +32,7 @@ func (r *reader) Batched() {
 }
 
 type db struct {
-	KvStore sync.Map
+	KvStore     sync.Map
 	AccessCount int
 }
 
@@ -44,7 +43,7 @@ type Dao interface {
 }
 
 func (d *db) Insert(key string, val string) {
-	d.KvStore.Store(key	, val)
+	d.KvStore.Store(key, val)
 }
 
 func (d *db) Get(key string) (interface{}, bool) {
@@ -154,7 +153,7 @@ func testBatchExpiration(t *testing.T) {
 			return version, nil
 		}))
 		ac := db.GetAccessCount()
-		if (ac != accessedOnce) {
+		if ac != accessedOnce {
 			t.Errorf("r1 should have triggered a single db call, but access count= #{ac}")
 		}
 		close(read1Done)
