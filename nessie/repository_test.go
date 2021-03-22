@@ -2,10 +2,10 @@ package nessie
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
 )
 
 func TestRepositoryBasicOps(t *testing.T) {
@@ -26,9 +26,8 @@ func TestRepositoryBasicOps(t *testing.T) {
 
 	// delete repositories
 	for _, repo := range repos {
-		_, err := client.Repositories.DeleteRepository(
-			repositories.NewDeleteRepositoryParamsWithContext(ctx).
-				WithRepository(repo), nil)
+		resp, err := client.DeleteRepositoryWithResponse(ctx, repo)
 		require.NoErrorf(t, err, "failed to delete repository %s, storage %s", repo)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
 	}
 }

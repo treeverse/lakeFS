@@ -2,15 +2,11 @@ package nessie
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
-	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 func TestMergeAndList(t *testing.T) {
@@ -24,23 +20,18 @@ func TestMergeAndList(t *testing.T) {
 	}
 
 	logger.WithField("branch", masterBranch).Info("Commit initial content")
-	_, err := client.Commits.Commit(
-		commits.NewCommitParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(masterBranch).
-			WithCommit(&models.CommitCreation{Message: swag.String("Initial content")}),
-		nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	logger.WithField("branch", branch).Info("Create branch")
-	ref, err := client.Branches.CreateBranch(
-		branches.NewCreateBranchParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(&models.BranchCreation{
-				Name:   swag.String(branch),
-				Source: swag.String(masterBranch),
-			}), nil)
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: masterBranch,
+	})
 	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
+	ref := string(createBranchResp.Body)
 	logger.WithField("branchRef", ref).Info("Branch created")
 
 	const addedFiles = 10
@@ -53,29 +44,30 @@ func TestMergeAndList(t *testing.T) {
 	const totalFiles = addedFiles + 1
 
 	logger.Info("Commit uploaded files")
-	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).
-		WithRepository(repo).WithBranch(branch).WithCommit(&models.CommitCreation{
-		Message: swag.String(fmt.Sprintf("Adding %d files", addedFiles)),
-	}), nil)
+	commitResp, err = client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+		Message: fmt.Sprintf("Adding %d files", addedFiles),
+	})
 	require.NoError(t, err, "failed to commit changes")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	mergeRes, err := client.Refs.MergeIntoBranch(
-		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationBranch(masterBranch).WithSourceRef(branch), nil)
+	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, masterBranch, api.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err, "failed to merge branches")
+	require.Equal(t, http.StatusOK, mergeRes.StatusCode())
 	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
 
-	resp, err := client.Objects.ListObjects(objects.NewListObjectsParamsWithContext(ctx).WithRepository(repo).WithRef(masterBranch).WithAmount(swag.Int64(100)), nil)
+	resp, err := client.ListObjectsWithResponse(ctx, repo, masterBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
 	require.NoError(t, err, "failed to list objects")
-	payload := resp.GetPayload()
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+	payload := resp.JSON200
 	objs := payload.Results
 	pagin := payload.Pagination
-	require.False(t, *pagin.HasMore, "pagination shouldn't have more items")
-	require.Equal(t, int64(totalFiles), *pagin.Results)
+	require.False(t, pagin.HasMore, "pagination shouldn't have more items")
+	require.Equal(t, int64(totalFiles), pagin.Results)
 	require.Equal(t, totalFiles, len(objs))
 	logger.WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
 
 	for _, obj := range objs {
 		_, ok := checksums[obj.Checksum]
-		require.True(t, ok, "file exists in master but shouldn't, obj: %s", *obj)
+		require.True(t, ok, "file exists in master but shouldn't, obj: %s", obj)
 	}
 }

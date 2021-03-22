@@ -8,18 +8,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+
+	"github.com/treeverse/lakefs/pkg/api"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
-	genclient "github.com/treeverse/lakefs/pkg/api/gen/client"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/setup"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -34,7 +32,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, *genclient.Lakefs, *s3.S3) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -62,17 +60,22 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, *genclient.
 	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", params.Name))
 
 	endpointURL := viper.GetString("endpoint_url")
+	if !strings.HasSuffix(endpointURL, "/") {
+		endpointURL += "/"
+	}
 	u, err := url.Parse(endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to parse endpoint URL", endpointURL)
 	}
 
-	apiBasePath := genclient.DefaultBasePath
-	if u.Path != "" {
-		apiBasePath = u.Path
+	if u.Path == "/" {
+		endpointURL += "api/v1"
 	}
-	r := httptransport.New(u.Host, apiBasePath, []string{u.Scheme})
-	client := genclient.New(r, strfmt.Default)
+
+	client, err := api.NewClientWithResponses(endpointURL)
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize API client")
+	}
 
 	if err := waitUntilLakeFSRunning(ctx, logger, client); err != nil {
 		logger.WithError(err).Fatal("Waiting for lakeFS")
@@ -82,27 +85,32 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, *genclient.
 	if setupLakeFS {
 		// first setup of lakeFS
 		adminUserName := params.Name
-		user := models.Setup{
-			Username: swag.String(adminUserName),
-		}
-		if params.AdminAccessKeyID != "" {
-			user.Key = &models.SetupKey{
-				AccessKeyID:     &params.AdminAccessKeyID,
-				SecretAccessKey: &params.AdminSecretAccessKey,
-			}
-		}
-		res, err := client.Setup.SetupLakeFS(&setup.SetupLakeFSParams{
-			User:    &user,
-			Context: ctx,
+		request := api.Setup{}
+		request.Key.AccessKeyId = params.AdminAccessKeyID
+		request.Key.SecretAccessKey = params.AdminSecretAccessKey
+		res, err := client.SetupWithResponse(ctx, api.SetupJSONRequestBody{
+			Key:      request.Key,
+			Username: adminUserName,
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to setup lakeFS")
 		}
+		if res.JSON200 == nil {
+			logger.WithField("status", res.HTTPResponse.Status).Error("Failed to setup lakeFS")
+		}
 		logger.Info("Cluster setup successfully")
-		viper.Set("access_key_id", res.Payload.AccessKeyID)
-		viper.Set("secret_access_key", res.Payload.AccessSecretKey)
+		viper.Set("access_key_id", res.JSON200.AccessKeyId)
+		viper.Set("secret_access_key", res.JSON200.AccessSecretKey)
 	}
-	r.DefaultAuthentication = httptransport.BasicAuth(viper.GetString("access_key_id"), viper.GetString("secret_access_key"))
+
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(viper.GetString("access_key_id"), viper.GetString("secret_access_key"))
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize basic auth security provider")
+	}
+	client, err = api.NewClientWithResponses(endpointURL, api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize API client with security provider")
+	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	awsSession := session.Must(session.NewSession())
@@ -123,11 +131,11 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, *genclient.
 
 const checkIteration = 5 * time.Second
 
-func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl *genclient.Lakefs) error {
+func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl api.ClientWithResponsesInterface) error {
 	setupCtx, cancel := context.WithTimeout(ctx, viper.GetDuration("setup_lakefs_timeout"))
 	defer cancel()
 	for {
-		_, err := cl.HealthCheck.HealthCheck(nil)
+		_, err := cl.HealthCheckWithResponse(setupCtx)
 		if err == nil {
 			return nil
 		}

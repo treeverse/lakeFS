@@ -1,11 +1,12 @@
 package api
 
-//go:generate oapi-codegen -package api -generate "types,client,chi-server,spec" -o lakefs.gen.go ../../api/swagger.yml
+//go:generate oapi-codegen -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
 
 import (
 	"net/http"
 
 	chimiddleware "github.com/deepmap/oapi-codegen/pkg/chi-middleware"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -21,6 +22,7 @@ import (
 const (
 	RequestIDHeaderName = "X-Request-ID"
 	LoggerServiceName   = "rest_api"
+	BaseURL             = "/api/v1"
 )
 
 func Serve(
@@ -41,12 +43,14 @@ func Serve(
 		panic(err)
 	}
 	r := chi.NewRouter()
-	//NewCookieAPIHandler(handler))
-	//apiRouter := r.With(middleware.RequestID, middleware.Logger, middleware.Recoverer, chimiddleware.OapiRequestValidator(swagger))
 	apiRouter := r.With(
+		chimiddleware.OapiRequestValidatorWithOptions(swagger, &chimiddleware.Options{
+			Options: openapi3filter.Options{
+				AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
+			},
+		}),
 		RequestCounterMiddleware(),
 		AuthMiddleware(logger, authService),
-		chimiddleware.OapiRequestValidator(swagger),
 		httputil.LoggingMiddleware(RequestIDHeaderName, logging.Fields{"service_name": LoggerServiceName}),
 		MetricsMiddleware(swagger),
 	)
@@ -62,77 +66,12 @@ func Serve(
 		actions,
 		logger,
 	)
-	HandlerFromMux(controller, apiRouter)
+	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
 	uiHandler := NewUIHandler(authService, gatewayDomain)
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/", uiHandler)
-
 	return r
-	/*
-		api.Logger = func(msg string, ctx ...interface{}) {
-			logging.Default().WithField("logger", "swagger").Debugf(msg, ctx)
-		}
-		api.BasicAuthAuth = NewBasicAuthHandler(authService)
-		api.JwtTokenAuth = NewJwtTokenAuthHandler(authService)
-
-		api.UseSwaggerUI()
-
-		api.ServeError = errors.ServeError
-
-		api.JSONConsumer = runtime.JSONConsumer()
-		api.MultipartformConsumer = runtime.DiscardConsumer
-
-		api.BinProducer = runtime.ByteStreamProducer()
-		api.JSONProducer = runtime.JSONProducer()
-	*/
-	// bind our handlers to the server
-
-	/*
-		apiHandler := api.Serve(func(handler http.Handler) http.Handler {
-			// build handler for our REST API
-			return httputil.LoggingMiddleware(
-				RequestIDHeaderName,
-				logging.Fields{"service_name": LoggerServiceName},
-				promhttp.InstrumentHandlerCounter(requestCounter,
-					MetricsHandler(api.Context(),
-						NewCookieAPIHandler(handler))))
-		})
-	*/
 }
-
-//func authenticateJWTToken(ctx context.Context, logger logging.Logger, authService auth.Service, r *http.Request) *model.User {
-//	r.Header.Get("Authentication")
-//	claims := &jwt.StandardClaims{}
-//	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-//			return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
-//		}
-//		return authService.SecretStore().SharedSecret(), nil
-//	})
-//	if err != nil {
-//		return nil, ErrAuthenticationFailed
-//	}
-//	claims, ok := token.Claims.(*jwt.StandardClaims)
-//	if !ok || !token.Valid {
-//		return nil, ErrAuthenticationFailed
-//	}
-//	cred, err := authService.GetCredentials(ctx, claims.Subject)
-//	if err != nil {
-//		logger.WithField("subject", claims.Subject).Debug("could not find credentials for token")
-//		return nil, ErrAuthenticationFailed
-//	}
-//	userData, err := authService.GetUserByID(ctx, cred.UserID)
-//	if err != nil {
-//		logger.WithFields(logging.Fields{
-//			"user_id": cred.UserID,
-//			"subject": claims.Subject,
-//		}).Debug("could not find user id by credentials")
-//		return nil, ErrAuthenticationFailed
-//	}
-//	return &models.User{
-//		ID: userData.Username,
-//	}, nil
-//}

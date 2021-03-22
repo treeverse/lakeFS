@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -79,9 +79,12 @@ var abuseRandomReadsCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				_, err := client.StatObjectWithResponse(ctx, u.Repository, u.Ref, &api.StatObjectParams{
+				resp, err := client.StatObjectWithResponse(ctx, u.Repository, u.Ref, &api.StatObjectParams{
 					Path: work,
 				})
+				if err == nil && resp.StatusCode() != http.StatusOK {
+					err = fmt.Errorf("request failed %s", resp.Status())
+				}
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
@@ -117,12 +120,11 @@ var abuseRandomWritesCmd = &cobra.Command{
 		})
 
 		client := getClient()
-		res, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		if err != nil {
-			DieErr(err)
-		}
-		repo := res.JSON200
-		storagePrefix := *repo.StorageNamespace
+		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
+		DieOnResponseError(resp, err)
+
+		repo := resp.JSON200
+		storagePrefix := repo.StorageNamespace
 		var size int64
 		var checksum = "00695c7307b0480c7b6bdc873cf05c15"
 		addr := storagePrefix + "/random-write"
@@ -138,8 +140,11 @@ var abuseRandomWritesCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				_, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: work},
+				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: work},
 					api.StageObjectJSONRequestBody(creationInfo))
+				if err == nil && resp.StatusCode() != http.StatusOK {
+					err = fmt.Errorf("request failed %s", resp.Status())
+				}
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
@@ -169,17 +174,16 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		deleteGen.Setup(func(add stress.GeneratorAddFn) {
 			client := getClient()
-			currentOffset := branchPrefix
-			amount := 1000
+			currentOffset := api.PaginationAfter(branchPrefix)
+			amount := api.PaginationAmount(1000)
 			for {
 				res, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
 					After:  &currentOffset,
 					Amount: &amount,
 				})
-				if err != nil {
-					DieErr(err)
-				}
-				for _, ref := range *res.JSON200.Results {
+				DieOnResponseError(res, err)
+
+				for _, ref := range res.JSON200.Results {
 					if !strings.HasPrefix(ref.Id, branchPrefix) {
 						return
 					}
@@ -189,7 +193,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 				if !pagination.HasMore {
 					return
 				}
-				currentOffset = *pagination.NextOffset
+				currentOffset = api.PaginationAfter(pagination.NextOffset)
 			}
 		})
 
@@ -225,11 +229,14 @@ var abuseCreateBranchesCmd = &cobra.Command{
 			ctx := cmd.Context()
 			for branch := range input {
 				start := time.Now()
-				_, err := client.CreateBranchWithResponse(
+				resp, err := client.CreateBranchWithResponse(
 					ctx, u.Repository, api.CreateBranchJSONRequestBody{
 						Name:   branch,
 						Source: u.Ref,
 					})
+				if err == nil && resp.StatusCode() != http.StatusCreated {
+					err = fmt.Errorf("request failed %s", resp.Status())
+				}
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),

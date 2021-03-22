@@ -3,9 +3,8 @@ package cmd
 import (
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -34,15 +33,17 @@ var repoListCmd = &cobra.Command{
 
 		clt := getClient()
 
-		repos, pagination, err := clt.ListRepositories(cmd.Context(), after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		res, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(res, err)
 
+		repos := res.JSON200.Results
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
 			ts := time.Unix(repo.CreationDate, 0).String()
-			rows[i] = []interface{}{repo.ID, ts, repo.DefaultBranch, repo.StorageNamespace}
+			rows[i] = []interface{}{repo.Id, ts, repo.DefaultBranch, repo.StorageNamespace}
 		}
 
 		ctx := struct {
@@ -54,7 +55,8 @@ var repoListCmd = &cobra.Command{
 				Rows:    rows,
 			},
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+		pagination := res.JSON200.Pagination
+		if pagination.HasMore {
 			ctx.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
@@ -83,20 +85,21 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = clt.CreateRepository(cmd.Context(), &models.RepositoryCreation{
-			StorageNamespace: &args[1],
-			DefaultBranch:    defaultBranch,
-			Name:             &u.Repository,
-		})
-		if err != nil {
-			DieErr(err)
-		}
-		repo, err := clt.GetRepository(cmd.Context(), u.Repository)
-		if err != nil {
-			DieErr(err)
-		}
+		respCreateRepo, err := clt.CreateRepositoryWithResponse(cmd.Context(),
+			&api.CreateRepositoryParams{},
+			api.CreateRepositoryJSONRequestBody{
+				Name:             u.Repository,
+				StorageNamespace: args[1],
+				DefaultBranch:    &defaultBranch,
+			})
+		DieOnResponseError(respCreateRepo, err)
+
+		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
+		DieOnResponseError(respGetRepo, err)
+
+		repo := respGetRepo.JSON200
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
-			repo.ID, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
 
@@ -118,20 +121,22 @@ var repoCreateBareCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = clt.CreateBareRepository(cmd.Context(), &models.RepositoryCreation{
-			StorageNamespace: &args[1],
-			DefaultBranch:    defaultBranch,
-			Name:             &u.Repository,
+		bareRepo := true
+		respCreateRepo, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
+			Bare: &bareRepo,
+		}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    &defaultBranch,
+			Name:             u.Repository,
+			StorageNamespace: args[1],
 		})
-		if err != nil {
-			DieErr(err)
-		}
-		repo, err := clt.GetRepository(cmd.Context(), u.Repository)
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(respCreateRepo, err)
+
+		respGetRepo, err := clt.GetRepositoryWithResponse(cmd.Context(), u.Repository)
+		DieOnResponseError(respGetRepo, err)
+
+		repo := respGetRepo.JSON200
 		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
-			repo.ID, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
 
@@ -151,10 +156,8 @@ var repoDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
-		err = clt.DeleteRepository(cmd.Context(), u.Repository)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository)
+		DieOnResponseError(resp, err)
 		Fmt("Repository '%s' deleted\n", u.Repository)
 	},
 }

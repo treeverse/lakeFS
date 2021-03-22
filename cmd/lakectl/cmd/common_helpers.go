@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"text/template"
 	"time"
@@ -157,13 +159,36 @@ func DieErr(err error) {
 	errData := struct{ Error string }{}
 	apiError, isAPIError := err.(APIError)
 	if isAPIError {
-		errData.Error = *apiError.GetPayload().Message
+		errData.Error = apiError.GetPayload().Message
 	}
 	if errData.Error == "" {
 		errData.Error = err.Error()
 	}
 	WriteTo(DeathMessage, errData, os.Stderr)
 	os.Exit(1)
+}
+
+func DieOnResponseError(response interface{}, err error) {
+	if err != nil {
+		DieErr(err)
+	}
+	// check http response code
+	r := reflect.ValueOf(response)
+	f := reflect.Indirect(r).FieldByName("HTTPResponse")
+	resp := f.Interface().(*http.Response)
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return
+	}
+	f = reflect.Indirect(r).FieldByName("Body")
+	body := f.Bytes()
+	var apiError api.Error
+	if err := json.Unmarshal(body, &apiError); err != nil {
+		// general case
+		DieFmt("Request failed (%s): %s\n", resp.Status, string(body))
+	} else {
+		// message
+		Die(apiError.Message, 1)
+	}
 }
 
 func Fmt(msg string, args ...interface{}) {
@@ -184,7 +209,7 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 		ctx.Pagination = &Pagination{
 			Amount:  amount,
 			HasNext: true,
-			After:   *paginator.NextOffset,
+			After:   paginator.NextOffset,
 		}
 	}
 

@@ -63,24 +63,20 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		amount := int(pageSize)
-		res, err := client.DiffBranchWithResponse(ctx, repository, branch, &api.DiffBranchParams{
-			After:  &after,
-			Amount: &amount,
+		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &api.DiffBranchParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(int(pageSize)),
 		})
-		if err != nil {
-			DieErr(err)
-		}
-		for _, line := range *res.JSON200.Results {
+		DieOnResponseError(resp, err)
+
+		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, false)
 		}
-		pagination := res.JSON200.Pagination
+		pagination := resp.JSON200.Pagination
 		if !pagination.HasMore {
 			break
 		}
-		if pagination.NextOffset != nil {
-			after = *pagination.NextOffset
-		}
+		after = pagination.NextOffset
 		pageSize.Next()
 	}
 }
@@ -90,24 +86,20 @@ func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface,
 	pageSize := pageSize(minDiffPageSize)
 	for {
 		amount := int(pageSize)
-		res, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
-			After:  &after,
-			Amount: &amount,
+		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 
-		for _, line := range *res.JSON200.Results {
+		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, true)
 		}
-		pagination := res.JSON200.Pagination
+		pagination := resp.JSON200.Pagination
 		if !pagination.HasMore {
 			break
 		}
-		if pagination.NextOffset != nil {
-			after = *pagination.NextOffset
-		}
+		after = pagination.NextOffset
 		pageSize.Next()
 	}
 }
@@ -116,7 +108,7 @@ func FmtDiff(diff api.Diff, withDirection bool) {
 	var color text.Color
 	var action string
 
-	switch *diff.Type {
+	switch diff.Type {
 	case "added":
 		color = text.FgGreen
 		action = "+ added"

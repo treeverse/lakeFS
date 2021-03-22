@@ -2,24 +2,23 @@ package nessie
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/swag"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const (
-	masterBranch = "master"
-)
+const masterBranch = "master"
+
+var errUploadFailed = errors.New("upload failed")
 
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
@@ -56,26 +55,28 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		"storage_namespace": repoStorage,
 		"name":              name,
 	}).Debug("Create repository for test")
-	_, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
-		WithRepository(&models.RepositoryCreation{
-			DefaultBranch:    masterBranch,
-			Name:             swag.String(name),
-			StorageNamespace: swag.String(repoStorage),
-		}), nil)
+	resp, err := client.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr(masterBranch),
+		Name:             name,
+		StorageNamespace: repoStorage,
+	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
 }
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
-	contentReader := runtime.NamedReader("content", strings.NewReader(objContent))
-	stats, err := client.Objects.UploadObject(
-		objects.NewUploadObjectParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithPath(objPath).
-			WithContent(contentReader), nil)
-	return stats.Payload.Checksum, objContent, err
+	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
+		Path: objPath,
+	}, "application/octet-stream", strings.NewReader(objContent))
+	if err != nil {
+		return "", "", err
+	}
+	if resp.StatusCode() != http.StatusCreated {
+		return "", "", fmt.Errorf("%w: %s (%d)", errUploadFailed, resp.Status(), resp.StatusCode())
+	}
+	return resp.JSON201.Checksum, objContent, nil
 }
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
@@ -84,24 +85,22 @@ func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPa
 	return checksum, content
 }
 
-func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []*models.ObjectStats {
+func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []api.ObjectStats {
 	t.Helper()
 	const amount = 5
-	var entries []*models.ObjectStats
+	var entries []api.ObjectStats
 	var after string
 	for {
-		resp, err := client.Objects.ListObjects(
-			objects.NewListObjectsParamsWithContext(ctx).
-				WithRepository(repository).
-				WithRef(ref).
-				WithAfter(swag.String(after)).
-				WithAmount(swag.Int64(amount)),
-			nil)
+		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &api.ListObjectsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
 		require.NoError(t, err, "listing objects")
+		require.Equal(t, http.StatusOK, resp.StatusCode())
 
-		entries = append(entries, resp.Payload.Results...)
-		after = resp.Payload.Pagination.NextOffset
-		if !swag.BoolValue(resp.Payload.Pagination.HasMore) {
+		entries = append(entries, resp.JSON200.Results...)
+		after = resp.JSON200.Pagination.NextOffset
+		if !resp.JSON200.Pagination.HasMore {
 			break
 		}
 	}
@@ -112,24 +111,25 @@ func listRepositoriesIDs(t *testing.T, ctx context.Context) []string {
 	repos := listRepositories(t, ctx)
 	ids := make([]string, len(repos))
 	for i, repo := range repos {
-		ids[i] = repo.ID
+		ids[i] = repo.Id
 	}
 	return ids
 }
 
-func listRepositories(t *testing.T, ctx context.Context) []*models.Repository {
+func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 	var after string
-	repoPerPage := swag.Int64(2)
-	var listedRepos []*models.Repository
+	const repoPerPage = 2
+	var listedRepos []api.Repository
 	for {
-		listResp, err := client.Repositories.
-			ListRepositories(repositories.NewListRepositoriesParamsWithContext(ctx).
-				WithAmount(repoPerPage).
-				WithAfter(swag.String(after)), nil)
+		resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(repoPerPage),
+		})
 		require.NoError(t, err, "list repositories")
-		payload := listResp.Payload
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+		payload := resp.JSON200
 		listedRepos = append(listedRepos, payload.Results...)
-		if !swag.BoolValue(payload.Pagination.HasMore) {
+		if !payload.Pagination.HasMore {
 			break
 		}
 		after = payload.Pagination.NextOffset

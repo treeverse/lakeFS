@@ -4,17 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/go-openapi/swag"
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/client"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/setup"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
@@ -51,18 +48,19 @@ func (m *nullCollector) CollectEvent(_, _ string) {}
 
 func (m *nullCollector) SetInstallationID(_ string) {}
 
-func createDefaultAdminUser(t *testing.T, clt *client.Lakefs) *authmodel.Credential {
+func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.Credential {
 	t.Helper()
-	res, err := clt.Setup.SetupLakeFS(
-		setup.NewSetupLakeFSParams().
-			WithUser(&models.Setup{
-				Username: swag.String("admin"),
-			}))
+	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
+		Username: "admin",
+	})
 	testutil.Must(t, err)
+	if res.JSON200 == nil {
+		t.Fatal("Failed run setup env", res.HTTPResponse.StatusCode, res.HTTPResponse.Status)
+	}
 	return &authmodel.Credential{
-		IssuedDate:      time.Unix(res.Payload.CreationDate, 0),
-		AccessKeyID:     res.Payload.AccessKeyID,
-		AccessSecretKey: res.Payload.AccessSecretKey,
+		IssuedDate:      time.Unix(res.JSON200.CreationDate, 0),
+		AccessKeyID:     res.JSON200.AccessKeyId,
+		AccessSecretKey: res.JSON200.AccessSecretKey,
 	}
 }
 
@@ -128,25 +126,45 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	}
 }
 
-func setupClientFromHandler(t testing.TB, handler http.Handler) *client.Lakefs {
+func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string) api.ClientWithResponsesInterface {
 	t.Helper()
-	server := httptest.NewServer(http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`))
-	t.Cleanup(server.Close)
 
-	u, err := url.Parse(server.URL)
-	if err != nil {
-		t.Fatal("parse httptest.Server url:", err)
+	var opts []api.ClientOption
+	if accessKeyID != "" {
+		basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
+		if err != nil {
+			t.Fatal("basic auth security provider", err)
+		}
+		opts = append(opts, api.WithRequestEditorFn(basicAuthProvider.Intercept))
 	}
-	clt := client.NewHTTPClientWithConfig(
-		nil,
-		client.DefaultTransportConfig().WithHost(u.Host).WithSchemes([]string{u.Scheme}),
-	)
+	clt, err := api.NewClientWithResponses(endpointURL+"/api/v1", opts...)
+	if err != nil {
+		t.Fatal("failed to create lakefs api client:", err)
+	}
 	return clt
 }
 
-func setupClient(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (*client.Lakefs, *dependencies) {
+func setupServer(t testing.TB, handler http.Handler) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func setupClient(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
 	handler, deps := setupHandler(t, blockstoreType, opts...)
-	clt := setupClientFromHandler(t, handler)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	return clt, deps
+}
+
+func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
+	t.Helper()
+	handler, deps := setupHandler(t, blockstoreType, opts...)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.AccessSecretKey)
 	return clt, deps
 }

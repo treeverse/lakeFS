@@ -1,2955 +1,110 @@
-openapi: 3.0.1
+openapi: "3.0.0"
+
 info:
-  title: lakeFS API
   description: lakeFS HTTP API
+  title: lakeFS API
   version: 0.1.0
+
+
 servers:
-- url: /api/v1
+  - url: '/api/v1'
+    description: lakeFS server endpoint
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: http
+      server_address:
+        default: 'localhost:8000'
+
 security:
-- jwt_token: []
-- basic_auth: []
-paths:
-  /setup_lakefs:
-    post:
-      tags:
-      - setup
-      summary: setup lakeFS and create the first user
-      operationId: setupLakeFS
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/setup'
-        required: false
-      responses:
-        200:
-          description: user created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/credentials_with_secret'
-        400:
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        409:
-          description: setup was already called
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: user
-  /user:
-    get:
-      tags:
-      - auth
-      summary: get current user
-      operationId: getCurrentUser
-      responses:
-        200:
-          description: user
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/user'
-  /auth/users:
-    get:
-      tags:
-      - auth
-      summary: list users
-      operationId: listUsers
-      parameters:
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: user list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/user'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - auth
-      summary: create user
-      operationId: createUser
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/user_creation'
-        required: false
-      responses:
-        201:
-          description: user
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/user'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: user
-  /auth/users/{userId}:
-    get:
-      tags:
-      - auth
-      summary: get user
-      operationId: getUser
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: user
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/user'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: user not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - auth
-      summary: delete user
-      operationId: deleteUser
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: user deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: user not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/groups:
-    get:
-      tags:
-      - auth
-      summary: list groups
-      operationId: listGroups
-      parameters:
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: group list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/group'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - auth
-      summary: create group
-      operationId: createGroup
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/group_creation'
-        required: false
-      responses:
-        201:
-          description: group
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/group'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: group
-  /auth/groups/{groupId}:
-    get:
-      tags:
-      - auth
-      summary: get group
-      operationId: getGroup
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: group
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/group'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: group not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - auth
-      summary: delete group
-      operationId: deleteGroup
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: group deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: group not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/policies:
-    get:
-      tags:
-      - auth
-      summary: list policies
-      operationId: listPolicies
-      parameters:
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: policy list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/policy'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - auth
-      summary: create policy
-      operationId: createPolicy
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/policy'
-        required: false
-      responses:
-        201:
-          description: policy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/policy'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: policy
-  /auth/policies/{policyId}:
-    get:
-      tags:
-      - auth
-      summary: get policy
-      operationId: getPolicy
-      parameters:
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: policy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/policy'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: policy not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    put:
-      tags:
-      - auth
-      summary: update policy
-      operationId: updatePolicy
-      parameters:
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/policy'
-        required: false
-      responses:
-        200:
-          description: policy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/policy'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: policy
-    delete:
-      tags:
-      - auth
-      summary: delete policy
-      operationId: deletePolicy
-      parameters:
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: policy deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: policy not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/groups/{groupId}/members:
-    get:
-      tags:
-      - auth
-      summary: list group members
-      operationId: listGroupMembers
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: user list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/user'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/groups/{groupId}/members/{userId}:
-    put:
-      tags:
-      - auth
-      summary: add group membership
-      operationId: addGroupMembership
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        201:
-          description: membership added successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - auth
-      summary: delete group membership
-      operationId: deleteGroupMembership
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: membership deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: membership not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/users/{userId}/credentials:
-    get:
-      tags:
-      - auth
-      summary: list user credentials
-      operationId: listUserCredentials
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: credential list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/credentials'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - auth
-      summary: create credentials
-      operationId: createCredentials
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        201:
-          description: credentials
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/credentials_with_secret'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/users/{userId}/credentials/{accessKeyId}:
-    get:
-      tags:
-      - auth
-      summary: get credentials
-      operationId: getCredentials
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: accessKeyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: credentials
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/credentials'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: credentials not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - auth
-      summary: delete credentials
-      operationId: deleteCredentials
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: accessKeyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: credentials deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: credentials not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/users/{userId}/groups:
-    get:
-      tags:
-      - auth
-      summary: list user groups
-      operationId: listUserGroups
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: group list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/group'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/users/{userId}/policies:
-    get:
-      tags:
-      - auth
-      summary: list user policies
-      operationId: listUserPolicies
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      - name: effective
-        in: query
-        description: will return all distinct policies attached to the user or any
-          of its groups
-        schema:
-          type: boolean
-          default: false
-      responses:
-        200:
-          description: policy list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/policy'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/users/{userId}/policies/{policyId}:
-    put:
-      tags:
-      - auth
-      summary: attach policy to user
-      operationId: attachPolicyToUser
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        201:
-          description: policy attached successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - auth
-      summary: detach policy from user
-      operationId: detachPolicyFromUser
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: policy detached successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: policy attachment not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/groups/{groupId}/policies:
-    get:
-      tags:
-      - auth
-      summary: list group policies
-      operationId: listGroupPolicies
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: policy list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/policy'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /auth/groups/{groupId}/policies/{policyId}:
-    put:
-      tags:
-      - auth
-      summary: attach policy to group
-      operationId: attachPolicyToGroup
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        201:
-          description: policy attached successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - auth
-      summary: detach policy from group
-      operationId: detachPolicyFromGroup
-      parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: policyId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: policy detached successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: policy attachment not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories:
-    get:
-      tags:
-      - repositories
-      summary: list repositories
-      operationId: listRepositories
-      parameters:
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: repository list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/repository'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - repositories
-      summary: create repository
-      operationId: createRepository
-      parameters:
-      - name: bare
-        in: query
-        description: If true, create a bare repository with no initial commit and
-          branch
-        schema:
-          type: boolean
-          default: false
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/repository_creation'
-        required: false
-      responses:
-        201:
-          description: repository
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/repository'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: repository
-  /repositories/{repository}:
-    get:
-      tags:
-      - repositories
-      summary: get repository
-      operationId: getRepository
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: repository
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/repository'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - repositories
-      summary: delete repository
-      operationId: deleteRepository
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: repository deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/dump:
-    put:
-      tags:
-      - refs
-      summary: Dump repository refs (tags, commits, branches) to object store
-      operationId: dump
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        201:
-          description: refs dump
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/refs_dump'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/restore:
-    put:
-      tags:
-      - refs
-      summary: Restore repository refs (tags, commits, branches) from object store
-      operationId: restore
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/refs_dump'
-        required: false
-      responses:
-        200:
-          description: refs successfully loaded
-          content: {}
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: manifest
-  /repositories/{repository}/tags:
-    get:
-      tags:
-      - tags
-      summary: list tags
-      operationId: listTags
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: tag list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ref'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - tags
-      summary: create tag
-      operationId: createTag
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tag_creation'
-        required: false
-      responses:
-        201:
-          description: tag
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ref'
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: tag
-  /repositories/{repository}/tags/{tag}:
-    get:
-      tags:
-      - tags
-      summary: get tag
-      operationId: getTag
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: tag
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: tag
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ref'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: tag not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - tags
-      summary: delete tag
-      operationId: deleteTag
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: tag
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: tag deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/branches:
-    get:
-      tags:
-      - branches
-      summary: list branches
-      operationId: listBranches
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: branch list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ref'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - branches
-      summary: create branch
-      operationId: createBranch
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/branch_creation'
-        required: false
-      responses:
-        201:
-          description: reference
-          content:
-            application/json:
-              schema:
-                type: string
-        400:
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: branch
-  /repositories/{repository}/branches/{branch}/commits:
-    get:
-      tags:
-      - commits
-      summary: get commit log for branch
-      operationId: getBranchCommitLog
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: commit log
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/commit'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      tags:
-      - commits
-      summary: create commit
-      operationId: commit
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/commit_creation'
-        required: false
-      responses:
-        201:
-          description: commit
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/commit'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        412:
-          description: precondition failed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: commit
-  /repositories/{repository}/branches/{branch}:
-    get:
-      tags:
-      - branches
-      summary: get branch
-      operationId: getBranch
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: branch
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ref'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    put:
-      tags:
-      - branches
-      summary: reset branch
-      operationId: resetBranch
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        description: reset parameters
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/reset_creation'
-        required: false
-      responses:
-        204:
-          description: reset successful
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: resource not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: reset
-    delete:
-      tags:
-      - branches
-      summary: delete branch
-      operationId: deleteBranch
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: branch deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/branches/{branch}/revert:
-    post:
-      tags:
-      - branches
-      summary: revert
-      operationId: revert
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                ref:
-                  type: string
-                  description: the commit to revert, given by a ref
-                parent_number:
-                  type: integer
-                  description: when reverting a merge commit, the parent number (starting
-                    from 1) relative to which to perform the revert.
-        required: false
-      responses:
-        204:
-          description: revert successful
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: resource not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: revert
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
-    post:
-      tags:
-      - refs
-      summary: merge references
-      operationId: mergeIntoBranch
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: sourceRef
-        in: path
-        description: source ref
-        required: true
-        schema:
-          type: string
-      - name: destinationBranch
-        in: path
-        description: destination branch name
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/merge'
-        required: false
-      responses:
-        200:
-          description: merge completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/merge_result'
-        400:
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: reference not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        409:
-          description: conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/merge_result'
-        412:
-          description: precondition failed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: merge
-  /repositories/{repository}/branches/{branch}/diff:
-    get:
-      tags:
-      - branches
-      summary: diff branch
-      operationId: diffBranch
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: diff of branch uncommitted changes
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/diff'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/{leftRef}/diff/{rightRef}:
-    get:
-      tags:
-      - refs
-      summary: diff references
-      operationId: diffRefs
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: leftRef
-        in: path
-        description: a reference (could be either a branch or a commit ID)
-        required: true
-        schema:
-          type: string
-      - name: rightRef
-        in: path
-        description: a reference (could be either a branch or a commit ID) to compare
-          against
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      - name: type
-        in: query
-        schema:
-          type: string
-      - name: diff_type
-        in: query
-        schema:
-          type: string
-          default: three_dot
-          enum:
-          - two_dot
-          - three_dot
-      responses:
-        200:
-          description: diff between refs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/diff'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: reference not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/commits/{commitId}:
-    get:
-      tags:
-      - commits
-      summary: get commit
-      operationId: getCommit
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: commitId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: commit
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/commit'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: commit not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/{ref}/objects:
-    get:
-      tags:
-      - objects
-      summary: get object content
-      operationId: getObject
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: ref
-        in: path
-        description: a reference (could be either a branch or a commit ID)
-        required: true
-        schema:
-          type: string
-      - name: path
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: object content
-          headers:
-            ETag:
-              schema:
-                type: string
-            Content-Disposition:
-              schema:
-                type: string
-            Last-Modified:
-              schema:
-                type: string
-            Content-Length:
-              schema:
-                type: integer
-                format: int64
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        401:
-          description: Unauthorized
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: resource not found
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-        410:
-          description: object expired
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/branches/{branch}/objects:
-    put:
-      tags:
-      - objects
-      summary: stage an object's metadata for the given branch
-      operationId: stageObject
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: path
-        in: query
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/object_stage_creation'
-        required: false
-      responses:
-        201:
-          description: object metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/object_stats'
-        400:
-          description: invalid object metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-      x-codegen-request-body-name: object
-    post:
-      tags:
-      - objects
-      summary: upload object content
-      operationId: uploadObject
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: path
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: storageClass
-        in: query
-        schema:
-          type: string
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              properties:
-                content:
-                  type: string
-                  description: Object content to upload
-                  format: binary
-      responses:
-        201:
-          description: object metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/object_stats'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    delete:
-      tags:
-      - objects
-      summary: delete object
-      operationId: deleteObject
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: path
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        204:
-          description: object deleted successfully
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: path or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/{ref}/objects/stat:
-    get:
-      tags:
-      - objects
-      summary: get object metadata
-      operationId: statObject
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: ref
-        in: path
-        description: a reference (could be either a branch or a commit ID)
-        required: true
-        schema:
-          type: string
-      - name: path
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: object metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/object_stats'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: path or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        410:
-          description: object gone (but partial metadata may be available)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/object_stats'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/{ref}/objects/underlyingProperties/:
-    get:
-      tags:
-      - objects
-      summary: get object properties on underlying storage
-      operationId: getUnderlyingProperties
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: ref
-        in: path
-        description: a reference (could be either a branch or a commit ID)
-        required: true
-        schema:
-          type: string
-      - name: path
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: object metadata on underlying storage
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/underlying_object_properties'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: path or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/{ref}/objects/ls:
-    get:
-      tags:
-      - objects
-      summary: list objects under a given prefix
-      operationId: listObjects
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: ref
-        in: path
-        description: a reference (could be either a branch or a commit ID)
-        required: true
-        schema:
-          type: string
-      - name: prefix
-        in: query
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      - name: delimiter
-        in: query
-        allowEmptyValue: true
-        schema:
-          type: string
-          default: /
-      responses:
-        200:
-          description: entry list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/object_stats'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: prefix or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/refs/{branch}/symlink:
-    post:
-      tags:
-      - metadata
-      summary: creates symlink files corresponding to the given directory
-      operationId: createSymlink
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: location
-        in: query
-        description: path to the table data
-        schema:
-          type: string
-      responses:
-        201:
-          description: location created
-          content:
-            application/json:
-              schema:
-                type: string
-                description: path to created location
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: repository or branch not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/actions/runs:
-    get:
-      tags:
-      - actions
-      summary: list runs
-      operationId: listRuns
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      - name: branch
-        in: query
-        schema:
-          type: string
-      - name: commit
-        in: query
-        schema:
-          type: string
-      responses:
-        200:
-          description: list action runs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/action_run'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/actions/runs/{run_id}:
-    get:
-      tags:
-      - actions
-      summary: get a run
-      operationId: getRun
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: run_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: action run result
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/action_run'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/actions/runs/{run_id}/hooks:
-    get:
-      tags:
-      - actions
-      summary: list run hooks
-      operationId: listRunHooks
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: run_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: after
-        in: query
-        schema:
-          type: string
-      - name: amount
-        in: query
-        schema:
-          type: integer
-          default: 100
-      responses:
-        200:
-          description: list specific run hooks
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    $ref: '#/components/schemas/pagination'
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/hook_run'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
-    get:
-      tags:
-      - actions
-      summary: get run hook output
-      operationId: getRunHookOutput
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: run_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: hook_run_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: run hook output
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        401:
-          description: Unauthorized
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-        404:
-          description: output not found
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/metadata/meta_range/{meta_range}:
-    get:
-      tags:
-      - metadata
-      summary: return URI to a meta-range file
-      operationId: getMetaRange
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: meta_range
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: meta-range URI
-          headers:
-            Location:
-              schema:
-                type: string
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /repositories/{repository}/metadata/range/{range}:
-    get:
-      tags:
-      - metadata
-      summary: return URI to a range file
-      operationId: getRange
-      parameters:
-      - name: repository
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: range
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: range URI
-          headers:
-            Location:
-              schema:
-                type: string
-          content: {}
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-        default:
-          description: generic error response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /healthcheck:
-    get:
-      tags:
-      - healthCheck
-      description: check that the API server is up and running
-      operationId: healthCheck
-      responses:
-        204:
-          description: NoContent
-          content: {}
-  /config:
-    get:
-      tags:
-      - config
-      description: retrieve the lakefs config
-      operationId: getConfig
-      responses:
-        200:
-          description: the lakefs config
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/config'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+  - jwt_token: []
+  - basic_auth: []
+
 components:
+
+  securitySchemes:
+    basic_auth:
+      type: http
+      scheme: basic
+    jwt_token:
+      type: apiKey
+      in: header
+      name: X-JWT-Authorization
+
+  parameters:
+    PaginationAfter:
+      in: query
+      name: after
+      description: return items after this value
+      schema:
+        type: string
+    PaginationAmount:
+      in: query
+      name: amount
+      description: how many items to return
+      schema:
+        type: integer
+        minimum: -1
+        maximum: 1000
+        default: 100
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+
   schemas:
-    pagination:
-      required:
-      - has_more
+
+    Pagination:
       type: object
+      required:
+        - has_more
+        - max_per_page
+        - results
+        - next_offset
       properties:
         has_more:
           type: boolean
         next_offset:
           type: string
         results:
-          minimum: 0
           type: integer
+          minimum: 0
         max_per_page:
-          minimum: 0
           type: integer
-    repository:
+          minimum: 0
+
+    Repository:
       type: object
+      required:
+        - creation_date
+        - id
+        - default_branch
+        - storage_namespace
       properties:
         id:
           type: string
@@ -2957,16 +112,38 @@ components:
           type: integer
           format: int64
         default_branch:
+          example: "master"
           type: string
-          example: master
         storage_namespace:
           type: string
-          description: Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')
-    merge_result:
+          description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
+
+    RepositoryList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Repository"
+
+    MergeResult:
+      type: object
+      required:
+        - summary
+        - reference
       properties:
         summary:
           type: object
+          required:
+            - added
+            - removed
+            - changed
+            - conflict
           properties:
             added:
               type: integer
@@ -2978,28 +155,39 @@ components:
               type: integer
         reference:
           type: string
-    repository_creation:
-      required:
-      - name
-      - storage_namespace
+
+    RepositoryCreation:
       type: object
+      required:
+        - name
+        - storage_namespace
       properties:
         name:
-          pattern: ^[a-z0-9][a-z0-9-]{2,62}$
           type: string
+          pattern: '^[a-z0-9][a-z0-9-]{2,62}$'
         storage_namespace:
-          pattern: ^(s3|gs|https?|mem|local|transient)://.*$
           type: string
-          description: Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')
-          example: s3://example-bucket/
+          description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
+          example: "s3://example-bucket/"
+          pattern: '^(s3|gs|https?|mem|local|transient)://.*$'
         default_branch:
+          example: "master"
           type: string
-          example: master
-    object_stats:
+
+    ObjectStats:
       type: object
+      required:
+        - checksum
+        - physical_address
+        - path
+        - path_type
+        - mtime
       properties:
         path:
           type: string
+        path_type:
+          type: string
+          enum: [ common_prefix, object ]
         physical_address:
           type: string
         checksum:
@@ -3010,18 +198,26 @@ components:
         size_bytes:
           type: integer
           format: int64
-          nullable: true
-        path_type:
-          type: string
-          enum:
-          - common_prefix
-          - object
-    object_stage_creation:
-      required:
-      - checksum
-      - physical_address
-      - size_bytes
+
+    ObjectStatsList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectStats"
+
+    ObjectStageCreation:
+      type: object
+      required:
+        - physical_address
+        - checksum
+        - size_bytes
       properties:
         physical_address:
           type: string
@@ -3034,57 +230,102 @@ components:
           type: object
           additionalProperties:
             type: string
-    underlying_object_properties:
+
+    UnderlyingObjectProperties:
       type: object
       properties:
         storage_class:
+          x-nullable: true
           type: string
-          nullable: true
-    ref:
-      required:
-      - commit_id
-      - id
+    Ref:
       type: object
+      required:
+        - id
+        - commit_id
       properties:
         id:
           type: string
         commit_id:
           type: string
-    diff:
+
+    RefList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ref"
+
+    Diff:
+      type: object
+      required:
+        - type
+        - path
+        - path_type
       properties:
         type:
           type: string
-          enum:
-          - added
-          - removed
-          - changed
-          - conflict
+          enum: [ added, removed, changed, conflict ]
         path:
           type: string
         path_type:
           type: string
-          enum:
-          - common_prefix
-          - object
-    reset_creation:
-      required:
-      - type
+          enum: [ common_prefix, object ]
+
+
+    DiffList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Diff"
+
+    ResetCreation:
+      type: object
+      required:
+        - type
       properties:
         type:
           type: string
-          enum:
-          - object
-          - common_prefix
-          - commit
-          - reset
+          enum: [ object, common_prefix, commit, reset ]
         commit:
           type: string
         path:
           type: string
-    commit:
+
+    RevertCreation:
       type: object
+      required:
+        - parent_number
+        - ref
+      properties:
+        ref:
+          type: string
+          description: the commit to revert, given by a ref
+        parent_number:
+          type: integer
+          description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
+
+    Commit:
+      type: object
+      required:
+        - id
+        - parents
+        - committer
+        - message
+        - creation_date
+        - meta_range_id
       properties:
         id:
           type: string
@@ -3105,10 +346,24 @@ components:
           type: object
           additionalProperties:
             type: string
-    commit_creation:
-      required:
-      - message
+
+    CommitList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Commit"
+
+    CommitCreation:
+      type: object
+      required:
+        - message
       properties:
         message:
           type: string
@@ -3116,8 +371,11 @@ components:
           type: object
           additionalProperties:
             type: string
-    merge:
+
+    Merge:
       type: object
+      required:
+        - message
       properties:
         message:
           type: string
@@ -3125,28 +383,35 @@ components:
           type: object
           additionalProperties:
             type: string
-    branch_creation:
-      required:
-      - name
-      - source
+
+    BranchCreation:
       type: object
+      required:
+        - name
+        - source
       properties:
         name:
           type: string
         source:
           type: string
-    tag_creation:
-      required:
-      - id
-      - ref
+
+    TagCreation:
       type: object
+      required:
+        - id
+        - ref
       properties:
         id:
           type: string
         ref:
           type: string
-    refs_dump:
+
+    RefsDump:
       type: object
+      required:
+        - branches_meta_range_id
+        - tags_meta_range_id
+        - commits_meta_range_id
       properties:
         commits_meta_range_id:
           type: string
@@ -3154,63 +419,114 @@ components:
           type: string
         branches_meta_range_id:
           type: string
-    error:
+
+    StorageURI:
+      description: URI to a path in a storage provider (e.g. "s3://bucket1/path/to/object")
+      required:
+        - location
       type: object
       properties:
-        message:
+        location:
           type: string
-          description: short message explaining the error
-    user:
+
+    Error:
       type: object
+      required:
+        - message
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - creation_date
       properties:
         id:
           type: string
         creation_date:
           type: integer
           format: int64
-    user_creation:
+
+    CurrentUser:
+      type: object
       required:
-      - id
+        - user
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    UserCreation:
       type: object
       properties:
         id:
           type: string
-    setup:
       required:
-      - username
+        - id
+
+    AccessKeyCredentials:
+      type: object
+      properties:
+        # Example values as seen on
+        # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+        access_key_id:
+          description: access key ID to set for user for use in integration testing.
+          example: AKIAIOSFODNN7EXAMPLE
+          type: string
+          minLength: 1
+        secret_access_key:
+          description: secret access key to set for user for use in integration testing.
+          example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          type: string
+          minLength: 1
+      required:
+        - access_key_id
+        - secret_access_key
+
+    Setup:
       type: object
       properties:
         username:
-          type: string
           description: an identifier for the user (e.g. jane.doe)
+          type: string
         key:
-          required:
-          - access_key_id
-          - secret_access_key
-          type: object
-          properties:
-            access_key_id:
-              minLength: 1
-              type: string
-              description: access key ID to set for user for use in integration testing.
-              example: AKIAIOSFODNN7EXAMPLE
-            secret_access_key:
-              minLength: 1
-              type: string
-              description: secret access key to set for user for use in integration
-                testing.
-              example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          description: set to pass access_key_id, secret_access_key for testing.
-    credentials:
+          $ref: "#/components/schemas/AccessKeyCredentials"
+      required:
+        - username
+
+    Credentials:
       type: object
+      required:
+        - creation_date
+        - access_key_id
       properties:
         access_key_id:
           type: string
         creation_date:
           type: integer
           format: int64
-    credentials_with_secret:
+
+    CredentialsList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Credentials"
+
+    CredentialsWithSecret:
+      type: object
+      required:
+        - access_key_id
+        - creation_date
+        - access_secret_key
       properties:
         access_key_id:
           type: string
@@ -3219,45 +535,76 @@ components:
         creation_date:
           type: integer
           format: int64
-    group:
+
+    Group:
       type: object
+      required:
+        - creation_date
+        - id
       properties:
         id:
           type: string
         creation_date:
           type: integer
           format: int64
-    group_creation:
-      required:
-      - id
+
+    GroupList:
       type: object
+      required:
+        - results
+        - pagination
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+
+    UserList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    GroupCreation:
+      type: object
+      required:
+        - id
       properties:
         id:
           type: string
-    statement:
-      required:
-      - action
-      - effect
-      - resource
+
+    Statement:
       type: object
+      required:
+        - effect
+        - resource
+        - action
       properties:
         effect:
           type: string
-          enum:
-          - allow
-          - deny
+          enum: [ allow, deny ]
         resource:
           type: string
         action:
-          minItems: 1
           type: array
           items:
             type: string
-    policy:
-      required:
-      - id
-      - statement
+          minItems: 1
+
+    Policy:
       type: object
+      required:
+        - id
+        - statement
       properties:
         id:
           type: string
@@ -3265,23 +612,44 @@ components:
           type: integer
           format: int64
         statement:
-          minItems: 1
           type: array
           items:
-            $ref: '#/components/schemas/statement'
-    config:
+            $ref: "#/components/schemas/Statement"
+          minItems: 1
+
+    PolicyList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Policy"
+
+    Config:
+      type: object
+      required:
+        - blockstore_namespace_example
+        - blockstore_namespace_ValidityRegex
       properties:
         blockstore_namespace_example:
           type: string
         blockstore_namespace_ValidityRegex:
           type: string
-    action_run:
-      required:
-      - branch
-      - commit_id
-      - run_id
+
+    ActionRun:
       type: object
+      required:
+        - run_id
+        - branch
+        - start_time
+        - commit_id
+        - event_type
+        - status
       properties:
         run_id:
           type: string
@@ -3295,20 +663,34 @@ components:
           format: date-time
         event_type:
           type: string
-          enum:
-          - pre_commit
-          - pre_merge
+          enum: [ pre_commit, pre_merge ]
         status:
           type: string
-          enum:
-          - failed
-          - completed
+          enum: [ failed, completed ]
         commit_id:
           type: string
-    hook_run:
-      required:
-      - hook_run_id
+
+    ActionRunList:
       type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionRun"
+
+    HookRun:
+      type: object
+      required:
+        - hook_run_id
+        - action
+        - hook_id
+        - start_time
+        - status
       properties:
         hook_run_id:
           type: string
@@ -3324,21 +706,1880 @@ components:
           format: date-time
         status:
           type: string
-          enum:
-          - failed
-          - completed
-  responses:
-    Unauthorized:
-      description: Unauthorized
-      content:
-        application/json:
+          enum: [ failed, completed ]
+
+    HookRunList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/HookRun"
+
+paths:
+
+  /setup_lakefs:
+    post:
+      tags:
+        - config
+      operationId: setup
+      summary: setup lakeFS and create a first user
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Setup"
+      responses:
+        200:
+          description: user created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialsWithSecret"
+        400:
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        409:
+          description: setup was already called
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /user:
+    get:
+      tags:
+        - auth
+      operationId: getCurrentUser
+      summary: get current user
+      responses:
+        200:
+          description: user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+
+  /auth/users:
+    get:
+      tags:
+        - auth
+      operationId: listUsers
+      summary: list users
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: user list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - auth
+      operationId: createUser
+      summary: create user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreation"
+      responses:
+        201:
+          description: user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        400:
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/users/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      operationId: getUser
+      summary: get user
+      responses:
+        200:
+          description: user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - auth
+      operationId: deleteUser
+      summary: delete user
+      responses:
+        204:
+          description: user deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/groups:
+    get:
+      tags:
+        - auth
+      operationId: listGroups
+      summary: list groups
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: group list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - auth
+      operationId: createGroup
+      summary: create group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreation"
+      responses:
+        201:
+          description: group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/groups/{groupId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      operationId: getGroup
+      summary: get group
+      responses:
+        200:
+          description: group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - auth
+      operationId: deleteGroup
+      summary: delete group
+      responses:
+        204:
+          description: group deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/policies:
+    get:
+      tags:
+        - auth
+      operationId: listPolicies
+      summary: list policies
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: policy list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - auth
+      operationId: createPolicy
+      summary: create policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Policy'
+      responses:
+        201:
+          description: policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/policies/{policyId}:
+    parameters:
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      operationId: getPolicy
+      summary: get policy
+      responses:
+        200:
+          description: policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - auth
+      operationId: updatePolicy
+      summary: update policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Policy'
+      responses:
+        200:
+          description: policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - auth
+      operationId: deletePolicy
+      summary: delete policy
+      responses:
+        204:
+          description: policy deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/groups/{groupId}/members:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      operationId: listGroupMembers
+      summary: list group members
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: group memeber list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/groups/{groupId}/members/{userId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - auth
+      operationId: addGroupMembership
+      summary: add group membership
+      responses:
+        201:
+          description: membership added successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - auth
+      operationId: deleteGroupMembership
+      summary: delete group membership
+      responses:
+        204:
+          description: membership deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/users/{userId}/credentials:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      operationId: listUserCredentials
+      summary: list user credentials
+      responses:
+        200:
+          description: credential list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialsList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - auth
+      operationId: createCredentials
+      summary: create credentials
+      responses:
+        201:
+          description: credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialsWithSecret"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+
+  /auth/users/{userId}/credentials/{accessKeyId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: accessKeyId
+        required: true
+        schema:
+          type: string
+    delete:
+      tags:
+        - auth
+      operationId: deleteCredentials
+      summary: delete credentials
+      responses:
+        204:
+          description: credentials deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+    get:
+      tags:
+        - auth
+      operationId: getCredentials
+      summary: get credentials
+      responses:
+        200:
+          description: credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credentials"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/users/{userId}/groups:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      operationId: listUserGroups
+      summary: list user groups
+      responses:
+        200:
+          description: group list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/users/{userId}/policies:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+        - in: query
+          name: effective
           schema:
-            $ref: '#/components/schemas/error'
-  securitySchemes:
-    basic_auth:
-      type: http
-      scheme: basic
-    jwt_token:
-      type: apiKey
-      name: X-JWT-Authorization
-      in: header
+            type: boolean
+            default: false
+          description: will return all distinct policies attached to the user or any of its groups
+      operationId: listUserPolicies
+      summary: list user policies
+      responses:
+        200:
+          description: policy list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/users/{userId}/policies/{policyId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - auth
+      operationId: attachPolicyToUser
+      summary: attach policy to user
+      responses:
+        201:
+          description: policy attached successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - auth
+      operationId: detachPolicyFromUser
+      summary: detach policy from user
+      responses:
+        204:
+          description: policy detached successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/groups/{groupId}/policies:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      operationId: listGroupPolicies
+      summary: list group policies
+      responses:
+        200:
+          description: policy list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /auth/groups/{groupId}/policies/{policyId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - auth
+      operationId: attachPolicyToGroup
+      summary: attach policy to group
+      responses:
+        201:
+          description: policy attached successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - auth
+      operationId: detachPolicyFromGroup
+      summary: detach policy from group
+      responses:
+        204:
+          description: policy detached successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories:
+    get:
+      tags:
+        - repositories
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      operationId: listRepositories
+      summary: list repositories
+      responses:
+        200:
+          description: repository list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - repositories
+      operationId: createRepository
+      summary: create repository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryCreation'
+      parameters:
+        - in: query
+          name: bare
+          schema:
+            type: boolean
+            default: false
+          description: If true, create a bare repository with no initial commit and branch
+      responses:
+        201:
+          description: repository
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getRepository
+      summary: get repository
+      responses:
+        200:
+          description: repository
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - repositories
+      operationId: deleteRepository
+      summary: delete repository
+      responses:
+        204:
+          description: repository deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/dump:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - refs
+      operationId: dumpRefs
+      summary: Dump repository refs (tags, commits, branches) to object store
+      responses:
+        201:
+          description: refs dump
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefsDump"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/restore:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - refs
+      operationId: restoreRefs
+      summary: Restore repository refs (tags, commits, branches) from object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefsDump'
+      responses:
+        200:
+          description: refs successfully loaded
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/tags:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - tags
+      operationId: listTags
+      summary: list tags
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: tag list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - tags
+      operationId: createTag
+      summary: create tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagCreation'
+      responses:
+        201:
+          description: tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ref"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/tags/{tag}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: tag
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - tags
+      operationId: getTag
+      summary: get tag
+      responses:
+        200:
+          description: tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ref"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - tags
+      operationId: deleteTag
+      summary: delete tag
+      responses:
+        204:
+          description: tag deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/branches:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - branches
+      operationId: listBranches
+      summary: list branches
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: branch list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - branches
+      operationId: createBranch
+      summary: create branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchCreation'
+      responses:
+        201:
+          description: reference
+          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/Ref'
+            text/html:
+              schema:
+                type: string
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{ref}/commits:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - refs
+      operationId: logCommits
+      summary: get commit log from ref
+      parameters:
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: commit log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/branches/{branch}/commits:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - commits
+      operationId: commit
+      summary: create commit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitCreation'
+      responses:
+        201:
+          description: commit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commit"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+        412:
+          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+
+  /repositories/{repository}/branches/{branch}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - branches
+      operationId: getBranch
+      summary: get branch
+      responses:
+        200:
+          description: branch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ref"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - branches
+      operationId: deleteBranch
+      summary: delete branch
+      responses:
+        204:
+          description: branch deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - branches
+      operationId: resetBranch
+      summary: reset branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetCreation'
+      responses:
+        204:
+          description: reset successful
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/branches/{branch}/revert:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - branches
+      operationId: revertBranch
+      summary: revert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevertCreation'
+      responses:
+        204:
+          description: revert successful
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: sourceRef
+        required: true
+        schema:
+          type: string
+        description: source ref
+      - in: path
+        name: destinationBranch
+        required: true
+        schema:
+          type: string
+        description: destination branch name
+    post:
+      tags:
+        - refs
+      operationId: mergeIntoBranch
+      summary: merge references
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Merge'
+      responses:
+        200:
+          description: merge completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          description: conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+        412:
+          description: precondition failed (e.g. a pre-merge hook returned a failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/branches/{branch}/diff:
+    parameters:
+      - $ref: '#/components/parameters/PaginationAfter'
+      - $ref: '#/components/parameters/PaginationAmount'
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - branches
+      operationId: diffBranch
+      summary: diff branch
+      responses:
+        200:
+          description: diff of branch uncommitted changes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiffList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{leftRef}/diff/{rightRef}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: leftRef
+        required: true
+        schema:
+          type: string
+        description: a reference (could be either a branch or a commit ID)
+      - in: path
+        name: rightRef
+        required: true
+        schema:
+          type: string
+        description: a reference (could be either a branch or a commit ID) to compare against
+      - $ref: '#/components/parameters/PaginationAfter'
+      - $ref: '#/components/parameters/PaginationAmount'
+      - in: query
+        name: type
+        schema:
+          type: string
+      - in: query
+        name: diff_type
+        schema:
+          type: string
+          enum: [two_dot, three_dot]
+          default: three_dot
+    get:
+      tags:
+        - refs
+      operationId: diffRefs
+      summary: diff references
+      responses:
+        200:
+          description: diff between refs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiffList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/commits/{commitId}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: commitId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - commits
+      operationId: getCommit
+      summary: get commit
+      responses:
+        200:
+          description: commit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commit"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{ref}/objects:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+        description: a reference (could be either a branch or a commit ID)
+      - in: query
+        name: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - objects
+      operationId: getObject
+      summary: get object content
+      responses:
+        200:
+          description: object content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Length:
+              schema:
+                type: integer
+                format: int64
+            Last-Modified:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+            Content-Disposition:
+              schema:
+                type: string
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+        410:
+          description: object expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /repositories/{repository}/branches/{branch}/objects:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: path
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - objects
+      operationId: stageObject
+      summary: stage an object's metadata for the given branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectStageCreation'
+      responses:
+        201:
+          description: object metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - objects
+      operationId: uploadObject
+      summary: upload object content
+      requestBody:
+        description: Object content to be uploaded
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      parameters:
+        - in: query
+          name: storageClass
+          required: false
+          schema:
+            type: string
+      responses:
+        201:
+          description: object metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - objects
+      operationId: deleteObject
+      summary: delete object
+      responses:
+        204:
+          description: object deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{ref}/objects/stat:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+        description: a reference (could be either a branch or a commit ID)
+      - in: query
+        name: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - objects
+      operationId: statObject
+      summary: get object metadata
+      responses:
+        200:
+          description: object metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+        410:
+          description: object gone (but partial metadata may be available)
+
+  /repositories/{repository}/refs/{ref}/objects/underlyingProperties:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+        description: a reference (could be either a branch or a commit ID)
+      - in: query
+        name: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - objects
+      operationId: getUnderlyingProperties
+      summary: get object properties on underlying storage
+      responses:
+        200:
+          description: object metadata on underlying storage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnderlyingObjectProperties"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{ref}/objects/ls:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+        description: a reference (could be either a branch or a commit ID)
+      - in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+      - $ref: '#/components/parameters/PaginationAfter'
+      - $ref: '#/components/parameters/PaginationAmount'
+      - in: query
+        name: delimiter
+        schema:
+          type: string
+          default: "/"
+    get:
+      tags:
+        - objects
+      operationId: listObjects
+      summary: list objects under a given prefix
+      responses:
+        200:
+          description: object listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStatsList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/refs/{branch}/symlink:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: location
+        schema:
+          type: string
+        description: path to the table data
+    post:
+      tags:
+        - metadata
+      operationId: createSymlinkFile
+      summary: creates symlink files corresponding to the given directory
+
+      responses:
+        201:
+          description: location created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageURI'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/actions/runs:
+    get:
+      tags:
+        - actions
+      operationId: listRepositoryRuns
+      summary: list runs
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+        - in: query
+          name: branch
+          schema:
+            type: string
+        - in: query
+          name: commit
+          schema:
+            type: string
+      responses:
+        200:
+          description: list action runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionRunList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/actions/runs/{run_id}:
+    get:
+      tags:
+        - actions
+      operationId: getRun
+      summary: get a run
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: action run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionRun"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks:
+    get:
+      tags:
+        - actions
+      operationId: listRunHooks
+      summary: list run hooks
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PaginationAfter'
+        - $ref: '#/components/parameters/PaginationAmount'
+      responses:
+        200:
+          description: list specific run hooks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HookRunList'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
+    get:
+      tags:
+        - actions
+      operationId: getRunHookOutput
+      summary: get run hook output
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: hook_run_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: run hook output
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/metadata/meta_range/{meta_range}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: meta_range
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - metadata
+      operationId: getMetaRange
+      summary: return URI to a meta-range file
+      responses:
+        200:
+          description: meta-range URI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageURI'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /repositories/{repository}/metadata/range/{range}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: range
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - metadata
+      operationId: getRange
+      summary: return URI to a range file
+      responses:
+        200:
+          description: range URI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageURI'
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: '#/components/responses/ServerError'
+
+  /healthcheck:
+    get:
+      operationId: healthCheck
+      security: [ ]
+      tags:
+        - healthCheck
+      description: check that the API server is up and running
+      responses:
+        204:
+          description: NoContent
+
+  /config:
+    get:
+      tags:
+        - config
+      operationId: getConfig
+      description: retrieve the lakefs config
+      responses:
+        200:
+          description: the lakefs config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        401:
+          $ref: "#/components/responses/Unauthorized"

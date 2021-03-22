@@ -11,20 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-openapi/runtime"
-	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/auth"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/config"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/setup"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/tags"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -34,32 +22,44 @@ import (
 )
 
 const (
-	timeout       = 10 * time.Second
+	//timeout       = 10 * time.Second
 	DefaultUserID = "example_user"
 )
 
-func TestController_ListRepositoriesHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
+type Statuser interface {
+	StatusCode() int
+}
 
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+func verifyResponseOK(t testing.TB, resp Statuser, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal("request failed with error:", err)
+	}
+	if resp == nil {
+		t.Fatal("request's response is missing")
+	}
+	statusCode := resp.StatusCode()
+	if statusCode < http.StatusOK || statusCode >= http.StatusMultipleChoices {
+		t.Fatal("request response failed with code", statusCode)
+	}
+}
+
+func TestController_ListRepositoriesHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("list no repos", func(t *testing.T) {
-		resp, err := clt.Repositories.ListRepositories(
-			repositories.NewListRepositoriesParamsWithTimeout(timeout),
-			bauth,
-		)
+		resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if resp.GetPayload() == nil {
+		if resp.JSON200 == nil {
 			t.Fatalf("expected payload, got nil")
 		}
-		if len(resp.GetPayload().Results) != 0 {
-			t.Fatalf("expected 0 repositories, got %d", len(resp.GetPayload().Results))
+		if len(resp.JSON200.Results) != 0 {
+			t.Fatalf("expected 0 repositories, got %d", len(resp.JSON200.Results))
 		}
 	})
 
@@ -73,97 +73,80 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 		_, err = deps.catalog.CreateRepository(ctx, "foo3", "s3://foo1", "master")
 		testutil.Must(t, err)
 
-		resp, err := clt.Repositories.ListRepositories(
-			repositories.NewListRepositoriesParamsWithTimeout(timeout),
-			bauth,
-		)
-
+		resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if resp.GetPayload() == nil {
+		if resp.JSON200 == nil {
 			t.Fatalf("expected payload, got nil")
 		}
-		if len(resp.GetPayload().Results) != 3 {
-			t.Fatalf("expected 3 repositories, got %d", len(resp.GetPayload().Results))
+		if len(resp.JSON200.Results) != 3 {
+			t.Fatalf("expected 3 repositories, got %d", len(resp.JSON200.Results))
 		}
 	})
 
 	t.Run("paginate repos", func(t *testing.T) {
 		// write some repos
-		resp, err := clt.Repositories.ListRepositories(
-			repositories.NewListRepositoriesParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(2)),
-			bauth,
-		)
-
+		resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{
+			Amount: api.PaginationAmountPtr(2),
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if resp.GetPayload() == nil {
+		if resp.JSON200 == nil {
 			t.Fatalf("expected payload, got nil")
 		}
-		if len(resp.GetPayload().Results) != 2 {
-			t.Fatalf("expected 3 repositories, got %d", len(resp.GetPayload().Results))
+		if len(resp.JSON200.Results) != 2 {
+			t.Fatalf("expected 3 repositories, got %d", len(resp.JSON200.Results))
 		}
 
-		if !swag.BoolValue(resp.GetPayload().Pagination.HasMore) {
+		if !resp.JSON200.Pagination.HasMore {
 			t.Fatalf("expected more results from paginator, got none")
 		}
 	})
 
 	t.Run("paginate repos after", func(t *testing.T) {
 		// write some repos
-		resp, err := clt.Repositories.ListRepositories(
-			repositories.NewListRepositoriesParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(2)).WithAfter(swag.String("foo2")),
-			bauth,
-		)
-
+		resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{
+			After:  api.PaginationAfterPtr("foo2"),
+			Amount: api.PaginationAmountPtr(2),
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if resp.GetPayload() == nil {
+		if resp.JSON200 == nil {
 			t.Fatalf("expected payload, got nil")
 		}
-		if len(resp.GetPayload().Results) != 1 {
-			t.Fatalf("expected 1 repository, got %d", len(resp.GetPayload().Results))
+		if len(resp.JSON200.Results) != 1 {
+			t.Fatalf("expected 1 repository, got %d", len(resp.JSON200.Results))
 		}
 
-		if swag.BoolValue(resp.GetPayload().Pagination.HasMore) {
+		if resp.JSON200.Pagination.HasMore {
 			t.Fatalf("expected no more results from paginator")
 		}
 
-		if !strings.EqualFold(resp.GetPayload().Results[0].ID, "foo3") {
+		if resp.JSON200.Results[0].Id != "foo3" {
 			t.Fatalf("expected last pagination result to be foo3, got %s instead",
-				resp.GetPayload().Results[0].ID)
+				resp.JSON200.Results[0].Id)
 		}
 	})
 }
 
 func TestController_GetRepoHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("get missing repo", func(t *testing.T) {
-		_, err := clt.Repositories.GetRepository(
-			repositories.NewGetRepositoryParamsWithTimeout(timeout).
-				WithRepository("foo1"),
-			bauth,
-		)
-
-		if err == nil {
-			t.Fatalf("expected err calling missing repo")
+		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
+		testutil.Must(t, err)
+		if resp == nil {
+			t.Fatal("GetRepository missing response")
 		}
-
-		if _, ok := err.(*repositories.GetRepositoryNotFound); !ok {
-			t.Fatalf("expected not found error getting missing repo")
+		if resp.JSON404 == nil {
+			t.Fatal("get missing repository should return 404, got:", resp.HTTPResponse)
 		}
 	})
 
@@ -172,49 +155,36 @@ func TestController_GetRepoHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName)
 		testutil.Must(t, err)
 
-		resp, err := clt.Repositories.GetRepository(
-			repositories.NewGetRepositoryParamsWithTimeout(timeout).
-				WithRepository("foo1"),
-			bauth)
+		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
+		verifyResponseOK(t, resp, err)
 
-		if err != nil {
-			t.Fatalf("unexpected err calling get repo, %v", err)
-		}
-
-		if !strings.EqualFold(resp.GetPayload().DefaultBranch, testBranchName) {
-			t.Fatalf("unexpected branch name %s, expected %s",
-				resp.GetPayload().DefaultBranch, testBranchName)
+		repository := resp.JSON200
+		if repository.DefaultBranch != testBranchName {
+			t.Fatalf("unexpected branch name %s, expected %s", repository.DefaultBranch, testBranchName)
 		}
 	})
 }
 
 func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	t.Run("get missing branch", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = clt.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
-			Branch:     "otherbranch",
-			Repository: "repo1",
-		}, bauth)
-		if err == nil {
+		resp, err := clt.LogCommitsWithResponse(ctx, "repo1", "otherbranch", &api.LogCommitsParams{})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
 			t.Fatalf("expected error getting a branch that doesn't exist")
 		}
 	})
 
 	t.Run("get branch log", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo2", "ns1", "master")
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.Must(t, err)
+
 		const commitsLen = 2
 		for i := 0; i < commitsLen; i++ {
 			n := strconv.Itoa(i + 1)
@@ -224,18 +194,12 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 				t.Fatalf("failed to commit '%s': %s", p, err)
 			}
 		}
-		resp, err := clt.Commits.GetBranchCommitLog(
-			commits.NewGetBranchCommitLogParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithRepository("repo2"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error getting log of commits: %s", err)
-		}
+		resp, err := clt.LogCommitsWithResponse(ctx, "repo2", "master", &api.LogCommitsParams{})
+		verifyResponseOK(t, resp, err)
 
 		// repo is created with a commit
 		const expectedCommits = commitsLen + 1
-		commitsLog := resp.GetPayload().Results
+		commitsLog := resp.JSON200.Results
 		if len(commitsLog) != expectedCommits {
 			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
 		}
@@ -243,23 +207,17 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 }
 
 func TestController_GetCommitHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("get missing commit", func(t *testing.T) {
-		_, err := clt.Commits.GetCommit(
-			commits.NewGetCommitParamsWithTimeout(timeout).
-				WithCommitID("b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa").
-				WithRepository("foo1"),
-			bauth)
-		if err == nil {
-			t.Fatalf("expected err calling missing commit")
+		resp, err := clt.GetCommitWithResponse(ctx, "foo1", "b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa")
+		testutil.Must(t, err)
+		if resp == nil {
+			t.Fatal("expect get missing commit response")
 		}
-
-		if _, ok := err.(*commits.GetCommitNotFound); !ok {
+		notFoundResp := resp.JSON404
+		if notFoundResp == nil {
 			t.Fatalf("expected not found error getting missing commit")
 		}
 	})
@@ -278,137 +236,92 @@ func TestController_GetCommitHandler(t *testing.T) {
 		if reference1 != commit1.Reference {
 			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
 		}
-		resp, err := clt.Commits.GetCommit(
-			commits.NewGetCommitParamsWithTimeout(timeout).
-				WithCommitID(commit1.Reference).
-				WithRepository("foo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected err calling commit: %s", err)
-		}
+		resp, err := clt.GetCommitWithResponse(ctx, "foo1", commit1.Reference)
+		verifyResponseOK(t, resp, err)
 
-		committer := resp.GetPayload().Committer
+		committer := resp.JSON200.Committer
 		if committer != DefaultUserID {
-			t.Fatalf("unexpected commit id %s, expected %s",
-				committer, DefaultUserID)
+			t.Fatalf("unexpected commit id %s, expected %s", committer, DefaultUserID)
 		}
 	})
 }
 
 func TestController_CommitHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		_, err := clt.Commits.Commit(
-			commits.NewCommitParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithCommit(&models.CommitCreation{
-					Message:  swag.String("some message"),
-					Metadata: nil,
-				}).
-				WithRepository("foo1"),
-			bauth)
-
-		if err == nil {
-			t.Fatalf("expected err calling missing repo for commit")
+		resp, err := clt.CommitWithResponse(ctx, "foo1", "master", api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		testutil.Must(t, err)
+		if resp == nil {
+			t.Fatal("Commit() expected response")
 		}
-
-		if _, ok := err.(*commits.CommitDefault); !ok {
-			t.Fatalf("expected not found error when missing commit repo, got %v", err)
+		notFoundResp := resp.JSON404
+		if notFoundResp == nil {
+			t.Fatal("expected not found response on missing commit repo")
 		}
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		ctx := context.Background()
 		_, err := deps.catalog.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.MustDo(t, "create repo foo1", err)
 		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "master", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-		_, err = clt.Commits.Commit(
-			commits.NewCommitParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithCommit(&models.CommitCreation{
-					Message:  swag.String("some message"),
-					Metadata: nil,
-				}).
-				WithRepository("foo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error on commit: %s", err)
-		}
+		resp, err := clt.CommitWithResponse(ctx, "foo1", "master", api.CommitJSONRequestBody{
+			Message: "some message",
+		})
+		verifyResponseOK(t, resp, err)
 	})
 }
 
 func TestController_CreateRepositoryHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 	t.Run("create repo success", func(t *testing.T) {
-		resp, err := clt.Repositories.CreateRepository(
-			repositories.NewCreateRepositoryParamsWithTimeout(timeout).
-				WithRepository(&models.RepositoryCreation{
-					StorageNamespace: swag.String("s3://foo-bucket/"),
-					Name:             swag.String("my-new-repo"),
-					DefaultBranch:    "master",
-				}),
-			bauth)
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("master"),
+			Name:             "my-new-repo",
+			StorageNamespace: "s3://foo-bucket",
+		})
+		verifyResponseOK(t, resp, err)
 
-		if err != nil {
-			t.Fatalf("unexpected error creating valid repo: %s", err)
-		}
-
-		if !strings.EqualFold(resp.GetPayload().ID, "my-new-repo") {
-			t.Fatalf("got unexpected repo when creating my-new-repo: %s", resp.GetPayload().ID)
+		repository := resp.JSON201
+		if repository.Id != "my-new-repo" {
+			t.Fatalf("got unexpected repo when creating my-new-repo: %s", repository.Id)
 		}
 	})
 
 	t.Run("create repo duplicate", func(t *testing.T) {
-		ctx := context.Background()
 		_, err := deps.catalog.CreateRepository(ctx, "repo2", "s3://foo1/", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = clt.Repositories.CreateRepository(
-			repositories.NewCreateRepositoryParamsWithTimeout(timeout).
-				WithRepository(&models.RepositoryCreation{
-					StorageNamespace: swag.String("s3://foo-bucket/"),
-					Name:             swag.String("repo2"),
-					DefaultBranch:    "master",
-				}),
-			bauth)
-
-		if err == nil {
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("master"),
+			Name:             "repo2",
+			StorageNamespace: "s3://foo-bucket/",
+		})
+		if resp == nil {
+			t.Fatal("CreateRepository missing response")
+		}
+		validationErrResp := resp.JSON400
+		if validationErrResp == nil {
 			t.Fatalf("expected error creating duplicate repo")
 		}
 	})
 }
 
 func TestController_DeleteRepositoryHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	t.Run("delete repo success", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master")
 		testutil.Must(t, err)
 
-		_, err = clt.Repositories.DeleteRepository(
-			repositories.NewDeleteRepositoryParamsWithTimeout(timeout).
-				WithRepository("my-new-repo"),
-			bauth)
-
-		if err != nil {
-			t.Fatalf("unexpected error deleting repo: %s", err)
-		}
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, "my-new-repo")
+		verifyResponseOK(t, resp, err)
 
 		_, err = deps.catalog.GetRepository(ctx, "my-new-repo")
 		if !errors.Is(err, catalog.ErrNotFound) {
@@ -417,72 +330,50 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
-		_, err := clt.Repositories.DeleteRepository(
-			repositories.NewDeleteRepositoryParamsWithTimeout(timeout).
-				WithRepository("my-other-repo"),
-			bauth)
-
-		if err == nil {
-			t.Fatalf("expected error deleting repo that doesnt exist")
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, "my-other-repo")
+		testutil.Must(t, err)
+		if resp.StatusCode() == http.StatusOK {
+			t.Fatalf("DeleteRepository should fail on non existing repository, got %d", resp.StatusCode())
 		}
 	})
 
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "rr0", "s3://foo1", "master")
-		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "rr1", "s3://foo1", "master")
-		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "rr11", "s3://foo1", "master")
-		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "rr2", "s3://foo1", "master")
-		testutil.Must(t, err)
-		_, err = clt.Repositories.DeleteRepository(
-			repositories.NewDeleteRepositoryParamsWithTimeout(timeout).
-				WithRepository("rr1"),
-			bauth)
-
-		if err != nil {
-			t.Fatalf("unexpected error deleting repo: %s", err)
+		names := []string{"rr0", "rr1", "rr11", "rr2"}
+		for _, name := range names {
+			_, err := deps.catalog.CreateRepository(ctx, name, "s3://foo1", "master")
+			testutil.Must(t, err)
 		}
 
-		_, err = deps.catalog.GetRepository(ctx, "rr0")
-		if err != nil {
-			t.Fatalf("unexpected error getting other repo: %s", err)
-		}
-		_, err = deps.catalog.GetRepository(ctx, "rr11")
-		if err != nil {
-			t.Fatalf("unexpected error getting other repo: %s", err)
-		}
-		_, err = deps.catalog.GetRepository(ctx, "rr2")
-		if err != nil {
-			t.Fatalf("unexpected error getting other repo: %s", err)
+		// delete one repository and check that all rest are there
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, "rr1")
+		verifyResponseOK(t, resp, err)
+		for _, name := range names {
+			if name == "rr1" {
+				continue
+			}
+			_, err = deps.catalog.GetRepository(ctx, name)
+			if err != nil {
+				t.Fatalf("unexpected error getting other repo: %s", err)
+			}
 		}
 	})
 }
 
 func TestController_ListBranchesHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-	// setup repository
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("list branches only default", func(t *testing.T) {
 		ctx := context.Background()
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
-		resp, err := clt.Branches.ListBranches(
-			branches.NewListBranchesParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(-1)).
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error listing branches: %s", err)
-		}
+		resp, err := clt.ListBranchesWithResponse(ctx, "repo1", &api.ListBranchesParams{
+			Amount: api.PaginationAmountPtr(-1),
+		})
+		verifyResponseOK(t, resp, err)
+
 		const expectedBranchesLen = 1
-		branchesLen := len(resp.GetPayload().Results)
+		branchesLen := len(resp.JSON200.Results)
 		if branchesLen != expectedBranchesLen {
 			t.Fatalf("ListBranches len=%d, expected %d", branchesLen, expectedBranchesLen)
 		}
@@ -503,93 +394,76 @@ func TestController_ListBranchesHandler(t *testing.T) {
 			_, err := deps.catalog.CreateBranch(ctx, "repo2", branchName, "master")
 			testutil.MustDo(t, "create branch "+branchName, err)
 		}
-		resp, err := clt.Branches.ListBranches(
-			branches.NewListBranchesParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(2)).
-				WithRepository("repo2"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(resp.GetPayload().Results) != 2 {
-			t.Fatalf("expected 2 branches to return, got %d", len(resp.GetPayload().Results))
+		resp, err := clt.ListBranchesWithResponse(ctx, "repo2", &api.ListBranchesParams{
+			Amount: api.PaginationAmountPtr(2),
+		})
+		verifyResponseOK(t, resp, err)
+		if len(resp.JSON200.Results) != 2 {
+			t.Fatalf("expected 2 branches to return, got %d", len(resp.JSON200.Results))
 		}
 
-		resp, err = clt.Branches.ListBranches(
-			branches.NewListBranchesParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(2)).
-				WithAfter(swag.String("master1")).
-				WithRepository("repo2"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-		results := resp.GetPayload().Results
+		resp, err = clt.ListBranchesWithResponse(ctx, "repo2", &api.ListBranchesParams{
+			After:  api.PaginationAfterPtr("master1"),
+			Amount: api.PaginationAmountPtr(2),
+		})
+		verifyResponseOK(t, resp, err)
+		results := resp.JSON200.Results
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
 		retReference := results[0]
 		const expectedID = "master2"
-		if swag.StringValue(retReference.ID) != expectedID {
-			t.Fatalf("expected '%s' as the first result for the second page, got '%s' instead",
-				expectedID, swag.StringValue(retReference.ID))
+		if retReference.Id != expectedID {
+			t.Fatalf("expected '%s' as the first result for the second page, got '%s' instead", expectedID, retReference.Id)
 		}
 	})
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {
-		_, err := clt.Branches.ListBranches(
-			branches.NewListBranchesParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(2)).
-				WithRepository("repoX"),
-			bauth)
-		if err == nil {
+		resp, err := clt.ListBranchesWithResponse(ctx, "repo666", &api.ListBranchesParams{
+			Amount: api.PaginationAmountPtr(2),
+		})
+		testutil.Must(t, err)
+		if resp == nil {
+			t.Fatal("ListBranches() missing response")
+		}
+		if resp.JSON404 == nil {
 			t.Fatal("expected error calling list branches on repo that doesnt exist")
 		}
 	})
 }
 
 func TestController_ListTagsHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	// setup test data
-	ctx := context.Background()
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "local://foo1", "master")
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "obj1"}))
 	commitLog, err := deps.catalog.Commit(ctx, "repo1", "master", "first commit", "test", nil)
 	testutil.Must(t, err)
 	const createTagLen = 7
-	var createdTags []*models.Ref
+	var createdTags []api.Ref
 	for i := 0; i < createTagLen; i++ {
-		tagID := swag.String("tag" + strconv.Itoa(i))
-		commitID := swag.String(commitLog.Reference)
-		_, err := clt.Tags.CreateTag(
-			tags.NewCreateTagParamsWithTimeout(timeout).
-				WithRepository("repo1").
-				WithTag(&models.TagCreation{
-					ID:  tagID,
-					Ref: commitID,
-				}),
-			bauth)
+		tagID := "tag" + strconv.Itoa(i)
+		commitID := commitLog.Reference
+		_, err := clt.CreateTagWithResponse(ctx, "repo1", api.CreateTagJSONRequestBody{
+			Id:  tagID,
+			Ref: commitID,
+		})
 		testutil.Must(t, err)
-		createdTags = append(createdTags, &models.Ref{
-			ID:       tagID,
-			CommitID: commitID,
+		createdTags = append(createdTags, api.Ref{
+			Id:       tagID,
+			CommitId: commitID,
 		})
 	}
 
 	t.Run("default", func(t *testing.T) {
-		resp, err := clt.Tags.ListTags(
-			tags.NewListTagsParamsWithTimeout(timeout).
-				WithRepository("repo1").
-				WithAmount(swag.Int64(-1)),
-			bauth)
-		testutil.MustDo(t, "list tags", err)
-		payload := resp.GetPayload()
+		resp, err := clt.ListTagsWithResponse(ctx, "repo1", &api.ListTagsParams{
+			Amount: api.PaginationAmountPtr(-1),
+		})
+		verifyResponseOK(t, resp, err)
+		payload := resp.JSON200
 		tagsLen := len(payload.Results)
 		if tagsLen != createTagLen {
 			t.Fatalf("ListTags len=%d, expected %d", tagsLen, createTagLen)
@@ -601,21 +475,19 @@ func TestController_ListTagsHandler(t *testing.T) {
 
 	t.Run("pagination", func(t *testing.T) {
 		const pageSize = 2
-		var results []*models.Ref
+		var results []api.Ref
 		var after string
 		var calls int
 		for {
 			calls++
-			resp, err := clt.Tags.ListTags(
-				tags.NewListTagsParamsWithTimeout(timeout).
-					WithRepository("repo1").
-					WithAmount(swag.Int64(pageSize)).
-					WithAfter(swag.String(after)),
-				bauth)
+			resp, err := clt.ListTagsWithResponse(ctx, "repo1", &api.ListTagsParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(pageSize),
+			})
 			testutil.Must(t, err)
-			payload := resp.GetPayload()
+			payload := resp.JSON200
 			results = append(results, payload.Results...)
-			if !swag.BoolValue(payload.Pagination.HasMore) {
+			if !payload.Pagination.HasMore {
 				break
 			}
 			after = payload.Pagination.NextOffset
@@ -630,79 +502,59 @@ func TestController_ListTagsHandler(t *testing.T) {
 	})
 
 	t.Run("no repository", func(t *testing.T) {
-		_, err := clt.Tags.ListTags(
-			tags.NewListTagsParamsWithTimeout(timeout).
-				WithRepository("repoX"),
-			bauth)
-		var listTagsDefault *tags.ListTagsDefault
-		if !errors.As(err, &listTagsDefault) {
-			t.Fatal("expected error calling list tags on when repo doesnt exist")
-		} else if listTagsDefault.Code() != http.StatusInternalServerError {
-			t.Fatalf("expected error status code %d, expected %d", listTagsDefault.Code(), http.StatusInternalServerError)
+		resp, err := clt.ListTagsWithResponse(ctx, "repo666", &api.ListTagsParams{})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Fatal("ListTags should return not found error")
 		}
 	})
 }
 
 func TestController_GetBranchHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("get default branch", func(t *testing.T) {
-		ctx := context.Background()
 		const testBranch = "master"
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
+		testutil.Must(t, err)
 		// create first dummy commit on master so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, "repo1", testBranch, "first commit", "test", nil)
 		testutil.Must(t, err)
 
-		testutil.Must(t, err)
-		resp, err := clt.Branches.GetBranch(
-			branches.NewGetBranchParamsWithTimeout(timeout).
-				WithBranch(testBranch).
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error getting branch: %s", err)
-		}
-		reference := resp.GetPayload()
-		if reference == nil || reference.CommitID == nil || *reference.CommitID == "" {
+		resp, err := clt.GetBranchWithResponse(ctx, "repo1", testBranch)
+		verifyResponseOK(t, resp, err)
+		reference := resp.JSON200
+		if reference == nil || reference.CommitId == "" {
 			t.Fatalf("Got no reference for branch '%s'", testBranch)
 		}
 	})
 
 	t.Run("get missing branch", func(t *testing.T) {
-		_, err := clt.Branches.GetBranch(
-			branches.NewGetBranchParamsWithTimeout(timeout).
-				WithBranch("master333").
-				WithRepository("repo1"),
-			bauth)
-		if err == nil {
-			t.Fatal("expected error getting branch that doesnt exist")
+		resp, err := clt.GetBranchWithResponse(ctx, "repo1", "master333")
+		if err != nil {
+			t.Fatal("GetBranch error", err)
+		}
+		if resp.JSON404 == nil {
+			t.Fatal("GetBranch expected not found error")
 		}
 	})
 
 	t.Run("get branch for missing repo", func(t *testing.T) {
-		_, err := clt.Branches.GetBranch(
-			branches.NewGetBranchParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithRepository("repo3"),
-			bauth)
-		if err == nil {
-			t.Fatal("expected error getting branch for repo that doesnt exist")
+		resp, err := clt.GetBranchWithResponse(ctx, "repo3", "master")
+		if err != nil {
+			t.Fatal("GetBranch error", err)
+		}
+		if resp.JSON404 == nil {
+			t.Fatal("GetBranch expected not found error")
 		}
 	})
 }
 
 func TestController_BranchesDiffBranchHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
+	clt, deps := setupClientWithAdmin(t, "")
 
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 	ctx := context.Background()
 	const testBranch = "master"
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
@@ -711,54 +563,43 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	}
 
 	t.Run("diff branch no changes", func(t *testing.T) {
-		diff, err := clt.Branches.DiffBranch(branches.NewDiffBranchParams().
-			WithRepository("repo1").
-			WithBranch(testBranch), bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(diff.Payload.Results) != 0 {
-			t.Fatalf("expected no diff results, got %d", len(diff.Payload.Results))
+		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
+		verifyResponseOK(t, resp, err)
+		changes := len(resp.JSON200.Results)
+		if changes != 0 {
+			t.Fatalf("expected no diff results, got %d", changes)
 		}
 	})
 
 	t.Run("diff branch with writes", func(t *testing.T) {
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
-		diff, err := clt.Branches.DiffBranch(branches.NewDiffBranchParams().
-			WithRepository("repo1").
-			WithBranch(testBranch), bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(diff.Payload.Results) != 1 {
-			t.Fatalf("expected no diff results, got %d", len(diff.Payload.Results))
+		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", testBranch, &api.DiffBranchParams{})
+		verifyResponseOK(t, resp, err)
+		results := resp.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("expected no resp results, got %d", len(results))
 		}
 
-		if diff.Payload.Results[0].Path != "a/b" {
-			t.Fatalf("got wrong diff object, expected a/b, got %s", diff.Payload.Results[0].Path)
+		if results[0].Path != "a/b" {
+			t.Fatalf("got wrong diff object, expected a/b, got %s", results[0].Path)
 		}
 	})
 
 	t.Run("diff branch that doesn't exist", func(t *testing.T) {
-		_, err := clt.Branches.DiffBranch(branches.NewDiffBranchParams().
-			WithRepository("repo1").
-			WithBranch("some-other-missing-branch"), bauth)
-		if _, ok := err.(*branches.DiffBranchNotFound); !ok {
-			t.Fatalf("expected an 404, got %v", err)
+		resp, err := clt.DiffBranchWithResponse(ctx, "repo1", "some-other-missing-branch", &api.DiffBranchParams{})
+		if err != nil {
+			t.Fatal("DiffBranch failed:", err)
 		}
-
+		if resp.JSON404 == nil {
+			t.Fatalf("expected an not found")
+		}
 	})
 }
 
 func TestController_CreateBranchHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
-		ctx := context.Background()
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", "master")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "a/b"}))
@@ -766,47 +607,28 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		const newBranchName = "master2"
-		resp, err := clt.Branches.CreateBranch(
-			branches.NewCreateBranchParamsWithTimeout(timeout).
-				WithBranch(&models.BranchCreation{
-					Name:   swag.String(newBranchName),
-					Source: swag.String("master"),
-				}).
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error creating branch: %s", err)
-		}
-		reference := resp.GetPayload()
+		resp, err := clt.CreateBranchWithResponse(ctx, "repo1", api.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "master",
+		})
+		verifyResponseOK(t, resp, err)
+		reference := string(resp.Body)
 		if len(reference) == 0 {
 			t.Fatalf("branch %s creation got no reference", newBranchName)
 		}
-		path := "some/path"
-		buf := new(bytes.Buffer)
-		buf.WriteString("hello world!")
-		_, err = clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch(newBranchName).
-				WithContent(runtime.NamedReader("content", buf)).
-				WithPath(path).
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error uploading object: %s", err)
-		}
+		const path = "some/path"
+		const content = "hello world!"
+		uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", newBranchName, &api.UploadObjectParams{
+			Path: path,
+		}, "application/octet-stream", strings.NewReader(content))
+		verifyResponseOK(t, uploadResp, err)
+
 		if _, err := deps.catalog.Commit(ctx, "repo1", "master2", "commit 1", "some_user", nil); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
-		resp2, err := clt.Refs.DiffRefs(
-			refs.NewDiffRefsParamsWithTimeout(timeout).
-				WithLeftRef(newBranchName).
-				WithRightRef("master").
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error diffing refs: %s", err)
-		}
-		results := resp2.GetPayload().Results
+		resp2, err := clt.DiffRefsWithResponse(ctx, "repo1", newBranchName, "master", &api.DiffRefsParams{})
+		verifyResponseOK(t, resp2, err)
+		results := resp2.JSON200.Results
 		if len(results) != 1 {
 			t.Fatalf("unexpected length of results: %d", len(results))
 		}
@@ -816,43 +638,37 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	})
 
 	t.Run("create branch missing commit", func(t *testing.T) {
-		_, err := clt.Branches.CreateBranch(
-			branches.NewCreateBranchParamsWithTimeout(timeout).
-				WithBranch(&models.BranchCreation{
-					Source: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
-					Name:   swag.String("master3"),
-				}).
-				WithRepository("repo1"),
-			bauth)
-		if err == nil {
-			t.Fatal("expected error creating branch with a commit that doesnt exist")
+		resp, err := clt.CreateBranchWithResponse(ctx, "repo1", api.CreateBranchJSONRequestBody{
+			Name:   "master3",
+			Source: "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447",
+		})
+		if err != nil {
+			t.Fatal("CreateBranch failed with error:", err)
+		}
+		if resp.JSON404 == nil {
+			t.Fatal("CreateBranch expected to fail with not found")
 		}
 	})
 
 	t.Run("create branch missing repo", func(t *testing.T) {
-		_, err := clt.Branches.CreateBranch(
-			branches.NewCreateBranchParamsWithTimeout(timeout).
-				WithBranch(&models.BranchCreation{
-					Source: swag.String("master"),
-					Name:   swag.String("master8"),
-				}).
-				WithRepository("repo5"),
-			bauth)
-		if err == nil {
-			t.Fatal("expected error creating branch with a repo that doesnt exist")
+		resp, err := clt.CreateBranchWithResponse(ctx, "repo5", api.CreateBranchJSONRequestBody{
+			Name:   "master8",
+			Source: "master",
+		})
+		if err != nil {
+			t.Fatal("CreateBranch failed with error:", err)
+		}
+		if resp.JSON404 == nil {
+			t.Fatal("CreateBranch expected not found")
 		}
 	})
 }
 
 func TestController_DeleteBranchHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 
 	t.Run("delete branch success", func(t *testing.T) {
-		ctx := context.Background()
 		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "master", catalog.DBEntry{Path: "a/b"}))
@@ -864,15 +680,8 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = clt.Branches.DeleteBranch(
-			branches.NewDeleteBranchParamsWithTimeout(timeout).
-				WithBranch("master2").
-				WithRepository("my-new-repo"),
-			bauth)
-
-		if err != nil {
-			t.Fatalf("unexpected error deleting branch: %s", err)
-		}
+		delResp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "master2")
+		verifyResponseOK(t, delResp, err)
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "master2")
 		if !errors.Is(err, catalog.ErrNotFound) {
@@ -881,26 +690,20 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
-		_, err := clt.Branches.DeleteBranch(
-			branches.NewDeleteBranchParamsWithTimeout(timeout).
-				WithBranch("master5").
-				WithRepository("my-new-repo"),
-			bauth)
-
-		if err == nil {
-			t.Fatalf("expected error deleting branch that doesnt exist")
+		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "master5")
+		if err != nil {
+			t.Fatal("DeleteBranch error:", err)
+		}
+		if resp.JSON404 == nil {
+			t.Fatal("DeleteBranch expected not found")
 		}
 	})
 }
 
 func TestController_ObjectsStatObjectHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://some-bucket", "master")
 	if err != nil {
 		t.Fatal(err)
@@ -920,132 +723,96 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := clt.Objects.StatObject(
-			objects.NewStatObjectParamsWithTimeout(timeout).
-				WithRef("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
 
-		if err != nil {
-			t.Fatalf("did not expect error for stat, got %s", err)
+		resp, err := clt.StatObjectWithResponse(ctx, "repo1", "master", &api.StatObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, resp, err)
+		objectStats := resp.JSON200
+		if objectStats.Path != entry.Path {
+			t.Fatalf("expected to get back our path, got %s", objectStats.Path)
 		}
-		if resp.Payload.Path != entry.Path {
-			t.Fatalf("expected to get back our path, got %s", resp.Payload.Path)
+		if api.Int64Value(objectStats.SizeBytes) != entry.Size {
+			t.Fatalf("expected correct size, got %d", objectStats.SizeBytes)
 		}
-		if swag.Int64Value(resp.Payload.SizeBytes) != entry.Size {
-			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
-		}
-		if resp.Payload.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
-			t.Fatalf("expected correct PhysicalAddress, got %s", resp.Payload.PhysicalAddress)
-		}
-
-		_, err = clt.Objects.StatObject(
-			objects.NewStatObjectParamsWithTimeout(timeout).
-				WithRef("master:HEAD").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
-
-		if _, ok := err.(*objects.StatObjectNotFound); !ok {
-			t.Fatalf("did expect object not found for stat, got %v", err)
+		if objectStats.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
+			t.Fatalf("expected correct PhysicalAddress, got %s", objectStats.PhysicalAddress)
 		}
 	})
 }
 
 func TestController_ObjectsListObjectsHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	testutil.Must(t, err)
-	testutil.Must(t,
-		deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
+	dbEntries := []catalog.DBEntry{
+		{
 			Path:            "foo/bar",
 			PhysicalAddress: "this_is_bars_address",
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "this_is_a_checksum",
-		}))
-	testutil.Must(t,
-		deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
+		},
+		{
 			Path:            "foo/quuux",
 			PhysicalAddress: "this_is_quuxs_address_expired",
 			CreationDate:    time.Now(),
 			Size:            9999999,
 			Checksum:        "quux_checksum",
 			Expired:         true,
-		}))
-	testutil.Must(t,
-		deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
+		},
+		{
 			Path:            "foo/baz",
 			PhysicalAddress: "this_is_bazs_address",
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "baz_checksum",
-		}))
-	testutil.Must(t,
-		deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{
+		},
+		{
 			Path:            "foo/a_dir/baz",
 			PhysicalAddress: "this_is_bazs_address",
 			CreationDate:    time.Now(),
 			Size:            666,
 			Checksum:        "baz_checksum",
-		}))
+		},
+	}
+	for _, entry := range dbEntries {
+		err := deps.catalog.CreateEntry(ctx, "repo1", "master", entry)
+		testutil.Must(t, err)
+	}
 
 	t.Run("get object list", func(t *testing.T) {
-		resp, err := clt.Objects.ListObjects(
-			objects.NewListObjectsParamsWithTimeout(timeout).
-				WithRef("master").
-				WithRepository("repo1").
-				WithPrefix(swag.String("foo/")),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
+		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "master", &api.ListObjectsParams{
+			Prefix: api.StringPtr("foo/"),
+		})
+		verifyResponseOK(t, resp, err)
+		results := resp.JSON200.Results
+		if len(results) != 4 {
+			t.Fatalf("expected 4 entries, got back %d", len(results))
 		}
-
-		if len(resp.Payload.Results) != 4 {
-			t.Fatalf("expected 4 entries, got back %d", len(resp.Payload.Results))
-		}
-
 	})
 
 	t.Run("get object list paginated", func(t *testing.T) {
-		resp, err := clt.Objects.ListObjects(
-			objects.NewListObjectsParamsWithTimeout(timeout).
-				WithAmount(swag.Int64(2)).
-				WithRef("master").
-				WithRepository("repo1").
-				WithPrefix(swag.String("foo/")),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
+		resp, err := clt.ListObjectsWithResponse(ctx, "repo1", "master", &api.ListObjectsParams{
+			Prefix: api.StringPtr("foo/"),
+			Amount: api.PaginationAmountPtr(2),
+		})
+		verifyResponseOK(t, resp, err)
+		if len(resp.JSON200.Results) != 2 {
+			t.Fatalf("expected 3 entries, got back %d", len(resp.JSON200.Results))
 		}
-
-		if len(resp.Payload.Results) != 2 {
-			t.Fatalf("expected 3 entries, got back %d", len(resp.Payload.Results))
-		}
-		if !swag.BoolValue(resp.Payload.Pagination.HasMore) {
+		if !resp.JSON200.Pagination.HasMore {
 			t.Fatalf("expected paginator.HasMore to be true")
 		}
 
-		if resp.Payload.Pagination.NextOffset != "foo/bar" {
-			t.Fatalf("expected next offset to be foo/bar, got %s", resp.Payload.Pagination.NextOffset)
+		if resp.JSON200.Pagination.NextOffset != "foo/bar" {
+			t.Fatalf("expected next offset to be foo/bar, got %s", resp.JSON200.Pagination.NextOffset)
 		}
 	})
 }
 
 func TestController_ObjectsGetObjectHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "master")
@@ -1083,490 +850,379 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		deps.catalog.CreateEntry(ctx, "repo1", "master", expired))
 
 	t.Run("get object", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		resp, err := clt.Objects.GetObject(
-			objects.NewGetObjectParamsWithTimeout(timeout).
-				WithRef("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth, buf)
+		resp, err := clt.GetObjectWithResponse(ctx, "repo1", "master", &api.GetObjectParams{Path: "foo/bar"})
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		if resp.ContentLength != 37 {
-			t.Fatalf("expected 37 bytes in content length, got back %d", resp.ContentLength)
-		}
-		if resp.ETag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
-			t.Fatalf("got unexpected etag: %s", resp.ETag)
+		if resp.HTTPResponse.StatusCode != http.StatusOK {
+			t.Fatalf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
 		}
 
-		body := buf.String()
-		if !strings.EqualFold(body, "this is file content made up of bytes") {
+		if resp.HTTPResponse.ContentLength != 37 {
+			t.Fatalf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Fatalf("got unexpected etag: %s", etag)
+		}
+
+		body := string(resp.Body)
+		if body != "this is file content made up of bytes" {
 			t.Fatalf("got unexpected body: '%s'", body)
-		}
-
-		_, err = clt.Objects.GetObject(
-			objects.NewGetObjectParamsWithTimeout(timeout).
-				WithRef("master:HEAD").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth, buf)
-		if _, ok := err.(*objects.GetObjectNotFound); !ok {
-			t.Fatalf("expected object not found error, got %v", err)
 		}
 	})
 
 	t.Run("get properties", func(t *testing.T) {
-		properties, err := clt.Objects.GetUnderlyingProperties(
-			objects.NewGetUnderlyingPropertiesParamsWithTimeout(timeout).
-				WithRef("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
+		resp, err := clt.GetUnderlyingPropertiesWithResponse(ctx, "repo1", "master", &api.GetUnderlyingPropertiesParams{Path: "foo/bar"})
 		if err != nil {
 			t.Fatalf("expected to get underlying properties, got %v", err)
 		}
-		if *properties.Payload.StorageClass != expensiveString {
+		properties := resp.JSON200
+		if properties == nil {
+			t.Fatalf("expected to get underlying properties, status code %d", resp.HTTPResponse.StatusCode)
+		}
+
+		if api.StringValue(properties.StorageClass) != expensiveString {
 			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
 		}
 	})
 }
 
 func TestController_ObjectsUploadObjectHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("upload object", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		buf.WriteString("hello world this is my awesome content")
-		resp, err := clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithContent(runtime.NamedReader("content", buf)).
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
+		const content = "hello world this is my awesome content"
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "master", &api.UploadObjectParams{
+			Path: "foo/bar",
+		}, "application/octet-stream", strings.NewReader(content))
+		verifyResponseOK(t, resp, err)
 
-		if swag.Int64Value(resp.Payload.SizeBytes) != 38 {
-			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
+		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
+		if sizeBytes != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
 		}
 
 		// download it
-		rbuf := new(bytes.Buffer)
-		rresp, err := clt.Objects.GetObject(
-			objects.NewGetObjectParamsWithTimeout(timeout).
-				WithRef("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth, rbuf)
-		if err != nil {
-			t.Fatal(err)
-		}
-		result := rbuf.String()
+		rresp, err := clt.GetObjectWithResponse(ctx, "repo1", "master", &api.GetObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, rresp, err)
+		result := string(rresp.Body)
 		if len(result) != 38 {
 			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
 		}
-		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
-			t.Fatalf("got unexpected etag: %s - expected %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		etag := rresp.HTTPResponse.Header.Get("ETag")
+		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+		if etag != httputil.ETag(expectedEtag) {
+			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
 		}
 	})
 
 	t.Run("upload object missing branch", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		buf.WriteString("hello world this is my awesome content")
-		_, err := clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch("masterX").
-				WithContent(runtime.NamedReader("content", buf)).
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
-		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
+		const content = "hello world this is my awesome content"
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "masterX", &api.UploadObjectParams{
+			Path: "foo/bar",
+		}, "application/octet-stream", strings.NewReader(content))
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
 
 	t.Run("upload object missing repo", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		buf.WriteString("hello world this is my awesome content")
-		_, err := clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithContent(runtime.NamedReader("content", buf)).
-				WithPath("foo/bar").
-				WithRepository("repo55555"),
-			bauth)
-		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
+		const content = "hello world this is my awesome content"
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo55555", "master", &api.UploadObjectParams{
+			Path: "foo/bar",
+		}, "application/octet-stream", strings.NewReader(content))
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
-
 }
 
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
-	clt, deps := setupClient(t, "s3")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "s3")
 	ctx := context.Background()
+
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("stage object", func(t *testing.T) {
-		resp, err := clt.Objects.StageObject(objects.NewStageObjectParams().
-			WithRepository("repo1").
-			WithBranch("master").
-			WithPath("foo/bar").
-			WithObject(&models.ObjectStageCreation{
-				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
-				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
-				SizeBytes:       swag.Int64(38),
-			}), bauth)
+		const expectedSizeBytes = 38
+		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "master", &api.StageObjectParams{Path: "foo/bar"}, api.StageObjectJSONRequestBody{
+			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			PhysicalAddress: "s3://another-bucket/some/location",
+			SizeBytes:       expectedSizeBytes,
+		})
+		verifyResponseOK(t, resp, err)
 
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if swag.Int64Value(resp.Payload.SizeBytes) != 38 {
-			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
+		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
+		if sizeBytes != expectedSizeBytes {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
 		}
 
 		// get back info
-		got, err := clt.Objects.StatObject(objects.NewStatObjectParams().
-			WithRepository("repo1").
-			WithRef("master").
-			WithPath("foo/bar"), bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if got.Payload.PhysicalAddress != "s3://another-bucket/some/location" {
-			t.Fatalf("unexpected physical address: %s", got.Payload.PhysicalAddress)
+		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "master", &api.StatObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, statResp, err)
+		objectStat := statResp.JSON200
+		if objectStat.PhysicalAddress != "s3://another-bucket/some/location" {
+			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})
 
 	t.Run("upload object missing branch", func(t *testing.T) {
-		_, err := clt.Objects.StageObject(objects.NewStageObjectParams().
-			WithRepository("repo1").
-			WithBranch("master1234").
-			WithPath("foo/bar").
-			WithObject(&models.ObjectStageCreation{
-				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
-				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
-				SizeBytes:       swag.Int64(38),
-			}), bauth)
-		if _, ok := err.(*objects.StageObjectNotFound); !ok {
+		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "master1234", &api.StageObjectParams{Path: "foo/bar"},
+			api.StageObjectJSONRequestBody{
+				Checksum:        "afb0689fe58b82c5f762991453edbbec",
+				PhysicalAddress: "s3://another-bucket/some/location",
+				SizeBytes:       38,
+			})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
 			t.Fatal("Missing branch should return not found")
 		}
 	})
 
 	t.Run("wrong storage adapter", func(t *testing.T) {
-		_, err := clt.Objects.StageObject(objects.NewStageObjectParams().
-			WithRepository("repo1").
-			WithBranch("master1234").
-			WithPath("foo/bar").
-			WithObject(&models.ObjectStageCreation{
-				Checksum:        swag.String("afb0689fe58b82c5f762991453edbbec"),
-				PhysicalAddress: swag.String("gs://another-bucket/some/location"),
-				SizeBytes:       swag.Int64(38),
-			}), bauth)
-		if _, ok := err.(*objects.StageObjectBadRequest); !ok {
+		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "master1234", &api.StageObjectParams{
+			Path: "foo/bar",
+		}, api.StageObjectJSONRequestBody{
+			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			PhysicalAddress: "gs://another-bucket/some/location",
+			SizeBytes:       38,
+		})
+		testutil.Must(t, err)
+		if resp.JSON400 == nil {
 			t.Fatal("Wrong storage adapter should return 400")
 		}
 	})
 }
 
 func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
-	clt, deps := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
+
 	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://some-bucket/prefix", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("delete object", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		buf.WriteString("hello world this is my awesome content")
-		resp, err := clt.Objects.UploadObject(
-			objects.NewUploadObjectParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithContent(runtime.NamedReader("content", buf)).
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
+		const content = "hello world this is my awesome content"
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "master", &api.UploadObjectParams{
+			Path: "foo/bar",
+		}, "application/octet-stream", strings.NewReader(content))
+		verifyResponseOK(t, resp, err)
 
-		if swag.Int64Value(resp.Payload.SizeBytes) != 38 {
-			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
+		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
+		if sizeBytes != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
 		}
 
 		// download it
-		rbuf := new(bytes.Buffer)
-		rresp, err := clt.Objects.GetObject(
-			objects.NewGetObjectParamsWithTimeout(timeout).
-				WithRef("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth, rbuf)
-		if err != nil {
-			t.Fatal(err)
-		}
-		result := rbuf.String()
+		rresp, err := clt.GetObjectWithResponse(ctx, "repo1", "master", &api.GetObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, rresp, err)
+		result := string(rresp.Body)
 		if len(result) != 38 {
 			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
 		}
-		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
-			t.Fatalf("got unexpected etag: %s - expected %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		etag := rresp.HTTPResponse.Header.Get("ETag")
+		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+		if etag != httputil.ETag(expectedEtag) {
+			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
 		}
 
 		// delete it
-		_, err = clt.Objects.DeleteObject(
-			objects.NewDeleteObjectParamsWithTimeout(timeout).
-				WithBranch("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
+		delResp, err := clt.DeleteObjectWithResponse(ctx, "repo1", "master", &api.DeleteObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, delResp, err)
 
 		// get it
-		_, err = clt.Objects.StatObject(
-			objects.NewStatObjectParamsWithTimeout(timeout).
-				WithRef("master").
-				WithPath("foo/bar").
-				WithRepository("repo1"),
-			bauth)
-		if err == nil {
+		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "master", &api.StatObjectParams{Path: "foo/bar"})
+		testutil.Must(t, err)
+		if statResp == nil {
+			t.Fatal("StatObject missing response")
+		}
+		if statResp.JSON404 == nil {
 			t.Fatalf("expected file to be gone now")
 		}
 	})
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
-	clt, _ := setupClient(t, "")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
+	clt, _ := setupClientWithAdmin(t, "")
+	ctx := context.Background()
 	t.Run("valid_policy", func(t *testing.T) {
-		_, err := clt.Auth.CreatePolicy(
-			auth.NewCreatePolicyParamsWithTimeout(timeout).
-				WithPolicy(&models.Policy{
-					CreationDate: time.Now().Unix(),
-					ID:           swag.String("ValidPolicyID"),
-					Statement: []*models.Statement{
-						{
-							Action:   []string{"fs:ReadObject"},
-							Effect:   swag.String("allow"),
-							Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
-						},
-					},
-				}),
-			bauth)
-		if err != nil {
-			t.Fatalf("unexpected error creating valid policy: %v", err)
-		}
+		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+			CreationDate: api.Int64Ptr(time.Now().Unix()),
+			Id:           "ValidPolicyID",
+			Statement: []api.Statement{
+				{
+					Action:   []string{"fs:ReadObject"},
+					Effect:   "allow",
+					Resource: "arn:lakefs:fs:::repository/foo/object/*",
+				},
+			},
+		})
+		verifyResponseOK(t, resp, err)
 	})
 
 	t.Run("invalid_policy_action", func(t *testing.T) {
-		_, err := clt.Auth.CreatePolicy(
-			auth.NewCreatePolicyParamsWithTimeout(timeout).
-				WithPolicy(&models.Policy{
-					CreationDate: time.Now().Unix(),
-					ID:           swag.String("ValidPolicyID"),
-					Statement: []*models.Statement{
-						{
-							Action:   []string{"fsx:ReadObject"},
-							Effect:   swag.String("allow"),
-							Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
-						},
-					},
-				}),
-			bauth)
-		if err == nil {
+		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+			CreationDate: api.Int64Ptr(time.Now().Unix()),
+			Id:           "ValidPolicyID",
+			Statement: []api.Statement{
+				{
+					Action:   []string{"fsx:ReadObject"},
+					Effect:   "allow",
+					Resource: "arn:lakefs:fs:::repository/foo/object/*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusBadRequest {
 			t.Fatalf("expected error creating invalid policy: action")
 		}
 	})
 
 	t.Run("invalid_policy_effect", func(t *testing.T) {
-		_, err := clt.Auth.CreatePolicy(
-			auth.NewCreatePolicyParamsWithTimeout(timeout).
-				WithPolicy(&models.Policy{
-					CreationDate: time.Now().Unix(),
-					ID:           swag.String("ValidPolicyID"),
-					Statement: []*models.Statement{
-						{
-							Action:   []string{"fs:ReadObject"},
-							Effect:   swag.String("Allow"),
-							Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
-						},
-					},
-				}),
-			bauth)
-		if err == nil {
+		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+			CreationDate: api.Int64Ptr(time.Now().Unix()),
+			Id:           "ValidPolicyID",
+			Statement: []api.Statement{
+				{
+					Action:   []string{"fs:ReadObject"},
+					Effect:   "Allow",
+					Resource: "arn:lakefs:fs:::repository/foo/object/*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		// middleware validates possible values so we match the http response
+		if resp.HTTPResponse.StatusCode != http.StatusBadRequest {
 			t.Fatalf("expected error creating invalid policy: effect")
 		}
 	})
 
 	t.Run("invalid_policy_arn", func(t *testing.T) {
-		_, err := clt.Auth.CreatePolicy(
-			auth.NewCreatePolicyParamsWithTimeout(timeout).
-				WithPolicy(&models.Policy{
-					CreationDate: time.Now().Unix(),
-					ID:           swag.String("ValidPolicyID"),
-					Statement: []*models.Statement{
-						{
-							Action:   []string{"fs:ReadObject"},
-							Effect:   swag.String("Allow"),
-							Resource: swag.String("arn:lakefs:fs:repository/foo/object/*"),
-						},
-					},
-				}),
-			bauth)
-		if err == nil {
+		resp, err := clt.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
+			CreationDate: api.Int64Ptr(time.Now().Unix()),
+			Id:           "ValidPolicyID",
+			Statement: []api.Statement{
+				{
+					Action:   []string{"fs:ReadObject"},
+					Effect:   "Allow",
+					Resource: "arn:lakefs:fs:repository/foo/object/*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if resp.HTTPResponse.StatusCode != http.StatusBadRequest {
 			t.Fatalf("expected error creating invalid policy: arn")
 		}
 	})
-
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
 	const ExpectedExample = "s3://example-bucket/"
-	clt, _ := setupClient(t, "s3")
-
-	// create user
-	creds := createDefaultAdminUser(t, clt)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	clt, _ := setupClientWithAdmin(t, "s3")
+	ctx := context.Background()
 
 	t.Run("Get config (currently only block store type)", func(t *testing.T) {
-		resp, err := clt.Config.GetConfig(
-			config.NewGetConfigParamsWithTimeout(timeout),
-			bauth)
-		if err != nil {
-			t.Fatal(err)
-		}
+		resp, err := clt.GetConfigWithResponse(ctx)
+		verifyResponseOK(t, resp, err)
 
-		got := resp.GetPayload()
-
-		if got.BlockstoreNamespaceExample != ExpectedExample {
-			t.Errorf("expected to get %s, got %s", ExpectedExample, got.BlockstoreNamespaceExample)
+		example := resp.JSON200.BlockstoreNamespaceExample
+		if example != ExpectedExample {
+			t.Errorf("expected to get %s, got %s", ExpectedExample, example)
 		}
 	})
 }
 
 func TestController_SetupLakeFSHandler(t *testing.T) {
-	name := "admin"
 	cases := []struct {
-		name string
-		user models.Setup
-		// Currently only test failure with SetupLakeFSDefault, further testing is by
-		// HTTP status code
-		errorDefaultCode int
+		name               string
+		key                *api.AccessKeyCredentials
+		expectedStatusCode int
 	}{
-		{name: "simple", user: models.Setup{Username: &name}},
+		{
+			name:               "simple",
+			expectedStatusCode: http.StatusOK,
+		},
 		{
 			name: "accessKeyAndSecret",
-			user: models.Setup{
-				Username: &name,
-				Key: &models.SetupKey{
-					AccessKeyID:     swag.String("IKEAsneakers"),
-					SecretAccessKey: swag.String("cetec astronomy"),
-				},
+			key: &api.AccessKeyCredentials{
+				AccessKeyId:     "IKEAsneakers",
+				SecretAccessKey: "cetec astronomy",
 			},
+			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "emptyAccessKeyId",
-			user: models.Setup{
-				Username: &name,
-				Key:      &models.SetupKey{SecretAccessKey: swag.String("cetec astronomy")},
+			key: &api.AccessKeyCredentials{
+				SecretAccessKey: "cetec astronomy",
 			},
-			errorDefaultCode: 422,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
-			name: "emptySecretKey", user: models.Setup{
-				Username: &name,
-				Key: &models.SetupKey{
-					AccessKeyID: swag.String("IKEAsneakers"),
-				},
+			name: "emptySecretKey",
+			key: &api.AccessKeyCredentials{
+				AccessKeyId: "IKEAsneakers",
 			},
-			errorDefaultCode: 422,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			clt, deps := setupClient(t, "", testutil.WithGetDBApplyDDL(false))
+			handler, deps := setupHandler(t, "")
+			server := setupServer(t, handler)
+			clt := setupClientByEndpoint(t, server.URL, "", "")
+
 			t.Run("fresh start", func(t *testing.T) {
-				res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
-				if c.errorDefaultCode != 0 {
-					var defaultErr *setup.SetupLakeFSDefault
-					if errors.As(err, &defaultErr) {
-						if defaultErr.Code() != c.errorDefaultCode {
-							t.Errorf("got default error with code %d, expected %d", defaultErr.Code(), c.errorDefaultCode)
-						}
-					} else {
-						t.Errorf("got %s instead of default error", err)
-					}
+				ctx := context.Background()
+				resp, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
+					Username: "admin",
+					Key:      c.key,
+				})
+				testutil.Must(t, err)
+				if resp.HTTPResponse.StatusCode != c.expectedStatusCode {
+					t.Fatalf("got status code %d, expected %d", resp.HTTPResponse.StatusCode, c.expectedStatusCode)
+				}
+				if resp.JSON200 == nil {
 					return
 				}
-				if err != nil {
-					t.Fatal("setup lakeFS:", err)
-				}
 
-				creds := res.Payload
-				bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-
-				if len(creds.AccessKeyID) == 0 {
+				creds := resp.JSON200
+				if len(creds.AccessKeyId) == 0 {
 					t.Fatal("Credential key id is missing")
 				}
 
-				if c.user.Key != nil {
-					if accessKeyID := swag.StringValue(c.user.Key.AccessKeyID); accessKeyID != creds.AccessKeyID {
-						t.Errorf("got access key ID %s != %s", creds.AccessKeyID, accessKeyID)
-					}
-					if secretAccessKey := swag.StringValue(c.user.Key.SecretAccessKey); secretAccessKey != creds.AccessSecretKey {
-						t.Errorf("got secret key %s != %s", creds.AccessSecretKey, secretAccessKey)
-					}
+				if c.key != nil && c.key.AccessKeyId != creds.AccessKeyId {
+					t.Errorf("got access key ID %s != %s", creds.AccessKeyId, c.key.AccessKeyId)
+				}
+				if c.key != nil && c.key.SecretAccessKey != creds.AccessSecretKey {
+					t.Errorf("got secret access key %s != %s", creds.AccessSecretKey, c.key.SecretAccessKey)
 				}
 
-				foundCreds, err := clt.Auth.GetCredentials(
-					auth.NewGetCredentialsParamsWithTimeout(timeout).
-						WithAccessKeyID(creds.AccessKeyID).
-						WithUserID(swag.StringValue(c.user.Username)),
-					bauth)
+				clt = setupClientByEndpoint(t, server.URL, creds.AccessKeyId, creds.AccessSecretKey)
+				getCredResp, err := clt.GetCredentialsWithResponse(ctx, "admin", creds.AccessKeyId)
+				verifyResponseOK(t, getCredResp, err)
 				if err != nil {
 					t.Fatal("Get API credentials key id for created access key", err)
 				}
+				foundCreds := getCredResp.JSON200
 				if foundCreds == nil {
 					t.Fatal("Get API credentials secret key for created access key")
 				}
-				if foundCreds.Payload.AccessKeyID != creds.AccessKeyID {
-					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.Payload.AccessKeyID, creds.AccessKeyID)
+				if foundCreds.AccessKeyId != creds.AccessKeyId {
+					t.Fatalf("Access key ID '%s', expected '%s'", foundCreds.AccessKeyId, creds.AccessKeyId)
 				}
 				if len(deps.collector.metadata) != 1 {
 					t.Fatal("Failed to collect metadata")
@@ -1593,14 +1249,17 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				}
 			})
 
-			if c.errorDefaultCode == 0 {
+			if c.expectedStatusCode == http.StatusOK {
 				// now we ask again - should get status conflict
 				t.Run("existing setup", func(t *testing.T) {
 					// request to setup
-					res, err := clt.Setup.SetupLakeFS(setup.NewSetupLakeFSParamsWithTimeout(timeout).WithUser(&c.user))
-					var fsConflict *setup.SetupLakeFSConflict
-					if !errors.As(err, &fsConflict) {
-						t.Errorf("repeated setup got %+v, %v instead of \"setupLakeFSConflict\"", res, err)
+					ctx := context.Background()
+					res, err := clt.SetupWithResponse(ctx, api.SetupJSONRequestBody{
+						Username: "admin",
+					})
+					testutil.Must(t, err)
+					if res.JSON409 == nil {
+						t.Error("repeated setup didn't got conflict response")
 					}
 				})
 			}

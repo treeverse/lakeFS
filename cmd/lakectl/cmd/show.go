@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -40,17 +40,17 @@ var showCmd = &cobra.Command{
 		switch showType {
 		case "commit":
 			client := getClient()
-			commit, err := client.GetCommit(cmd.Context(), u.Repository, identifier)
-			if err != nil {
-				DieErr(err)
-			}
+			resp, err := client.GetCommitWithResponse(cmd.Context(), u.Repository, identifier)
+			DieOnResponseError(resp, err)
+
+			commit := resp.JSON200
 			showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 			commits := struct {
-				Commits         []*models.Commit
+				Commits         []*api.Commit
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{
-				Commits:         []*models.Commit{commit},
+				Commits:         []*api.Commit{commit},
 				ShowMetaRangeID: showMetaRangeID,
 			}
 			Write(commitsTemplate, commits)

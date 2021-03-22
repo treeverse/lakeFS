@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cznic/mathutil"
-	"github.com/go-openapi/swag"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/xitongsys/parquet-go-source/local"
@@ -121,15 +120,26 @@ func orcSchema(fieldToRemove string) string {
 }
 
 func getOrcValues(o *TestObject, fieldToRemove string) []interface{} {
+	var sz int64
+	if o.Size != nil {
+		sz = *o.Size
+	}
+	var ms int64
+	if o.LastModifiedMillis != nil {
+		ms = *o.LastModifiedMillis
+	}
+	var checksum string
+	if o.Checksum != nil {
+		checksum = *o.Checksum
+	}
 	fieldValues := map[string]interface{}{
-		bucketFieldName:         o.Bucket,
-		keyFieldName:            o.Key,
-		isLatestFieldName:       o.IsLatest == nil || swag.BoolValue(o.IsLatest),
-		isDeleteMarkerFieldName: swag.BoolValue(o.IsDeleteMarker),
-		sizeFieldName:           swag.Int64Value(o.Size),
-		lastModifiedDateFieldName: time.Unix(swag.Int64Value(o.LastModifiedMillis)/1000,
-			(swag.Int64Value(o.LastModifiedMillis)%1000)*1_000_000),
-		eTagFieldName: swag.StringValue(o.Checksum),
+		bucketFieldName:           o.Bucket,
+		keyFieldName:              o.Key,
+		isLatestFieldName:         o.IsLatest == nil || (o.IsLatest != nil && *o.IsLatest),
+		isDeleteMarkerFieldName:   o.IsDeleteMarker != nil && *o.IsDeleteMarker,
+		sizeFieldName:             sz,
+		lastModifiedDateFieldName: time.Unix(ms/1000, (ms%1000)*1_000_000),
+		eTagFieldName:             checksum,
 	}
 	values := make([]interface{}, 0, len(fieldValues))
 	for _, field := range inventoryFields {

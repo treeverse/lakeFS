@@ -1,14 +1,11 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -45,19 +42,23 @@ var runsDescribeCmd = &cobra.Command{
 		ctx := cmd.Context()
 
 		// run result information
-		runResult, err := client.GetRunResult(ctx, u.Repository, runID)
-		if err != nil {
-			DieErr(err)
-		}
+		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
+		DieOnResponseError(runsRes, err)
+
+		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
 
 		// iterator over hooks - print information and output
-		response, pagination, err := client.ListRunTaskResults(ctx, u.Repository, runID, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(runHooksRes, err)
+
+		response := runHooksRes.JSON200.Results
+		pagination := runHooksRes.JSON200.Pagination
 		data := struct {
-			Hooks      []*models.HookRun
+			Hooks      []api.HookRun
 			HooksTable []*Table
 			HookLog    func(hookRunID string) (string, error)
 			Pagination *Pagination
@@ -66,7 +67,7 @@ var runsDescribeCmd = &cobra.Command{
 			HooksTable: convertHookResultsTables(response),
 			HookLog:    makeHookLog(ctx, client, u.Repository, runID),
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+		if pagination.HasMore {
 			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
@@ -77,47 +78,44 @@ var runsDescribeCmd = &cobra.Command{
 	},
 }
 
-func makeHookLog(ctx context.Context, client api.Client, repositoryID string, runID string) func(hookRunID string) (string, error) {
+func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, repositoryID string, runID string) func(hookRunID string) (string, error) {
 	return func(hookRunID string) (string, error) {
-		var buf bytes.Buffer
-		err := client.GetRunHookOutput(ctx, repositoryID, runID, hookRunID, &buf)
+		res, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
 		if err != nil {
 			return "", err
 		}
-		return buf.String(), nil
+		return string(res.Body), nil
 	}
 }
 
-func convertRunResultTable(r *models.ActionRun) *Table {
-	runID := text.FgYellow.Sprint(swag.StringValue(r.RunID))
-	branch := swag.StringValue(r.Branch)
-	commitID := swag.StringValue(r.CommitID)
+func convertRunResultTable(r *api.ActionRun) *Table {
+	runID := text.FgYellow.Sprint(r.RunId)
 	statusColor := text.FgRed
-	if r.Status == models.ActionRunStatusCompleted {
+	if r.Status == "completed" {
 		statusColor = text.FgGreen
 	}
 	status := statusColor.Sprint(r.Status)
 	return &Table{
 		Headers: []interface{}{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
 		Rows: [][]interface{}{
-			{runID, r.EventType, branch, r.StartTime, r.EndTime, commitID, status},
+			{runID, r.EventType, r.Branch, r.StartTime, r.EndTime, r.CommitId, status},
 		},
 	}
 }
 
-func convertHookResultsTables(results []*models.HookRun) []*Table {
+func convertHookResultsTables(results []api.HookRun) []*Table {
 	tables := make([]*Table, len(results))
 	for i, r := range results {
-		hookRunID := text.FgYellow.Sprint(swag.StringValue(r.HookRunID))
+		hookRunID := text.FgYellow.Sprint(r.HookRunId)
 		statusColor := text.FgRed
-		if r.Status == models.ActionRunStatusCompleted {
+		if r.Status == "completed" {
 			statusColor = text.FgGreen
 		}
 		status := statusColor.Sprint(r.Status)
 		tables[i] = &Table{
 			Headers: []interface{}{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
 			Rows: [][]interface{}{
-				{hookRunID, r.HookID, r.StartTime, r.EndTime, r.Action, status},
+				{hookRunID, r.HookId, r.StartTime, r.EndTime, r.Action, status},
 			},
 		}
 	}

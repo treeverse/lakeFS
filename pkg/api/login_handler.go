@@ -36,28 +36,28 @@ func GenerateJWT(secret []byte, accessKeyID string, issuedAt, expiresAt time.Tim
 func NewLoginHandler(authService auth.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			writeError(w, http.StatusMethodNotAllowed, nil)
 			return
 		}
 
-		login := &LoginRequestData{}
+		var login LoginRequestData
 		err := json.NewDecoder(r.Body).Decode(&login)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			writeError(w, http.StatusUnauthorized, nil)
 			return
 		}
 
 		// load credentials by access key
 		credentials, err := authService.GetCredentials(r.Context(), login.AccessKeyID)
 		if err != nil || credentials.AccessSecretKey != login.SecretAccessKey {
-			w.WriteHeader(http.StatusUnauthorized)
+			writeError(w, http.StatusUnauthorized, nil)
 			return
 		}
 
 		// verify user associated with credentials exists
 		_, err = authService.GetUserByID(r.Context(), credentials.UserID)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			writeError(w, http.StatusUnauthorized, nil)
 			return
 		}
 
@@ -66,7 +66,7 @@ func NewLoginHandler(authService auth.Service) http.Handler {
 		secret := authService.SecretStore().SharedSecret()
 		tokenString, err := GenerateJWT(secret, login.AccessKeyID, loginTime, expires)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			writeError(w, http.StatusUnauthorized, nil)
 			return
 		}
 
@@ -78,10 +78,10 @@ func NewLoginHandler(authService auth.Service) http.Handler {
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
 		})
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(LoginResponseData{
+		response := LoginResponseData{
 			Token: tokenString,
-		})
+		}
+		writeResponse(w, http.StatusOK, response)
 	})
 }
 

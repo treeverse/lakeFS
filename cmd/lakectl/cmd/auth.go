@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 var userCreatedTemplate = `{{ "User created successfully." | green }}
@@ -60,23 +59,21 @@ var authUsersList = &cobra.Command{
 
 		clt := getClient()
 
-		res, err := clt.ListUsersWithResponse(cmd.Context(), &api.ListUsersParams{
-			After:  &after,
-			Amount: &amount,
+		resp, err := clt.ListUsersWithResponse(cmd.Context(), &api.ListUsersParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 
-		users := *res.JSON200.Results
+		users := resp.JSON200.Results
 		rows := make([][]interface{}, len(users))
 		for i, user := range users {
-			ts := time.Unix(*user.CreationDate, 0).String()
+			ts := time.Unix(user.CreationDate, 0).String()
 			rows[i] = []interface{}{user.Id, ts}
 		}
 
-		pagination := res.JSON200.Pagination
-		PrintTable(rows, []interface{}{"User ID", "Creation Date"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"User ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -87,13 +84,11 @@ var authUsersCreate = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		res, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
+		resp, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
 			Id: id,
 		})
-		if err != nil {
-			DieErr(err)
-		}
-		user := res.JSON201
+		DieOnResponseError(resp, err)
+		user := resp.JSON201
 		Write(userCreatedTemplate, user)
 	},
 }
@@ -105,11 +100,8 @@ var authUsersDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		_, err := clt.DeleteUserWithResponse(cmd.Context(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
+		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
+		DieOnResponseError(resp, err)
 		Fmt("User deleted successfully\n")
 	},
 }
@@ -129,23 +121,21 @@ var authUsersGroupsList = &cobra.Command{
 
 		clt := getClient()
 
-		res, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &api.ListUserGroupsParams{
-			After:  &after,
-			Amount: &amount,
+		resp, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &api.ListUserGroupsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 
-		groups := *res.JSON200.Results
+		groups := resp.JSON200.Results
 		rows := make([][]interface{}, len(groups))
 		for i, group := range groups {
-			ts := time.Unix(*group.CreationDate, 0).String()
+			ts := time.Unix(group.CreationDate, 0).String()
 			rows[i] = []interface{}{group.Id, ts}
 		}
 
-		pagination := res.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -165,21 +155,25 @@ var authUsersPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListUserPolicies(cmd.Context(), id, effective, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &api.ListUserPoliciesParams{
+			After:     api.PaginationAfterPtr(after),
+			Amount:    api.PaginationAmountPtr(amount),
+			Effective: &effective,
+		})
+		DieOnResponseError(resp, err)
 
+		policies := resp.JSON200.Results
 		rows := make([][]interface{}, 0)
 		for _, policy := range policies {
 			for i, statement := range policy.Statement {
-				ts := time.Unix(policy.CreationDate, 0).String()
-				rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+				ts := time.Unix(*policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
 
 		}
 
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
 	},
 }
 
@@ -190,12 +184,8 @@ var authUsersPoliciesAttach = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
-
-		err := clt.AttachPolicyToUser(cmd.Context(), id, policy)
-		if err != nil {
-			DieErr(err)
-		}
-
+		resp, err := clt.AttachPolicyToUserWithResponse(cmd.Context(), id, policy)
+		DieOnResponseError(resp, err)
 		Fmt("Policy attached successfully\n")
 	},
 }
@@ -208,10 +198,8 @@ var authUsersPoliciesDetach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.DetachPolicyFromUser(cmd.Context(), id, policy)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
+		DieOnResponseError(resp, err)
 
 		Fmt("Policy detached successfully\n")
 	},
@@ -230,18 +218,15 @@ var authUsersCredentialsCreate = &cobra.Command{
 		clt := getClient()
 
 		if id == "" {
-			user, err := clt.GetCurrentUser(cmd.Context())
-			if err != nil {
-				DieErr(err)
-			}
-			id = user.ID
+			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
+			DieOnResponseError(resp, err)
+			id = resp.JSON200.User.Id
 		}
 
-		credentials, err := clt.CreateCredentials(cmd.Context(), id)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.CreateCredentialsWithResponse(cmd.Context(), id)
+		DieOnResponseError(resp, err)
 
+		credentials := resp.JSON201
 		Write(credentialsCreatedTemplate, credentials)
 	},
 }
@@ -255,17 +240,12 @@ var authUsersCredentialsDelete = &cobra.Command{
 		clt := getClient()
 
 		if id == "" {
-			user, err := clt.GetCurrentUser(cmd.Context())
-			if err != nil {
-				DieErr(err)
-			}
-			id = user.ID
+			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
+			DieOnResponseError(resp, err)
+			id = resp.JSON200.User.Id
 		}
-
-		err := clt.DeleteCredentials(cmd.Context(), id, accessKeyID)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.DeleteCredentialsWithResponse(cmd.Context(), id, accessKeyID)
+		DieOnResponseError(resp, err)
 
 		Fmt("Credentials deleted successfully\n")
 	},
@@ -281,26 +261,25 @@ var authUsersCredentialsList = &cobra.Command{
 
 		clt := getClient()
 		if id == "" {
-			user, err := clt.GetCurrentUser(cmd.Context())
-			if err != nil {
-				DieErr(err)
-			}
-			id = user.ID
+			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
+			DieOnResponseError(resp, err)
+			id = resp.JSON200.User.Id
 		}
 
-		credentials, pagination, err := clt.ListUserCredentials(cmd.Context(), id, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ListUserCredentialsWithResponse(cmd.Context(), id, &api.ListUserCredentialsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
+		credentials := resp.JSON200.Results
 		rows := make([][]interface{}, len(credentials))
 		for i, c := range credentials {
-
 			ts := time.Unix(c.CreationDate, 0).String()
-			rows[i] = []interface{}{c.AccessKeyID, ts}
+			rows[i] = []interface{}{c.AccessKeyId, ts}
 		}
-
-		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, &pagination, amount)
 	},
 }
 
@@ -319,18 +298,21 @@ var authGroupsList = &cobra.Command{
 
 		clt := getClient()
 
-		groups, pagination, err := clt.ListGroups(cmd.Context(), after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ListGroupsWithResponse(cmd.Context(), &api.ListGroupsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
+		groups := resp.JSON200.Results
 		rows := make([][]interface{}, len(groups))
 		for i, group := range groups {
 			ts := time.Unix(group.CreationDate, 0).String()
-			rows[i] = []interface{}{group.ID, ts}
+			rows[i] = []interface{}{group.Id, ts}
 		}
 
-		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -341,12 +323,12 @@ var authGroupsCreate = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		user, err := clt.CreateGroup(cmd.Context(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Write(groupCreatedTemplate, user)
+		resp, err := clt.CreateGroupWithResponse(cmd.Context(), api.CreateGroupJSONRequestBody{
+			Id: id,
+		})
+		DieOnResponseError(resp, err)
+		group := resp.JSON201
+		Write(groupCreatedTemplate, group)
 	},
 }
 
@@ -357,11 +339,8 @@ var authGroupsDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		err := clt.DeleteGroup(cmd.Context(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
+		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
+		DieOnResponseError(resp, err)
 		Fmt("Group deleted successfully\n")
 	},
 }
@@ -381,17 +360,20 @@ var authGroupsListMembers = &cobra.Command{
 
 		clt := getClient()
 
-		users, pagination, err := clt.ListGroupMembers(cmd.Context(), id, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ListGroupMembersWithResponse(cmd.Context(), id, &api.ListGroupMembersParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
+		users := resp.JSON200.Results
 		rows := make([][]interface{}, len(users))
 		for i, user := range users {
-			rows[i] = []interface{}{user.ID}
+			rows[i] = []interface{}{user.Id}
 		}
 
-		PrintTable(rows, []interface{}{"User ID"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"User ID"}, &pagination, amount)
 	},
 }
 
@@ -403,11 +385,8 @@ var authGroupsAddMember = &cobra.Command{
 		user, _ := cmd.Flags().GetString("user")
 		clt := getClient()
 
-		err := clt.AddGroupMembership(cmd.Context(), id, user)
-		if err != nil {
-			DieErr(err)
-		}
-
+		resp, err := clt.AddGroupMembershipWithResponse(cmd.Context(), id, user)
+		DieOnResponseError(resp, err)
 		Fmt("User successfully added\n")
 	},
 }
@@ -420,11 +399,8 @@ var authGroupsRemoveMember = &cobra.Command{
 		user, _ := cmd.Flags().GetString("user")
 		clt := getClient()
 
-		err := clt.DeleteGroupMembership(cmd.Context(), id, user)
-		if err != nil {
-			DieErr(err)
-		}
-
+		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
+		DieOnResponseError(resp, err)
 		Fmt("User successfully removed\n")
 	},
 }
@@ -444,21 +420,24 @@ var authGroupsPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListGroupPolicies(cmd.Context(), id, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &api.ListGroupPoliciesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
+		policies := resp.JSON200.Results
 		rows := make([][]interface{}, 0)
 		for _, policy := range policies {
 			for i, statement := range policy.Statement {
-				ts := time.Unix(policy.CreationDate, 0).String()
-				rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+				ts := time.Unix(*policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
 
 		}
 
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
 	},
 }
 
@@ -470,10 +449,8 @@ var authGroupsPoliciesAttach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.AttachPolicyToGroup(cmd.Context(), id, policy)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
+		DieOnResponseError(resp, err)
 
 		Fmt("Policy attached successfully\n")
 	},
@@ -487,10 +464,8 @@ var authGroupsPoliciesDetach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 
-		err := clt.DetachPolicyFromGroup(cmd.Context(), id, policy)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
+		DieOnResponseError(resp, err)
 
 		Fmt("Policy detached successfully\n")
 	},
@@ -511,17 +486,20 @@ var authPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListPolicies(cmd.Context(), after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ListPoliciesWithResponse(cmd.Context(), &api.ListPoliciesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
+		policies := resp.JSON200.Results
 		rows := make([][]interface{}, len(policies))
 		for i, policy := range policies {
-			ts := time.Unix(policy.CreationDate, 0).String()
-			rows[i] = []interface{}{*policy.ID, ts}
+			ts := time.Unix(*policy.CreationDate, 0).String()
+			rows[i] = []interface{}{policy.Id, ts}
 		}
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, pagination, amount)
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -542,6 +520,9 @@ var authPoliciesCreate = &cobra.Command{
 			if err != nil {
 				DieFmt("could not open policy document: %v", err)
 			}
+			defer func() {
+				_ = fp.Close()
+			}()
 		}
 
 		var doc StatementDoc
@@ -549,26 +530,27 @@ var authPoliciesCreate = &cobra.Command{
 		if err != nil {
 			DieFmt("could not parse statement JSON document: %v", err)
 		}
+		resp, err := clt.CreatePolicyWithResponse(cmd.Context(), api.CreatePolicyJSONRequestBody{
+			Id:        id,
+			Statement: doc.Statement,
+		})
+		DieOnResponseError(resp, err)
 
-		createdPolicy, err := clt.CreatePolicy(cmd.Context(), &models.Policy{ID: &id, Statement: doc.Statement})
-		if err != nil {
-			DieErr(err)
-		}
-
+		createdPolicy := resp.JSON201
 		Write(policyCreatedTemplate, struct {
 			ID           string
 			CreationDate int64
 			StatementDoc StatementDoc
 		}{
-			ID:           *createdPolicy.ID,
-			CreationDate: createdPolicy.CreationDate,
+			ID:           createdPolicy.Id,
+			CreationDate: *createdPolicy.CreationDate,
 			StatementDoc: StatementDoc{createdPolicy.Statement},
 		})
 	},
 }
 
 type StatementDoc struct {
-	Statement []*models.Statement `json:"statement"`
+	Statement []api.Statement `json:"statement"`
 }
 
 var authPoliciesShow = &cobra.Command{
@@ -578,19 +560,18 @@ var authPoliciesShow = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		policy, err := clt.GetPolicy(cmd.Context(), id)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
+		DieOnResponseError(resp, err)
 
+		policy := *resp.JSON200
 		Write(policyDetailsTemplate, struct {
 			ID           string
 			CreationDate int64
 			StatementDoc StatementDoc
 		}{
-			ID:           *policy.ID,
-			CreationDate: policy.CreationDate,
-			StatementDoc: StatementDoc{policy.Statement},
+			ID:           policy.Id,
+			CreationDate: *policy.CreationDate,
+			StatementDoc: StatementDoc{Statement: policy.Statement},
 		})
 	},
 }
@@ -602,11 +583,8 @@ var authPoliciesDelete = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		clt := getClient()
 
-		err := clt.DeletePolicy(cmd.Context(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
+		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
+		DieOnResponseError(resp, err)
 		Fmt("Policy deleted successfully\n")
 	},
 }

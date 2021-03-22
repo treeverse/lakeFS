@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -65,19 +66,34 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 func getClient() api.ClientWithResponsesInterface {
 	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
-	// only to be immediately repoened.
+	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(ConfigAccessKeyID, ConfigSecretAccessKey)
+	accessKeyID := viper.GetString(ConfigAccessKeyID)
+	secretAccessKey := viper.GetString(ConfigSecretAccessKey)
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
 		DieErr(err)
 	}
 
-	server := viper.GetString(ConfigServerEndpointURL)
+	serverEndpoint := viper.GetString(ConfigServerEndpointURL)
+	// normalize server endpoint, use the configuration url if no base uri specify set the default
+	if !strings.HasSuffix(serverEndpoint, "/") {
+		serverEndpoint += "/"
+	}
+	u, err := url.Parse(serverEndpoint)
+	if err != nil {
+		DieErr(err)
+	}
+	// if no uri to api is set in configuration - set the default
+	if u.Path == "/" {
+		serverEndpoint += "api/v1"
+	}
+
 	client, err := api.NewClientWithResponses(
-		server,
+		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 	)
 	if err != nil {

@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/go-openapi/swag"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -85,25 +85,27 @@ var fsListCmd = &cobra.Command{
 		for {
 			params := &api.ListObjectsParams{
 				Prefix:    &prefix,
-				After:     &from,
+				After:     api.PaginationAfterPtr(from),
 				Delimiter: paramsDelimiter,
 			}
-			res, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-			if err != nil {
-				DieErr(err)
-			}
+			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
+			DieOnResponseError(resp, err)
+
+			results := resp.JSON200.Results
 			// trim prefix if non recursive
 			if !recursive {
 				for i := range results {
-					results[i].Path = strings.TrimPrefix(results[i].Path, trimPrefix)
+					trimmed := strings.TrimPrefix(results[i].Path, trimPrefix)
+					results[i].Path = trimmed
 				}
 			}
 
 			Write(fsLsTemplate, results)
-			if !swag.BoolValue(more.HasMore) {
+			pagination := resp.JSON200.Pagination
+			if !pagination.HasMore {
 				break
 			}
-			from = more.NextOffset
+			from = pagination.NextOffset
 		}
 	},
 }
@@ -118,21 +120,34 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		_, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, os.Stdout)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.GetObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
+			Path: *pathURI.Path,
+		})
+		DieOnResponseError(resp, err)
+		Fmt("%s\n", string(resp.Body))
 	},
 }
 
-func upload(ctx context.Context, client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
-	fp := OpenByPath(sourcePathname)
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePath string, destURI *uri.URI) (*api.ObjectStats, error) {
+	fp := OpenByPath(sourcePath)
 	defer func() {
 		_ = fp.Close()
 	}()
-
-	// read
-	return client.UploadObject(ctx, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+	resp, err := client.UploadObjectWithBodyWithResponse(ctx, destURI.Repository, destURI.Ref, &api.UploadObjectParams{
+		Path: sourcePath,
+	}, "application/octet-stream", fp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusCreated {
+		apiErrors := []*api.Error{resp.JSON400, resp.JSON401, resp.JSON404, resp.JSONDefault}
+		for _, apiErr := range apiErrors {
+			if apiErr != nil {
+				return nil, errors.New(apiErr.Message)
+			}
+		}
+	}
+	return resp.JSON201, nil
 }
 
 var fsUploadCmd = &cobra.Command{
@@ -175,7 +190,9 @@ var fsUploadCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
-			totals.Bytes += swag.Int64Value(stat.SizeBytes)
+			if stat.SizeBytes != nil {
+				totals.Bytes += *stat.SizeBytes
+			}
 			totals.Count++
 			return nil
 		})
@@ -202,21 +219,24 @@ var fsStageCmd = &cobra.Command{
 		checksum, _ := cmd.Flags().GetString("checksum")
 		meta, metaErr := getKV(cmd, "meta")
 
-		obj := &models.ObjectStageCreation{
-			Checksum:        swag.String(checksum),
-			PhysicalAddress: swag.String(location),
-			SizeBytes:       swag.Int64(size),
+		obj := api.ObjectStageCreation{
+			Checksum:        checksum,
+			PhysicalAddress: location,
+			SizeBytes:       size,
 		}
 		if metaErr == nil {
-			obj.Metadata = meta
+			metadata := api.ObjectStageCreation_Metadata{
+				AdditionalProperties: meta,
+			}
+			obj.Metadata = &metadata
 		}
 
-		stat, err := client.StageObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, obj)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StageObjectParams{
+			Path: *pathURI.Path,
+		}, api.StageObjectJSONRequestBody(obj))
+		DieOnResponseError(resp, err)
 
-		Write(fsStatTemplate, stat)
+		Write(fsStatTemplate, resp.JSON201)
 	},
 }
 
@@ -230,10 +250,10 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		err := client.DeleteObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.DeleteObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
+			Path: *pathURI.Path,
+		})
+		DieOnResponseError(resp, err)
 	},
 }
 

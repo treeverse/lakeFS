@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -47,21 +45,19 @@ var mergeCmd = &cobra.Command{
 			Die("both references must belong to the same repository", 1)
 		}
 
-		result, err := client.Merge(cmd.Context(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
-		if errors.Is(err, catalog.ErrConflictFound) {
-			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
+		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{})
+		if resp != nil && resp.JSON409 != nil {
+			_, _ = fmt.Printf("Conflicts: %d\n", resp.JSON409.Summary.Conflict)
 			return
 		}
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo
-			Result *models.MergeResult
+			Result *api.MergeResult
 		}{
-			FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
-			result,
+			Merge:  FromTo{FromRef: sourceRef.Ref, ToRef: destinationRef.Ref},
+			Result: resp.JSON200,
 		})
 	},
 }

@@ -4,20 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"text/template"
 	"time"
 
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/pkg/api"
+
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/actions"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 const actionPreMergeYaml = `
@@ -55,14 +50,13 @@ func TestHooksSuccess(t *testing.T) {
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")
-	ref, err := client.Branches.CreateBranch(
-		branches.NewCreateBranchParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(&models.BranchCreation{
-				Name:   swag.String(branch),
-				Source: swag.String(masterBranch),
-			}), nil)
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: masterBranch,
+	})
 	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
+	ref := string(createBranchResp.Body)
 	logger.WithField("branchRef", ref).Info("Branch created")
 	logger.WithField("branch", branch).Info("Upload initial content")
 
@@ -79,13 +73,11 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, err)
 	preMergeAction := doc.String()
 
-	_, err = client.Objects.UploadObject(
-		objects.NewUploadObjectParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithPath("_lakefs_actions/testing_pre_merge").
-			WithContent(runtime.NamedReader("content", strings.NewReader(preMergeAction))), nil)
+	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
+		Path: "_lakefs_actions/testing_pre_merge",
+	}, "application/octet-stream", strings.NewReader(preMergeAction))
 	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
 	actionPreCommitTmpl := template.Must(template.New("action-pre-commit").Parse(actionPreCommitYaml))
 	doc.Reset()
@@ -93,22 +85,20 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, err)
 	preCommitAction := doc.String()
 
-	_, err = client.Objects.UploadObject(
-		objects.NewUploadObjectParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithPath("_lakefs_actions/testing_pre_commit").
-			WithContent(runtime.NamedReader("content", strings.NewReader(preCommitAction))), nil)
+	uploadResp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
+		Path: "_lakefs_actions/testing_pre_commit",
+	},
+		"application/octet-stream",
+		strings.NewReader(preCommitAction))
 	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
 
-	stats, err := client.Commits.Commit(
-		commits.NewCommitParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(branch).
-			WithCommit(&models.CommitCreation{Message: swag.String("Initial content")}),
-		nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+		Message: "Initial content",
+	})
 	require.NoError(t, err, "failed to commit initial content")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	webhookData, err := responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
@@ -118,23 +108,25 @@ func TestHooksSuccess(t *testing.T) {
 	var commitEvent, mergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&commitEvent), "reading pre-commit data")
 
+	commitRecord := commitResp.JSON201
 	require.Equal(t, "pre-commit", commitEvent.EventType)
 	require.Equal(t, "Test Commit", commitEvent.ActionName)
 	require.Equal(t, "test_webhook", commitEvent.HookID)
 	require.Equal(t, repo, commitEvent.RepositoryID)
 	require.Equal(t, branch, commitEvent.BranchID)
-	require.Equal(t, stats.Payload.Committer, commitEvent.Committer)
-	require.Equal(t, stats.Payload.Message, commitEvent.CommitMessage)
+	require.Equal(t, commitRecord.Committer, commitEvent.Committer)
+	require.Equal(t, commitRecord.Message, commitEvent.CommitMessage)
 	require.Equal(t, branch, commitEvent.SourceRef)
-	require.Equal(t, stats.Payload.Metadata, commitEvent.Metadata)
+	require.Equal(t, commitRecord.Metadata.AdditionalProperties, commitEvent.Metadata)
 
-	mergeRes, err := client.Refs.MergeIntoBranch(
-		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationBranch(masterBranch).WithSourceRef(branch), nil)
+	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, masterBranch, api.MergeIntoBranchJSONRequestBody{})
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, mergeResp.StatusCode())
 	require.NoError(t, webhookData.err, "failed to merge branches")
-	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
+	mergeRef := string(mergeResp.Body)
+	logger.WithField("mergeResult", mergeRef).Info("Merged successfully")
 
 	require.NoError(t, err, "error on pre commit serving")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
@@ -145,21 +137,23 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, "test_webhook", mergeEvent.HookID)
 	require.Equal(t, repo, mergeEvent.RepositoryID)
 	require.Equal(t, masterBranch, mergeEvent.BranchID)
-	require.Equal(t, stats.Payload.ID, mergeEvent.SourceRef)
+	require.Equal(t, commitRecord.Id, mergeEvent.SourceRef)
 
-	runs, err := client.Actions.ListRuns(&actions.ListRunsParams{
-		Repository: repo,
-		Commit:     &mergeRes.Payload.Reference,
-		Context:    ctx,
-	}, nil)
-
+	runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
+		After:  nil,
+		Amount: nil,
+		Branch: nil,
+		Commit: api.StringPtr(mergeRef),
+	})
 	require.NoError(t, err)
-	require.Len(t, runs.Payload.Results, 1)
-	run := runs.Payload.Results[0]
-	require.Equal(t, mergeRes.Payload.Reference, *run.CommitID)
+	require.Equal(t, http.StatusOK, runsResp.StatusCode())
+	runs := runsResp.JSON200
+	require.Len(t, runs.Results, 1)
+	run := runs.Results[0]
+	require.Equal(t, mergeRef, run.CommitId)
 	require.Equal(t, "pre-merge", run.EventType)
 	require.Equal(t, "completed", run.Status)
-	require.Equal(t, "master", *run.Branch)
+	require.Equal(t, "master", run.Branch)
 }
 
 type webhookEventInfo struct {

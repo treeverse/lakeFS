@@ -39,21 +39,19 @@ var branchListCmd = &cobra.Command{
 		after, _ := cmd.Flags().GetString("after")
 		u := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		res, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
-			After:  &after,
-			Amount: &amount,
+		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 
-		refs := *res.JSON200.Results
+		refs := resp.JSON200.Results
 		rows := make([][]interface{}, len(refs))
 		for i, row := range refs {
 			rows[i] = []interface{}{row.Id, row.CommitId}
 		}
 
-		pagination := *res.JSON200.Pagination
+		pagination := resp.JSON200.Pagination
 		data := struct {
 			BranchTable *Table
 			Pagination  *Pagination
@@ -67,7 +65,7 @@ var branchListCmd = &cobra.Command{
 			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
-				After:   *pagination.NextOffset,
+				After:   pagination.NextOffset,
 			}
 		}
 
@@ -94,15 +92,12 @@ var branchCreateCmd = &cobra.Command{
 			Die("source branch must be in the same repository", 1)
 		}
 
-		_, err = client.CreateBranchWithResponse(cmd.Context(), u.Repository, api.CreateBranchJSONRequestBody{
+		resp, err := client.CreateBranchWithResponse(cmd.Context(), u.Repository, api.CreateBranchJSONRequestBody{
 			Name:   u.Ref,
 			Source: sourceURI.Ref,
 		})
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("created branch '%s'\n", u.Ref)
+		DieOnResponseError(resp, err)
+		Fmt("created branch '%s'\n", string(resp.Body))
 	},
 }
 
@@ -120,10 +115,8 @@ var branchDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		_, err = client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -148,13 +141,11 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
-		_, err = clt.RevertWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertJSONRequestBody{
-			ParentNumber: &parentNumber,
-			Ref:          &commitRef,
+		resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
+			ParentNumber: parentNumber,
+			Ref:          commitRef,
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -221,10 +212,8 @@ var branchResetCmd = &cobra.Command{
 			Die("Reset aborted", 1)
 			return
 		}
-		_, err = clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -238,11 +227,10 @@ var branchShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		ref, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		if err != nil {
-			DieErr(err)
-		}
-		Fmt("%s\n", ref)
+		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
+		DieOnResponseError(resp, err)
+		branch := resp.JSON200
+		Fmt("%s\n", branch)
 	},
 }
 

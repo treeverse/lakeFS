@@ -46,19 +46,19 @@ var logCmd = &cobra.Command{
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		res, err := client.GetBranchCommitLogWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.GetBranchCommitLogParams{
-			After:  &after,
-			Amount: &amount,
+		res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(res, err)
+
+		commits := res.JSON200.Results
 		ctx := struct {
 			Commits         []api.Commit
 			Pagination      *Pagination
 			ShowMetaRangeID bool
 		}{
-			Commits:         *res.JSON200.Results,
+			Commits:         commits,
 			ShowMetaRangeID: showMetaRangeID,
 		}
 		pagination := res.JSON200.Pagination
@@ -66,7 +66,7 @@ var logCmd = &cobra.Command{
 			ctx.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
-				After:   *pagination.NextOffset,
+				After:   pagination.NextOffset,
 			}
 		}
 		Write(commitsTemplate, ctx)

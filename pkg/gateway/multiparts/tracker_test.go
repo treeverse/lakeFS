@@ -1,4 +1,4 @@
-package multiparts
+package multiparts_test
 
 import (
 	"context"
@@ -6,16 +6,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func testTracker(t testing.TB) Tracker {
+func testTracker(t testing.TB) multiparts.Tracker {
 	t.Helper()
 	conn, _ := testutil.GetDB(t, databaseURI)
-	return NewTracker(conn)
+	return multiparts.NewTracker(conn)
 }
 
-func Tracker_Get(t *testing.T) {
+func TestTracker_Get(t *testing.T) {
 	ctx := context.Background()
 	tracker := testTracker(t)
 
@@ -31,13 +32,13 @@ func Tracker_Get(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *MultipartUpload
+		want    *multiparts.MultipartUpload
 		wantErr bool
 	}{
 		{
 			name: "exists",
 			args: args{uploadID: "upload1"},
-			want: &MultipartUpload{
+			want: &multiparts.MultipartUpload{
 				UploadID:        "upload1",
 				Path:            "/path1",
 				CreationDate:    creationTime,
@@ -72,7 +73,7 @@ func Tracker_Get(t *testing.T) {
 	}
 }
 
-func Tracker_Delete(t *testing.T) {
+func TestTracker_Delete(t *testing.T) {
 	ctx := context.Background()
 	c := testTracker(t)
 
@@ -102,7 +103,7 @@ func Tracker_Delete(t *testing.T) {
 	}
 }
 
-func Tracker_Create(t *testing.T) {
+func TestTracker_Create(t *testing.T) {
 	ctx := context.Background()
 	tracker := testTracker(t)
 

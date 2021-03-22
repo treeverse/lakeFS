@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -25,10 +23,9 @@ var catHookOutputCmd = &cobra.Command{
 		hookRunID := args[2]
 		client := getClient()
 		ctx := cmd.Context()
-		err := client.GetRunHookOutput(ctx, u.Repository, runID, hookRunID, os.Stdout)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.GetRunHookOutputWithResponse(ctx, u.Repository, runID, hookRunID)
+		DieOnResponseError(resp, err)
+		Fmt("%s\n", string(resp.Body))
 	},
 }
 
