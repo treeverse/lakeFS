@@ -28,7 +28,7 @@ func (b BatchFn) Execute() (interface{}, error) {
 type DelayFn func(dur time.Duration)
 
 type Batcher interface {
-	BatchFor(key string, dur time.Duration, fn BatchFn) (interface{}, error)
+	BatchFor(key string, dur time.Duration, exec Executable) (interface{}, error)
 }
 
 type nonBatchingExecutor struct {
@@ -47,7 +47,6 @@ type request struct {
 	key        string
 	timeout    time.Duration
 	exec       Executable
-	onBatched  chan *response
 	onResponse chan *response
 }
 
