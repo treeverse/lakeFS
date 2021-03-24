@@ -2506,11 +2506,12 @@ func writeError(w http.ResponseWriter, code int, v interface{}) {
 }
 
 func writeResponse(w http.ResponseWriter, code int, response interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
 	if response == nil {
+		w.WriteHeader(code)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		logging.Default().WithError(err).WithField("code", code).Debug("Failed to write encoded json response")
