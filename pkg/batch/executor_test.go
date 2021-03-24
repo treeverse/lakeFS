@@ -125,8 +125,12 @@ func testReadAfterWrite(t *testing.T) {
 		}
 
 		// We expect r2's exec function to not execute because it should join r1's batch
-		if te.WasExecuted() || db.GetAccessCount() != 1 {
-			t.Error("r2's exec function should not be called, only r1's")
+		if te.WasExecuted() {
+			t.Errorf("r2's exec function should not be called, only r1's")
+		}
+
+		if accessCount := db.GetAccessCount(); accessCount != 1 {
+			t.Errorf("db should only be accessed once, but was accessed %d timess", accessCount)
 		}
 		close(read2Done)
 	}()
@@ -157,7 +161,7 @@ func testBatchExpiration(t *testing.T) {
 			return "v1", nil
 		}))
 		if r1 != "v1" {
-			t.Errorf("expected r1 to get v1 but got #{r1} instead")
+			t.Errorf("expected r1 to get v1 but got %s instead", r1)
 		}
 		close(read1Done)
 	}()
@@ -168,7 +172,7 @@ func testBatchExpiration(t *testing.T) {
 			return "v2", nil
 		}))
 		if r2 != "v2" {
-			t.Errorf("expected r2 to get v2 but got #{r2} instead")
+			t.Errorf("expected r2 to get v2 but got %s instead", r2)
 		}
 		close(read2Done)
 	}()
@@ -225,8 +229,8 @@ func testBatchByKey(t *testing.T) {
 	r1Succeeded := te1.WasExecuted()
 	r2Succeeded := te2.WasExecuted()
 	if !(r1Succeeded && r2Succeeded) {
-		t.Error("both r1's and r2's exec functions should be executed but r1Succeeded=#{r1Succeeded} " +
-			"and r2Succeeded=#{r2Succeeded}")
+		t.Error("both r1's and r2's exec functions should be executed but r1Succeeded=%t "+
+			"and r2Succeeded=%t", r1Succeeded, r2Succeeded)
 	}
 }
 
