@@ -11,54 +11,54 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const accessedOnce = 1
-const accessedTwice = 2
-
-type reader struct {
-	Ch         chan bool
-	IsExecuted bool
-	Fn         ExecFn
+type trackableExecuter struct {
+	batchTracker chan struct{}
+	execTracker  chan struct{}
 }
 
-type ExecFn func() (interface{}, error)
-
-func (r *reader) Execute() (interface{}, error) {
-	r.IsExecuted = true
-	return r.Fn()
+func (te *trackableExecuter) WasExecuted() bool {
+	chanOpen := true
+	select {
+	case _, chanOpen = <-te.execTracker:
+	default:
+	}
+	return !chanOpen
 }
 
-func (r *reader) Batched() {
-	close(r.Ch)
+func (te *trackableExecuter) Execute() (interface{}, error) {
+	close(te.execTracker)
+	return nil, nil
+}
+
+func (te *trackableExecuter) Batched() {
+	close(te.batchTracker)
 }
 
 type db struct {
-	KvStore     sync.Map
-	AccessCount int
-}
-
-type Dao interface {
-	Insert(key string, val string)
-	Get(key string) string
-	GetCount() int
+	kvStore     sync.Map
+	accessCount int32
 }
 
 func (d *db) Insert(key string, val string) {
-	d.KvStore.Store(key, val)
+	d.kvStore.Store(key, val)
 }
 
 func (d *db) Get(key string) (interface{}, bool) {
-	d.AccessCount++
-	return d.KvStore.Load(key)
+	atomic.AddInt32(&d.accessCount, 1)
+	return d.kvStore.Load(key)
 }
 
-func (d *db) GetAccessCount() int {
-	return d.AccessCount
+func (d *db) GetAccessCount() int32 {
+	return d.accessCount
 }
 
 func testReadAfterWrite(t *testing.T) {
 	// Setup executor
 	exec := batch.NewExecutor(logging.Default())
-	go exec.Run(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
+
 	// Prove the executor does not violate read-after-write consistency.
 	// First, let's define read-after-write consistency:
 	// 	Any read that started after a successful write has returned, must return the updated value.
@@ -67,14 +67,16 @@ func testReadAfterWrite(t *testing.T) {
 	// 2. writer (w1) writes v1
 	// 3. writer (w1) returns (Current version: v1)
 	// 4. reader (r2) starts
-	// 5. both readers (r1,r2) return with v1 as their response.
-	var db = &db{sync.Map{}, 0}
+	// 5. reader (r1) returns
+	// 6. reader (r2) returns
+	// 7. both readers (r1,r2) return with v1 as their response.
+	var db = &db{}
 	db.Insert("v", "v0")
 
 	read1Done := make(chan bool)
 	write1Done := make(chan bool)
 	read2Done := make(chan bool)
-	read2Batched := make(chan bool)
+	read2Batched := make(chan struct{})
 
 	// we pass a custom delay func that ensures we make the write only after
 	//  reader1 started
@@ -115,12 +117,15 @@ func testReadAfterWrite(t *testing.T) {
 	// following that write, another reader starts, and must read the updated value
 	go func() {
 		<-write1Done // ensure we start AFTER write1 has completed
-		r := reader{Ch: read2Batched, Fn: func() (interface{}, error) {
-			return nil, nil
-		}}
-		_, _ = exec.BatchFor("k", 50*time.Millisecond, &r)
-		// We expect r2's exec function to no execute because it should join r1's batch
-		if r.IsExecuted || db.GetAccessCount() != accessedOnce {
+		te := trackableExecuter{batchTracker: read2Batched, execTracker: make(chan struct{})}
+		r2, _ := exec.BatchFor("k", 50*time.Millisecond, &te)
+		r2v := r2.(string)
+		if r2v != "v1" {
+			t.Errorf("expected r2 to get v1, got %s instead", r2v)
+		}
+
+		// We expect r2's exec function to not execute because it should join r1's batch
+		if te.WasExecuted() || db.GetAccessCount() != 1 {
 			t.Error("r2's exec function should not be called, only r1's")
 		}
 		close(read2Done)
@@ -133,42 +138,37 @@ func testReadAfterWrite(t *testing.T) {
 func testBatchExpiration(t *testing.T) {
 	// Setup executor
 	exec := batch.NewExecutor(logging.Default())
-	go exec.Run(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
 
 	// Confirm that batches expire after a delay period, and hence requests don't hang
 	// To test this, let's simulate the following scenario:
 	// 1. reader (r1) makes request with key 'k'
-	// 2. reader 1 returns
+	// 2. reader 1 returns v1
 	// 3. reader (r2) makes request with key 'k'
-	// 4. a new batch is used to making r2's db request
-	var db = &db{sync.Map{}, 0}
-
+	// 4. a new batch is used to making r2's request and the returned value is v2
 	read1Done := make(chan bool)
 	read2Done := make(chan bool)
 
 	// reader1 starts
 	go func() {
-		exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
-			version, _ := db.Get("v")
-			return version, nil
+		r1, _ := exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+			return "v1", nil
 		}))
-		ac := db.GetAccessCount()
-		if ac != accessedOnce {
-			t.Errorf("r1 should have triggered a single db call, but access count= #{ac}")
+		if r1 != "v1" {
+			t.Errorf("expected r1 to get v1 but got #{r1} instead")
 		}
 		close(read1Done)
-
 	}()
 
 	go func() {
 		<-read1Done // ensure r2 starts after r1 has returned
-		exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
-			version, _ := db.Get("v")
-			return version, nil
+		r2, _ := exec.BatchFor("k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+			return "v2", nil
 		}))
-		ac := db.GetAccessCount()
-		if ac != accessedTwice {
-			t.Errorf("r2 should have triggered the second db call, but access count= #{ac}")
+		if r2 != "v2" {
+			t.Errorf("expected r2 to get v2 but got #{r2} instead")
 		}
 		close(read2Done)
 	}()
@@ -179,16 +179,17 @@ func testBatchExpiration(t *testing.T) {
 func testBatchByKey(t *testing.T) {
 	// Setup executor
 	exec := batch.NewExecutor(logging.Default())
-	go exec.Run(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
 
 	// Confirm that requests are batched by key.
 	// To test this, let's simulate the following scenario:
-	// 1. reader (r1) makes request with key 'k1'
-	// 2. reader (r2) makes request with key 'k2' before r1's batch has been expired
+	// 1. reader (r1) makes a request with key 'k1'
+	// 2. reader (r2) makes a request with key 'k2' before te1's batch has been expired
 	// 3. Two batches are created and two requests are executed
 	read1Done := make(chan bool)
 	read2Done := make(chan bool)
-	req2Done := make(chan bool)
 
 	// we pass a custom delay func that ensures r2 starts only after r1 started, and that r1 executes only
 	// after r2 made a request
@@ -198,40 +199,34 @@ func testBatchByKey(t *testing.T) {
 		delaysDone := atomic.AddInt32(&delays, 1)
 		if delaysDone == 1 {
 			close(waitRead2)
-			<-req2Done
+			<-read2Done
 		}
 	}
 	exec.Delay = delayFn
 
-	r1 := reader{Fn: func() (interface{}, error) {
-		return nil, nil
-	}}
-	r2 := reader{Fn: func() (interface{}, error) {
-		close(req2Done)
-		return nil, nil
-	}}
+	te1 := trackableExecuter{execTracker: make(chan struct{})}
+	te2 := trackableExecuter{execTracker: make(chan struct{})}
 
 	// reader1 starts
-	go func(r *reader) {
-		_, _ = exec.BatchFor("k1", 50*time.Millisecond, r)
+	go func(te *trackableExecuter) {
+		_, _ = exec.BatchFor("k1", 50*time.Millisecond, te)
 		close(read1Done)
-	}(&r1)
+	}(&te1)
 
-	go func(r *reader) {
-		<-waitRead2 // ensure we start AFTER r2 started
-		//close(read2Started)
-		exec.BatchFor("k2", 0, r)
+	// reader2 starts
+	go func(te *trackableExecuter) {
+		<-waitRead2 // ensure we start AFTER te2 started
+		exec.BatchFor("k2", 0, te)
 		close(read2Done)
-	}(&r2)
+	}(&te2)
 
 	<-read1Done
-	<-read2Done
 
-	r1Succeeded := r1.IsExecuted
-	r2Succeeded := r2.IsExecuted
+	r1Succeeded := te1.WasExecuted()
+	r2Succeeded := te2.WasExecuted()
 	if !(r1Succeeded && r2Succeeded) {
-		t.Error("both r1 and r2's exec functions should be executed but r1Succeeded=#{r1Succeeded} " +
-			"and r2Succeeded=#{r1Succeeded}")
+		t.Error("both r and r2's exec functions should be executed but r1Succeeded=#{r1Succeeded} " +
+			"and r2Succeeded=#{r2Succeeded}")
 	}
 }
 

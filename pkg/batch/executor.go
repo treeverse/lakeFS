@@ -11,11 +11,12 @@ import (
 // dispatching new ones would start blocking.
 const RequestBufferSize = 1 << 17
 
-type Executable interface {
+type Executer interface {
 	Execute() (interface{}, error)
 }
 
-type Batchable interface {
+type BatchTracker interface {
+	// This method should be called on adding a request to an existing batch
 	Batched()
 }
 
@@ -28,14 +29,14 @@ func (b BatchFn) Execute() (interface{}, error) {
 type DelayFn func(dur time.Duration)
 
 type Batcher interface {
-	BatchFor(key string, dur time.Duration, exec Executable) (interface{}, error)
+	BatchFor(key string, dur time.Duration, exec Executer) (interface{}, error)
 }
 
 type nonBatchingExecutor struct {
 }
 
-func (n *nonBatchingExecutor) BatchFor(_ string, _ time.Duration, exec Executable) (interface{}, error) {
-	return exec.Execute()
+func (n *nonBatchingExecutor) BatchFor(_ string, _ time.Duration, ft Executer) (interface{}, error) {
+	return ft.Execute()
 }
 
 type response struct {
@@ -46,7 +47,7 @@ type response struct {
 type request struct {
 	key        string
 	timeout    time.Duration
-	exec       Executable
+	exec       Executer
 	onResponse chan *response
 }
 
@@ -75,7 +76,7 @@ func NewExecutor(logger logging.Logger) *Executor {
 	}
 }
 
-func (e *Executor) BatchFor(key string, timeout time.Duration, exec Executable) (interface{}, error) {
+func (e *Executor) BatchFor(key string, timeout time.Duration, exec Executer) (interface{}, error) {
 	cb := make(chan *response)
 	e.requests <- &request{
 		key:        key,
@@ -102,7 +103,7 @@ func (e *Executor) Run(ctx context.Context) {
 					e.execs <- req.key
 				}(req)
 			} else {
-				if b, ok := req.exec.(Batchable); ok {
+				if b, ok := req.exec.(BatchTracker); ok {
 					b.Batched()
 				}
 				e.waitingOnKey[req.key] = append(e.waitingOnKey[req.key], req)
