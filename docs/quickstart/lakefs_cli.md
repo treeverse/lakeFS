@@ -1,12 +1,12 @@
 ---
 layout: default
-title: lakeFS CLI
+title: Install lakeFS CLI
 parent: Quick Start
 nav_order: 40
 has_children: false
 ---
 
-# CLI usage with lakectl
+# Install lakeFS CLI
   
   lakeFS comes with its own native CLI client. You can see the complete command reference [here](../reference/commands.md).
   
