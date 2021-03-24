@@ -16,7 +16,7 @@ type Executer interface {
 }
 
 type BatchTracker interface {
-	// This method should be called on adding a request to an existing batch
+	// Batched is called when a request is added to an existing batch.
 	Batched()
 }
 
@@ -35,8 +35,8 @@ type Batcher interface {
 type nonBatchingExecutor struct {
 }
 
-func (n *nonBatchingExecutor) BatchFor(_ string, _ time.Duration, ft Executer) (interface{}, error) {
-	return ft.Execute()
+func (n *nonBatchingExecutor) BatchFor(_ string, _ time.Duration, exec Executer) (interface{}, error) {
+	return exec.Execute()
 }
 
 type response struct {
