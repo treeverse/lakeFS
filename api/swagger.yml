@@ -277,7 +277,6 @@ components:
           type: string
           enum: [ common_prefix, object ]
 
-
     DiffList:
       type: object
       required:
@@ -721,6 +720,40 @@ components:
           items:
             $ref: "#/components/schemas/HookRun"
 
+    StagingLocation:
+      type: object
+      description: location for placing an object when staging it
+      required:
+        - token
+      properties:
+        physical_address:
+          type: string
+        token:
+          type: string
+          description: opaque staging token to use to link uploaded object
+
+    StagingMetadata:
+      type: object
+      description: information about uploaded object
+      properties:
+        staging:
+          $ref: "#/components/schemas/StagingLocation"
+        checksum:
+          type: string
+          description: unique identifier of object content on backing store (typically ETag)
+        mtime:
+          type: integer
+          format: int64
+        size_bytes:
+          type: integer
+          format: int64
+      required:
+        - staging
+        - checksum
+        - mtime
+        - size_bytes
+
+
 paths:
 
   /setup_lakefs:
@@ -756,7 +789,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /user:
     get:
@@ -791,7 +824,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - auth
@@ -818,7 +851,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/users/{userId}:
     parameters:
@@ -844,7 +877,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - auth
@@ -858,7 +891,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/groups:
     get:
@@ -879,7 +912,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - auth
@@ -902,7 +935,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/groups/{groupId}:
     parameters:
@@ -928,7 +961,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - auth
@@ -942,7 +975,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/policies:
     get:
@@ -963,7 +996,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - auth
@@ -987,7 +1020,7 @@ paths:
         400:
           $ref: "#/components/responses/ValidationError"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/policies/{policyId}:
     parameters:
@@ -1013,7 +1046,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     put:
       tags:
         - auth
@@ -1037,7 +1070,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - auth
@@ -1051,7 +1084,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/groups/{groupId}/members:
     parameters:
@@ -1078,7 +1111,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/groups/{groupId}/members/{userId}:
     parameters:
@@ -1105,7 +1138,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
     delete:
       tags:
@@ -1120,7 +1153,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/users/{userId}/credentials:
     parameters:
@@ -1149,7 +1182,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
     post:
       tags:
@@ -1168,7 +1201,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
 
   /auth/users/{userId}/credentials/{accessKeyId}:
@@ -1196,7 +1229,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
     get:
       tags:
@@ -1215,7 +1248,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/users/{userId}/groups:
     parameters:
@@ -1244,7 +1277,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/users/{userId}/policies:
     parameters:
@@ -1279,7 +1312,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/users/{userId}/policies/{policyId}:
     parameters:
@@ -1306,7 +1339,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - auth
@@ -1320,7 +1353,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/groups/{groupId}/policies:
     parameters:
@@ -1349,7 +1382,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /auth/groups/{groupId}/policies/{policyId}:
     parameters:
@@ -1376,7 +1409,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
     delete:
       tags:
@@ -1391,7 +1424,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories:
     get:
@@ -1412,7 +1445,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - repositories
@@ -1443,7 +1476,7 @@ paths:
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}:
     parameters:
@@ -1469,7 +1502,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - repositories
@@ -1483,7 +1516,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/dump:
     parameters:
@@ -1511,7 +1544,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/restore:
     parameters:
@@ -1541,7 +1574,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/tags:
     parameters:
@@ -1570,7 +1603,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
     post:
       tags:
@@ -1597,7 +1630,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/tags/{tag}:
     parameters:
@@ -1628,7 +1661,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - tags
@@ -1642,7 +1675,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches:
     parameters:
@@ -1671,7 +1704,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - branches
@@ -1700,7 +1733,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{ref}/commits:
     parameters:
@@ -1734,7 +1767,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}/commits:
     parameters:
@@ -1773,7 +1806,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
         412:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
           content:
@@ -1811,7 +1844,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - branches
@@ -1825,7 +1858,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     put:
       tags:
         - branches
@@ -1845,7 +1878,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}/revert:
     parameters:
@@ -1878,7 +1911,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     parameters:
@@ -1936,7 +1969,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}/diff:
     parameters:
@@ -1969,7 +2002,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{leftRef}/diff/{rightRef}:
     parameters:
@@ -2019,7 +2052,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/commits/{commitId}:
     parameters:
@@ -2050,7 +2083,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{ref}/objects:
     parameters:
@@ -2102,13 +2135,85 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
         410:
           description: object expired
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /repositories/{repository}/branches/{branch}/staging/backing:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - staging
+      operationId: getPhysicalAddress
+      summary: get a physical address and a return token to write object to underlying storage
+      responses:
+        200:
+          description: physical address for staging area
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagingLocation"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      tags: 
+       - staging
+      operationId: linkPhysicalAddress
+      summary: associate staging on this physical address with a path
+      description: |
+        If the supplied token matches the current staging token, associate the object as the
+        physical address with the supplied path.  Otherwise return a conflict and hint where
+        to place the object to try again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StagingMetadata"
+      responses:
+        200:
+          # This actually violates HTTP, which requires returning 201 if a new object was
+          # created or 200 if an existing object was modified,
+          # https://tools.ietf.org/html/rfc7231#section-4.3.4
+          description: successfully linked
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/ServerError"
+        409:
+          description: conflict with a commit, try here
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagingLocation"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}/objects:
     parameters:
@@ -2152,7 +2257,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - objects
@@ -2185,7 +2290,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
     delete:
       tags:
         - objects
@@ -2199,7 +2304,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{ref}/objects/stat:
     parameters:
@@ -2236,7 +2341,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
         410:
           description: object gone (but partial metadata may be available)
 
@@ -2275,7 +2380,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{ref}/objects/ls:
     parameters:
@@ -2319,7 +2424,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{branch}/symlink:
     parameters:
@@ -2356,7 +2461,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/actions/runs:
     get:
@@ -2392,7 +2497,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/actions/runs/{run_id}:
     get:
@@ -2423,7 +2528,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/actions/runs/{run_id}/hooks:
     get:
@@ -2456,7 +2561,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
     get:
@@ -2493,7 +2598,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     parameters:
@@ -2524,7 +2629,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/metadata/range/{range}:
     parameters:
@@ -2555,7 +2660,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFound"
         default:
-          $ref: '#/components/responses/ServerError'
+          $ref: "#/components/responses/ServerError"
 
   /healthcheck:
     get:

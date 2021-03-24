@@ -61,6 +61,14 @@ type Controller struct {
 	Logger                logging.Logger
 }
 
+func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetPhysicalAddressParams) {
+	panic("implement me")
+}
+
+func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body LinkPhysicalAddressJSONRequestBody, repository string, branch string, params LinkPhysicalAddressParams) {
+	panic("implement me")
+}
+
 func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
