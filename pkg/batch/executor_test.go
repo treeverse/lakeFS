@@ -215,7 +215,7 @@ func testBatchByKey(t *testing.T) {
 
 	// reader2 starts
 	go func(te *trackableExecuter) {
-		<-waitRead2 // ensure we start AFTER te2 started
+		<-waitRead2 // ensure we start AFTER r1 started a new batch
 		exec.BatchFor("k2", 0, te)
 		close(read2Done)
 	}(&te2)
@@ -225,7 +225,7 @@ func testBatchByKey(t *testing.T) {
 	r1Succeeded := te1.WasExecuted()
 	r2Succeeded := te2.WasExecuted()
 	if !(r1Succeeded && r2Succeeded) {
-		t.Error("both r and r2's exec functions should be executed but r1Succeeded=#{r1Succeeded} " +
+		t.Error("both r1's and r2's exec functions should be executed but r1Succeeded=#{r1Succeeded} " +
 			"and r2Succeeded=#{r2Succeeded}")
 	}
 }
