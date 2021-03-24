@@ -63,7 +63,7 @@ func (d *deleteOnClose) Seek(offset int64, whence int) (int64, error) {
 
 func (d *deleteOnClose) Close() error {
 	if err := os.Remove(d.Name()); err != nil {
-		d.File.Close()	// Close failure is unimportant on read, but data definitely stays!
+		d.File.Close() // Close failure is unimportant on read, but data definitely stays!
 		return fmt.Errorf("delete on close: %w", err)
 	}
 	return d.File.Close()
@@ -88,7 +88,7 @@ func OpenByPath(path string) io.ReadSeekCloser {
 			// Try to delete the file.  This will fail on Windows, we shall try to
 			// delete on close anyway.
 			if os.Remove(temp.Name()) != nil {
-			 	return &deleteOnClose{temp}
+				return &deleteOnClose{temp}
 			}
 			return temp
 		}
