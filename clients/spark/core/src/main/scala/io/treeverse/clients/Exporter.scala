@@ -1,9 +1,10 @@
 package io.treeverse.clients
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
-import java.net.{URI, URL}
+import java.net.URL
 import scala.util.Random
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
@@ -23,15 +24,22 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     val dst = dstRoot
     val actionsDF = spark.sql(s"SELECT 'copy' as action, * FROM ${tableName}")
 
-    export(ns, dst, actionsDF)
+    export(ns, dst, actionsDF, false)
+    export(ns, dst, actionsDF, true)
   }
 
-  private def export(ns: String, rel: String, actionsDF: DataFrame) =  {
+  val sparkSuccessFileSuffix = "_SUCCESS"
+
+  private def export(ns: String, rel: String, actionsDF: DataFrame, successFiles: Boolean) =  {
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
 
+    val shouldRun = (key: String) =>  {
+      val isSuccessFile = key.endsWith(sparkSuccessFileSuffix)
+      isSuccessFile == successFiles
+    }
     actionsDF.foreach { row =>
-      Exporter.handleRow(ns, rel, serializedConf, row)
+      Exporter.handleRow(ns, rel, serializedConf, row, shouldRun)
     }
   }
 
@@ -66,17 +74,22 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
       WHERE n.etag <> p.etag OR n.etag is null or p.etag is null)
     """)
 
-    export(ns, dst, actionsDF)
+    export(ns, dst, actionsDF, false)
+    export(ns, dst, actionsDF, true)
   }
 }
 
 object Exporter {
-  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[org.apache.hadoop.conf.Configuration], row: Row): Unit =  {
+  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row, shouldHandle: String => Boolean): Unit =  {
     val action = row(0)
     val key = row(1).toString()
     val address = row(2).toString()
-    val conf = serializedConf.value
 
+    if (shouldHandle(key)) {
+      return
+    }
+
+    val conf = serializedConf.value
     val srcPath = resolveURL(new URL(ns), address)
     val dstPath = resolveURL(new URL(rootDst), key)
 
