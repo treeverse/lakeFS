@@ -7,10 +7,6 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
-# Same for python swagger validation
-SWAGGER_VALIDATOR_IMAGE=treeverse/swagger-spec-validator:latest
-SWAGGER_VALIDATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(SWAGGER_VALIDATOR_IMAGE)
-
 export PATH:= $(PATH):$(GOBINPATH)
 
 GOBUILD=$(GOCMD) build
@@ -103,13 +99,6 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions
 
-validate-swagger: go-install ## Validate swagger.yaml
-	$(GOBINPATH)/swagger validate api/swagger.yml
-	# Run python validation as well
-	$(GOBINPATH)/swagger expand --format=json api/swagger.yml > swagger.json
-	$(SWAGGER_VALIDATOR) /mnt/swagger.json
-	@rm swagger.json
-
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/config.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
@@ -157,7 +146,7 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/committed/committed.pb.go
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 
-checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
+checks-validator: lint validate-fmt validate-proto  ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
