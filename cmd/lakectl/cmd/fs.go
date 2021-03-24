@@ -113,7 +113,9 @@ var fsCatCmd = &cobra.Command{
 func upload(ctx context.Context, client api.Client, sourcePathname string, destURI *uri.URI, direct bool) (*models.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
-		_ = fp.Close()
+		if err := fp.Close(); err != nil {
+			DieErr(fmt.Errorf("close: %w", err))
+		}
 	}()
 
 	if direct {
