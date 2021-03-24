@@ -28,18 +28,13 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     export(ns, dst, actionsDF, true)
   }
 
-  val sparkSuccessFileSuffix = "_SUCCESS"
 
   private def export(ns: String, rel: String, actionsDF: DataFrame, successFiles: Boolean) =  {
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
 
-    val shouldRun = (key: String) =>  {
-      val isSuccessFile = key.endsWith(sparkSuccessFileSuffix)
-      isSuccessFile == successFiles
-    }
     actionsDF.foreach { row =>
-      Exporter.handleRow(ns, rel, serializedConf, row, shouldRun)
+      Exporter.handleRow(ns, rel, serializedConf, row, successFiles)
     }
   }
 
@@ -80,12 +75,15 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
 }
 
 object Exporter {
-  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row, shouldHandle: String => Boolean): Unit =  {
+  val sparkSuccessFileSuffix = "_SUCCESS"
+
+  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row, successFiles: Boolean): Unit =  {
     val action = row(0)
     val key = row(1).toString()
     val address = row(2).toString()
 
-    if (shouldHandle(key)) {
+    val isSuccessFile = key.endsWith(sparkSuccessFileSuffix)
+    if (isSuccessFile != successFiles){
       return
     }
 
