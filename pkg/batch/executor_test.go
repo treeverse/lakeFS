@@ -130,7 +130,7 @@ func testReadAfterWrite(t *testing.T) {
 		}
 
 		if accessCount := db.GetAccessCount(); accessCount != 1 {
-			t.Errorf("db should only be accessed once, but was accessed %d timess", accessCount)
+			t.Errorf("db should only be accessed once, but was accessed %d times", accessCount)
 		}
 		close(read2Done)
 	}()
