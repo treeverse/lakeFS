@@ -26,7 +26,6 @@ LAKECTL_BINARY_NAME=lakectl
 
 UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/build
-API_BUILD_DIR=pkg/api/gen
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
@@ -44,8 +43,16 @@ export REVISION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
-	    graveler/committed/mock graveler/sstable/mock actions/mock
+	@rm -rf \
+		$(LAKECTL_BINARY_NAME) \
+		$(LAKEFS_BINARY_NAME) \
+		$(UI_BUILD_DIR) \
+		pkg/actions/mock \
+		pkg/api/lakefs.gen.go \
+		pkg/ddl/statik.go \
+		pkg/graveler/sstable/mock \
+		pkg/webui \
+	    pkg/graveler/committed/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -77,19 +84,15 @@ go-mod-download: ## Download module dependencies
 	$(GOCMD) mod download
 
 go-install: go-mod-download ## Install dependencies
-	$(GOCMD) install github.com/go-swagger/go-swagger/cmd/swagger
+	$(GOCMD) install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 	$(GOCMD) install github.com/golang/mock/mockgen
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 	$(GOCMD) install github.com/rakyll/statik
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
 
-gen-api: go-install del-gen-api ## Run the go-swagger code generator
+gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
-
-del-gen-api:
-	@rm -rf $(API_BUILD_DIR)
-	@mkdir -p $(API_BUILD_DIR)
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands

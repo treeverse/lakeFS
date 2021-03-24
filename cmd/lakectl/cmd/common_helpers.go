@@ -170,7 +170,7 @@ func DieErr(err error) {
 	os.Exit(1)
 }
 
-type Statuser interface {
+type StatusCoder interface {
 	StatusCode() int
 }
 
@@ -180,7 +180,7 @@ func DieOnResponseError(response interface{}, err error) {
 	}
 	// check http response code
 	var statusCode int
-	if stat, ok := response.(Statuser); ok {
+	if stat, ok := response.(StatusCoder); ok {
 		statusCode = stat.StatusCode()
 		if statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices {
 			return
@@ -191,13 +191,13 @@ func DieOnResponseError(response interface{}, err error) {
 	f := reflect.Indirect(r).FieldByName("Body")
 	if f.IsZero() {
 		// no body - format error
-		DieFmt("%w: code %d\n", ErrRequestFailed, statusCode)
+		DieFmt("%s: code %d\n", ErrRequestFailed, statusCode)
 	}
 	body := f.Bytes()
 	var apiError api.Error
 	if err := json.Unmarshal(body, &apiError); err != nil {
 		// general case
-		DieFmt("%w: %s (code %d)\n", ErrRequestFailed, string(body), statusCode)
+		DieFmt("%s: %s (code %d)\n", ErrRequestFailed, string(body), statusCode)
 	} else {
 		// message
 		Die(apiError.Message, 1)
