@@ -53,17 +53,9 @@ type deleteOnClose struct {
 	*os.File
 }
 
-func (d *deleteOnClose) Read(p []byte) (n int, err error) {
-	return d.File.Read(p)
-}
-
-func (d *deleteOnClose) Seek(offset int64, whence int) (int64, error) {
-	return d.File.Seek(offset, whence)
-}
-
 func (d *deleteOnClose) Close() error {
 	if err := os.Remove(d.Name()); err != nil {
-		d.File.Close() // Close failure is unimportant on read, but data definitely stays!
+		d.File.Close() // "Only" file descriptor leak if close fails (but data might stay).
 		return fmt.Errorf("delete on close: %w", err)
 	}
 	return d.File.Close()

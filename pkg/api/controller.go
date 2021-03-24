@@ -1506,6 +1506,7 @@ func (c *Controller) StagingLinkPhysicalAddressHandler() staging.LinkPhysicalAdd
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrNotFound) {
 			return staging.NewLinkPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
+		}
 		if err != nil {
 			return staging.NewLinkPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
