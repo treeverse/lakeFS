@@ -153,6 +153,7 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -233,6 +234,7 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupID string, userID string) {
@@ -319,6 +321,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID string, policyID string) {
@@ -426,6 +429,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
@@ -567,6 +571,7 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID string) {
@@ -673,6 +678,7 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userID string, accessKeyID string) {
@@ -792,6 +798,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID string, policyID string) {
@@ -829,8 +836,8 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
-func (c *Controller) HealthCheck(http.ResponseWriter, *http.Request) {
-	// nothing to do
+func (c *Controller) HealthCheck(w http.ResponseWriter, _ *http.Request) {
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, params ListRepositoriesParams) {
@@ -977,6 +984,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
@@ -1295,7 +1303,10 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_branch")
 	err := c.Catalog.DeleteBranch(ctx, repository, branch)
-	_ = handleAPIError(w, err)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repository string, branch string) {
@@ -1375,7 +1386,10 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	default:
 		writeError(w, http.StatusNotFound, "reset type not found")
 	}
-	_ = handleAPIError(w, err)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository string, branch string) {
@@ -1479,7 +1493,10 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 	c.LogAction(ctx, "delete_object")
 
 	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path)
-	_ = handleAPIError(w, err)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository string, branch string, params UploadObjectParams) {
@@ -1629,7 +1646,10 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 		Committer:    committer,
 		ParentNumber: body.ParentNumber,
 	})
-	_ = handleAPIError(w, err)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository string, commitID string) {
@@ -2361,7 +2381,10 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_tag")
 	err := c.Catalog.DeleteTag(ctx, repository, tag)
-	_ = handleAPIError(w, err)
+	if handleAPIError(w, err) {
+		return
+	}
+	writeResponse(w, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository string, tag string) {

@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"golang.org/x/term"
 )
 
+var ErrRequestFailed = errors.New("request failed")
 var isTerminal = true
 var noColorRequested = false
 
@@ -168,23 +170,34 @@ func DieErr(err error) {
 	os.Exit(1)
 }
 
+type Statuser interface {
+	StatusCode() int
+}
+
 func DieOnResponseError(response interface{}, err error) {
 	if err != nil {
 		DieErr(err)
 	}
 	// check http response code
-	r := reflect.ValueOf(response)
-	f := reflect.Indirect(r).FieldByName("HTTPResponse")
-	resp := f.Interface().(*http.Response)
-	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
-		return
+	var statusCode int
+	if stat, ok := response.(Statuser); ok {
+		statusCode = stat.StatusCode()
+		if statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices {
+			return
+		}
 	}
-	f = reflect.Indirect(r).FieldByName("Body")
+	// read body and try to parse Error
+	r := reflect.ValueOf(response)
+	f := reflect.Indirect(r).FieldByName("Body")
+	if f.IsZero() {
+		// no body - format error
+		DieFmt("%w: code %d\n", ErrRequestFailed, statusCode)
+	}
 	body := f.Bytes()
 	var apiError api.Error
 	if err := json.Unmarshal(body, &apiError); err != nil {
 		// general case
-		DieFmt("Request failed (%s): %s\n", resp.Status, string(body))
+		DieFmt("%w: %s (code %d)\n", ErrRequestFailed, string(body), statusCode)
 	} else {
 		// message
 		Die(apiError.Message, 1)

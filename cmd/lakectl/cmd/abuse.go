@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -17,8 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
-
-var ErrRequestFailed = errors.New("request failed")
 
 var abuseCmd = &cobra.Command{
 	Use:    "abuse <sub command>",
