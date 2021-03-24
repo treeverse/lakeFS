@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -85,22 +86,26 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	if setupLakeFS {
 		// first setup of lakeFS
 		adminUserName := params.Name
-		request := api.Setup{}
-		request.Key.AccessKeyId = params.AdminAccessKeyID
-		request.Key.SecretAccessKey = params.AdminSecretAccessKey
-		res, err := client.SetupWithResponse(ctx, api.SetupJSONRequestBody{
-			Key:      request.Key,
+		requestBody := api.SetupJSONRequestBody{
 			Username: adminUserName,
-		})
+		}
+		if params.AdminAccessKeyID != "" || params.AdminSecretAccessKey != "" {
+			requestBody.Key = &api.AccessKeyCredentials{
+				AccessKeyId:     params.AdminAccessKeyID,
+				SecretAccessKey: params.AdminSecretAccessKey,
+			}
+		}
+		res, err := client.SetupWithResponse(ctx, requestBody)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to setup lakeFS")
 		}
-		if res.JSON200 == nil {
-			logger.WithField("status", res.HTTPResponse.Status).Error("Failed to setup lakeFS")
+		if res.StatusCode() != http.StatusOK {
+			logger.WithField("status", res.HTTPResponse.Status).Fatal("Failed to setup lakeFS")
 		}
 		logger.Info("Cluster setup successfully")
-		viper.Set("access_key_id", res.JSON200.AccessKeyId)
-		viper.Set("secret_access_key", res.JSON200.AccessSecretKey)
+		credentialsWithSecret := res.JSON200
+		viper.Set("access_key_id", credentialsWithSecret.AccessKeyId)
+		viper.Set("secret_access_key", credentialsWithSecret.AccessSecretKey)
 	}
 
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(viper.GetString("access_key_id"), viper.GetString("secret_access_key"))

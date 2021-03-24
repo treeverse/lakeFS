@@ -6,9 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )

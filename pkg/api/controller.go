@@ -869,7 +869,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		results = append(results, r)
 	}
 	repositoryList := RepositoryList{
-		Pagination: paginationFor2(hasMore, results, "Name"),
+		Pagination: paginationFor(hasMore, results, "Id"),
 		Results:    results,
 	}
 	writeResponse(w, http.StatusOK, repositoryList)
@@ -1252,22 +1252,16 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	response := RefList{
-		Pagination: Pagination{
-			HasMore:    hasMore,
-			MaxPerPage: DefaultMaxPerPage,
-			Results:    len(res),
-		},
-		Results: make([]Ref, 0, len(res)),
-	}
+	refs := make([]Ref, 0, len(res))
 	for _, branch := range res {
-		response.Results = append(response.Results, Ref{
+		refs = append(refs, Ref{
 			CommitId: branch.Reference,
 			Id:       branch.Name,
 		})
 	}
-	if len(response.Results) > 0 && hasMore {
-		response.Pagination.NextOffset = res[len(res)-1].Reference
+	response := RefList{
+		Results:    refs,
+		Pagination: paginationFor(hasMore, refs, "Id"),
 	}
 	writeResponse(w, http.StatusOK, response)
 }
@@ -1457,26 +1451,18 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	response := DiffList{
-		Pagination: Pagination{
-			HasMore:    hasMore,
-			MaxPerPage: DefaultMaxPerPage,
-			Results:    len(diff),
-		},
-		Results: make([]Diff, 0, len(diff)),
-	}
+	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		response.Results = append(response.Results, Diff{
+		results = append(results, Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
 			PathType: "object",
 		})
 	}
-	if hasMore && len(diff) > 0 {
-		lastDiff := diff[len(diff)-1]
-		response.Pagination.NextOffset = lastDiff.Path
+	response := DiffList{
+		Pagination: paginationFor(hasMore, results, "Path"),
+		Results:    results,
 	}
-
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -1958,25 +1944,17 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	if handleAPIError(w, err) {
 		return
 	}
-
-	response := DiffList{
-		Pagination: Pagination{
-			HasMore:    hasMore,
-			MaxPerPage: DefaultMaxPerPage,
-			Results:    len(diff),
-		},
-		Results: make([]Diff, 0, len(diff)),
-	}
+	results := make([]Diff, 0, len(diff))
 	for _, d := range diff {
-		response.Results = append(response.Results, Diff{
+		results = append(results, Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
 			PathType: "object",
 		})
 	}
-	if hasMore && len(diff) > 0 {
-		lastDiff := diff[len(diff)-1]
-		response.Pagination.NextOffset = lastDiff.Path
+	response := DiffList{
+		Pagination: paginationFor(hasMore, results, "Path"),
+		Results:    results,
 	}
 	writeResponse(w, http.StatusOK, response)
 }
@@ -2000,7 +1978,6 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 	}
 
 	serializedCommits := make([]Commit, 0, len(commitLog))
-	lastID := ""
 	for _, commit := range commitLog {
 		metadata := Commit_Metadata{
 			AdditionalProperties: commit.Metadata,
@@ -2014,11 +1991,10 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 			MetaRangeId:  commit.MetaRangeID,
 			Parents:      commit.Parents,
 		})
-		lastID = commit.Reference
 	}
 
 	response := CommitList{
-		Pagination: paginationFor(lastID, hasMore, len(serializedCommits)),
+		Pagination: paginationFor(hasMore, serializedCommits, "Id"),
 		Results:    serializedCommits,
 	}
 	writeResponse(w, http.StatusOK, response)
@@ -2325,23 +2301,16 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 
-	response := RefList{
-		Pagination: Pagination{
-			HasMore:    hasMore,
-			MaxPerPage: DefaultMaxPerPage,
-			Results:    len(res),
-		},
-		Results: make([]Ref, 0, len(res)),
-	}
+	results := make([]Ref, 0, len(res))
 	for _, tag := range res {
-		response.Results = append(response.Results, Ref{
+		results = append(results, Ref{
 			CommitId: tag.CommitID,
 			Id:       tag.ID,
 		})
 	}
-	if len(res) > 0 && hasMore {
-		lastTag := res[len(res)-1]
-		response.Pagination.NextOffset = lastTag.ID
+	response := RefList{
+		Results:    results,
+		Pagination: paginationFor(hasMore, results, "Id"),
 	}
 	writeResponse(w, http.StatusOK, response)
 }
@@ -2571,19 +2540,7 @@ func (c *Controller) LogAction(ctx context.Context, action string) {
 	c.Collector.CollectEvent("api_server", action)
 }
 
-func paginationFor(next string, hasMore bool, length int) Pagination {
-	pagination := Pagination{
-		HasMore:    hasMore,
-		MaxPerPage: DefaultMaxPerPage,
-		Results:    length,
-	}
-	if hasMore {
-		pagination.NextOffset = next
-	}
-	return pagination
-}
-
-func paginationFor2(hasMore bool, results interface{}, fieldName string) Pagination {
+func paginationFor(hasMore bool, results interface{}, fieldName string) Pagination {
 	pagination := Pagination{
 		HasMore:    hasMore,
 		MaxPerPage: DefaultMaxPerPage,

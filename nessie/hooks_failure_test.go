@@ -2,16 +2,14 @@ package nessie
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 var actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(
@@ -61,7 +59,7 @@ func hookFailToCommit(t *testing.T, path string) {
 		Path    string
 		Timeout string
 	}{
-		URL:     fmt.Sprintf("http://nessie:%d", server.port),
+		URL:     server.BaseURL(),
 		Path:    path,
 		Timeout: hooksTimeout.String(),
 	}
@@ -79,14 +77,13 @@ func hookFailToCommit(t *testing.T, path string) {
 		"application/octet-stream",
 		strings.NewReader(preCommitAction))
 	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, uploadResp.StatusCode())
+	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
 
 	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
-	require.Error(t, err, "commit should fail due to webhook")
+	require.NoError(t, err)
 	require.Equal(t, http.StatusPreconditionFailed, commitResp.StatusCode())
 	require.Nil(t, commitResp.JSON201)
-	require.Equal(t, http.StatusPreconditionFailed, commitResp.StatusCode())
 }

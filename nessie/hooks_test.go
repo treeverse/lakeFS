@@ -3,16 +3,14 @@ package nessie
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 const actionPreMergeYaml = `
@@ -64,7 +62,7 @@ func TestHooksSuccess(t *testing.T) {
 	docData := struct {
 		URL string
 	}{
-		URL: fmt.Sprintf("http://nessie:%d", server.port),
+		URL: server.BaseURL(),
 	}
 
 	actionPreMergeTmpl := template.Must(template.New("action-pre-merge").Parse(actionPreMergeYaml))
@@ -125,7 +123,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, mergeResp.StatusCode())
 	require.NoError(t, webhookData.err, "failed to merge branches")
-	mergeRef := string(mergeResp.Body)
+	mergeRef := mergeResp.JSON200.Reference
 	logger.WithField("mergeResult", mergeRef).Info("Merged successfully")
 
 	require.NoError(t, err, "error on pre commit serving")
@@ -139,10 +137,8 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, masterBranch, mergeEvent.BranchID)
 	require.Equal(t, commitRecord.Id, mergeEvent.SourceRef)
 
+	t.Log("List repository runs", mergeRef)
 	runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
-		After:  nil,
-		Amount: nil,
-		Branch: nil,
 		Commit: api.StringPtr(mergeRef),
 	})
 	require.NoError(t, err)

@@ -28,6 +28,6 @@ func TestRepositoryBasicOps(t *testing.T) {
 	for _, repo := range repos {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repo)
 		require.NoErrorf(t, err, "failed to delete repository %s, storage %s", repo)
-		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode())
 	}
 }

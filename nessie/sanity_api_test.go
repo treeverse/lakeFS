@@ -83,7 +83,7 @@ func TestSanityAPI(t *testing.T) {
 	log.Debug("branch1 - delete file1")
 	deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, "branch1", &api.DeleteObjectParams{Path: "file1"})
 	require.NoError(t, err, "delete object")
-	require.Equal(t, http.StatusOK, deleteResp.StatusCode())
+	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
 	log.Debug("branch1 - add fileX")
 	_, _ = uploadFileRandomData(ctx, t, repo, "branch1", "fileX")
@@ -117,7 +117,7 @@ func TestSanityAPI(t *testing.T) {
 		Message: "3 changes",
 	})
 	require.NoError(t, err, "commit 3 changes")
-	require.Equal(t, http.StatusOK, commitResp.StatusCode())
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	log.Debug("branch1 - diff changes with master")
 	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", masterBranch, &api.DiffRefsParams{
@@ -152,5 +152,5 @@ func TestSanityAPI(t *testing.T) {
 	log.Debug("delete test repository")
 	deleteRepoResp, err := client.DeleteRepositoryWithResponse(ctx, repo)
 	require.NoError(t, err, "failed to delete repository")
-	require.Equal(t, http.StatusOK, deleteRepoResp.StatusCode())
+	require.Equal(t, http.StatusNoContent, deleteRepoResp.StatusCode())
 }

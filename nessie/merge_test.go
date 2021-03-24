@@ -62,8 +62,8 @@ func TestMergeAndList(t *testing.T) {
 	objs := payload.Results
 	pagin := payload.Pagination
 	require.False(t, pagin.HasMore, "pagination shouldn't have more items")
-	require.Equal(t, int64(totalFiles), pagin.Results)
-	require.Equal(t, totalFiles, len(objs))
+	require.Len(t, objs, totalFiles)
+	require.Equal(t, totalFiles, pagin.Results)
 	logger.WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
 
 	for _, obj := range objs {

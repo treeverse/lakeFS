@@ -35,7 +35,7 @@ func TestDeleteStaging(t *testing.T) {
 
 	resp, err := client.DeleteObjectWithResponse(ctx, repo, masterBranch, &api.DeleteObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to delete object")
-	require.Equal(t, http.StatusOK, resp.StatusCode())
+	require.Equal(t, http.StatusNoContent, resp.StatusCode())
 
 	f, err = found(ctx, repo, masterBranch, objPath)
 	assert.NoError(t, err)
@@ -58,7 +58,7 @@ func TestDeleteCommitted(t *testing.T) {
 
 	getResp, err := client.DeleteObjectWithResponse(ctx, repo, masterBranch, &api.DeleteObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to delete object")
-	require.Equal(t, http.StatusOK, getResp.StatusCode())
+	require.Equal(t, http.StatusNoContent, getResp.StatusCode())
 
 	f, err = found(ctx, repo, masterBranch, objPath)
 	assert.NoError(t, err)
@@ -83,7 +83,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 
 	deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, masterBranch, &api.DeleteObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to delete object")
-	require.Equal(t, http.StatusOK, deleteResp.StatusCode())
+	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
 	commitResp, err = client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
 		Message: "nessie:deleteCommit",
