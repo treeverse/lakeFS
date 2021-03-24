@@ -80,7 +80,7 @@ func (t *Loader) Run() error {
 		if err != nil {
 			return err
 		}
-		if resp.HTTPResponse.StatusCode != http.StatusOK {
+		if resp.HTTPResponse.StatusCode != http.StatusNoContent {
 			return fmt.Errorf("%w: %s (%d)", ErrRepositoryDeleteFailed, resp.HTTPResponse.Status, resp.HTTPResponse.StatusCode)
 		}
 	}
