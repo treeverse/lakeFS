@@ -1,11 +1,14 @@
 package io.treeverse.clients
+import io.treeverse.clients.Exporter.resolveURL
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import java.io.IOException
 import java.net.URL
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import scala.util.Random
-import scala.util.matching.Regex
 
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
@@ -25,23 +28,26 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     val dst = dstRoot
     val actionsDF = spark.sql(s"SELECT 'copy' as action, * FROM ${tableName}")
 
-    if (!export(ns, dst, actionsDF, false)){
-      // failed to export files, don't export _success files
-      return
-    }
-    export(ns, dst, actionsDF, true)
+    actOnActions(ns, dst, commitID, actionsDF)
   }
 
-  private def export(ns: String, rel: String, actionsDF: DataFrame, successFiles: Boolean) : Boolean =  {
+  private def export(ns: String, rel: String, commitID: String, actionsDF: DataFrame, successFiles: Boolean) : Boolean =  {
     import spark.implicits._
 
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
 
-    actionsDF.map(
+    val errs = actionsDF.map(
       row =>
         Exporter.handleRow(ns, rel, serializedConf, row, successFiles)
-    ).reduce((a, b) => a && b)
+    ).filter(err => err != null)
+
+    if (errs.count() == 0){
+      return true
+    }
+
+    writeSummaryFile(false, commitID, errs.reduce(_+"\n"+_))
+    false
   }
 
   def exportFrom(branch: String, prevCommitID: String): Unit = {
@@ -74,12 +80,36 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
       WHERE n.etag <> p.etag OR n.etag is null or p.etag is null)
     """)
 
-    export(ns, dst, actionsDF, false)
-    export(ns, dst, actionsDF, true)
+    actOnActions(ns, dst, commitID, actionsDF)
   }
 
-  val prefixLen = 8
-  def randPrefix() : String = {
+  final val successMsg = "Export completed successfully!"
+  private def actOnActions(ns: String, dst: String, commitID: String, actionsDF: DataFrame): Unit = {
+    if (!export(ns, dst, commitID, actionsDF, false)) {
+      // failed to export files, don't export _success files
+      return
+    }
+    if (!export(ns, dst, commitID, actionsDF, true)){
+      return
+    }
+
+    writeSummaryFile(true, commitID, successMsg)
+  }
+
+
+
+  private def writeSummaryFile(success: Boolean, commitID: String, content : String) = {
+    val suffix = if(success) "SUCCESS" else "FAILURE"
+    val dstPath = resolveURL(new URL(dstRoot), s"EXPORT_${commitID}_${suffix}")
+    val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
+
+    val stream = dstFS.create(dstPath)
+    stream.writeChars(content)
+    stream.close()
+  }
+
+  final val prefixLen = 8
+  private def randPrefix() : String = {
     val gen = Random.alphanumeric.dropWhile(_.isDigit)
     gen.take(prefixLen).mkString("")
   }
@@ -90,7 +120,7 @@ object Exporter {
   // dir, then they should be equal to "_SUCCESS".
   final val sparkSuccessFileRegex = "((.*\\/_SUCCESS)|(^_SUCCESS))$".r
 
-  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row, successFiles :Boolean): Boolean =  {
+  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row, successFiles :Boolean): String =  {
     val action = row(0)
     val key = row(1).toString()
     val address = row(2).toString()
@@ -99,12 +129,12 @@ object Exporter {
       case sparkSuccessFileRegex() =>
         if(!successFiles) {
           // key match, end gracefully
-          return true
+          return null
         }
       case default =>
         if (successFiles) {
           // key doesn't match, end gracefully
-          return true
+          return null
         }
     }
 
@@ -114,27 +144,32 @@ object Exporter {
 
     val dstFS = dstPath.getFileSystem(conf)
 
-    try{
       action match {
         case "delete" => {
-          dstFS.delete(dstPath,false) : Boolean
+          try {
+            dstFS.delete(dstPath, false)
+            null
+          } catch {
+            case e : (IOException) =>  s"Unable to delete file ${dstPath.toString}: ${e.toString}"
+          }
         }
 
         case "copy" =>{
-          org.apache.hadoop.fs.FileUtil.copy(
-
-            srcPath.getFileSystem(conf),
-            srcPath,
-            dstFS,
-            dstPath,
-            false,
-            conf
-          ) : Boolean
+          try {
+            org.apache.hadoop.fs.FileUtil.copy(
+              srcPath.getFileSystem(conf),
+              srcPath,
+              dstFS,
+              dstPath,
+              false,
+              conf)
+            null
+          } catch {
+            case e : (IOException) =>  s"Unable to copy file ${dstPath.toString} from source ${srcPath.toString}: ${e.toString}"
+          }
         }
       }
-    } catch {
-      case _ : (Exception) => false
-    }
+
   }
 
   private def resolveURL(baseUrl :URL, extraPath: String): Path = {
