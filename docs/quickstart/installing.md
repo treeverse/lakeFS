@@ -7,7 +7,7 @@ nav_order: 10
 has_children: false
 ---
 
-# Installing lakeFS
+# Install lakeFS
 {: .no_toc }
 
 {% include learn_only.html %} 
