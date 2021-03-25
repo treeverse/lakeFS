@@ -91,7 +91,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 	if len(headerValue) > 0 {
 		match := V2AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
-			logging.Default().WithField("header", headerValue).Error("log header does not match v2 structure")
+			logging.Default().WithField("header", v2authHeaderName).Error("log header does not match v2 structure")
 			return ctx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
@@ -104,7 +104,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
-			logging.Default().WithField("header", headerValue).Error("log header does not match v2 structure (isn't proper base64)")
+			logging.Default().WithField("header", v2authHeaderName).Error("log header does not match v2 structure (isn't proper base64)")
 			return ctx, ErrHeaderMalformed
 		}
 		ctx.signature = sig
