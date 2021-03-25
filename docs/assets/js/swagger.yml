@@ -22,10 +22,9 @@ securityDefinitions:
     in: header
     name: X-JWT-Authorization
 
-
 security:
-  - basic_auth: [ ]
-  - jwt_token: [ ]
+  - jwt_token: []
+  - basic_auth: []
 
 responses:
   Unauthorized:
@@ -96,7 +95,7 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3|gs|mem|local|transient)://.*$'
+        pattern: '^(s3|gs|https?|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
@@ -116,9 +115,58 @@ definitions:
       size_bytes:
         type: integer
         format: int64
+        x-nullable: true
       path_type:
         type: string
         enum: [ common_prefix, object ]
+
+  staging_location:
+    type: object
+    description: location for placing an object when staging it
+    properties:
+      physical_address:
+        type: string
+      token:
+        type: string
+        description: opaque staging token to use to link uploaded object
+    required:
+      - token
+
+  staging_metadata:
+    type: object
+    description: information about uploaded object
+    properties:
+      staging:
+        type: object
+        $ref: "#/definitions/staging_location"
+      checksum:
+        type: string
+        description: unique identifier of object content on backing store (typically ETag)
+      mtime:
+        type: integer
+        format: int64
+      size_bytes:
+        type: integer
+        format: int64
+
+  object_stage_creation:
+    type: object
+    required:
+      - physical_address
+      - checksum
+      - size_bytes
+    properties:
+      physical_address:
+        type: string
+      checksum:
+        type: string
+      size_bytes:
+        type: integer
+        format: int64
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
 
   underlying_object_properties:
     type: object
@@ -149,10 +197,7 @@ definitions:
       path_type:
         type: string
         enum: [ common_prefix, object ]
-  diff_type: &DIFF_TYPE
-    type: string
-    enum: [two_dot, three_dot]
-    default: three_dot
+
   reset_creation:
     type: object
     required:
@@ -231,6 +276,16 @@ definitions:
       id:
         type: string
       ref:
+        type: string
+
+  refs_dump:
+    type: object
+    properties:
+      commits_meta_range_id:
+        type: string
+      tags_meta_range_id:
+        type: string
+      branches_meta_range_id:
         type: string
 
   error:
@@ -357,43 +412,59 @@ definitions:
       - id
       - statement
 
-  continuous_export_configuration:
-    type: object
-    required:
-      - exportPath
-    properties:
-      exportPath:
-        type: string
-        format: uri
-        x-nullable: false       # Override https://github.com/go-swagger/go-swagger/issues/1188
-        # go-swagger totally not a bug.  This causes the generated field
-        # *not* to be a pointer.  Then the regular (incorrect, in this
-        # case) JSON parser parses it as an empty field, and validation
-        # verifies the value is non-empty.  In *this particular case* it
-        # works because a URI cannot be empty (at least not an absolute
-        # URI, which is what we require).
-        description: export objects to this path
-        example: s3://company-bucket/path/to/export
-      exportStatusPath:
-        type: string
-        format: uri
-        description: write export status object to this path
-        example: s3://company-bucket/path/to/status
-      lastKeysInPrefixRegexp:
-        type: array
-        items:
-          type: string
-        description: "list of regexps of keys to exported last in each prefix (for signalling)"
-        example: [ "^SUCCESS$", ".*/_SUCCESS$" ]
-      isContinuous:
-        type: boolean
-        description: if true, export every commit or merge to branch
-
   config:
     type: object
     properties:
-      blockstore.type:
+      blockstore_namespace_example:
         type: string
+      blockstore_namespace_ValidityRegex:
+        type: string
+  action_run:
+    type: object
+    required:
+      - run_id
+      - branch
+      - commit_id
+    properties:
+      run_id:
+        type: string
+      branch:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+      end_time:
+        type: string
+        format: date-time
+      event_type:
+        type: string
+        enum: [ pre_commit, pre_merge ]
+      status:
+        type: string
+        enum: [ failed, completed ]
+      commit_id:
+        type: string
+
+  hook_run:
+    type: object
+    required:
+      - hook_run_id
+    properties:
+      hook_run_id:
+        type: string
+      action:
+        type: string
+      hook_id:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+      end_time:
+        type: string
+        format: date-time
+      status:
+        type: string
+        enum: [ failed, completed ]
 
 paths:
 
@@ -452,7 +523,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -556,7 +626,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -660,7 +729,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -794,7 +862,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -874,7 +941,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -978,7 +1044,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1017,7 +1082,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1104,7 +1168,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1181,7 +1244,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1216,6 +1278,11 @@ paths:
           name: repository
           schema:
             $ref: "#/definitions/repository_creation"
+        - in: query
+          name: bare
+          type: boolean
+          default: false
+          description: If true, create a bare repository with no initial commit and branch
       responses:
         201:
           description: repository
@@ -1277,6 +1344,69 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/refs/dump:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - refs
+      operationId: dump
+      summary: Dump repository refs (tags, commits, branches) to object store
+      responses:
+        201:
+          description: refs dump
+          schema:
+            $ref: "#/definitions/refs_dump"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+  /repositories/{repository}/refs/restore:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - refs
+      operationId: restore
+      summary: Restore repository refs (tags, commits, branches) from object store
+      parameters:
+        - in: body
+          name: manifest
+          schema:
+            $ref: "#/definitions/refs_dump"
+      responses:
+        200:
+          description: refs successfully loaded
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
   /repositories/{repository}/tags:
     parameters:
       - in: path
@@ -1292,7 +1422,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1329,7 +1458,6 @@ paths:
         201:
           description: tag
           schema:
-            type: object
             $ref: "#/definitions/ref"
         400:
           description: validation error
@@ -1361,7 +1489,6 @@ paths:
         200:
           description: tag
           schema:
-            type: object
             $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
@@ -1407,7 +1534,6 @@ paths:
         - in: query
           name: after
           type: string
-          default: ""
         - in: query
           name: amount
           type: integer
@@ -1492,9 +1618,7 @@ paths:
                 items:
                   $ref: "#/definitions/commit"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
           schema:
@@ -1524,6 +1648,10 @@ paths:
           description: branch not found
           schema:
             $ref: "#/definitions/error"
+        412:
+          description: precondition failed
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
@@ -1548,7 +1676,6 @@ paths:
         200:
           description: branch
           schema:
-            type: object
             $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
@@ -1627,6 +1754,9 @@ paths:
               ref:
                 type: string
                 description: the commit to revert, given by a ref
+              parent_number:
+                type: integer
+                description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
       responses:
         204:
           description: revert successful
@@ -1641,7 +1771,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     parameters:
       - in: path
         name: repository
@@ -1651,9 +1781,9 @@ paths:
         name: sourceRef
         required: true
         type: string
-        description: source branch name
+        description: source ref
       - in: path
-        name: destinationRef
+        name: destinationBranch
         required: true
         type: string
         description: destination branch name
@@ -1673,10 +1803,12 @@ paths:
           description: merge completed
           schema:
             $ref: "#/definitions/merge_result"
-        401:
-          description: Unauthorized
+        400:
+          description: bad request
           schema:
-            $ref: "#/responses/Unauthorized"
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
         404:
           description: reference not found
           schema:
@@ -1685,6 +1817,10 @@ paths:
           description: conflict
           schema:
             $ref: "#/definitions/merge_result"
+        412:
+          description: precondition failed
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
@@ -1725,9 +1861,7 @@ paths:
                 items:
                   $ref: "#/definitions/diff"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
           schema:
@@ -1764,7 +1898,12 @@ paths:
       - in: query
         name: type
         type: string
-        <<: *DIFF_TYPE
+      - in: query
+        name: diff_type
+        type: string
+        enum: [two_dot, three_dot]
+        default: three_dot
+
     get:
       tags:
         - refs
@@ -1783,9 +1922,7 @@ paths:
                 items:
                   $ref: "#/definitions/diff"
         401:
-          description: Unauthorized
-          schema:
-            $ref: "#/responses/Unauthorized"
+          $ref: "#/responses/Unauthorized"
         404:
           description: reference not found
           schema:
@@ -1878,6 +2015,76 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/branches/{branch}/staging/backing:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: path
+        name: branch
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
+    get:
+      tags:
+        - staging
+      operationId: getPhysicalAddress
+      summary: get a physical address and a return token to write object to underlying storage
+      responses:
+        200:
+          description: physical address for staging area
+          schema:
+            $ref: "#/definitions/staging_location"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags: 
+       - staging
+      operationId: linkPhysicalAddress
+      summary: associate staging on this physical address with a path
+      description: |
+        If the supplied token matches the current staging token, associate the object as the
+        physical address with the supplied path.  Otherwise return a conflict and hint where
+        to place the object to try again.
+      parameters:
+        - in: body
+          name: metadata
+          schema:
+            $ref: "#/definitions/staging_metadata"
+      responses:
+        200:
+          # This actually violates HTTP, which requires returning 201 if a new object was
+          # created or 200 if an existing object was modified,
+          # https://tools.ietf.org/html/rfc7231#section-4.3.4
+          description: successfully linked
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        409:
+          description: conflict with a commit, try here
+          schema:
+            $ref: "#/definitions/staging_location"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+      
+
   /repositories/{repository}/branches/{branch}/objects:
     parameters:
       - in: path
@@ -1892,6 +2099,36 @@ paths:
         name: path
         required: true
         type: string
+
+    put:
+      tags:
+        - objects
+      operationId: stageObject
+      summary: stage an object's metadata for the given branch
+      parameters:
+        - in: body
+          name: object
+          schema:
+            $ref: "#/definitions/object_stage_creation"
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        400:
+          description: invalid object metadata
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - objects
@@ -2040,6 +2277,11 @@ paths:
         name: amount
         type: integer
         default: 100
+      - in: query
+        name: delimiter
+        type: string
+        default: "/"
+        allowEmptyValue: true
     get:
       tags:
         - objects
@@ -2105,121 +2347,219 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/branches/{branch}/continuous-export:
+  /repositories/{repository}/actions/runs:
+    get:
+      tags:
+        - actions
+      operationId: listRuns
+      summary: list runs
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+        - in: query
+          name: branch
+          type: string
+        - in: query
+          name: commit
+          type: string
+      responses:
+        200:
+          description: list action runs
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}:
+    get:
+      tags:
+        - actions
+      operationId: getRun
+      summary: get a run
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: action run result
+          schema:
+            $ref: "#/definitions/action_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks:
+    get:
+      tags:
+        - actions
+      operationId: listRunHooks
+      summary: list run hooks
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: list specific run hooks
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/hook_run"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
+    get:
+      tags:
+        - actions
+      operationId: getRunHookOutput
+      summary: get run hook output
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          type: string
+        - in: path
+          name: run_id
+          required: true
+          type: string
+        - in: path
+          name: hook_run_id
+          required: true
+          type: string
+      produces:
+        - application/octet-stream
+      responses:
+        200:
+          description: run hook output
+          schema:
+            type: file
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: output not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repository}/metadata/meta_range/{meta_range}:
     parameters:
       - in: path
         name: repository
         required: true
         type: string
       - in: path
-        name: branch
+        name: meta_range
         required: true
         type: string
     get:
       tags:
-        - export
-        - branches
-      operationId: getContinuousExport
-      summary: returns the current continuous export configuration of a branch
+        - metadata
+      operationId: getMetaRange
+      summary: return URI to a meta-range file
+      # TODO(ariels): Actually redirect to S3.
       responses:
         200:
-          description: continuous export policy
-          schema:
-            $ref: "#/definitions/continuous_export_configuration"
+          description: meta-range URI
+          headers:
+            Location:
+              type: string
         401:
           $ref: "#/responses/Unauthorized"
-        404:
-          description: no continuous export policy defined
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-    put:
-      tags:
-        - export
-        - branches
-      operationId: setContinuousExport
-      summary: sets a new continuous export configuration of a branch
-      parameters:
-        - in: body
-          name: config
-          required: true
-          schema:
-            $ref: "#/definitions/continuous_export_configuration"
-      responses:
-        201:
-          description: continuous export successfullyconfigured
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/branches/{branch}/repair-export:
+  /repositories/{repository}/metadata/range/{range}:
     parameters:
       - in: path
         name: repository
         required: true
         type: string
       - in: path
-        name: branch
+        name: range
         required: true
         type: string
-    post:
+    get:
       tags:
-        - export
-        - branches
-      operationId: repair
-      summary: set continuous export state as repaired
+        - metadata
+      operationId: getRange
+      summary: return URI to a range file
+      # TODO(ariels): Actually redirect to S3.
       responses:
-        201:
-          description: continuous export status successfully changed to repaired
+        200:
+          description: range URI
+          headers:
+            Location:
+              type: string
         401:
           $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
-
-  /repositories/{repository}/branches/{branch}/export-hook:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        type: string
-      - in: path
-        name: branch
-        required: true
-        type: string
-    post:
-      tags:
-        - export
-        - branches
-      operationId: run
-      summary: hook to be called in order to execute continuous export on branch
-      responses:
-        201:
-          description: continuous export successfully started
-          schema:
-            description: "export ID"
-            type: string
-        401:
-          $ref: "#/responses/Unauthorized"
-        404:
-          description: no branch defined at that repo
-          schema:
-            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:

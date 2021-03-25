@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/loadtest"
+	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/loadtest"
 
 	"github.com/spf13/cobra"
 )

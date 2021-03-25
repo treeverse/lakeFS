@@ -1,15 +1,14 @@
 package cmd
 
 import (
-	"context"
 	"log"
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/diagnostics"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/diagnostics"
 )
 
 // diagnosticsCmd represents the diagnostics command
@@ -17,25 +16,30 @@ var diagnosticsCmd = &cobra.Command{
 	Use:   "diagnostics",
 	Short: "Collect lakeFS diagnostics",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		ctx := cmd.Context()
 		output, _ := cmd.Flags().GetString("output")
 
-		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 		defer dbPool.Close()
-		adapter, err := factory.BuildBlockAdapter(cfg)
+		adapter, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			log.Printf("Failed to create block adapter: %s", err)
 		}
-		cataloger, err := catalog.NewCataloger(dbPool, cfg)
+		c, err := catalog.New(ctx, catalog.Config{
+			Config: cfg,
+			DB:     dbPool,
+		})
 		if err != nil {
-			log.Printf("Failed to create cataloger: %s", err)
+			log.Printf("Failed to create c: %s", err)
 		}
-		pyrmaidParams, err := cfg.GetCommittedTierFSParams()
+		defer func() { _ = c.Close() }()
+
+		pyrmaidParams, err := cfg.GetCommittedTierFSParams(ctx)
 		if err != nil {
 			log.Printf("Failed to get pyramid params: %s", err)
 		}
 
-		c := diagnostics.NewCollector(dbPool, cataloger, pyrmaidParams, adapter)
+		collector := diagnostics.NewCollector(dbPool, c, pyrmaidParams, adapter)
 
 		f, err := os.Create(output)
 		if err != nil {
@@ -44,7 +48,7 @@ var diagnosticsCmd = &cobra.Command{
 		defer func() { _ = f.Close() }()
 
 		log.Printf("Collecting data")
-		err = c.Collect(ctx, f)
+		err = collector.Collect(ctx, f)
 		if err != nil {
 			log.Fatalf("Failed to collect data: %s", err)
 		}

@@ -11,15 +11,16 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/graveler"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/onboard"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/onboard"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -37,7 +38,7 @@ const (
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
-	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", catalog.DefaultImportBranchName),
+	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", onboard.DefaultImportBranchName),
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(ImportCmdNumArgs),
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
@@ -70,11 +71,11 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	prefixFile, _ := flags.GetString(PrefixesFileFlagName)
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
-	ctx := context.Background()
+	ctx := cmd.Context()
 	conf := config.NewConfig()
-	err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
+	err := db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
 	if errors.Is(err, db.ErrSchemaNotCompatible) {
-		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
+		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		return 1
 	}
 	if err != nil {
@@ -82,23 +83,30 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 	logger := logging.FromContext(ctx)
-	dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+	dbPool := db.BuildDatabaseConnection(ctx, cfg.GetDatabaseParams())
 	defer dbPool.Close()
 
-	cataloger, err := catalog.NewCataloger(dbPool, cfg)
+	catalogCfg := catalog.Config{
+		Config: cfg,
+		DB:     dbPool,
+	}
+	c, err := catalog.New(ctx, catalogCfg)
 	if err != nil {
-		fmt.Printf("Failed to create cataloger: %s\n", err)
+		fmt.Printf("Failed to create c: %s\n", err)
 		return 1
 	}
-	defer func() { _ = cataloger.Close() }()
+	defer func() { _ = c.Close() }()
 
-	entryCataloger, err := catalog.NewEntryCatalog(cfg, dbPool)
-	if err != nil {
-		fmt.Printf("Failed to build entry catalog: %s\n", err)
-		return 1
-	}
+	// wire actions into entry catalog
+	actionsService := actions.NewService(
+		dbPool,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+	)
+	c.SetHooksHandler(actionsService)
+
 	u := uri.Must(uri.Parse(args[0]))
-	blockStore, err := factory.BuildBlockAdapter(cfg)
+	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
 	if err != nil {
 		fmt.Printf("Failed to create block adapter: %s\n", err)
 		return 1
@@ -114,7 +122,7 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 		return 1
 	}
 
-	repo, err := getRepository(ctx, cataloger, repoName, dryRun)
+	repo, err := getRepository(ctx, c, repoName)
 	if err != nil {
 		fmt.Println("Error getting repository", err)
 		return 1
@@ -150,11 +158,11 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	importConfig := &onboard.Config{
 		CommitUsername:     CommitterName,
 		InventoryURL:       manifestURL,
-		Repository:         repoName,
+		RepositoryID:       graveler.RepositoryID(repoName),
+		DefaultBranchID:    graveler.BranchID(repo.DefaultBranch),
 		InventoryGenerator: blockStore,
-		Cataloger:          cataloger,
+		Store:              c.Store,
 		KeyPrefixes:        prefixes,
-		EntryCatalog:       entryCataloger,
 		BaseCommit:         graveler.CommitID(baseCommit),
 	}
 
@@ -191,14 +199,14 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	fmt.Println()
 
 	if baseCommit == "" {
-		fmt.Printf("Import to branch %s finished successfully.\n", catalog.DefaultImportBranchName)
+		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultImportBranchName)
 		fmt.Println()
 	}
 
 	if withMerge {
 		fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
 		msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-		commitLog, err := cataloger.Merge(ctx, repoName, catalog.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
+		commitLog, err := c.Merge(ctx, repoName, onboard.DefaultImportBranchName, repo.DefaultBranch, CommitterName, msg, nil)
 		if err != nil {
 			fmt.Printf("Merge failed: %s\n", err)
 			return 1
@@ -213,14 +221,8 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	return 0
 }
 
-func getRepository(ctx context.Context, cataloger catalog.Cataloger, repoName string, dryRun bool) (*catalog.Repository, error) {
-	if dryRun {
-		return &catalog.Repository{
-			Name:          repoName,
-			DefaultBranch: catalog.DefaultBranchName,
-		}, nil
-	}
-	repo, err := cataloger.GetRepository(ctx, repoName)
+func getRepository(ctx context.Context, c catalog.Interface, repoName string) (*catalog.Repository, error) {
+	repo, err := c.GetRepository(ctx, repoName)
 	if err != nil {
 		return nil, fmt.Errorf("read repository %s: %w", repoName, err)
 	}

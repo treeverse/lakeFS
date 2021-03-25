@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"context"
 	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -35,7 +34,7 @@ var repoListCmd = &cobra.Command{
 
 		clt := getClient()
 
-		repos, pagination, err := clt.ListRepositories(context.Background(), after, amount)
+		repos, pagination, err := clt.ListRepositories(cmd.Context(), after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -69,7 +68,6 @@ var repoListCmd = &cobra.Command{
 
 // repoCreateCmd represents the create repo command
 // lakectl create lakefs://myrepo s3://my-bucket/
-// not verifying bucket name in order not to bind to s3
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
@@ -85,7 +83,7 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = clt.CreateRepository(context.Background(), &models.RepositoryCreation{
+		err = clt.CreateRepository(cmd.Context(), &models.RepositoryCreation{
 			StorageNamespace: &args[1],
 			DefaultBranch:    defaultBranch,
 			Name:             &u.Repository,
@@ -93,7 +91,42 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		repo, err := clt.GetRepository(context.Background(), u.Repository)
+		repo, err := clt.GetRepository(cmd.Context(), u.Repository)
+		if err != nil {
+			DieErr(err)
+		}
+		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+			repo.ID, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+	},
+}
+
+// repoCreateBareCmd represents the create repo command
+// lakectl create-bare lakefs://myrepo s3://my-bucket/
+var repoCreateBareCmd = &cobra.Command{
+	Use:    "create-bare <repository uri> <storage namespace>",
+	Short:  "create a new repository with no initial branch or commit",
+	Hidden: true,
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(repoCreateCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
+	),
+
+	Run: func(cmd *cobra.Command, args []string) {
+		clt := getClient()
+		u := uri.Must(uri.Parse(args[0]))
+		defaultBranch, err := cmd.Flags().GetString("default-branch")
+		if err != nil {
+			DieErr(err)
+		}
+		err = clt.CreateBareRepository(cmd.Context(), &models.RepositoryCreation{
+			StorageNamespace: &args[1],
+			DefaultBranch:    defaultBranch,
+			Name:             &u.Repository,
+		})
+		if err != nil {
+			DieErr(err)
+		}
+		repo, err := clt.GetRepository(cmd.Context(), u.Repository)
 		if err != nil {
 			DieErr(err)
 		}
@@ -118,7 +151,7 @@ var repoDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
-		err = clt.DeleteRepository(context.Background(), u.Repository)
+		err = clt.DeleteRepository(cmd.Context(), u.Repository)
 		if err != nil {
 			DieErr(err)
 		}
@@ -131,12 +164,15 @@ func init() {
 	rootCmd.AddCommand(repoCmd)
 	repoCmd.AddCommand(repoListCmd)
 	repoCmd.AddCommand(repoCreateCmd)
+	repoCmd.AddCommand(repoCreateBareCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
 
-	repoListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	repoListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
+
+	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
 
 	AssignAutoConfirmFlag(repoDeleteCmd.Flags())
 }

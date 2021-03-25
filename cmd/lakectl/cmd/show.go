@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"context"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 // showCmd represents the show command
@@ -41,7 +40,7 @@ var showCmd = &cobra.Command{
 		switch showType {
 		case "commit":
 			client := getClient()
-			commit, err := client.GetCommit(context.Background(), u.Repository, identifier)
+			commit, err := client.GetCommit(cmd.Context(), u.Repository, identifier)
 			if err != nil {
 				DieErr(err)
 			}

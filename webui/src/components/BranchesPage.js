@@ -6,7 +6,7 @@ import {listBranches, listBranchesPaginate, createBranch, resetBranch, deleteBra
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {GitBranchIcon, LinkIcon, LinkExternalIcon, BrowserIcon, TrashcanIcon} from "@primer/octicons-react";
+import {GitBranchIcon, LinkIcon, LinkExternalIcon, BrowserIcon, TrashcanIcon, PlayIcon} from "@primer/octicons-react";
 import Alert from "react-bootstrap/Alert";
 import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
@@ -20,6 +20,8 @@ import RefDropdown from "./RefDropdown";
 import ConfirmationModal from "./ConfirmationModal"
 import {Link} from "react-router-dom";
 
+
+const ImportBranchName = 'import-from-inventory';
 
 
 const CreateBranchButton = connect(
@@ -141,6 +143,10 @@ const BranchesPage = connect(
     } else if (!!branches.error) {
         body = (<Alert variant="danger">{branches.error}</Alert> );
     } else {
+        let deleteBranchConfirmMsg = <>Are you sure you wish to delete branch <strong>{selectedBranch}</strong> ?</>;
+        if (selectedBranch === ImportBranchName) {
+            deleteBranchConfirmMsg = <>{deleteBranchConfirmMsg}<br/><Badge variant="warning">Warning</Badge> this is a system branch used for importing data to lakeFS</>;
+        }
         body = (
             <>
                 <ListGroup className="branches-list pagination-group">
@@ -171,6 +177,11 @@ const BranchesPage = connect(
                                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                                         <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
+                                        <OverlayTrigger placement="bottom" overlay={<Tooltip>View branch runs</Tooltip>}>
+                                            <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/actions?branch=${branch.id}`} >
+                                                <PlayIcon/>
+                                            </Button>
+                                        </OverlayTrigger>
                                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects</Tooltip>}>
                                             <Button href={`/repositories/${repo.id}/tree?branch=${branch.id}`} variant={buttonVariant}>
                                                 <BrowserIcon/>
@@ -182,7 +193,7 @@ const BranchesPage = connect(
                                             </Button>
                                         </OverlayTrigger>
                                     </ButtonGroup>
-                                    <ConfirmationModal show={show} onHide={handleClose} msg={`are you sure you wish to delete branch ${selectedBranch}?`} onConfirm={onSubmit}/>
+                                    <ConfirmationModal show={show} onHide={handleClose} msg={deleteBranchConfirmMsg} onConfirm={onSubmit}/>
                                 </div>
                             </div>
                         </ListGroupItem>

@@ -2,7 +2,7 @@
 # DB
 #####
 module "db" {
-  source = "github.com/terraform-aws-modules/terraform-aws-rds"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-rds.git?ref=v2.22.0"
 
   identifier = "benchmarks-postgres-${var.tag}"
 

@@ -1,9 +1,19 @@
 name: Go
 on:
   push:
+    paths-ignore:
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
     branches:
       - master
   pull_request:
+    paths-ignore:
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
 jobs:
   validator:
     name: Run Linters and Checkers
@@ -16,12 +26,10 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15.2
+          go-version: 1.16.2
         id: go
       - name: Generated code
         run: make gen
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
       - name: Checks validator
         run: make checks-validator
         env:
@@ -56,7 +64,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15.2
+          go-version: 1.16.2
         id: go
 
       # No way to share code between workflows :-( If you change this, find and change the

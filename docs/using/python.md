@@ -49,10 +49,7 @@ from bravado.client import SwaggerClient
 
 http_client = RequestsClient()
 http_client.set_basic_auth('localhost:8000', 'AKIAIOSFODNN7EXAMPLE', 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
-client = SwaggerClient.from_url(
-    'http://localhost:8000/swagger.json',
-    http_client=http_client,
-    config={"validate_swagger_spec": False})
+client = SwaggerClient.from_url('http://localhost:8000/swagger.json', http_client=http_client)
 
 ``` 
 

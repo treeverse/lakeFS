@@ -11,21 +11,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/treeverse/lakefs/api/gen/client/commits"
-
-	retry "github.com/avast/retry-go"
+	"github.com/avast/retry-go"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/thanhpk/randstr"
-	genclient "github.com/treeverse/lakefs/api/gen/client"
-	"github.com/treeverse/lakefs/api/gen/client/branches"
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-	"github.com/treeverse/lakefs/api/gen/client/refs"
-	"github.com/treeverse/lakefs/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/testutil"
+	genclient "github.com/treeverse/lakefs/pkg/api/gen/client"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var (

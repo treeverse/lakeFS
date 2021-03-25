@@ -4,8 +4,6 @@ import {ClippyIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 
-
-
 const copyTextToClipboard = (text, onSuccess, onError) => {
     const textArea = document.createElement('textarea');
 
@@ -127,4 +125,5 @@ const ClipboardButton = ({ text, variant, onSuccess, onError, icon = <ClippyIcon
     );
 };
 
-export default ClipboardButton;
+export {useHover}
+export default ClipboardButton

@@ -1,7 +1,17 @@
 name: Nessie
 on:
   pull_request:
+    paths-ignore:
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
   push:
+    paths-ignore:
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
     branches:
       - master
 
@@ -36,7 +46,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.15.2
+          go-version: 1.16.2
         id: go
 
       # No way to share code between workflows :-( If you change this, find and change the
@@ -109,7 +119,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15.2
+          go-version: 1.16.2
         id: go
       - name: Extract version
         shell: bash
@@ -139,13 +149,10 @@ jobs:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
-      - name: Run Nessie S3
-        env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: go test -v ./nessie --system-tests
+        run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
       - name: Check files in S3 bucket
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
@@ -177,13 +184,10 @@ jobs:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
         run: |
           docker-compose -f nessie/ops/docker-compose.yaml down -v
-          docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
-      - name: Run Nessie S3 with local API key
-        env:
-          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
-        run: go test -v ./nessie --system-tests --use-local-credentials --coverprofile=nessie-cover.out --cover
+          docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
       - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -197,14 +201,33 @@ jobs:
           AWS_ACCESS_KEY_ID: ""
           AWS_SECRET_ACCESS_KEY: ""
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
         run: |
             docker-compose -f nessie/ops/docker-compose.yaml down -v
-            docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
-      - name: Run Nessie GS
-        env:
-          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
-        run: go test -v ./nessie --system-tests
+            docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
       - name: lakeFS Logs on GS failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
+      - name: Run lakeFS Azure
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          # Setting Account_ID as a secret as a way to avoid specifying it here
+          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: azure
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          AWS_ACCESS_KEY_ID: ""
+          AWS_SECRET_ACCESS_KEY: ""
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
+          NESSIE_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
+        run: |
+          docker-compose -f nessie/ops/docker-compose.yaml down -v
+          docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
+      - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs

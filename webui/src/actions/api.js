@@ -357,7 +357,7 @@ class Repositories {
             }
         }
         const results = response.results.filter(repo => repo.id.indexOf(from) === 0);
-        if (self) results.unshift(from);
+        if (self) results.unshift(self);
         const hasMore = response.pagination.has_more;
 
         return {
@@ -555,11 +555,55 @@ class Refs {
             case 409:
                 const resp = await response.json();
                 throw new MergeError(response.statusText, resp.body);
+            case 412:
             default:
                 throw new Error(await extractError(response));
         }
     }
 }
+
+class Actions {
+
+    async listRuns(repoId, branch, commit, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({branch, commit, after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs?${query}`);
+        if (response.status !== 200) {
+            throw new Error(`could not list actions runs: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
+    async getRun(repoId, runId) {
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}`);
+        if (response.status !== 200) {
+            throw new Error(`could not get actions run: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
+    async listRunHooks(repoId, runId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks?${query}`);
+        if (response.status !== 200) {
+            throw new Error(`could not list actions run hooks: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
+    async getRunHookOutput(repoId, runId, hookRunId) {
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks/${hookRunId}/output`, {
+            headers: {
+                "Content-Type": "application/octet-stream",
+            },
+        })
+        if (response.status !== 200) {
+            throw new Error(`could not get actions run hook output: ${await extractError(response)}`)
+        }
+        return response.text();
+    }
+
+}
+
 
 class Setup {
     async lakeFS(username) {
@@ -606,4 +650,5 @@ export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
 export const auth = new Auth();
+export const actions = new Actions();
 export const config = new Config();

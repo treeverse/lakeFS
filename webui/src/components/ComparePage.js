@@ -8,6 +8,7 @@ import RefDropdown from "./RefDropdown";
 import Changes from "./Changes";
 import ConfirmationModal from "./ConfirmationModal";
 import {PAGINATION_AMOUNT} from "../actions/refs";
+import {formatAlertText} from "./PreconditionErr";
 
 const MergeButton = connect(
     ({ refs }) => ({
@@ -47,16 +48,6 @@ const MergeButton = connect(
         setShow(false);
     };
     
-    useEffect(() => {
-        if (mergeState.error) {
-            window.alert(mergeState.error);
-            resetMerge();
-            // TODO(barak): test if we need to reset and refresh diff after merge?!
-        // } else if (mergeState.payload && mergeState.payload.results.length > 0) {
-        //     resetDiff();
-        }
-    }, [resetMerge, mergeState]);
-
     const onSubmit = () => {
         if (disabled) return;
         merge(repo.id, sourceBranchId, destinationBranchId);
@@ -144,10 +135,11 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
 
 const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, resetMerge, mergeResults }) => {
     const refreshData = useCallback(() => {
+        resetMerge();
         if (compareRef && (compareRef.id !== refId.id)) {
             diff(repo.id, compareRef.id, refId.id);
         }
-    }, [repo.id, refId.id, diff, compareRef]);
+    }, [repo.id, refId.id, diff, compareRef, resetMerge]);
 
     useEffect(() => {
         refreshData();
@@ -156,27 +148,35 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
     const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     const compareWith = !compareRef || (refId.type === compareRef.type && refId.id === compareRef.id);
-    const alertText = diffResults.error || '';
+    const alertText = formatAlertText(repo.id, diffResults.error || mergeResults.error);
+    let alertComponent;
+    if (compareWith) {
+        alertComponent = (
+            <Alert variant="warning">
+                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
+                You’ll need to use two different sources to get a valid comparison.
+            </Alert>);
+    } else if (showMergeCompleted) {
+        alertComponent = (
+            <Alert variant="success" onClick={() => {
+                resetMerge();
+                refreshData();
+            }} dismissible>
+                Merge completed
+            </Alert>);
+    } else if (alertText) {
+        alertComponent = (
+            <Alert variant="danger">
+                {alertText}
+            </Alert>);
+    }
     return (
         <div className="mt-3">
             <div className="action-bar">
                 <CompareToolbar refId={refId} repo={repo} compare={compareRef} refresh={refreshData}/>
             </div>
 
-            <Alert variant="warning" show={compareWith}>
-                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-                You’ll need to use two different sources to get a valid comparison.
-            </Alert>
-
-            <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
-                Merge completed
-            </Alert>
-
-            <Alert variant="danger" show={!!alertText}>
-                <Alert.Heading>{alertText}</Alert.Heading>
-            </Alert>
-
-            {!(compareWith || alertText) &&
+            {alertComponent ||
                 <>
                 <Changes
                     repo={repo}
@@ -188,7 +188,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
                 {paginator &&
                 <p className="tree-paginator">
                     <Button variant="outline-primary" onClick={() => {
-                        diffPaginate(repo.id, refId.id, compareRef.id, diffResults.payload.pagination.next_offset, PAGINATION_AMOUNT);
+                        diffPaginate(repo.id, compareRef.id, refId.id, diffResults.payload.pagination.next_offset, PAGINATION_AMOUNT);
                     }}>
                         Load More
                     </Button>

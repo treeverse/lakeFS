@@ -2,19 +2,21 @@ package nessie
 
 import (
 	"flag"
+	"log"
 	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	genclient "github.com/treeverse/lakefs/api/gen/client"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/testutil"
+	genclient "github.com/treeverse/lakefs/pkg/api/gen/client"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var (
 	logger logging.Logger
 	client *genclient.Lakefs
 	svc    *s3.S3
+	server *webhookServer
 )
 
 func TestMain(m *testing.M) {
@@ -35,7 +37,14 @@ func TestMain(m *testing.M) {
 		params.AdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	}
 	logger, client, svc = testutil.SetupTestingEnv(&params)
-	logger.Info("Setup succeeded, running the tests")
+	var err error
+	server, err = startWebhookServer()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	defer func() { _ = server.s.Close() }()
+
+	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
 }

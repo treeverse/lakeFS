@@ -1,0 +1,13 @@
+on:
+  pre-merge:
+    branches:
+      - master
+hooks:
+  - id: hook1
+    type: webhook
+    properties:
+      url: "https://api.lakefs.io/webhook1?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+  - id: hook1
+    type: webhook
+    properties:
+      url: "https://api.lakefs.io/webhook1?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"

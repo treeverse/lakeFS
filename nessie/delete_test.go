@@ -10,9 +10,9 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/api/gen/client/commits"
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 func found(ctx context.Context, repo, ref, path string) (bool, error) {

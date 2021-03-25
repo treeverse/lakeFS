@@ -3,17 +3,16 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const fsStatTemplate = `Path: {{.Path | yellow }}
@@ -39,7 +38,7 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path)
+		stat, err := client.StatObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
@@ -49,7 +48,7 @@ var fsStatCmd = &cobra.Command{
 }
 
 const fsLsTemplate = `{{ range $val := . -}}
-{{ $val.PathType|ljust 6 }}    {{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}    {{ $val.Path|yellow }}
+{{ $val.PathType|ljust 12 }}    {{ if eq $val.PathType "object" }}{{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}{{ else }}                                            {{ end }}    {{ $val.Path|yellow }}
 {{ end -}}
 `
 
@@ -58,23 +57,34 @@ var fsListCmd = &cobra.Command{
 	Short: "list entries under a given tree",
 	Args: cmdutils.ValidationChain(
 		cobra.ExactArgs(1),
-		cmdutils.Or(
-			cmdutils.FuncValidator(0, uri.ValidatePathURI),
-			cmdutils.FuncValidator(0, uri.ValidateRefURI),
-		),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
+		recursive, _ := cmd.Flags().GetBool("recursive")
+		prefix := *pathURI.Path
+
+		// prefix we need to trim in ls output (non recursive)
+		var trimPrefix string
+		if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+			trimPrefix = prefix[:idx]
+		}
+
 		var from string
 		for {
-			results, more, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, from, -1)
+			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, recursive, prefix, from, -1)
 			if err != nil {
 				DieErr(err)
 			}
-			if len(results) > 0 {
-				Write(fsLsTemplate, results)
+			// trim prefix if non recursive
+			if !recursive {
+				for i := range results {
+					results[i].Path = strings.TrimPrefix(results[i].Path, trimPrefix)
+				}
 			}
+
+			Write(fsLsTemplate, results)
 			if !swag.BoolValue(more.HasMore) {
 				break
 			}
@@ -93,33 +103,21 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		_, err := client.GetObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, os.Stdout)
+		_, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, os.Stdout)
 		if err != nil {
 			DieErr(err)
 		}
 	},
 }
 
-func upload(client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
-	var fp io.Reader
-	if strings.EqualFold(sourcePathname, "-") {
-		// upload from stdin
-		fp = os.Stdin
-	} else {
-		file, err := os.Open(sourcePathname)
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			_ = file.Close()
-		}()
-		fp = file
-	}
+func upload(ctx context.Context, client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
+	fp := OpenByPath(sourcePathname)
+	defer func() {
+		_ = fp.Close()
+	}()
 
 	// read
-	stat, err := client.UploadObject(context.Background(), destURI.Repository, destURI.Ref, destURI.Path, fp)
-
-	return stat, err
+	return client.UploadObject(ctx, destURI.Repository, destURI.Ref, *destURI.Path, fp)
 }
 
 var fsUploadCmd = &cobra.Command{
@@ -135,7 +133,7 @@ var fsUploadCmd = &cobra.Command{
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		if !recursive {
-			stat, err := upload(client, source, pathURI)
+			stat, err := upload(cmd.Context(), client, source, pathURI)
 			if err != nil {
 				DieErr(err)
 			}
@@ -156,12 +154,13 @@ var fsUploadCmd = &cobra.Command{
 			}
 			relPath := strings.TrimPrefix(path, source)
 			uri := *pathURI
-			uri.Path = filepath.Join(uri.Path, relPath)
-			stat, err := upload(client, path, &uri)
+			p := filepath.Join(*uri.Path, relPath)
+			uri.Path = &p
+			stat, err := upload(cmd.Context(), client, path, &uri)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
-			totals.Bytes += stat.SizeBytes
+			totals.Bytes += swag.Int64Value(stat.SizeBytes)
 			totals.Count++
 			return nil
 		})
@@ -169,6 +168,40 @@ var fsUploadCmd = &cobra.Command{
 			DieErr(err)
 		}
 		Write(fsRecursiveTemplate, totals)
+	},
+}
+
+var fsStageCmd = &cobra.Command{
+	Use:    "stage <path uri>",
+	Short:  "stages a reference to an existing object, to be managed in lakeFS",
+	Hidden: true,
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		pathURI := uri.Must(uri.Parse(args[0]))
+		size, _ := cmd.Flags().GetInt64("size")
+		location, _ := cmd.Flags().GetString("location")
+		checksum, _ := cmd.Flags().GetString("checksum")
+		meta, metaErr := getKV(cmd, "meta")
+
+		obj := &models.ObjectStageCreation{
+			Checksum:        swag.String(checksum),
+			PhysicalAddress: swag.String(location),
+			SizeBytes:       swag.Int64(size),
+		}
+		if metaErr == nil {
+			obj.Metadata = meta
+		}
+
+		stat, err := client.StageObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, obj)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Write(fsStatTemplate, stat)
 	},
 }
 
@@ -182,7 +215,7 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		err := client.DeleteObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path)
+		err := client.DeleteObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
@@ -202,9 +235,21 @@ func init() {
 	fsCmd.AddCommand(fsListCmd)
 	fsCmd.AddCommand(fsCatCmd)
 	fsCmd.AddCommand(fsUploadCmd)
+	fsCmd.AddCommand(fsStageCmd)
 	fsCmd.AddCommand(fsRmCmd)
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	_ = fsUploadCmd.MarkFlagRequired("source")
+
+	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
+	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
+	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
+	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
+
+	_ = fsStageCmd.MarkFlagRequired("location")
+	_ = fsStageCmd.MarkFlagRequired("size")
+	_ = fsStageCmd.MarkFlagRequired("checksum")
+
+	fsListCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
 }

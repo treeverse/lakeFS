@@ -1,15 +1,14 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -48,7 +47,7 @@ var mergeCmd = &cobra.Command{
 			Die("both references must belong to the same repository", 1)
 		}
 
-		result, err := client.Merge(context.Background(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
+		result, err := client.Merge(cmd.Context(), destinationRef.Repository, destinationRef.Ref, sourceRef.Ref)
 		if errors.Is(err, catalog.ErrConflictFound) {
 			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
 			return

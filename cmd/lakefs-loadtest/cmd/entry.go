@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -15,10 +14,10 @@ import (
 	nanoid "github.com/matoous/go-nanoid"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/cmdutils"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/uri"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const createEntryPathLength = 110
@@ -49,16 +48,23 @@ var entryCmd = &cobra.Command{
 
 		rand.Seed(time.Now().UTC().UnixNano()) // make it special
 
-		ctx := context.Background()
-		database := connectToDB(connectionString)
+		ctx := cmd.Context()
+		database := connectToDB(ctx, connectionString)
 		defer database.Close()
+		lockDB := connectToDB(ctx, connectionString)
+		defer lockDB.Close()
 
 		conf := config.NewConfig()
-		c, err := catalog.NewCataloger(database, conf)
+		c, err := catalog.New(ctx, catalog.Config{
+			Config: conf,
+			DB:     database,
+			LockDB: lockDB,
+		})
 		if err != nil {
-			fmt.Printf("Cannot create cataloger: %s\n", err)
+			fmt.Printf("Cannot create catalog: %s\n", err)
 			os.Exit(1)
 		}
+		defer func() { _ = c.Close() }()
 
 		// validate repository and branch
 		_, err = c.GetRepository(ctx, u.Repository)

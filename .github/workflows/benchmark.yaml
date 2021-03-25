@@ -1,6 +1,11 @@
 name: Benchmark
 on:
   push:
+    paths-ignore:
+      - ".github/**"
+      - "docs/**"
+      - "webui/**"
+      - "design/**"
     branches:
       - master
 

@@ -2,7 +2,7 @@
 layout: default
 title: Community
 description: lakeFS community. Join the community on the lakeFS slack channel and feel free to ask questions and get help.
-nav_order: 10
+nav_order: 50
 has_children: false
 ---
 

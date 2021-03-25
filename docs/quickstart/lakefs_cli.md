@@ -1,12 +1,12 @@
 ---
 layout: default
-title: lakeFS CLI
+title: Install lakeFS CLI
 parent: Quick Start
 nav_order: 40
 has_children: false
 ---
 
-# CLI usage with lakectl
+# Install lakeFS CLI
   
   lakeFS comes with its own native CLI client. You can see the complete command reference [here](../reference/commands.md).
   
@@ -62,4 +62,4 @@ has_children: false
   
 ### Next steps
 
-Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploying/index.md).
+Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploying-aws/index.md).

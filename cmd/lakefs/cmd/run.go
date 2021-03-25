@@ -16,19 +16,20 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api"
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/block/factory"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/gateway/multiparts"
-	"github.com/treeverse/lakefs/gateway/simulator"
-	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/stats"
+	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/gateway"
+	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
+	"github.com/treeverse/lakefs/pkg/gateway/simulator"
+	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
@@ -48,32 +49,50 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
+		ctx := cmd.Context()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
 
-		if err := db.ValidateSchemaUpToDate(dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
-			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying/upgrade.html")
+		if err := db.ValidateSchemaUpToDate(ctx, dbParams); errors.Is(err, db.ErrSchemaNotCompatible) {
+			logger.WithError(err).Fatal("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		} else if errors.Is(err, migrate.ErrNilVersion) {
 			logger.Debug("No migration, setup required")
 		} else if err != nil {
 			logger.WithError(err).Warn("Failed on schema validation")
 		}
-		dbPool := db.BuildDatabaseConnection(dbParams)
+		dbPool := db.BuildDatabaseConnection(ctx, dbParams)
 		defer dbPool.Close()
+
+		lockdbPool := db.BuildDatabaseConnection(ctx, dbParams)
+		defer lockdbPool.Close()
 
 		registerPrometheusCollector(dbPool)
 		migrator := db.NewDatabaseMigrator(dbParams)
 
-		cataloger, err := catalog.NewCataloger(dbPool, cfg)
+		c, err := catalog.New(ctx, catalog.Config{
+			Config: cfg,
+			DB:     dbPool,
+			LockDB: lockdbPool,
+		})
 		if err != nil {
-			logger.WithError(err).Fatal("failed to create cataloger")
+			logger.WithError(err).Fatal("failed to create c")
 		}
+		defer func() { _ = c.Close() }()
+
+		// wire actions
+		actionsService := actions.NewService(
+			dbPool,
+			catalog.NewActionsSource(c),
+			catalog.NewActionsOutputWriter(c.BlockAdapter),
+		)
+		c.SetHooksHandler(actionsService)
+
 		multipartsTracker := multiparts.NewTracker(dbPool)
 
 		// init block store
-		blockStore, err := factory.BuildBlockAdapter(cfg)
+		blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
@@ -85,7 +104,7 @@ var runCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(logger, cfg, authMetadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 
 		// send metadata
@@ -94,24 +113,23 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		defer func() {
-			_ = cataloger.Close()
-		}()
-
 		// start API server
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-		apiHandler := api.Serve(api.Dependencies{
-			Cataloger:       cataloger,
-			Auth:            authService,
-			BlockAdapter:    blockStore,
-			MetadataManager: authMetadataManager,
-			Migrator:        migrator,
-			Collector:       bufferedCollector,
-			Logger:          logger.WithField("service", "api_gateway"),
-		})
+		apiHandler := api.Serve(
+			c,
+			authService,
+			blockStore,
+			authMetadataManager,
+			migrator,
+			bufferedCollector,
+			cloudMetadataProvider,
+			actionsService,
+			logger.WithField("service", "api_gateway"),
+			cfg.GetS3GatewayDomainName(),
+		)
 
 		// init gateway server
 		s3Fallback := cfg.GetS3GatewayFallbackURL()
@@ -124,7 +142,7 @@ var runCmd = &cobra.Command{
 		}
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
-			cataloger,
+			c,
 			multipartsTracker,
 			blockStore,
 			authService,
@@ -132,7 +150,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			s3FallbackURL,
 		)
-		ctx, cancelFn := context.WithCancel(context.Background())
+		ctx, cancelFn := context.WithCancel(cmd.Context())
 		go bufferedCollector.Run(ctx)
 
 		bufferedCollector.CollectEvent("global", "run")
@@ -155,7 +173,7 @@ var runCmd = &cobra.Command{
 			}
 		}()
 
-		go gracefulShutdown(quit, done, server)
+		go gracefulShutdown(cmd.Context(), quit, done, server)
 
 		<-done
 		cancelFn()
@@ -197,7 +215,7 @@ func registerPrometheusCollector(db sqlstats.StatsGetter) {
 	}
 }
 
-func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
+func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
 	logger := logging.Default()
 	logger.WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
 
@@ -206,7 +224,7 @@ func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutte
 	<-quit
 	logger.Warn("shutting down...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 	defer cancel()
 
 	for i, server := range servers {

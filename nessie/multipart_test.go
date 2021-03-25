@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
-	multipartNumberOfParts = 20
-	multipartPartSize      = 6 * 1024 * 1024
+	multipartNumberOfParts = 7
+	multipartPartSize      = 5 * 1024 * 1024
 )
 
 func TestMultipartUpload(t *testing.T) {

@@ -1,15 +1,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/metastore"
-	"github.com/treeverse/lakefs/metastore/glue"
-	"github.com/treeverse/lakefs/metastore/hive"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/metastore"
+	"github.com/treeverse/lakefs/pkg/metastore/glue"
+	"github.com/treeverse/lakefs/pkg/metastore/hive"
 )
 
 var metastoreCmd = &cobra.Command{
@@ -40,7 +39,7 @@ var metastoreCopyCmd = &cobra.Command{
 		msType := config.GetMetastoreType()
 		switch msType {
 		case "hive":
-			hiveClient, err := hive.NewMSClient(config.GetMetastoreHiveURI(), false)
+			hiveClient, err := hive.NewMSClient(cmd.Context(), config.GetMetastoreHiveURI(), false)
 			if err != nil {
 				DieErr(err)
 			}
@@ -53,7 +52,7 @@ var metastoreCopyCmd = &cobra.Command{
 			client = hiveClient
 
 		case "glue":
-			client, err = glue.NewMSClient(config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+			client, err = glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 			if err != nil {
 				DieErr(err)
 			}
@@ -94,7 +93,7 @@ var metastoreDiffCmd = &cobra.Command{
 		switch msType {
 		case "hive":
 			var hiveClient *hive.MSClient
-			hiveClient, err = hive.NewMSClient(config.GetMetastoreHiveURI(), false)
+			hiveClient, err = hive.NewMSClient(cmd.Context(), config.GetMetastoreHiveURI(), false)
 			if err != nil {
 				DieErr(err)
 			}
@@ -107,7 +106,7 @@ var metastoreDiffCmd = &cobra.Command{
 			client = hiveClient
 
 		case "glue":
-			client, err = glue.NewMSClient(config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+			client, err = glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 			if err != nil {
 				DieErr(err)
 			}
@@ -159,11 +158,11 @@ var glueSymlinkCmd = &cobra.Command{
 		toTable, _ := cmd.Flags().GetString("to-table")
 
 		client := getClient()
-		location, err := client.Symlink(context.Background(), repo, branch, path)
+		location, err := client.Symlink(cmd.Context(), repo, branch, path)
 		if err != nil {
 			DieErr(err)
 		}
-		msClient, err := glue.NewMSClient(config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+		msClient, err := glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 		if err != nil {
 			DieErr(err)
 		}

@@ -42,6 +42,9 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
+* `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
+* `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
+* `blockstore.azure.auth_method` `(one of ["msi", "access-key"]: "access-key" )` - Authentication method to use (msi is used for Azure AD authentication). 
 * `blockstore.s3.region` `(string : "us-east-1")` - When using the S3 block adapter, AWS region to use
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
@@ -52,26 +55,6 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.force_path_style` `(boolean : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
-* `blockstore.s3.retention.role_arn` - ARN of IAM role to use to
-  perform AWS S3 Batch tagging operations.  This role must be
-  configured according to [Granting permissions for Amazon S3 Batch
-  Operations][aws-s3-batch-permissions] for "PUT object tagging", with
-  these permissions:
-  * `ListBucket` on all buckets used for storing repositories.
-  * `PutObjectTagging` and `PutObjectVersionTagging` on all buckets
-     and prefixes used for storing repositories.
-  * `GetObject` under `blockstore.s3.retention.manifest_base_url`,
-  * `PutObject` under `blockstore.s3.retention.report_s3_prefix_url`.
-* `blockstore.s3.retention.manifest_base_url` - Base S3 URL to use for
-  uploading batch tagging manifest files.  Must be readable by
-  `blockstore.s3.retention.role_arn` and writable by the configured
-  AWS role running `lakefs`.
-* `blockstore.s3.retention.report_s3_prefix_url` - Base S3 URL to use
-  for writing batch tagging completion reports.  Must be writable by
-  `blockstore.s3.retention.role_arn`.
-* `cataloger.type` (one of `rocks` or `mvcc`, default `rocks`) - whether to use `mvcc` or
-  `rocks` cataloger.  Changing from `mvcc` to `rocks` requires migration.  Changing back is
-  not possible.
 * `committed.local_cache` - an object describing the local (on-disk) cache of metadata from
   permanent storage:
   + `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
@@ -238,3 +221,32 @@ gateways:
     domain_name: s3.my-company.com
     region: us-east-1
 ```
+## Example: Azure blob storage
+
+```yaml
+---
+logging:
+  format: json
+  level: WARN
+  output: "-"
+
+database:
+  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+
+auth:
+  encrypt:
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+
+blockstore:
+  type: azure
+  azure:
+    auth_method: access-key
+    storage_account: exampleStorageAcount
+    storage_access_key: ExampleAcessKeyMD7nkPOWgV7d4BUjzLw==
+
+gateways:
+  s3:
+    domain_name: s3.my-company.com
+    region: us-east-1
+```
+

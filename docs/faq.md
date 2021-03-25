@@ -2,7 +2,7 @@
 layout: default
 title: FAQ
 description: Frequently Asked Questions (FAQ). Have a question about lakeFS? Find our what others where asking
-nav_order: 11
+nav_order: 60
 has_children: false
 ---
 
@@ -12,7 +12,7 @@ has_children: false
 lakeFS is completely free and open source and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0){:target="_blank"} License.
 
 ### 2. The project is backed by a commercial company. What is your commitment to open source?
-Since it is important to us to align expectations, we have gathered our thoughts on the subject [here](https://lakefs.io/blog){:target="_blank"}.
+Since it is important to us to align expectations, we have gathered our thoughts on the subject [here](https://docs.lakefs.io/licensing.html){:target="_blank"}.
 
 ### 3. How do I contribute to lakeFS?
 Thank you for your interest in contributing to our project. We are excited to build a community of users and contributors around lakeFS. We trust the common wisdom of the community to evolve lakeFS to the best platform it can possibly be. Don't hesitate to get started. Check out our [contribution guide](contributing.md)

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo_large.png"/>
+  <img src="docs/assets/img/logo_large.png"/>
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@ lakeFS is an open source layer that delivers resilience and manageability to obj
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
-lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service. It is API compatible with S3, and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
+lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage as its underlying storage service. It is API compatible with S3, and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
 
 For more information see the [Official Documentation](https://docs.lakefs.io).
@@ -104,6 +104,7 @@ Stay up to date and get lakeFS support via:
 
 - [lakeFS documentation](https://docs.lakefs.io)
 - If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
+- [Roadmap](https://docs.lakefs.io/roadmap.html)
 
 ## Licensing
 
