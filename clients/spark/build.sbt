@@ -136,6 +136,12 @@ ThisBuild / developers := List(
     email = "yoni.augarten@treeverse.io",
     url   = url("https://github.com/johnnyaug"),
   ),
+  Developer(
+    id    = "itai.admi",
+    name  = "Itai Admi",
+    email = "itai.admi@treeverse.io",
+    url   = url("https://github.com/itaiad200"),
+  ),
 )
 
 ThisBuild / versionScheme := Some("early-semver")
