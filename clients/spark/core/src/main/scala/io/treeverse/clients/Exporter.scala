@@ -122,7 +122,8 @@ object Exporter {
     val key = row(1).toString()
     val address = row(2).toString()
 
-    if (!filter.shouldHandleKey(key, round)){
+    if (filter.roundForKey(key) != round){
+      // skip this round
       return null
     }
 

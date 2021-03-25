@@ -4,17 +4,14 @@ package io.treeverse.clients
 class SparkFilter extends KeyFilter {
   // spark success files must end with "/_SUCCESS", unless they are in the root
   // dir, then they should be equal to "_SUCCESS".
-  final private val sparkSuccessFileRegex = "(/|^)_SUCCESS$".r
+  final private val sparkSuccessFileRegex = "(.*/|^)_SUCCESS$".r
 
   override def rounds(): Int = 2
 
-  override def shouldHandleKey(key: String, round:  Int): Boolean = {
-    val isMatch = sparkSuccessFileRegex.findFirstIn(key) != None
-
-    round match{
-      case 1 =>  !isMatch
-      case 2 => isMatch
-      case default => throw new IllegalArgumentException("SparkSuccessFilter has 2 rounds only")
+  override def roundForKey(key: String) : Int = {
+    key match {
+      case sparkSuccessFileRegex(_) => 2
+      case _ => 1
     }
   }
 }
