@@ -144,7 +144,7 @@ const EntryRowActions = ({repo, refId, entry, onDelete}) => {
                 {(refId.type === 'commit') ?
                     <Dropdown.Menu>
                         <PathLink path={entry.path} refId={refId} repoId={repo.id}
-                            as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+                                as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
                     </Dropdown.Menu>
                     :
                     <Dropdown.Menu>
