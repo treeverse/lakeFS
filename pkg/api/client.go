@@ -742,6 +742,20 @@ func (c *client) StageObject(ctx context.Context, repoID, branchID, path string,
 	return resp.GetPayload(), nil
 }
 
+// readSize returns the size of r.
+func readSize(r io.Seeker) (int64, error) {
+	cur, err := r.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return 0, fmt.Errorf("tell: %w", err)
+	}
+	end, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, fmt.Errorf("seek to end: %w", err)
+	}
+	_, err = r.Seek(cur, io.SeekStart)
+	return end, err
+}
+
 func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string, metadata map[string]string, contents io.ReadSeeker) (*models.ObjectStats, error) {
 	resp, err := c.remote.Staging.GetPhysicalAddress(&staging.GetPhysicalAddressParams{
 		Repository: repoID,
@@ -753,6 +767,11 @@ func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string
 		return nil, fmt.Errorf("get physical address to upload object: %w", err)
 	}
 	stagingLocation := resp.GetPayload()
+
+	size, err := readSize(contents)
+	if err != nil {
+		return nil, fmt.Errorf("readSize: %w", err)
+	}
 
 	for { // Return from inside loop
 		physicalAddress, err := url.Parse(stagingLocation.PhysicalAddress)
@@ -784,15 +803,6 @@ func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string
 		})
 		if err != nil {
 			return nil, fmt.Errorf("upload to backing store %v: %w", physicalAddress, err)
-		}
-
-		size, err := contents.Seek(0, io.SeekEnd)
-		if err != nil {
-			return nil, fmt.Errorf("read size: %w", err)
-		}
-		_, err = contents.Seek(0, io.SeekStart)
-		if err != nil {
-			return nil, fmt.Errorf("rewind: %w", err)
 		}
 
 		_, err = c.remote.Staging.LinkPhysicalAddress(&staging.LinkPhysicalAddressParams{
