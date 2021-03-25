@@ -24,7 +24,7 @@ lakeFS secret key: ```*.fs.s3a.secret.key```
 EMR will encourage users to use s3:// with Spark as it will use EMR's proprietary driver. Users need to use s3a:// for this guide to work.
 {: .note}
 
-The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../architecture.md#S3 Gateway).
+The Spark job reads and writes will be directed to the lakeFS instance, using the [s3 gateway](../architecture/overview.md#s3-gateway).
 
 There are 2 options for configuring an EMR cluster to work with lakeFS:
 1. When you create a cluster - All steps will use the cluster configuration.
