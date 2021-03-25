@@ -2,11 +2,16 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -20,10 +25,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
 	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
 	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/pkg/api/gen/client/staging"
 	"github.com/treeverse/lakefs/pkg/api/gen/client/tags"
 	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/catalog"
 )
+
+var ErrUnsupportedProtocol = errors.New("unsupported protocol")
 
 type AuthClient interface {
 	GetCurrentUser(ctx context.Context) (*models.User, error)
@@ -91,6 +99,8 @@ type RepositoryClient interface {
 	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
 	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
+
+	ClientUpload(ctx context.Context, repository, branch, path string, metadata map[string]string, contents io.ReadSeeker) (*models.ObjectStats, error)
 
 	RefsDump(ctx context.Context, repository string) (*models.RefsDump, error)
 	RefsRestore(ctx context.Context, repository string, manifest *models.RefsDump) error
@@ -730,6 +740,92 @@ func (c *client) StageObject(ctx context.Context, repoID, branchID, path string,
 		return nil, err
 	}
 	return resp.GetPayload(), nil
+}
+
+func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string, metadata map[string]string, contents io.ReadSeeker) (*models.ObjectStats, error) {
+	resp, err := c.remote.Staging.GetPhysicalAddress(&staging.GetPhysicalAddressParams{
+		Repository: repoID,
+		Branch:     branchID,
+		Path:       path,
+		Context:    ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, fmt.Errorf("get physical address to upload object: %w", err)
+	}
+	stagingLocation := resp.GetPayload()
+
+	for { // Return from inside loop
+		physicalAddress, err := url.Parse(stagingLocation.PhysicalAddress)
+
+		if err != nil {
+			return nil, fmt.Errorf("parse physical address URL %v: %w", stagingLocation.PhysicalAddress, err)
+		}
+
+		// TODO(ariels): plug-in support for other protocols
+		if physicalAddress.Scheme != "s3" {
+			return nil, fmt.Errorf("%w %s", ErrUnsupportedProtocol, physicalAddress.Scheme)
+		}
+		bucket := physicalAddress.Hostname()
+
+		sess, err := session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("connect to S3 session: %w", err)
+		}
+		sess.ClientConfig(s3.ServiceName)
+		svc := s3.New(sess)
+
+		// TODO(ariels): Allow customization of request
+		putObjectResponse, err := svc.PutObject(&s3.PutObjectInput{
+			Body:   contents,
+			Bucket: &bucket,
+			Key:    &physicalAddress.Path,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("upload to backing store %v: %w", physicalAddress, err)
+		}
+
+		size, err := contents.Seek(0, io.SeekEnd)
+		if err != nil {
+			return nil, fmt.Errorf("read size: %w", err)
+		}
+		_, err = contents.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, fmt.Errorf("rewind: %w", err)
+		}
+
+		_, err = c.remote.Staging.LinkPhysicalAddress(&staging.LinkPhysicalAddressParams{
+			Repository: repoID,
+			Branch:     branchID,
+			Path:       path,
+			Metadata: &models.StagingMetadata{
+				Checksum:     putObjectResponse.ETag,
+				SizeBytes:    &size,
+				UserMetadata: metadata,
+				Staging:      stagingLocation,
+			},
+			Context: ctx,
+		}, c.auth)
+		if err == nil {
+			return &models.ObjectStats{
+				Checksum: *putObjectResponse.ETag,
+				// BUG(ariels): Unavailable on S3, remove this field entirely
+				//     OR add it to the server staging manager API.
+				Mtime:           time.Now().Unix(),
+				Path:            path,
+				PathType:        models.ObjectStatsPathTypeObject,
+				PhysicalAddress: stagingLocation.PhysicalAddress,
+				SizeBytes:       &size,
+			}, nil
+		}
+		conflict, ok := err.(*staging.LinkPhysicalAddressConflict)
+		if !ok {
+			return nil, fmt.Errorf("link object to backing store: %w", err)
+		}
+		// Try again!
+		stagingLocation = conflict.GetPayload()
+	}
 }
 
 func (c *client) UploadObject(ctx context.Context, repoID, branchID, path string, r io.Reader) (*models.ObjectStats, error) {

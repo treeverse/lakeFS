@@ -324,6 +324,26 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string)
 	return repos, hasMore, nil
 }
 
+func (c *Catalog) GetStagingToken(ctx context.Context, repository string, branch string) (*string, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	branchID := graveler.BranchID(branch)
+	if err := Validate([]ValidateArg{
+		{"repositoryID", repositoryID, ValidateRepositoryID},
+		{"branchID", branchID, ValidateBranchID},
+	}); err != nil {
+		return nil, err
+	}
+	token, err := c.Store.GetStagingToken(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	tokenString := ""
+	if token != nil {
+		tokenString = string(*token)
+	}
+	return &tokenString, nil
+}
+
 func (c *Catalog) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (*CommitLog, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)

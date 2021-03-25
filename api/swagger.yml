@@ -142,16 +142,16 @@ definitions:
       checksum:
         type: string
         description: unique identifier of object content on backing store (typically ETag)
-      mtime:
-        type: integer
-        format: int64
       size_bytes:
         type: integer
         format: int64
+      user_metadata:
+        type: object
+        additionalProperties:
+          type: string
     required:
       - staging
       - checksum
-      - mtime
       - size_bytes
 
   object_stage_creation:
@@ -2074,6 +2074,10 @@ paths:
           # created or 200 if an existing object was modified,
           # https://tools.ietf.org/html/rfc7231#section-4.3.4
           description: successfully linked
+        400:
+          description: bad request
+          schema:
+            $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
         404:
