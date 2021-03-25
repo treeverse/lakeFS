@@ -116,6 +116,9 @@ Most critical path operations scale very well across machines.
 All benchmarks below were measured using 2 x [c5ad.4xlarge](https://aws.amazon.com/ec2/instance-types/c5/){: target="_blank" } instances 
 on [AWS us-east-1](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
+Similar results can be achieved on Google Cloud using a `c2-standard-16` machine type, with an attached [local SSD](https://cloud.google.com/compute/docs/disks/local-ssd).
+
+
 The PostgreSQL instance that was used is a [db.m6g.2xlarge](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html){: target="_blank" }
 
 The example repository we tested against contains the metadata of a large lakeFS installation, 
@@ -306,8 +309,8 @@ For high availability, we'll deploy 2 pods with 1 CPU core and 1 GiB of RAM each
 
 Since the PostgreSQL instance is expected to hold a very small dataset 
 (at 500k, expected dataset size is `150MiB (for 100k records) * 5 = 750MiB`). 
-To ensure we have enough RAM to hold this, we'll need 3 GiB of RAM, so a very moderate Aurora instance `db.t3.large` is chosen.
-
+To ensure we have enough RAM to hold this, we'll need 3 GiB of RAM, so a very moderate Aurora instance `db.t3.large` (2 vCPUs and 8 GB of RAM) will be more than enough.
+An equivalent database instance on GCP or Azure should give similar results.
 
 <img src="../assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
 
@@ -334,6 +337,7 @@ we're doing roughly 625 requests/core, so 24 cores should cover our peak traffic
 
 The PostgreSQL instance 
 (at 500k, expected dataset size is `150MiB (for 100k records) * 25 = 3750 MiB`). 
-To ensure we have enough RAM to hold this, we'll need at least 15 GiB of RAM, so we'll go with a `db.r5.xlarge` Aurora instance.
+To ensure we have enough RAM to hold this, we'll need at least 15 GiB of RAM, so we'll go with a `db.r5.xlarge` (4 vCPUs and 32GB RAM) Aurora instance.
+An equivalent database instance on GCP or Azure should give similar results.
 
 <img src="../assets/img/reference_arch2.png" alt="Automated pipelines lakeFS reference architecture"/>
