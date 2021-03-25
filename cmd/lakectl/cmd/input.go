@@ -43,14 +43,6 @@ type nopCloser struct {
 	io.ReadSeekCloser
 }
 
-func (nc *nopCloser) Read(p []byte) (n int, err error) {
-	return nc.ReadSeekCloser.Read(p)
-}
-
-func (nc *nopCloser) Seek(offset int64, whence int) (int64, error) {
-	return nc.ReadSeekCloser.Seek(offset, whence)
-}
-
 func (nc *nopCloser) Close() error {
 	return nil
 }

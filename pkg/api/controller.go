@@ -1450,13 +1450,11 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 			},
 		})
 		if err != nil {
-			c.Logger.Infof("[DEBUG] error: %s", err.Error())
 			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		c.LogAction(ctx, "generate_physical_address")
 
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
-		c.Logger.Infof("[DEBUG] repo %+v error %v", repo, err)
 		if errors.Is(err, catalog.ErrNotFound) {
 			return staging.NewGetPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
 		} else if err != nil {
@@ -1464,7 +1462,6 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 		}
 
 		token, err := c.Catalog.GetStagingToken(ctx, params.Repository, params.Branch)
-		c.Logger.Infof("[DEBUG] token %s error %v", *token, err)
 		if errors.Is(err, catalog.ErrNotFound) {
 			return staging.NewGetPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
 		} else if err != nil {
@@ -1483,11 +1480,8 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 		}
 		qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("staging/%s%s", tokenPart, name))
 		if err != nil {
-			c.Logger.Infof("[DEBUG] resolve error %v", err)
 			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-
-		c.Logger.Infof("[DEBUG] OK addr %s token %s", qk.Format(), token)
 
 		return staging.NewGetPhysicalAddressOK().WithPayload(&models.StagingLocation{
 			PhysicalAddress: qk.Format(),
@@ -1512,7 +1506,8 @@ func (c *Controller) StagingLinkPhysicalAddressHandler() staging.LinkPhysicalAdd
 		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
 		if errors.Is(err, catalog.ErrNotFound) {
 			return staging.NewLinkPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
-		} else if err != nil {
+		}
+		if err != nil {
 			return staging.NewLinkPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
