@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/manifoldco/promptui"
@@ -38,11 +37,21 @@ func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
 	return true, nil
 }
 
+// nopCloser wraps a ReadSeekCloser to ignore calls to Close().  It is io.NopCloser (or
+// ioutils.NopCloser) for Seeks.
+type nopCloser struct {
+	io.ReadSeekCloser
+}
+
+func (nc *nopCloser) Close() error {
+	return nil
+}
+
 // OpenByPath returns a reader from the given path. If path is "-", it'll return Stdin
-func OpenByPath(path string) io.ReadCloser {
+func OpenByPath(path string) io.ReadSeekCloser {
 	if path == StdinFileName {
 		// read from stdin
-		return ioutil.NopCloser(os.Stdin)
+		return &nopCloser{os.Stdin}
 	}
 	fp, err := os.Open(path)
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	nanoid "github.com/matoous/go-nanoid"
+	nanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type EventType string
@@ -55,7 +55,7 @@ func (h *HooksNoOp) PostMergeHook(context.Context, HookRecord) error {
 
 func NewRunID() string {
 	const nanoLen = 8
-	id := nanoid.MustID(nanoLen)
+	id := nanoid.Must(nanoLen)
 	tm := time.Now().UTC().Format("20060102150405")
 	return tm + id
 }

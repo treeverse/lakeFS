@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jamiealquiza/tachymeter"
-	nanoid "github.com/matoous/go-nanoid"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -95,7 +95,7 @@ var entryCmd = &cobra.Command{
 				defer wg.Done()
 				<-startingLine
 				for reqID := 0; reqID < requests; reqID++ {
-					id, err := nanoid.ID(createEntryPathLength)
+					id, err := nanoid.New(createEntryPathLength)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
 					}

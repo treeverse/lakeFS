@@ -331,6 +331,10 @@ type VersionController interface {
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
+
+	// GetStagingToken returns the token identifying current staging for branchID of
+	// repositoryID.
+	GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -801,6 +805,14 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repositoryID RepositoryID, 
 		return nil, g.RefManager.DeleteBranch(ctx, repositoryID, branchID)
 	})
 	return err
+}
+
+func (g *Graveler) GetStagingToken(ctx context.Context, repositoryID RepositoryID, branchID BranchID) (*StagingToken, error) {
+	branch, err := g.RefManager.GetBranch(ctx, repositoryID, branchID)
+	if err != nil {
+		return nil, err
+	}
+	return &branch.StagingToken, nil
 }
 
 func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error) {

@@ -16,6 +16,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations"
@@ -30,6 +31,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/repositories"
 	setupop "github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/setup"
+	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/staging"
 	"github.com/treeverse/lakefs/pkg/api/gen/restapi/operations/tags"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -174,6 +176,9 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.ObjectsUploadObjectHandler = c.ObjectsUploadObjectHandler()
 	api.ObjectsStageObjectHandler = c.ObjectsStageObjectHandler()
 	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
+
+	api.StagingGetPhysicalAddressHandler = c.StagingGetPhysicalAddressHandler()
+	api.StagingLinkPhysicalAddressHandler = c.StagingLinkPhysicalAddressHandler()
 
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
 	api.MetadataGetRangeHandler = c.MetadataGetRangeHandler()
@@ -1433,6 +1438,117 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			returnValue.Payload.Pagination.NextOffset = lastID
 		}
 		return returnValue
+	})
+}
+
+func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddressHandler {
+	return staging.GetPhysicalAddressHandlerFunc(func(params staging.GetPhysicalAddressParams, user *models.User) middleware.Responder {
+		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
+			},
+		})
+		if err != nil {
+			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		c.LogAction(ctx, "generate_physical_address")
+
+		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return staging.NewGetPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
+		} else if err != nil {
+			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		token, err := c.Catalog.GetStagingToken(ctx, params.Repository, params.Branch)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return staging.NewGetPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
+		} else if err != nil {
+			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// Generate a name.
+		name, err := nanoid.New()
+		if err != nil {
+			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		tokenPart := ""
+		if token != nil {
+			tokenPart = *token + "/"
+		}
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name))
+		if err != nil {
+			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		return staging.NewGetPhysicalAddressOK().WithPayload(&models.StagingLocation{
+			PhysicalAddress: qk.Format(),
+			Token:           token,
+		})
+	})
+}
+
+func (c *Controller) StagingLinkPhysicalAddressHandler() staging.LinkPhysicalAddressHandler {
+	return staging.LinkPhysicalAddressHandlerFunc(func(params staging.LinkPhysicalAddressParams, user *models.User) middleware.Responder {
+		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
+			},
+		})
+		if err != nil {
+			return staging.NewLinkPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		c.LogAction(ctx, "stage_object")
+
+		repo, err := c.Catalog.GetRepository(ctx, params.Repository)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return staging.NewLinkPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
+		}
+		if err != nil {
+			return staging.NewLinkPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// write metadata
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Metadata.Staging.PhysicalAddress)
+		if err != nil {
+			return staging.NewLinkPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		blockStoreType := c.BlockAdapter.BlockstoreType()
+		if qk.StorageType.String() != blockStoreType {
+			return staging.NewLinkPhysicalAddressBadRequest().WithPayload(
+				responseError("invalid storage type: %s: current block adapter is %s",
+					qk.StorageType.String(),
+					blockStoreType,
+				))
+		}
+
+		writeTime := time.Now()
+		// Because CreateEntry tracks staging on a database with atomic operations,
+		// _ignore_ the staging token here: no harm done even if a race was lost
+		// against a commit.
+		entry := catalog.DBEntry{
+			CommonLevel:     false,
+			Path:            params.Path,
+			PhysicalAddress: params.Metadata.Staging.PhysicalAddress,
+			CreationDate:    writeTime,
+			Size:            swag.Int64Value(params.Metadata.SizeBytes),
+			Checksum:        swag.StringValue(params.Metadata.Checksum),
+			Metadata:        params.Metadata.UserMetadata,
+		}
+
+		err = c.Catalog.CreateEntry(ctx, repo.Name, params.Branch, entry)
+		if errors.Is(err, catalog.ErrNotFound) {
+			return staging.NewLinkPhysicalAddressNotFound().WithPayload(responseErrorFrom(err))
+		}
+		if err != nil {
+			return staging.NewLinkPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		return staging.NewLinkPhysicalAddressOK()
 	})
 }
 

@@ -110,14 +110,17 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client api.Client, sourcePathname string, destURI *uri.URI) (*models.ObjectStats, error) {
+func upload(ctx context.Context, client api.Client, sourcePathname string, destURI *uri.URI, direct bool) (*models.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
 
-	// read
-	return client.UploadObject(ctx, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+	if direct {
+		return client.ClientUpload(ctx, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
+	} else {
+		return client.UploadObject(ctx, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+	}
 }
 
 var fsUploadCmd = &cobra.Command{
@@ -132,8 +135,9 @@ var fsUploadCmd = &cobra.Command{
 		pathURI := uri.Must(uri.Parse(args[0]))
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		direct, _ := cmd.Flags().GetBool("direct")
 		if !recursive {
-			stat, err := upload(cmd.Context(), client, source, pathURI)
+			stat, err := upload(cmd.Context(), client, source, pathURI, direct)
 			if err != nil {
 				DieErr(err)
 			}
@@ -156,7 +160,7 @@ var fsUploadCmd = &cobra.Command{
 			uri := *pathURI
 			p := filepath.Join(*uri.Path, relPath)
 			uri.Path = &p
-			stat, err := upload(cmd.Context(), client, path, &uri)
+			stat, err := upload(cmd.Context(), client, path, &uri, direct)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
@@ -224,8 +228,9 @@ var fsRmCmd = &cobra.Command{
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
-	Use:   "fs",
-	Short: "view and manipulate objects",
+	Use:    "fs",
+	Short:  "view and manipulate objects",
+	Hidden: true,
 }
 
 //nolint:gochecknoinits
@@ -240,13 +245,13 @@ func init() {
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
+	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
-
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")
 	_ = fsStageCmd.MarkFlagRequired("checksum")
