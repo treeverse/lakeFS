@@ -6,12 +6,15 @@ import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import java.io.IOException
 import java.net.URL
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import scala.util.Random
 
 
-class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
+class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String) {
+
+  def this(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
+    this(spark, apiClient, new SparkFilter(), repoName, dstRoot)
+  }
+
   def exportAllFromBranch(branch: String): Unit = {
     val commitID = apiClient.getBranchHEADCommit(repoName, branch)
     exportAllFromCommit(commitID)
@@ -31,22 +34,23 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     actOnActions(ns, dst, commitID, actionsDF)
   }
 
-  private def export(ns: String, rel: String, commitID: String, actionsDF: DataFrame, successFiles: Boolean) : Boolean =  {
+  final private val maxLoggedErrors = 10000
+  private def export(round: Int, ns: String, rel: String, commitID: String, actionsDF: DataFrame) : Boolean =  {
     import spark.implicits._
 
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
-
+    val f = filter
     val errs = actionsDF.map(
       row =>
-        Exporter.handleRow(ns, rel, serializedConf, row, successFiles)
+        Exporter.handleRow(f, round, ns, rel, serializedConf, row)
     ).filter(err => err != null)
 
-    if (errs.count() == 0){
+    if (errs.isEmpty){
       return true
     }
 
-    writeSummaryFile(false, commitID, errs.reduce(_+"\n"+_))
+    writeSummaryFile(false, commitID, errs.take(maxLoggedErrors).reduce(_+"\n"+_))
     false
   }
 
@@ -83,20 +87,17 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     actOnActions(ns, dst, commitID, actionsDF)
   }
 
-  final val successMsg = "Export completed successfully!"
+  final private val successMsg = "Export completed successfully!"
   private def actOnActions(ns: String, dst: String, commitID: String, actionsDF: DataFrame): Unit = {
-    if (!export(ns, dst, commitID, actionsDF, false)) {
-      // failed to export files, don't export _success files
-      return
-    }
-    if (!export(ns, dst, commitID, actionsDF, true)){
-      return
+    for( i <- 1 to filter.rounds()){
+      if (!export(i, ns, dst, commitID, actionsDF)) {
+        // failed to export files, don't export next round
+        return
+      }
     }
 
     writeSummaryFile(true, commitID, successMsg)
   }
-
-
 
   private def writeSummaryFile(success: Boolean, commitID: String, content : String) = {
     val suffix = if(success) "SUCCESS" else "FAILURE"
@@ -108,7 +109,7 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
     stream.close()
   }
 
-  final val prefixLen = 8
+  final private val prefixLen = 8
   private def randPrefix() : String = {
     val gen = Random.alphanumeric.dropWhile(_.isDigit)
     gen.take(prefixLen).mkString("")
@@ -116,26 +117,13 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, repoName: String, dst
 }
 
 object Exporter {
-  // spark success files must end with "/_SUCCESS", unless they are in the root
-  // dir, then they should be equal to "_SUCCESS".
-  final val sparkSuccessFileRegex = "((.*\\/_SUCCESS)|(^_SUCCESS))$".r
-
-  private def handleRow(ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row, successFiles :Boolean): String =  {
+  private def handleRow(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) : String =  {
     val action = row(0)
     val key = row(1).toString()
     val address = row(2).toString()
 
-    key match {
-      case sparkSuccessFileRegex() =>
-        if(!successFiles) {
-          // key match, end gracefully
-          return null
-        }
-      case default =>
-        if (successFiles) {
-          // key doesn't match, end gracefully
-          return null
-        }
+    if (!filter.shouldHandleKey(key, round)){
+      return null
     }
 
     val conf = serializedConf.value
@@ -169,7 +157,6 @@ object Exporter {
           }
         }
       }
-
   }
 
   private def resolveURL(baseUrl :URL, extraPath: String): Path = {
