@@ -143,7 +143,7 @@ const EntryRowActions = ({repo, refId, entry, onDelete}) => {
                 </Dropdown.Toggle>
                 {(refId.type === 'commit') ?
                     <Dropdown.Menu>
-                    <PathLink path={entry.path} refId={refId} repoId={repo.id}
+                        <PathLink path={entry.path} refId={refId} repoId={repo.id}
                             as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
                     </Dropdown.Menu>
                     :
