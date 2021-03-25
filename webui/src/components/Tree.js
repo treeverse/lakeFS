@@ -141,17 +141,23 @@ const EntryRowActions = ({repo, refId, entry, onDelete}) => {
                 })}>
                     {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Dropdown.Toggle>
-
-                <Dropdown.Menu>
+                {(refId.type === 'commit') ?
+                    <Dropdown.Menu>
                     <PathLink path={entry.path} refId={refId} repoId={repo.id}
                             as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                    <Dropdown.Item onClick={(e) => {
-                        e.preventDefault();
-                        handleShow();
-                    }}>
-                        <TrashcanIcon/> {' '} Delete
-                    </Dropdown.Item>
-                </Dropdown.Menu>
+                    </Dropdown.Menu>
+                    :
+                    <Dropdown.Menu>
+                        <PathLink path={entry.path} refId={refId} repoId={repo.id}
+                                as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+                        <Dropdown.Item onClick={(e) => {
+                            e.preventDefault();
+                            handleShow();
+                           }}>
+                            <TrashcanIcon/> {' '} Delete
+                        </Dropdown.Item>
+                    </Dropdown.Menu> 
+                }
             </Dropdown>
             <ConfirmationModal show={show} onHide={handleClose} msg={deleteConfirmMsg} onConfirm={onSubmit}/>
         </>
