@@ -1478,7 +1478,7 @@ func (c *Controller) StagingGetPhysicalAddressHandler() staging.GetPhysicalAddre
 		if token != nil {
 			tokenPart = *token + "/"
 		}
-		qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("staging/%s%s", tokenPart, name))
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name))
 		if err != nil {
 			return staging.NewGetPhysicalAddressDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
