@@ -754,7 +754,7 @@ func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string
 	}
 	stagingLocation := resp.GetPayload()
 
-	for {			// Return from inside loop
+	for { // Return from inside loop
 		physicalAddress, err := url.Parse(stagingLocation.PhysicalAddress)
 
 		if err != nil {
@@ -778,9 +778,9 @@ func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string
 
 		// TODO(ariels): Allow customization of request
 		putObjectResponse, err := svc.PutObject(&s3.PutObjectInput{
-			Body: contents,
+			Body:   contents,
 			Bucket: &bucket,
-			Key: &physicalAddress.Path,
+			Key:    &physicalAddress.Path,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("upload to backing store %v: %w", physicalAddress, err)
@@ -797,13 +797,13 @@ func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string
 
 		_, err = c.remote.Staging.LinkPhysicalAddress(&staging.LinkPhysicalAddressParams{
 			Repository: repoID,
-			Branch: branchID,
-			Path: path,
+			Branch:     branchID,
+			Path:       path,
 			Metadata: &models.StagingMetadata{
-				Checksum: putObjectResponse.ETag,
-				SizeBytes: &size,
+				Checksum:     putObjectResponse.ETag,
+				SizeBytes:    &size,
 				UserMetadata: metadata,
-				Staging: stagingLocation,
+				Staging:      stagingLocation,
 			},
 			Context: ctx,
 		}, c.auth)
@@ -812,11 +812,11 @@ func (c *client) ClientUpload(ctx context.Context, repoID, branchID, path string
 				Checksum: *putObjectResponse.ETag,
 				// BUG(ariels): Unavailable on S3, remove this field entirely
 				//     OR add it to the server staging manager API.
-				Mtime: time.Now().Unix(),
-				Path: path,
-				PathType: models.ObjectStatsPathTypeObject,
+				Mtime:           time.Now().Unix(),
+				Path:            path,
+				PathType:        models.ObjectStatsPathTypeObject,
 				PhysicalAddress: stagingLocation.PhysicalAddress,
-				SizeBytes: &size,
+				SizeBytes:       &size,
 			}, nil
 		}
 		conflict, ok := err.(*staging.LinkPhysicalAddressConflict)

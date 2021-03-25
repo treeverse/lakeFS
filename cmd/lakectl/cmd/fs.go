@@ -228,8 +228,8 @@ var fsRmCmd = &cobra.Command{
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
-	Use:   "fs",
-	Short: "view and manipulate objects",
+	Use:    "fs",
+	Short:  "view and manipulate objects",
 	Hidden: true,
 }
 
