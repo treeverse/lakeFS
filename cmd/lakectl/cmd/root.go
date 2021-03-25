@@ -80,6 +80,12 @@ func getClient() api.Client {
 	return client
 }
 
+// isSeekable returns true if f.Seek appears to work.
+func isSeekable(f io.Seeker) bool {
+	_, err := f.Seek(0, io.SeekCurrent)
+	return err == nil // a little naive, but probably good enough for its purpose
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
