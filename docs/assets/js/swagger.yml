@@ -2057,8 +2057,12 @@ paths:
       summary: associate staging on this physical address with a path
       description: |
         If the supplied token matches the current staging token, associate the object as the
-        physical address with the supplied path.  Otherwise return a conflict and hint where
-        to place the object to try again.
+        physical address with the supplied path.
+
+        Otherwise, if staging has been committed and the token has expired, return a conflict
+        and hint where to place the object to try again.  Caller should copy the object to the
+        new physical address and PUT again with the new staging token.  (No need to back off,
+        this is due to losing the race against a concurrent commit operation.)
       parameters:
         - in: body
           name: metadata
