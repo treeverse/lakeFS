@@ -4,7 +4,8 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import java.io.IOException
+
+import java.io.{FileNotFoundException, IOException}
 import java.net.URL
 import scala.util.Random
 
@@ -44,13 +45,13 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     val errs = actionsDF.map(
       row =>
         Exporter.handleRow(f, round, ns, rel, serializedConf, row)
-    ).filter(err => err != null)
+    ).filter(status => !status.success)
 
     if (errs.isEmpty){
       return true
     }
 
-    writeSummaryFile(false, commitID, errs.take(maxLoggedErrors).reduce(_+"\n"+_))
+    writeSummaryFile(false, commitID, errs.take(maxLoggedErrors).map(s => s.msg).reduce(_+"\n"+_))
     false
   }
 
@@ -117,7 +118,7 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
 }
 
 object Exporter {
-  private def handleRow(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) : String =  {
+  private def handleRow(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) : ExportStatus =  {
     val action = row(0)
     val key = row(1).toString()
     val address = row(2).toString()
@@ -133,31 +134,32 @@ object Exporter {
 
     val dstFS = dstPath.getFileSystem(conf)
 
-      action match {
-        case "delete" => {
-          try {
-            dstFS.delete(dstPath, false)
-            null
-          } catch {
-            case e : (IOException) =>  s"Unable to delete file ${dstPath.toString}: ${e.toString}"
-          }
-        }
-
-        case "copy" =>{
-          try {
-            org.apache.hadoop.fs.FileUtil.copy(
-              srcPath.getFileSystem(conf),
-              srcPath,
-              dstFS,
-              dstPath,
-              false,
-              conf)
-            null
-          } catch {
-            case e : (IOException) =>  s"Unable to copy file ${dstPath.toString} from source ${srcPath.toString}: ${e.toString}"
-          }
+    action match {
+      case "delete" => {
+        try {
+          dstFS.delete(dstPath, false)
+          null
+        } catch {
+          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to delete file ${dstPath.toString}: ${e.toString}")
         }
       }
+
+      case "copy" =>{
+        try {
+          org.apache.hadoop.fs.FileUtil.copy(
+            srcPath.getFileSystem(conf),
+            srcPath,
+            dstFS,
+            dstPath,
+            false,
+            conf)
+          null
+        } catch  {
+          case e : (FileNotFoundException) =>  ExportStatus(dstPath.toString, success = true, s"Unable to copy file ${dstPath.toString} from source ${srcPath.toString} since source file is missing: ${e.toString}")
+          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to copy file ${dstPath.toString} from source ${srcPath.toString}: ${e.toString}")
+        }
+      }
+    }
   }
 
   private def resolveURL(baseUrl :URL, extraPath: String): Path = {
