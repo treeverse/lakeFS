@@ -27,8 +27,8 @@ type applier struct {
 	haveDiffs, haveSource bool
 }
 
-// applyFromIter applies all changes from Iterator to writer and returns the number of writes
-func (a *applier) applyFromIter(iter Iterator) (int, error) {
+// applyAll applies all changes from Iterator to writer and returns the number of writes
+func (a *applier) applyAll(iter Iterator) (int, error) {
 	var count int
 	for {
 		select {
@@ -137,13 +137,13 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 		return a.summary, err
 	}
 	if a.haveSource {
-		if _, err := a.applyFromIter(a.source); err != nil {
+		if _, err := a.applyAll(a.source); err != nil {
 			return a.summary, err
 		}
 	}
 
 	if a.haveDiffs {
-		numAdded, err := a.applyFromIter(a.diffs)
+		numAdded, err := a.applyAll(a.diffs)
 		if err != nil {
 			return a.summary, err
 		}
@@ -248,7 +248,8 @@ func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *gravele
 			if err := a.writer.WriteRange(*diffRange); err != nil {
 				return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
 			}
-			a.haveSource = a.diffs.NextRange()
+			a.addIntoDiffSummary(graveler.DiffTypeAdded, int(diffRange.Count))
+			a.haveDiffs = a.diffs.NextRange()
 		}
 	} else {
 		// diffs is at start of range which we need to scan, enter it.

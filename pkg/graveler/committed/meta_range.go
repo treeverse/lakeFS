@@ -34,7 +34,7 @@ type DiffIterator interface {
 	// the next value could be Range or Value
 	NextRange() bool
 	// Value returns a nil ValueRecord and a Range before starting a Range, or a Value and that Range when inside a Range.
-	// In contrast to Iterator, the DiffIterator might not have a current range
+	// In contrast to Iterator, the DiffIterator might not have a current range -  this could happen if the current value exists in two different ranges
 	Value() (*graveler.Diff, *RangeDiff)
 	SeekGE(id graveler.Key)
 	Err() error
@@ -45,6 +45,16 @@ type DiffIterator interface {
 type RangeDiff struct {
 	Type  graveler.DiffType
 	Range *Range
+}
+
+func (r RangeDiff) Copy() *RangeDiff {
+	res := RangeDiff{
+		Type: r.Type,
+	}
+	if r.Range != nil {
+		res.Range = r.Range.Copy()
+	}
+	return &res
 }
 
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"encoding/hex"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -13,6 +13,19 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
+
+type expectedRange struct {
+	minKey string
+	maxKey string
+	count  int64
+}
+
+func newExpectedRange(p *committed.RangeDiff) *expectedRange {
+	if p == nil || p.Range == nil {
+		return nil
+	}
+	return &expectedRange{string(p.Range.MinKey), string(p.Range.MaxKey), p.Range.Count}
+}
 
 func TestDiff(t *testing.T) {
 	const (
@@ -26,6 +39,7 @@ func TestDiff(t *testing.T) {
 		rightKeys                 [][]string
 		rightIdentities           [][]string
 		expectedDiffKeys          []string
+		expectedRanges            []*expectedRange
 		expectedDiffTypes         []graveler.DiffType
 		expectedDiffIdentities    []string
 		expectedLeftReadsByRange  []int
@@ -37,6 +51,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
 			expectedDiffKeys:          []string{},
+			expectedRanges:            []*expectedRange{},
 			expectedLeftReadsByRange:  []int{0, 0},
 			expectedRightReadsByRange: []int{0, 0},
 		},
@@ -46,6 +61,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}},
 			expectedDiffKeys:          []string{"k4"},
+			expectedRanges:            []*expectedRange{nil},
 			expectedDiffTypes:         []graveler.DiffType{added},
 			expectedDiffIdentities:    []string{"i4"},
 			expectedLeftReadsByRange:  []int{0, 1},
@@ -57,6 +73,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
 			expectedDiffKeys:          []string{"k4"},
+			expectedRanges:            []*expectedRange{nil},
 			expectedDiffTypes:         []graveler.DiffType{removed},
 			expectedDiffIdentities:    []string{"i4"},
 			expectedLeftReadsByRange:  []int{0, 2},
@@ -68,6 +85,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}},
 			expectedDiffKeys:          []string{"k4", "k5"},
+			expectedRanges:            []*expectedRange{nil, nil},
 			expectedDiffTypes:         []graveler.DiffType{added, removed},
 			expectedDiffIdentities:    []string{"i4", "i5"},
 			expectedLeftReadsByRange:  []int{0, 2},
@@ -79,6 +97,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3a"}},
 			expectedDiffKeys:          []string{"k3"},
+			expectedRanges:            []*expectedRange{nil},
 			expectedDiffTypes:         []graveler.DiffType{changed},
 			expectedDiffIdentities:    []string{"i3a"},
 			expectedLeftReadsByRange:  []int{0, 1},
@@ -90,6 +109,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k3", "k4"}, {"k5", "k6"}},
 			rightIdentities:           [][]string{{"i3a", "i4"}, {"i5", "i6"}},
 			expectedDiffKeys:          []string{"k1", "k2", "k3", "k4", "k5", "k6"},
+			expectedRanges:            []*expectedRange{nil, nil, nil, nil, {"k5", "k6", 2}, {"k5", "k6", 2}, {"k5", "k6", 2}},
 			expectedDiffTypes:         []graveler.DiffType{removed, removed, changed, added, added, added},
 			expectedDiffIdentities:    []string{"i1", "i2", "i3a", "i4", "i5", "i6"},
 			expectedLeftReadsByRange:  []int{3},
@@ -97,6 +117,7 @@ func TestDiff(t *testing.T) {
 		},
 		"diff between empty iterators": {
 			expectedDiffKeys: []string{},
+			expectedRanges:   []*expectedRange{},
 		},
 		"added on empty": {
 			leftKeys:                  [][]string{},
@@ -104,6 +125,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3"}},
 			expectedDiffKeys:          []string{"k1", "k2", "k3"},
+			expectedRanges:            []*expectedRange{{"k1", "k2", 2}, {"k1", "k2", 2}, {"k1", "k2", 2}, {"k3", "k3", 1}, {"k3", "k3", 1}},
 			expectedDiffTypes:         []graveler.DiffType{added, added, added},
 			expectedDiffIdentities:    []string{"i1", "i2", "i3"},
 			expectedLeftReadsByRange:  nil,
@@ -115,6 +137,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k3", "k4"}, {"k5", "k6", "k7"}},
 			rightIdentities:           [][]string{{"i3", "i4"}, {"i5", "i6", "i7"}},
 			expectedDiffKeys:          []string{"k1", "k2", "k7"},
+			expectedRanges:            []*expectedRange{{"k1", "k2", 2}, {"k1", "k2", 2}, {"k1", "k2", 2}, nil},
 			expectedDiffTypes:         []graveler.DiffType{removed, removed, added},
 			expectedDiffIdentities:    []string{"i1", "i2", "i7"},
 			expectedLeftReadsByRange:  []int{2, 4},
@@ -126,6 +149,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2", "k3", "k4", "k5"}},
 			rightIdentities:           [][]string{{"i1", "i2", "i3", "i4", "i5"}},
 			expectedDiffKeys:          []string{"k1", "k2"},
+			expectedRanges:            []*expectedRange{nil, nil},
 			expectedDiffTypes:         []graveler.DiffType{added, added},
 			expectedDiffIdentities:    []string{"i1", "i2"},
 			expectedLeftReadsByRange:  []int{3},
@@ -137,6 +161,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k6", "k7"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i6", "i7"}},
 			expectedDiffKeys:          []string{"k3", "k4", "k5"},
+			expectedRanges:            []*expectedRange{{"k3", "k3", 1}, {"k3", "k3", 1}, {"k4", "k4", 1}, {"k4", "k4", 1}, {"k5", "k5", 1}, {"k5", "k5", 1}},
 			expectedDiffTypes:         []graveler.DiffType{removed, removed, removed},
 			expectedDiffIdentities:    []string{"i3", "i4", "i5"},
 			expectedLeftReadsByRange:  []int{0, 1, 1, 1, 0},
@@ -148,6 +173,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k4", "k5"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i4", "i5"}},
 			expectedDiffKeys:          []string{"k3", "k6", "k7"},
+			expectedRanges:            []*expectedRange{{"k3", "k3", 1}, {"k3", "k3", 1}, {"k6", "k7", 1}, {"k6", "k7", 1}, {"k6", "k7", 1}},
 			expectedDiffTypes:         []graveler.DiffType{removed, removed, removed},
 			expectedDiffIdentities:    []string{"i3", "i6", "i7"},
 			expectedLeftReadsByRange:  []int{0, 1, 1, 1, 2},
@@ -159,6 +185,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {}, {}, {"k3", "k4"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {}, {}, {"i3", "i4"}},
 			expectedDiffKeys:          []string{},
+			expectedRanges:            []*expectedRange{{"", "", 0}, {"", "", 0}},
 			expectedDiffTypes:         []graveler.DiffType{},
 			expectedDiffIdentities:    []string{},
 			expectedLeftReadsByRange:  []int{0, 0, 0, 0, 0, 0},
@@ -170,6 +197,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i3", "i4"}, {"i5", "i6"}},
 			expectedDiffKeys:          []string{"k3", "k4"},
+			expectedRanges:            []*expectedRange{{"k3", "k4", 2}, {"k3", "k4", 2}, {"k3", "k4", 2}},
 			expectedDiffTypes:         []graveler.DiffType{added, added},
 			expectedDiffIdentities:    []string{"i3", "i4"},
 			expectedLeftReadsByRange:  []int{0, 0},
@@ -181,6 +209,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k3", "k4"}, {"k5", "k6"}},
 			rightIdentities:           [][]string{{"i1", "i2a"}, {"i3", "i4"}, {"i5", "i6a"}},
 			expectedDiffKeys:          []string{"k2", "k6"},
+			expectedRanges:            []*expectedRange{nil, nil},
 			expectedDiffTypes:         []graveler.DiffType{changed, changed},
 			expectedDiffIdentities:    []string{"i2a", "i6a"},
 			expectedLeftReadsByRange:  []int{2, 0, 2},
@@ -192,19 +221,27 @@ func TestDiff(t *testing.T) {
 			fakeLeft := newFakeMetaRangeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
 			ctx := context.Background()
-			it := committed.NewFlatDiffIterator(ctx, fakeLeft, fakeRight)
+			it := committed.NewDiffIterator(ctx, fakeLeft, fakeRight)
 			defer it.Close()
 			var diffs []*graveler.Diff
 			actualDiffKeys := make([]string, 0)
+			actualDiffRanges := make([]*expectedRange, 0)
 			for it.Next() {
-				actualDiffKeys = append(actualDiffKeys, string(it.Value().Key))
-				diffs = append(diffs, it.Value())
+				diff, rng := it.Value()
+				actualDiffRanges = append(actualDiffRanges, newExpectedRange(rng))
+				if diff != nil {
+					actualDiffKeys = append(actualDiffKeys, string(diff.Key))
+					diffs = append(diffs, diff)
+				}
 			}
 			if it.Err() != nil {
 				t.Fatalf("got unexpected error: %v", it.Err())
 			}
 			if diff := deep.Equal(tst.expectedDiffKeys, actualDiffKeys); diff != nil {
 				t.Fatalf("keys in diff different than expected. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedRanges, actualDiffRanges); diff != nil {
+				t.Fatalf("ranges in diff different than expected. diff=%s", diff)
 			}
 			for i, d := range diffs {
 				if d.Type != tst.expectedDiffTypes[i] {
@@ -229,13 +266,104 @@ func TestDiffCancelContext(t *testing.T) {
 	right := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	it := committed.NewFlatDiffIterator(ctx, left, right)
+	it := committed.NewDiffValueIterator(ctx, left, right)
 	defer it.Close()
 	if it.Next() {
 		t.Fatal("Next() should return false")
 	}
 	if err := it.Err(); !errors.Is(err, context.Canceled) {
 		t.Fatalf("Err() returned %v, should return context.Canceled", err)
+	}
+}
+func TestNextRange(t *testing.T) {
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx,
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
+		newFakeMetaRangeIterator([][]string{{"k3", "k4"}, {"k5", "k6"}}, [][]string{{"i3a", "i4a"}, {"i5", "i6"}}))
+
+	t.Run("next range - in middle of range", func(t *testing.T) {
+		if !it.Next() { // move to range k1-k2
+			t.Fatal("expected iterator to have value")
+		}
+		record, rng := it.Value()
+		if record != nil {
+			t.Fatal("expected record to be nil")
+		}
+		if !it.Next() { // move to k1
+			t.Fatal("expected iterator to have value")
+		}
+		record, rng = it.Value()
+		if record == nil || string(record.Key) != "k1" {
+			t.Fatal("expected record key to be k1")
+		}
+		if !it.NextRange() { // move to k3
+			t.Fatal("expected iterator to have value")
+		}
+		record, rng = it.Value()
+		if rng != nil {
+			t.Fatal("expected range to not have value")
+		}
+		if record == nil || string(record.Key) != "k3" {
+			t.Fatal("expected record key to be k3")
+		}
+		if !it.Next() { // move to k4
+			t.Fatal("expected iterator to have value")
+		}
+		if !it.Next() { // move to range k5-k6
+			t.Fatal("expected iterator to have value")
+		}
+		record, rng = it.Value()
+		if record != nil {
+			t.Fatal("expected record to not have value")
+		}
+		if !it.Next() { // move to k5
+			t.Fatal("expected iterator to have value")
+		}
+		record, rng = it.Value()
+		if record == nil || string(record.Key) != "k5" {
+			t.Fatal("expected record key to be k5")
+		}
+		if it.NextRange() { // move to end
+			t.Fatal("expected iterator to be done")
+		}
+		if err := it.Err(); err != nil {
+			t.Fatalf("unexpected error:%v", err)
+		}
+	})
+	t.Run("call next range with no range", func(t *testing.T) {
+		it.SeekGE(graveler.Key("k3"))
+		if !it.Next() {
+			t.Fatal("expected iterator to have value")
+		}
+		record, rng := it.Value()
+		if record == nil || string(record.Key) != "k3" {
+			t.Fatal("expected record to have a value equal to k3")
+		}
+		if rng != nil {
+			t.Fatal("expected range to not have value")
+		}
+		if it.NextRange() {
+			t.Fatal("expected false from iterator after close")
+		}
+		if err := it.Err(); err != committed.ErrNoRange {
+			t.Fatalf("expected to get err=%s, got: %s", committed.ErrNoRange, err)
+		}
+	})
+}
+
+func TestNextErr(t *testing.T) {
+	ctx := context.Background()
+	it := committed.NewDiffIterator(ctx,
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
+		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	if !it.Next() {
+		t.Fatal("expected iterator to have value")
+	}
+	if it.NextRange() {
+		t.Fatal("expected false from iterator after close")
+	}
+	if err := it.Err(); err != committed.ErrNoRange {
+		t.Fatalf("expected to get err=%s, got: %s", committed.ErrNoRange, err)
 	}
 }
 
@@ -246,67 +374,81 @@ func TestDiffSeek(t *testing.T) {
 		changed = graveler.DiffTypeChanged
 	)
 	left := [][]string{{"k1", "k2"}, {"k4", "k5"}, {"k6", "k7"}}
-	right := [][]string{{"k1", "k3"}, {"k4", "k5"}, {"k6", "k7"}}
+	right := [][]string{{"k1", "k3"}, {"k3a", "k3b"}, {"k4", "k5"}, {"k6", "k7"}}
 	leftIdentities := [][]string{{"i1", "i2"}, {"i4", "i5"}, {"i6", "i7"}}
-	rightIdentities := [][]string{{"i1", "i3"}, {"i4", "i5"}, {"i6", "i7a"}}
-	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3": added, "k7": changed}
-	diffIdentityByKey := map[string]string{"k2": "i2", "k3": "i3", "k7": "i7a"}
+	rightIdentities := [][]string{{"i1", "i3"}, {"i2a", "i2b"}, {"i4", "i5"}, {"i6", "i7a"}}
+	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3a": added, "k3b": added, "k3": added, "k7": changed}
+	diffIdentityByKey := map[string]string{"k2": "i2", "k3a": "i2a", "k3b": "i2b", "k3": "i3", "k7": "i7a"}
 	ctx := context.Background()
-	it := committed.NewFlatDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
+	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
 	defer it.Close()
 
 	tests := []struct {
-		seekTo           string
-		expectedDiffKeys []string
+		seekTo             string
+		expectedDiffKeys   []string
+		expectedDiffRanges []*expectedRange
 	}{
 		{
-			seekTo:           "k1",
-			expectedDiffKeys: []string{"k2", "k3", "k7"},
+			seekTo:             "k1",
+			expectedDiffKeys:   []string{"k2", "k3", "k3a", "k3b", "k7"},
+			expectedDiffRanges: []*expectedRange{nil, nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, nil},
 		},
 		{
-			seekTo:           "k2",
-			expectedDiffKeys: []string{"k2", "k3", "k7"},
+			seekTo:             "k2",
+			expectedDiffKeys:   []string{"k2", "k3", "k3a", "k3b", "k7"},
+			expectedDiffRanges: []*expectedRange{nil, nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, nil},
 		},
 		{
-			seekTo:           "k3",
-			expectedDiffKeys: []string{"k3", "k7"},
+			seekTo:             "k3",
+			expectedDiffKeys:   []string{"k3", "k3a", "k3b", "k7"},
+			expectedDiffRanges: []*expectedRange{nil, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, {"k3a", "k3b", 2}, nil},
 		},
 		{
-			seekTo:           "k4",
-			expectedDiffKeys: []string{"k7"},
+			seekTo:             "k4",
+			expectedDiffKeys:   []string{"k7"},
+			expectedDiffRanges: []*expectedRange{nil},
 		},
 		{
-			seekTo:           "k8",
-			expectedDiffKeys: []string{},
+			seekTo:             "k8",
+			expectedDiffKeys:   []string{},
+			expectedDiffRanges: []*expectedRange{},
 		},
 	}
 	for _, tst := range tests {
 		it.SeekGE([]byte(tst.seekTo))
-		if it.Value() != nil {
-			t.Fatalf("value expected to be nil after SeekGE. got=%v", it.Value())
+		diff, rangeDiff := it.Value()
+		if diff != nil || rangeDiff != nil {
+			t.Fatalf("value expected to be nil after SeekGE. got diff=%v rangeDiff=%v", diff, rangeDiff)
 		}
 		keys := make([]string, 0)
+		ranges := make([]*expectedRange, 0)
 		for it.Next() {
-			current := it.Value()
-			key := current.Key.String()
-			identity := string(current.Value.Identity)
-			if current.Type != diffTypeByKey[key] {
-				t.Fatalf("unexpected diff type in index %d. expected=%d, got=%d", len(keys), diffTypeByKey[key], current.Type)
+			currentDiff, currentRangeDiff := it.Value()
+			ranges = append(ranges, newExpectedRange(currentRangeDiff))
+			if currentDiff != nil {
+				key := currentDiff.Key.String()
+				identity := string(currentDiff.Value.Identity)
+				if currentDiff.Type != diffTypeByKey[key] {
+					t.Fatalf("unexpected diff type in index %d. expected=%d, got=%d", len(keys), diffTypeByKey[key], currentDiff.Type)
+				}
+				if identity != diffIdentityByKey[key] {
+					t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", len(keys), diffIdentityByKey[key], identity)
+				}
+				keys = append(keys, key)
 			}
-			if identity != diffIdentityByKey[key] {
-				t.Fatalf("unexpected identity in diff index %d. expected=%s, got=%s", len(keys), diffIdentityByKey[key], identity)
-			}
-			keys = append(keys, key)
 		}
 		if diff := deep.Equal(keys, tst.expectedDiffKeys); diff != nil {
 			t.Fatal("unexpected keys in diff", diff)
+		}
+		if diff := deep.Equal(tst.expectedDiffRanges, ranges); diff != nil {
+			t.Fatalf("ranges in diff different than expected. diff=%s", diff)
 		}
 	}
 }
 
 func TestNextOnClose(t *testing.T) {
 	ctx := context.Background()
-	it := committed.NewFlatDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
+	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
 		t.Fatal("expected iterator to have value")
 	}
@@ -322,7 +464,7 @@ func TestDiffErr(t *testing.T) {
 	leftIt.SetErr(leftErr)
 	rightIt := newFakeMetaRangeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
 	ctx := context.Background()
-	it := committed.NewFlatDiffIterator(ctx, leftIt, rightIt)
+	it := committed.NewDiffIterator(ctx, leftIt, rightIt)
 	defer it.Close()
 	if it.Next() {
 		t.Fatalf("expected false from iterator with error")
@@ -363,13 +505,11 @@ func newFakeMetaRangeIterator(rangeKeys [][]string, rangeIdentities [][]string) 
 		encoder := gob.NewEncoder(&b)
 		_ = encoder.Encode(rangeKeys[rangeIdx])
 		_ = encoder.Encode(rangeIdentities[rangeIdx])
-		rangeID := hex.EncodeToString(b.Bytes())
 		var minKey, maxKey committed.Key
 		if len(rangeKeys[rangeIdx]) > 0 {
 			minKey = []byte(rangeKeys[rangeIdx][0])
 			maxKey = []byte(rangeKeys[rangeIdx][len(rangeKeys[rangeIdx])-1])
 		}
-		res.AddRange(&committed.Range{ID: committed.ID(rangeID), MinKey: minKey, MaxKey: maxKey})
 		rangeValues := make([]*graveler.ValueRecord, 0, len(rangeKeys[rangeIdx]))
 		for idx := range keys {
 			rangeValues = append(rangeValues, &graveler.ValueRecord{
@@ -380,7 +520,9 @@ func newFakeMetaRangeIterator(rangeKeys [][]string, rangeIdentities [][]string) 
 				},
 			})
 		}
-		res.AddValueRecords(rangeValues...)
+		res.
+			AddRange(&committed.Range{ID: committed.ID(strings.Join(identities, "-")), MinKey: minKey, MaxKey: maxKey, Count: int64(len(rangeKeys[rangeIdx]))}).
+			AddValueRecords(rangeValues...)
 	}
 	return res
 }

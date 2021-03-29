@@ -7,10 +7,8 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-
-	"github.com/treeverse/lakefs/pkg/graveler"
-
 	"github.com/golang/mock/gomock"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
@@ -251,7 +249,6 @@ func Test_merge(t *testing.T) {
 			},
 			conflictExpectedIdx: nil,
 			expectedActions: []writeAction{
-
 				{
 					action: actionTypeWriteRange,
 					rng:    committed.Range{ID: "base:k1-k3", MinKey: committed.Key("k1"), MaxKey: committed.Key("k3"), Count: 2, EstimatedSize: 1024},
@@ -550,7 +547,7 @@ func Test_merge(t *testing.T) {
 			expectedSummary: graveler.DiffSummary{},
 			expectedErr:     graveler.ErrNoChanges,
 		},
-		"empty dest and base": {
+		"empty source and base": {
 			baseRange:   []testRange{},
 			sourceRange: []testRange{},
 			destRange: []testRange{

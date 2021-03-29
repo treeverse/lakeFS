@@ -3,6 +3,7 @@ package committed
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
@@ -21,8 +22,10 @@ type mergeIterator struct {
 	*compareIterator
 }
 
+var ErrUnsupportedRangeDiffType = errors.New("range diff type unsupported - supports only added and removed")
+
 // NewMergeIterator accepts an iterator describing a diff from the merge destination to the source.
-// It returns a Iterator with the changes to perform on the destination branch, in order to merge the source into it,
+// It returns an Iterator with the changes to perform on the destination branch, in order to merge the source into it,
 // relative to base as the merge base.
 // When reaching a conflict, the iterator will enter an error state with the graveler.ErrConflictFound error.
 func NewMergeIterator(ctx context.Context, diffDestToSource DiffIterator, base Iterator) *mergeIterator {
@@ -49,13 +52,13 @@ func NewCompareIterator(ctx context.Context, diffDestToSource DiffIterator, base
 	}
 }
 
-func (d *compareIterator) rangeFromBase(key graveler.Key) (*Range, error) {
+func (d *compareIterator) rangeAndValueFromBase(key graveler.Key) (*graveler.ValueRecord, *Range, error) {
 	d.base.SeekGE(key)
 	if !d.base.Next() {
-		return nil, d.err
+		return nil, nil, d.err
 	}
-	_, baseRange := d.base.Value()
-	return baseRange, nil
+	baseValue, baseRange := d.base.Value()
+	return baseValue, baseRange, nil
 }
 
 func (d *compareIterator) valueFromBase(key graveler.Key) (*graveler.ValueRecord, error) {
@@ -83,107 +86,37 @@ func (d *compareIterator) handleConflict() bool {
 	d.val.Type = graveler.DiffTypeConflict
 	return true
 }
+func (d *compareIterator) setRangeDiff(r *RangeDiff) {
+	if r != nil {
+		d.rng = r.Copy()
+		return
+	}
+	d.rng = nil
+}
 
-func (d *compareIterator) Step() bool {
-	hasNext := true
-	for hasNext {
+// stepNext is called after diffIt Next or NextRange and iterates over diff iterator until the compare iterator has a value
+func (d *compareIterator) stepNext() bool {
+	for {
 		select {
 		case <-d.ctx.Done():
 			d.err = d.ctx.Err()
 			return false
 		default:
 		}
-		val, rngDiff := d.diffIt.Value()
-		if rngDiff != nil && val == nil {
-			typ := rngDiff.Type
-			rng := rngDiff.Range
-			baseRange, err := d.rangeFromBase(graveler.Key(rng.MinKey))
-			if err != nil {
-				d.err = err
-				return false
-			}
-			switch typ {
-			case graveler.DiffTypeAdded:
-				// exists on source, but not on dest
-				if baseRange == nil || bytes.Compare(rng.MaxKey, baseRange.MinKey) < 0 {
-					// added only on source
-					d.rng = rngDiff
-					d.val = nil
-					return true
-				}
-
-				hasNext = d.diffIt.Next()
-			case graveler.DiffTypeRemoved:
-				// exists on dest, but not on source
-				if baseRange != nil {
-					if baseRange.ID == rng.ID {
-						// removed on source, not changed on dest
-						d.rng = rngDiff
-						d.val = nil
-						return true
-					}
-					// changed on dest, removed on source
-					hasNext = d.diffIt.Next() // go in
-					continue
-				}
-				// added on dest, but not on source - continue -> nextRange
-				hasNext = d.diffIt.NextRange()
-			}
+		var hasNext bool
+		var done bool
+		val, _ := d.diffIt.Value()
+		if val == nil {
+			// range header
+			hasNext, done = d.stepRange()
+		} else {
+			hasNext, done = d.stepValue()
 		}
-		if val != nil {
-			key := val.Key
-			typ := val.Type
-			baseVal, err := d.valueFromBase(key)
-			if err != nil {
-				d.err = err
-				return false
-			}
-			switch typ {
-			case graveler.DiffTypeAdded:
-				// exists on source, but not on dest
-				if baseVal == nil {
-					// added only on source
-					d.val = val.Copy()
-					d.rng = nil
-					return true
-				}
-				if !bytes.Equal(baseVal.Identity, val.Value.Identity) {
-					// removed on dest, but changed on source
-					return d.handleConflict()
-				}
-			case graveler.DiffTypeChanged:
-				if baseVal == nil {
-					// added on dest and source, with different identities
-					return d.handleConflict()
-				}
-				if bytes.Equal(baseVal.Identity, val.Value.Identity) {
-					// changed on dest, but not on source
-					hasNext = d.diffIt.Next()
-					continue
-				}
-				if !bytes.Equal(baseVal.Identity, val.LeftIdentity) {
-					// changed on dest and source, to different identities
-					return d.handleConflict()
-				}
-				// changed only on source
-				d.val = val.Copy()
-				d.rng = nil
-				return true
-			case graveler.DiffTypeRemoved:
-				// exists on dest, but not on source
-				if baseVal != nil {
-					if bytes.Equal(baseVal.Identity, val.LeftIdentity) {
-						// removed on source, not changed on dest
-						d.val = val.Copy()
-						d.rng = nil
-						return true
-					}
-					// changed on dest, removed on source
-					return d.handleConflict()
-				}
-				// added on dest, but not on source - next value
-			}
-			hasNext = d.diffIt.Next()
+		if done {
+			return hasNext
+		}
+		if !hasNext {
+			break
 		}
 	}
 	if d.err != nil {
@@ -192,11 +125,113 @@ func (d *compareIterator) Step() bool {
 	return false
 }
 
+// stepValue moves one step according to current value
+// returns hasMore if iterator has more, and done if the step is over  (got to a value, end of iterator, or error)
+func (d *compareIterator) stepValue() (bool, bool) {
+	val, rngDiff := d.diffIt.Value()
+	key := val.Key
+	typ := val.Type
+	baseVal, err := d.valueFromBase(key)
+	if err != nil {
+		d.err = err
+		return false, true
+	}
+	switch typ {
+	case graveler.DiffTypeAdded:
+		// exists on source, but not on dest
+		if baseVal == nil {
+			// added only on source
+			d.val = val.Copy()
+			d.setRangeDiff(rngDiff)
+			return true, true
+		}
+		if !bytes.Equal(baseVal.Identity, val.Value.Identity) {
+			// removed on dest, but changed on source
+			return d.handleConflict(), true
+		}
+	case graveler.DiffTypeChanged:
+		if baseVal == nil {
+			// added on dest and source, with different identities
+			return d.handleConflict(), true
+		}
+		if bytes.Equal(baseVal.Identity, val.Value.Identity) {
+			// changed on dest, but not on source
+			return d.diffIt.Next(), false
+		}
+		if !bytes.Equal(baseVal.Identity, val.LeftIdentity) {
+			// changed on dest and source, to different identities
+			return d.handleConflict(), true
+		}
+		// changed only on source
+		d.val = val.Copy()
+		d.setRangeDiff(rngDiff)
+		return true, true
+	case graveler.DiffTypeRemoved:
+		// exists on dest, but not on source
+		if baseVal != nil {
+			if bytes.Equal(baseVal.Identity, val.LeftIdentity) {
+				// removed on source, not changed on dest
+				d.val = val.Copy()
+				d.setRangeDiff(rngDiff)
+				return true, true
+			}
+			// changed on dest, removed on source
+			return d.handleConflict(), true
+		}
+		// added on dest, but not on source - next value
+	}
+	return d.diffIt.Next(), false
+}
+
+// stepRange moves one step according to current range
+// returns hasMore if iterator has more, and done if the step is over (got to a value, end of iterator, or error)
+func (d *compareIterator) stepRange() (hasMore bool, done bool) {
+	_, rngDiff := d.diffIt.Value()
+	typ := rngDiff.Type
+	rng := rngDiff.Range
+	baseValue, baseRange, err := d.rangeAndValueFromBase(graveler.Key(rng.MinKey))
+	if err != nil {
+		d.err = err
+		return false, true
+	}
+	if typ == graveler.DiffTypeAdded {
+		// exists on source, but not on dest
+		if baseRange != nil && rng.ID == baseRange.ID {
+			// removed only on dest -> skip range
+			return d.diffIt.NextRange(), false
+		}
+		if baseValue == nil || bytes.Compare(rng.MaxKey, baseValue.Key) < 0 {
+			// added only on source
+			d.setRangeDiff(rngDiff)
+			d.val = nil
+			return true, true
+		}
+		// overlapping base and diff, must step into range
+		return d.diffIt.Next(), false
+	}
+	if typ == graveler.DiffTypeRemoved {
+		if baseRange != nil && rng.ID == baseRange.ID {
+			// removed on source, not changed on dest
+			d.setRangeDiff(rngDiff)
+			d.val = nil
+			return true, true
+		}
+		if baseValue == nil || bytes.Compare(rng.MaxKey, baseValue.Key) < 0 {
+			// added on dest, but not on source, skip range
+			return d.diffIt.NextRange(), false
+		}
+
+		// overlapping base and diff, must step into range
+		return d.diffIt.Next(), false
+	}
+	d.err = ErrUnsupportedRangeDiffType
+	return false, true
+}
+
 func (d *compareIterator) Next() bool {
 	if d.diffIt.Next() {
-		return d.Step()
+		return d.stepNext()
 	}
-
 	d.err = d.diffIt.Err()
 	return false
 }
@@ -206,7 +241,7 @@ func (d *compareIterator) NextRange() bool {
 		d.err = d.diffIt.Err()
 		return false
 	}
-	return d.Step()
+	return d.stepNext()
 }
 
 func (d *compareIterator) SeekGE(id graveler.Key) {
@@ -232,21 +267,21 @@ func (d *compareIterator) Close() {
 
 func (c *mergeIterator) Value() (*graveler.ValueRecord, *Range) {
 	value, rng := c.compareIterator.Value()
+	var resValue *graveler.ValueRecord
+	var resRange *Range
 	if value != nil {
-		res := &graveler.ValueRecord{
+		resValue = &graveler.ValueRecord{
 			Key: value.Key,
 		}
 		if value.Type != graveler.DiffTypeRemoved {
-			res.Value = value.Value
+			resValue.Value = value.Value
 		}
-		return res, nil
 	}
 	if rng != nil {
-		res := rng.Range.Copy()
+		resRange = rng.Range.Copy()
 		if rng.Type == graveler.DiffTypeRemoved {
-			res.SetTombstone()
+			resRange.SetTombstone()
 		}
-		return nil, res
 	}
-	return nil, nil
+	return resValue, resRange
 }

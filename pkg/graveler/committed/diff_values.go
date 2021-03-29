@@ -11,7 +11,7 @@ type diffValuesIterator struct {
 	rangeDiffIter DiffIterator
 }
 
-func NewFlatDiffIterator(ctx context.Context, left Iterator, right Iterator) graveler.DiffIterator {
+func NewDiffValueIterator(ctx context.Context, left Iterator, right Iterator) graveler.DiffIterator {
 	return &diffValuesIterator{
 		rangeDiffIter: NewDiffIterator(ctx, left, right),
 	}

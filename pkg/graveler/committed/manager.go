@@ -89,10 +89,10 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	if err != nil {
 		return nil, err
 	}
-	return NewFlatDiffIterator(ctx, leftIt, rightIt), nil
+	return NewDiffValueIterator(ctx, leftIt, rightIt), nil
 }
 
-func (c *committedManager) DiffRange(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.MetaRangeID) (DiffIterator, error) {
+func (c *committedManager) diffWithRanges(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.MetaRangeID) (DiffIterator, error) {
 	leftIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, left)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (c *committedManager) DiffRange(ctx context.Context, ns graveler.StorageNam
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	diffIt, err := c.DiffRange(ctx, ns, destination, source)
+	diffIt, err := c.diffWithRanges(ctx, ns, destination, source)
 	if err != nil {
 		return "", graveler.DiffSummary{}, fmt.Errorf("diff: %w", err)
 	}

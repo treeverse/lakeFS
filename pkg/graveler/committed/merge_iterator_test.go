@@ -158,6 +158,359 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+func makeDV(typ graveler.DiffType, k, id, leftID string) *graveler.Diff {
+	res := &graveler.Diff{
+		Type:         typ,
+		Key:          graveler.Key(k),
+		Value:        &graveler.Value{Identity: []byte(id)},
+		LeftIdentity: []byte(leftID),
+	}
+
+	return res
+}
+
+func getMaxKey(keys []string) committed.Key {
+	if len(keys) == 0 {
+		return nil
+	}
+	return committed.Key(keys[len(keys)-1])
+}
+
+func getMinKey(keys []string) committed.Key {
+	if len(keys) == 0 {
+		return nil
+	}
+	return committed.Key(keys[0])
+}
+
+func getRecordKey(record *graveler.ValueRecord) string {
+	if record == nil {
+		return ""
+	}
+	return string(record.Key)
+}
+
+func getRecordID(record *graveler.ValueRecord) string {
+	if record == nil || record.Value == nil {
+		return ""
+	}
+	return string(record.Identity)
+}
+
+func getRangeID(rng *committed.Range) string {
+	if rng == nil {
+		return ""
+	}
+	return string(rng.ID)
+}
+
+func TestMergeRangTemp(t *testing.T) {
+	tests := map[string]struct {
+		baseRangeIds        []string
+		baseKeys            [][]string
+		baseIdentities      [][]string
+		diffRangeIds        []string
+		diffRangeTypes      []graveler.DiffType
+		diffKeys            [][]string
+		diffIdentities      [][]string
+		leftIdentities      [][]string
+		expectedRanges      []string
+		expectedValues      []string
+		expectedIDs         []string
+		expectedReadByRange []int
+	}{
+		"diff added - no base": {
+			baseRangeIds:   []string{},
+			baseKeys:       [][]string{},
+			baseIdentities: [][]string{},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{added},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"", ""}},
+			expectedRanges: []string{"source:k3-k4", "source:k3-k4", "source:k3-k4"},
+			expectedValues: []string{"", "k3", "k4"},
+			expectedIDs:    []string{"", "i3", "i4"},
+		},
+		"diff added - before base": {
+			baseRangeIds:   []string{"base:k5-k6"},
+			baseKeys:       [][]string{{"k5", "k6"}},
+			baseIdentities: [][]string{{"i5", "i6"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{added},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"", ""}},
+			expectedRanges: []string{"source:k3-k4", "source:k3-k4", "source:k3-k4"},
+			expectedValues: []string{"", "k3", "k4"},
+			expectedIDs:    []string{"", "i3", "i4"},
+		},
+		"diff added - wrapping base": {
+			baseRangeIds:   []string{"base:k1-k5"},
+			baseKeys:       [][]string{{"k1", "k5"}},
+			baseIdentities: [][]string{{"i1", "i5"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{added},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"", ""}},
+			expectedRanges: []string{"source:k3-k4", "source:k3-k4", "source:k3-k4"},
+			expectedValues: []string{"", "k3", "k4"},
+			expectedIDs:    []string{"", "i3", "i4"},
+		},
+		"diff added - wrapping base 2": {
+			baseRangeIds:   []string{"base:k1-k6"},
+			baseKeys:       [][]string{{"k1", "k6"}},
+			baseIdentities: [][]string{{"i1", "i6"}},
+			diffRangeIds:   []string{"source:k2-k3", "source:k4-k5"},
+			diffRangeTypes: []graveler.DiffType{added, added},
+			diffKeys:       [][]string{{"k2", "k3"}, {"k4", "k5"}},
+			diffIdentities: [][]string{{"i2", "i3"}, {"i4", "i5"}},
+			leftIdentities: [][]string{{"", ""}, {"", ""}},
+			expectedRanges: []string{"source:k2-k3", "source:k2-k3", "source:k2-k3", "source:k4-k5", "source:k4-k5", "source:k4-k5"},
+			expectedValues: []string{"", "k2", "k3", "", "k4", "k5"},
+			expectedIDs:    []string{"", "i2", "i3", "", "i4", "i5"},
+		},
+		"diff added - overlapping base": {
+			baseRangeIds:   []string{"base:k1-k33"},
+			baseKeys:       [][]string{{"k1", "k33"}},
+			baseIdentities: [][]string{{"i1", "i33"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{added},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"", ""}},
+			expectedRanges: []string{"source:k3-k4", "source:k3-k4"},
+			expectedValues: []string{"k3", "k4"},
+			expectedIDs:    []string{"i3", "i4"},
+		},
+		"diff removed - no base (added by dest) ": {
+			baseRangeIds:   []string{},
+			baseKeys:       [][]string{},
+			baseIdentities: [][]string{},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{removed},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"i3", "i4"}},
+			expectedRanges: []string{},
+			expectedValues: []string{},
+			expectedIDs:    []string{},
+		},
+		"diff removed` - before base": {
+			baseRangeIds:   []string{"base:k5-k6"},
+			baseKeys:       [][]string{{"k5", "k6"}},
+			baseIdentities: [][]string{{"i5", "i6"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{removed},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"", ""}},
+			expectedRanges: []string{},
+			expectedValues: []string{},
+			expectedIDs:    []string{},
+		},
+		"diff removed` - equal to base - removed": {
+			baseRangeIds:   []string{"source:k3-k4"},
+			baseKeys:       [][]string{{"k3", "k4"}},
+			baseIdentities: [][]string{{"i3", "i4"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{removed},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"i3", "i4"}},
+			expectedRanges: []string{"source:k3-k4", "source:k3-k4", "source:k3-k4"},
+			expectedValues: []string{"", "k3", "k4"},
+			expectedIDs:    []string{"", "", ""},
+		},
+		"diff removed` - overlapping base": {
+			baseRangeIds:   []string{"source:k1-k4"},
+			baseKeys:       [][]string{{"k1", "k3", "k33", "k4"}},
+			baseIdentities: [][]string{{"i1", "i3", "i33", "i4"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{removed},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"i3", "i4"}},
+			expectedRanges: []string{"source:k3-k4", "source:k3-k4"},
+			expectedValues: []string{"k3", "k4"},
+			expectedIDs:    []string{"", ""},
+		},
+		"diff with no range added - no base": {
+			baseRangeIds:   []string{},
+			baseKeys:       [][]string{},
+			baseIdentities: [][]string{},
+			diffRangeIds:   []string{""},
+			diffRangeTypes: []graveler.DiffType{added},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"i3", "i4"}},
+			expectedRanges: []string{"", ""},
+			expectedValues: []string{"k3", "k4"},
+			expectedIDs:    []string{"i3", "i4"},
+		},
+		"diff added - equal to base (removed from source)": {
+			baseRangeIds:   []string{"source:k3-k4"},
+			baseKeys:       [][]string{{"k3", "k4"}},
+			baseIdentities: [][]string{{"i3", "i4"}},
+			diffRangeIds:   []string{"source:k3-k4"},
+			diffRangeTypes: []graveler.DiffType{added},
+			diffKeys:       [][]string{{"k3", "k4"}},
+			diffIdentities: [][]string{{"i3", "i4"}},
+			leftIdentities: [][]string{{"", ""}},
+			expectedRanges: []string{},
+			expectedValues: []string{},
+			expectedIDs:    []string{},
+		},
+	}
+	for name, tst := range tests {
+		t.Run(name, func(t *testing.T) {
+			// build base iterator
+			if !(len(tst.baseRangeIds) == len(tst.baseIdentities) && len(tst.baseIdentities) == len(tst.baseKeys)) {
+				t.Fatal("base lists should be all the same length")
+			}
+			baseIt := testutil.NewFakeIterator()
+			for i, baseRange := range tst.baseRangeIds {
+				var rng *committed.Range
+				if baseRange != "" {
+					rng = &committed.Range{
+						ID:     committed.ID(baseRange),
+						MinKey: getMinKey(tst.baseKeys[i]),
+						MaxKey: getMaxKey(tst.baseKeys[i]),
+						Count:  int64(len(tst.baseKeys)),
+					}
+				}
+				records := make([]*graveler.ValueRecord, 0)
+				for j, key := range tst.baseKeys[i] {
+					records = append(records, makeV(key, tst.baseIdentities[i][j]))
+				}
+				baseIt.AddRange(rng).
+					AddValueRecords(records...)
+			}
+			// build diff iterator
+			diffIt := testutil.NewFakeDiffIterator()
+			for i, diffRange := range tst.diffRangeIds {
+				var rng *committed.RangeDiff
+				if diffRange != "" {
+					rng = &committed.RangeDiff{
+						Type: tst.diffRangeTypes[i],
+						Range: &committed.Range{
+							ID:     committed.ID(diffRange),
+							MinKey: getMinKey(tst.diffKeys[i]),
+							MaxKey: getMaxKey(tst.diffKeys[i]),
+							Count:  int64(len(tst.diffKeys[i])),
+						},
+					}
+				}
+				records := make([]*graveler.Diff, 0)
+				for j, key := range tst.diffKeys[i] {
+					records = append(records, makeDV(tst.diffRangeTypes[i], key, tst.diffIdentities[i][j], tst.leftIdentities[i][j]))
+				}
+				diffIt.AddRange(rng).
+					AddValueRecords(records...)
+			}
+
+			// test merge iterator
+			ctx := context.Background()
+			it := committed.NewMergeIterator(ctx, diffIt, baseIt)
+			gotKeys := make([]string, 0)
+			gotIDs := make([]string, 0)
+			gotRangesIDs := make([]string, 0)
+			for it.Next() {
+				val, rng := it.Value()
+				gotKeys = append(gotKeys, getRecordKey(val))
+				gotIDs = append(gotIDs, getRecordID(val))
+				gotRangesIDs = append(gotRangesIDs, getRangeID(rng))
+			}
+			if err := it.Err(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := deep.Equal(tst.expectedRanges, gotRangesIDs); diff != nil {
+				t.Errorf("got unexpected ranges from compare iterator. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedValues, gotKeys); diff != nil {
+				t.Errorf("got unexpected values from merge iterator. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedIDs, gotIDs); diff != nil {
+				t.Errorf("got unexpected values from merge iterator. diff=%s", diff)
+			}
+		})
+	}
+}
+func TestMergeNextRange(t *testing.T) {
+	baseIt := testutil.NewFakeIterator()
+
+	diffIt := testutil.NewFakeDiffIterator()
+
+	rangeDiff1 := &committed.RangeDiff{
+		Type: added,
+		Range: &committed.Range{
+			ID:     "diff:k1-k3",
+			MinKey: committed.Key("k1"),
+			MaxKey: committed.Key("k3"),
+			Count:  2,
+		},
+	}
+	diffIt.AddRange(rangeDiff1)
+
+	diffIt.AddValueRecords(makeDV(added, "k1", "i1", ""), makeDV(added, "k3", "i3", ""))
+
+	rangeDiff2 := &committed.RangeDiff{
+		Type: added,
+		Range: &committed.Range{
+			ID:     "diff:k4-k5",
+			MinKey: committed.Key("k4"),
+			MaxKey: committed.Key("k5"),
+			Count:  2,
+		},
+	}
+	diffIt.AddRange(rangeDiff2)
+
+	diffIt.AddValueRecords(makeDV(added, "k4", "i4", ""), makeDV(added, "k5", "i5", ""))
+
+	ctx := context.Background()
+	it := committed.NewMergeIterator(ctx, diffIt, baseIt)
+
+	if !it.Next() {
+		t.Fatalf("expected to have next - didn't get get next with error:%v", it.Err())
+	}
+	val, rng := it.Value()
+	if diff := deep.Equal(rng, rangeDiff1.Range); diff != nil {
+		t.Errorf("got unexpected ranges from compare iterator. diff=%s", diff)
+	}
+	if val != nil {
+		t.Errorf("expected val to be nil got %v", val)
+	}
+
+	if !it.NextRange() {
+		t.Fatalf("expected to have next - didn't get get next with error:%v", it.Err())
+	}
+	val, rng = it.Value()
+	if diff := deep.Equal(rng, rangeDiff2.Range); diff != nil {
+		t.Errorf("got unexpected ranges from compare iterator. diff=%s", diff)
+	}
+	if val != nil {
+		t.Errorf("expected val to be nil got %v", val)
+	}
+
+	if !it.Next() {
+		t.Fatalf("expected to have next - didn't get get next with error:%v", it.Err())
+	}
+	val, rng = it.Value()
+	if diff := deep.Equal(rng, rangeDiff2.Range); diff != nil {
+		t.Errorf("got unexpected ranges from compare iterator. diff=%s", diff)
+	}
+	if val == nil || string(val.Identity) != "i4" {
+		t.Errorf("expected val to be nil got %v", val)
+	}
+	if it.NextRange() {
+		t.Fatal("expected not to have next")
+	}
+	if err := it.Err(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestMergeCancelContext(t *testing.T) {
 	diffs := []graveler.Diff{testMergeNewDiff(added, "k3", "i3", "")}
 	diffIt := testutil.NewDiffIter(diffs)

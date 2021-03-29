@@ -10,6 +10,7 @@ type Range struct {
 	MaxKey        Key
 	EstimatedSize uint64 // EstimatedSize estimated Range size in bytes
 	Count         int64
+	Tombstone     bool
 }
 
 func (r Range) Copy() *Range {
@@ -23,11 +24,11 @@ func (r Range) Copy() *Range {
 }
 
 func (r Range) IsTombstone() bool {
-	return r.EstimatedSize == 0
+	return r.Tombstone
 }
 
 func (r *Range) SetTombstone() {
-	r.EstimatedSize = 0
+	r.Tombstone = true
 }
 
 func MarshalRange(r Range) ([]byte, error) {

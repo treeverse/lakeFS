@@ -85,12 +85,12 @@ func diffIteratorNextValue(it Iterator) (*graveler.ValueRecord, *Range, error) {
 	return nil, nil, it.Err()
 }
 
-func diffIteratorNextRange(it Iterator) (*Range, error) {
+func diffIteratorNextRange(it Iterator) (*graveler.ValueRecord, *Range, error) {
 	if it.NextRange() {
-		_, rng := it.Value()
-		return rng, nil
+		val, rng := it.Value()
+		return val, rng, nil
 	}
-	return nil, it.Err()
+	return nil, nil, it.Err()
 }
 
 func (d *diffIterator) setCurrentRangeRight() {
@@ -114,7 +114,7 @@ func (d *diffIterator) setCurrentRangeLeft() {
 	d.currentDiff = nil
 }
 
-func (d *diffIterator) emptyCurrentRange() {
+func (d *diffIterator) clearCurrentRange() {
 	d.currentRange.iter = nil
 	d.currentRange.value = nil
 	d.currentRange.currentRangeDiff = nil
@@ -180,7 +180,7 @@ func (d *diffIterator) Next() bool {
 		if d.currentRange.value.err != nil {
 			d.err = d.currentRange.value.err
 			d.currentDiff = nil
-			d.emptyCurrentRange()
+			d.clearCurrentRange()
 			return false
 		}
 		if d.currentRange.value.record != nil {
@@ -188,8 +188,8 @@ func (d *diffIterator) Next() bool {
 			d.currentDiff = &graveler.Diff{Type: d.currentRange.currentRangeDiff.Type, Key: d.currentRange.value.record.Key.Copy(), Value: d.currentRange.value.record.Value, LeftIdentity: leftIdentity}
 			return true
 		}
-		// current diff range
-		d.emptyCurrentRange()
+		// current diff range over - clear current range and continue to get next range/value
+		d.clearCurrentRange()
 	}
 	select {
 	case <-d.ctx.Done():
@@ -210,7 +210,7 @@ func (d *diffIterator) Next() bool {
 			}
 			if d.err != nil {
 				d.currentDiff = nil
-				d.emptyCurrentRange()
+				d.clearCurrentRange()
 				return false
 			}
 			compareResult := d.compareDiffIterators()
@@ -219,8 +219,8 @@ func (d *diffIterator) Next() bool {
 				d.currentDiff = nil
 				return false
 			case diffItCompareResultSameRanges:
-				d.leftValue.rng, d.leftValue.err = diffIteratorNextRange(d.left)
-				d.rightValue.rng, d.rightValue.err = diffIteratorNextRange(d.right)
+				d.leftValue.record, d.leftValue.rng, d.leftValue.err = diffIteratorNextRange(d.left)
+				d.rightValue.record, d.rightValue.rng, d.rightValue.err = diffIteratorNextRange(d.right)
 			case diffItCompareResultLeftRangeBeforeRight:
 				d.setCurrentRangeLeft()
 				return true
@@ -260,8 +260,8 @@ func (d *diffIterator) NextRange() bool {
 		d.err = ErrNoRange
 		return false
 	}
-	d.currentRange.value.rng, d.currentRange.value.err = diffIteratorNextRange(d.currentRange.iter)
-	d.emptyCurrentRange()
+	d.currentRange.value.record, d.currentRange.value.rng, d.currentRange.value.err = diffIteratorNextRange(d.currentRange.iter)
+	d.clearCurrentRange()
 	return d.Next()
 }
 
