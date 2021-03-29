@@ -1,0 +1,24 @@
+{
+  "name": "lakefs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@primer/octicons-react": "^12.1.0",
+    "bootstrap": "^4.6.0",
+    "bootswatch": "^4.6.0",
+    "moment": "^2.29.1",
+    "next": "10.0.9",
+    "react": "17.0.2",
+    "react-bootstrap": "^1.5.2",
+    "react-bootstrap-typeahead": "^5.1.4",
+    "react-dom": "17.0.2",
+    "swr": "^0.5.4"
+  },
+  "devDependencies": {
+  }
+}

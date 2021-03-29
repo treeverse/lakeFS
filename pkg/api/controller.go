@@ -143,7 +143,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.AuthDetachPolicyFromGroupHandler = c.DetachPolicyFromGroupHandler()
 
 	api.RepositoriesListRepositoriesHandler = c.ListRepositoriesHandler()
-	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
+	api.RepositoriesGetRepositoryHandler = c.GetRepositoryHandler()
 	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
 	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
 
@@ -344,7 +344,7 @@ func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	return after, amount
 }
 
-func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
+func (c *Controller) GetRepositoryHandler() repositories.GetRepositoryHandler {
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
 		ctx, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
@@ -360,6 +360,9 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 		if errors.Is(err, catalog.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
+		} else if errors.Is(err, catalog.ErrInvalid) {
+			return repositories.NewGetRepositoryNotFound().
+				WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).

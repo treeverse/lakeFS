@@ -1,7 +1,11 @@
-import {isValidBranchName} from "../model/validation";
+import {isValidBranchName} from "./validation";
 
 export const API_ENDPOINT = '/api/v1';
-export const DEFAULT_LISTING_AMOUNT = 100;
+export const DEFAULT_LISTING_AMOUNT = 300;
+
+import useSWR, { useSWRInfinite } from "swr";
+
+
 
 export const linkToPath = (repoId, branchId, path) => {
     const query = qs({
@@ -30,18 +34,15 @@ export const extractError = async (response) => {
     return body;
 };
 
-const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, defaultHeaders = {
+const apiRequest = (uri, requestData = {}, additionalHeaders = {}, defaultHeaders = {
     "Accept": "application/json",
     "Content-Type": "application/json",
 }) => {
-    const response = await fetch(`${API_ENDPOINT}${uri}`, {
-        headers: new Headers({
-            ...defaultHeaders,
-            ...additionalHeaders,
-        }),
-        ...requestData,
-    });
-    return response;
+    const headers = new Headers({
+        ...defaultHeaders,
+        ...additionalHeaders,
+    })
+    return fetch(`${API_ENDPOINT}${uri}`, {headers,  ...requestData});
 };
 
 // helper errors
@@ -53,11 +54,11 @@ export class NotFoundError extends Error {
 }
 
 export class MergeError extends Error {
-  constructor(message, payload) {
-    super(message);
-    this.name = "MergeError";
-    this.payload = payload;
-  }
+    constructor(message, payload) {
+        super(message);
+        this.name = "MergeError";
+        this.payload = payload;
+    }
 }
 
 
@@ -317,10 +318,23 @@ class Auth {
 }
 
 
+const paginator = (url) => {
+    return (pageIndex, previousPageData) => {
+        const amount = DEFAULT_LISTING_AMOUNT
+        let after = ""
+        if (!!previousPageData && previousPageData.pagination.has_more) {
+            after = previousPageData.pagination.next_offset;
+        } else if (!!previousPageData && !previousPageData.pagination.has_more) {
+            return null // done!
+        }
+        return [url, after, amount];
+    }
+}
+
 class Repositories {
 
     async get(repoId) {
-        const response = await apiRequest(`/repositories/${repoId}`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`);
         if (response.status === 404) {
             throw new NotFoundError(`could not find repository ${repoId}`);
         } else if (response.status !== 200) {
@@ -329,40 +343,65 @@ class Repositories {
         return response.json();
     }
 
-    async list(after, amount) {
-        const query = qs({after, amount});
-        const response = await apiRequest(`/repositories?${query}`);
+    useGet(repoId) {
+        return useSWR(`/repositories/${repoId}`, async () => {
+            return await this.get(repoId);
+        });
+    }
+
+    async list(after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount})
+        const response = await apiRequest(`/repositories?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list repositories: ${await extractError(response)}`)
         }
-        return response.json();
+        return await response.json()
     }
 
-    async filter(from, amount) {
-        if (!from) {
-            return this.list(from, amount);
+    useList(after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        return useSWRInfinite(paginator(`/repositories`), (url, after, amount) => {
+            return this.list(after, amount);
+        });
+    }
+
+    async filter(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+
+        if (!prefix || prefix.length === 0) {
+            return await this.list(after, amount);
         }
-        const response = await this.list(from, amount);
+
+        if (prefix > after) {
+            after = prefix;
+        }
+
+        const response = await this.list(after, amount);
+        const filtered = response.results.filter(repo => repo.id.indexOf(prefix) === 0);
+        // try and see if prefix itself is a repo ID
         let self;
         try {
-            self = await this.get(from);
+            self = await this.get(prefix);
         } catch (error) {
             if (!(error instanceof NotFoundError)) {
                 throw error;
             }
         }
-        const results = response.results.filter(repo => repo.id.indexOf(from) === 0);
-        if (self) results.unshift(self);
-        const hasMore = response.pagination.has_more;
+        const hasMore = (filtered.length === response.results.length) && response.pagination.has_more;
+        if (self) filtered.unshift(self);
 
         return {
-            results,
+            results: filtered,
             pagination: {
                 has_more: hasMore,
                 max_per_page: amount,
-                results: results.length,
+                results: filtered.length,
             },
         };
+    }
+
+    useFilter(prefix, amount = DEFAULT_LISTING_AMOUNT) {
+        return useSWRInfinite(paginator(`/repositories?filter=${prefix}`), (url, from, amount) => {
+            return this.filter(prefix, from, amount).catch(error => ({error}));
+        });
     }
 
     async create(repo) {
@@ -512,6 +551,16 @@ class Commits {
         return response.json();
     }
 
+    async get(repoId, commitId) {
+        const response = await apiRequest(`/repositories/${repoId}/commits/${commitId}`);
+        if (response.status === 404) {
+            throw new NotFoundError(`could not find commit ${commitId}`);
+        } else if (response.status !== 200) {
+            throw new Error(`could not get commit: ${await extractError(response)}`)
+        }
+        return response.json();
+    }
+
     async commit(repoId, branchId, message, metadata ={}) {
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
             method: 'POST',
@@ -525,6 +574,8 @@ class Commits {
 }
 
 class Refs {
+
+
     async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
         let response;
@@ -546,7 +597,7 @@ class Refs {
         });
         switch (response.status) {
             case 200:
-              return response.json();
+                return response.json();
             case 409:
                 const resp = await response.json();
                 throw new MergeError(response.statusText, resp.body);
@@ -628,12 +679,18 @@ class Config {
         });
         switch (response.status) {
             case 200:
-                return response.json();
+                return await response.json();
             case 409:
                 throw new Error('Conflict');
             default:
                 throw new Error('Unknown');
         }
+    }
+
+    useGet() {
+        return useSWR(`/config`, () => {
+            return this.get().catch(error => ({error}))
+        })
     }
 }
 

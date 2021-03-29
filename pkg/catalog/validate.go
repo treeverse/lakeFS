@@ -1,7 +1,6 @@
 package catalog
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,8 +20,8 @@ var (
 )
 
 var (
-	ErrInvalidType   = errors.New("invalid type")
-	ErrRequiredValue = errors.New("required value")
+	ErrInvalidType   = fmt.Errorf("invalid type: %w", ErrInvalid)
+	ErrRequiredValue = fmt.Errorf("required value: %w", ErrInvalid)
 )
 
 type ValidateFunc func(v interface{}) error
