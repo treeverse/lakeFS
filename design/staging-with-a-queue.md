@@ -131,3 +131,21 @@ State update on receiving a "perform commit" announcement is:
 * Verify the range of staging tokens is a prefix of the list of staging tokens, fail otherwise.
 * Drop the staging tokens from the list of pending staging tokens.
 * Update the head ref to point at the commit ID.
+
+## Comparison with the LSM-based family of solutions
+
+There is much similarity to LSM solutions.
+Indeed they may be brought even closer by choosing specific implementation features wisely.
+The _queue_ in this family of solutions is analogous to the _log_ in LSM-based solutions.
+
+LSM-based solutions allow applying different changes in different orders, as long as those changes are commutative.
+For instance, 2 "put object" operations for different paths with the same staging token may be re-ordered on different members.
+In practice it does not appear that we can save much time, both because we need to preserve ordering for "put object" operations on the same key, and because we need to batch to achieve acceptable performance.
+Also, changing ordering of operations on different members requires being able to handle the (rare!) case of checkpointing the same sequence of operations at different times on different members.
+
+Queuing solutions let a queue or Raft perform some of the "heavy lifting" of applying logs to snapshots -- at the cost of having to operate a queue or Raft.
+This allows members to hold state in faster storage:
+
+* "put object" operations may be accepted by a majority of members holding them in RAM, without having to store them to disk.
+* disk serialization can be entirely local, without having to write to S3.
+* writing to S3 is necessary only for additional durability, to allow recovery after losing the queue (e.g. losing a majority of Raft members).
