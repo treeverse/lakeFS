@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -135,20 +135,31 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	defer func() {
 		_ = fp.Close()
 	}()
-	var b bytes.Buffer
-	w := multipart.NewWriter(&b)
-	contentWriter, err := w.CreateFormField("content")
-	if err != nil {
-		return nil, err
-	}
-	if _, err := io.Copy(contentWriter, fp); err != nil {
-		return nil, err
-	}
-	w.Close()
+
+	filePath := api.StringValue(destURI.Path)
+
+	pr, pw := io.Pipe()
+	mpw := multipart.NewWriter(pw)
+	contentType := mpw.FormDataContentType()
+	go func() {
+		defer func() {
+			_ = pw.Close()
+		}()
+		cw, err := mpw.CreateFormFile("content", path.Base(filePath))
+		if err != nil {
+			_ = pw.CloseWithError(err)
+			return
+		}
+		if _, err := io.Copy(cw, fp); err != nil {
+			_ = pw.CloseWithError(err)
+			return
+		}
+		_ = mpw.Close()
+	}()
 
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, destURI.Repository, destURI.Ref, &api.UploadObjectParams{
-		Path: sourcePath,
-	}, w.FormDataContentType(), &b)
+		Path: filePath,
+	}, contentType, pr)
 	if err != nil {
 		return nil, err
 	}

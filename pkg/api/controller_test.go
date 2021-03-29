@@ -8,6 +8,7 @@ import (
 	"math"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -621,20 +622,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		const path = "some/path"
 		const content = "hello world!"
 
-		var b bytes.Buffer
-		w := multipart.NewWriter(&b)
-		contentWriter, err := w.CreateFormField("content")
-		if err != nil {
-			t.Fatal("CreateFormField content", err)
-		}
-		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
-			t.Fatal("write content", err)
-		}
-		w.Close()
-
-		uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", newBranchName, &api.UploadObjectParams{
-			Path: path,
-		}, w.FormDataContentType(), &b)
+		uploadResp, _ := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), "repo1", newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
 		if _, err := deps.catalog.Commit(ctx, "repo1", "master2", "commit 1", "some_user", nil); err != nil {
@@ -676,6 +664,25 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			t.Fatal("CreateBranch expected not found")
 		}
 	})
+}
+
+func uploadObjectHelper(t testing.TB, ctx context.Context, clt api.ClientWithResponsesInterface, path string, reader io.Reader, repo, branch string) (*api.UploadObjectResponse, error) {
+	t.Helper()
+
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	contentWriter, err := w.CreateFormFile("content", filepath.Base(path))
+	if err != nil {
+		t.Fatal("CreateFormField:", err)
+	}
+	if _, err := io.Copy(contentWriter, reader); err != nil {
+		t.Fatal("CreateFormFile write content:", err)
+	}
+	w.Close()
+
+	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
+		Path: path,
+	}, w.FormDataContentType(), &b)
 }
 
 func TestController_DeleteBranchHandler(t *testing.T) {
@@ -913,22 +920,21 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 
 	t.Run("upload object", func(t *testing.T) {
 		const content = "hello world this is my awesome content"
-		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "master", &api.UploadObjectParams{
-			Path: "foo/bar",
-		}, "application/octet-stream", strings.NewReader(content))
+		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo1", "master")
 		verifyResponseOK(t, resp, err)
 
 		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
-		if sizeBytes != 38 {
-			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
+		const expectedSize = 38
+		if sizeBytes != expectedSize {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSize, sizeBytes)
 		}
 
 		// download it
 		rresp, err := clt.GetObjectWithResponse(ctx, "repo1", "master", &api.GetObjectParams{Path: "foo/bar"})
 		verifyResponseOK(t, rresp, err)
 		result := string(rresp.Body)
-		if len(result) != 38 {
-			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+		if len(result) != expectedSize {
+			t.Fatalf("expected %d bytes to be read, got back %d", expectedSize, len(result))
 		}
 		etag := rresp.HTTPResponse.Header.Get("ETag")
 		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
@@ -939,9 +945,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 
 	t.Run("upload object missing branch", func(t *testing.T) {
 		const content = "hello world this is my awesome content"
-		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "masterX", &api.UploadObjectParams{
-			Path: "foo/bar",
-		}, "application/octet-stream", strings.NewReader(content))
+		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo1", "masterX")
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
 			t.Fatal("Missing branch should return not found")
@@ -950,12 +954,10 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 
 	t.Run("upload object missing repo", func(t *testing.T) {
 		const content = "hello world this is my awesome content"
-		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo55555", "master", &api.UploadObjectParams{
-			Path: "foo/bar",
-		}, "application/octet-stream", strings.NewReader(content))
+		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo55555", "master")
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
-			t.Fatal("Missing branch should return not found")
+			t.Fatal("Missing repository should return not found")
 		}
 	})
 }
@@ -1031,9 +1033,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 
 	t.Run("delete object", func(t *testing.T) {
 		const content = "hello world this is my awesome content"
-		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", "master", &api.UploadObjectParams{
-			Path: "foo/bar",
-		}, "application/octet-stream", strings.NewReader(content))
+		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo1", "master")
 		verifyResponseOK(t, resp, err)
 
 		sizeBytes := api.Int64Value(resp.JSON201.SizeBytes)
