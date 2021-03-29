@@ -3,7 +3,7 @@ layout: default
 title: Python
 description: The lakeFS API is OpenAPI 2.0 compliant, allowing the dynamic generation of clients from Python and multiple other languages
 parent: Using lakeFS with...
-nav_order: 5
+nav_order: 30
 has_children: false
 ---
 
