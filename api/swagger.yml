@@ -9,14 +9,6 @@ info:
 servers:
   - url: '/api/v1'
     description: lakeFS server endpoint
-    variables:
-      protocol:
-        enum:
-          - http
-          - https
-        default: http
-      server_address:
-        default: 'localhost:8000'
 
 security:
   - jwt_token: []
@@ -2262,14 +2254,18 @@ paths:
       tags:
         - objects
       operationId: uploadObject
-      summary: upload object content
+      x-validation-exclude-body: false
       requestBody:
-        description: Object content to be uploaded
         content:
-          application/octet-stream:
+          multipart/form-data:
             schema:
-              type: string
-              format: binary
+              type: object
+              properties:
+                content:
+                  description: Object content to upload
+                  type: string
+                  format: binary
+
       parameters:
         - in: query
           name: storageClass
