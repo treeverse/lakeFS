@@ -5,25 +5,15 @@ info:
   title: lakeFS API
   version: 0.1.0
 
-
 servers:
-  - url: '/api/v1'
+  - url: "/api/v1"
     description: lakeFS server endpoint
-    variables:
-      protocol:
-        enum:
-          - http
-          - https
-        default: http
-      server_address:
-        default: 'localhost:8000'
 
 security:
   - jwt_token: []
   - basic_auth: []
 
 components:
-
   securitySchemes:
     basic_auth:
       type: http
@@ -76,9 +66,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
 
-
   schemas:
-
     Pagination:
       type: object
       required:
@@ -89,14 +77,18 @@ components:
       properties:
         has_more:
           type: boolean
+          description: Next page is available
         next_offset:
           type: string
+          description: Token used to retrieve the next page
         results:
           type: integer
           minimum: 0
+          description: The number of values found in the results
         max_per_page:
           type: integer
           minimum: 0
+          description: The maximum value per page that can be returned
 
     Repository:
       type: object
@@ -111,12 +103,12 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
         default_branch:
-          example: "master"
           type: string
         storage_namespace:
           type: string
-          description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
+          description: 'Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")'
 
     RepositoryList:
       type: object
@@ -164,15 +156,15 @@ components:
       properties:
         name:
           type: string
-          pattern: '^[a-z0-9][a-z0-9-]{2,62}$'
+          pattern: "^[a-z0-9][a-z0-9-]{2,62}$"
         storage_namespace:
           type: string
-          description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
+          description: 'Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")'
           example: "s3://example-bucket/"
-          pattern: '^(s3|gs|https?|mem|local|transient)://.*$'
+          pattern: "^(s3|gs|https?|mem|local|transient)://.*$"
         default_branch:
-          example: "master"
           type: string
+          example: "main"
 
     ObjectStats:
       type: object
@@ -195,6 +187,7 @@ components:
         mtime:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
         size_bytes:
           type: integer
           format: int64
@@ -235,8 +228,8 @@ components:
       type: object
       properties:
         storage_class:
-          x-nullable: true
           type: string
+          nullable: true
     Ref:
       type: object
       required:
@@ -339,6 +332,7 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
         meta_range_id:
           type: string
         metadata:
@@ -448,6 +442,7 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
 
     CurrentUser:
       type: object
@@ -506,6 +501,7 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
 
     CredentialsList:
       type: object
@@ -534,6 +530,7 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
 
     Group:
       type: object
@@ -546,6 +543,7 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
 
     GroupList:
       type: object
@@ -610,6 +608,7 @@ components:
         creation_date:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
         statement:
           type: array
           items:
@@ -744,6 +743,7 @@ components:
         mtime:
           type: integer
           format: int64
+          description: Unix Epoch in seconds
         size_bytes:
           type: integer
           format: int64
@@ -753,9 +753,7 @@ components:
         - mtime
         - size_bytes
 
-
 paths:
-
   /setup_lakefs:
     post:
       tags:
@@ -812,15 +810,15 @@ paths:
       operationId: listUsers
       summary: list users
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: user list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserList'
+                $ref: "#/components/schemas/UserList"
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
@@ -900,8 +898,8 @@ paths:
       operationId: listGroups
       summary: list groups
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: group list
@@ -984,15 +982,15 @@ paths:
       operationId: listPolicies
       summary: list policies
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: policy list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PolicyList'
+                $ref: "#/components/schemas/PolicyList"
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
@@ -1007,7 +1005,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Policy'
+              $ref: "#/components/schemas/Policy"
       responses:
         201:
           description: policy
@@ -1057,7 +1055,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Policy'
+              $ref: "#/components/schemas/Policy"
       responses:
         200:
           description: policy
@@ -1099,8 +1097,8 @@ paths:
       operationId: listGroupMembers
       summary: list group members
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: group memeber list
@@ -1166,8 +1164,8 @@ paths:
       tags:
         - auth
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       operationId: listUserCredentials
       summary: list user credentials
       responses:
@@ -1176,7 +1174,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CredentialsList'
+                $ref: "#/components/schemas/CredentialsList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1202,7 +1200,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-
 
   /auth/users/{userId}/credentials/{accessKeyId}:
     parameters:
@@ -1261,8 +1258,8 @@ paths:
       tags:
         - auth
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       operationId: listUserGroups
       summary: list user groups
       responses:
@@ -1271,7 +1268,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupList'
+                $ref: "#/components/schemas/GroupList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1290,8 +1287,8 @@ paths:
       tags:
         - auth
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
         - in: query
           name: effective
           schema:
@@ -1306,7 +1303,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PolicyList'
+                $ref: "#/components/schemas/PolicyList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1366,8 +1363,8 @@ paths:
       tags:
         - auth
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       operationId: listGroupPolicies
       summary: list group policies
       responses:
@@ -1376,7 +1373,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PolicyList'
+                $ref: "#/components/schemas/PolicyList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1431,8 +1428,8 @@ paths:
       tags:
         - repositories
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       operationId: listRepositories
       summary: list repositories
       responses:
@@ -1441,7 +1438,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RepositoryList'
+                $ref: "#/components/schemas/RepositoryList"
         401:
           $ref: "#/components/responses/Unauthorized"
         default:
@@ -1456,7 +1453,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RepositoryCreation'
+              $ref: "#/components/schemas/RepositoryCreation"
       parameters:
         - in: query
           name: bare
@@ -1563,7 +1560,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefsDump'
+              $ref: "#/components/schemas/RefsDump"
       responses:
         200:
           description: refs successfully loaded
@@ -1589,15 +1586,15 @@ paths:
       operationId: listTags
       summary: list tags
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: tag list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefList'
+                $ref: "#/components/schemas/RefList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1615,7 +1612,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TagCreation'
+              $ref: "#/components/schemas/TagCreation"
       responses:
         201:
           description: tag
@@ -1690,15 +1687,15 @@ paths:
       operationId: listBranches
       summary: list branches
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: branch list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefList'
+                $ref: "#/components/schemas/RefList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1715,14 +1712,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BranchCreation'
+              $ref: "#/components/schemas/BranchCreation"
       responses:
         201:
           description: reference
           content:
 #            application/json:
 #              schema:
-#                $ref: '#/components/schemas/Ref'
+#                $ref: "#/components/schemas/Ref"
             text/html:
               schema:
                 type: string
@@ -1753,15 +1750,15 @@ paths:
       operationId: logCommits
       summary: get commit log from ref
       parameters:
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: commit log
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitList'
+                $ref: "#/components/schemas/CommitList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1791,7 +1788,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommitCreation'
+              $ref: "#/components/schemas/CommitCreation"
       responses:
         201:
           description: commit
@@ -1813,7 +1810,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-
 
   /repositories/{repository}/branches/{branch}:
     parameters:
@@ -1869,7 +1865,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetCreation'
+              $ref: "#/components/schemas/ResetCreation"
       responses:
         204:
           description: reset successful
@@ -1902,7 +1898,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RevertCreation'
+              $ref: "#/components/schemas/RevertCreation"
       responses:
         204:
           description: revert successful
@@ -1942,14 +1938,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Merge'
+              $ref: "#/components/schemas/Merge"
       responses:
         200:
           description: merge completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeResult'
+                $ref: "#/components/schemas/MergeResult"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -1961,20 +1957,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeResult'
+                $ref: "#/components/schemas/MergeResult"
         412:
           description: precondition failed (e.g. a pre-merge hook returned a failure)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         default:
           $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}/diff:
     parameters:
-      - $ref: '#/components/parameters/PaginationAfter'
-      - $ref: '#/components/parameters/PaginationAmount'
+      - $ref: "#/components/parameters/PaginationAfter"
+      - $ref: "#/components/parameters/PaginationAmount"
       - in: path
         name: repository
         required: true
@@ -1996,7 +1992,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DiffList'
+                $ref: "#/components/schemas/DiffList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2023,8 +2019,8 @@ paths:
         schema:
           type: string
         description: a reference (could be either a branch or a commit ID) to compare against
-      - $ref: '#/components/parameters/PaginationAfter'
-      - $ref: '#/components/parameters/PaginationAmount'
+      - $ref: "#/components/parameters/PaginationAfter"
+      - $ref: "#/components/parameters/PaginationAmount"
       - in: query
         name: type
         schema:
@@ -2046,7 +2042,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DiffList'
+                $ref: "#/components/schemas/DiffList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2236,20 +2232,20 @@ paths:
       tags:
         - objects
       operationId: stageObject
-      summary: stage an object's metadata for the given branch
+      summary: stage an object"s metadata for the given branch
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ObjectStageCreation'
+              $ref: "#/components/schemas/ObjectStageCreation"
       responses:
         201:
           description: object metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObjectStats'
+                $ref: "#/components/schemas/ObjectStats"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -2262,14 +2258,18 @@ paths:
       tags:
         - objects
       operationId: uploadObject
-      summary: upload object content
+      x-validation-exclude-body: false
       requestBody:
-        description: Object content to be uploaded
         content:
-          application/octet-stream:
+          multipart/form-data:
             schema:
-              type: string
-              format: binary
+              type: object
+              properties:
+                content:
+                  description: Object content to upload
+                  type: string
+                  format: binary
+
       parameters:
         - in: query
           name: storageClass
@@ -2400,8 +2400,8 @@ paths:
         required: false
         schema:
           type: string
-      - $ref: '#/components/parameters/PaginationAfter'
-      - $ref: '#/components/parameters/PaginationAmount'
+      - $ref: "#/components/parameters/PaginationAfter"
+      - $ref: "#/components/parameters/PaginationAmount"
       - in: query
         name: delimiter
         schema:
@@ -2418,7 +2418,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObjectStatsList'
+                $ref: "#/components/schemas/ObjectStatsList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2455,7 +2455,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StorageURI'
+                $ref: "#/components/schemas/StorageURI"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2475,8 +2475,8 @@ paths:
           required: true
           schema:
             type: string
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
         - in: query
           name: branch
           schema:
@@ -2491,7 +2491,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionRunList'
+                $ref: "#/components/schemas/ActionRunList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2547,15 +2547,15 @@ paths:
           required: true
           schema:
             type: string
-        - $ref: '#/components/parameters/PaginationAfter'
-        - $ref: '#/components/parameters/PaginationAmount'
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
           description: list specific run hooks
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HookRunList'
+                $ref: "#/components/schemas/HookRunList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2623,7 +2623,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StorageURI'
+                $ref: "#/components/schemas/StorageURI"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2651,10 +2651,15 @@ paths:
       responses:
         200:
           description: range URI
+          headers:
+            Location:
+              schema:
+                type: string
+              description: redirect to S3
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StorageURI'
+                $ref: "#/components/schemas/StorageURI"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

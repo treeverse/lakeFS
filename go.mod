@@ -22,14 +22,14 @@ require (
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
-	github.com/deepmap/oapi-codegen v1.5.1
+	github.com/deepmap/oapi-codegen v1.5.6
 	github.com/dgraph-io/ristretto v0.0.4-0.20210108140656-b1486d8516f2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/georgysavva/scany v0.2.7
-	github.com/getkin/kin-openapi v0.49.0
-	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/getkin/kin-openapi v0.53.0
+	github.com/go-chi/chi/v5 v5.0.0
 	github.com/go-openapi/errors v0.20.0 // indirect
 	github.com/go-openapi/strfmt v0.20.0 // indirect
 	github.com/go-openapi/swag v0.19.14 // indirect

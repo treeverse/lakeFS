@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"math"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -618,9 +620,21 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		}
 		const path = "some/path"
 		const content = "hello world!"
+
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		contentWriter, err := w.CreateFormField("content")
+		if err != nil {
+			t.Fatal("CreateFormField content", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("write content", err)
+		}
+		w.Close()
+
 		uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, "repo1", newBranchName, &api.UploadObjectParams{
 			Path: path,
-		}, "application/octet-stream", strings.NewReader(content))
+		}, w.FormDataContentType(), &b)
 		verifyResponseOK(t, uploadResp, err)
 
 		if _, err := deps.catalog.Commit(ctx, "repo1", "master2", "commit 1", "some_user", nil); err != nil {

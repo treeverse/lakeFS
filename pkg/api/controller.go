@@ -1513,7 +1513,13 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 
 	// write the content
-	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, r.Body, r.ContentLength, block.PutOpts{StorageClass: params.StorageClass})
+	file, handler, err := r.FormFile("content")
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -2565,7 +2571,7 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) Paginati
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []permissions.Permission) bool {
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
-	if !ok {
+	if !ok || user == nil {
 		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return false
 	}

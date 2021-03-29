@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -132,9 +135,20 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	defer func() {
 		_ = fp.Close()
 	}()
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	contentWriter, err := w.CreateFormField("content")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := io.Copy(contentWriter, fp); err != nil {
+		return nil, err
+	}
+	w.Close()
+
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, destURI.Repository, destURI.Ref, &api.UploadObjectParams{
 		Path: sourcePath,
-	}, "application/octet-stream", fp)
+	}, w.FormDataContentType(), &b)
 	if err != nil {
 		return nil, err
 	}
