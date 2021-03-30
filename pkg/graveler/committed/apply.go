@@ -147,7 +147,9 @@ func (a *applier) apply() (graveler.DiffSummary, error) {
 		if err != nil {
 			return a.summary, err
 		}
-		a.addIntoDiffSummary(graveler.DiffTypeAdded, numAdded)
+		if numAdded > 0 {
+			a.addIntoDiffSummary(graveler.DiffTypeAdded, numAdded)
+		}
 	}
 
 	if !a.opts.AllowEmpty && !a.hasChanges(a.summary) {
@@ -232,34 +234,42 @@ func (a *applier) applySourceRangeDiffKey(sourceRange *Range, diffValue *gravele
 }
 
 func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *graveler.ValueRecord) error {
-	if bytes.Compare(diffRange.MaxKey, sourceValue.Key) < 0 {
-		// diffs at start of range which was completely added or removed --
-		// write and skip that entire range.
-		if diffRange.IsTombstone() {
-			a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
-		} else {
-			if a.logger.IsTracing() {
-				a.logger.WithFields(logging.Fields{
-					"from": string(diffRange.MinKey),
-					"to":   string(diffRange.MaxKey),
-					"ID":   diffRange.ID,
-				}).Trace("copy entire diff range")
-			}
-			if err := a.writer.WriteRange(*diffRange); err != nil {
-				return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
-			}
-			a.addIntoDiffSummary(graveler.DiffTypeAdded, int(diffRange.Count))
-			a.haveDiffs = a.diffs.NextRange()
-		}
-	} else {
+	if bytes.Compare(diffRange.MaxKey, sourceValue.Key) >= 0 {
 		// diffs is at start of range which we need to scan, enter it.
 		a.haveDiffs = a.diffs.Next()
+		return nil
+	}
+	// diffs at start of range which was completely added or removed --
+	// write and skip that entire range.
+	if diffRange.IsTombstone() {
+		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
+	} else {
+		if a.logger.IsTracing() {
+			a.logger.WithFields(logging.Fields{
+				"from": string(diffRange.MinKey),
+				"to":   string(diffRange.MaxKey),
+				"ID":   diffRange.ID,
+			}).Trace("copy entire diff range")
+		}
+		if err := a.writer.WriteRange(*diffRange); err != nil {
+			return fmt.Errorf("copy diff range %s: %w", diffRange.ID, err)
+		}
+		a.addIntoDiffSummary(graveler.DiffTypeAdded, int(diffRange.Count))
+		a.haveDiffs = a.diffs.NextRange()
 	}
 	return nil
 }
 
 func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 	switch {
+	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0 && diffRange.IsTombstone():
+		// internal error but no data lost: deletion requested of a
+		// range that was not there.
+		a.logger.WithFields(logging.Fields{
+			"from": string(diffRange.MinKey),
+			"to":   string(diffRange.MaxKey),
+			"ID":   string(diffRange.ID),
+		}).Warn("[I] unmatched delete")
 	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0:
 		// insert diff
 		if err := a.writer.WriteRange(*diffRange); err != nil {

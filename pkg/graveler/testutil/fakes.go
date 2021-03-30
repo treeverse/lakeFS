@@ -575,13 +575,18 @@ func (i *FakeDiffIterator) ReadsByRange() []int {
 }
 
 func (i *FakeDiffIterator) nextKey() []byte {
-	if len(i.DRV) <= i.idx+1 {
-		return nil
+	for j := 1; len(i.DRV) > i.idx+j; j++ {
+		if i.DRV[i.idx+j].V == nil {
+			if i.DRV[i.idx+j].R == nil {
+				continue // in case we added an empty range header
+			}
+			return i.DRV[i.idx+j].R.Range.MinKey
+
+		}
+		return i.DRV[i.idx+j].V.Key
+
 	}
-	if i.DRV[i.idx+1].V == nil {
-		return i.DRV[i.idx+1].R.Range.MinKey
-	}
-	return i.DRV[i.idx+1].V.Key
+	return nil
 }
 
 func (i *FakeDiffIterator) SetErr(err error) {
@@ -632,6 +637,9 @@ func (i *FakeDiffIterator) NextRange() bool {
 		i.idx++
 		if i.DRV[i.idx].V == nil {
 			i.rangeIdx++
+			if i.DRV[i.idx].R == nil {
+				return i.Next() // in case we added an empty range header
+			}
 			return true
 		}
 	}

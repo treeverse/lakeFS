@@ -129,7 +129,6 @@ func TestMerge(t *testing.T) {
 			idx := 0
 			for it.Next() {
 				idx++
-				// TODO(Guys): support and test ranges
 				val, _ := it.Value()
 				gotKeys = append(gotKeys, string(val.Key))
 				if val.Value == nil {
@@ -204,7 +203,7 @@ func getRangeID(rng *committed.Range) string {
 	return string(rng.ID)
 }
 
-func TestMergeRang(t *testing.T) {
+func TestMergeRange(t *testing.T) {
 	tests := map[string]struct {
 		baseRangeIds        []string
 		baseKeys            [][]string
@@ -759,6 +758,151 @@ func TestCompare(t *testing.T) {
 			}
 			if diff := deep.Equal(tst.expectedDiffTypes, gotDiffTypes); diff != nil {
 				t.Fatalf("got unexpected diff types from merge iterator. diff=%s", diff)
+			}
+		})
+	}
+}
+
+func TestMergeSeekWithRange(t *testing.T) {
+	diffIt := testutil.NewFakeDiffIterator()
+	diffIt.AddRange(&committed.RangeDiff{
+		Type: added,
+		Range: &committed.Range{
+			ID:        "add:k1-k3",
+			MinKey:    committed.Key("k1"),
+			MaxKey:    committed.Key("k3"),
+			Count:     3,
+			Tombstone: false,
+		},
+	}).
+		AddValueRecords(makeDV(added, "k1", "i1", ""), makeDV(added, "k2", "i2", ""), makeDV(added, "k3", "i3", "")).
+		AddRange(&committed.RangeDiff{
+			Type: removed,
+			Range: &committed.Range{
+				ID:        "remove:k4-k6",
+				MinKey:    committed.Key("k4"),
+				MaxKey:    committed.Key("k6"),
+				Count:     3,
+				Tombstone: false,
+			},
+		}).
+		AddValueRecords(makeDV(removed, "k4", "i4", "i4"), makeDV(removed, "k5", "i5", "i5"), makeDV(removed, "k6", "i6", "i6")).
+		AddRange(nil).
+		AddValueRecords(makeDV(added, "k7", "i7", ""), makeDV(removed, "k8", "i8", "i8"), makeDV(changed, "k9", "i9a", "i9"))
+
+	baseIt := testutil.NewFakeIterator()
+	baseIt.AddRange(&committed.Range{
+		ID:        "remove:k4-k6",
+		MinKey:    committed.Key("k4"),
+		MaxKey:    committed.Key("k6"),
+		Count:     3,
+		Tombstone: false,
+	}).
+		AddValueRecords(makeV("k4", "i4"), makeV("k5", "i5"), makeV("k6", "i6")).
+		AddRange(&committed.Range{
+			ID:        "k7-k9",
+			MinKey:    committed.Key("k4"),
+			MaxKey:    committed.Key("k6"),
+			Count:     2,
+			Tombstone: false,
+		}).
+		AddValueRecords(makeV("k8", "i8"), makeV("k9", "i9"))
+	ctx := context.Background()
+	it := committed.NewMergeIterator(ctx, diffIt, baseIt)
+	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
+	defer it.Close()
+	tests := []struct {
+		seekTo             string
+		expectedKeys       []string
+		expectedIdentities []string
+		expectedRanges     []string
+	}{
+		{
+			seekTo:             "k1",
+			expectedKeys:       []string{"", "", "k7", "k8", "k9"},
+			expectedIdentities: []string{"", "", "i7", "", "i9a"},
+			expectedRanges:     []string{"add:k1-k3", "remove:k4-k6", "", "", ""},
+		},
+		{
+			seekTo:             "k2",
+			expectedKeys:       []string{"k2", "k3", "", "k7", "k8", "k9"},
+			expectedIdentities: []string{"i2", "i3", "", "i7", "", "i9a"},
+			expectedRanges:     []string{"add:k1-k3", "add:k1-k3", "remove:k4-k6", "", "", ""},
+		},
+
+		{
+			seekTo:             "k3",
+			expectedKeys:       []string{"k3", "", "k7", "k8", "k9"},
+			expectedIdentities: []string{"i3", "", "i7", "", "i9a"},
+			expectedRanges:     []string{"add:k1-k3", "remove:k4-k6", "", "", ""},
+		},
+
+		{
+			seekTo:             "k4",
+			expectedKeys:       []string{"", "k7", "k8", "k9"},
+			expectedIdentities: []string{"", "i7", "", "i9a"},
+			expectedRanges:     []string{"remove:k4-k6", "", "", ""},
+		},
+		{
+			seekTo:             "k5",
+			expectedKeys:       []string{"k5", "k6", "k7", "k8", "k9"},
+			expectedIdentities: []string{"", "", "i7", "", "i9a"},
+			expectedRanges:     []string{"remove:k4-k6", "remove:k4-k6", "", "", ""},
+		},
+		{
+			seekTo:             "k8",
+			expectedKeys:       []string{"k8", "k9"},
+			expectedIdentities: []string{"", "i9a"},
+			expectedRanges:     []string{"", ""},
+		},
+		{
+			seekTo:             "k9",
+			expectedKeys:       []string{"k9"},
+			expectedIdentities: []string{"i9a"},
+			expectedRanges:     []string{""},
+		},
+		{
+			seekTo:             "k99",
+			expectedKeys:       nil,
+			expectedIdentities: nil,
+		},
+	}
+	for _, tst := range tests {
+		t.Run(fmt.Sprintf("seek to %s", tst.seekTo), func(t *testing.T) {
+			it.SeekGE([]byte(tst.seekTo))
+			val, _ := it.Value()
+			if val != nil {
+				t.Fatalf("value expected to be nil after SeekGE. got=%v", val)
+			}
+			idx := 0
+			var gotValues, gotKeys, gotRanges []string
+
+			hasNext := it.Next()
+			for hasNext {
+				val, rng := it.Value()
+				gotRanges = append(gotRanges, getRangeID(rng))
+				idx++
+				gotKeys = append(gotKeys, getRecordKey(val))
+				gotValues = append(gotValues, getRecordID(val))
+
+				if val == nil {
+					hasNext = it.NextRange()
+				} else {
+					hasNext = it.Next()
+				}
+			}
+
+			if it.Err() != nil {
+				t.Errorf("got unexpected error: %v", it.Err())
+			}
+			if diff := deep.Equal(tst.expectedKeys, gotKeys); diff != nil {
+				t.Errorf("got unexpected keys from merge iterator. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedIdentities, gotValues); diff != nil {
+				t.Errorf("got unexpected values from merge iterator. diff=%s", diff)
+			}
+			if diff := deep.Equal(tst.expectedRanges, gotRanges); diff != nil {
+				t.Errorf("got unexpected ranges from merge iterator. diff=%s", diff)
 			}
 		})
 	}

@@ -180,7 +180,7 @@ func TestApplyDelete(t *testing.T) {
 	}, summary)
 }
 
-func TestAppCopiesLeftoverDiffs(t *testing.T) {
+func TestApplyCopiesLeftoverDiffs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -212,6 +212,25 @@ func TestAppCopiesLeftoverDiffs(t *testing.T) {
 	}, summary)
 }
 
+func TestApplyTombstoneNoBase(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	source := testutil.NewFakeIterator()
+
+	diffs := testutil.NewFakeIterator()
+	diffs.
+		AddRange(&committed.Range{ID: "diffs:one", MinKey: committed.Key("b"), MaxKey: committed.Key("f"), Count: 3, Tombstone: true}).
+		AddValueRecords(makeTombstoneV("b"), makeTombstoneV("e"), makeTombstoneV("f"))
+
+	writer := mock.NewMockMetaRangeWriter(ctrl)
+
+	summary, err := committed.Apply(context.Background(), writer, source, diffs, &committed.ApplyOptions{})
+	assert.Error(t, err, graveler.ErrNoChanges)
+	assert.Equal(t, graveler.DiffSummary{
+		Count: map[graveler.DiffType]int{},
+	}, summary)
+}
 func TestApplyCopiesLeftoverSources(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
