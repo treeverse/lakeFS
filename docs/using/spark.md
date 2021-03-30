@@ -3,7 +3,7 @@ layout: default
 title: Spark
 description: Accessing data in lakeFS from Apache Spark is the same as accessing S3 data from Apache Spark
 parent: Using lakeFS with...
-nav_order: 3
+nav_order: 20
 has_children: false
 ---
 
@@ -16,12 +16,16 @@ has_children: false
 {: .no_toc .text-delta }
 
 1. TOC
-{:toc .pb-5 }
+{:toc}
 
 Accessing data in lakeFS from Spark is the same as accessing S3 data from Spark.
 The only changes we need to consider are:
 1. Setting the configurations to access lakeFS.
 1. Accessing objects using the lakeFS path convention.
+
+**Note**
+In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}.
+{: .note}
 
 ## Configuration
 In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration to the lakeFS endpoint and credentials:
@@ -32,17 +36,25 @@ In order to configure Spark to work with lakeFS, we set S3 Hadoop configuration 
 | `fs.s3a.access.key`  | Set to the lakeFS access key |
 | `fs.s3a.secret.key`  | Set to the lakeFS secret key |
 
-**Note** 
-In the following example we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
-{: .note}
-
 Here is how to do it in Spark code: 
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.lakefs.example.com")
 ```
-  
+### Per-bucket configuration
+
+The above configuration will use lakeFS as the sole S3 endpoint. To use lakeFS in parallel with S3, you can configure Spark to use lakeFS only for specific bucket names.
+For example, to configure only `example-repo` to use lakeFS, set the following configurations:
+
+```scala
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.access.key", "AKIAIOSFODNN7EXAMPLE")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.endpoint", "https://s3.lakefs.example.com")
+```
+
+With this configuration set , reading s3a paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
+
 ## Reading Data
 In order for us to access objects in lakeFS we will need to use the lakeFS path conventions:
     ```s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT```
