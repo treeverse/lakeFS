@@ -25,7 +25,7 @@ def settingsToCompileIn(dir: String) = {
 }
 
 def generateCoreProject(buildType: BuildType) =
-  Project(s"$baseName}-client-${buildType.name}", file(s"target/core-${buildType.name}"))
+  Project(s"${baseName}-client-${buildType.name}", file(s"target/core-${buildType.name}"))
     .settings(
       sharedSettings,
       settingsToCompileIn("core"),
