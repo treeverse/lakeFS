@@ -1,53 +1,145 @@
 package api_test
 
-//
-//func TestBasicAuth(t *testing.T) {
-//	clt, _ := setupClient(t, "")
-//	creds := createDefaultAdminUser(t, clt)
-//
-//	t.Run("valid Auth", func(t *testing.T) {
-//		validAuth := client.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
-//		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParamsWithTimeout(timeout), validAuth)
-//		if err != nil {
-//			t.Fatalf("unexpected error \"%s\" when passing valid credentials", err)
-//		}
-//	})
-//
-//	t.Run("invalid Auth secret", func(t *testing.T) {
-//		invalidAuth := client.BasicAuth(creds.AccessKeyID, "foobarbaz")
-//		_, err := clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), invalidAuth)
-//		var unauthorized *repositories.ListRepositoriesUnauthorized
-//		if !errors.As(err, &unauthorized) {
-//			t.Fatalf("got %s not unauthorized error", err)
-//		}
-//	})
-//}
-//
-//func TestJwtTokenAuth(t *testing.T) {
-//	clt, deps := setupClient(t, "")
-//	creds := createDefaultAdminUser(t, clt)
-//	secret := deps.authService.SecretStore().SharedSecret()
-//
-//	t.Run("valid token", func(t *testing.T) {
-//		now := time.Now()
-//		exp := now.Add(10 * time.Minute)
-//		token, err := api.GenerateJWT(secret, creds.AccessKeyID, now, exp)
-//		testutil.MustDo(t, "create auth token", err)
-//		authInfo := client.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
-//		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParamsWithTimeout(timeout), authInfo)
-//		testutil.MustDo(t, "Request expected to work using a valid token", err)
-//	})
-//
-//	t.Run("invalid token", func(t *testing.T) {
-//		now := time.Now()
-//		exp := now.Add(10 * time.Minute)
-//		token, err := api.GenerateJWT(secret, "admin", now, exp)
-//		testutil.MustDo(t, "create auth token", err)
-//		authInfo := client.APIKeyAuth(api.JWTAuthorizationHeaderName, "header", token)
-//		_, err = clt.Repositories.ListRepositories(repositories.NewListRepositoriesParams().WithTimeout(timeout), authInfo)
-//		var unauthorized *repositories.ListRepositoriesUnauthorized
-//		if !errors.As(err, &unauthorized) {
-//			t.Fatalf("got %s not unauthorized error", err)
-//		}
-//	})
-//}
+import (
+	"context"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/auth"
+)
+
+func TestAuthMiddleware(t *testing.T) {
+	handler, deps := setupHandler(t, "mem")
+	server := setupServer(t, handler)
+	apiEndpoint := server.URL + apiPath
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	cred := createDefaultAdminUser(t, clt)
+
+	t.Run("valid basic auth", func(t *testing.T) {
+		ctx := context.Background()
+		authClient := setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.AccessSecretKey)
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("unexpected status code %d, expected %d", resp.StatusCode(), http.StatusOK)
+		}
+	})
+
+	t.Run("invalid basic auth", func(t *testing.T) {
+		ctx := context.Background()
+		authClient := setupClientByEndpoint(t, server.URL, "foo", "bar")
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusUnauthorized {
+			t.Fatal("ListRepositories() should return unauthorized status code, got", resp.StatusCode())
+		}
+		if resp.JSON401 == nil {
+			t.Fatal("ListRepositories() should return unauthorized response, got nil")
+		}
+	})
+
+	t.Run("valid jwt header", func(t *testing.T) {
+		ctx := context.Background()
+		apiToken := testGenerateApiToken(t, deps.authService, cred.AccessKeyID)
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", api.JWTAuthorizationHeaderName, apiToken)
+		if err != nil {
+			t.Fatal("basic auth security provider", err)
+		}
+		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		if err != nil {
+			t.Fatal("failed to create lakefs api client:", err)
+		}
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("unexpected status code %d, expected %d", resp.StatusCode(), http.StatusOK)
+		}
+	})
+
+	t.Run("invalid jwt header", func(t *testing.T) {
+		ctx := context.Background()
+		apiToken := testGenerateApiToken(t, deps.authService, "AKIAIOSFODNN7EXAMPLE")
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", api.JWTAuthorizationHeaderName, apiToken)
+		if err != nil {
+			t.Fatal("basic auth security provider", err)
+		}
+		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		if err != nil {
+			t.Fatal("failed to create lakefs api client:", err)
+		}
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusUnauthorized {
+			t.Fatal("ListRepositories() should return unauthorized status code, got", resp.StatusCode())
+		}
+		if resp.JSON401 == nil {
+			t.Fatal("ListRepositories() should return unauthorized response, got nil")
+		}
+	})
+
+	t.Run("valid jwt cookie", func(t *testing.T) {
+		ctx := context.Background()
+		apiToken := testGenerateApiToken(t, deps.authService, cred.AccessKeyID)
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
+		if err != nil {
+			t.Fatal("basic auth security provider", err)
+		}
+		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		if err != nil {
+			t.Fatal("failed to create lakefs api client:", err)
+		}
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("unexpected status code %d, expected %d", resp.StatusCode(), http.StatusOK)
+		}
+	})
+
+	t.Run("invalid jwt cookie", func(t *testing.T) {
+		ctx := context.Background()
+		apiToken := testGenerateApiToken(t, deps.authService, "AKIAIOSFODNN7EXAMPLE")
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.JWTCookieName, apiToken)
+		if err != nil {
+			t.Fatal("basic auth security provider", err)
+		}
+		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		if err != nil {
+			t.Fatal("failed to create lakefs api client:", err)
+		}
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		if err != nil {
+			t.Fatal("ListRepositories() should return without error:", err)
+		}
+		if resp.StatusCode() != http.StatusUnauthorized {
+			t.Fatal("ListRepositories() should return unauthorized status code, got", resp.StatusCode())
+		}
+		if resp.JSON401 == nil {
+			t.Fatal("ListRepositories() should return unauthorized response, got nil")
+		}
+	})
+}
+
+func testGenerateApiToken(t testing.TB, authService auth.Service, accessKeyID string) string {
+	t.Helper()
+	secret := authService.SecretStore().SharedSecret()
+	now := time.Now()
+	expires := now.Add(time.Hour)
+	tokenString, err := api.GenerateJWT(secret, accessKeyID, now, expires)
+	if err != nil {
+		t.Fatal("Failed to generate jwt token:", err)
+	}
+	return tokenString
+}

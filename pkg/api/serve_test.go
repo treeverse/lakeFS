@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -27,7 +26,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-const ServerTimeout = 30 * time.Second
+const (
+	ServerTimeout = 30 * time.Second
+
+	apiPath = "/api/v1"
+)
 
 type dependencies struct {
 	blocks      block.Adapter
@@ -137,7 +140,7 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 		}
 		opts = append(opts, api.WithRequestEditorFn(basicAuthProvider.Intercept))
 	}
-	clt, err := api.NewClientWithResponses(endpointURL+"/api/v1", opts...)
+	clt, err := api.NewClientWithResponses(endpointURL+apiPath, opts...)
 	if err != nil {
 		t.Fatal("failed to create lakefs api client:", err)
 	}
@@ -149,14 +152,6 @@ func setupServer(t testing.TB, handler http.Handler) *httptest.Server {
 	server := httptest.NewServer(http.TimeoutHandler(handler, ServerTimeout, `{"error": "timeout"}`))
 	t.Cleanup(server.Close)
 	return server
-}
-
-func setupClient(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {
-	t.Helper()
-	handler, deps := setupHandler(t, blockstoreType, opts...)
-	server := setupServer(t, handler)
-	clt := setupClientByEndpoint(t, server.URL, "", "")
-	return clt, deps
 }
 
 func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.GetDBOption) (api.ClientWithResponsesInterface, *dependencies) {

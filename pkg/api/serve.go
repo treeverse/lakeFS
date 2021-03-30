@@ -56,9 +56,7 @@ func Serve(
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
-			ExcludeRequestBody: false,
 		}),
-		RequestCounterMiddleware(),
 		AuthMiddleware(logger, authService),
 		httputil.LoggingMiddleware(RequestIDHeaderName, logging.Fields{"service_name": LoggerServiceName}),
 		MetricsMiddleware(swagger),
@@ -116,6 +114,13 @@ func validateRequest(r *http.Request, router routers.Router, options *openapi3fi
 		return http.StatusBadRequest, err // We failed to find a matching route for the request.
 	}
 
+	// Extension - validation exclude body
+	if _, ok := route.Operation.Extensions[extensionValidationExcludeBody]; ok {
+		o := *options
+		o.ExcludeRequestBody = true
+		options = &o
+	}
+
 	// Validate request
 	requestValidationInput := &openapi3filter.RequestValidationInput{
 		Request:    r,
@@ -123,13 +128,6 @@ func validateRequest(r *http.Request, router routers.Router, options *openapi3fi
 		Route:      route,
 		Options:    options,
 	}
-
-	if _, ok := route.Operation.Extensions[extensionValidationExcludeBody]; ok {
-		o := *options
-		o.ExcludeRequestBody = true
-		requestValidationInput.Options = &o
-	}
-
 	if err := openapi3filter.ValidateRequest(r.Context(), requestValidationInput); err != nil {
 		var reqErr *openapi3filter.RequestError
 		if errors.As(err, &reqErr) {
@@ -139,8 +137,6 @@ func validateRequest(r *http.Request, router routers.Router, options *openapi3fi
 		if errors.As(err, &seqErr) {
 			return http.StatusUnauthorized, err
 		}
-		// This should never happen today, but if our upstream code changes,
-		// we don't want to crash the server, so handle the unexpected error.
 		return http.StatusInternalServerError, err
 	}
 

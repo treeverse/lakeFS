@@ -7,16 +7,20 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 func MetricsMiddleware(swagger *openapi3.Swagger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
+		// router for operation ID lookup
 		router, err := legacy.NewRouter(swagger)
 		if err != nil {
 			panic(err)
 		}
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// request histogram by operation ID
+		requestHistogramHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			route, _, err := router.FindRoute(r)
 			start := time.Now()
 			mrw := httputil.NewMetricResponseWriter(w)
@@ -27,5 +31,8 @@ func MetricsMiddleware(swagger *openapi3.Swagger) func(http.Handler) http.Handle
 					Observe(time.Since(start).Seconds())
 			}
 		})
+
+		// request handler
+		return promhttp.InstrumentHandlerCounter(requestCounter, requestHistogramHandler)
 	}
 }
