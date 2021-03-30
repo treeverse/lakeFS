@@ -24,12 +24,14 @@ func AuthMiddleware(logger logging.Logger, authService auth.Service) func(next h
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			var user *model.User
+			var err error
 
 			// validate jwt token from cookie
 			jwtCookie, _ := r.Cookie(JWTCookieName)
 			if jwtCookie != nil {
-				user = userByToken(ctx, w, logger, authService, jwtCookie.Value)
-				if user == nil {
+				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
+				if err != nil {
+					writeError(w, http.StatusUnauthorized, err)
 					return
 				}
 			}
@@ -38,8 +40,9 @@ func AuthMiddleware(logger logging.Logger, authService auth.Service) func(next h
 			if user == nil {
 				token := r.Header.Get(JWTAuthorizationHeaderName)
 				if token != "" {
-					user = userByToken(ctx, w, logger, authService, token)
-					if user == nil {
+					user, err = userByToken(ctx, logger, authService, token)
+					if err != nil {
+						writeError(w, http.StatusUnauthorized, err)
 						return
 					}
 				}
@@ -49,21 +52,24 @@ func AuthMiddleware(logger logging.Logger, authService auth.Service) func(next h
 			if user == nil {
 				accessKey, secretKey, ok := r.BasicAuth()
 				if ok {
-					user = userByAuth(ctx, w, logger, authService, accessKey, secretKey)
-					if user == nil {
+					user, err = userByAuth(ctx, logger, authService, accessKey, secretKey)
+					if err != nil {
+						writeError(w, http.StatusUnauthorized, err)
 						return
 					}
 				}
 			}
 
 			// keep user on the request context
-			r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
+			if user != nil {
+				r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func userByToken(ctx context.Context, w http.ResponseWriter, logger logging.Logger, authService auth.Service, tokenString string) *model.User {
+func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims := &jwt.StandardClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -72,19 +78,16 @@ func userByToken(ctx context.Context, w http.ResponseWriter, logger logging.Logg
 		return authService.SecretStore().SharedSecret(), nil
 	})
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
-		return nil
+		return nil, ErrAuthenticationFailed
 	}
 	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok || !token.Valid {
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
-		return nil
+		return nil, ErrAuthenticationFailed
 	}
 	cred, err := authService.GetCredentials(ctx, claims.Subject)
 	if err != nil {
 		logger.WithField("subject", claims.Subject).Debug("could not find credentials for token")
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
-		return nil
+		return nil, ErrAuthenticationFailed
 	}
 	userData, err := authService.GetUserByID(ctx, cred.UserID)
 	if err != nil {
@@ -92,31 +95,25 @@ func userByToken(ctx context.Context, w http.ResponseWriter, logger logging.Logg
 			"user_id": cred.UserID,
 			"subject": claims.Subject,
 		}).Debug("could not find user id by credentials")
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
-		return nil
+		return nil, ErrAuthenticationFailed
 	}
-	return userData
+	return userData, nil
 }
 
-func userByAuth(ctx context.Context, w http.ResponseWriter, logger logging.Logger, authService auth.Service, accessKey string, secretKey string) *model.User {
+func userByAuth(ctx context.Context, logger logging.Logger, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
 	cred, err := authService.GetCredentials(ctx, accessKey)
 	if err != nil {
-		logger.WithError(err).Error("failed to get credentials for key")
-		writeError(w, http.StatusInternalServerError, fmt.Errorf("get credentials for access key: %w", err))
-		return nil
+		logger.WithError(err).Error("failed getting credentials for key")
+		return nil, ErrAuthenticationFailed
 	}
 	if secretKey != cred.AccessSecretKey {
 		logger.Debug("access key secret does not match")
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
-		return nil
+		return nil, ErrAuthenticationFailed
 	}
 	user, err := authService.GetUserByID(ctx, cred.UserID)
 	if err != nil {
-		logger.WithFields(logging.Fields{
-			"user_id": cred.UserID,
-		}).Debug("could not find user id by credentials")
-		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
-		return nil
+		logger.WithFields(logging.Fields{"user_id": cred.UserID}).Debug("could not find user id by credentials")
+		return nil, ErrAuthenticationFailed
 	}
-	return user
+	return user, nil
 }
