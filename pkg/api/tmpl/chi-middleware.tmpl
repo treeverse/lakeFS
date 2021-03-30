@@ -1,3 +1,5 @@
+// chi-middleware.tmpl based on https://github.com/deepmap/oapi-codegen/tree/master/pkg/codegen/templates
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
     Handler ServerInterface
@@ -21,7 +23,6 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
 	  http.Error(w, "Error unmarshalling body '{{$opid}}' as JSON", http.StatusBadRequest)
 	  return
   }
-
   {{end}}{{end}}{{end}}
 
   {{range .PathParams}}// ------------- Path parameter "{{.ParamName}}" -------------
