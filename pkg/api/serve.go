@@ -5,6 +5,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -79,8 +80,19 @@ func Serve(
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
+	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount("/", uiHandler)
 	return r
+}
+
+func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
+	reader, err := GetSwaggerSpecReader()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = io.Copy(w, reader)
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
@@ -139,6 +151,5 @@ func validateRequest(r *http.Request, router routers.Router, options *openapi3fi
 		}
 		return http.StatusInternalServerError, err
 	}
-
 	return http.StatusOK, nil
 }
