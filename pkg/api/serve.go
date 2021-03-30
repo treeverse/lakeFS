@@ -3,6 +3,7 @@ package api
 //go:generate oapi-codegen -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -26,7 +27,13 @@ const (
 	RequestIDHeaderName = "X-Request-ID"
 	LoggerServiceName   = "rest_api"
 	BaseURL             = "/api/v1"
+
+	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
+
+type responseError struct {
+	Message string `json:"message"`
+}
 
 func Serve(
 	catalog catalog.Interface,
@@ -88,8 +95,12 @@ func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *openapi
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// validate request
-			if statusCode, err := validateRequest(r, router, options); err != nil {
-				http.Error(w, err.Error(), statusCode)
+			statusCode, err := validateRequest(r, router, options)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				w.WriteHeader(statusCode)
+				_ = json.NewEncoder(w).Encode(responseError{Message: err.Error()})
 				return
 			}
 			// serve
@@ -113,7 +124,7 @@ func validateRequest(r *http.Request, router routers.Router, options *openapi3fi
 		Options:    options,
 	}
 
-	if _, ok := route.Operation.Extensions["x-validation-exclude-body"]; ok {
+	if _, ok := route.Operation.Extensions[extensionValidationExcludeBody]; ok {
 		o := *options
 		o.ExcludeRequestBody = true
 		requestValidationInput.Options = &o

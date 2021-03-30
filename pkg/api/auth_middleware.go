@@ -34,7 +34,7 @@ func AuthMiddleware(logger logging.Logger, authService auth.Service) func(next h
 				}
 			}
 
-			// validate jwt token from cookie
+			// validate jwt token from header
 			if user == nil {
 				token := r.Header.Get(JWTAuthorizationHeaderName)
 				if token != "" {
@@ -99,19 +99,23 @@ func userByToken(ctx context.Context, w http.ResponseWriter, logger logging.Logg
 }
 
 func userByAuth(ctx context.Context, w http.ResponseWriter, logger logging.Logger, authService auth.Service, accessKey string, secretKey string) *model.User {
-	credentials, err := authService.GetCredentials(ctx, accessKey)
+	cred, err := authService.GetCredentials(ctx, accessKey)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Errorf("basic auth could not get access key: %w", err))
+		logger.WithError(err).Error("failed to get credentials for key")
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("get credentials for access key: %w", err))
 		return nil
 	}
-	if secretKey != credentials.AccessSecretKey {
-		logger.WithField("access_key", accessKey).Debug("access key secret does not match")
+	if secretKey != cred.AccessSecretKey {
+		logger.Debug("access key secret does not match")
 		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
 		return nil
 	}
-	user, err := authService.GetUserByID(ctx, credentials.UserID)
+	user, err := authService.GetUserByID(ctx, cred.UserID)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, err)
+		logger.WithFields(logging.Fields{
+			"user_id": cred.UserID,
+		}).Debug("could not find user id by credentials")
+		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
 		return nil
 	}
 	return user
