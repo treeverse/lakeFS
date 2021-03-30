@@ -52,7 +52,8 @@ func NewCompareIterator(ctx context.Context, diffDestToSource DiffIterator, base
 	}
 }
 
-func (d *compareIterator) rangeAndValueFromBase(key graveler.Key) (*graveler.ValueRecord, *Range, error) {
+// baseGE returns value ( and its range) from base iterator, which is greater or equal than the given key
+func (d *compareIterator) baseGE(key graveler.Key) (*graveler.ValueRecord, *Range, error) {
 	d.base.SeekGE(key)
 	if !d.base.Next() {
 		return nil, nil, d.err
@@ -127,7 +128,7 @@ func (d *compareIterator) stepNext() bool {
 
 // stepValue moves one step according to current value
 // returns hasMore if iterator has more, and done if the step is over  (got to a value, end of iterator, or error)
-func (d *compareIterator) stepValue() (bool, bool) {
+func (d *compareIterator) stepValue() (hasNext, done bool) {
 	val, rngDiff := d.diffIt.Value()
 	key := val.Key
 	typ := val.Type
@@ -189,7 +190,7 @@ func (d *compareIterator) stepRange() (hasMore bool, done bool) {
 	_, rngDiff := d.diffIt.Value()
 	typ := rngDiff.Type
 	rng := rngDiff.Range
-	baseValue, baseRange, err := d.rangeAndValueFromBase(graveler.Key(rng.MinKey))
+	baseValue, baseRange, err := d.baseGE(graveler.Key(rng.MinKey))
 	if err != nil {
 		d.err = err
 		return false, true

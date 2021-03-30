@@ -204,7 +204,7 @@ func getRangeID(rng *committed.Range) string {
 	return string(rng.ID)
 }
 
-func TestMergeRangTemp(t *testing.T) {
+func TestMergeRang(t *testing.T) {
 	tests := map[string]struct {
 		baseRangeIds        []string
 		baseKeys            [][]string
@@ -501,7 +501,7 @@ func TestMergeNextRange(t *testing.T) {
 		t.Errorf("got unexpected ranges from compare iterator. diff=%s", diff)
 	}
 	if val == nil || string(val.Identity) != "i4" {
-		t.Errorf("expected val to be nil got %v", val)
+		t.Errorf("expected identity to be i4 got %v", val)
 	}
 	if it.NextRange() {
 		t.Fatal("expected not to have next")
