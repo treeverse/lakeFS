@@ -97,6 +97,12 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
 // This middleware is good for net/http either since go-chi is 100% compatible with net/http.
+// The original implementation can be found at https://github.com/deepmap/oapi-codegen/blob/master/pkg/chi-middleware/oapi_validate.go
+// Used our own implementation in order to:
+// 1. Use the latest version kin-openapi (can switch back when oapi-codegen will be updated)
+// 2. For file upload wanted to skip body validation for two reasons:
+//    a. didn't find a way for the validator to accept any file content type
+//    b. didn't want the validator to read the complete request body for the specific request
 func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *openapi3filter.Options) func(http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
