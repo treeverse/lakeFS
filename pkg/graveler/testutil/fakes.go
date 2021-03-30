@@ -581,10 +581,8 @@ func (i *FakeDiffIterator) nextKey() []byte {
 				continue // in case we added an empty range header
 			}
 			return i.DRV[i.idx+j].R.Range.MinKey
-
 		}
 		return i.DRV[i.idx+j].V.Key
-
 	}
 	return nil
 }
