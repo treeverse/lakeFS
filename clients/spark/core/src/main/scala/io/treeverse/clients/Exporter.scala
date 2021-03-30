@@ -51,7 +51,7 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
       return true
     }
 
-    writeSummaryFile(false, commitID, errs.take(maxLoggedErrors).map(s => s.msg).reduce(_+"\n"+_))
+    writeSummaryFile(false, commitID, errs.sample(maxLoggedErrors).map(s => s.msg).reduce(_+"\n"+_))
     false
   }
 
@@ -140,7 +140,7 @@ object Exporter {
           dstFS.delete(dstPath, false)
           null
         } catch {
-          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to delete file ${dstPath.toString}: ${e.toString}")
+          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to delete file ${dstPath}: ${e}")
         }
       }
 
@@ -155,8 +155,8 @@ object Exporter {
             conf)
           null
         } catch  {
-          case e : (FileNotFoundException) =>  ExportStatus(dstPath.toString, success = true, s"Unable to copy file ${dstPath.toString} from source ${srcPath.toString} since source file is missing: ${e.toString}")
-          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to copy file ${dstPath.toString} from source ${srcPath.toString}: ${e.toString}")
+          case e : (FileNotFoundException) =>  ExportStatus(dstPath.toString, success = true, s"Unable to copy file ${dstPath} from source ${srcPath} since source file is missing: ${e}")
+          case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to copy file ${dstPath} from source ${srcPath}: ${e}")
         }
       }
     }
