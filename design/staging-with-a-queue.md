@@ -114,23 +114,35 @@ A great deal of variety is possible, enabling different performance characterist
 
 First announce the intended commit.
 Recall that the head ref has a staging queue of multiple staging areas.
-A commit announcement refers to any suffix of this queue.
-However the commit announcement itself needs to include the parent commit ID.
+The commit announcement itself needs to include the parent commit ID.
 To avoid a separate (fragile!) step of linking a metarange ID to its parent commit ID, include the intended parent ID right on the commit announcement.
-So include the entire staging queue in the commit announcement.
 
 A commit announcement includes:
 
-* The intended parent commit ID
-* The range of all staging tokens to include.
+* The intended parent commit ID.
 * The new staging token.
 
 State update on receiving a commit announcement is:
 
 * Verify the parent commit ID is the current head ref, fail otherwise.  (This is an optimization).
-* Verify commit range is a prefix of the list of staging tokens, fail otherwise.  (This is an optimization).
+* Verify range of staging tokens to commit is a prefix of the list of staging tokens, fail otherwise.  (This is an optimization).
 * Append a staging area for the new staging token.
-* If the continuation token belongs to this member, stream the list of all files in its range out to the sleeping goroutine, triggering metarange generation.
+* If the continuation token belongs to this member, stream the list of all files in the range staging tokens out to the sleeping goroutine, triggering metarange generation.
+
+What range of staging tokens?
+A commit announcement could refer to any suffix of this queue.
+Because we verify when performing the correctness, this choice affects only progress, not correctness.
+However it is advisable to progress early and often.
+For now include the entire staging queue in the commit announcement.
+We may later revisit this situation and possibly increase performance for concurrent commit operations.
+For instance:
+
+* Add "time-based" locks (see below),
+* each commit acquires a "time-based" advisory lock on the suffix of currently _unlocked_ staging tokens and tries to commit that,
+* (or, alternatively, wait for all advisory locks to expire before proceeding),
+* retries on performing the commit proceed as always.
+
+All failures may immediately and transparently be retried.
 
 #### Metarange generation
 
@@ -143,7 +155,7 @@ and/or terminate the entire process on grounds of unhealthiness.
 
 Upon finishing the metarange, a metarange is available and a commit can be generated.
 A commit file is generated and uploaded to S3.
-The entire commit  along with its computed ID is simply sent as the "perform" operation.
+The entire commit along with its computed ID is simply sent as the "perform" operation.
 
 State update on receiving a "perform commit" announcement is:
 
@@ -151,6 +163,10 @@ State update on receiving a "perform commit" announcement is:
 * Verify the range of staging tokens is a prefix of the list of staging tokens, fail otherwise.
 * Drop the staging tokens from the list of pending staging tokens.
 * Update the head ref to point at the commit ID.
+
+If verification fails, it is safe for the proposer immediately to restart from "State update
+on receiving a commit announcement", changing the parent commit ID to the latest ref and
+recomputing staging tokens.
 
 ## Comparison with the LSM-based family of solutions
 
