@@ -1067,6 +1067,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
+
 func ensureStorageNamespaceRW(ctx context.Context, adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
@@ -1352,7 +1353,10 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 	cd := mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(logPath)})
 	w.Header().Set("Content-Disposition", cd)
 	w.Header().Set("Content-Type", "application/octet-stream")
-	_, _ = io.Copy(w, reader)
+	_, err = io.Copy(w, reader)
+	if err != nil {
+		c.Logger.WithError(err).WithField("log_path", logPath).Warn("Write run hook output")
+	}
 }
 
 func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, repository string, params ListBranchesParams) {
@@ -2170,7 +2174,16 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	cd := mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(entry.Path)})
 	w.Header().Set("Content-Disposition", cd)
 	w.Header().Set("Content-Type", "application/octet-stream")
-	_, _ = io.Copy(w, reader)
+	_, err = io.Copy(w, reader)
+	if err != nil {
+		c.Logger.
+			WithError(err).
+			WithFields(logging.Fields{
+				"storage_namespace": repo.StorageNamespace,
+				"physical_address":  entry.PhysicalAddress,
+			}).
+			Debug("GetObject copy content")
+	}
 }
 
 func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, repository string, ref string, params ListObjectsParams) {
@@ -2188,16 +2201,6 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	// discern between an empty delimiter and no delimiter being passed at all
 	// by default, go-swagger will use the default value ("/") even if we pass
 	// a delimiter param that is explicitly empty. This overrides this (wrong) behavior.
-
-	/* old implementation
-	delimiter := params.Delimiter
-	query := r.URL.Query()
-	_, delimiterPassed := query["delimiter"]
-	queryDelimiter := query.Get("delimiter")
-	if delimiterPassed && queryDelimiter == "" {
-		delimiter = ""
-	}
-	*/
 	var delimiter string
 	if params.Delimiter == nil {
 		delimiter = "/"
