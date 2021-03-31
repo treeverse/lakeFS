@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -71,9 +70,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, err)
 	preMergeAction := doc.String()
 
-	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
-		Path: "_lakefs_actions/testing_pre_merge",
-	}, "application/octet-stream", strings.NewReader(preMergeAction))
+	resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_merge", preMergeAction)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
@@ -83,11 +80,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, err)
 	preCommitAction := doc.String()
 
-	uploadResp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
-		Path: "_lakefs_actions/testing_pre_commit",
-	},
-		"application/octet-stream",
-		strings.NewReader(preCommitAction))
+	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_commit", preCommitAction)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")

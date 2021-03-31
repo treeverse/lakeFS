@@ -3,7 +3,6 @@ package nessie
 import (
 	"bytes"
 	"net/http"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -70,12 +69,7 @@ func hookFailToCommit(t *testing.T, path string) {
 	require.NoError(t, err)
 	preCommitAction := doc.String()
 
-	uploadResp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch,
-		&api.UploadObjectParams{
-			Path: "_lakefs_actions/testing_pre_commit",
-		},
-		"application/octet-stream",
-		strings.NewReader(preCommitAction))
+	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_commit", preCommitAction)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")

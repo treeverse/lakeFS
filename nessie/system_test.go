@@ -1,10 +1,13 @@
 package nessie
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -67,9 +70,8 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
-	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
-		Path: objPath,
-	}, "application/octet-stream", strings.NewReader(objContent))
+
+	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
 	if err != nil {
 		return "", "", err
 	}
@@ -77,6 +79,23 @@ func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath st
 		return "", "", fmt.Errorf("%w: %s (%d)", errUploadFailed, resp.Status(), resp.StatusCode())
 	}
 	return resp.JSON201.Checksum, objContent, nil
+}
+
+func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*api.UploadObjectResponse, error) {
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
+	if err != nil {
+		return nil, fmt.Errorf("create form file: %w", err)
+	}
+	_, err = contentWriter.Write([]byte(objContent))
+	if err != nil {
+		return nil, fmt.Errorf("write content: %w", err)
+	}
+	w.Close()
+	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
+		Path: objPath,
+	}, w.FormDataContentType(), &b)
 }
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {

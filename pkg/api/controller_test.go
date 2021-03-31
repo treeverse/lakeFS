@@ -672,7 +672,7 @@ func uploadObjectHelper(t testing.TB, ctx context.Context, clt api.ClientWithRes
 	w := multipart.NewWriter(&b)
 	contentWriter, err := w.CreateFormFile("content", filepath.Base(path))
 	if err != nil {
-		t.Fatal("CreateFormField:", err)
+		t.Fatal("CreateFormFile:", err)
 	}
 	if _, err := io.Copy(contentWriter, reader); err != nil {
 		t.Fatal("CreateFormFile write content:", err)
