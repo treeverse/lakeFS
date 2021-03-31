@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -157,14 +159,26 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 
 			// Making sure content isn't duplicated to avoid dedup mechanisms in lakeFS
 			content := contentPrefix + randstr.Hex(contentSuffixLength)
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+			contentWriter, err := w.CreateFormFile("content", filepath.Base(file))
+			if err != nil {
+				logger.WithError(err).Error("CreateFormFile failed")
+				return failed
+			}
+			_, err = contentWriter.Write([]byte(content))
+			if err != nil {
+				logger.WithError(err).Error("CreateFormFile write content failed")
+				return failed
+			}
+			w.Close()
+			contentType := w.FormDataContentType()
 
 			if err := retry.Do(func() error {
 				resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoName, branchName,
-					&api.UploadObjectParams{
-						Path: file,
-					},
-					"application/octet-stream",
-					strings.NewReader(content))
+					&api.UploadObjectParams{Path: file},
+					contentType,
+					&b)
 				if err != nil {
 					return err
 				}
