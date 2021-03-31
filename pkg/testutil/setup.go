@@ -59,16 +59,13 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", params.Name))
 
 	endpointURL := viper.GetString("endpoint_url")
-	if !strings.HasSuffix(endpointURL, "/") {
-		endpointURL += "/"
-	}
 	u, err := url.Parse(endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to parse endpoint URL", endpointURL)
 	}
 
-	if u.Path == "/" {
-		endpointURL += "api/v1"
+	if u.Path == "" || u.Path == "/" {
+		endpointURL = strings.TrimRight(endpointURL, "/") + api.BaseURL
 	}
 
 	client, err := api.NewClientWithResponses(endpointURL)

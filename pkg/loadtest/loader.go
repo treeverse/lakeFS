@@ -132,7 +132,7 @@ func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
 		return nil, err
 	}
 
-	serverEndpoint := t.Config.ServerAddress + "/api/v1"
+	serverEndpoint := t.Config.ServerAddress + api.BaseURL
 	apiClient, err := api.NewClientWithResponses(
 		serverEndpoint,
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),

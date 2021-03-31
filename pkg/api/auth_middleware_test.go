@@ -14,7 +14,7 @@ import (
 func TestAuthMiddleware(t *testing.T) {
 	handler, deps := setupHandler(t, "mem")
 	server := setupServer(t, handler)
-	apiEndpoint := server.URL + apiPath
+	apiEndpoint := server.URL + api.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
 

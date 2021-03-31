@@ -78,17 +78,13 @@ func getClient() api.ClientWithResponsesInterface {
 	}
 
 	serverEndpoint := viper.GetString(ConfigServerEndpointURL)
-	// normalize server endpoint, use the configuration url if no base uri specify set the default
-	if !strings.HasSuffix(serverEndpoint, "/") {
-		serverEndpoint += "/"
-	}
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
 	}
 	// if no uri to api is set in configuration - set the default
-	if u.Path == "/" {
-		serverEndpoint += "api/v1"
+	if u.Path == "" || u.Path == "/" {
+		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
 
 	client, err := api.NewClientWithResponses(

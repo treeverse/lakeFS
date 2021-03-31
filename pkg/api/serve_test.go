@@ -28,8 +28,6 @@ import (
 
 const (
 	ServerTimeout = 30 * time.Second
-
-	apiPath = "/api/v1"
 )
 
 type dependencies struct {
@@ -140,7 +138,7 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 		}
 		opts = append(opts, api.WithRequestEditorFn(basicAuthProvider.Intercept))
 	}
-	clt, err := api.NewClientWithResponses(endpointURL+apiPath, opts...)
+	clt, err := api.NewClientWithResponses(endpointURL+api.BaseURL, opts...)
 	if err != nil {
 		t.Fatal("failed to create lakefs api client:", err)
 	}
