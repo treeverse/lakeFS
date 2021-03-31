@@ -5,14 +5,32 @@ Design for reliable staging based on a queue.
 ## Introduction
 
 This design for staging is based on a *queue* that can broadcast to all subscribers.  Such a
-queue may be supplied in-process by a Raft library, or by a self-managed queue such as Kafka,
-or by a hosted queue such as Kafka.
+queue may be supplied in-process by a Raft library, or by a _fast_ self-managed queue such as
+Kafka, or by a hosted queue (if there is any such).
 
 ### Required queue properties
 
 1. Identical broadcast ordering over all members (i.e., a real queue, not a bus).
 2. Reliable at-least-once message delivery.
 3. Checkpoint / playback recover semantics
+
+### Options for queuing
+
+This design is directly influenced by the API that Raft exposes to client programs.
+Implementing on Raft is an obvious choice.  It may be possible to use a queuing solution,
+possibly a hosted one -- if that has low latency _and_ is cheap enough.
+
+1. Kafka (if latency low enough).  [Is there good hosting?]
+1. Kinesis (if latency low enough; probably not, 100ms send-to-receive seems indicated).
+1. AWS SNS.  This is a FIFO topic, so all members subscribe to it using a FIFO queue (on SQS).
+   Use a *short* retry policy, after which deliver messages to _another_ "dead letter" FIFO queue.
+   I see no easy way to get a current snapshot from SNS (or SQS),
+   so to join just subscribe and push a message that causes at least one member to publish a snapshot for that message...
+   and process from receipt of the snapshot.
+   
+   Still might have too-high latency or be too expensive.
+1. Azure Service Bus??
+1. GCP Pub/Sub???
 
 ## Operation
 
@@ -54,7 +72,7 @@ The staging token may be returned immediately.
 However if put performance during commits is important we can do better:
 sleep on the next sync event (see how we "get object" below for details) to get a staging token that is more likely to be valid.
 
-#### Links uploaded object to staging
+#### Link uploaded object to staging
 
 To link an object a member sends a PUT record to the queue.
 The record includes the path, the staging token, and the desired entry.
@@ -69,6 +87,8 @@ A get cannot be satisfied by the contents of the map on arrival.
 Instead send a SYNC record to the queue.
 Batch requests and put them all to sleep on the same SYNC record.
 The sleep time of a batch induces an increased GET latency.
+
+![timeline of batched sync operations\: get requests sleep on the next SYNC record\; when that record is received all current values are valid for them](./Sync for queue-based reads.png)
 
 A SYNC action does not update state, so all members except the sending member merely drop it.
 The sending member releases all waiting get requests, replying to each by the value set in the last staging map containing the path, or the committed value if the value is not in any staging map.
