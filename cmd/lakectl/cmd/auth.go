@@ -29,7 +29,7 @@ var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green
 `
 
 var policyDetailsTemplate = `
-ID: {{ .Id | bold }}
+ID: {{ .ID | bold }}
 Creation Date: {{  .CreationDate | date }}
 Statements:
 {{ .StatementDoc | json }}
