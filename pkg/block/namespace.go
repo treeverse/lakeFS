@@ -124,7 +124,7 @@ func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
 		}
 		storageType, err := GetStorageType(parsedNs)
 		if err != nil {
-			return qk, err
+			return qk, fmt.Errorf("no storage type for %s: %w", parsedNs, err)
 		}
 
 		return QualifiedKey{

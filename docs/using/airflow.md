@@ -3,7 +3,7 @@ layout: default
 title: Airflow
 description: Easily build reproducible data pipelines with Airflow and lakeFS using commits, without modifying the code or logic of your job.
 parent: Using lakeFS with...
-nav_order: 10
+nav_order: 55
 has_children: false
 ---
 
@@ -19,7 +19,7 @@ All we need to do is set lakeFS as the endpoint-url and use our lakeFS credentia
 
 We could then run tasks on lakeFS using the lakeFS path convention 
 
-```s3://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT```
+`s3://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT`
 
 The lakeFS docs contain explanations and examples on how to use lakeFS with [AWS CLI](aws_cli.md), [Spark](spark.md), [Presto](presto.md) and many more. 
 
@@ -30,12 +30,11 @@ Using the SimpleHttpOperator to send [API requests](../reference/api.md) to lake
 For example, a commit task using the bashOperator:
 
 ```python
-
 commit_extract = BashOperator(
-       task_id='commit_extract',
-       bash_command='lakectl commit lakefs://example_repo@example_dag_branch -m "extract data"',
-       dag=dag,
-       )
+   task_id='commit_extract',
+   bash_command='lakectl commit lakefs://example_repo@example_dag_branch -m "extract data"',
+   dag=dag,
+)
 ```
 
 

@@ -2,15 +2,20 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
@@ -29,6 +34,8 @@ const fsRecursiveTemplate = `Files: {{.Count}}
 Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
+
+var ErrUnsupportedProtocol = errors.New("unsupported protocol")
 
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
@@ -130,14 +137,18 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePath string, destURI *uri.URI) (*api.ObjectStats, error) {
-	fp := OpenByPath(sourcePath)
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, direct bool) (*api.ObjectStats, error) {
+	fp := OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
+	if direct {
+		return clientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
+	}
+	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+}
 
-	filePath := api.StringValue(destURI.Path)
-
+func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, fp io.Reader) (*api.ObjectStats, error) {
 	pr, pw := io.Pipe()
 	mpw := multipart.NewWriter(pw)
 	contentType := mpw.FormDataContentType()
@@ -157,7 +168,7 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 		_ = mpw.Close()
 	}()
 
-	resp, err := client.UploadObjectWithBodyWithResponse(ctx, destURI.Repository, destURI.Ref, &api.UploadObjectParams{
+	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
 		Path: filePath,
 	}, contentType, pr)
 	if err != nil {
@@ -174,6 +185,95 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	return resp.JSON201, nil
 }
 
+func clientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+	resp, err := client.GetPhysicalAddressWithResponse(ctx, repoID, branchID, &api.GetPhysicalAddressParams{
+		Path: filePath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get physical address to upload object: %w", err)
+	}
+	if resp.JSONDefault != nil {
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("%w: %s (status code %d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
+	}
+
+	stagingLocation := *resp.JSON200
+	for { // Return from inside loop
+		physicalAddress := api.StringValue(stagingLocation.PhysicalAddress)
+		parsedAddress, err := url.Parse(physicalAddress)
+		if err != nil {
+			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
+		}
+
+		// TODO(ariels): plug-in support for other protocols
+		if parsedAddress.Scheme != "s3" {
+			return nil, fmt.Errorf("%w %s", ErrUnsupportedProtocol, parsedAddress.Scheme)
+		}
+
+		bucket := parsedAddress.Hostname()
+		sess, err := session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("connect to S3 session: %w", err)
+		}
+		sess.ClientConfig(s3.ServiceName)
+		svc := s3.New(sess)
+
+		// TODO(ariels): Allow customization of request
+		putObjectResponse, err := svc.PutObject(&s3.PutObjectInput{
+			Body:   contents,
+			Bucket: &bucket,
+			Key:    &parsedAddress.Path,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("upload to backing store %v: %w", parsedAddress, err)
+		}
+
+		size, err := contents.Seek(0, io.SeekEnd)
+		if err != nil {
+			return nil, fmt.Errorf("read size: %w", err)
+		}
+		_, err = contents.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, fmt.Errorf("rewind: %w", err)
+		}
+
+		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &api.LinkPhysicalAddressParams{
+			Path: filePath,
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  api.StringValue(putObjectResponse.ETag),
+			SizeBytes: size,
+			Staging:   stagingLocation,
+			UserMetadata: &api.StagingMetadata_UserMetadata{
+				AdditionalProperties: metadata,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("link object to backing store: %w", err)
+		}
+		if resp.StatusCode() == http.StatusOK {
+			return &api.ObjectStats{
+				Checksum: *putObjectResponse.ETag,
+				// BUG(ariels): Unavailable on S3, remove this field entirely
+				//     OR add it to the server staging manager API.
+				Mtime:           time.Now().Unix(),
+				Path:            filePath,
+				PathType:        "object",
+				PhysicalAddress: physicalAddress,
+				SizeBytes:       &size,
+			}, nil
+		}
+		if resp.JSON409 == nil {
+			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())
+		}
+		// Try again!
+		stagingLocation = *resp.JSON409
+	}
+}
+
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
@@ -186,8 +286,9 @@ var fsUploadCmd = &cobra.Command{
 		pathURI := uri.Must(uri.Parse(args[0]))
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		direct, _ := cmd.Flags().GetBool("direct")
 		if !recursive {
-			stat, err := upload(cmd.Context(), client, source, pathURI)
+			stat, err := upload(cmd.Context(), client, source, pathURI, direct)
 			if err != nil {
 				DieErr(err)
 			}
@@ -210,7 +311,7 @@ var fsUploadCmd = &cobra.Command{
 			uri := *pathURI
 			p := filepath.Join(*uri.Path, relPath)
 			uri.Path = &p
-			stat, err := upload(cmd.Context(), client, path, &uri)
+			stat, err := upload(cmd.Context(), client, path, &uri, direct)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
@@ -283,8 +384,9 @@ var fsRmCmd = &cobra.Command{
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
-	Use:   "fs",
-	Short: "view and manipulate objects",
+	Use:    "fs",
+	Short:  "view and manipulate objects",
+	Hidden: true,
 }
 
 //nolint:gochecknoinits
@@ -299,13 +401,13 @@ func init() {
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
+	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
-
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")
 	_ = fsStageCmd.MarkFlagRequired("checksum")

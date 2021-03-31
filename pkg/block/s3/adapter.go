@@ -40,7 +40,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 		return qualifiedKey, err
 	}
 	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return qualifiedKey, block.ErrInvalidNamespace
+		return qualifiedKey, fmt.Errorf("expected storage type s3: %w", block.ErrInvalidNamespace)
 	}
 	return qualifiedKey, nil
 }

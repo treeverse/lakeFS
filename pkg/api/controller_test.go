@@ -174,9 +174,8 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 
 	t.Run("get missing branch", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "master")
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.Must(t, err)
+
 		resp, err := clt.LogCommitsWithResponse(ctx, "repo1", "otherbranch", &api.LogCommitsParams{})
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
@@ -192,10 +191,10 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		for i := 0; i < commitsLen; i++ {
 			n := strconv.Itoa(i + 1)
 			p := "foo/bar" + n
-			testutil.MustDo(t, "create entry bar"+n, deps.catalog.CreateEntry(ctx, "repo2", "master", catalog.DBEntry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n}))
-			if _, err := deps.catalog.Commit(ctx, "repo2", "master", "commit"+n, "some_user", nil); err != nil {
-				t.Fatalf("failed to commit '%s': %s", p, err)
-			}
+			err := deps.catalog.CreateEntry(ctx, "repo2", "master", catalog.DBEntry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+			testutil.MustDo(t, "create entry "+p, err)
+			_, err = deps.catalog.Commit(ctx, "repo2", "master", "commit"+n, "some_user", nil)
+			testutil.MustDo(t, "commit "+p, err)
 		}
 		resp, err := clt.LogCommitsWithResponse(ctx, "repo2", "master", &api.LogCommitsParams{})
 		verifyResponseOK(t, resp, err)

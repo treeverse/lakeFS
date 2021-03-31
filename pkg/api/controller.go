@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -62,11 +63,128 @@ type Controller struct {
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetPhysicalAddressParams) {
-	panic("implement me")
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "generate_physical_address")
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if errors.Is(err, catalog.ErrNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	token, err := c.Catalog.GetStagingToken(ctx, repository, branch)
+	if errors.Is(err, catalog.ErrNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Generate a name.
+	name, err := nanoid.New()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	tokenPart := ""
+	if token != nil {
+		tokenPart = *token + "/"
+	}
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response := &StagingLocation{
+		PhysicalAddress: StringPtr(qk.Format()),
+		Token:           StringValue(token),
+	}
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body LinkPhysicalAddressJSONRequestBody, repository string, branch string, params LinkPhysicalAddressParams) {
-	panic("implement me")
+	if !c.authorize(w, r, []permissions.Permission{
+		{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "stage_object")
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if errors.Is(err, catalog.ErrNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	// write metadata
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	blockStoreType := c.BlockAdapter.BlockstoreType()
+	if qk.StorageType.String() != blockStoreType {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s",
+			qk.StorageType.String(),
+			blockStoreType,
+		))
+		return
+	}
+
+	writeTime := time.Now()
+	// Because CreateEntry tracks staging on a database with atomic operations,
+	// _ignore_ the staging token here: no harm done even if a race was lost
+	// against a commit.
+	var metadata catalog.Metadata
+	if body.UserMetadata != nil {
+		metadata = body.UserMetadata.AdditionalProperties
+	}
+	entry := catalog.DBEntry{
+		CommonLevel:     false,
+		Path:            params.Path,
+		PhysicalAddress: params.Path,
+		CreationDate:    writeTime,
+		Size:            body.SizeBytes,
+		Checksum:        body.Checksum,
+		Metadata:        metadata,
+	}
+
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if errors.Is(err, catalog.ErrNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	writeResponse(w, http.StatusOK, nil)
 }
 
 func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
