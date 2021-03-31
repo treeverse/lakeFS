@@ -1933,7 +1933,6 @@ paths:
       operationId: mergeIntoBranch
       summary: merge references
       requestBody:
-        required: true
         content:
           application/json:
             schema:

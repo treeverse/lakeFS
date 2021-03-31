@@ -19,9 +19,12 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
 
   {{if .HasBody}}{{range .Bodies}}{{if and .Default (eq .NameTag "JSON")}}// ------------- Body parse -------------
   var body {{$opid}}{{.NameTag}}RequestBody
-  if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-	  http.Error(w, "Error unmarshalling body '{{$opid}}' as JSON", http.StatusBadRequest)
-	  return
+  parseBody := {{if .Required}}true{{else}}r.ContentLength != 0{{end}}
+  if parseBody {
+      if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+          http.Error(w, "Error unmarshalling body '{{$opid}}' as JSON", http.StatusBadRequest)
+          return
+      }
   }
   {{end}}{{end}}{{end}}
 
