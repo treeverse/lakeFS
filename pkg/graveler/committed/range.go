@@ -10,6 +10,18 @@ type Range struct {
 	MaxKey        Key
 	EstimatedSize uint64 // EstimatedSize estimated Range size in bytes
 	Count         int64
+	Tombstone     bool
+}
+
+func (r Range) Copy() *Range {
+	return &Range{
+		ID:            r.ID,
+		MinKey:        r.MinKey.Copy(),
+		MaxKey:        r.MaxKey.Copy(),
+		EstimatedSize: r.EstimatedSize,
+		Count:         r.Count,
+		Tombstone:     r.Tombstone,
+	}
 }
 
 func MarshalRange(r Range) ([]byte, error) {
