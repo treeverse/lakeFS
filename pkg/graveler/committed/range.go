@@ -20,15 +20,8 @@ func (r Range) Copy() *Range {
 		MaxKey:        r.MaxKey.Copy(),
 		EstimatedSize: r.EstimatedSize,
 		Count:         r.Count,
+		Tombstone:     r.Tombstone,
 	}
-}
-
-func (r Range) IsTombstone() bool {
-	return r.Tombstone
-}
-
-func (r *Range) SetTombstone() {
-	r.Tombstone = true
 }
 
 func MarshalRange(r Range) ([]byte, error) {

@@ -471,7 +471,7 @@ func TestMergeNextRange(t *testing.T) {
 	it := committed.NewMergeIterator(ctx, diffIt, baseIt)
 
 	if !it.Next() {
-		t.Fatalf("expected to have next - didn't get get next with error:%v", it.Err())
+		t.Fatalf("expected it.Next() to return true (error:%v)", it.Err())
 	}
 	val, rng := it.Value()
 	if diff := deep.Equal(rng, rangeDiff1.Range); diff != nil {
@@ -482,7 +482,7 @@ func TestMergeNextRange(t *testing.T) {
 	}
 
 	if !it.NextRange() {
-		t.Fatalf("expected to have next - didn't get get next with error:%v", it.Err())
+		t.Fatalf("expected it.NextRange() to return true (error:%v)", it.Err())
 	}
 	val, rng = it.Value()
 	if diff := deep.Equal(rng, rangeDiff2.Range); diff != nil {
@@ -493,7 +493,7 @@ func TestMergeNextRange(t *testing.T) {
 	}
 
 	if !it.Next() {
-		t.Fatalf("expected to have next - didn't get get next with error:%v", it.Err())
+		t.Fatalf("expected it.Next() to return true (error:%v)", it.Err())
 	}
 	val, rng = it.Value()
 	if diff := deep.Equal(rng, rangeDiff2.Range); diff != nil {
@@ -503,7 +503,7 @@ func TestMergeNextRange(t *testing.T) {
 		t.Errorf("expected identity to be i4 got %v", val)
 	}
 	if it.NextRange() {
-		t.Fatal("expected not to have next")
+		t.Fatal("expected it.NextRange() to return false")
 	}
 	if err := it.Err(); err != nil {
 		t.Fatal(err)

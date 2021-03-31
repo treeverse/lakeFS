@@ -15,9 +15,9 @@ import (
 )
 
 type diffTestRange struct {
-	minKey string
-	maxKey string
-	count  int64
+	MinKey string
+	MaxKey string
+	Count  int64
 }
 
 func newDiffTestRange(p *committed.RangeDiff) *diffTestRange {
@@ -173,7 +173,7 @@ func TestDiff(t *testing.T) {
 			rightKeys:                 [][]string{{"k1", "k2"}, {"k4", "k5"}},
 			rightIdentities:           [][]string{{"i1", "i2"}, {"i4", "i5"}},
 			expectedDiffKeys:          []string{"k3", "k6", "k7"},
-			expectedRanges:            []*diffTestRange{{"k3", "k3", 1}, {"k3", "k3", 1}, {"k6", "k7", 1}, {"k6", "k7", 1}, {"k6", "k7", 1}},
+			expectedRanges:            []*diffTestRange{{"k3", "k3", 1}, {"k3", "k3", 1}, {"k6", "k7", 2}, {"k6", "k7", 2}, {"k6", "k7", 2}},
 			expectedDiffTypes:         []graveler.DiffType{removed, removed, removed},
 			expectedDiffIdentities:    []string{"i3", "i6", "i7"},
 			expectedLeftReadsByRange:  []int{0, 1, 1, 1, 2},
@@ -287,44 +287,44 @@ func TestNextRange(t *testing.T) {
 		}
 		record, rng := it.Value()
 		if record != nil {
-			t.Fatal("expected record to be nil")
+			t.Errorf("expected record to be nil got %v", record)
 		}
 		if !it.Next() { // move to k1
-			t.Fatal("expected iterator to have value")
+			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
 		record, rng = it.Value()
 		if record == nil || string(record.Key) != "k1" {
-			t.Fatal("expected record key to be k1")
+			t.Errorf("expected record with key=k1, got record %v", record)
 		}
-		if !it.NextRange() { // move to k3
-			t.Fatal("expected iterator to have value")
+		if !it.NextRange() { // move to k3 (moves to end of current range, but can't start a new range because k3 is part of two different ranges)
+			t.Fatalf("expected it.NextRange() to return true (err %v)", it.Err())
 		}
 		record, rng = it.Value()
 		if rng != nil {
-			t.Fatal("expected range to not have value")
+			t.Errorf("expected range to be nil got range %v", rng)
 		}
 		if record == nil || string(record.Key) != "k3" {
-			t.Fatal("expected record key to be k3")
+			t.Errorf("expected record with key=k3, got record %v", record)
 		}
 		if !it.Next() { // move to k4
-			t.Fatal("expected iterator to have value")
+			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
 		if !it.Next() { // move to range k5-k6
-			t.Fatal("expected iterator to have value")
+			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
 		record, rng = it.Value()
 		if record != nil {
-			t.Fatal("expected record to not have value")
+			t.Errorf("expected record to be nil got record %v", record)
 		}
 		if !it.Next() { // move to k5
-			t.Fatal("expected iterator to have value")
+			t.Fatalf("expected it.Next() to return true (err %v)", it.Err())
 		}
 		record, rng = it.Value()
 		if record == nil || string(record.Key) != "k5" {
-			t.Fatal("expected record key to be k5")
+			t.Errorf("expected record with key=k5, got record %v", record)
 		}
 		if it.NextRange() { // move to end
-			t.Fatal("expected iterator to be done")
+			t.Fatal("expected it.NextRange() to return false")
 		}
 		if err := it.Err(); err != nil {
 			t.Fatalf("unexpected error:%v", err)

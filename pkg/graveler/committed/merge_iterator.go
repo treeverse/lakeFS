@@ -281,7 +281,7 @@ func (c *mergeIterator) Value() (*graveler.ValueRecord, *Range) {
 	if rng != nil {
 		resRange = rng.Range.Copy()
 		if rng.Type == graveler.DiffTypeRemoved {
-			resRange.SetTombstone()
+			resRange.Tombstone = true
 		}
 	}
 	return resValue, resRange

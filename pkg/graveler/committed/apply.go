@@ -38,7 +38,7 @@ func (a *applier) applyAll(iter Iterator) (int, error) {
 		}
 		iterValue, iterRange := iter.Value()
 		if iterValue == nil {
-			if iterRange.IsTombstone() {
+			if iterRange.Tombstone {
 				// internal error but no data lost: deletion requested of a
 				// file that was not there.
 				a.logger.WithFields(logging.Fields{
@@ -241,7 +241,7 @@ func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *gravele
 	}
 	// diffs at start of range which was completely added or removed --
 	// write and skip that entire range.
-	if diffRange.IsTombstone() {
+	if diffRange.Tombstone {
 		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
 	} else {
 		if a.logger.IsTracing() {
@@ -262,7 +262,7 @@ func (a *applier) applyDiffRangeSourceKey(diffRange *Range, sourceValue *gravele
 
 func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 	switch {
-	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0 && diffRange.IsTombstone():
+	case bytes.Compare(diffRange.MaxKey, sourceRange.MinKey) < 0 && diffRange.Tombstone:
 		// internal error but no data lost: deletion requested of a
 		// range that was not there.
 		a.logger.WithFields(logging.Fields{
@@ -283,7 +283,7 @@ func (a *applier) applyBothRanges(diffRange *Range, sourceRange *Range) error {
 			return fmt.Errorf("copy source range %s: %w", sourceRange.ID, err)
 		}
 		a.haveSource = a.source.NextRange()
-	case diffRange.ID == sourceRange.ID && diffRange.IsTombstone():
+	case diffRange.ID == sourceRange.ID && diffRange.Tombstone:
 		a.addIntoDiffSummary(graveler.DiffTypeRemoved, int(diffRange.Count))
 		a.haveSource = a.source.NextRange()
 		a.haveDiffs = a.diffs.NextRange()
