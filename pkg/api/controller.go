@@ -458,6 +458,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusCreated, nil)
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
@@ -935,6 +936,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	if handleAPIError(w, err) {
 		return
 	}
+	writeResponse(w, http.StatusCreated, nil)
 }
 
 func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
