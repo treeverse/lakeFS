@@ -114,7 +114,7 @@ func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string,
 		StorageNamespace: t.Config.StorageNamespace,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)
+		return "", fmt.Errorf("failed to create lakeFS repository '%s' (%s): %w", t.NewRepoName, t.Config.StorageNamespace, err)
 	}
 	if resp.HTTPResponse.StatusCode != http.StatusCreated {
 		return "", fmt.Errorf("%w: %s (%d)", ErrRepositoryCreateFailed, resp.HTTPResponse.Status, resp.HTTPResponse.StatusCode)
