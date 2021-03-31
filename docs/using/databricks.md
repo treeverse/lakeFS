@@ -1,5 +1,6 @@
 ---
-layout: default title: Databricks
+layout: default
+title: Databricks
 description: Interact with your lakeFS data from Databricks
 parent: Using lakeFS with...
 nav_order: 60
@@ -7,16 +8,15 @@ has_children: false
 ---
 
 # Using lakeFS with Databricks
-
 {: .no_toc }
+
 [Databricks](https://databricks.com/) is an Apache Spark-based analytics platform.  
-{: .pb-5 }
 
 ## Table of contents
-
 {: .no_toc .text-delta }
 
-1. TOC {:toc}
+1. TOC
+{:toc}
 
 ## Configuration
 
