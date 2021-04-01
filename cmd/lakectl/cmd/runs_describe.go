@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
@@ -83,6 +85,12 @@ func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, r
 		res, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
 		if err != nil {
 			return "", err
+		}
+		if res.StatusCode() != http.StatusOK {
+			if res.JSONDefault != nil {
+				return "", fmt.Errorf("%w: %s", ErrRequestFailed, res.JSONDefault.Message)
+			}
+			return "", fmt.Errorf("%w: status code %d", ErrRequestFailed, res.StatusCode())
 		}
 		return string(res.Body), nil
 	}

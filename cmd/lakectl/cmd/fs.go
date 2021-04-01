@@ -50,9 +50,7 @@ var fsStatCmd = &cobra.Command{
 		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path: *pathURI.Path,
 		})
-		if err != nil {
-			DieErr(err)
-		}
+		DieOnResponseError(res, err)
 
 		stat := res.JSON200
 		Write(fsStatTemplate, stat)
