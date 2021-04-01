@@ -89,9 +89,15 @@ lazy val commonSettings = Seq(
   version := projectVersion
 )
 
+val nexus = "https://s01.oss.sonatype.org/"
 lazy val publishSettings = Seq(
+  publishResolvers := Seq(
+    if (isSnapshot.value)
+      MavenRepository("lakefs-snapshots", s"$nexus/content/repositories/snapshots")
+    else MavenRepository("lakefs-releases", s"$nexus/service/local/staging/deploy/maven2"),
+    MavenRepository("lakefs-s3-repo", "s3://treeverse-clients-us-east/"),
+  ),
   publishTo := {
-    val nexus = "https://s01.oss.sonatype.org/"
     if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
     else Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
