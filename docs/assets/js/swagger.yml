@@ -88,7 +88,7 @@ components:
         max_per_page:
           type: integer
           minimum: 0
-          description: The maximum value per page that can be returned
+          description: Maximal number of entries per page
 
     Repository:
       type: object
