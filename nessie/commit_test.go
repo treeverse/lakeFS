@@ -18,7 +18,7 @@ func TestCommitSingle(t *testing.T) {
 		if direct {
 			name = "direct"
 		}
-		t.Run(name, func (t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
 			objPath := "1.txt"
 
@@ -74,7 +74,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 		if direct {
 			name = "direct"
 		}
-		t.Run(name, func (t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
 
 			names1 := genNames(size, "run2/foo")
@@ -122,7 +122,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 			}
 			close(uploads)
 			wg.Wait()
-			
+
 			if t.Failed() {
 				t.FailNow()
 			}
