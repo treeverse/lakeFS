@@ -75,23 +75,33 @@ func (c *MSClient) Close() error {
 	return nil
 }
 
-func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
+func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, toAddress string) error {
 	if len(partition) > 0 {
 		return c.CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 	}
-	table, err := c.client.GetTable(c.ctx, toDB, toTable)
+
+	toClient := c
+	if toAddress != "" {
+		var err error
+		toClient, err = NewMSClient(c.ctx, toAddress, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	table, err := toClient.client.GetTable(c.ctx, toDB, toTable)
 	if err != nil {
 		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
 			return err
 		}
 	}
 	if table == nil {
-		return c.Copy(fromDB, fromTable, toDB, toTable, toBranch, serde)
+		return c.Copy(fromDB, fromTable, toDB, toTable, toBranch, serde, *toClient)
 	}
-	return c.Merge(fromDB, fromTable, toDB, toTable, toBranch, serde)
+	return c.Merge(fromDB, fromTable, toDB, toTable, toBranch, serde, *toClient)
 }
 
-func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
+func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string, toClient MSClient) error {
 	table, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -124,15 +134,15 @@ func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string
 			}
 		}
 	}
-	err = c.client.CreateTable(c.ctx, table)
+	err = toClient.client.CreateTable(c.ctx, table)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddPartitions(c.ctx, partitions)
+	_, err = toClient.client.AddPartitions(c.ctx, partitions)
 	return err
 }
 
-func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
+func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde string, toClient MSClient) error {
 	table, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -152,7 +162,7 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 	if err != nil {
 		return err
 	}
-	toPartitions, err := c.client.GetPartitions(c.ctx, toDB, toTable, -1)
+	toPartitions, err := toClient.client.GetPartitions(c.ctx, toDB, toTable, -1)
 	if err != nil {
 		return err
 	}
@@ -191,21 +201,21 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 		return err
 	}
 
-	err = c.client.AlterTable(c.ctx, toDB, toTable, table)
+	err = toClient.client.AlterTable(c.ctx, toDB, toTable, table)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddPartitions(c.ctx, addPartitions)
+	_, err = toClient.client.AddPartitions(c.ctx, addPartitions)
 	if err != nil {
 		return err
 	}
-	err = c.client.AlterPartitions(c.ctx, toDB, toTable, alterPartitions)
+	err = toClient.client.AlterPartitions(c.ctx, toDB, toTable, alterPartitions)
 	if err != nil {
 		return err
 	}
 	// drop one by one
 	for _, partition := range removePartitions {
-		_, err = c.client.DropPartition(c.ctx, toDB, toTable, partition.Values, true)
+		_, err = toClient.client.DropPartition(c.ctx, toDB, toTable, partition.Values, true)
 		if err != nil {
 			return err
 		}

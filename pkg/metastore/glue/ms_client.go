@@ -388,7 +388,7 @@ func (g *MSClient) copyOrMerge(fromDB, fromTable, toDB, toTable, serde string, s
 	return g.merge(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 }
 
-func (g *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
+func (g *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, _ string) error {
 	if len(partition) > 0 {
 		return g.CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 	}

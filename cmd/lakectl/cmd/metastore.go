@@ -17,7 +17,7 @@ var metastoreCmd = &cobra.Command{
 }
 
 type metastoreClient interface {
-	CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error
+	CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, toAddress string) error
 	Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error)
 }
 
@@ -33,6 +33,7 @@ var metastoreCopyCmd = &cobra.Command{
 		toBranch, _ := cmd.Flags().GetString("to-branch")
 		serde, _ := cmd.Flags().GetString("serde")
 		partition, _ := cmd.Flags().GetStringSlice("partition")
+		toAddress, _ := cmd.Flags().GetString("to-address")
 
 		var client metastoreClient
 		var err error
@@ -70,7 +71,7 @@ var metastoreCopyCmd = &cobra.Command{
 			serde = toTable
 		}
 		fmt.Printf("copy %s %s.%s -> %s.%s\n", msType, fromDB, fromTable, toDB, toTable)
-		err = client.CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
+		err = client.CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde, partition, toAddress)
 		if err != nil {
 			DieErr(err)
 		}
@@ -193,6 +194,7 @@ func init() {
 	_ = metastoreCopyCmd.MarkFlagRequired("to-branch")
 	_ = metastoreCopyCmd.Flags().String("serde", "", "serde to set copy to  [default is  to-table]")
 	_ = metastoreCopyCmd.Flags().StringSliceP("partition", "p", nil, "partition to copy")
+	_ = metastoreCopyCmd.Flags().String("to-address", "", "destination metastore address - default is same as source, supported only in hive")
 
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("type", "", "metastore type [hive, glue]")
