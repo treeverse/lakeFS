@@ -23,7 +23,17 @@ export const RepositoryNavTabs = ({ repoId, active }) => {
 
     const router = useRouter()
 
-    const withContext = (url) => {
+    const withRefContext = (url) => {
+        const { ref } = router.query;
+        const params = new URLSearchParams();
+        if (!!ref)
+            params.append('ref', ref)
+        if (!!params.toString())
+            return `${url}?${params.toString()}`
+        return url
+    }
+
+    const withRefAndPathContext = (url) => {
         const { ref, path } = router.query;
         const params = new URLSearchParams();
         if (!!ref)
@@ -37,19 +47,19 @@ export const RepositoryNavTabs = ({ repoId, active }) => {
 
     return (
         <Nav justify variant="tabs" >
-            <NavItem active={active === 'objects'} href={withContext(`/repositories/${repoId}/objects`)}>
+            <NavItem active={active === 'objects'} href={withRefAndPathContext(`/repositories/${repoId}/objects`)}>
                 <DatabaseIcon/> Objects
             </NavItem>
-            <NavItem active={active === 'changes'} href={withContext(`/repositories/${repoId}/changes`)}>
+            <NavItem active={active === 'changes'} href={withRefAndPathContext(`/repositories/${repoId}/changes`)}>
                 <FileDiffIcon/> Changes
             </NavItem>
-            <NavItem active={active === 'commits'} href={withContext(`/repositories/${repoId}/commits`)}>
+            <NavItem active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)}>
                 <GitCommitIcon/> Commits
             </NavItem>
-            <NavItem active={active === 'branches'} href={withContext(`/repositories/${repoId}/branches`)}>
+            <NavItem active={active === 'branches'} href={withRefContext(`/repositories/${repoId}/branches`)}>
                 <GitBranchIcon/> Branches
             </NavItem>
-            <NavItem active={active === 'compare'} href={withContext(`/repositories/${repoId}/compare`)}>
+            <NavItem active={active === 'compare'} href={withRefContext(`/repositories/${repoId}/compare`)}>
                 <GitCompareIcon/> Compare
             </NavItem>
             <NavItem active={active === 'actions'} href={`/repositories/${repoId}/actions`}>

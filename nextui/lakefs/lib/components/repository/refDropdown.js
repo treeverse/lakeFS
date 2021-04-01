@@ -75,7 +75,7 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
                 <ul className="list-group ref-list">
                     {results.map(branch => (
                         <BranchEntry key={branch.id} repo={repo} branch={branch.id} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
-                            const data = await commits.log(repo.id, branch.id, '');
+                            const data = await commits.log(repo.id, branch.id);
                             setCommitList({...commitList, branch: branch.id, commits: data.results});
                         }}/>
                     ))}

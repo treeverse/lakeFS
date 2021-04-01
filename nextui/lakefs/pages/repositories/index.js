@@ -5,26 +5,43 @@ import Card from "react-bootstrap/Card";
 import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
-import Alert from "react-bootstrap/Alert";
 import Modal from "react-bootstrap/Modal";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
-import {useEffect, useRef, useState} from "react";
+import {useRef, useState} from "react";
 import * as moment from "moment";
 
 import Link from 'next/link';
 
 import Layout from "../../lib/components/layout";
-import {DebouncedFormControl} from "../../lib/components/controls";
+import {DebouncedFormControl, Loading} from "../../lib/components/controls";
 import {config, repositories} from '../../rest/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
+import {Error} from "../../lib/components/controls"
 import {useRouter} from "next/router";
-import {mutate} from "swr";
+import {useAPI, useAPIWithPagination} from "../../rest/hooks";
+
+
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
-    const { data } = config.useGet();
+    const { response, error: err, loading } =useAPI(() => {
+        return config.get()
+    })
+
+    const showError = (!!error) ? error : err
+    if (loading)
+        return (
+            <Modal show={show} onHide={onCancel} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Create A New Repository</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Loading/>
+                </Modal.Body>
+            </Modal>
+        )
 
     return (
         <Modal show={show} onHide={onCancel} size="lg">
@@ -32,7 +49,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
                 <Modal.Title>Create A New Repository</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <RepositoryCreateForm config={data} error={error} onSubmit={onSubmit} onCancel={onCancel}/>
+                <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>
             </Modal.Body>
         </Modal>
     );
@@ -40,29 +57,13 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 
 
-const RepositoryList = ({ filter, lastListUpdate  }) => {
+const RepositoryList = ({ filter, lastListUpdate = null  }) => {
+    const {results, loading, error, hasMore, paginate} = useAPIWithPagination((after) => {
+        return repositories.filter(filter, after)
+    },  [lastListUpdate, filter])
 
-    const { data , size, setSize, mutate } = repositories.useFilter(filter)
-
-    useEffect(() => {
-        mutate();
-    }, [lastListUpdate])
-
-    if (!data) return <p>Loading...</p>;
-
-    const currentPage = data[size-1];
-    if (!!currentPage && !!currentPage.error) return <Alert variant="danger">{currentPage.error.message}</Alert>
-
-    let paginationButton = (<span/>);
-    if (!!currentPage && currentPage.pagination.has_more) {
-        paginationButton = (
-            <p className="tree-paginator">
-                <Button variant="outline-primary" onClick={() => {setSize(size + 1)}}>Load More</Button>
-            </p>
-        )
-    }
-    let results = [];
-    data.forEach(page => { results = results.concat(...page.results) });
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>
 
     return (
         <div>
@@ -72,7 +73,10 @@ const RepositoryList = ({ filter, lastListUpdate  }) => {
                         <Card>
                             <Card.Body>
                                 <h5>
-                                    <Link href={`/repositories/${encodeURIComponent(repo.id)}`}>
+                                    <Link href={{
+                                        pathname: `/repositories/[repoId]/objects`,
+                                        query: {repoId: repo.id}
+                                    }}>
                                         <a>{repo.id}</a>
                                     </Link>
                                 </h5>
@@ -88,7 +92,11 @@ const RepositoryList = ({ filter, lastListUpdate  }) => {
                     </Col>
                 </Row>
             ))}
-            {paginationButton}
+            {(hasMore) ?  (
+                <p className="tree-paginator">
+                    <Button variant="outline-primary" onClick={paginate}>Load More</Button>
+                </p>
+            ) :  <span/>}
         </div>
     );
 };

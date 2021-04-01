@@ -1,9 +1,8 @@
-import useSWR from "swr";
-
 import {repositories, branches, commits, NotFoundError} from "../../rest/api";
+import {useAPI} from "../../rest/hooks";
 
 
-const resolve = async (repoId, refId) => {
+export const resolveRef = async (repoId, refId) => {
     // try branch
     try {
         const branch = await branches.get(repoId, refId)
@@ -27,13 +26,15 @@ const resolve = async (repoId, refId) => {
 }
 
 export const useRepoAndRef = (repoId, refId) => {
-    return useSWR(`/repoAndRef/${repoId}/${refId}`, async () => {
-        try {
-            const repo = await repositories.get(repoId);
-            const ref = await resolve(repoId, (!!refId) ? refId : repo.default_branch);
-            return {repo, ref}
-        } catch (error) {
-            return {error}
-        }
-    });
+    return useAPI(async () => {
+        const repo = await repositories.get(repoId);
+        const ref = await resolveRef(repoId, (!!refId) ? refId : repo.default_branch);
+        return {repo, ref}
+    }, [repoId, refId]);
+}
+
+export const useRepo = (repoId) => {
+    return useAPI(() => {
+        return repositories.get(repoId)
+    }, [repoId])
 }

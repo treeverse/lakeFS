@@ -10,8 +10,10 @@ import useUser from '../hooks/user'
 const NavUserInfo = () => {
     const router = useRouter();
     const { user } = useUser();
+
     if (!user || !user.loggedIn)
         return (<></>);
+
     const details = user.details;
     return (
         <Navbar.Collapse className="justify-content-end">
@@ -22,31 +24,40 @@ const NavUserInfo = () => {
 
                 <NavDropdown.Divider/>
 
-                <NavDropdown.Item onSelect={()=> { router.push('/auth/credentials') }}>Manage Credentials</NavDropdown.Item>
+                <NavDropdown.Item
+                    href="/auth/credentials"
+                    onSelect={()=> router.push('/auth/credentials')}>
+                        Manage Credentials
+                </NavDropdown.Item>
 
             </NavDropdown>
         </Navbar.Collapse>
     );
 }
 
-const TopNav = () => {
-
+const TopNavLink = ({ href, children }) => {
     const router = useRouter()
     const isActive = (prefix) => router.route.indexOf(prefix) === 0
 
     return (
+        <Link href={href}>
+            <Nav.Link href={href} active={isActive(href)}>{children}</Nav.Link>
+        </Link>
+    )
+}
+
+const TopNav = () => {
+    return (
         <Navbar variant="dark" bg="dark" expand="md">
-            <Navbar.Brand href="/">
-                <img src="/logo.png" alt="lakeFS" className="logo"/>
-            </Navbar.Brand>
+            <Link href="/">
+                <Navbar.Brand href="/">
+                    <img src="/logo.png" alt="lakeFS" className="logo"/>
+                </Navbar.Brand>
+            </Link>
 
             <Nav className="mr-auto">
-                <Link href="/repositories">
-                    <Nav.Link active={isActive("/repositories")}>Repositories</Nav.Link>
-                </Link>
-                <Link href="/auth">
-                    <Nav.Link active={isActive("/auth")}>Administration</Nav.Link>
-                </Link>
+                <TopNavLink href="/repositories">Repositories</TopNavLink>
+                <TopNavLink href="/auth">Administration</TopNavLink>
             </Nav>
 
             <NavUserInfo/>

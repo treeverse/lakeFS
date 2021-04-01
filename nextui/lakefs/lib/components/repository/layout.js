@@ -2,6 +2,8 @@ import Layout from "../layout";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import {RepositoryNavTabs} from "./tabs";
+import {useRepoAndRef} from "../../hooks/repo";
+import {Error, Loading} from "../controls";
 
 export const RepositoryPageLayout = ({ repoId, activePage, children }) => {
     return (
@@ -15,9 +17,7 @@ export const RepositoryPageLayout = ({ repoId, activePage, children }) => {
 
                     <RepositoryNavTabs repoId={repoId} active={activePage}/>
 
-                    <>
-                        {children}
-                    </>
+                    <div className="mt-2">{children}</div>
                 </div>
             </div>
         </Layout>

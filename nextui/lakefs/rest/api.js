@@ -3,9 +3,6 @@ import {isValidBranchName} from "./validation";
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 300;
 
-import useSWR, { useSWRInfinite } from "swr";
-
-
 
 export const linkToPath = (repoId, branchId, path) => {
     const query = qs({
@@ -317,20 +314,6 @@ class Auth {
     }
 }
 
-
-const paginator = (url) => {
-    return (pageIndex, previousPageData) => {
-        const amount = DEFAULT_LISTING_AMOUNT
-        let after = ""
-        if (!!previousPageData && previousPageData.pagination.has_more) {
-            after = previousPageData.pagination.next_offset;
-        } else if (!!previousPageData && !previousPageData.pagination.has_more) {
-            return null // done!
-        }
-        return [url, after, amount];
-    }
-}
-
 class Repositories {
 
     async get(repoId) {
@@ -343,12 +326,6 @@ class Repositories {
         return response.json();
     }
 
-    useGet(repoId) {
-        return useSWR(`/repositories/${repoId}`, async () => {
-            return await this.get(repoId);
-        });
-    }
-
     async list(after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount})
         const response = await apiRequest(`/repositories?${query}`)
@@ -356,12 +333,6 @@ class Repositories {
             throw new Error(`could not list repositories: ${await extractError(response)}`)
         }
         return await response.json()
-    }
-
-    useList(after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        return useSWRInfinite(paginator(`/repositories`), (url, after, amount) => {
-            return this.list(after, amount);
-        });
     }
 
     async filter(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
@@ -394,14 +365,9 @@ class Repositories {
                 has_more: hasMore,
                 max_per_page: amount,
                 results: filtered.length,
+                next_offset: (!!filtered && filtered.length > 0) ? filtered[filtered.length - 1].id : response.pagination.next_offset,
             },
         };
-    }
-
-    useFilter(prefix, amount = DEFAULT_LISTING_AMOUNT) {
-        return useSWRInfinite(paginator(`/repositories?filter=${prefix}`), (url, from, amount) => {
-            return this.filter(prefix, from, amount).catch(error => ({error}));
-        });
     }
 
     async create(repo) {
@@ -513,7 +479,7 @@ class Objects {
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return await response.json();
     }
 
     async upload(repoId, branchId, path, fileObject) {
@@ -575,15 +541,18 @@ class Commits {
 
 class Refs {
 
+    async changes(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/diff?${query}`);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
 
     async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        let response;
-        if (leftRef === rightRef) {
-            response = await apiRequest(`/repositories/${repoId}/branches/${leftRef}/diff?${query}`);
-        } else {
-            response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
-        }
+        const response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -685,12 +654,6 @@ class Config {
             default:
                 throw new Error('Unknown');
         }
-    }
-
-    useGet() {
-        return useSWR(`/config`, () => {
-            return this.get().catch(error => ({error}))
-        })
     }
 }
 

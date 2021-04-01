@@ -4,10 +4,10 @@ import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 
 const RepositoryActionsPage = () => {
     const router = useRouter()
-    const { id } = router.query;
+    const { repoId } = router.query;
 
     return (
-        <RepositoryPageLayout repoId={encodeURIComponent(id)} activePage={'actions'}>
+        <RepositoryPageLayout repoId={encodeURIComponent(repoId)} activePage={'actions'}>
             <h1>actions</h1>
         </RepositoryPageLayout>
     )
