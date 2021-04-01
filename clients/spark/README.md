@@ -12,9 +12,21 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 
 Start Spark Shell / PySpark with the `--packages` flag:
 
-```bash
-spark-shell --packages io.treeverse:lakefs-spark-client_2.12:0.1.0-SNAPSHOT
-```
+Spark 3.0.1:
+   ```bash
+   spark-shell --packages io.treeverse:lakefs-spark-client-301_2.12:0.1.0-SNAPSHOT
+   ```
+
+Spark 2.4.7:
+   ```bash
+   spark-shell --packages io.treeverse:lakefs-spark-client-247_2.11:0.1.0-SNAPSHOT
+   ```
+
+Alternatively, the Jars are publicly available on S3:
+
+* Spark 3.0.1: `s3://treeverse-clients-us-east/io/treeverse/lakefs-spark-client-301_2.12/0.1.0-SNAPSHOT/lakefs-spark-client-301_2.12-0.1.0-SNAPSHOT.jar`
+
+* Spark 2.4.7: `s3://treeverse-clients-us-east/io/treeverse/lakefs-spark-client-247_2.11/0.1.0-SNAPSHOT/lakefs-spark-client-247_2.11-0.1.0-SNAPSHOT.jar`
 
 ## Configuration
 
@@ -28,6 +40,7 @@ spark-shell --packages io.treeverse:lakefs-spark-client_2.12:0.1.0-SNAPSHOT
 
 1. The client will also directly interact with your storage using Hadoop FileSystem. Therefore, your Spark session must be able to access the underlying storage of your lakeFS repository.
 For instance, running as a user with a personal account on S3 (not in production) you might add:
+   
     | Configuration | Description |
     |--------|-------|
     | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
