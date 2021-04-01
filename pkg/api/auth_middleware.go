@@ -86,7 +86,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	}
 	cred, err := authService.GetCredentials(ctx, claims.Subject)
 	if err != nil {
-		logger.WithField("subject", claims.Subject).Debug("could not find credentials for token")
+		logger.WithField("subject", claims.Subject).Info("could not find credentials for token")
 		return nil, ErrAuthenticationFailed
 	}
 	userData, err := authService.GetUserByID(ctx, cred.UserID)

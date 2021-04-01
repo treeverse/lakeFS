@@ -142,7 +142,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, writer *H
 	}
 
 	// check status code
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("%w (status code: %d)", ErrWebhookRequestFailed, resp.StatusCode)
 	}
 	return nil

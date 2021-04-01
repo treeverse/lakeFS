@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"reflect"
 	"strings"
@@ -182,7 +181,7 @@ func DieOnResponseError(response interface{}, err error) {
 	var statusCode int
 	if stat, ok := response.(StatusCoder); ok {
 		statusCode = stat.StatusCode()
-		if statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices {
+		if api.IsStatusCodeOK(statusCode) {
 			return
 		}
 	}

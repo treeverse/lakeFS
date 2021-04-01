@@ -42,7 +42,7 @@ func verifyResponseOK(t testing.TB, resp Statuser, err error) {
 		t.Fatal("request's response is missing")
 	}
 	statusCode := resp.StatusCode()
-	if statusCode < http.StatusOK || statusCode >= http.StatusMultipleChoices {
+	if !api.IsStatusCodeOK(statusCode) {
 		t.Fatal("request response failed with code", statusCode)
 	}
 }

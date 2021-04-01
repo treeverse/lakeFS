@@ -254,7 +254,7 @@ func responseAsError(action string, response interface{}) error {
 	r := reflect.ValueOf(response)
 	f := reflect.Indirect(r).FieldByName("HTTPResponse")
 	resp := f.Interface().(*http.Response)
-	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+	if api.IsStatusCodeOK(resp.StatusCode) {
 		return nil
 	}
 	f = reflect.Indirect(r).FieldByName("Body")

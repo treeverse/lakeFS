@@ -2564,6 +2564,10 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, response)
 }
 
+func IsStatusCodeOK(statusCode int) bool {
+	return statusCode >= 200 && statusCode <= 299
+}
+
 func StringPtr(s string) *string {
 	return &s
 }

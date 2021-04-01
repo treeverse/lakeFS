@@ -173,14 +173,26 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		return nil, err
 	}
 	if resp.StatusCode() != http.StatusCreated {
-		apiErrors := []*api.Error{resp.JSON400, resp.JSON401, resp.JSON404, resp.JSONDefault}
-		for _, apiErr := range apiErrors {
-			if apiErr != nil {
-				return nil, fmt.Errorf("%w: %s", ErrRequestFailed, apiErr.Message)
-			}
+		if resp.JSONDefault != nil {
+			return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
 		}
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, http.StatusText(resp.StatusCode()))
 	}
 	return resp.JSON201, nil
+}
+
+// readSize returns the size of r.
+func readSize(r io.Seeker) (int64, error) {
+	cur, err := r.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return 0, fmt.Errorf("tell: %w", err)
+	}
+	end, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, fmt.Errorf("seek to end: %w", err)
+	}
+	_, err = r.Seek(cur, io.SeekStart)
+	return end, err
 }
 
 func clientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contents io.ReadSeeker) (*api.ObjectStats, error) {
@@ -195,6 +207,11 @@ func clientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("%w: %s (status code %d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
+	}
+
+	size, err := readSize(contents)
+	if err != nil {
+		return nil, fmt.Errorf("readSize: %w", err)
 	}
 
 	stagingLocation := *resp.JSON200
@@ -228,15 +245,6 @@ func clientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 		})
 		if err != nil {
 			return nil, fmt.Errorf("upload to backing store %v: %w", parsedAddress, err)
-		}
-
-		size, err := contents.Seek(0, io.SeekEnd)
-		if err != nil {
-			return nil, fmt.Errorf("read size: %w", err)
-		}
-		_, err = contents.Seek(0, io.SeekStart)
-		if err != nil {
-			return nil, fmt.Errorf("rewind: %w", err)
 		}
 
 		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &api.LinkPhysicalAddressParams{
