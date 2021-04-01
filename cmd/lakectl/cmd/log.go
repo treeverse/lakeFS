@@ -9,7 +9,7 @@ import (
 
 const commitsTemplate = `
 {{ range $val := .Commits }}
-ID:            {{ $val.ID|yellow }}{{if $val.Committer }}
+ID:            {{ $val.Id|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
 {{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeID }}
@@ -19,7 +19,7 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 {{ end }}
 	{{ $val.Message }}
 	
-	{{ range $key, $value := $val.Metadata }}
+	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
 		{{ $key }} = {{ $value }}
 	{{ end -}}
 {{ end }}
@@ -53,7 +53,7 @@ var logCmd = &cobra.Command{
 		DieOnResponseError(res, err)
 
 		commits := res.JSON200.Results
-		ctx := struct {
+		data := struct {
 			Commits         []api.Commit
 			Pagination      *Pagination
 			ShowMetaRangeID bool
@@ -63,13 +63,13 @@ var logCmd = &cobra.Command{
 		}
 		pagination := res.JSON200.Pagination
 		if pagination.HasMore {
-			ctx.Pagination = &Pagination{
+			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
 			}
 		}
-		Write(commitsTemplate, ctx)
+		Write(commitsTemplate, data)
 	},
 }
 
