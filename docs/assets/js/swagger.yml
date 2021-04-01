@@ -367,6 +367,8 @@ components:
 
     Merge:
       type: object
+      required:
+        - message
       properties:
         message:
           type: string
@@ -1780,9 +1782,7 @@ paths:
       tags:
         - commits
       operationId: logBranchCommits
-      summary: |
-        get commit log from branch.
-        Deprecated: replaced by logCommits by passing branch name as ref
+      summary: get commit log from branch
       parameters:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
