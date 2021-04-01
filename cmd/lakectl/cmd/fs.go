@@ -181,6 +181,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 	return resp.JSON201, nil
 }
 
+// TODO(ariels) to move it to helpers
 // readSize returns the size of r.
 func readSize(r io.Seeker) (int64, error) {
 	cur, err := r.Seek(0, io.SeekCurrent)
