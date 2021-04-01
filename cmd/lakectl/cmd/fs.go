@@ -167,7 +167,7 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		return nil, err
 	}
 	if resp.StatusCode() != http.StatusCreated {
-		return nil,helpers.ResponseAsError(resp)
+		return nil, helpers.ResponseAsError(resp)
 	}
 	return resp.JSON201, nil
 }
