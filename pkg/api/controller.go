@@ -1155,8 +1155,9 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if params.Branch != nil {
-		exists, err := c.Catalog.BranchExists(ctx, repository, StringValue(params.Branch))
+	branchID := StringValue(params.Branch)
+	if branchID != "" {
+		exists, err := c.Catalog.BranchExists(ctx, repository, branchID)
 		if handleAPIError(w, err) {
 			return
 		}
