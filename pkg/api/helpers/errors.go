@@ -20,9 +20,11 @@ var (
 	ErrRequestFailed = errors.New("request failed")
 )
 
+const minHTTPErrorStatusCode = 400
+
 // isOK returns true if statusCode is an OK HTTP status code: 0-399.
 func isOK(statusCode int) bool {
-	return statusCode < 400
+	return statusCode < minHTTPErrorStatusCode
 }
 
 // ResponseAsError returns a ErrRequestFailed wrapping a response from the server.  It
