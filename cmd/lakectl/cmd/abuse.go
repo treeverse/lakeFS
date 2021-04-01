@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -83,7 +84,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 					Path: work,
 				})
 				if err == nil && resp.StatusCode() != http.StatusOK {
-					err = fmt.Errorf("%w: %s (%d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
+					err = helpers.ResponseAsError(resp)
 				}
 				output <- stress.Result{
 					Error: err,
@@ -143,7 +144,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: work},
 					api.StageObjectJSONRequestBody(creationInfo))
 				if err == nil && resp.StatusCode() != http.StatusOK {
-					err = fmt.Errorf("%w: %s (%d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
+					err = helpers.ResponseAsError(resp)
 				}
 				output <- stress.Result{
 					Error: err,
@@ -236,7 +237,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 						Source: u.Ref,
 					})
 				if err == nil && resp.StatusCode() != http.StatusCreated {
-					err = fmt.Errorf("%w: %s (%d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
+					err = helpers.ResponseAsError(resp)
 				}
 				output <- stress.Result{
 					Error: err,

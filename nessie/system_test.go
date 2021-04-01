@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -79,18 +80,26 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		"failed to create repository '%s', storage '%s': response %s", name, repoStorage, string(resp.Body))
 }
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
+func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
 
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
-	if err != nil {
-		return "", "", err
+	if direct {
+		stats, err := helpers.ClientUpload(ctx, client, repo, branch, objPath, nil, strings.NewReader(objContent))
+		if err != nil {
+			return "", "", err
+		}
+		return stats.Checksum, objContent, nil
+	} else {
+		resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
+		if err != nil {
+			return "", "", err
+		}
+		if resp.StatusCode() != http.StatusCreated {
+			return "", "", fmt.Errorf("%w: %s (%d)", errUploadFailed, resp.Status(), resp.StatusCode())
+		}
+		return resp.JSON201.Checksum, objContent, nil
 	}
-	if resp.StatusCode() != http.StatusCreated {
-		return "", "", fmt.Errorf("%w: %s (%d)", errUploadFailed, resp.Status(), resp.StatusCode())
-	}
-	return resp.JSON201.Checksum, objContent, nil
 }
 
 func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*api.UploadObjectResponse, error) {
@@ -110,8 +119,8 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	}, w.FormDataContentType(), &b)
 }
 
-func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath)
+func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, direct)
 	require.NoError(t, err, "failed to upload file")
 	return checksum, content
 }

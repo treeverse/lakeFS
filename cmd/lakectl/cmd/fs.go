@@ -2,22 +2,18 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -34,8 +30,6 @@ const fsRecursiveTemplate = `Files: {{.Count}}
 Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
-
-var ErrUnsupportedProtocol = errors.New("unsupported protocol")
 
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
@@ -141,7 +135,7 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 		_ = fp.Close()
 	}()
 	if direct {
-		return clientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
+		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
 	}
 	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, fp)
 }
@@ -173,112 +167,9 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		return nil, err
 	}
 	if resp.StatusCode() != http.StatusCreated {
-		if resp.JSONDefault != nil {
-			return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
-		}
-		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, http.StatusText(resp.StatusCode()))
+		return nil,helpers.ResponseAsError(resp)
 	}
 	return resp.JSON201, nil
-}
-
-// TODO(ariels) to move it to helpers
-// readSize returns the size of r.
-func readSize(r io.Seeker) (int64, error) {
-	cur, err := r.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return 0, fmt.Errorf("tell: %w", err)
-	}
-	end, err := r.Seek(0, io.SeekEnd)
-	if err != nil {
-		return 0, fmt.Errorf("seek to end: %w", err)
-	}
-	_, err = r.Seek(cur, io.SeekStart)
-	return end, err
-}
-
-func clientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contents io.ReadSeeker) (*api.ObjectStats, error) {
-	resp, err := client.GetPhysicalAddressWithResponse(ctx, repoID, branchID, &api.GetPhysicalAddressParams{
-		Path: filePath,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("get physical address to upload object: %w", err)
-	}
-	if resp.JSONDefault != nil {
-		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("%w: %s (status code %d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
-	}
-
-	size, err := readSize(contents)
-	if err != nil {
-		return nil, fmt.Errorf("readSize: %w", err)
-	}
-
-	stagingLocation := *resp.JSON200
-	for { // Return from inside loop
-		physicalAddress := api.StringValue(stagingLocation.PhysicalAddress)
-		parsedAddress, err := url.Parse(physicalAddress)
-		if err != nil {
-			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
-		}
-
-		// TODO(ariels): plug-in support for other protocols
-		if parsedAddress.Scheme != "s3" {
-			return nil, fmt.Errorf("%w %s", ErrUnsupportedProtocol, parsedAddress.Scheme)
-		}
-
-		bucket := parsedAddress.Hostname()
-		sess, err := session.NewSessionWithOptions(session.Options{
-			SharedConfigState: session.SharedConfigEnable,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("connect to S3 session: %w", err)
-		}
-		sess.ClientConfig(s3.ServiceName)
-		svc := s3.New(sess)
-
-		// TODO(ariels): Allow customization of request
-		putObjectResponse, err := svc.PutObject(&s3.PutObjectInput{
-			Body:   contents,
-			Bucket: &bucket,
-			Key:    &parsedAddress.Path,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("upload to backing store %v: %w", parsedAddress, err)
-		}
-
-		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &api.LinkPhysicalAddressParams{
-			Path: filePath,
-		}, api.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  api.StringValue(putObjectResponse.ETag),
-			SizeBytes: size,
-			Staging:   stagingLocation,
-			UserMetadata: &api.StagingMetadata_UserMetadata{
-				AdditionalProperties: metadata,
-			},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("link object to backing store: %w", err)
-		}
-		if resp.StatusCode() == http.StatusOK {
-			return &api.ObjectStats{
-				Checksum: *putObjectResponse.ETag,
-				// BUG(ariels): Unavailable on S3, remove this field entirely
-				//     OR add it to the server staging manager API.
-				Mtime:           time.Now().Unix(),
-				Path:            filePath,
-				PathType:        "object",
-				PhysicalAddress: physicalAddress,
-				SizeBytes:       &size,
-			}, nil
-		}
-		if resp.JSON409 == nil {
-			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())
-		}
-		// Try again!
-		stagingLocation = *resp.JSON409
-	}
 }
 
 var fsUploadCmd = &cobra.Command{
