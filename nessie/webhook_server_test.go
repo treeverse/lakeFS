@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -22,6 +23,11 @@ type webhookServer struct {
 	fail   bool
 	respCh chan hookResponse
 	port   int
+	host   string
+}
+
+func (s *webhookServer) BaseURL() string {
+	return fmt.Sprintf("http://%s:%d", s.host, s.port)
 }
 
 func startWebhookServer() (*webhookServer, error) {
@@ -41,7 +47,10 @@ func startWebhookServer() (*webhookServer, error) {
 	s := &http.Server{
 		Handler: mux,
 	}
-
+	host := os.Getenv("TEST_WEBHOOK_HOST")
+	if host == "" {
+		host = "nessie"
+	}
 	go func() {
 		if err = s.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen:%s\n", err)
@@ -52,6 +61,7 @@ func startWebhookServer() (*webhookServer, error) {
 		s:      s,
 		respCh: respCh,
 		port:   port,
+		host:   host,
 	}, nil
 }
 

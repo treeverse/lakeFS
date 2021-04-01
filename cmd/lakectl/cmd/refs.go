@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -45,18 +44,15 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		if err != nil {
 			DieErr(err)
 		}
-		manifest := &models.RefsDump{}
-		err = json.Unmarshal(data, manifest)
+		var manifest api.RefsDump
+		err = json.Unmarshal(data, &manifest)
 		if err != nil {
 			DieErr(err)
 		}
-
 		// execute the restore operation
 		client := getClient()
-		err = client.RefsRestore(cmd.Context(), repoURI.Repository, manifest)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.RestoreRefsWithResponse(cmd.Context(), repoURI.Repository, api.RestoreRefsJSONRequestBody(manifest))
+		DieOnResponseError(resp, err)
 		Write(refsRestoreSuccess, nil)
 	},
 }
@@ -73,10 +69,8 @@ var refsDumpCmd = &cobra.Command{
 		repoURI := uri.Must(uri.Parse(args[0]))
 
 		client := getClient()
-		resp, err := client.RefsDump(cmd.Context(), repoURI.Repository)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
+		DieOnResponseError(resp, err)
 
 		Write(metadataDumpTemplate, struct {
 			Response interface{}

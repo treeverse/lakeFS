@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws/arn"
@@ -27,14 +28,14 @@ func ValidateActionName(name string) error {
 
 func ValidateArn(name string) error {
 	if !arn.IsARN(name) && name != permissions.All {
-		return ErrValidationError
+		return fmt.Errorf("%w: ARN '%s'", ErrValidationError, name)
 	}
 	return nil
 }
 
 func ValidateStatementEffect(effect string) error {
 	if effect != StatementEffectDeny && effect != StatementEffectAllow {
-		return ErrValidationError
+		return fmt.Errorf("%w: effect '%s'", ErrValidationError, effect)
 	}
 	return nil
 }

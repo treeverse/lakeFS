@@ -3,20 +3,22 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"golang.org/x/term"
 )
 
+var ErrRequestFailed = errors.New("request failed")
 var isTerminal = true
 var noColorRequested = false
 
@@ -151,7 +153,7 @@ func DieFmt(msg string, args ...interface{}) {
 }
 
 type APIError interface {
-	GetPayload() *models.Error
+	GetPayload() *api.Error
 }
 
 func DieErr(err error) {
@@ -167,11 +169,45 @@ func DieErr(err error) {
 	os.Exit(1)
 }
 
+type StatusCoder interface {
+	StatusCode() int
+}
+
+func DieOnResponseError(response interface{}, err error) {
+	if err != nil {
+		DieErr(err)
+	}
+	// check http response code
+	var statusCode int
+	if stat, ok := response.(StatusCoder); ok {
+		statusCode = stat.StatusCode()
+		if api.IsStatusCodeOK(statusCode) {
+			return
+		}
+	}
+	// read body and try to parse Error
+	r := reflect.ValueOf(response)
+	f := reflect.Indirect(r).FieldByName("Body")
+	if f.IsZero() {
+		// no body - format error
+		DieFmt("%s: code %d\n", ErrRequestFailed, statusCode)
+	}
+	body := f.Bytes()
+	var apiError api.Error
+	if err := json.Unmarshal(body, &apiError); err != nil {
+		// general case
+		DieFmt("%s: %s (code %d)\n", ErrRequestFailed, string(body), statusCode)
+	} else {
+		// message
+		Die(apiError.Message, 1)
+	}
+}
+
 func Fmt(msg string, args ...interface{}) {
 	fmt.Printf(msg, args...)
 }
 
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.Pagination, amount int) {
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination
@@ -181,7 +217,7 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.P
 			Rows:    rows,
 		},
 	}
-	if paginator != nil && swag.BoolValue(paginator.HasMore) {
+	if paginator.HasMore {
 		ctx.Pagination = &Pagination{
 			Amount:  amount,
 			HasNext: true,

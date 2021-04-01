@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -34,9 +33,6 @@ var runsListCmd = &cobra.Command{
 
 		client := getClient()
 		ctx := cmd.Context()
-		var err error
-		var results []*models.ActionRun
-		var pagination *models.Pagination
 
 		// list runs with optional branch filter
 		var optionalBranch *string
@@ -48,24 +44,29 @@ var runsListCmd = &cobra.Command{
 			optionalCommit = &commit
 		}
 
-		results, pagination, err = client.ListRunResults(ctx, u.Repository, optionalBranch, optionalCommit, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.ListRepositoryRunsWithResponse(ctx, u.Repository, &api.ListRepositoryRunsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+			Branch: optionalBranch,
+			Commit: optionalCommit,
+		})
+		DieOnResponseError(resp, err)
 
+		results := resp.JSON200.Results
 		rows := make([][]interface{}, len(results))
 		for i, row := range results {
 			rows[i] = []interface{}{
-				swag.StringValue(row.RunID),
+				row.RunId,
 				row.EventType,
 				row.StartTime,
 				row.EndTime,
-				swag.StringValue(row.Branch),
-				swag.StringValue(row.CommitID),
+				row.Branch,
+				row.CommitId,
 				row.Status,
 			}
 		}
 
+		pagination := resp.JSON200.Pagination
 		data := struct {
 			ActionsRunsTable *Table
 			Pagination       *Pagination
@@ -83,7 +84,7 @@ var runsListCmd = &cobra.Command{
 				Rows: rows,
 			},
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+		if pagination.HasMore {
 			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,

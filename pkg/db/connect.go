@@ -7,7 +7,6 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treeverse/lakefs/pkg/db/params"
-
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 

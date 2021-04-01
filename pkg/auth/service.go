@@ -9,7 +9,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
-
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -761,8 +760,8 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		credentials, err := s.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			credentials := &model.Credential{}
-			err := tx.Get(credentials, `
-			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyID)
+			err := tx.Get(credentials, `SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`,
+				accessKeyID)
 			if err != nil {
 				return nil, err
 			}

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/cznic/mathutil"
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cast"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/reader"
@@ -97,7 +96,8 @@ func set(o *InventoryObject, f string, v interface{}) error {
 		secToMS := int64(time.Second / time.Millisecond)
 		seconds := lastModifiedMillis / secToMS
 		ns := (lastModifiedMillis % secToMS) * int64(time.Millisecond/time.Nanosecond)
-		o.LastModified = swag.Time(time.Unix(seconds, ns))
+		tm := time.Unix(seconds, ns)
+		o.LastModified = &tm
 	case eTagFieldName:
 		o.Checksum, err = cast.ToStringE(v)
 	default:

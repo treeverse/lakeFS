@@ -15,8 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
-
-	"github.com/go-openapi/swag"
 )
 
 func verifyObject(t *testing.T, actual *InventoryObject, expected *InventoryObject, index int, batchId int, indexInBatch int) {
@@ -48,12 +46,15 @@ func objs(num int, lastModified []time.Time) <-chan *TestObject {
 	go func() {
 		defer close(out)
 		for i := 0; i < num; i++ {
+			sz := int64(500)
+			tm := lastModified[i%len(lastModified)].UnixNano() / 1_000_000
+			checksum := "abcdefg"
 			out <- &TestObject{
 				Bucket:             inventoryBucketName,
 				Key:                fmt.Sprintf("f%05d", i),
-				Size:               swag.Int64(500),
-				LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].UnixNano() / 1_000_000),
-				Checksum:           swag.String("abcdefg"),
+				Size:               &sz,
+				LastModifiedMillis: &tm,
+				Checksum:           &checksum,
 			}
 		}
 	}()

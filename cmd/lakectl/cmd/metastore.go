@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/glue"
@@ -158,14 +159,17 @@ var glueSymlinkCmd = &cobra.Command{
 		toTable, _ := cmd.Flags().GetString("to-table")
 
 		client := getClient()
-		location, err := client.Symlink(cmd.Context(), repo, branch, path)
+		res, err := client.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
 		if err != nil {
 			DieErr(err)
 		}
+		location := res.JSON201.Location
+
 		msClient, err := glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
 		if err != nil {
 			DieErr(err)
 		}
+
 		err = msClient.CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, location)
 		if err != nil {
 			DieErr(err)

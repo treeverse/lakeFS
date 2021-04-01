@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
 	"github.com/scritchley/orc"
 )
@@ -56,7 +55,8 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) *
 		obj.Size = rowData[sizeIdx].(int64)
 	}
 	if lastModifiedIdx, ok := r.orcSelect.IndexInSelect[lastModifiedDateFieldName]; ok && rowData[lastModifiedIdx] != nil {
-		obj.LastModified = swag.Time(rowData[lastModifiedIdx].(time.Time))
+		tm := rowData[lastModifiedIdx].(time.Time)
+		obj.LastModified = &tm
 	}
 	if eTagIdx, ok := r.orcSelect.IndexInSelect[eTagFieldName]; ok && rowData[eTagIdx] != nil {
 		obj.Checksum = rowData[eTagIdx].(string)

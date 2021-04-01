@@ -2,15 +2,22 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/go-openapi/swag"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -28,6 +35,8 @@ Total Size: {{.Bytes}} bytes
 Human Total Size: {{.Bytes|human_bytes}}
 `
 
+var ErrUnsupportedProtocol = errors.New("unsupported protocol")
+
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
 	Short: "view object metadata",
@@ -38,11 +47,12 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		stat, err := client.StatObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
-		if err != nil {
-			DieErr(err)
-		}
+		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
+			Path: *pathURI.Path,
+		})
+		DieOnResponseError(res, err)
 
+		stat := res.JSON200
 		Write(fsStatTemplate, stat)
 	},
 }
@@ -66,29 +76,43 @@ var fsListCmd = &cobra.Command{
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non recursive)
+		const delimiter = "/"
 		var trimPrefix string
-		if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
 			trimPrefix = prefix[:idx]
 		}
-
+		// delimiter used for listing
+		var paramsDelimiter *string
+		if recursive {
+			paramsDelimiter = api.StringPtr("")
+		} else {
+			paramsDelimiter = api.StringPtr(delimiter)
+		}
 		var from string
 		for {
-			results, more, err := client.ListObjects(cmd.Context(), pathURI.Repository, pathURI.Ref, recursive, prefix, from, -1)
-			if err != nil {
-				DieErr(err)
+			params := &api.ListObjectsParams{
+				Prefix:    &prefix,
+				After:     api.PaginationAfterPtr(from),
+				Delimiter: paramsDelimiter,
 			}
+			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
+			DieOnResponseError(resp, err)
+
+			results := resp.JSON200.Results
 			// trim prefix if non recursive
 			if !recursive {
 				for i := range results {
-					results[i].Path = strings.TrimPrefix(results[i].Path, trimPrefix)
+					trimmed := strings.TrimPrefix(results[i].Path, trimPrefix)
+					results[i].Path = trimmed
 				}
 			}
 
 			Write(fsLsTemplate, results)
-			if !swag.BoolValue(more.HasMore) {
+			pagination := resp.JSON200.Pagination
+			if !pagination.HasMore {
 				break
 			}
-			from = more.NextOffset
+			from = pagination.NextOffset
 		}
 	},
 }
@@ -103,25 +127,157 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		_, err := client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, os.Stdout)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.GetObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
+			Path: *pathURI.Path,
+		})
+		DieOnResponseError(resp, err)
+		Fmt("%s\n", string(resp.Body))
 	},
 }
 
-func upload(ctx context.Context, client api.Client, sourcePathname string, destURI *uri.URI, direct bool) (*models.ObjectStats, error) {
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, direct bool) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
-		if err := fp.Close(); err != nil {
-			DieErr(fmt.Errorf("close: %w", err))
+		_ = fp.Close()
+	}()
+	if direct {
+		return clientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
+	}
+	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+}
+
+func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, fp io.Reader) (*api.ObjectStats, error) {
+	pr, pw := io.Pipe()
+	mpw := multipart.NewWriter(pw)
+	contentType := mpw.FormDataContentType()
+	go func() {
+		defer func() {
+			_ = pw.Close()
+		}()
+		cw, err := mpw.CreateFormFile("content", path.Base(filePath))
+		if err != nil {
+			_ = pw.CloseWithError(err)
+			return
 		}
+		if _, err := io.Copy(cw, fp); err != nil {
+			_ = pw.CloseWithError(err)
+			return
+		}
+		_ = mpw.Close()
 	}()
 
-	if direct {
-		return client.ClientUpload(ctx, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
-	} else {
-		return client.UploadObject(ctx, destURI.Repository, destURI.Ref, *destURI.Path, fp)
+	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
+		Path: filePath,
+	}, contentType, pr)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusCreated {
+		if resp.JSONDefault != nil {
+			return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
+		}
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, http.StatusText(resp.StatusCode()))
+	}
+	return resp.JSON201, nil
+}
+
+// TODO(ariels) to move it to helpers
+// readSize returns the size of r.
+func readSize(r io.Seeker) (int64, error) {
+	cur, err := r.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return 0, fmt.Errorf("tell: %w", err)
+	}
+	end, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, fmt.Errorf("seek to end: %w", err)
+	}
+	_, err = r.Seek(cur, io.SeekStart)
+	return end, err
+}
+
+func clientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, filePath string, metadata map[string]string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+	resp, err := client.GetPhysicalAddressWithResponse(ctx, repoID, branchID, &api.GetPhysicalAddressParams{
+		Path: filePath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get physical address to upload object: %w", err)
+	}
+	if resp.JSONDefault != nil {
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, resp.JSONDefault.Message)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("%w: %s (status code %d)", ErrRequestFailed, resp.Status(), resp.StatusCode())
+	}
+
+	size, err := readSize(contents)
+	if err != nil {
+		return nil, fmt.Errorf("readSize: %w", err)
+	}
+
+	stagingLocation := *resp.JSON200
+	for { // Return from inside loop
+		physicalAddress := api.StringValue(stagingLocation.PhysicalAddress)
+		parsedAddress, err := url.Parse(physicalAddress)
+		if err != nil {
+			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
+		}
+
+		// TODO(ariels): plug-in support for other protocols
+		if parsedAddress.Scheme != "s3" {
+			return nil, fmt.Errorf("%w %s", ErrUnsupportedProtocol, parsedAddress.Scheme)
+		}
+
+		bucket := parsedAddress.Hostname()
+		sess, err := session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("connect to S3 session: %w", err)
+		}
+		sess.ClientConfig(s3.ServiceName)
+		svc := s3.New(sess)
+
+		// TODO(ariels): Allow customization of request
+		putObjectResponse, err := svc.PutObject(&s3.PutObjectInput{
+			Body:   contents,
+			Bucket: &bucket,
+			Key:    &parsedAddress.Path,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("upload to backing store %v: %w", parsedAddress, err)
+		}
+
+		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &api.LinkPhysicalAddressParams{
+			Path: filePath,
+		}, api.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  api.StringValue(putObjectResponse.ETag),
+			SizeBytes: size,
+			Staging:   stagingLocation,
+			UserMetadata: &api.StagingMetadata_UserMetadata{
+				AdditionalProperties: metadata,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("link object to backing store: %w", err)
+		}
+		if resp.StatusCode() == http.StatusOK {
+			return &api.ObjectStats{
+				Checksum: *putObjectResponse.ETag,
+				// BUG(ariels): Unavailable on S3, remove this field entirely
+				//     OR add it to the server staging manager API.
+				Mtime:           time.Now().Unix(),
+				Path:            filePath,
+				PathType:        "object",
+				PhysicalAddress: physicalAddress,
+				SizeBytes:       &size,
+			}, nil
+		}
+		if resp.JSON409 == nil {
+			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())
+		}
+		// Try again!
+		stagingLocation = *resp.JSON409
 	}
 }
 
@@ -166,7 +322,9 @@ var fsUploadCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
-			totals.Bytes += swag.Int64Value(stat.SizeBytes)
+			if stat.SizeBytes != nil {
+				totals.Bytes += *stat.SizeBytes
+			}
 			totals.Count++
 			return nil
 		})
@@ -193,21 +351,24 @@ var fsStageCmd = &cobra.Command{
 		checksum, _ := cmd.Flags().GetString("checksum")
 		meta, metaErr := getKV(cmd, "meta")
 
-		obj := &models.ObjectStageCreation{
-			Checksum:        swag.String(checksum),
-			PhysicalAddress: swag.String(location),
-			SizeBytes:       swag.Int64(size),
+		obj := api.ObjectStageCreation{
+			Checksum:        checksum,
+			PhysicalAddress: location,
+			SizeBytes:       size,
 		}
 		if metaErr == nil {
-			obj.Metadata = meta
+			metadata := api.ObjectStageCreation_Metadata{
+				AdditionalProperties: meta,
+			}
+			obj.Metadata = &metadata
 		}
 
-		stat, err := client.StageObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path, obj)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StageObjectParams{
+			Path: *pathURI.Path,
+		}, api.StageObjectJSONRequestBody(obj))
+		DieOnResponseError(resp, err)
 
-		Write(fsStatTemplate, stat)
+		Write(fsStatTemplate, resp.JSON201)
 	},
 }
 
@@ -221,10 +382,10 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		err := client.DeleteObject(cmd.Context(), pathURI.Repository, pathURI.Ref, *pathURI.Path)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.DeleteObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
+			Path: *pathURI.Path,
+		})
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -247,7 +408,7 @@ func init() {
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
-	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials")
+	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
