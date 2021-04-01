@@ -15,6 +15,8 @@ const (
 	ConfigAccessKeyID       = "credentials.access_key_id"
 	ConfigSecretAccessKey   = "credentials.secret_access_key"
 	ConfigServerEndpointURL = "server.endpoint_url"
+
+	DefaultServerEndpointURL = "http://localhost:8000"
 )
 
 var (
@@ -46,6 +48,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)

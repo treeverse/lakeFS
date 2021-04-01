@@ -1,17 +1,15 @@
 package nessie
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"testing"
 
-	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/pkg/api"
+
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 func TestCommitSingle(t *testing.T) {
@@ -19,16 +17,18 @@ func TestCommitSingle(t *testing.T) {
 	objPath := "1.txt"
 
 	_, objContent := uploadFileRandomData(ctx, t, repo, masterBranch, objPath)
-	_, err := client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:singleCommit"),
-	}), nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+		Message: "nessie:singleCommit",
+	})
 	require.NoError(t, err, "failed to commit changes")
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	var b bytes.Buffer
-	_, err = client.Objects.GetObject(objects.NewGetObjectParamsWithContext(ctx).WithRepository(repo).WithRef(masterBranch).WithPath(objPath), nil, &b)
+	getObjResp, err := client.GetObjectWithResponse(ctx, repo, masterBranch, &api.GetObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to get object")
+	require.Equal(t, http.StatusOK, getObjResp.StatusCode())
 
-	require.Equal(t, objContent, b.String(), fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, b.String()))
+	body := string(getObjResp.Body)
+	require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
 }
 
 // genNames generates n consecutive filenames starting with prefix.
@@ -84,10 +84,11 @@ func TestCommitInMixedOrder(t *testing.T) {
 		t.FailNow()
 	}
 
-	_, err := client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:mixedOrderCommit1"),
-	}), nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+		Message: "nessie:mixedOrderCommit1",
+	})
 	require.NoError(t, err, "failed to commit changes")
+	require.Equal(t, http.StatusCreated, commitResp.HTTPResponse.StatusCode)
 
 	names2 := genNames(size, "run1/foo")
 	uploads = make(chan Upload, size)
@@ -111,8 +112,9 @@ func TestCommitInMixedOrder(t *testing.T) {
 		t.FailNow()
 	}
 
-	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:mixedOrderCommit2"),
-	}), nil)
+	commitResp, err = client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+		Message: "nessie:mixedOrderCommit2",
+	})
 	require.NoError(t, err, "failed to commit second set of changes")
+	require.Equal(t, http.StatusCreated, commitResp.HTTPResponse.StatusCode)
 }

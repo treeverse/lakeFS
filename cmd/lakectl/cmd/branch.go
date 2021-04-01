@@ -3,9 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -40,17 +39,20 @@ var branchListCmd = &cobra.Command{
 		after, _ := cmd.Flags().GetString("after")
 		u := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		response, pagination, err := client.ListBranches(cmd.Context(), u.Repository, after, amount)
-		if err != nil {
-			DieErr(err)
+		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		refs := resp.JSON200.Results
+		rows := make([][]interface{}, len(refs))
+		for i, row := range refs {
+			rows[i] = []interface{}{row.Id, row.CommitId}
 		}
 
-		rows := make([][]interface{}, len(response))
-		for i, row := range response {
-			rows[i] = []interface{}{swag.StringValue(row.ID), swag.StringValue(row.CommitID)}
-		}
-
-		ctx := struct {
+		pagination := resp.JSON200.Pagination
+		data := struct {
 			BranchTable *Table
 			Pagination  *Pagination
 		}{
@@ -59,15 +61,15 @@ var branchListCmd = &cobra.Command{
 				Rows:    rows,
 			},
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
-			ctx.Pagination = &Pagination{
+		if pagination.HasMore {
+			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
 			}
 		}
 
-		Write(branchListTemplate, ctx)
+		Write(branchListTemplate, data)
 	},
 }
 
@@ -90,15 +92,12 @@ var branchCreateCmd = &cobra.Command{
 			Die("source branch must be in the same repository", 1)
 		}
 
-		_, err = client.CreateBranch(cmd.Context(), u.Repository, &models.BranchCreation{
-			Name:   swag.String(u.Ref),
-			Source: swag.String(sourceURI.Ref),
+		resp, err := client.CreateBranchWithResponse(cmd.Context(), u.Repository, api.CreateBranchJSONRequestBody{
+			Name:   u.Ref,
+			Source: sourceURI.Ref,
 		})
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("created branch '%s'\n", u.Ref)
+		DieOnResponseError(resp, err)
+		Fmt("created branch '%s'\n", string(resp.Body))
 	},
 }
 
@@ -116,10 +115,8 @@ var branchDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		err = client.DeleteBranch(cmd.Context(), u.Repository, u.Ref)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -144,10 +141,11 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
-		err = clt.RevertBranch(cmd.Context(), u.Repository, u.Ref, commitRef, parentNumber)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
+			ParentNumber: parentNumber,
+			Ref:          commitRef,
+		})
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -181,31 +179,31 @@ var branchResetCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		var reset models.ResetCreation
+		var reset api.ResetCreation
 		var confirmationMsg string
 		switch {
 		case len(commitID) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes to commit: %s", commitID)
-			reset = models.ResetCreation{
-				Commit: commitID,
-				Type:   swag.String(models.ResetCreationTypeCommit),
+			reset = api.ResetCreation{
+				Commit: &commitID,
+				Type:   "commit",
 			}
 		case len(prefix) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes from path: %s to last commit", prefix)
-			reset = models.ResetCreation{
-				Path: prefix,
-				Type: swag.String(models.ResetCreationTypeCommonPrefix),
+			reset = api.ResetCreation{
+				Path: &prefix,
+				Type: "common_prefix",
 			}
 		case len(object) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes for object: %s to last commit", object)
-			reset = models.ResetCreation{
-				Path: object,
-				Type: swag.String(models.ResetCreationTypeObject),
+			reset = api.ResetCreation{
+				Path: &object,
+				Type: "object",
 			}
 		default:
 			confirmationMsg = "Are you sure you want to reset all uncommitted changes"
-			reset = models.ResetCreation{
-				Type: swag.String(models.ResetCreationTypeReset),
+			reset = api.ResetCreation{
+				Type: "reset",
 			}
 		}
 
@@ -214,10 +212,8 @@ var branchResetCmd = &cobra.Command{
 			Die("Reset aborted", 1)
 			return
 		}
-		err = clt.ResetBranch(cmd.Context(), u.Repository, u.Ref, &reset)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -231,11 +227,10 @@ var branchShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		ref, err := client.GetBranch(cmd.Context(), u.Repository, u.Ref)
-		if err != nil {
-			DieErr(err)
-		}
-		Fmt("%s\n", ref)
+		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
+		DieOnResponseError(resp, err)
+		branch := resp.JSON200
+		Fmt("%s\n", branch)
 	},
 }
 

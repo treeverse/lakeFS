@@ -1,4 +1,4 @@
-package multiparts
+package multiparts_test
 
 import (
 	"flag"

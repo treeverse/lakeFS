@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,19 +62,34 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	Version: config.Version,
 }
 
-func getClient() api.Client {
+func getClient() api.ClientWithResponsesInterface {
 	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
-	// only to be immediately repoened.
+	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	client, err := api.NewClient(
-		viper.GetString(ConfigServerEndpointURL),
-		viper.GetString(ConfigAccessKeyID),
-		viper.GetString(ConfigSecretAccessKey),
-		api.WithHTTPClient(&http.Client{Transport: transport}),
+	accessKeyID := viper.GetString(ConfigAccessKeyID)
+	secretAccessKey := viper.GetString(ConfigSecretAccessKey)
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
+	if err != nil {
+		DieErr(err)
+	}
+
+	serverEndpoint := viper.GetString(ConfigServerEndpointURL)
+	u, err := url.Parse(serverEndpoint)
+	if err != nil {
+		DieErr(err)
+	}
+	// if no uri to api is set in configuration - set the default
+	if u.Path == "" || u.Path == "/" {
+		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
+	}
+
+	client, err := api.NewClientWithResponses(
+		serverEndpoint,
+		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)

@@ -12,7 +12,6 @@ import (
 
 	s3sdk "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/cloud/aws/s3inventory"
@@ -33,7 +32,8 @@ func rows(keys []string, lastModified map[string]time.Time) []*s3inventory.Inven
 			res[i].IsLatest = !strings.Contains(key, "_expired")
 			res[i].IsDeleteMarker = strings.Contains(key, "_del")
 			if lastModified != nil {
-				res[i].LastModified = swag.Time(lastModified[key])
+				tm := lastModified[key]
+				res[i].LastModified = &tm
 			}
 		}
 	}

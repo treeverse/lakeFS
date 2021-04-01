@@ -693,15 +693,15 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 		if err == nil {
 			err = ErrBranchExists
 		}
-		return nil, err
+		return nil, fmt.Errorf("branch '%s': %w", branchID, err)
 	}
 
 	reference, err := g.RefManager.RevParse(ctx, repositoryID, ref)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
 	}
 	if reference.CommitID() == "" {
-		return nil, ErrCreateBranchNoCommit
+		return nil, fmt.Errorf("source reference '%s': %w", ref, ErrCreateBranchNoCommit)
 	}
 	newBranch := Branch{
 		CommitID:     reference.CommitID(),
@@ -709,7 +709,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repositoryID RepositoryID, 
 	}
 	err = g.RefManager.SetBranch(ctx, repositoryID, branchID, newBranch)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("set branch '%s' to '%s': %w", branchID, newBranch, err)
 	}
 	return &newBranch, nil
 }
@@ -789,6 +789,10 @@ func (g *Graveler) Log(ctx context.Context, repositoryID RepositoryID, commitID 
 }
 
 func (g *Graveler) ListBranches(ctx context.Context, repositoryID RepositoryID) (BranchIterator, error) {
+	_, err := g.GetRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
 	return g.RefManager.ListBranches(ctx, repositoryID)
 }
 

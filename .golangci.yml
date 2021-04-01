@@ -1,8 +1,7 @@
 run:
   tests: false
   skip-dirs:
-    - api/gen
-    - metastore/give/gen-go
+    - pkg/metastore/give/gen-go
   timeout: 5m
 
 linters:

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -20,14 +19,18 @@ func TestEntryToValueAndBack(t *testing.T) {
 		Metadata:     map[string]string{"key9": "value9", "key1": "value1"},
 	}
 	val, err := EntryToValue(entry)
-	testutil.MustDo(t, "convert entry value", err)
+	if err != nil {
+		t.Fatal("convert entry value", err)
+	}
 
 	if len(val.Identity) == 0 {
 		t.Error("EntryToValue() missing identify")
 	}
 
 	ent, err := ValueToEntry(val)
-	testutil.MustDo(t, "convert value to entry", err)
+	if err != nil {
+		t.Fatal("convert value to entry", err)
+	}
 
 	if diff := deep.Equal(entry, ent); diff != nil {
 		t.Fatal("Entry convert to value and back failed:", diff)

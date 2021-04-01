@@ -105,9 +105,8 @@ func NewHandler(
 			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
 		},
 	}
-	h = simulator.RegisterRecorder(httputil.LoggingMiddleware(
-		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, h,
-	), authService, region, bareDomain)
+	loggingMiddleware := httputil.LoggingMiddleware("X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"})
+	h = simulator.RegisterRecorder(loggingMiddleware(h), authService, region, bareDomain)
 	h = EnrichWithOperation(sc,
 		DurationHandler(
 			AuthenticationHandler(authService, bareDomain,

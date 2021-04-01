@@ -1,26 +1,25 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const commitsTemplate = `
 {{ range $val := .Commits }}
-ID:            {{ $val.ID|yellow }}{{if $val.Committer }}
+ID:            {{ $val.Id|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
-{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeID }}
+{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeId }}
 {{ end -}}
 {{ if gt ($val.Parents|len) 1 -}}
 Merge:         {{ $val.Parents|join ", "|bold }}
 {{ end }}
 	{{ $val.Message }}
 	
-	{{ range $key, $value := $val.Metadata }}
+	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
 		{{ $key }} = {{ $value }}
 	{{ end -}}
 {{ end }}
@@ -47,26 +46,30 @@ var logCmd = &cobra.Command{
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		commits, pagination, err := client.GetCommitLog(cmd.Context(), branchURI.Repository, branchURI.Ref, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
-		ctx := struct {
-			Commits         []*models.Commit
+		res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(res, err)
+
+		commits := res.JSON200.Results
+		data := struct {
+			Commits         []api.Commit
 			Pagination      *Pagination
 			ShowMetaRangeID bool
 		}{
 			Commits:         commits,
 			ShowMetaRangeID: showMetaRangeID,
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
-			ctx.Pagination = &Pagination{
+		pagination := res.JSON200.Pagination
+		if pagination.HasMore {
+			data.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
 			}
 		}
-		Write(commitsTemplate, ctx)
+		Write(commitsTemplate, data)
 	},
 }
 

@@ -7,14 +7,14 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	genclient "github.com/treeverse/lakefs/pkg/api/gen/client"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var (
 	logger logging.Logger
-	client *genclient.Lakefs
+	client api.ClientWithResponsesInterface
 	svc    *s3.S3
 	server *webhookServer
 )

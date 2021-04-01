@@ -3,33 +3,29 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"mime/multipart"
+	"net/http"
 	"os"
+	"path/filepath"
+	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/thanhpk/randstr"
-	genclient "github.com/treeverse/lakefs/pkg/api/gen/client"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/branches"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/commits"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/objects"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/refs"
-	"github.com/treeverse/lakefs/pkg/api/gen/client/repositories"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var (
 	logger logging.Logger
-	client *genclient.Lakefs
+	client api.ClientWithResponsesInterface
 )
 
 const (
@@ -72,26 +68,28 @@ func testBenchmarkLakeFS() error {
 		"storage_namespace": ns,
 		"name":              repoName,
 	}).Debug("Create repository for test")
-	repo, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
-		WithRepository(&models.RepositoryCreation{
-			DefaultBranch:    "master",
-			Name:             swag.String(repoName),
-			StorageNamespace: swag.String(ns),
-		}), nil)
+	createRepoResp, err := client.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("master"),
+		Name:             repoName,
+		StorageNamespace: ns,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create repository, storage '%s': %w", ns, err)
 	}
+	if err := responseAsError("create repository", createRepoResp); err != nil {
+		return err
+	}
 
-	_, err = client.Branches.CreateBranch(&branches.CreateBranchParams{
-		Branch: &models.BranchCreation{
-			Source: swag.String("master"),
-			Name:   swag.String(branchName),
-		},
-		Repository: repo.Payload.ID,
-		Context:    ctx,
-	}, nil)
+	repo := createRepoResp.JSON201
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo.Id, api.CreateBranchJSONRequestBody{
+		Name:   branchName,
+		Source: "master",
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create a branch from master: %w", err)
+	}
+	if err := responseAsError("create branch", createBranchResp); err != nil {
+		return err
 	}
 
 	parallelism := viper.GetInt("parallelism_level")
@@ -104,20 +102,17 @@ func testBenchmarkLakeFS() error {
 	failed = doInParallel(ctx, repoName, parallelism, filesAmount, "", reader)
 	logger.WithField("failedCount", failed).Info("Finished reading files")
 
-	_, err = client.Commits.Commit(&commits.CommitParams{
-		Branch: branchName,
-		Commit: &models.CommitCreation{
-			Message: swag.String("commit before merge"),
-		},
-		Repository: repoName,
-		Context:    ctx,
-	}, nil)
+	commitResp, err := client.CommitWithResponse(ctx, repo.Id, branchName, api.CommitJSONRequestBody{
+		Message: "commit before merge",
+	})
 	if err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
+	if err := responseAsError("commit", commitResp); err != nil {
+		return err
+	}
 
 	merge(ctx)
-
 	return nil
 }
 
@@ -164,16 +159,30 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 
 			// Making sure content isn't duplicated to avoid dedup mechanisms in lakeFS
 			content := contentPrefix + randstr.Hex(contentSuffixLength)
-			contentReader := runtime.NamedReader("content", strings.NewReader(content))
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+			contentWriter, err := w.CreateFormFile("content", filepath.Base(file))
+			if err != nil {
+				logger.WithError(err).Error("CreateFormFile failed")
+				return failed
+			}
+			_, err = contentWriter.Write([]byte(content))
+			if err != nil {
+				logger.WithError(err).Error("CreateFormFile write content failed")
+				return failed
+			}
+			w.Close()
+			contentType := w.FormDataContentType()
 
 			if err := retry.Do(func() error {
-				_, err := client.Objects.UploadObject(
-					objects.NewUploadObjectParamsWithContext(ctx).
-						WithRepository(repoName).
-						WithBranch(branchName).
-						WithPath(file).
-						WithContent(contentReader), nil)
-				return err
+				resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoName, branchName,
+					&api.UploadObjectParams{Path: file},
+					contentType,
+					&b)
+				if err != nil {
+					return err
+				}
+				return responseAsError("upload object", resp)
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -187,16 +196,13 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 
 func merge(ctx context.Context) {
 	err := retry.Do(func() error {
-		_, err := client.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
-			DestinationBranch: "master",
-			Merge: &models.Merge{
-				Message: "merging all objects to master",
-			},
-			Repository: repoName,
-			SourceRef:  branchName,
-			Context:    ctx,
-		}, nil)
-		return err
+		resp, err := client.MergeIntoBranchWithResponse(ctx, repoName, branchName, "master", api.MergeIntoBranchJSONRequestBody{
+			Message: "merging all objects to master",
+		})
+		if err != nil {
+			return err
+		}
+		return responseAsError("merge", resp)
 	}, retry.Attempts(retryAttempts),
 		retry.Delay(retryDelay),
 		retry.LastErrorOnly(true),
@@ -219,13 +225,11 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 			}
 
 			if err := retry.Do(func() error {
-				var b bytes.Buffer
-				_, err := client.Objects.GetObject(
-					objects.NewGetObjectParamsWithContext(ctx).
-						WithRepository(repoName).
-						WithRef(branchName).
-						WithPath(file), nil, &b)
-				return err
+				resp, err := client.GetObjectWithResponse(ctx, repoName, branchName, &api.GetObjectParams{Path: file})
+				if err != nil {
+					return err
+				}
+				return responseAsError("get object", resp)
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -235,4 +239,30 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 			}
 		}
 	}
+}
+
+type APIError struct {
+	Action  string
+	Message string
+}
+
+func (a *APIError) Error() string {
+	return fmt.Sprintf("%s failed: %s", a.Action, a.Message)
+}
+
+func responseAsError(action string, response interface{}) error {
+	r := reflect.ValueOf(response)
+	f := reflect.Indirect(r).FieldByName("HTTPResponse")
+	resp := f.Interface().(*http.Response)
+	if api.IsStatusCodeOK(resp.StatusCode) {
+		return nil
+	}
+	f = reflect.Indirect(r).FieldByName("Body")
+	body := f.Bytes()
+	var apiError api.Error
+	if err := json.Unmarshal(body, &apiError); err != nil {
+		// general case
+		return &APIError{Action: action, Message: resp.Status}
+	}
+	return &APIError{Action: action, Message: apiError.Message}
 }
