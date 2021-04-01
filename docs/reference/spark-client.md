@@ -3,7 +3,7 @@ layout: default
 title: Spark Client
 description: lakeFS spark client performs operations on lakeFS committed metadata stored in the object store. 
 parent: Reference
-nav_order: 10
+nav_exclude: true
 has_children: false
 ---
 
