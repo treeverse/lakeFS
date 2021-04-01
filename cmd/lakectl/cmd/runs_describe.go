@@ -18,7 +18,7 @@ const actionRunResultTemplate = `
 
 const actionTaskResultTemplate = `{{ $r := . }}
 {{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}
-{{ printf $val.HookRunID | call $r.HookLog }}
+{{ printf $val.HookRunId | call $r.HookLog }}
 {{ end }}
 {{ .Pagination | paginate }}
 `

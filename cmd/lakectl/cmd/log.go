@@ -12,7 +12,7 @@ const commitsTemplate = `
 ID:            {{ $val.Id|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
-{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeID }}
+{{ if $.ShowMetaRangeID }}Meta Range ID: {{ $val.MetaRangeId }}
 {{ end -}}
 {{ if gt ($val.Parents|len) 1 -}}
 Merge:         {{ $val.Parents|join ", "|bold }}
