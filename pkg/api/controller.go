@@ -2089,7 +2089,16 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	writeResponse(w, http.StatusOK, response)
 }
 
+// LogBranchCommits deprecated replaced by LogCommits
+func (c *Controller) LogBranchCommits(w http.ResponseWriter, r *http.Request, repository string, branch string, params LogBranchCommitsParams) {
+	c.logCommitsHelper(w, r, repository, branch, params.After, params.Amount)
+}
+
 func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository string, ref string, params LogCommitsParams) {
+	c.logCommitsHelper(w, r, repository, ref, params.After, params.Amount)
+}
+
+func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository string, ref string, after *PaginationAfter, amount *PaginationAmount) {
 	if !c.authorize(w, r, []permissions.Permission{
 		{
 			Action:   permissions.ReadBranchAction,
@@ -2102,7 +2111,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 	c.LogAction(ctx, "get_branch_commit_log")
 
 	// get commit log
-	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, paginationAfter(params.After), paginationAmount(params.Amount))
+	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, paginationAfter(after), paginationAmount(amount))
 	if handleAPIError(w, err) {
 		return
 	}
