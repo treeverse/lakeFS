@@ -20,6 +20,7 @@ import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {Error} from "../../lib/components/controls"
 import {useRouter} from "next/router";
 import {useAPI, useAPIWithPagination} from "../../rest/hooks";
+import {Paginator} from "../../lib/components/pagination";
 
 
 
@@ -92,11 +93,8 @@ const RepositoryList = ({ filter, lastListUpdate = null  }) => {
                     </Col>
                 </Row>
             ))}
-            {(hasMore) ?  (
-                <p className="tree-paginator">
-                    <Button variant="outline-primary" onClick={paginate}>Load More</Button>
-                </p>
-            ) :  <span/>}
+
+            <Paginator hasMore={hasMore} paginate={paginate}/>
         </div>
     );
 };

@@ -29,6 +29,7 @@ import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
 import {ChangeEntryRow} from "../../../lib/components/repository/changes";
+import {Paginator} from "../../../lib/components/pagination";
 
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -153,7 +154,7 @@ const ChangesContainer = ({ repo, reference, onSelectRef, showActions = true }) 
     const [internalRefresh, setInternalRefresh] = useState(true)
 
     const { results, error, loading, paginate, hasMore } = useAPIWithPagination(async (after) => {
-        return refs.changes(repo.id, reference.id, after, 1)
+        return refs.changes(repo.id, reference.id, after)
     }, [repo.id, reference.id, internalRefresh])
 
     const refresh = () => setInternalRefresh(!internalRefresh)
@@ -163,12 +164,6 @@ const ChangesContainer = ({ repo, reference, onSelectRef, showActions = true }) 
 
     const actionErrorDisplay = (!!actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
-
-    const paginationButton = (hasMore) ? (
-        <p className="tree-paginator mt-3">
-            <Button variant="outline-primary" onClick={paginate}>Load More</Button>
-        </p>
-    ) : <></>
 
     return (
         <>
@@ -233,7 +228,7 @@ const ChangesContainer = ({ repo, reference, onSelectRef, showActions = true }) 
                         </Card>
                     )}
 
-                {paginationButton}
+                <Paginator paginate={paginate} hasMore={hasMore}/>
             </div>
         </>
     )

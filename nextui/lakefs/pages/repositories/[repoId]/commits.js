@@ -14,6 +14,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {DiffIcon, LinkExternalIcon, LinkIcon, PlayIcon} from "@primer/octicons-react";
 import moment from "moment";
+import {Paginator} from "../../../lib/components/pagination";
 
 
 const CommitWidget = ({repo, commit, previous}) => {
@@ -83,11 +84,14 @@ const CommitsContainer = ({ repo, reference, onSelectRef }) => {
     if (!!error) return <Error error={error}/>
 
     return (
-        <div>
-            {results.map(commit => (
-                <CommitWidget repo={repo} commit={commit}/>
-            ))}
-        </div>
+        <>
+            <div>
+                {results.map(commit => (
+                    <CommitWidget repo={repo} commit={commit}/>
+                ))}
+            </div>
+            <Paginator hasMore={hasMore} paginate={paginate}/>
+        </>
     )
 
 

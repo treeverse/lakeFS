@@ -22,6 +22,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 
 import {linkToPath} from "../../../rest/api";
 import {ConfirmationModal} from "../modals";
+import {Paginator} from "../pagination";
 
 
 const humanSize = (bytes) => {
@@ -262,12 +263,6 @@ const GetStarted = ({ onUpload }) => {
 
 export const Tree = ({ repo, reference, hasMore, results, paginate, onUpload, onDelete, showActions = false, path = "" }) => {
 
-    const paginationButton = (hasMore) ? (
-        <p className="tree-paginator">
-            <Button variant="outline-primary" onClick={paginate}>Load More</Button>
-        </p>
-    ) : <></>
-
     let body;
     if (results.length === 0 && path === "") {
         // empty state!
@@ -304,9 +299,8 @@ export const Tree = ({ repo, reference, hasMore, results, paginate, onUpload, on
                     {body}
                 </Card.Body>
             </Card>
-            <div className="mt-3">
-                {paginationButton}
-            </div>
+
+            <Paginator hasMore={hasMore} paginate={paginate}/>
         </div>
     );
 }
