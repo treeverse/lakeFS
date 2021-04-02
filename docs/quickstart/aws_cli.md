@@ -1,13 +1,15 @@
 ---
 layout: default
-title: Copy Files
+title: Add Data
 description: In this section we will learn how to configure and use AWS CLI to manage data with the lakeFS Server.
 parent: Quick Start
 nav_order: 30
 has_children: false
 ---
 
-# Copying files into lakeFS using AWS CLI
+# Add Data
+In this section we'll review how to copy files into lakeFS using the AWS CLI.
+
 1. If you don't have the AWS CLI installed, follow the [instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html){:target="_blank"}.
 1. Configure a new connection profile using the credentials we generated earlier:
 

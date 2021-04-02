@@ -4,11 +4,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -61,18 +59,21 @@ func (p *pageSize) Next() int {
 	return p.Value()
 }
 
-func printDiffBranch(ctx context.Context, client api.Client, repository string, branch string) {
+func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterface, repository string, branch string) {
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		diff, pagination, err := client.DiffBranch(ctx, repository, branch, after, pageSize.Value())
-		if err != nil {
-			DieErr(err)
-		}
-		for _, line := range diff {
+		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &api.DiffBranchParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(int(pageSize)),
+		})
+		DieOnResponseError(resp, err)
+
+		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, false)
 		}
-		if !swag.BoolValue(pagination.HasMore) {
+		pagination := resp.JSON200.Pagination
+		if !pagination.HasMore {
 			break
 		}
 		after = pagination.NextOffset
@@ -80,19 +81,22 @@ func printDiffBranch(ctx context.Context, client api.Client, repository string, 
 	}
 }
 
-func printDiffRefs(ctx context.Context, client api.Client, repository string, leftRef string, rightRef string) {
+func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string) {
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		diff, pagination, err := client.DiffRefs(ctx, repository, leftRef, rightRef,
-			after, pageSize.Value())
-		if err != nil {
-			DieErr(err)
-		}
-		for _, line := range diff {
+		amount := int(pageSize)
+		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		for _, line := range resp.JSON200.Results {
 			FmtDiff(line, true)
 		}
-		if !swag.BoolValue(pagination.HasMore) {
+		pagination := resp.JSON200.Pagination
+		if !pagination.HasMore {
 			break
 		}
 		after = pagination.NextOffset
@@ -100,21 +104,21 @@ func printDiffRefs(ctx context.Context, client api.Client, repository string, le
 	}
 }
 
-func FmtDiff(diff *models.Diff, withDirection bool) {
+func FmtDiff(diff api.Diff, withDirection bool) {
 	var color text.Color
 	var action string
 
 	switch diff.Type {
-	case models.DiffTypeAdded:
+	case "added":
 		color = text.FgGreen
 		action = "+ added"
-	case models.DiffTypeRemoved:
+	case "removed":
 		color = text.FgRed
 		action = "- removed"
-	case models.DiffTypeChanged:
+	case "changed":
 		color = text.FgYellow
 		action = "~ modified"
-	case models.DiffTypeConflict:
+	case "conflict":
 		color = text.FgHiYellow
 		action = "* conflict"
 	default:

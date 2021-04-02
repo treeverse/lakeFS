@@ -4,9 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/db/params"
-
 	"github.com/treeverse/lakefs/pkg/db"
+	"github.com/treeverse/lakefs/pkg/db/params"
 )
 
 func TestConnectDB(t *testing.T) {

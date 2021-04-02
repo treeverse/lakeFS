@@ -3,7 +3,7 @@ layout: default
 title: Python
 description: The lakeFS API is OpenAPI 2.0 compliant, allowing the dynamic generation of clients from Python and multiple other languages
 parent: Using lakeFS with...
-nav_order: 5
+nav_order: 30
 has_children: false
 ---
 
@@ -61,7 +61,7 @@ Now that we have a client object, we can use it to interact with the API.
 
 ```python
 client.repositories.createRepository(repository={
-    'id': 'example-repo',
+    'name': 'example-repo',
     'storage_namespace': 's3://storage-bucket/repos/example-repo',
     'default_branch':'main'
 }).result()
@@ -136,7 +136,7 @@ client.commits.commit(
 # 'python_api'}, parents=['~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnU'])
 ```
 
-Diffing again, this time there should be no uncommitted branches:
+Diffing again, this time there should be no uncommitted files:
 
 ```python
 client.branches.diffBranch(repository='test-repo', branch='experiment-aggregations1').result()
@@ -157,7 +157,7 @@ client.refs.diffRefs(repository='test-repo', leftRef='experiment-aggregations1',
 Looks like we have a change. Let's merge it:
 
 ```python
-client.refs.mergeIntoBranch(repository='test-repo', sourceRef='experiment-aggregations1', destinationRef='main').result()
+client.refs.mergeIntoBranch(repository='test-repo', sourceRef='experiment-aggregations1', destinationBranch='main').result()
 # output:
 # {'results': [merge_result(path='path/to/object', path_type='object', type='added')]}
 ```

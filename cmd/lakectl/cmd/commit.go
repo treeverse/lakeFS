@@ -5,22 +5,21 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 var commitCreateTemplate = `Commit for branch "{{.Branch.Ref}}" completed.
 
-ID: {{.Commit.ID|yellow}}
+ID: {{.Commit.Id|yellow}}
 Message: {{.Commit.Message}}
 Timestamp: {{.Commit.CreationDate|date}}
 Parents: {{.Commit.Parents|join ", "}}
 
 `
-var (
-	errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
-)
+
+var errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
 
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
@@ -42,16 +41,21 @@ var commitCmd = &cobra.Command{
 		branchURI := uri.Must(uri.Parse(args[0]))
 
 		// do commit
-		client := getClient()
-		commit, err := client.Commit(cmd.Context(), branchURI.Repository, branchURI.Ref, message, kvPairs)
-		if err != nil {
-			DieErr(err)
+		metadata := api.CommitCreation_Metadata{
+			AdditionalProperties: kvPairs,
 		}
+		client := getClient()
+		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, api.CommitJSONRequestBody{
+			Message:  message,
+			Metadata: &metadata,
+		})
+		DieOnResponseError(resp, err)
 
+		commit := resp.JSON201
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
-			Commit *models.Commit
-		}{branchURI, commit})
+			Commit *api.Commit
+		}{Branch: branchURI, Commit: commit})
 	},
 }
 

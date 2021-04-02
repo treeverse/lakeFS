@@ -11,19 +11,32 @@ import (
 // dispatching new ones would start blocking.
 const RequestBufferSize = 1 << 17
 
+type Executer interface {
+	Execute() (interface{}, error)
+}
+
+type BatchTracker interface {
+	// Batched is called when a request is added to an existing batch.
+	Batched()
+}
+
 type BatchFn func() (interface{}, error)
+
+func (b BatchFn) Execute() (interface{}, error) {
+	return b()
+}
 
 type DelayFn func(dur time.Duration)
 
 type Batcher interface {
-	BatchFor(key string, dur time.Duration, fn BatchFn) (interface{}, error)
+	BatchFor(key string, dur time.Duration, exec Executer) (interface{}, error)
 }
 
 type nonBatchingExecutor struct {
 }
 
-func (n *nonBatchingExecutor) BatchFor(key string, dur time.Duration, fn BatchFn) (interface{}, error) {
-	return fn()
+func (n *nonBatchingExecutor) BatchFor(_ string, _ time.Duration, exec Executer) (interface{}, error) {
+	return exec.Execute()
 }
 
 type response struct {
@@ -34,7 +47,7 @@ type response struct {
 type request struct {
 	key        string
 	timeout    time.Duration
-	fn         BatchFn
+	exec       Executer
 	onResponse chan *response
 }
 
@@ -63,12 +76,12 @@ func NewExecutor(logger logging.Logger) *Executor {
 	}
 }
 
-func (e *Executor) BatchFor(key string, timeout time.Duration, fn BatchFn) (interface{}, error) {
+func (e *Executor) BatchFor(key string, timeout time.Duration, exec Executer) (interface{}, error) {
 	cb := make(chan *response)
 	e.requests <- &request{
 		key:        key,
 		timeout:    timeout,
-		fn:         fn,
+		exec:       exec,
 		onResponse: cb,
 	}
 	response := <-cb
@@ -83,20 +96,25 @@ func (e *Executor) Run(ctx context.Context) {
 		case req := <-e.requests:
 			// see if we have it scheduled already
 			if _, exists := e.waitingOnKey[req.key]; !exists {
+				e.waitingOnKey[req.key] = []*request{req}
 				// this is a new key, let's fire a timer for it
 				go func(req *request) {
 					e.Delay(req.timeout)
 					e.execs <- req.key
 				}(req)
+			} else {
+				if b, ok := req.exec.(BatchTracker); ok {
+					b.Batched()
+				}
+				e.waitingOnKey[req.key] = append(e.waitingOnKey[req.key], req)
 			}
-			e.waitingOnKey[req.key] = append(e.waitingOnKey[req.key], req)
 		case execKey := <-e.execs:
 			// let's take all callbacks
 			waiters := e.waitingOnKey[execKey]
 			delete(e.waitingOnKey, execKey)
 			go func(key string) {
 				// execute and call all mapped callbacks
-				v, err := waiters[0].fn()
+				v, err := waiters[0].exec.Execute()
 				if e.Logger.IsTracing() {
 					e.Logger.WithFields(logging.Fields{
 						"waiters": len(waiters),

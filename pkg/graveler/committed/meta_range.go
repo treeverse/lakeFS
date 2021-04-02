@@ -24,6 +24,50 @@ type Iterator interface {
 	Close()
 }
 
+// DiffIterator iterates over all Range headers and values of a Diff, allowing seeking by entire
+// ranges.
+// DiffIterator might contain ranges without headers
+// for example:
+//
+// left        [min].R1.[max]                     [min].R3.[max]        [min]...............R5..............[max]
+//        ------------------------------------------------------------------------------------------------
+// right                        [min].R2.[max]     [min.....R4....max]  [min].R6.[max] [min].R7.[max]
+//
+// R1 -  will return as diff with header
+// R2 - will return as diff with header
+// R3 and R4 - could not return a header because we must enter the ranges in order to get some header values (such as count)
+// R5 and R6 - same as R3 and R4
+// R7 - in case R5 has no values in the R7 range, R7 would return as a diff with header
+type DiffIterator interface {
+	// Next moves to look at the next value in the current Range, or a header for the next Range if the current Range is over and a next range exists.
+	Next() bool
+	// NextRange skips the current range
+	// If the next Range is a "headerless" range it will return the first value, otherwise will return the header
+	// calling NextRange from a "headerless" should result with ErrNoRange
+	NextRange() bool
+	// Value returns a nil ValueRecord and a Range before starting a Range, a Value and that Range when inside a Range, or a value with no range when inside a headerless Range
+	Value() (*graveler.Diff, *RangeDiff)
+	SeekGE(id graveler.Key)
+	Err() error
+	Close()
+}
+
+// RangeDiff represents a change in Range
+type RangeDiff struct {
+	Type  graveler.DiffType
+	Range *Range
+}
+
+func (r RangeDiff) Copy() *RangeDiff {
+	res := RangeDiff{
+		Type: r.Type,
+	}
+	if r.Range != nil {
+		res.Range = r.Range.Copy()
+	}
+	return &res
+}
+
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
 	Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error)

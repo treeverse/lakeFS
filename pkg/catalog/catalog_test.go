@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -134,7 +133,9 @@ func TestCatalog_BranchExists(t *testing.T) {
 			// test method
 			ctx := context.Background()
 			exists, err := c.BranchExists(ctx, "repo", tt.Branch)
-			testutil.MustDo(t, "BranchExists", err)
+			if err != nil {
+				t.Fatal("BranchExists failed:", err)
+			}
 			if exists != tt.ShouldExist {
 				not := ""
 				if !tt.ShouldExist {

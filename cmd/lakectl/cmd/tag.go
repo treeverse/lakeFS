@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -35,14 +35,16 @@ var tagListCmd = &cobra.Command{
 		u := uri.Must(uri.Parse(args[0]))
 		ctx := cmd.Context()
 		client := getClient()
-		response, pagination, err := client.ListTags(ctx, u.Repository, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
-		rows := make([][]interface{}, len(response))
-		for i, row := range response {
-			rows[i] = []interface{}{swag.StringValue(row.ID), swag.StringValue(row.CommitID)}
+		refs := resp.JSON200.Results
+		rows := make([][]interface{}, len(refs))
+		for i, row := range refs {
+			rows[i] = []interface{}{row.Id, row.CommitId}
 		}
 
 		tmplArgs := struct {
@@ -54,7 +56,8 @@ var tagListCmd = &cobra.Command{
 				Rows:    rows,
 			},
 		}
-		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+		pagination := resp.JSON200.Pagination
+		if pagination.HasMore {
 			tmplArgs.Pagination = &Pagination{
 				Amount:  amount,
 				HasNext: true,
@@ -78,10 +81,13 @@ var tagCreateCmd = &cobra.Command{
 		client := getClient()
 		commitRef := args[1]
 		ctx := cmd.Context()
-		commitID, err := client.CreateTag(ctx, tagURI.Repository, tagURI.Ref, commitRef)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, api.CreateTagJSONRequestBody{
+			Id:  tagURI.Ref,
+			Ref: commitRef,
+		})
+		DieOnResponseError(resp, err)
+
+		commitID := *resp.JSON201
 		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
 	},
 }
@@ -101,10 +107,8 @@ var tagDeleteCmd = &cobra.Command{
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 		ctx := cmd.Context()
-		err = client.DeleteTag(ctx, u.Repository, u.Ref)
-		if err != nil {
-			DieErr(err)
-		}
+		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
+		DieOnResponseError(resp, err)
 	},
 }
 
@@ -119,11 +123,9 @@ var tagShowCmd = &cobra.Command{
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 		ctx := cmd.Context()
-		ref, err := client.GetTag(ctx, u.Repository, u.Ref)
-		if err != nil {
-			DieErr(err)
-		}
-		Fmt("%s\n", ref)
+		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
+		DieOnResponseError(resp, err)
+		Fmt("%s %s", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }
 

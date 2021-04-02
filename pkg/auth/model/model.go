@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
-
-	"github.com/treeverse/lakefs/pkg/api/gen/models"
 )
 
 const (
-	StatementEffectAllow = models.StatementEffectAllow
-	StatementEffectDeny  = models.StatementEffectDeny
+	StatementEffectAllow = "allow"
+	StatementEffectDeny  = "deny"
 )
 
 type PaginationParams struct {

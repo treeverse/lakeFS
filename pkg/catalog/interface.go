@@ -65,6 +65,8 @@ type Interface interface {
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
 
+	GetStagingToken(ctx context.Context, repository string, branch string) (*string, error)
+
 	CreateBranch(ctx context.Context, repository, branch string, sourceRef string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)

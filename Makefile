@@ -7,10 +7,6 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
-# Same for python swagger validation
-SWAGGER_VALIDATOR_IMAGE=treeverse/swagger-spec-validator:latest
-SWAGGER_VALIDATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(SWAGGER_VALIDATOR_IMAGE)
-
 export PATH:= $(PATH):$(GOBINPATH)
 
 GOBUILD=$(GOCMD) build
@@ -30,7 +26,6 @@ LAKECTL_BINARY_NAME=lakectl
 
 UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/build
-API_BUILD_DIR=pkg/api/gen
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
@@ -48,8 +43,16 @@ export REVISION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME) \
-	    graveler/committed/mock graveler/sstable/mock actions/mock
+	@rm -rf \
+		$(LAKECTL_BINARY_NAME) \
+		$(LAKEFS_BINARY_NAME) \
+		$(UI_BUILD_DIR) \
+		pkg/actions/mock \
+		pkg/api/lakefs.gen.go \
+		pkg/ddl/statik.go \
+		pkg/graveler/sstable/mock \
+		pkg/webui \
+	    pkg/graveler/committed/mock
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -81,19 +84,15 @@ go-mod-download: ## Download module dependencies
 	$(GOCMD) mod download
 
 go-install: go-mod-download ## Install dependencies
-	$(GOCMD) install github.com/go-swagger/go-swagger/cmd/swagger
+	$(GOCMD) install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 	$(GOCMD) install github.com/golang/mock/mockgen
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 	$(GOCMD) install github.com/rakyll/statik
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
 
-gen-api: go-install del-gen-api ## Run the go-swagger code generator
+gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
-
-del-gen-api:
-	@rm -rf $(API_BUILD_DIR)
-	@mkdir -p $(API_BUILD_DIR)
 
 .PHONY: gen-mockgen
 gen-mockgen: go-install ## Run the generator for inline commands
@@ -102,13 +101,6 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/pyramid
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions
-
-validate-swagger: go-install ## Validate swagger.yaml
-	$(GOBINPATH)/swagger validate api/swagger.yml
-	# Run python validation as well
-	$(GOBINPATH)/swagger expand --format=json api/swagger.yml > swagger.json
-	$(SWAGGER_VALIDATOR) /mnt/swagger.json
-	@rm swagger.json
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/config.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
@@ -157,7 +149,7 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/committed/committed.pb.go
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 
-checks-validator: lint validate-fmt validate-swagger validate-proto  ## Run all validation/linting steps
+checks-validator: lint validate-fmt validate-proto  ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install

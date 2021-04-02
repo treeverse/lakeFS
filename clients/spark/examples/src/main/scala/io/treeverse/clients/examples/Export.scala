@@ -37,5 +37,7 @@ object Export extends App {
     exporter.exportAllFromBranch(branch)
 //    exporter.exportAllFromCommit(prevCommitID)
 //    exporter.exportFrom(branch, prevCommitID)
+
+    spark.sparkContext.stop()
   }
 }

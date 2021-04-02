@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/manifoldco/promptui"
@@ -38,11 +38,53 @@ func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
 	return true, nil
 }
 
-// OpenByPath returns a reader from the given path. If path is "-", it'll return Stdin
-func OpenByPath(path string) io.ReadCloser {
+// nopCloser wraps a ReadSeekCloser to ignore calls to Close().  It is io.NopCloser (or
+// ioutils.NopCloser) for Seeks.
+type nopCloser struct {
+	io.ReadSeekCloser
+}
+
+func (nc *nopCloser) Close() error {
+	return nil
+}
+
+// deleteOnClose wraps a File to be a ReadSeekCloser that deletes itself when closed.
+type deleteOnClose struct {
+	*os.File
+}
+
+func (d *deleteOnClose) Close() error {
+	if err := os.Remove(d.Name()); err != nil {
+		d.File.Close() // "Only" file descriptor leak if close fails (but data might stay).
+		return fmt.Errorf("delete on close: %w", err)
+	}
+	return d.File.Close()
+}
+
+// OpenByPath returns a reader from the given path. If path is "-", it consumes Stdin and
+// opens a readable copy that is either deleted (POSIX) or will delete itself on close
+// (non-POSIX, notably WINs).
+func OpenByPath(path string) io.ReadSeekCloser {
 	if path == StdinFileName {
-		// read from stdin
-		return ioutil.NopCloser(os.Stdin)
+		if !isSeekable(os.Stdin) {
+			temp, err := os.CreateTemp("", "lakectl-stdin")
+			if err != nil {
+				DieErr(fmt.Errorf("create temporary file to buffer stdin: %w", err))
+			}
+			if _, err = io.Copy(temp, os.Stdin); err != nil {
+				DieErr(fmt.Errorf("copy stdin to temporary file: %w", err))
+			}
+			if _, err = temp.Seek(0, io.SeekStart); err != nil {
+				DieErr(fmt.Errorf("rewind temporary copied file: %w", err))
+			}
+			// Try to delete the file.  This will fail on Windows, we shall try to
+			// delete on close anyway.
+			if os.Remove(temp.Name()) != nil {
+				return &deleteOnClose{temp}
+			}
+			return temp
+		}
+		return &nopCloser{os.Stdin}
 	}
 	fp, err := os.Open(path)
 	if err != nil {

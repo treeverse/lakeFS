@@ -7,7 +7,7 @@ nav_order: 20
 has_children: false
 ---
 
-# Setting up a Repository
+# Create Repository
 {: .no_toc }
 
 Once you have a running lakeFS instance, we'll need to set up an initial admin user in order to log in to the UI and make our first steps in lakeFS! In this guide, we're going to run an initial setup and then create a new [repository](../branching/model.md#repositories).
