@@ -75,10 +75,8 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		StorageNamespace: repoStorage,
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
-	if resp.StatusCode() != http.StatusCreated {
-		t.Logf("failed to create repository '%s', storage '%s': response %s", name, repoStorage, string(resp.Body))
-		t.Fail()
-	}
+	require.Equalf(t, http.StatusCreated, resp.StatusCode(),
+		"failed to create repository '%s', storage '%s': response %s", name, repoStorage, string(resp.Body))
 }
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
