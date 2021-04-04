@@ -132,6 +132,10 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
 	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, direct)
+	if errors.Is(err, helpers.ErrUnsupportedProtocol) {
+		t.Logf("direct upload no supported yet (%s)", err)
+		t.SkipNow()
+	}
 	require.NoError(t, err, "failed to upload file")
 	return checksum, content
 }
