@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -23,9 +24,18 @@ const masterBranch = "master"
 
 var errUploadFailed = errors.New("upload failed")
 
+var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
+
+// makeRepositoryName changes name to make it an acceptable repository name by replacing all
+// non-alphanumeric characters with a `-`.
+func makeRepositoryName(name string) string {
+	return nonAlphanumericSequence.ReplaceAllString(name, "-")
+}
+
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
-	logger := logger.WithField("testName", t.Name())
+	name := makeRepositoryName(t.Name())
+	logger := logger.WithField("testName", name)
 	repo := createRepositoryForTest(ctx, t)
 	logger.WithField("repo", repo).Info("Created repository")
 	return ctx, logger, repo
@@ -42,6 +52,7 @@ func createRepositoryByName(ctx context.Context, t *testing.T, name string) stri
 		storageNamespace += "/"
 	}
 	storageNamespace += name
+	name = makeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace)
 	return name
 }
@@ -64,7 +75,10 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		StorageNamespace: repoStorage,
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
-	require.Equal(t, http.StatusCreated, resp.StatusCode())
+	if resp.StatusCode() != http.StatusCreated {
+		t.Logf("failed to create repository '%s', storage '%s': response %s", name, repoStorage, string(resp.Body))
+		t.Fail()
+	}
 }
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
