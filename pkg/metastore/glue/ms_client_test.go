@@ -294,7 +294,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	toDBName := "default"
 	toBranch := "br1"
 
-	err = client.CopyOrMerge(dbName, tableName, toDBName, toTableName, toBranch, toTableName, nil, "")
+	err = client.CopyOrMerge(dbName, tableName, toDBName, toTableName, toBranch, toTableName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +382,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	// now merge back
-	err = client.CopyOrMerge(toDBName, toTableName, dbName, tableName, branch, "", nil, "")
+	err = client.CopyOrMerge(toDBName, toTableName, dbName, tableName, branch, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
