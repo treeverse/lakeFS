@@ -63,6 +63,11 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		switch {
 		case errors.Is(err, catalog.ErrNotFound):
 			lg.Debug("tried to delete a non-existent object")
+		case errors.Is(err, catalog.ErrPathRequiredValue):
+			// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
+			// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.
+			// Spark expects it to succeed (not deleting anything is a success), instead of returning an error.
+			lg.Debug("tried to delete with an empty branch")
 		case err != nil:
 			lg.WithError(err).Error("failed deleting object")
 			errs = append(errs, serde.DeleteError{
