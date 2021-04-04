@@ -29,6 +29,8 @@ var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 
+var directUploadSupported = true
+
 // verifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
 func verifyResponse(resp *http.Response, body []byte) error {
@@ -91,12 +93,17 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
+func uploadFileRandomDataAndReport(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
 
 	if direct {
 		stats, err := helpers.ClientUpload(ctx, client, repo, branch, objPath, nil, strings.NewReader(objContent))
+		if errors.Is(err, helpers.ErrUnsupportedProtocol) {
+			t.Logf("direct upload not supported yet (%s), switch to use gateway", err)
+			directUploadSupported = false
+			return uploadFileRandomDataAndReport(ctx, t, repo, branch, objPath, false)
+		}
 		if err != nil {
 			return "", "", err
 		}
@@ -131,11 +138,7 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 }
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, direct)
-	if errors.Is(err, helpers.ErrUnsupportedProtocol) {
-		t.Logf("direct upload no supported yet (%s)", err)
-		t.SkipNow()
-	}
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, t, repo, branch, objPath, direct && directUploadSupported)
 	require.NoError(t, err, "failed to upload file")
 	return checksum, content
 }
