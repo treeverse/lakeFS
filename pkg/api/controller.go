@@ -1571,6 +1571,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "diff_workspace")
+	c.Logger.WithField("after", paginationAfter(params.After)).Warn("pagination after")
 	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return

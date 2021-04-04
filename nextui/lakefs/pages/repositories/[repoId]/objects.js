@@ -118,7 +118,7 @@ const UploadButton = ({ repo, reference, path, onDone}) => {
 
 const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, refreshToken }) => {
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
-        return objects.list(repo.id, reference.id, path, after, 1)
+        return objects.list(repo.id, reference.id, path, after)
     },[repo.id, reference.id, path, after, refreshToken])
 
     if (loading) return <Loading/>
@@ -223,10 +223,10 @@ const RepositoryObjectsPage = () => {
                     path={(!!path) ? path : ""}
                     after={(!!after) ? after : ""}
                     onPaginate={after => {
-                        const query = {repoId, after, ref: ref.id}
+                        const query = {repoId, after}
                         if (!!path) query.path = path
+                        if (!!ref) query.ref = ref
                         const url = {pathname: `/repositories/[repoId]/objects`, query}
-                        console.log(url)
                         router.push(url)
                     }}
                     onSelectRef={ref => router.push({

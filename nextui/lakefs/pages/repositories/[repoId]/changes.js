@@ -149,13 +149,13 @@ const RevertButton =({ onRevert, enabled = false }) => {
     );
 }
 
-const ChangesContainer = ({ repo, reference, onSelectRef, showActions = true }) => {
+const ChangesContainer = ({ repo, reference, after, onPaginate, onSelectRef, showActions = true }) => {
     const [actionError, setActionError] = useState(null)
     const [internalRefresh, setInternalRefresh] = useState(true)
 
-    const { results, error, loading, paginate, hasMore } = useAPIWithPagination(async (after) => {
+    const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return refs.changes(repo.id, reference.id, after)
-    }, [repo.id, reference.id, internalRefresh])
+    }, [repo.id, reference.id, internalRefresh, after])
 
     const refresh = () => setInternalRefresh(!internalRefresh)
 
@@ -228,25 +228,25 @@ const ChangesContainer = ({ repo, reference, onSelectRef, showActions = true }) 
                         </Card>
                     )}
 
-                <Paginator paginate={paginate} hasMore={hasMore}/>
+                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
             </div>
         </>
     )
 }
 
-const RefContainer = ({ repoId, refId, onSelectRef }) => {
+const RefContainer = ({ repoId, refId, after, onSelectRef, onPaginate }) => {
     const {loading, error, response} = useRepoAndRef(repoId, refId)
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
     const { repo, ref } = response
     return (
-        <ChangesContainer repo={repo} reference={ref} onSelectRef={onSelectRef}/>
+        <ChangesContainer repo={repo} reference={ref} onSelectRef={onSelectRef} after={after} onPaginate={onPaginate}/>
     )
 }
 
 const RepositoryChangesPage = () => {
     const router = useRouter()
-    const { repoId, ref } = router.query;
+    const { repoId, ref, after } = router.query;
 
     return (
         <RepositoryPageLayout repoId={repoId} activePage={'changes'}>
@@ -255,10 +255,17 @@ const RepositoryChangesPage = () => {
                 <RefContainer
                     repoId={repoId}
                     refId={ref}
+                    after={(!!after) ? after : ""}
                     onSelectRef={ref => router.push({
                         pathname: `/repositories/[repoId]/changes`,
-                        query: {repoId, ref: ref.id}
+                        query: {repoId, ref}
                     })}
+                    onPaginate={after => {
+                        router.push({
+                            pathname: `/repositories/[repoId]/changes`,
+                            query: {repoId, ref, after}
+                        })
+                    }}
                 />
             }
         </RepositoryPageLayout>

@@ -2,9 +2,11 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import {ClippyIcon} from "@primer/octicons-react";
+import {CheckIcon, ClippyIcon, PlayIcon, ShareIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
+import {OverlayTrigger} from "react-bootstrap";
+import Link from "next/link";
 
 const defaultDebounceMs = 300;
 
@@ -181,31 +183,63 @@ export const useHover = () => {
     return [ref, value]
 }
 
-export const ClipboardButton = ({ text, variant, onSuccess, onError, icon = <ClippyIcon/>,  tooltip = "Copy to clipboard"}) => {
+const RefButton = React.forwardRef(({ href, variant, children, tooltip = null }, ref) => {
+    if (tooltip === null) {
+        return (
+            <Button variant={variant} as="a" href={href} ref={ref}>
+                {children}
+            </Button>
+        )
+    }
+    return (
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
+            <Button variant={variant} as="a" href={href} ref={ref}>
+                {children}
+            </Button>
+        </OverlayTrigger>
+    )
+})
 
-    const [show, setShow] = useState(false);
-    const [tooltipText, setTooltipText] = useState(tooltip);
+export const LinkButton = ({ href, children, tooltip, buttonVariant }) => {
+    return (
+        <Link passHref href={href}>
+            <RefButton tooltip={tooltip} variant={buttonVariant}>{children}</RefButton>
+        </Link>
+    )
+}
 
-    const [target, isHovered] = useHover();
+export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard"}) => {
+
+    const [show, setShow] = useState(false)
+    const [copied, setCopied] = useState(false)
+    const [target, isHovered] = useHover()
+
+    const currentIcon = (!copied) ? icon : <CheckIcon/>
 
     let updater = null;
 
     return (
         <>
-            <Overlay placement="bottom" show={show || isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
-                {props => {updater = props.scheduleUpdate; props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
+            <Overlay
+                placement="bottom"
+                show={show || isHovered}
+                target={target.current}>
+                {props => {
+                    updater = props.scheduleUpdate
+                    props.show = undefined
+                    return (<Tooltip {...props}>{tooltip}</Tooltip>)
+                }}
             </Overlay>
             <Button variant={variant} ref={target} onClick={(e) => {
-                setShow(false);
-                setTooltipText('Copied!');
-                if (updater != null) updater();
-                setShow(true);
+                setShow(false)
+                setCopied(true)
+                if (updater != null) updater()
                 setTimeout(() => {
-                    if (target.current != null) setShow(false);
-                }, 2500);
+                    if (target.current != null) setCopied(false)
+                }, 1000);
                 copyTextToClipboard(text, onSuccess, onError);
             }}>
-                {icon}
+                {currentIcon}
             </Button>
         </>
     );

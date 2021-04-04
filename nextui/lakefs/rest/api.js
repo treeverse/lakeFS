@@ -443,9 +443,9 @@ class Objects {
 }
 
 class Commits {
-    async log(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
+    async log(repoId, refId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits?${query}`);
+        const response = await apiRequest(`/repositories/${repoId}/refs/${refId}/commits?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
