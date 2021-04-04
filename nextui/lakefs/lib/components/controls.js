@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
@@ -8,7 +8,7 @@ import Overlay from "react-bootstrap/Overlay";
 
 const defaultDebounceMs = 300;
 
-function debounce(func, wait, immediate) {
+export function debounce(func, wait, immediate) {
     let timeout;
     return function() {
         let context = this, args = arguments;
@@ -23,8 +23,34 @@ function debounce(func, wait, immediate) {
     };
 }
 
+export const useDebounce = (func, wait = defaultDebounceMs) => {
+    const debouncedRef = useRef(debounce(func, wait))
+    return debouncedRef.current;
+}
+
+export const useDebouncedState = (dependsOn, debounceFn, wait = 300) => {
+    const [state, setState] = useState(dependsOn)
+    useEffect(() => setState(dependsOn), [dependsOn])
+    const dfn = useDebounce(debounceFn, wait)
+
+    return [state, newState => {
+        setState(newState)
+        dfn(newState)
+    }]
+}
+
+// export const useDebouncedState = (initialValue, debounceOnChangeFn, wait = defaultDebounceMs) => {
+//     const [value, setValue] = useState(initialValue)
+//     const debouncedFn = useDebounce(debounceOnChangeFn, wait)
+//
+//     return [value, (newValue) => {
+//         setValue(newValue)
+//         debouncedFn(newValue)
+//     }];
+// }
+
 export const DebouncedFormControl = React.forwardRef((props, ref) => {
-    const onChange = debounce(props.onChange, (props.debounce !== undefined) ? props.debounce : defaultDebounceMs);
+    const onChange = debounce(props.onChange, (props.debounce !== undefined) ? props.debounce : defaultDebounceMs)
     return (<Form.Control ref={ref} {...{...props, onChange}}/>);
 });
 

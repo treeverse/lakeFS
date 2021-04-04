@@ -11,24 +11,28 @@ import Popover from "react-bootstrap/Popover";
 import {branches, commits} from '../../../rest/api';
 
 
-const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
+const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
 
     // used for branch pagination
-    const [from, setFrom] = useState("");
+    const [pagination, setPagination] = useState({after: "", prefix: "", amount})
 
     // used for commit listing
     const initialCommitList = {branch: selected, commits: null, loading: false};
     const [commitList, setCommitList] = useState(initialCommitList);
 
     useEffect(()=> {
-        listBranches(repo.id, from, amount);
-    }, [listBranches, repo.id, amount, from]);
+        listBranches(repo.id, pagination.prefix, pagination.after, pagination.amount)
+    }, [repo.id, listBranches, pagination])
 
     const form = (
         <div className="ref-filter-form">
             <Form onSubmit={e => { e.preventDefault(); }}>
                 <Form.Control type="text" placeholder="filter branches" onChange={(e)=> {
-                    filterBranches(repo.id, e.currentTarget.value, amount);
+                    setPagination({
+                        amount,
+                        after: "",
+                        prefix: e.target.value
+                    })
                 }}/>
             </Form>
         </div>
@@ -80,7 +84,9 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
                         }}/>
                     ))}
                 </ul>
-                <Paginator results={branches.payload.results} pagination={branches.payload.pagination} from={from} onPaginate={setFrom}/>
+                <Paginator results={branches.payload.results} pagination={branches.payload.pagination} from={pagination.after} onPaginate={(after) => {
+                    setPagination({after})
+                }}/>
             </div>
         </div>
     );
@@ -178,25 +184,15 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
 
     const [branchList, setBranches] = useState({loading: true, payload: null, error: null});
 
-    const listBranches = useCallback(async (repoId, from, amount) => {
+    const listBranches = useCallback(async (repoId, prefix, after, amount) => {
         setBranches({loading: true, payload: null, error: null});
         try {
-            const response = await branches.list(repoId, from, amount);
+            const response = await branches.list(repoId, prefix, after, amount);
             setBranches({loading: false, payload: response, error: null});
         } catch (error) {
             setBranches({loading: false, payload: null, error: error});
         }
-    }, [] );
-
-    const filterBranches = useCallback(async (repoId, from, amount) => {
-        setBranches({loading: true, payload: null, error: null});
-        try {
-            const response = await branches.filter(repoId, from, amount);
-            setBranches({loading: false, payload: response, error: null});
-        } catch (error) {
-            setBranches({loading: false, payload: null, error: error});
-        }
-    }, []);
+    }, [])
 
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
@@ -207,7 +203,6 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
                         branches={branchList}
                         withCommits={withCommits}
                         listBranches={listBranches}
-                        filterBranches={filterBranches}
                         withWorkspace={withWorkspace}
                         selected={selected}
                         selectRef={(ref) => {

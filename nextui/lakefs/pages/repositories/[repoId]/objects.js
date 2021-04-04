@@ -116,10 +116,10 @@ const UploadButton = ({ repo, reference, path, onDone}) => {
     );
 }
 
-const TreeContainer = ({ repo, reference, path, onRefresh, refreshToken }) => {
-    const { results, error, loading, paginate, hasMore } = useAPIWithPagination(async(after) => {
-        return objects.list(repo.id, reference.id, path, after)
-    }, [repo.id, reference.id, path, refreshToken])
+const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, refreshToken }) => {
+    const { results, error, loading, nextPage } = useAPIWithPagination( () => {
+        return objects.list(repo.id, reference.id, path, after, 1)
+    },[repo.id, reference.id, path, after, refreshToken])
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
@@ -130,9 +130,10 @@ const TreeContainer = ({ repo, reference, path, onRefresh, refreshToken }) => {
             reference={reference}
             path={(!!path) ? path : ""}
             showActions={true}
-            hasMore={hasMore}
             results={results}
-            paginate={paginate}
+            after={after}
+            nextPage={nextPage}
+            onPaginate={onPaginate}
             onDelete={entry => {
                 objects
                     .delete(repo.id, reference.id, entry.path)
@@ -144,7 +145,7 @@ const TreeContainer = ({ repo, reference, path, onRefresh, refreshToken }) => {
 }
 
 
-const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, path = null }) => {
+const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, after, onPaginate, path = null }) => {
 
     const [refreshToken, setRefreshToken] = useState(false)
     const refresh = () => setRefreshToken(!refreshToken)
@@ -182,6 +183,8 @@ const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, path = null }) 
                 reference={reference}
                 repo={repo}
                 path={path}
+                after={after}
+                onPaginate={onPaginate}
                 refreshToken={refreshToken}
                 onRefresh={refresh}/>
         </>
@@ -189,19 +192,26 @@ const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, path = null }) 
 
 }
 
-const RefContainer = ({ repoId, refId, path, onSelectRef }) => {
+const RefContainer = ({ repoId, refId, path, after, onPaginate, onSelectRef }) => {
     const {loading, error, response} = useRepoAndRef(repoId, refId)
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
     const { repo, ref } = response
     return (
-        <RepositoryObjectBrowser repo={repo} reference={ref} path={path} onSelectRef={onSelectRef}/>
+        <RepositoryObjectBrowser
+            repo={repo}
+            reference={ref}
+            path={path}
+            after={after}
+            onPaginate={onPaginate}
+            onSelectRef={onSelectRef}
+        />
     )
 }
 
 const RepositoryObjectsPage = () => {
     const router = useRouter()
-    const { repoId, ref, path } = router.query;
+    const { repoId, ref, path, after } = router.query;
 
       return (
         <RepositoryPageLayout repoId={repoId} activePage={'objects'}>
@@ -211,6 +221,14 @@ const RepositoryObjectsPage = () => {
                     repoId={repoId}
                     refId={ref}
                     path={(!!path) ? path : ""}
+                    after={(!!after) ? after : ""}
+                    onPaginate={after => {
+                        const query = {repoId, after, ref: ref.id}
+                        if (!!path) query.path = path
+                        const url = {pathname: `/repositories/[repoId]/objects`, query}
+                        console.log(url)
+                        router.push(url)
+                    }}
                     onSelectRef={ref => router.push({
                         pathname: `/repositories/[repoId]/objects`,
                         query: {repoId, ref: ref.id}

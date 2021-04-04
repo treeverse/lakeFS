@@ -278,7 +278,7 @@ func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error
 
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
-func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -291,13 +291,23 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, after string)
 	defer it.Close()
 	// seek for first item
 	afterRepositoryID := graveler.RepositoryID(after)
-	if afterRepositoryID != "" {
-		it.SeekGE(afterRepositoryID)
+	prefixRepositoryID := graveler.RepositoryID(prefix)
+	startPos := prefixRepositoryID
+	if afterRepositoryID > startPos {
+		startPos = afterRepositoryID
+	}
+	if startPos != "" {
+		it.SeekGE(startPos)
 	}
 
 	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
+
+		if !strings.HasPrefix(string(record.RepositoryID), prefix) {
+			break
+		}
+
 		if record.RepositoryID == afterRepositoryID {
 			continue
 		}

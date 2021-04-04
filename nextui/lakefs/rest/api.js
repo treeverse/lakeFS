@@ -326,48 +326,13 @@ class Repositories {
         return response.json();
     }
 
-    async list(after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount})
+    async list(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount})
         const response = await apiRequest(`/repositories?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list repositories: ${await extractError(response)}`)
         }
         return await response.json()
-    }
-
-    async filter(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-
-        if (!prefix || prefix.length === 0) {
-            return await this.list(after, amount);
-        }
-
-        if (prefix > after) {
-            after = prefix;
-        }
-
-        const response = await this.list(after, amount);
-        const filtered = response.results.filter(repo => repo.id.indexOf(prefix) === 0);
-        // try and see if prefix itself is a repo ID
-        let self;
-        try {
-            self = await this.get(prefix);
-        } catch (error) {
-            if (!(error instanceof NotFoundError)) {
-                throw error;
-            }
-        }
-        const hasMore = (filtered.length === response.results.length) && response.pagination.has_more;
-        if (self) filtered.unshift(self);
-
-        return {
-            results: filtered,
-            pagination: {
-                has_more: hasMore,
-                max_per_page: amount,
-                results: filtered.length,
-                next_offset: (!!filtered && filtered.length > 0) ? filtered[filtered.length - 1].id : response.pagination.next_offset,
-            },
-        };
     }
 
     async create(repo) {
@@ -431,43 +396,13 @@ class Branches {
         }
     }
 
-    async list(repoId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`)
         }
         return response.json();
-    }
-
-
-    async filter(repoId, from, amount = DEFAULT_LISTING_AMOUNT) {
-        if (!from) {
-            return this.list(repoId, from, amount);
-        }
-        const response = await this.list(repoId, from, amount);
-        let self;
-        if (isValidBranchName(from)) {
-            try {
-                self = await this.get(repoId, from);
-            } catch (error) {
-                if (!(error instanceof NotFoundError)) {
-                    throw error;
-                }
-            }
-        }
-        const results = response.results.filter(branch => branch.id.indexOf(from) === 0);
-        if (self) results.unshift(self);
-        const hasMore = response.pagination.has_more;
-
-        return {
-            results,
-            pagination: {
-                has_more: hasMore,
-                max_per_page: amount,
-                results: results.length,
-            },
-        };
     }
 }
 

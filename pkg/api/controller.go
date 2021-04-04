@@ -972,7 +972,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error listing repositories: %s", err))
 		return
@@ -1372,7 +1372,7 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches")
 
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, "", paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2631,6 +2631,13 @@ func writeResponse(w http.ResponseWriter, code int, response interface{}) {
 }
 
 func paginationAfter(v *PaginationAfter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func paginationPrefix(v *PaginationPrefix) string {
 	if v == nil {
 		return ""
 	}

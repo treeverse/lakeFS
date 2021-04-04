@@ -8,13 +8,13 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
-import {useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import * as moment from "moment";
 
 import Link from 'next/link';
 
 import Layout from "../../lib/components/layout";
-import {DebouncedFormControl, Loading} from "../../lib/components/controls";
+import {debounce, DebouncedFormControl, Loading, useDebounce, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../rest/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {Error} from "../../lib/components/controls"
@@ -58,10 +58,10 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 
 
-const RepositoryList = ({ filter, lastListUpdate = null  }) => {
-    const {results, loading, error, hasMore, paginate} = useAPIWithPagination((after) => {
-        return repositories.filter(filter, after)
-    },  [lastListUpdate, filter])
+const RepositoryList = ({ onPaginate, prefix, after, lastListUpdate = null  }) => {
+    const {results, loading, error, nextPage} = useAPIWithPagination(() => {
+        return repositories.list(prefix, after, 3)
+    }, [lastListUpdate, prefix, after])
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>
@@ -94,7 +94,7 @@ const RepositoryList = ({ filter, lastListUpdate = null  }) => {
                 </Row>
             ))}
 
-            <Paginator hasMore={hasMore} paginate={paginate}/>
+            <Paginator after={after} nextPage={nextPage} onPaginate={onPaginate}/>
         </div>
     );
 };
@@ -102,26 +102,26 @@ const RepositoryList = ({ filter, lastListUpdate = null  }) => {
 
 
 const Repositories = () => {
+    const router = useRouter()
 
-    const [filterByPrefix, setFilterByPrefix] = useState('')
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [createError, setCreateError] = useState(null)
     const [lastListUpdate, setLastListUpdate] = useState(new Date())
-    const filterField = useRef(null)
 
-    const router = useRouter()
-
+    const routerPfx = (!!router.query.prefix) ? router.query.prefix : ""
+    const [prefix, setPrefix] = useDebouncedState(
+        routerPfx,
+        (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
+    )
     const createRepo = async (repo) => {
         try {
             await repositories.create(repo)
+            setLastListUpdate(new Date())
+            setCreateError(null)
+            return await router.push({pathname: `/repositories/[repoId]/objects`, query: {repoId: repo.name}})
         } catch (error) {
             setCreateError(error)
-            return
         }
-
-        setLastListUpdate(new Date())
-        setCreateError(null)
-        return await router.push(`/repositories/${encodeURIComponent(repo.name)}`)
     }
 
     return (
@@ -139,9 +139,12 @@ const Repositories = () => {
                                             <SearchIcon/>
                                         </InputGroup.Text>
                                     </InputGroup.Prepend>
-                                    <DebouncedFormControl type="text" placeholder="Find a repository..." autoFocus ref={filterField} onChange={() =>{
-                                        setFilterByPrefix(filterField.current.value);
-                                    }}/>
+                                    <Form.Control
+                                        placeholder="Find a repository..."
+                                        autoFocus
+                                        value={prefix}
+                                        onChange={event => setPrefix(event.target.value)}
+                                    />
                                 </InputGroup>
                             </Col>
                         </Form.Row>
@@ -156,15 +159,22 @@ const Repositories = () => {
                     </ButtonToolbar>
                 </div>
 
-                <RepositoryList filter={filterByPrefix} lastListUpdate={lastListUpdate}/>
+                <RepositoryList
+                    prefix={routerPfx}
+                    lastListUpdate={lastListUpdate}
+                    after={(!!router.query.after) ? router.query.after : ""}
+                    onPaginate={after => {
+                        const query = {after}
+                        if (!!router.query.prefix) query.prefix = router.query.prefix
+                        router.push({pathname: `/repositories`, query})
+                    }}
+                    />
 
                 <CreateRepositoryModal
                     onCancel={() => setShowCreateModal(false)}
                     show={showCreateModal}
                     error={createError}
-                    onSubmit={(repo) => {
-                        createRepo(repo);
-                    }}/>
+                    onSubmit={(repo) => createRepo(repo)}/>
             </div>
 
         </Layout>

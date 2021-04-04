@@ -229,7 +229,7 @@ const URINavigator = ({ repo, reference, path }) => {
             <strong>{'lakefs://'}</strong>
             <Link href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id}}}><a>{repo.id}</a></Link>
             <strong>{'@'}</strong>
-            <Link href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: reference.id}}}><a>{reference.id.substr(0, 12)}</a></Link>
+            <Link href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: reference.id}}}><a>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</a></Link>
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
@@ -261,7 +261,7 @@ const GetStarted = ({ onUpload }) => {
     )
 }
 
-export const Tree = ({ repo, reference, hasMore, results, paginate, onUpload, onDelete, showActions = false, path = "" }) => {
+export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "" }) => {
 
     let body;
     if (results.length === 0 && path === "") {
@@ -300,7 +300,7 @@ export const Tree = ({ repo, reference, hasMore, results, paginate, onUpload, on
                 </Card.Body>
             </Card>
 
-            <Paginator hasMore={hasMore} paginate={paginate}/>
+            <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
         </div>
     );
 }

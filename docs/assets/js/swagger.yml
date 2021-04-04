@@ -24,6 +24,12 @@ components:
       name: X-JWT-Authorization
 
   parameters:
+    PaginationPrefix:
+      in: query
+      name: prefix
+      description: return items prefixed with this value
+      schema:
+        type: string
     PaginationAfter:
       in: query
       name: after
@@ -1427,6 +1433,7 @@ paths:
       tags:
         - repositories
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listRepositories
@@ -1777,6 +1784,30 @@ paths:
         required: true
         schema:
           type: string
+    get:
+      deprecated: true
+      tags:
+        - commits
+      operationId: logBranchCommits
+      summary: |
+        get commit log from branch.
+        Deprecated: replaced by logCommits by passing branch name as ref
+      parameters:
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      responses:
+        200:
+          description: commit log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
     post:
       tags:
         - commits
