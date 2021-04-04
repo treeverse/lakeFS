@@ -3,7 +3,6 @@ package nessie
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"testing"
 
@@ -27,11 +26,13 @@ func TestCommitSingle(t *testing.T) {
 				Message: "nessie:singleCommit",
 			})
 			require.NoError(t, err, "failed to commit changes")
-			require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+				"failed to commit changes repo %s branch %s", repo, masterBranch)
 
 			getObjResp, err := client.GetObjectWithResponse(ctx, repo, masterBranch, &api.GetObjectParams{Path: objPath})
 			require.NoError(t, err, "failed to get object")
-			require.Equal(t, http.StatusOK, getObjResp.StatusCode())
+			require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
+				"failed to get object repo %s branch %s path %s", repo, masterBranch, objPath)
 
 			body := string(getObjResp.Body)
 			require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
@@ -103,7 +104,8 @@ func TestCommitInMixedOrder(t *testing.T) {
 				Message: "nessie:mixedOrderCommit1",
 			})
 			require.NoError(t, err, "failed to commit changes")
-			require.Equal(t, http.StatusCreated, commitResp.HTTPResponse.StatusCode)
+			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+				"failed to commit changes repo %s branch %s", repo, masterBranch)
 
 			names2 := genNames(size, "run1/foo")
 			uploads = make(chan Upload, size)
@@ -131,7 +133,8 @@ func TestCommitInMixedOrder(t *testing.T) {
 				Message: "nessie:mixedOrderCommit2",
 			})
 			require.NoError(t, err, "failed to commit second set of changes")
-			require.Equal(t, http.StatusCreated, commitResp.HTTPResponse.StatusCode)
+			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+				"failed to commit second set of changes repo %s branch %s", repo, masterBranch)
 		})
 	}
 }
