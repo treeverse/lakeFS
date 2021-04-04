@@ -6,7 +6,7 @@ import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 import java.io.{FileNotFoundException, IOException}
-import java.net.URL
+import java.net.URI
 import scala.util.Random
 
 
@@ -102,7 +102,7 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
 
   private def writeSummaryFile(success: Boolean, commitID: String, content : String) = {
     val suffix = if(success) "SUCCESS" else "FAILURE"
-    val dstPath = resolveURL(new URL(dstRoot), s"EXPORT_${commitID}_${suffix}")
+    val dstPath = resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${suffix}")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
 
     val stream = dstFS.create(dstPath)
@@ -129,8 +129,8 @@ object Exporter {
     }
 
     val conf = serializedConf.value
-    val srcPath = resolveURL(new URL(ns), address)
-    val dstPath = resolveURL(new URL(rootDst), key)
+    val srcPath = resolveURL(new URI(ns), address)
+    val dstPath = resolveURL(new URI(rootDst), key)
 
     val dstFS = dstPath.getFileSystem(conf)
 
@@ -162,10 +162,8 @@ object Exporter {
     }
   }
 
-  private def resolveURL(baseUrl :URL, extraPath: String): Path = {
-    val uri = baseUrl.toURI
+  private def resolveURL(uri: URI, extraPath: String): Path = {
     val newPath: String = uri.getPath + '/' + extraPath
-
     new Path(uri.resolve(newPath))
   }
 }
