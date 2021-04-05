@@ -1,8 +1,5 @@
-import {isValidBranchName} from "./validation";
-
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 300;
-
 
 export const linkToPath = (repoId, branchId, path) => {
     const query = qs({

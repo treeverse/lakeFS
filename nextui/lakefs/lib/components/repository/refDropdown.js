@@ -232,9 +232,16 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
         );
     }
 
-    const showId = (ref) => (!ref) ? '' : (ref.type === 'branch') ? ref.id : ref.id.substr(0, 12);
+    const showId = (ref) => {
+        console.log('selected : ', ref)
+        if (!ref)
+            return ''
+        if (ref.type === 'commit')
+            return ref.id.substr(0, 12)
+        return ref.id
+    }
 
-    const title = prefix + (!!selected) ? `${selected.type}: ` : '';
+    const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>

@@ -1,5 +1,18 @@
+import React, {useState} from "react";
+
 import {useRouter} from "next/router";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
+import Link from "next/link";
+import moment from "moment";
+import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon, SyncIcon} from "@primer/octicons-react";
+
+import {commits} from "../../../../rest/api";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
+import {OverlayTrigger} from "react-bootstrap";
+import Tooltip from "react-bootstrap/Tooltip";
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import ListGroup from "react-bootstrap/ListGroup";
+
 import {
     ActionGroup,
     ActionsBar,
@@ -8,20 +21,10 @@ import {
     LinkButton,
     Loading
 } from "../../../../lib/components/controls";
-import React, {useState} from "react";
+import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {useRepoAndRef} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../rest/hooks";
-import {commits} from "../../../../rest/api";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import {OverlayTrigger} from "react-bootstrap";
-import Link from "next/link";
-import Tooltip from "react-bootstrap/Tooltip";
-import Button from "react-bootstrap/Button";
-import {BrowserIcon, LinkExternalIcon, LinkIcon, PackageIcon, PlayIcon, SyncIcon} from "@primer/octicons-react";
-import moment from "moment";
 import {Paginator} from "../../../../lib/components/pagination";
-import Card from "react-bootstrap/Card";
-import ListGroup from "react-bootstrap/ListGroup";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
 
 
@@ -69,7 +72,7 @@ const CommitWidget = ({ repo, commit }) => {
                     <div className="float-right ml-2">
                         <ButtonGroup className="commit-actions">
                             <LinkButton
-                                buttonVariant="outline-primary"
+                                buttonVariant="primary"
                                 href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: commit.id}}}
                                 tooltip="Browse objects at this commit">
                                 <BrowserIcon/>

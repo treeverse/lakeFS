@@ -59,7 +59,7 @@ const CommitActions = ({ repo, commit }) => {
         <div>
             <ButtonGroup className="commit-actions">
                 <LinkButton
-                    buttonVariant="outline-primary"
+                    buttonVariant="primary"
                     href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: commit.id}}}
                     tooltip="Browse objects at this commit">
                     <BrowserIcon/>

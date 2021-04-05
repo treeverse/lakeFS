@@ -20,7 +20,7 @@ import {useAPIWithPagination} from "../../../rest/hooks";
 import {useRepoAndRef} from "../../../lib/hooks/repo";
 
 
-const UploadButton = ({ repo, reference, path, onDone}) => {
+const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => {
     const initialState = {
         inProgress: false,
         error: null,
@@ -109,7 +109,7 @@ const UploadButton = ({ repo, reference, path, onDone}) => {
                 </Modal.Footer>
             </Modal>
 
-            <Button variant="light" onClick={() => { setShow(true) }}>
+            <Button variant={variant} onClick={() => { setShow(true) }}>
                 <UploadIcon/> Upload Object
             </Button>
         </>

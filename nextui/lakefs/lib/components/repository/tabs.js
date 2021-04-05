@@ -56,7 +56,7 @@ export const RepositoryNavTabs = ({ repoId, active }) => {
             <NavItem active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)}>
                 <GitCommitIcon/> Commits
             </NavItem>
-            <NavItem active={active === 'branches'} href={withRefContext(`/repositories/${repoId}/branches`)}>
+            <NavItem active={active === 'branches'} href={`/repositories/${repoId}/branches`}>
                 <GitBranchIcon/> Branches
             </NavItem>
             <NavItem active={active === 'compare'} href={withRefContext(`/repositories/${repoId}/compare`)}>
