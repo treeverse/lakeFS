@@ -197,7 +197,7 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 func merge(ctx context.Context) {
 	err := retry.Do(func() error {
 		resp, err := client.MergeIntoBranchWithResponse(ctx, repoName, branchName, "master", api.MergeIntoBranchJSONRequestBody{
-			Message: "merging all objects to master",
+			Message: api.StringPtr("merging all objects to master"),
 		})
 		if err != nil {
 			return err

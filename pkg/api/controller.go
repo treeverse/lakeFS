@@ -2381,7 +2381,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	res, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
-		body.Message,
+		StringValue(body.Message),
 		metadata)
 
 	var hookAbortErr *graveler.HookAbortError
