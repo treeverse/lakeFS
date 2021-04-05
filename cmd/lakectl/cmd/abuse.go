@@ -26,15 +26,20 @@ var abuseCmd = &cobra.Command{
 func readLines(path string) (lines []string, err error) {
 	reader := OpenByPath(path)
 	defer func() {
-		err = reader.Close()
+		if closeErr := reader.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				err = fmt.Errorf("%w, and while closing %s", err, closeErr)
+			}
+		}
 	}()
 	scanner := bufio.NewScanner(reader)
 	lines = make([]string, 0)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	err = scanner.Err()
-	if err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, err
 	}
 	return lines, nil
