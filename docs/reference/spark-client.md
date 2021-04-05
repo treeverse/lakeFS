@@ -49,12 +49,12 @@ Alternatively, the Jars are publicly available on S3:
 
 1. The client will also directly interact with your storage using Hadoop FileSystem. Therefore, your Spark session must be able to access the underlying storage of your lakeFS repository.
 
-For instance, running as a user with a personal account on S3 (not in production) you might add:
+    For instance, running as a user with a personal account on S3 (not in production) you might add:
 
-|   | Configuration                    | Description                                              |
-|---|----------------------------------|----------------------------------------------------------|
-|   | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
-|   | `spark.hadoop.fs.s3a.secret.key` | Corresponding secret key to use with S3 access key       |
+   | Configuration                    | Description                                              |
+   |----------------------------------|----------------------------------------------------------|
+   | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
+   | `spark.hadoop.fs.s3a.secret.key` | Corresponding secret key to use with S3 access key       |
 
 
 ## Examples
