@@ -191,6 +191,10 @@ components:
         size_bytes:
           type: integer
           format: int64
+        user_metadata:
+          type: object
+          additionalProperties:
+            type: string
 
     ObjectStatsList:
       type: object
@@ -1782,7 +1786,9 @@ paths:
       tags:
         - commits
       operationId: logBranchCommits
-      summary: get commit log from branch
+      summary: |
+        get commit log from branch.
+        Deprecated: replaced by logCommits by passing branch name as ref
       parameters:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
@@ -2256,7 +2262,7 @@ paths:
       tags:
         - objects
       operationId: stageObject
-      summary: stage an object"s metadata for the given branch
+      summary: stage an object's metadata for the given branch
       requestBody:
         required: true
         content:

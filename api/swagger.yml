@@ -191,6 +191,10 @@ components:
         size_bytes:
           type: integer
           format: int64
+        user_metadata:
+          type: object
+          additionalProperties:
+            type: string
 
     ObjectStatsList:
       type: object
@@ -2258,7 +2262,7 @@ paths:
       tags:
         - objects
       operationId: stageObject
-      summary: stage an object"s metadata for the given branch
+      summary: stage an object's metadata for the given branch
       requestBody:
         required: true
         content:

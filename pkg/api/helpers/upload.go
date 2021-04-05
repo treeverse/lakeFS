@@ -97,6 +97,9 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 				PathType:        "object",
 				PhysicalAddress: physicalAddress,
 				SizeBytes:       &size,
+				UserMetadata:    &api.ObjectStats_UserMetadata{
+					AdditionalProperties: metadata,
+				},
 			}, nil
 		}
 		if resp.JSON409 == nil {

@@ -25,6 +25,7 @@ Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
 Physical Address: {{ .PhysicalAddress }}
 Checksum: {{ .Checksum }}
+Metadata: {{ if .UserMetadata }} {{- .UserMetadata.AdditionalProperties | map -}} {{- end}}
 `
 
 const fsRecursiveTemplate = `Files: {{.Count}}
@@ -145,13 +146,16 @@ var fsCatCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, direct bool) (*api.ObjectStats, error) {
+func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, userMetadata map[string]string, direct bool) (*api.ObjectStats, error) {
 	fp := OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
 	if direct {
-		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, nil, fp)
+		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, userMetadata, fp)
+	}
+	if len(userMetadata) > 0 {
+		Write(`{{ "WARNING: user metadata dropped on upload through server" | yellow }}`, nil)
 	}
 	return uploadObject(ctx, client, destURI.Repository, destURI.Ref, *destURI.Path, fp)
 }
@@ -201,8 +205,9 @@ var fsUploadCmd = &cobra.Command{
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		direct, _ := cmd.Flags().GetBool("direct")
+		metadata, _ := cmd.Flags().GetStringToString("metadata")
 		if !recursive {
-			stat, err := upload(cmd.Context(), client, source, pathURI, direct)
+			stat, err := upload(cmd.Context(), client, source, pathURI, metadata, direct)
 			if err != nil {
 				DieErr(err)
 			}
@@ -225,7 +230,7 @@ var fsUploadCmd = &cobra.Command{
 			uri := *pathURI
 			p := filepath.Join(*uri.Path, relPath)
 			uri.Path = &p
-			stat, err := upload(cmd.Context(), client, path, &uri, direct)
+			stat, err := upload(cmd.Context(), client, path, &uri, nil, direct)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
@@ -317,6 +322,7 @@ func init() {
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
+	fsUploadCmd.Flags().StringToStringP("metadata", "m", nil, "attach user metadata to uploaded file")
 	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 

@@ -2307,6 +2307,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
+	userMetadata := map[string]string(entry.Metadata)
 	objStat := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -2314,6 +2315,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		PathType:        "object",
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       Int64Ptr(entry.Size),
+		UserMetadata:    &ObjectStats_UserMetadata{userMetadata},
 	}
 	code := http.StatusOK
 	if entry.Expired {

@@ -90,6 +90,13 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 			return ""
 		},
 		"lower": strings.ToLower,
+		"map": func(m map[string]string) string {
+			rows := make([]string, 0, len(m))
+			for k, v := range m {
+				rows = append(rows, text.Bold.Sprint(k) + text.Faint.Sprint("=") + fmt.Sprint(`"`, v, `"`))
+			}
+			return strings.Join(rows, "  ")
+		},
 		"human_bytes": func(b int64) string {
 			var unit int64 = 1000
 			if b < unit {
