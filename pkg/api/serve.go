@@ -46,7 +46,7 @@ func Serve(
 	cloudMetadataProvider cloud.MetadataProvider,
 	actions actionsHandler,
 	logger logging.Logger,
-	gatewayDomain string,
+	gatewayDomains []string,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := GetSwagger()
@@ -76,7 +76,7 @@ func Serve(
 	)
 	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
 
-	uiHandler := NewUIHandler(authService, gatewayDomain)
+	uiHandler := NewUIHandler(authService, gatewayDomains)
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))

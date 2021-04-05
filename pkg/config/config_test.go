@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-test/deep"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -44,8 +45,8 @@ func TestConfig_NewFromFile(t *testing.T) {
 		if c.GetListenAddress() != "0.0.0.0:8005" {
 			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.GetListenAddress())
 		}
-		if c.GetS3GatewayDomainName() != "s3.example.com" {
-			t.Fatalf("expected domain name s3.example.com, got %s", c.GetS3GatewayDomainName())
+		if diffs := deep.Equal(c.GetS3GatewayDomainNames(), []string{"s3.example.com", "gcp.example.net"}); diffs != nil {
+			t.Fatalf("expected domain name s3.example.com, diffs %s", diffs)
 		}
 	})
 

@@ -21,7 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
-func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain string, next http.Handler) http.Handler {
+func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomains []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
@@ -47,7 +47,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 			}
 			return
 		}
-		err = authenticator.Verify(creds, bareDomain)
+		err = authenticator.Verify(creds, bareDomains)
 		logger = logger.WithField("authenticator", authenticator)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
@@ -68,10 +68,10 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomain 
 	})
 }
 
-func EnrichWithParts(bareDomain string, next http.Handler) http.Handler {
+func EnrichWithParts(bareDomains []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		repo, ref, pth := Parts(req.Host, req.URL.Path, bareDomain)
+		repo, ref, pth := Parts(req.Host, req.URL.Path, bareDomains)
 		ctx = context.WithValue(ctx, ContextKeyRepositoryID, repo)
 		ctx = context.WithValue(ctx, ContextKeyRef, ref)
 		ctx = context.WithValue(ctx, ContextKeyPath, pth)
@@ -85,7 +85,9 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 		ctx := req.Context()
 		o := &operations.Operation{
 			Region:            sc.region,
-			FQDN:              sc.bareDomain,
+			// BUG(ariels): This is wrong many times when there is >1 domain.  Can
+			//     we use req.Host?
+			FQDN:              sc.bareDomains[0],
 			Catalog:           sc.catalog,
 			MultipartsTracker: sc.multipartsTracker,
 			BlockStore:        sc.blockStore,
@@ -181,11 +183,22 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 	})
 }
 
+// memberFold returns true if a is equal case-folded to a member of bs.
+func memberFold(a string, bs []string) bool {
+	for _, b := range bs {
+		if strings.EqualFold(a, b) {
+			return true
+		}
+	}
+	return false
+}
+
 // Parts returns the repo id, ref and path according to whether the request is path-style or virtual-host-style.
-func Parts(host string, urlPath string, bareDomain string) (repo string, ref string, pth string) {
+func Parts(host string, urlPath string, bareDomains []string) (repo string, ref string, pth string) {
 	urlPath = strings.TrimPrefix(urlPath, path.Separator)
 	var p []string
-	if strings.EqualFold(httputil.HostOnly(host), httputil.HostOnly(bareDomain)) {
+	ourHosts := httputil.HostsOnly(bareDomains)
+	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
 		p = strings.SplitN(urlPath, path.Separator, 3)
 		repo = p[0]
@@ -195,11 +208,12 @@ func Parts(host string, urlPath string, bareDomain string) (repo string, ref str
 	} else {
 		// virtual host style: extract repo from subdomain
 		host := httputil.HostOnly(host)
-		ourHost := httputil.HostOnly(bareDomain)
-		if !strings.HasSuffix(host, ourHost) {
-			repo = ""
-		} else {
-			repo = strings.TrimSuffix(host, "."+ourHost)
+		repo = ""
+		for _, ourHost := range ourHosts {
+			if strings.HasSuffix(host, ourHost) {
+				repo = strings.TrimSuffix(host, "."+ourHost)
+				break
+			}
 		}
 		p = strings.SplitN(urlPath, path.Separator, 2)
 	}

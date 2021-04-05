@@ -128,7 +128,7 @@ var runCmd = &cobra.Command{
 			cloudMetadataProvider,
 			actionsService,
 			logger.WithField("service", "api_gateway"),
-			cfg.GetS3GatewayDomainName(),
+			cfg.GetS3GatewayDomainNames(),
 		)
 
 		// init gateway server
@@ -146,7 +146,7 @@ var runCmd = &cobra.Command{
 			multipartsTracker,
 			blockStore,
 			authService,
-			cfg.GetS3GatewayDomainName(),
+			cfg.GetS3GatewayDomainNames(),
 			bufferedCollector,
 			s3FallbackURL,
 		)
@@ -161,8 +161,8 @@ var runCmd = &cobra.Command{
 			Handler: httputil.HostMux(
 				httputil.HostHandler(apiHandler).Default(), // api as default handler
 				httputil.HostHandler(s3gatewayHandler, // s3 gateway for its bare domain and sub-domains of that
-					httputil.Exact(cfg.GetS3GatewayDomainName()),
-					httputil.SubdomainsOf(cfg.GetS3GatewayDomainName())),
+					httputil.Exact(cfg.GetS3GatewayDomainNames()),
+					httputil.SubdomainsOf(cfg.GetS3GatewayDomainNames())),
 			),
 		}
 

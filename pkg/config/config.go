@@ -133,8 +133,9 @@ const (
 
 	CommittedPebbleSSTableCacheSizeBytesKey = "committed.sstable.memory.cache_size_bytes"
 
-	GatewaysS3DomainNameKey = "gateways.s3.domain_name"
-	GatewaysS3RegionKey     = "gateways.s3.region"
+	GatewaysS3DomainNameKey  = "gateways.s3.domain_name"
+	GatewaysS3DomainNamesKey = "gateways.s3.domain_name"
+	GatewaysS3RegionKey      = "gateways.s3.region"
 
 	BlockstoreGSS3EndpointKey = "blockstore.gs.s3_endpoint"
 
@@ -297,8 +298,21 @@ func (c *Config) GetS3GatewayRegion() string {
 	return c.values.Gateways.S3.Region
 }
 
-func (c *Config) GetS3GatewayDomainName() string {
-	return c.values.Gateways.S3.DomainName
+func (c *Config) GetS3GatewayDomainNames() []string {
+	oneDomainName := c.values.Gateways.S3.DomainName
+	manyDomainNames := c.values.Gateways.S3.DomainNames
+	if manyDomainNames != nil {
+		if oneDomainName != "" {
+			// TODO(ozkatz): This fatal error can occur quite late during
+			//     operation.
+			logging.Default().WithFields(logging.Fields{
+				"domain_name": oneDomainName,
+				"domain_names": manyDomainNames,
+			}).Fatal("both single domain_name and multiple domain_names configured")
+		}
+		return manyDomainNames
+	}
+	return []string{oneDomainName}
 }
 
 func (c *Config) GetS3GatewayFallbackURL() string {

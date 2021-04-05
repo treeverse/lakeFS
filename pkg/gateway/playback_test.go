@@ -145,7 +145,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		multipartsTracker,
 		blockAdapter,
 		authService,
-		authService.BareDomain,
+		authService.BareDomains,
 		&mockCollector{},
 		nil,
 	)

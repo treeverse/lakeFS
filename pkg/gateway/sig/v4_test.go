@@ -99,7 +99,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 				return
 			}
 
-			err = authenticator.Verify(mockCreds, "")
+			err = authenticator.Verify(mockCreds, nil)
 			if err != nil {
 				if !tc.ExpectedError {
 					t.Fatal(err)
@@ -171,7 +171,7 @@ func TestSingleChunkPut(t *testing.T) {
 				AccessKeyID:     ID,
 				SecretAccessKey: SECRET,
 				IssuedDate:      time.Now(),
-			}, "")
+			}, nil)
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
 			}
@@ -233,7 +233,7 @@ func TestStreaming(t *testing.T) {
 		AccessKeyID:     ID,
 		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -290,7 +290,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 		AccessKeyID:     ID,
 		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, nil)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -335,7 +335,7 @@ func TestUnsignedPayload(t *testing.T) {
 		AccessKeyID:     testID,
 		SecretAccessKey: testSecret,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, nil)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}

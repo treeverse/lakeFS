@@ -95,7 +95,8 @@ type configuration struct {
 	}
 	Gateways struct {
 		S3 struct {
-			DomainName  string `mapstructure:"domain_name"`
+			DomainName  string   `mapstructure:"domain_name"`
+			DomainNames []string `mapstructure:"domain_names"`
 			Region      string
 			FallbackURL string `mapstructure:"fallback_url"`
 		}

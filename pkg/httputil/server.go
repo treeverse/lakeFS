@@ -14,26 +14,45 @@ func HostOnly(hostname string) string {
 	return hostname
 }
 
+func HostsOnly(hostname []string) []string {
+	ret := make([]string, len(hostname))
+	for i := 0; i < len(hostname); i++ {
+		ret[i] = HostOnly(hostname[i])
+	}
+	return ret
+}
+
 type MatchFn func(string) bool
 
-func Exact(v string) MatchFn {
-	vHost := HostOnly(v)
+func Exact(v []string) MatchFn {
+	vHost := HostsOnly(v)
 	return func(host string) bool {
-		return vHost == host
+		for _, v := range vHost {
+			if v == host {
+				return true
+			}
+		}
+		return false
 	}
 }
 
-func SubdomainsOf(v string) MatchFn {
-	subV := "." + HostOnly(v)
+func SubdomainsOf(v []string) MatchFn {
+	subVHost := HostsOnly(v)
+	for i := 0; i < len(subVHost); i++ {
+		subVHost[i] = "." + subVHost[i]
+	}
 	return func(host string) bool {
-		if !strings.HasSuffix(host, subV) || len(host) < len(subV)+1 {
-			return false
+		for _, subV := range subVHost {
+			if !strings.HasSuffix(host, subV) || len(host) < len(subV)+1 {
+				continue
+			}
+			dot := strings.IndexRune(host, '.')
+			if dot > -1 && dot < len(host)-len(subV) {
+				continue
+			}
+			return true // it is a direct sub-domain
 		}
-		dot := strings.IndexRune(host, '.')
-		if dot > -1 && dot < len(host)-len(subV) {
-			return false
-		}
-		return true // it is a direct sub-domain
+		return false
 	}
 }
 
