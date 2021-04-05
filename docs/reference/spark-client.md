@@ -1,3 +1,12 @@
+---
+layout: default
+title: Spark Client
+description: lakeFS spark client performs operations on lakeFS committed metadata stored in the object store. 
+parent: Reference
+nav_exclude: true
+has_children: false
+---
+
 
 # lakeFS Spark Client
 
@@ -32,19 +41,20 @@ Alternatively, the Jars are publicly available on S3:
 
 1. To read metadata from lakeFS, the client should be configured with your lakeFS endpoint and credentials, using the following Hadoop configurations:
 
-    | Configuration                        | Description                                                  |
-    |--------------------------------------|--------------------------------------------------------------|
-    | `spark.hadoop.lakefs.api.url`        | lakeFS API endpoint, e.g: `http://lakefs.example.com/api/v1` |
-    | `spark.hadoop.lakefs.api.access_key` | The access key to use for fetching metadata from lakeFS      |
-    | `spark.hadoop.lakefs.api.secret_key` | Corresponding lakeFS secret key                              |
+   | Configuration                        | Description                                                  |
+   |--------------------------------------|--------------------------------------------------------------|
+   | `spark.hadoop.lakefs.api.url`        | lakeFS API endpoint, e.g: `http://lakefs.example.com/api/v1` |
+   | `spark.hadoop.lakefs.api.access_key` | The access key to use for fetching metadata from lakeFS      |
+   | `spark.hadoop.lakefs.api.secret_key` | Corresponding lakeFS secret key                              |
 
 1. The client will also directly interact with your storage using Hadoop FileSystem. Therefore, your Spark session must be able to access the underlying storage of your lakeFS repository.
-For instance, running as a user with a personal account on S3 (not in production) you might add:
-   
-    | Configuration | Description |
-    |--------|-------|
-    | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
-    | `spark.hadoop.fs.s3a.secret.key`  | Corresponding secret key to use with S3 access key |
+
+    For instance, running as a user with a personal account on S3 (not in production) you might add:
+
+   | Configuration                    | Description                                              |
+   |----------------------------------|----------------------------------------------------------|
+   | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
+   | `spark.hadoop.fs.s3a.secret.key` | Corresponding secret key to use with S3 access key       |
 
 
 ## Examples
@@ -83,4 +93,5 @@ For instance, running as a user with a personal account on S3 (not in production
        +----------+--------+
      */
    ```
+
 
