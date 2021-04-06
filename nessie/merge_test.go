@@ -14,7 +14,7 @@ func TestMergeAndList(t *testing.T) {
 	const branch = "feature-1"
 
 	logger.WithField("branch", masterBranch).Info("Upload initial content")
-	checksum, content := uploadFileRandomData(ctx, t, repo, masterBranch, "README", true)
+	checksum, content := uploadFileRandomData(ctx, t, repo, masterBranch, "README", false)
 	checksums := map[string]string{
 		checksum: content,
 	}
