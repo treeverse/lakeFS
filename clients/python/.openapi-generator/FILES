@@ -129,6 +129,7 @@ lakefs/model/user_creation.py
 lakefs/model/user_list.py
 lakefs/model_utils.py
 lakefs/models/__init__.py
+lakefs/models/__init__.py
 lakefs/rest.py
 requirements.txt
 setup.cfg

@@ -8,7 +8,7 @@ PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
 OPENAPI_GENERATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 ifeq ($(PACKAGE_VERSION),)
 	PACKAGE_VERSION=$(shell git describe --abbrev=0 --tags | cut -dv -f2)
@@ -47,7 +47,7 @@ REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
 
 .PHONY: all clean nessie lint test gen help
-all: build
+all: build clients
 
 clean:
 	@rm -rf \
