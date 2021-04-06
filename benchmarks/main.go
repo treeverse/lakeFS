@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -76,7 +77,7 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to create repository, storage '%s': %w", ns, err)
 	}
-	if err := responseAsError("create repository", createRepoResp); err != nil {
+	if err := helpers.ResponseAsError("create repository", createRepoResp); err != nil {
 		return err
 	}
 
@@ -88,7 +89,7 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to create a branch from master: %w", err)
 	}
-	if err := responseAsError("create branch", createBranchResp); err != nil {
+	if err := helpers.ResponseAsError("create branch", createBranchResp); err != nil {
 		return err
 	}
 
@@ -108,7 +109,7 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
-	if err := responseAsError("commit", commitResp); err != nil {
+	if err := helpers.ResponseAsError("commit", commitResp); err != nil {
 		return err
 	}
 
@@ -182,7 +183,7 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 				if err != nil {
 					return err
 				}
-				return responseAsError("upload object", resp)
+				return helpers.ResponseAsError("upload object", resp)
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -202,7 +203,7 @@ func merge(ctx context.Context) {
 		if err != nil {
 			return err
 		}
-		return responseAsError("merge", resp)
+		return helpers.ResponseAsError("merge", resp)
 	}, retry.Attempts(retryAttempts),
 		retry.Delay(retryDelay),
 		retry.LastErrorOnly(true),
@@ -229,7 +230,7 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 				if err != nil {
 					return err
 				}
-				return responseAsError("get object", resp)
+				return helpers.ResponseAsError("get object", resp)
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -248,21 +249,4 @@ type APIError struct {
 
 func (a *APIError) Error() string {
 	return fmt.Sprintf("%s failed: %s", a.Action, a.Message)
-}
-
-func responseAsError(action string, response interface{}) error {
-	r := reflect.ValueOf(response)
-	f := reflect.Indirect(r).FieldByName("HTTPResponse")
-	resp := f.Interface().(*http.Response)
-	if api.IsStatusCodeOK(resp.StatusCode) {
-		return nil
-	}
-	f = reflect.Indirect(r).FieldByName("Body")
-	body := f.Bytes()
-	var apiError api.Error
-	if err := json.Unmarshal(body, &apiError); err != nil {
-		// general case
-		return &APIError{Action: action, Message: resp.Status}
-	}
-	return &APIError{Action: action, Message: apiError.Message}
 }
