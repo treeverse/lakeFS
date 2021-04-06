@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -57,17 +58,16 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient *MSClient, schemaF
 			return err
 		}
 		err = toClient.client.CreateDatabase(ctx, database)
-		if err != nil {
-			if _, ok := err.(*hive_metastore.AlreadyExistsException); !ok {
-				return err
-			}
+		var alreadyExistsErr *hive_metastore.AlreadyExistsException
+		if err != nil && !errors.As(err, &alreadyExistsErr) {
+			return err
 		}
 		tablesNames, err := fromClient.client.GetTables(ctx, dbName, tableFilter)
 		if err != nil {
 			return err
 		}
 		for _, tableName := range tablesNames {
-			fmt.Printf("copy table  %s.%s\n", dbName, tableName)
+			fmt.Printf("copy table %s.%s\n", dbName, tableName)
 			err = fromClient.CopyOrMergeTo(dbName, tableName, dbName, tableName, toBranch, tableName, nil, toClient.client)
 			if err != nil {
 				return err
@@ -120,10 +120,9 @@ func (c *MSClient) CopyOrMergeTo(fromDB, fromTable, toDB, toTable, toBranch, ser
 	}
 
 	table, err := toClient.GetTable(c.ctx, toDB, toTable)
-	if err != nil {
-		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
-			return err
-		}
+	var noSuchObjectErr *hive_metastore.NoSuchObjectException
+	if err != nil && !errors.As(err, &noSuchObjectErr) {
+		return err
 	}
 	if table == nil {
 		return c.Copy(fromDB, fromTable, toDB, toTable, toBranch, serde, toClient)

@@ -79,7 +79,7 @@ var metastoreCopyCmd = &cobra.Command{
 
 var metastoreCopyAllCmd = &cobra.Command{
 	Use:   "copy-all",
-	Short: "copy from one metastore to another ",
+	Short: "copy from one metastore to another",
 	Long:  "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromAddress, _ := cmd.Flags().GetString("from-address")
