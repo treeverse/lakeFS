@@ -25,7 +25,6 @@ import Row from "react-bootstrap/Row";
 import {connect} from "react-redux";
 import {listBranches} from "../actions/branches";
 import ConfirmationModal from "./ConfirmationModal";
-import DropdownItem from "react-bootstrap/esm/DropdownItem";
 
 
 const humanSize = (bytes) => {
