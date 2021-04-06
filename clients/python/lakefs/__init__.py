@@ -10,7 +10,7 @@
 """
 
 
-__version__ = "0.33.1"
+__version__ = "0.1.0.dev"
 
 # import ApiClient
 from lakefs.api_client import ApiClient
