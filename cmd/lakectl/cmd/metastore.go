@@ -110,7 +110,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 			}
 		}()
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
-		err = hive.CopyOrMergeAll(cmd.Context(), *fromClient, *toClient, schemaFilter, tableFilter, branch)
+		err = hive.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch)
 		if err != nil {
 			DieErr(err)
 		}
@@ -254,8 +254,8 @@ func init() {
 	_ = metastoreCopyAllCmd.MarkFlagRequired("from-address")
 	_ = metastoreCopyAllCmd.Flags().String("to-address", "", "destination metastore address")
 	_ = metastoreCopyAllCmd.MarkFlagRequired("to-address")
-	_ = metastoreCopyAllCmd.Flags().String("schema-filter", "*", "filter for schemas to copy in regex")
-	_ = metastoreCopyAllCmd.Flags().String("table-filter", "*", "filter for tables to copy in regex")
+	_ = metastoreCopyAllCmd.Flags().String("schema-filter", "*", "filter for schemas to copy in metastore pattern")
+	_ = metastoreCopyAllCmd.Flags().String("table-filter", "*", "filter for tables to copy in metastore pattern")
 	_ = metastoreCopyAllCmd.Flags().String("branch", "", "lakeFS branch name")
 	_ = metastoreCopyAllCmd.MarkFlagRequired("branch")
 
