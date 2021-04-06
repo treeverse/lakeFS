@@ -108,12 +108,15 @@ const CommitMetadataTable = ({ commit }) => {
 
 const CommitLink = ({ repoId, commitId }) => {
     return (
-        <Link href={{
-            pathname: '/repositories/[repoId]/commits/[commitId]',
-            query: {repoId, commitId}
-        }}>
-            <a><code>{commitId}</code></a>
-        </Link>
+        <>
+            <Link href={{
+                pathname: '/repositories/[repoId]/commits/[commitId]',
+                query: {repoId, commitId}
+            }}>
+                <a><code>{commitId}</code></a>
+            </Link>
+            <br/>
+        </>
     )
 }
 
@@ -143,10 +146,7 @@ const CommitInfo = ({ repo, commit }) => {
                     <strong>Parents</strong></td>
                 <td>
                     {commit.parents.map(cid => (
-                        <>
-                            <CommitLink key={cid} repoId={repo.id} commitId={cid}/>
-                            <br/>
-                        </>
+                        <CommitLink key={cid} repoId={repo.id} commitId={cid}/>
                     ))}
                 </td>
             </tr>

@@ -1,10 +1,9 @@
-import Layout from "../layout";
+import Link from 'next/link';
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
+
 import {RepositoryNavTabs} from "./tabs";
-import {useRepoAndRef} from "../../hooks/repo";
-import {Error, Loading} from "../controls";
-import Link from 'next/link';
+import Layout from "../layout";
 
 export const RepositoryPageLayout = ({ repoId, activePage, children }) => {
     return (
@@ -13,8 +12,12 @@ export const RepositoryPageLayout = ({ repoId, activePage, children }) => {
                 <div className="mt-5">
 
                     <Breadcrumb>
-                        <Breadcrumb.Item href={`/repositories`}>Repositories</Breadcrumb.Item>
-                        <Breadcrumb.Item active href={`/repositories/${repoId}`}>{repoId}</Breadcrumb.Item>
+                        <Link passHref href={{pathname: '/repositories'}}>
+                            <Breadcrumb.Item>Repositories</Breadcrumb.Item>
+                        </Link>
+                        <Link passHref href={{pathname: '/repositories/[repoId]/objects', query: {repoId}}}>
+                            <Breadcrumb.Item active>{repoId}</Breadcrumb.Item>
+                        </Link>
                     </Breadcrumb>
 
                     <RepositoryNavTabs repoId={repoId} active={activePage}/>

@@ -79,7 +79,6 @@ const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, wit
                 <ul className="list-group ref-list">
                     {results.map(branch => (
                         <BranchEntry key={branch.id} repo={repo} branch={branch.id} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
-                            console.log('gonna list the repo ', repo, ' with branch ', branch)
                             const data = await commits.log(repo.id, branch.id)
                             setCommitList({...commitList, branch: branch.id, commits: data.results});
                         }}/>
@@ -233,7 +232,6 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     }
 
     const showId = (ref) => {
-        console.log('selected : ', ref)
         if (!ref)
             return ''
         if (ref.type === 'commit')
