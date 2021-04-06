@@ -58,7 +58,7 @@ func ResponseAsError(response interface{}) error {
 		body := f.Bytes()
 		var apiError api.Error
 		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
-			message = apiError.Message
+			message = fmt.Sprintf("[%s] %s", message, apiError.Message)
 		}
 	}
 

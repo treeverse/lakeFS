@@ -3,13 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -77,8 +74,8 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to create repository, storage '%s': %w", ns, err)
 	}
-	if err := helpers.ResponseAsError("create repository", createRepoResp); err != nil {
-		return err
+	if err := helpers.ResponseAsError(createRepoResp); err != nil {
+		return fmt.Errorf("create repository: %w", err)
 	}
 
 	repo := createRepoResp.JSON201
@@ -89,8 +86,8 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to create a branch from master: %w", err)
 	}
-	if err := helpers.ResponseAsError("create branch", createBranchResp); err != nil {
-		return err
+	if err := helpers.ResponseAsError(createBranchResp); err != nil {
+		return fmt.Errorf("create branch: %w", err)
 	}
 
 	parallelism := viper.GetInt("parallelism_level")
@@ -109,8 +106,8 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
-	if err := helpers.ResponseAsError("commit", commitResp); err != nil {
-		return err
+	if err := helpers.ResponseAsError(commitResp); err != nil {
+		return fmt.Errorf("commit: %w", err)
 	}
 
 	merge(ctx)
@@ -183,7 +180,10 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 				if err != nil {
 					return err
 				}
-				return helpers.ResponseAsError("upload object", resp)
+				if err = helpers.ResponseAsError(resp); err != nil {
+					return fmt.Errorf("upload object: %w", err)
+				}
+				return nil
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -203,7 +203,10 @@ func merge(ctx context.Context) {
 		if err != nil {
 			return err
 		}
-		return helpers.ResponseAsError("merge", resp)
+		if err = helpers.ResponseAsError(resp); err != nil {
+			return fmt.Errorf("merge: %w", resp)
+		}
+		return nil
 	}, retry.Attempts(retryAttempts),
 		retry.Delay(retryDelay),
 		retry.LastErrorOnly(true),
@@ -230,7 +233,10 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 				if err != nil {
 					return err
 				}
-				return helpers.ResponseAsError("get object", resp)
+				if err = helpers.ResponseAsError(resp); err != nil {
+					return fmt.Errorf("get object: %w", err)
+				}
+				return nil
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
