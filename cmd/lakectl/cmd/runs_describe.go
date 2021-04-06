@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -87,10 +87,7 @@ func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, r
 			return "", err
 		}
 		if res.StatusCode() != http.StatusOK {
-			if res.JSONDefault != nil {
-				return "", fmt.Errorf("%w: %s", ErrRequestFailed, res.JSONDefault.Message)
-			}
-			return "", fmt.Errorf("%w: status code %d", ErrRequestFailed, res.StatusCode())
+			return "", helpers.ResponseAsError(res)
 		}
 		return string(res.Body), nil
 	}
