@@ -258,7 +258,7 @@ const RepositoryChangesPage = () => {
                     after={(!!after) ? after : ""}
                     onSelectRef={ref => router.push({
                         pathname: `/repositories/[repoId]/changes`,
-                        query: {repoId, ref}
+                        query: {repoId, ref: ref.id}
                     })}
                     onPaginate={after => {
                         router.push({

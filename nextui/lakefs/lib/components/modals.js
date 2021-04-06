@@ -33,12 +33,16 @@ export const ConfirmationButton = ({ msg, onConfirm, variant, disabled = false, 
         )
     }
 
+    const hide = () => setShow(false)
+
     return (
         <>
             <ConfirmationModal
                 show={show}
-                onConfirm={onConfirm}
-                onHide={() => setShow(false)}
+                onConfirm={() => {
+                    onConfirm(hide)
+                }}
+                onHide={hide}
                 msg={msg}
             />
             {btn}

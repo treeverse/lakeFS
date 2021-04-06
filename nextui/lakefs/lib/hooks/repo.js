@@ -33,6 +33,17 @@ export const useRepoAndRef = (repoId, refId) => {
     }, [repoId, refId]);
 }
 
+export const useRepoRefAndCompare = (repoId, refId, compareId) => {
+    return useAPI(async () => {
+        const repo = await repositories.get(repoId)
+        const ref = await resolveRef(repoId, (!!refId) ? refId : repo.default_branch)
+        let compare = null
+        if (!!compareId)
+            compare = await resolveRef(repoId, compareId)
+        return {repo, ref, compare}
+    }, [repoId, refId, compareId])
+}
+
 export const useRepo = (repoId) => {
     return useAPI(() => {
         return repositories.get(repoId)
