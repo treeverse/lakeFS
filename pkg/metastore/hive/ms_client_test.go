@@ -171,6 +171,26 @@ func (h HiveMsMock) AlterPartitions(_ context.Context, dbName string, tableName 
 	return h.MockStore.AlterPartitions(dbName, tableName, partitionsToMock(newPartitions))
 }
 
+func (h HiveMsMock) GetDatabase(_ context.Context, _ string) (r *hive_metastore.Database, err error) {
+	panic("implement me")
+}
+
+func (h HiveMsMock) GetTables(_ context.Context, _ string, _ string) (r []string, err error) {
+	panic("implement me")
+}
+
+func (h HiveMsMock) GetDatabases(_ context.Context, _ string) (r []string, err error) {
+	panic("implement me")
+}
+
+func (h HiveMsMock) GetAllDatabases(_ context.Context) (_ []string, err error) {
+	panic("implement me")
+}
+
+func (h HiveMsMock) CreateDatabase(_ context.Context, _ *hive_metastore.Database) (err error) {
+	panic("implement me")
+}
+
 func getCols() []*hive_metastore.FieldSchema {
 	return []*hive_metastore.FieldSchema{
 		{
