@@ -7,6 +7,13 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
+# https://openapi-generator.tech
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli
+OPENAPI_GENERATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+ifeq ($(PACKAGE_VERSION),)
+	PACKAGE_VERSION=$(shell git describe --abbrev=0 --tags | cut -dv -f2)
+endif
+
 export PATH:= $(PATH):$(GOBINPATH)
 
 GOBUILD=$(GOCMD) build
@@ -90,6 +97,16 @@ go-install: go-mod-download ## Install dependencies
 	$(GOCMD) install github.com/rakyll/statik
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
+
+client-python: api/swagger.yml  ## Generate SDK for Python client
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/$< \
+		-g python \
+		--package-name lakefs \
+		--additional-properties=packageName=lakefs,packageVersion=$(PACKAGE_VERSION),projectName=lakefs \
+		-o /mnt/clients/python
+
+clients: client-python
 
 gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
