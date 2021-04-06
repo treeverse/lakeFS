@@ -12,7 +12,7 @@ import (
 )
 
 func TestCommitSingle(t *testing.T) {
-	for _, direct := range []bool{false, true} {
+	for _, direct := range testDirectDataAccess {
 		name := "indirect"
 		if direct {
 			name = "direct"
@@ -70,7 +70,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 		size        = 100
 	)
 
-	for _, direct := range []bool{false, true} {
+	for _, direct := range testDirectDataAccess {
 		name := "indirect"
 		if direct {
 			name = "direct"

@@ -20,7 +20,7 @@ func TestDeleteObjects(t *testing.T) {
 		identifiers = append(identifiers, &s3.ObjectIdentifier{
 			Key: aws.String(masterBranch + "/" + file),
 		})
-		_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, file, true)
+		_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, file, false)
 	}
 
 	listOut, err := svc.ListObjects(&s3.ListObjectsInput{

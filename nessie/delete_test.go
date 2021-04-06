@@ -27,7 +27,7 @@ func TestDeleteStaging(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath, true)
+	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath, false)
 
 	f, err := found(ctx, repo, masterBranch, objPath)
 	assert.NoError(t, err)
@@ -46,7 +46,7 @@ func TestDeleteCommitted(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath, true)
+	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath, false)
 
 	f, err := found(ctx, repo, masterBranch, objPath)
 	assert.NoError(t, err)
@@ -69,7 +69,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath, true)
+	_, _ = uploadFileRandomData(ctx, t, repo, masterBranch, objPath, false)
 
 	f, err := found(ctx, repo, masterBranch, objPath)
 	assert.NoError(t, err)
