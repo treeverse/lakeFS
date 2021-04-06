@@ -30,7 +30,7 @@ setup(
     description="lakeFS API",
     author="OpenAPI Generator community",
     author_email="team@openapitools.org",
-    url="",
+    url="https://github.com/treeverse/lakeFS/tree/feature/python-client/clients/python",
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API"],
     python_requires=">=3.6",
     install_requires=REQUIRES,
