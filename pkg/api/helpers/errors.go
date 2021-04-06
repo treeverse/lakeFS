@@ -32,8 +32,8 @@ func isOK(statusCode int) bool {
 // Body that it assumes is an api.Error.
 func ResponseAsError(response interface{}) error {
 	r := reflect.Indirect(reflect.ValueOf(response))
-	if !r.IsValid() {
-		return fmt.Errorf("%w: bad type: cannot indirect", ErrRequestFailed)
+	if !r.IsValid() || r.Kind() != reflect.Struct {
+		return fmt.Errorf("%w: bad type %s: must reference a struct", ErrRequestFailed, r.Type().Name())
 	}
 
 	f := r.FieldByName("HTTPResponse")
