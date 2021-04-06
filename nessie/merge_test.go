@@ -38,7 +38,7 @@ func TestMergeAndList(t *testing.T) {
 	for i := 0; i < addedFiles; i++ {
 		p := fmt.Sprintf("%d.txt", i)
 		logger.WithField("path", p).Info("Upload content to branch")
-		checksum, content := uploadFileRandomData(ctx, t, repo, branch, p, true)
+		checksum, content := uploadFileRandomData(ctx, t, repo, branch, p, false)
 		checksums[checksum] = content
 	}
 	const totalFiles = addedFiles + 1

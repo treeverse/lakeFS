@@ -44,7 +44,7 @@ func TestResponseAsError(t *testing.T) {
 		{
 			"JSON body",
 			&Body{Response{&http.Response{StatusCode: 418}}, []byte("{\"message\": \"lemonade\"}")},
-			"lemonade",
+			"[I'm a teapot] lemonade",
 		},
 	}
 
