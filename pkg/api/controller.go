@@ -167,7 +167,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	entry := catalog.DBEntry{
 		CommonLevel:     false,
 		Path:            params.Path,
-		PhysicalAddress: params.Path,
+		PhysicalAddress: *body.Staging.PhysicalAddress,
 		CreationDate:    writeTime,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
@@ -2163,6 +2163,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	if handleAPIError(w, err) {
 		return
 	}
+	c.Logger.Tracef("get repo %s ref %s path %s: %+v", repository, ref, params.Path, entry)
 	if entry.Expired {
 		writeError(w, http.StatusGone, "resource expired")
 		return
@@ -2381,7 +2382,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	res, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
-		body.Message,
+		StringValue(body.Message),
 		metadata)
 
 	var hookAbortErr *graveler.HookAbortError

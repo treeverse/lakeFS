@@ -20,8 +20,9 @@ var (
 )
 
 var (
-	ErrInvalidType   = fmt.Errorf("invalid type: %w", ErrInvalid)
-	ErrRequiredValue = fmt.Errorf("required value: %w", ErrInvalid)
+	ErrInvalidType       = fmt.Errorf("invalid type: %w", ErrInvalid)
+	ErrRequiredValue     = fmt.Errorf("required value: %w", ErrInvalid)
+	ErrPathRequiredValue = fmt.Errorf("missing path: %w", ErrRequiredValue)
 )
 
 type ValidateFunc func(v interface{}) error
@@ -170,7 +171,7 @@ func ValidatePath(v interface{}) error {
 	}
 	l := len(s.String())
 	if l == 0 {
-		return ErrRequiredValue
+		return ErrPathRequiredValue
 	}
 	if l > MaxPathLength {
 		return fmt.Errorf("%w: %d is above maximum length (%d)", ErrInvalidValue, l, MaxPathLength)
