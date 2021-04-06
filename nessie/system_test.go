@@ -29,8 +29,6 @@ var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 
-var directUploadSupported = true
-
 // verifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
 func verifyResponse(resp *http.Response, body []byte) error {
@@ -99,11 +97,6 @@ func uploadFileRandomDataAndReport(ctx context.Context, t *testing.T, repo, bran
 
 	if direct {
 		stats, err := helpers.ClientUpload(ctx, client, repo, branch, objPath, nil, strings.NewReader(objContent))
-		if errors.Is(err, helpers.ErrUnsupportedProtocol) {
-			t.Logf("direct upload not supported yet (%s), switch to use gateway", err)
-			directUploadSupported = false
-			return uploadFileRandomDataAndReport(ctx, t, repo, branch, objPath, false)
-		}
 		if err != nil {
 			return "", "", err
 		}
