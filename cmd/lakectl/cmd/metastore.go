@@ -78,6 +78,46 @@ var metastoreCopyCmd = &cobra.Command{
 	},
 }
 
+var metastoreCopyAllCmd = &cobra.Command{
+	Use:   "copy-all",
+	Short: "copy from one metastore to another",
+	Long:  "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
+	Run: func(cmd *cobra.Command, args []string) {
+		fromAddress, _ := cmd.Flags().GetString("from-address")
+		toAddress, _ := cmd.Flags().GetString("to-address")
+		schemaFilter, _ := cmd.Flags().GetString("schema-filter")
+		tableFilter, _ := cmd.Flags().GetString("table-filter")
+		branch, _ := cmd.Flags().GetString("branch")
+
+		if fromAddress == toAddress {
+			Die("from-address must be different than to-address", 1)
+		}
+		fromClient, err := hive.NewMSClient(cmd.Context(), fromAddress, false)
+		if err != nil {
+			DieErr(err)
+		}
+		toClient, err := hive.NewMSClient(cmd.Context(), toAddress, false)
+		if err != nil {
+			DieErr(err)
+		}
+		defer func() {
+			err = fromClient.Close()
+			if err != nil {
+				DieErr(err)
+			}
+			err = toClient.Close()
+			if err != nil {
+				DieErr(err)
+			}
+		}()
+		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
+		err = hive.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
 var metastoreDiffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "show column and partition differences between two tables",
@@ -211,6 +251,17 @@ func init() {
 	_ = metastoreDiffCmd.MarkFlagRequired("from-table")
 	_ = metastoreDiffCmd.Flags().String("to-schema", "", "destination schema name ")
 	_ = metastoreDiffCmd.Flags().String("to-table", "", "destination table name [default is from-table]")
+
+	metastoreCmd.AddCommand(metastoreCopyAllCmd)
+
+	_ = metastoreCopyAllCmd.Flags().String("from-address", "", "source metastore address")
+	_ = metastoreCopyAllCmd.MarkFlagRequired("from-address")
+	_ = metastoreCopyAllCmd.Flags().String("to-address", "", "destination metastore address")
+	_ = metastoreCopyAllCmd.MarkFlagRequired("to-address")
+	_ = metastoreCopyAllCmd.Flags().String("schema-filter", "*", "filter for schemas to copy in metastore pattern")
+	_ = metastoreCopyAllCmd.Flags().String("table-filter", "*", "filter for tables to copy in metastore pattern")
+	_ = metastoreCopyAllCmd.Flags().String("branch", "", "lakeFS branch name")
+	_ = metastoreCopyAllCmd.MarkFlagRequired("branch")
 
 	metastoreCmd.AddCommand(glueSymlinkCmd)
 	_ = glueSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
