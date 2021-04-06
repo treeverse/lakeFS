@@ -6,12 +6,9 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import java.io.{FileNotFoundException, IOException, Serializable}
 import java.net.URI
 import java.time.format.DateTimeFormatter
-import java.time.ZonedDateTime
-import java.util.Calendar
-import java.util
 import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
@@ -45,17 +42,14 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
     val f = filter
-    var par = parallelism
+    val par = parallelism
     val errs = actionsDF.mapPartitions( part => {
       val pool: ExecutorService = Executors.newFixedThreadPool(par)
 
-      val callableTasks = new util.ArrayList[Callable[ExportStatus]]
-      while (part.hasNext) {
-        val row = part.next()
-        callableTasks.add(new Handler(f, round, ns, rel, serializedConf, row))
-      }
-
-      val res = pool.invokeAll(callableTasks).asScala.map(f => f.get()).iterator
+      val res = pool.invokeAll(
+        part.map(row =>
+          new Handler(f, round, ns, rel, serializedConf, row)
+        ).toList.asJava).asScala.map(fut => fut.get()).iterator
       pool.shutdown()
       res
     }
@@ -64,8 +58,8 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     if (errs.isEmpty){
       return true
     }
-
-    writeSummaryFile(false, commitID, errs.take(maxLoggedErrors).map(s => s.msg).reduce(_+"\n"+_))
+    val count = errs.count()
+    writeSummaryFile(false, commitID, errs.sample(math.min(1.0, maxLoggedErrors.toDouble/count)).map(s => s.msg).reduce(_+"\n"+_))
     false
   }
 
