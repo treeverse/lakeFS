@@ -204,7 +204,7 @@ func merge(ctx context.Context) {
 			return err
 		}
 		if err = helpers.ResponseAsError(resp); err != nil {
-			return fmt.Errorf("merge: %w", resp)
+			return fmt.Errorf("merge: %w", err)
 		}
 		return nil
 	}, retry.Attempts(retryAttempts),
