@@ -2,7 +2,7 @@
 layout: default
 title: Monitoring using Prometheus
 description: Users looking to monitor their lakeFS instances can point Prometheus configuration to scrape data from this endpoint. This guide explains how to setup
-parent: AWS Deployment
+parent: Production Deployment
 nav_order: 30
 has_children: false
 ---

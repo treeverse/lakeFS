@@ -2,7 +2,7 @@
 layout: default
 title: Setup
 description: This section outlines how to setup your environment once lakeFS is configured and running
-parent: AWS Deployment
+parent: Production Deployment
 nav_order: 27
 has_children: false
 ---
@@ -24,7 +24,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
     
    ![Create Repository](../assets/img/create_repo_s3.png)
 
-   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](./bucket.md).
+   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](storage.md).
    
    
 # Next steps
