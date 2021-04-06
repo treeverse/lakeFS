@@ -15,10 +15,8 @@ import collection.JavaConverters._
 
 
 class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
-  final private val defaultParallelism = 10
-
   def this(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
-    this(spark, apiClient, new SparkFilter(), repoName, dstRoot, defaultParallelism)
+    this(spark, apiClient, new SparkFilter(), repoName, dstRoot, Exporter.defaultParallelism)
   }
 
   def exportAllFromBranch(branch: String): Unit = {
@@ -132,6 +130,10 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     val gen = Random.alphanumeric.dropWhile(_.isDigit)
     gen.take(prefixLen).mkString("")
   }
+}
+
+object Exporter{
+  final val defaultParallelism = 10
 }
 
 class Handler(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) extends Callable[ExportStatus] with Serializable {
