@@ -14,7 +14,7 @@ lakeFS requires a PostgreSQL database to synchronize actions on your repositorie
 We will show you how to create a database on your cloud platform.
 You can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection details and proceed to [Configuring the Storage](storage.md).
+If you already have a database, take note of the connection string and proceed to [Configuring the Storage](storage.md).
 
 ## Table of contents
 {: .no_toc .text-delta }
