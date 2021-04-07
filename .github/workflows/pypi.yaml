@@ -1,8 +1,8 @@
 name: pypi
 
-on:
-  release:
-    types: [published]
+on: workflow_dispatch
+  #release:
+    #types: [published]
 
 jobs:
   pypi:
@@ -16,14 +16,14 @@ jobs:
         shell: bash
         run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         id: version
-      - name: Python generate client
-        shell: bash
-        run: make client-python PACKAGE_VERSION=0.1.0.dev
-        #run: make PACKAGE_VERSION=${{ steps.version.outputs.tag }}
       - name: Python build package
-        run: make package-python 
+        run: |
+            make client-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+            make package-python 
+            echo "LIST FILES"
+            ls -l clients/python
       - name: Python publish package
-        # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        #if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
