@@ -23,7 +23,7 @@ func ClientDownload(ctx context.Context, client api.ClientWithResponsesInterface
 		return nil, nil, fmt.Errorf("get object URI: %w", err)
 	}
 
-	physicalAddress:= resp.JSON200.PhysicalAddress
+	physicalAddress := resp.JSON200.PhysicalAddress
 	parsedAddress, err := url.Parse(physicalAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)

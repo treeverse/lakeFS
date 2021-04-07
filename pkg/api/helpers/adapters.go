@@ -34,7 +34,7 @@ type ClientAdapter interface {
 	Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error)
 }
 
-type AdapterFactory map[string] func() (ClientAdapter, error)
+type AdapterFactory map[string]func() (ClientAdapter, error)
 
 // NewAdapter returns a ClientAdapter for protocol.
 func NewAdapter(protocol string) (ClientAdapter, error) {
