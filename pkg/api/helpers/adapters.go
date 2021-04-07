@@ -1,0 +1,98 @@
+package helpers
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/url"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/treeverse/lakefs/pkg/api"
+)
+
+// ObjectStats metadata of an object stored on a backing store.
+type ObjectStats struct {
+	// Size is the number of bytes.
+	Size int64
+	// ETag is a unique identifier of the contents.
+	ETag string
+	// MTime is the time stored for last object modification.  It can be returned as 0
+	// from calls to ClientAdapter.Upload().
+	MTime time.Time
+}
+
+// ClientAdapter abstracts operations on a backing store.
+type ClientAdapter interface {
+	// Upload upload data from contents to physicalAddress and returns stored stats.
+	// Returned MTime may be zero.
+	Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error)
+
+	// Download returns a Reader to download data from physicalAddress.  The Close method
+	// of that Reader can return errors!
+	Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error)
+}
+
+type AdapterFactory map[string] func() (ClientAdapter, error)
+
+// NewAdapter returns a ClientAdapter for protocol.
+func NewAdapter(protocol string) (ClientAdapter, error) {
+	factory, ok := adapterFactory[protocol]
+	if !ok {
+		return nil, ErrUnsupportedProtocol
+	}
+	return factory()
+}
+
+var adapterFactory = AdapterFactory{
+	"s3": newS3Adapter,
+}
+
+type s3Adapter struct {
+	svc *s3.S3
+}
+
+func newS3Adapter() (ClientAdapter, error) {
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("connect to S3 session: %w", err)
+	}
+	sess.ClientConfig(s3.ServiceName)
+	return &s3Adapter{svc: s3.New(sess)}, nil
+}
+
+func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error) {
+	// TODO(ariels): Allow customization of request
+	putObjectResponse, err := s.svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
+		Body:   contents,
+		Bucket: api.StringPtr(physicalAddress.Hostname()),
+		Key:    &physicalAddress.Path,
+	})
+	if err != nil {
+		return ObjectStats{}, err
+	}
+	size, err := contents.Seek(0, io.SeekEnd)
+	if err != nil {
+		return ObjectStats{}, fmt.Errorf("read stream size: %w", err)
+	}
+	return ObjectStats{
+		Size: size,
+		ETag: api.StringValue(putObjectResponse.ETag),
+		// S3 PutObject does not return creation time.
+	}, nil
+}
+
+func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error) {
+	// TODO(ariels): Allow customization of request
+	getObjectResponse, err := s.svc.GetObjectWithContext(ctx, &s3.GetObjectInput{
+		Bucket: api.StringPtr(physicalAddress.Hostname()),
+		Key:    &physicalAddress.Path,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return getObjectResponse.Body, nil
+}

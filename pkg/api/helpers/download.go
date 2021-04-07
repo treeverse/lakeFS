@@ -3,9 +3,6 @@ package helpers
 import (
 	"github.com/treeverse/lakefs/pkg/api"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-
 	"context"
 	"fmt"
 	"io"
@@ -32,29 +29,16 @@ func ClientDownload(ctx context.Context, client api.ClientWithResponsesInterface
 		return nil, nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
 	}
 
-	// TODO(ariels): plug-in support for other protocols
-	if parsedAddress.Scheme != "s3" {
-		return nil, nil, fmt.Errorf("%w %s", ErrUnsupportedProtocol, parsedAddress.Scheme)
-	}
-
-	bucket := parsedAddress.Hostname()
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
+	adapter, err := NewAdapter(parsedAddress.Scheme)
 	if err != nil {
-		return nil, nil, fmt.Errorf("connect to S3 session: %w", err)
+		return nil, nil, fmt.Errorf("cannot handle %s: %w", parsedAddress.Scheme, err)
 	}
-	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
 
-	// TODO(ariels): Allow customization of request
-	getObjectResponse, err := svc.GetObject(&s3.GetObjectInput{
-		Bucket: &bucket,
-		Key:    &parsedAddress.Path,
-	})
+	contents, err := adapter.Download(ctx, parsedAddress)
+
 	if err != nil {
 		return nil, nil, fmt.Errorf("read from backing store %v: %w", parsedAddress, err)
 	}
 
-	return resp.JSON200, getObjectResponse.Body, nil
+	return resp.JSON200, contents, nil
 }
