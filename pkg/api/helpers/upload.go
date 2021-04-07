@@ -38,12 +38,14 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 		}
 
 		adapter, err := NewAdapter(parsedAddress.Scheme)
-
 		if err != nil {
-			return nil, fmt.Errorf("cannot handle %s: %w", parsedAddress.Scheme, err)
+			return nil, fmt.Errorf("%s: %w", parsedAddress.Scheme, err)
 		}
 
 		stats, err := adapter.Upload(ctx, parsedAddress, contents)
+		if err != nil {
+			return nil, fmt.Errorf("upload to backing store: %w", err)
+		}
 
 		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &api.LinkPhysicalAddressParams{
 			Path: filePath,
