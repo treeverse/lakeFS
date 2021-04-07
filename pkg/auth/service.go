@@ -164,7 +164,7 @@ func genAccessKeyID() string {
 	return fmt.Sprintf("%s%s%s", "AKIAJ", key, "Q")
 }
 
-func genAccessSecretKey() string {
+func genSecretAccessKey() string {
 	const secretKeyLength = 30
 	return Base64StringGenerator(secretKeyLength)
 }
@@ -642,7 +642,7 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 
 func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := genAccessKeyID()
-	secretAccessKey := genAccessSecretKey()
+	secretAccessKey := genSecretAccessKey()
 	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
@@ -659,13 +659,13 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		}
 		c := &model.Credential{
 			AccessKeyID:                   accessKeyID,
-			AccessSecretKey:               secretAccessKey,
-			AccessSecretKeyEncryptedBytes: encryptedKey,
+			SecretAccessKey:               secretAccessKey,
+			SecretAccessKeyEncryptedBytes: encryptedKey,
 			IssuedDate:                    now,
 			UserID:                        user.ID,
 		}
 		_, err = tx.Exec(`
-			INSERT INTO auth_credentials (access_key_id, access_secret_key, issued_date, user_id)
+			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
 			c.AccessKeyID,
 			encryptedKey,
@@ -765,11 +765,11 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			if err != nil {
 				return nil, err
 			}
-			key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
+			key, err := s.decryptSecret(credentials.SecretAccessKeyEncryptedBytes)
 			if err != nil {
 				return nil, err
 			}
-			credentials.AccessSecretKey = key
+			credentials.SecretAccessKey = key
 			return credentials, nil
 		})
 		if err != nil {

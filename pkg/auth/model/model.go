@@ -81,8 +81,8 @@ func (s *Statements) Scan(src interface{}) error {
 
 type Credential struct {
 	AccessKeyID                   string    `db:"access_key_id"`
-	AccessSecretKey               string    `db:"-" json:"-"`
-	AccessSecretKeyEncryptedBytes []byte    `db:"access_secret_key" json:"-"`
+	SecretAccessKey               string    `db:"-" json:"-"`
+	SecretAccessKeyEncryptedBytes []byte    `db:"secret_access_key" json:"-"`
 	IssuedDate                    time.Time `db:"issued_date"`
 	UserID                        int       `db:"user_id"`
 }
@@ -90,5 +90,5 @@ type Credential struct {
 // For JSON serialization:
 type CredentialKeys struct {
 	AccessKeyID     string `json:"access_key_id"`
-	AccessSecretKey string `json:"access_secret_key"`
+	SecretAccessKey string `json:"secret_access_key"`
 }
