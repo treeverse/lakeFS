@@ -14,6 +14,8 @@ ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0.dev
 endif
 
+PYTHON_IMAGE=python:#
+
 export PATH:= $(PATH):$(GOBINPATH)
 
 GOBUILD=$(GOCMD) build
@@ -107,6 +109,11 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		-o /mnt/clients/python
 
 clients: client-python
+
+package-python:
+	$(DOCKER) run --rm -v $(shell pwd):/mnt -w /mnt/clients/python python:3 ./build-package.sh
+
+package: package-python
 
 gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api

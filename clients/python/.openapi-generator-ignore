@@ -25,3 +25,4 @@
 
 git_push.sh
 lakefs/client.py
+build-package.sh

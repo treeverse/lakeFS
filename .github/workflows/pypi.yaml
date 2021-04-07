@@ -10,22 +10,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          fetch-depth: '1'
       - name: Extract version
         shell: bash
         run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
         id: version
       - name: Python generate client
-        run: make PACKAGE_VERSION=${{ steps.version.outputs.tag }}
-      - name: Python install pypa/build
-        run: python -m pip install build --user
-      - name: Python build a binary wheel and a source tarball
-        run: |
-          cd clients/python/
-          python -m build --sdist --wheel --outdir dist/
+        shell: bash
+        run: make client-python PACKAGE_VERSION=0.1.0.dev
+        #run: make PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+      - name: Python build package
+        run: make package-python 
       - name: Python publish package
         # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
