@@ -7,6 +7,9 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 import java.io.{FileNotFoundException, IOException}
 import java.net.URI
+import java.time.format.DateTimeFormatter
+import java.time.ZonedDateTime
+import java.util.Calendar
 import scala.util.Random
 
 
@@ -102,7 +105,8 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
 
   private def writeSummaryFile(success: Boolean, commitID: String, content : String) = {
     val suffix = if(success) "SUCCESS" else "FAILURE"
-    val dstPath = resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${suffix}")
+    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
+    val dstPath = resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${time}_${suffix}")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
 
     val stream = dstFS.create(dstPath)

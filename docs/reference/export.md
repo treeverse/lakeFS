@@ -60,8 +60,8 @@ exportFrom(branch: String, prevCommitID: String)
 ## Success/Failure Indications
 When the Spark export operation ends, an additional status file will be added to the root 
 object storage destination.
-If all files were exported successfully the file path will be of form: `EXPORT_<commitID>_SUCCESS`.
-For failures: the form will be`EXPORT_<commitID>_FAILURE`, and the file will include a log of the failed files operations.
+If all files were exported successfully the file path will be of form: `EXPORT_<commitID>_<ISO-8601-time-UTC>_SUCCESS`.
+For failures: the form will be`EXPORT_<commitID>_<ISO-8601-time-UTC>_FAILURE`, and the file will include a log of the failed files operations.
 
 ## Export Rounds (Spark success files)
 Some files should be exported before others, e.g. a Spark `_SUCCESS` file exported before other files under
