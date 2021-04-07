@@ -75,5 +75,8 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 		}
 		// Try again!
 		stagingLocation = *resp.JSON409
+		if _, err = contents.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("rewind: %w", err)
+		}
 	}
 }
