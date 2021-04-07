@@ -227,10 +227,6 @@ const BranchesContainer = ({ repo, prefix, after, onPaginate }) => {
     return (
         <div className="mb-5">
             <ActionsBar>
-                <ActionGroup orientation="left">
-
-                </ActionGroup>
-
                 <ActionGroup orientation="right">
                     <OverlayTrigger placement="bottom"
                                     overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>

@@ -198,8 +198,10 @@ const CommitContainer = ({ repo, reference, onPaginate, after }) => {
 
 const RefContainer = ({ repoId, refId, onPaginate, after }) => {
     const {loading, error, response} = useRepoAndRef(repoId, refId)
+
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
+
     const { repo, ref } = response
     return (
         <CommitContainer repo={repo} reference={ref} onPaginate={onPaginate} after={after}/>

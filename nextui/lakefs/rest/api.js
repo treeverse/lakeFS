@@ -450,9 +450,10 @@ class Commits {
     }
 
     async get(repoId, commitId) {
-        const response = await apiRequest(`/repositories/${repoId}/commits/${commitId}`);
+        const response = await apiRequest(`/repositories/${repoId}/commits/${commitId}`)
+        console.log('response: ', response)
         if (response.status === 404) {
-            throw new NotFoundError(`could not find commit ${commitId}`);
+            throw new NotFoundError(`could not find commit ${commitId}`)
         } else if (response.status !== 200) {
             throw new Error(`could not get commit: ${await extractError(response)}`)
         }
@@ -511,7 +512,7 @@ class Refs {
 
 class Actions {
 
-    async listRuns(repoId, branch, commit, after, amount = DEFAULT_LISTING_AMOUNT) {
+    async listRuns(repoId, branch = "", commit = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({branch, commit, after, amount});
         const response = await apiRequest(`/repositories/${repoId}/actions/runs?${query}`);
         if (response.status !== 200) {

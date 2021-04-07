@@ -211,6 +211,17 @@
   background-color: #fff3cd;
 }
 
+.table tr .row-hover {
+  visibility: hidden;
+  font-size: 0.7em;
+}
+
+.table tr:hover .row-hover {
+  visibility: visible;
+  display: inline-block;
+}
+
+
 .tree-row-actions {
   width: 30px;
   padding:0;
@@ -222,7 +233,6 @@
   visibility: hidden;
   font-size: 0.7rem;
 }
-
 .table .tree-row:hover .tree-row-actions .btn,
 .table .tree-row:focus .tree-row-actions .btn,
 .actions-runs-list .table tbody tr:hover td .clipboard-copy button ,

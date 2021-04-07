@@ -22,14 +22,19 @@ export const resolveRef = async (repoId, refId) => {
         }
     }
 
-    throw NotFoundError('ref not found');
+    throw new NotFoundError('ref not found');
 }
 
 export const useRepoAndRef = (repoId, refId) => {
     return useAPI(async () => {
-        const repo = await repositories.get(repoId);
-        const ref = await resolveRef(repoId, (!!refId) ? refId : repo.default_branch);
-        return {repo, ref}
+        const repo = await repositories.get(repoId)
+        try {
+            const ref = await resolveRef(repoId, (!!refId) ? refId : repo.default_branch)
+            return {repo, ref}
+        } catch (error) {
+            throw error
+        }
+
     }, [repoId, refId]);
 }
 

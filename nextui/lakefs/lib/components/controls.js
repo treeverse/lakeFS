@@ -7,6 +7,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import {OverlayTrigger} from "react-bootstrap";
 import Link from "next/link";
+import moment from "moment";
 
 const defaultDebounceMs = 300;
 
@@ -74,6 +75,22 @@ export const Error = ({error, onDismiss = null}) => {
     return (
         <Alert variant="danger">{msg}</Alert>
     )
+}
+
+export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
+    if (typeof dateValue === 'number') {
+        return (
+            <span>{moment.unix(dateValue).format(format)}</span>
+        )
+    }
+
+    return (
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{dateValue}</Tooltip>}>
+            <span>{moment(dateValue).format(format)}</span>
+        </OverlayTrigger>
+    )
+
+
 }
 
 export const ActionGroup = ({ children, orientation = "left" }) => {
@@ -205,6 +222,16 @@ export const LinkButton = ({ href, children, tooltip, buttonVariant }) => {
         <Link passHref href={href}>
             <RefButton tooltip={tooltip} variant={buttonVariant}>{children}</RefButton>
         </Link>
+    )
+}
+
+export const TooltipButton = ({ onClick, variant, children, tooltip, className="", size = "sm" }) => {
+    return (
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
+            <Button variant={variant} onClick={onClick} className={className} size={size}>
+                {children}
+            </Button>
+        </OverlayTrigger>
     )
 }
 
