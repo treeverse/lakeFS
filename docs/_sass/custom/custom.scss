@@ -759,38 +759,34 @@ th, td {
 	background-color: transparent;
 }
 
-/* Style the tab */
-.tab {
-	overflow: hidden;
-	border: 1px solid #ccc;
-	background-color: #f1f1f1;
+.main-content ul.ui-tabs-nav > li::before {
+	content: "";
 }
 
-/* Style the buttons that are used to open the tab content */
-.tab button {
-	background-color: inherit;
-	float: left;
+.tabs {
+	background: transparent;
+	border: none !important;
+}
+
+.tabs .ui-widget-header {
+	background: transparent;
 	border: none;
-	outline: none;
-	cursor: pointer;
-	padding: 14px 16px;
-	transition: 0.3s;
+	border-bottom: 1px solid #c0c0c0;
+	-moz-border-radius: 0px;
+	-webkit-border-radius: 0px;
+	border-radius: 0px;
+}
+.tabs .ui-tabs-nav .ui-state-default {
+	background: transparent;
+	border: none;
+}
+.tabs .ui-tabs-nav .ui-state-active {
+	border: none;
 }
 
-/* Change background color of buttons on hover */
-.tab button:hover {
-	background-color: #ddd;
+.tabs .ui-tabs-nav .ui-state-default a {
+	color: #c0c0c0;
 }
-
-/* Create an active/current tablink class */
-.tab button.active {
-	background-color: #ccc;
-}
-
-/* Style the tab content */
-.tabcontent {
-	display: none;
-	padding: 6px 12px;
-	border: 1px solid #ccc;
-	border-top: none;
+.tabs .ui-tabs-nav .ui-state-active a {
+	color: $teal-green;
 }

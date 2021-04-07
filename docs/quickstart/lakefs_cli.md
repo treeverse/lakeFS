@@ -62,4 +62,4 @@ has_children: false
   
 ### Next steps
 
-Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploying-aws/index.md).
+Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../production/index.md).

@@ -32,83 +32,23 @@ You can now move on to your preferred installation method:
 lakeFS can be easily installed on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 To install lakeFS with Helm:
 1. Copy the Helm values file relevant to your cloud provider:
-   
-   <div class="tab">
-     <button id="helm_aws_btn" class="tablinks" onclick="openTab(this, 'helm_aws_tab')">AWS</button>
-     <button class="tablinks" onclick="openTab(this, 'helm_google_tab')">Google Cloud</button>
-     <button class="tablinks" onclick="openTab(this, 'helm_azure_tab')">Microsoft Azure</button>
-      <script>
-         $(() => {
-           $('#helm_aws_btn').click();
-         })
-      </script>
+   <div class="tabs">
+   <ul>
+     <li><a href="#helm-tabs-1">AWS</a></li>
+     <li><a href="#helm-tabs-2">Google Cloud</a></li>
+     <li><a href="#helm-tabs-3">Microsoft Azure</a></li>
+   </ul>
+   <div markdown="1" id="helm-tabs-1">      
+   {% include_relative installation-methods/aws-helm-values.md %}
    </div>
-   <div markdown="1" id="helm_aws_tab" class="tabcontent" >
-   ```yaml
-   secrets:
-     # replace DATABASE_CONNECTION_STRING with the connection string of the database you created in a previous step.
-     # e.g. postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs
-     databaseConnectionString: [DATABASE_CONNECTION_STRING]
-     # replace this with a randomly-generated string
-     authEncryptSecretKey: [ENCRYPTION_SECRET_KEY]
-   lakefsConfig: |
-     blockstore:
-       type: s3
-       s3:
-         region: us-east-1
-     gateways:
-       s3:
-         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-         domain_name: [S3_GATEWAY_DOMAIN]
-   ```
+   <div markdown="1" id="helm-tabs-2">
+   {% include_relative installation-methods/gcp-helm-values.md %}
    </div>
-   <div markdown="1" id="helm_google_tab" class="tabcontent">
-   ### Notes for running lakeFS on GKE
-   {: .no_toc }
-     * To connect to your database, you need to use one of the ways of [connecting GKE to Cloud SQL](https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine#cloud-sql-auth-proxy-with-workload-identity).
-     * To give lakeFS access to your bucket, you can start the cluster in [storage-rw](https://cloud.google.com/container-registry/docs/access-control#gke) mode. Alternatively, you can use a service account JSON string by uncommenting the `gs.credentials_json` property in the following yaml.
-   
-   ```yaml
-   secrets:
-     # replace DATABASE_CONNECTION_STRING with the connection string of the database you created in a previous step.
-     # e.g.: postgres://postgres:myPassword@localhost/postgres:5432
-     databaseConnectionString: [DATABASE_CONNECTION_STRING]
-     # replace this with a randomly-generated string
-     authEncryptSecretKey: [ENCRYPTION_SECRET_KEY]
-   lakefsConfig: |
-     blockstore:
-       type: gs
-     # Uncomment the following lines to give lakeFS access to your buckets using a service account:
-     # gs:
-     #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
-     gateways:
-       s3:
-         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-         domain_name: [S3_GATEWAY_DOMAIN]
-   ```
+   <div markdown="1" id="helm-tabs-3">
+   {% include_relative installation-methods/azure-helm-values.md %}
    </div>
-   <div markdown="1" id="helm_azure_tab" class="tabcontent">
-   ```yaml
-   secrets:
-     # replace this with the connection string of the database you created in a previous step:
-     databaseConnectionString: [DATABASE_CONNECTION_STRING]
-     # replace this with a randomly-generated string
-     authEncryptSecretKey: [ENCRYPTION_SECRET_KEY]
-   lakefsConfig: |
-     blockstore:
-       type: azure
-       azure:
-         auth_method: msi # msi for active directory, access-key for access key 
-      #  In case you chose to authenticate via access key unmark the following rows and insert the values from the previous step 
-      #  storage_account: [your storage account]
-      #  storage_access_key: [your access key]
-     gateways:
-       s3:
-         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-         domain_name: s3.lakefs.example.com
-   ```
    </div>
-   
+
 1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
 
    The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html), but without sensitive information.
@@ -134,19 +74,22 @@ Once your installation is running, move on to [Load Balancing and DNS](./lb_dns.
 ## Docker
 To deploy using Docker, create a yaml configuration file.
 Here is a minimal example, but you can see the [reference](../reference/configuration.md#example-aws-deployment) for the full list of configurations.
-
-```yaml
-database:
-  connection_string: "[DATABASE_CONNECTION_STRING]"
-auth:
-  encrypt:
-    secret_key: "[ENCRYPTION_SECRET_KEY]"
-blockstore:
-  type: s3  # or "gs", or "azure"
-gateways:
-  s3:
-    domain_name: "[S3_GATEWAY_DOMAIN]"
-```
+<div class="tabs">
+<ul>
+  <li><a href="#docker-tabs-1">AWS</a></li>
+  <li><a href="#docker-tabs-2">Google Cloud</a></li>
+  <li><a href="#docker-tabs-3">Microsoft Azure</a></li>
+</ul>
+<div markdown="1" id="docker-tabs-1">      
+{% include_relative installation-methods/aws-docker-config.md %}
+</div>
+<div markdown="1" id="docker-tabs-2">
+{% include_relative installation-methods/gcp-docker-config.md %}
+</div>
+<div markdown="1" id="docker-tabs-3">
+{% include_relative installation-methods/azure-docker-config.md %}
+</div>
+</div>
 
 Save the configuration file locally as `lakefs-config.yaml` and run the following command:
 
@@ -166,18 +109,24 @@ Some environments make it harder to use a configuration file, and are best confi
 All lakeFS configurations can be given through environment variables, see the [reference](../reference/configuration.md#using-environment-variables) for the full list of configurations.
 
 These configurations can be used to run lakeFS on container orchestration service providers like AWS ECS, Google Cloud Run , or Azure Container Instances.
+Here is a `docker run` command to demonstrate the use of environment variables:
 
-```bash
-export STORAGE_PROVIDER=s3  # or "gs", or "azure"
-docker run \
-  --name lakefs \
-  -p 8000:8000 \
-  -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
-  -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
-  -e LAKEFS_BLOCKSTORE_TYPE="${STORAGE_PROVIDER}" \
-  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="[S3_GATEWAY_DOMAIN]" \
-  treeverse/lakefs:latest run
-```
+<div class="tabs">
+<ul>
+  <li><a href="#docker-run-tabs-1">AWS</a></li>
+  <li><a href="#docker-run-tabs-2">Google Cloud</a></li>
+  <li><a href="#docker-run-tabs-3">Microsoft Azure</a></li>
+</ul>
+<div markdown="1" id="docker-run-tabs-1">      
+{% include_relative installation-methods/aws-docker-run.md %}
+</div>
+<div markdown="1" id="docker-run-tabs-2">
+{% include_relative installation-methods/gcp-docker-run.md %}
+</div>
+<div markdown="1" id="docker-run-tabs-3">
+{% include_relative installation-methods/azure-docker-run.md %}
+</div>
+</div>
 
 Once your installation is running, move on to [Load Balancing and DNS](./lb_dns.md).
 
@@ -205,4 +154,4 @@ They are needed to access the two different lakeFS APIs (these are also covered 
 lakeFS actually exposes only one API endpoint. For every request, lakeFS checks the `Host` header.
 If the header is under the S3 gateway domain, the request is directed to the S3-compatible API.
 
-The third DNS record (`*.s3.lakefs.example.com`) allows for [virtual-host style access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html). This is a way for AWS client to specify the bucket name in the Host subdomain.
+The third DNS record (`*.s3.lakefs.example.com`) allows for [virtual-host style access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html). This is a way for AWS clients to specify the bucket name in the Host subdomain.
