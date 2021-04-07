@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -19,6 +18,7 @@ type MetadataManager interface {
 
 type DBMetadataManager struct {
 	version string
+	installationID string
 	db      db.Database
 }
 
@@ -27,33 +27,32 @@ const (
 	SetupTimestampKeyName = "setup_timestamp"
 )
 
-func NewDBMetadataManager(version string, database db.Database) *DBMetadataManager {
+func NewDBMetadataManager(version string, fixedInstallationID string, database db.Database) *DBMetadataManager {
 	return &DBMetadataManager{
 		version: version,
+		installationID: generateInstallationID(fixedInstallationID),
 		db:      database,
 	}
 }
 
-func generateInstallationID() string {
-	installationID := config.GetFixedInstallationID()
+func generateInstallationID(installationID string) string {
 	if installationID == "" {
 		installationID = uuid.New().String()
 	}
 	return installationID
 }
 
-func insertOrGetInstallationID(tx db.Tx) (string, error) {
-	newInstallationID := generateInstallationID()
+func insertOrGetInstallationID(tx db.Tx, installationID string) (string, error) {
 	res, err := tx.Exec(`INSERT INTO auth_installation_metadata (key_name, key_value)
 			VALUES ($1,$2)
 			ON CONFLICT DO NOTHING`,
-		InstallationIDKeyName, newInstallationID)
+		InstallationIDKeyName, installationID)
 	if err != nil {
 		return "", err
 	}
 	affected := res.RowsAffected()
 	if affected == 1 {
-		return newInstallationID, nil
+		return installationID, nil
 	}
 	return getInstallationID(tx)
 }
@@ -127,9 +126,9 @@ func (d *DBMetadataManager) Write(ctx context.Context) (map[string]string, error
 			return nil, err
 		}
 		// write installation id
-		installationID, err := insertOrGetInstallationID(tx)
+		d.installationID, err = insertOrGetInstallationID(tx, d.installationID)
 		if err == nil {
-			metadata[InstallationIDKeyName] = installationID
+			metadata[InstallationIDKeyName] = d.installationID
 		}
 
 		// get setup timestamp

@@ -72,5 +72,9 @@ func initConfig() {
 	}
 
 	// setup config used by the executed command
-	cfg = config.NewConfig()
+	var err error
+	cfg, err = config.NewConfig()
+	if err != nil {
+		panic(fmt.Errorf("config: %w", err))
+	}
 }

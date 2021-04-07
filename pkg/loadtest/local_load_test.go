@@ -57,6 +57,8 @@ func TestLocalLoad(t *testing.T) {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
 	ctx := context.Background()
+	conf, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	if blockstoreType == "" {
@@ -64,7 +66,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config: config.NewConfig(),
+		Config: conf,
 		DB:     conn,
 	})
 	testutil.MustDo(t, "build catalog", err)

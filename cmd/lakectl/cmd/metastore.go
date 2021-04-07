@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -20,6 +21,41 @@ type metastoreClient interface {
 	CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error
 	Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error)
 }
+
+func GetMetastoreAwsConfig() *aws.Config {
+	cfg := &aws.Config{
+		Region: aws.String(c.values.Metastore.Glue.Region),
+		Logger: &LogrusAWSAdapter{},
+	}
+	if c.values.Metastore.Glue.Profile != "" || c.values.Metastore.Glue.CredentialsFile != "" {
+		cfg.Credentials = credentials.NewSharedCredentials(
+			c.values.Metastore.Glue.CredentialsFile,
+			c.values.Metastore.Glue.Profile,
+		)
+	}
+	if c.values.Metastore.Glue.Credentials != nil {
+		cfg.Credentials = credentials.NewStaticCredentials(
+			c.values.Metastore.Glue.Credentials.AccessKeyID,
+			c.values.Metastore.Glue.Credentials.AccessSecretKey,
+			c.values.Metastore.Glue.Credentials.SessionToken,
+		)
+	}
+	return cfg
+}
+
+func (c *Config) GetMetastoreGlueCatalogID() string {
+	return c.values.Metastore.Glue.CatalogID
+}
+
+func (c *Config) GetMetastoreHiveURI() string {
+	return c.values.Metastore.Hive.URI
+}
+
+func (c *Config) GetMetastoreType() string {
+	return c.values.Metastore.Type
+}
+
+
 
 var metastoreCopyCmd = &cobra.Command{
 	Use:   "copy",

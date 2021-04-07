@@ -76,7 +76,8 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		blockstoreType = mem.BlockstoreType
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cfg := config.NewConfig()
+	cfg, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
 	cfg.Override(func(configurator config.Configurator) {
 		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
 	})

@@ -72,8 +72,12 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	baseCommit, _ := flags.GetString(BaseCommitFlagName)
 
 	ctx := cmd.Context()
-	conf := config.NewConfig()
-	err := db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
+	conf, err := config.NewConfig()
+	if err != nil {
+		fmt.Printf("config: %s\n", err)
+		return 1
+	}
+	err = db.ValidateSchemaUpToDate(ctx, conf.GetDatabaseParams())
 	if errors.Is(err, db.ErrSchemaNotCompatible) {
 		fmt.Println("Migration version mismatch, for more information see https://docs.lakefs.io/deploying-aws/upgrade.html")
 		return 1
