@@ -5,7 +5,7 @@ const Layout = ({ children }) => {
     return (
         <>
             <TopNav/>
-            <Container className="main-app">
+            <Container fluid={"xl"} className="main-app">
                 {children}
             </Container>
         </>

@@ -222,6 +222,34 @@
 }
 
 
+.hook-logs {
+  background: #222222;
+  color: #FBFBFB;
+  padding: 40px 10px;
+}
+.hook-log, .hook-log pre {
+  background: #222222;
+  color: #FBFBFB;
+}
+.hook-log pre {
+  padding: 20px 0;
+}
+.hook-log-content {
+  padding: 0 0 0 20px;
+}
+.hook-log-title {
+  font-size: 1.2em;
+}
+.hook-log-title small {
+  font-size: 0.7em;
+  color: #AAAAAA;
+  margin-left: 10px;
+}
+
+.hook-log-title .btn, .hook-log-title .btn.btn-link  {
+    color: #FBFBFB;
+}
+
 .tree-row-actions {
   width: 30px;
   padding:0;

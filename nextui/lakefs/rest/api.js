@@ -585,7 +585,7 @@ class Actions {
         return response.json()
     }
 
-    async listRunHooks(repoId, runId, after, amount = DEFAULT_LISTING_AMOUNT) {
+    async listRunHooks(repoId, runId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount})
         const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks?${query}`)
         if (response.status !== 200) {

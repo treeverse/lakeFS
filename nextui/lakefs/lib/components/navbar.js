@@ -14,10 +14,7 @@ const NavUserInfo = () => {
 
     if (loading)  return <Navbar.Text>Loading...</Navbar.Text>
 
-    if (!user || !!error)
-        return (<></>);
-
-    console.log(user)
+    if (!user || !!error) return (<></>)
 
     return (
         <Navbar.Collapse className="justify-content-end">

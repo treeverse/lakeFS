@@ -26,32 +26,19 @@ import {
 import Table from "react-bootstrap/Table";
 import Link from 'next/link';
 import {Paginator} from "../../../../lib/components/pagination";
+import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
 
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
 
-    let status = <StopwatchIcon fill="yellow"/>
-    switch (run.status) {
-        case "completed":
-            status = <CheckCircleFillIcon fill="green"/>
-            break
-        case "failed":
-            status = <XCircleFillIcon fill="red"/>
-    }
-
-    status = (
-        <OverlayTrigger placement="bottom" overlay={<Tooltip id={`${run.run_id}-status-tooltip`}>{run.status}</Tooltip>}>
-            <span className="mr-2">{status}</span>
-        </OverlayTrigger>
-    )
-
     return (
         <tr>
             <td>
-                {status} {' '}
+                <ActionStatusIcon className="mr-2" status={run.status}/>
+                {' '}
                 <Link href={{
-                    pathname: '/repositories/[repoId]/actions/[actionId]',
-                    query: {repoId: repo.id, actionId: run.run_id}
+                    pathname: '/repositories/[repoId]/actions/[runId]',
+                    query: {repoId: repo.id, runId: run.run_id}
                 }}>
                     <a>{run.run_id}</a>
                 </Link>
@@ -187,7 +174,7 @@ const ActionsContainer = ({ repo, after, onPaginate, branch, commit, onFilterBra
 }
 
 
-const RefContainer = ({ repoId, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
+const RepoContainer = ({ repoId, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
     const {loading, error, response} = useRepo(repoId)
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
@@ -215,7 +202,7 @@ const RepositoryActionsPage = () => {
         <RepositoryPageLayout repoId={repoId} activePage={'actions'}>
             {(!repoId) ?
                 <Loading/> :
-                <RefContainer
+                <RepoContainer
                     repoId={repoId}
                     after={(!!after) ? after : ""}
                     commit={commit}
