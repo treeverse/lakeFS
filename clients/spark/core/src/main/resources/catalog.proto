@@ -12,4 +12,10 @@ message Entry {
 	int64 size = 3;
 	string e_tag = 4;
 	map<string,string> metadata = 5;
+	enum AddressType {
+		UNKNOWN = 0;
+		RELATIVE = 1;
+		FULL = 2;
+	}
+	AddressType address_type = 6;
 }

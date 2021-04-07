@@ -107,6 +107,7 @@ var entryCmd = &cobra.Command{
 						CreationDate:    time.Now(),
 						Checksum:        addr,
 						PhysicalAddress: addr,
+						AddressType:     catalog.AddressTypeRelative,
 					})
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)

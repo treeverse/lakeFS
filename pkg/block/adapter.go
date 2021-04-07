@@ -15,6 +15,10 @@ type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 type ObjectPointer struct {
 	StorageNamespace string
 	Identifier       string
+
+	// Indicates whether the Identifier is relative to the StorageNamespace.
+	// nil value means it's unknown.
+	Relative *bool
 }
 
 // PutOpts contains optional arguments for Put.  These should be

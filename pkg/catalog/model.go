@@ -3,6 +3,7 @@ package catalog
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -22,13 +23,14 @@ type Repository struct {
 
 type DBEntry struct {
 	CommonLevel     bool
-	Path            string    `db:"path"`
-	PhysicalAddress string    `db:"physical_address"`
-	CreationDate    time.Time `db:"creation_date"`
-	Size            int64     `db:"size"`
-	Checksum        string    `db:"checksum"`
-	Metadata        Metadata  `db:"metadata"`
-	Expired         bool      `db:"is_expired"`
+	Path            string      `db:"path"`
+	PhysicalAddress string      `db:"physical_address"`
+	CreationDate    time.Time   `db:"creation_date"`
+	Size            int64       `db:"size"`
+	Checksum        string      `db:"checksum"`
+	Metadata        Metadata    `db:"metadata"`
+	Expired         bool        `db:"is_expired"`
+	AddressType     AddressType `db:"address_type"`
 }
 
 type CommitLog struct {
@@ -54,6 +56,38 @@ type Branch struct {
 type Tag struct {
 	ID       string
 	CommitID string
+}
+
+// AddressType is the type of an entry address
+type AddressType int32
+
+const (
+	// AddressTypeUnknown indicates that the address might be relative or full.
+	// Used only for backward compatibility and should not be used for creating entries.
+	AddressTypeUnknown AddressType = 0
+
+	// AddressTypeRelative indicates that the address is relative to the storage namespace.
+	// For example: "/foo/bar"
+	AddressTypeRelative AddressType = 1
+
+	// AddressTypeFull indicates that the address is the full address of the object in the object store.
+	// For example: "s3://bucket/foo/bar"
+	AddressTypeFull AddressType = 2
+)
+
+func (at AddressType) IsRelative() *bool {
+	switch at {
+	case AddressTypeUnknown:
+		return nil
+	case AddressTypeRelative:
+		y := true
+		return &y
+	case AddressTypeFull:
+		n := false
+		return &n
+	default:
+		panic(fmt.Sprintf("unknown address type: %d", at))
+	}
 }
 
 func (j Metadata) Value() (driver.Value, error) {

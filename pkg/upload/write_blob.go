@@ -11,6 +11,7 @@ import (
 
 type Blob struct {
 	PhysicalAddress string
+	RelativePath    bool
 	Checksum        string
 	Size            int64
 }
@@ -30,6 +31,7 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName string, bo
 	checksum := hex.EncodeToString(hashReader.Md5.Sum(nil))
 	return &Blob{
 		PhysicalAddress: address,
+		RelativePath:    true,
 		Checksum:        checksum,
 		Size:            hashReader.CopiedSize,
 	}, nil

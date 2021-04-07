@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/go-openapi/swag"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -105,7 +106,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	if token != nil {
 		tokenPart = *token + "/"
 	}
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name))
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name), swag.Bool(true))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -141,7 +142,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	// write metadata
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path, swag.Bool(true))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -168,6 +169,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		CommonLevel:     false,
 		Path:            params.Path,
 		PhysicalAddress: *body.Staging.PhysicalAddress,
+		AddressType:     catalog.AddressTypeFull,
 		CreationDate:    writeTime,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
@@ -1650,11 +1652,17 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
+	addressType := catalog.AddressTypeFull
+	if blob.RelativePath {
+		addressType = catalog.AddressTypeRelative
+	}
+
 	// write metadata
 	writeTime := time.Now()
 	entry := catalog.DBEntry{
 		Path:            params.Path,
 		PhysicalAddress: blob.PhysicalAddress,
+		AddressType:     addressType,
 		CreationDate:    writeTime,
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
@@ -1664,7 +1672,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, swag.Bool(blob.RelativePath))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -1698,7 +1706,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 	// write metadata
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, swag.Bool(false))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -1718,6 +1726,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		CommonLevel:     false,
 		Path:            params.Path,
 		PhysicalAddress: body.PhysicalAddress,
+		AddressType:     catalog.AddressTypeFull,
 		CreationDate:    writeTime,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
@@ -2007,7 +2016,11 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		}
 		// loop all entries enter to map[path] physicalAddress
 		for _, entry := range entries {
-			address := fmt.Sprintf("%s/%s", repo.StorageNamespace, entry.PhysicalAddress)
+			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.IsRelative())
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, fmt.Sprintf("error while resolving address: %s", err))
+				return
+			}
 			idx := strings.LastIndex(entry.Path, "/")
 			var path string
 			if idx != -1 {
@@ -2021,9 +2034,9 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 					return
 				}
 				currentPath = path
-				currentAddresses = []string{address}
+				currentAddresses = []string{qk.Format()}
 			} else {
-				currentAddresses = append(currentAddresses, address)
+				currentAddresses = append(currentAddresses, qk.Format())
 			}
 		}
 		after = entries[len(entries)-1].Path
@@ -2239,7 +2252,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 
 	objList := make([]ObjectStats, 0, len(res))
 	for _, entry := range res {
-		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.IsRelative())
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -2302,7 +2315,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.IsRelative())
 	if handleAPIError(w, err) {
 		return
 	}
