@@ -63,6 +63,12 @@ export const Loading = () => {
     )
 }
 
+export const Na = () => {
+    return (
+        <span>&mdash;</span>
+    )
+}
+
 export const Error = ({error, onDismiss = null}) => {
     let msg = error.toString()
     // handle wrapped errors

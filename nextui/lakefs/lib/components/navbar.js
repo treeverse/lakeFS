@@ -5,21 +5,25 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 import {useRouter} from 'next/router'
 import Link from 'next/link'
 import useUser from '../hooks/user'
+import {auth} from "../../rest/api";
 
 
 const NavUserInfo = () => {
-    const router = useRouter();
-    const { user } = useUser();
+    const router = useRouter()
+    const { user, loading, error } = useUser()
 
-    if (!user || !user.loggedIn)
+    if (loading)  return <Navbar.Text>Loading...</Navbar.Text>
+
+    if (!user || !!error)
         return (<></>);
 
-    const details = user.details;
+    console.log(user)
+
     return (
         <Navbar.Collapse className="justify-content-end">
-            <NavDropdown title={details.id} className="navbar-username" alignRight>
+            <NavDropdown title={user.id} className="navbar-username" alignRight>
                 <NavDropdown.Header>
-                    Access Key ID: <code>{details.accessKeyId}</code>
+                    Access Key ID: <code>{user.accessKeyId}</code>
                 </NavDropdown.Header>
 
                 <NavDropdown.Divider/>
@@ -27,7 +31,16 @@ const NavUserInfo = () => {
                 <NavDropdown.Item
                     href="/auth/credentials"
                     onSelect={()=> router.push('/auth/credentials')}>
-                        Manage Credentials
+                        Manage My Credentials
+                </NavDropdown.Item>
+
+                <NavDropdown.Item
+                    onSelect={()=> {
+                        auth.logout().then(() => {
+                            router.push('/auth/login')
+                        })
+                    }}>
+                    Logout
                 </NavDropdown.Item>
 
             </NavDropdown>

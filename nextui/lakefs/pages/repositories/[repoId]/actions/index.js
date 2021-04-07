@@ -5,7 +5,7 @@ import {
     ActionsBar,
     Error,
     FormattedDate,
-    Loading,
+    Loading, Na,
     TooltipButton
 } from "../../../../lib/components/controls";
 import React, {useState} from "react";
@@ -66,23 +66,20 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                 </Link>
                 <TooltipButton
                     onClick={() => onFilterBranch(run.branch)}
-                    variant="outline-info"
+                    variant="link"
                     tooltip="filter by branch"
                     className="row-hover"
                     size="sm">
-                    <FilterIcon/>
+                    <FilterIcon size="small"/>
                 </TooltipButton>
             </td>
             <td><FormattedDate dateValue={run.start_time}/></td>
             <td>
-                {(!!run.end_time) ?
-                    <FormattedDate dateValue={run.end_time}/> :
-                    <span>&mdash;</span>
-                }
+                {(!run.end_time) ? <Na/> :<FormattedDate dateValue={run.end_time}/>}
             </td>
             <td>
-                {(!!run.commit_id) ?
-                    (<>
+                {(!run.commit_id) ? <Na/> : (
+                    <>
                         <Link href={{
                             pathname: '/repositories/[repoId]/commits/[commitId]',
                             query: {repoId: repo.id, commitId: run.commit_id}
@@ -93,13 +90,14 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                         </Link>
                         <TooltipButton
                             onClick={() => onFilterCommit(run.commit_id)}
-                            variant="outline-info"
+                            variant="link"
                             tooltip="filter by commit ID"
                             className="row-hover"
                             size="sm">
-                            <FilterIcon/>
+                            <FilterIcon size="small"/>
                         </TooltipButton>
-                    </>) : (<span>&mdash;</span>)}
+                    </>
+                )}
             </td>
         </tr>
     )
@@ -133,15 +131,12 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
     )
 }
 
-const ActionsContainer = ({ repo, after, onPaginate }) => {
+const ActionsContainer = ({ repo, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
 
     const [refresh, setRefresh] = useState(false)
-    const [commitFilter, setCommitFilter] = useState("")
-    const [branchFilter, setBranchFilter] = useState("")
-
     const {results, loading, error, nextPage} = useAPIWithPagination(async () => {
-        return await actions.listRuns(repo.id, branchFilter, commitFilter, after)
-    }, [repo.id, after, refresh, commitFilter, branchFilter])
+        return await actions.listRuns(repo.id, branch, commit, after)
+    }, [repo.id, after, refresh, branch, commit])
 
     const doRefresh = () => setRefresh(!refresh)
 
@@ -155,24 +150,20 @@ const ActionsContainer = ({ repo, after, onPaginate }) => {
                 nextPage={nextPage}
                 after={after}
                 onPaginate={onPaginate}
-                onFilterCommit={commitId => {
-                    setCommitFilter(commitId)
-                }}
-                onFilterBranch={branchId => {
-                    setBranchFilter(branchId)
-                }}
+                onFilterCommit={onFilterCommit}
+                onFilterBranch={onFilterBranch}
             />
     )
 
     let filters = [];
-    if (!!branchFilter) {
-        filters = [<TooltipButton variant="light" tooltip="remove branch filter" onClick={() => setBranchFilter("")}>
-            <XIcon/> {branchFilter}
+    if (!!branch) {
+        filters = [<TooltipButton key="branch" variant="light" tooltip="remove branch filter" onClick={() => onFilterBranch("")}>
+            <XIcon/> {branch}
         </TooltipButton>]
     }
-    if (!!commitFilter) {
-        filters = [...filters, <TooltipButton variant="light" tooltip="remove commit filter" onClick={() => setCommitFilter("")}>
-            <XIcon/>  {commitFilter.substr(0, 12)}
+    if (!!commit) {
+        filters = [...filters, <TooltipButton key="commit" variant="light" tooltip="remove commit filter" onClick={() => onFilterCommit("")}>
+            <XIcon/>  {commit.substr(0, 12)}
         </TooltipButton> ]
     }
 
@@ -196,18 +187,29 @@ const ActionsContainer = ({ repo, after, onPaginate }) => {
 }
 
 
-const RefContainer = ({ repoId, after, onPaginate }) => {
+const RefContainer = ({ repoId, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
     const {loading, error, response} = useRepo(repoId)
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
     return (
-        <ActionsContainer repo={response} after={after} onPaginate={onPaginate}/>
+        <ActionsContainer
+            repo={response}
+            after={after}
+            onPaginate={onPaginate}
+            branch={branch}
+            commit={commit}
+            onFilterBranch={onFilterBranch}
+            onFilterCommit={onFilterCommit}
+        />
     )
 }
 
 const RepositoryActionsPage = () => {
     const router = useRouter()
     const { repoId, after } = router.query;
+
+    const commit = (!!router.query.commit) ? router.query.commit : ""
+    const branch = (!!router.query.branch) ? router.query.branch : ""
 
     return (
         <RepositoryPageLayout repoId={repoId} activePage={'actions'}>
@@ -216,9 +218,22 @@ const RepositoryActionsPage = () => {
                 <RefContainer
                     repoId={repoId}
                     after={(!!after) ? after : ""}
+                    commit={commit}
+                    branch={branch}
+                    onFilterCommit={commit => {
+                        const query = {repoId} // will reset pagination
+                        if (!!commit) query.commit = commit
+                        router.push({pathname: `/repositories/[repoId]/actions`, query})
+                    }}
+                    onFilterBranch={branch => {
+                        const query = {repoId} // will reset pagination
+                        if (!!branch) query.branch = branch
+                        router.push({pathname: `/repositories/[repoId]/actions`, query})
+                    }}
                     onPaginate={after => {
                         const query = {repoId, after}
-                        if (!!router.query.prefix) query.prefix = router.query.prefix
+                        if (!!commit) query.commit = commit
+                        if (!!branch) query.branch = branch
                         router.push({pathname: `/repositories/[repoId]/actions`, query})
                     }}
                 />

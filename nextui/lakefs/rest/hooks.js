@@ -1,4 +1,6 @@
 import {useEffect, useState} from 'react';
+import {useRouter} from "next/router";
+import {AuthenticationError} from "./api";
 
 
 export const useAPIWithPagination = (promise, deps = []) => {
@@ -42,6 +44,8 @@ export const useAPIWithPagination = (promise, deps = []) => {
 }
 
 export const useAPI = (promise, deps = []) => {
+    const router = useRouter()
+
     const initialState = {
         loading: true,
         error: null,
@@ -61,6 +65,13 @@ export const useAPI = (promise, deps = []) => {
                 response
             })
         } catch (error) {
+            if (error instanceof AuthenticationError) {
+                router.push({
+                    pathname: '/auth/login',
+                    query: {next: router.asPath}
+                })
+                return
+            }
             setRequest({
                 loading: false,
                 error,

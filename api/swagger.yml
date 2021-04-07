@@ -12,6 +12,7 @@ servers:
 security:
   - jwt_token: []
   - basic_auth: []
+  - cookie_auth: []
 
 components:
   securitySchemes:
@@ -22,6 +23,10 @@ components:
       type: apiKey
       in: header
       name: X-JWT-Authorization
+    cookie_auth:
+      type: apiKey
+      in: cookie
+      name: access_token
 
   parameters:
     PaginationPrefix:
@@ -575,6 +580,26 @@ components:
           items:
             $ref: "#/components/schemas/User"
 
+    LoginInformation:
+      type: object
+      required:
+        - access_key_id
+        - secret_access_key
+      properties:
+        access_key_id:
+          type: string
+        secret_access_key:
+          type: string
+
+    AuthenticationToken:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          description: a JWT token that could be used to authenticate requests
+          type: string
+
     GroupCreation:
       type: object
       required:
@@ -805,6 +830,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      operationId: login
+      summary: perform a login
+      security: []  # No authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInformation"
+      responses:
+        200:
+          description: successful login
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "access_token=abcde12356; Path=/; HttpOnly"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      operationId: logout
+      summary: logs out a cookie-authenticated user
+      security:
+        - cookie_auth: []
+      responses:
+        200:
+          description: successful logout
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /auth/users:
     get:

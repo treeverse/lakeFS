@@ -60,7 +60,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 const RepositoryList = ({ onPaginate, prefix, after, lastListUpdate = null  }) => {
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return repositories.list(prefix, after, 3)
+        return repositories.list(prefix, after)
     }, [lastListUpdate, prefix, after])
 
     if (loading) return <Loading/>;

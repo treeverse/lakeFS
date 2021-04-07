@@ -1,6 +1,26 @@
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 300;
 
+class LocalCache {
+    get(key) {
+        const value = localStorage.getItem(key)
+        if (value !== null)
+            return JSON.parse(value)
+        return null
+    }
+
+    set(key, value) {
+        localStorage.setItem(key, JSON.stringify(value))
+    }
+
+    delete(key) {
+        localStorage.removeItem(key)
+    }
+}
+
+const cache = new LocalCache()
+
+
 export const linkToPath = (repoId, branchId, path) => {
     const query = qs({
         path: path,
@@ -20,30 +40,53 @@ const qs = (queryParts) => {
 export const extractError = async (response) => {
     let body;
     if (response.headers.get('Content-Type') === 'application/json') {
-        const jsonBody = await response.json();
+        const jsonBody = await response.json()
         body = jsonBody.message;
     } else {
-        body = await response.text();
+        body = await response.text()
     }
     return body;
 };
 
-const apiRequest = (uri, requestData = {}, additionalHeaders = {}, defaultHeaders = {
+export const defaultAPIHeaders = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-}) => {
+}
+
+const authenticationError = "error authenticating request"
+
+const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     const headers = new Headers({
-        ...defaultHeaders,
+        ...defaultAPIHeaders,
         ...additionalHeaders,
     })
-    return fetch(`${API_ENDPOINT}${uri}`, {headers,  ...requestData});
-};
+    const response = await fetch(`${API_ENDPOINT}${uri}`, {headers,  ...requestData})
+
+    // check if we're missing credentials
+    if (response.status === 401) {
+        const errorMessage = await extractError(response)
+        if (errorMessage === authenticationError) {
+            cache.delete('user')
+            throw new AuthenticationError('Authentication Error')
+        }
+    }
+
+    return response
+}
 
 // helper errors
 export class NotFoundError extends Error {
     constructor(message) {
+        super(message)
+        this.name = "NotFoundError"
+    }
+}
+
+
+export class AuthenticationError extends Error {
+    constructor(message) {
         super(message);
-        this.name = "NotFoundError";
+        this.name = "AuthenticationError"
     }
 }
 
@@ -60,39 +103,59 @@ export class MergeError extends Error {
 class Auth {
 
     async login(accessKeyId, secretAccessKey) {
-        const response = await fetch('/auth/login', {
-            headers: new Headers({'Content-Type': 'application/json'}),
+        const response = await fetch(`${API_ENDPOINT}/auth/login`, {
+            headers: new Headers(defaultAPIHeaders),
             method: 'POST',
             body: json({access_key_id: accessKeyId, secret_access_key: secretAccessKey})
         });
 
         if (response.status === 401) {
-            throw new Error('invalid credentials');
+            throw new AuthenticationError('invalid credentials');
         }
         if (response.status !== 200) {
-            throw new Error('unknown authentication error');
+            throw new AuthenticationError('unknown authentication error');
         }
 
-        const userResponse = await apiRequest('/user');
-        const body = await userResponse.json();
-        return body.user;
+        // get current user and cache it
+        const userResponse = await apiRequest('/user')
+        const body = await userResponse.json()
+        const user = body.user
+
+        cache.set('user', {...user, accessKeyId})
+        return user
+    }
+
+    async logout() {
+        const response = await fetch(`${API_ENDPOINT}/auth/logout`, {
+            headers: new Headers(defaultAPIHeaders),
+            method: 'POST',
+        });
+
+        if (response.status !== 200) {
+            throw new Error('unknown authentication error')
+        }
+        cache.delete('user')
+    }
+
+    async getCurrentUser() {
+        return cache.get('user')
     }
 
     async listUsers(after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({after, amount})
         const response = await apiRequest(`/auth/users?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list users: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async createUser(userId) {
-        const response = await apiRequest(`/auth/users`, {method: 'POST', body: json({id: userId})});
+        const response = await apiRequest(`/auth/users`, {method: 'POST', body: json({id: userId})})
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async listGroups(after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -101,64 +164,64 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list groups: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async listGroupMembers(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({after, amount})
         const response = await apiRequest(`/auth/groups/${groupId}/members?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list group members: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async addUserToGroup(userId, groupId) {
         const response = await apiRequest(`/auth/groups/${groupId}/members/${userId}`, {method: 'PUT'})
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async removeUserFromGroup(userId, groupId) {
         const response = await apiRequest(`/auth/groups/${groupId}/members/${userId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async attachPolicyToUser(userId, policyId) {
         const response = await apiRequest(`/auth/users/${userId}/policies/${policyId}`, {method: 'PUT'})
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async detachPolicyFromUser(userId, policyId) {
         const response = await apiRequest(`/auth/users/${userId}/policies/${policyId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async attachPolicyToGroup(groupId, policyId) {
         const response = await apiRequest(`/auth/groups/${groupId}/policies/${policyId}`, {method: 'PUT'})
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async detachPolicyFromGroup(groupId, policyId) {
         const response = await apiRequest(`/auth/groups/${groupId}/policies/${policyId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async deleteCredentials(userId, accessKeyId) {
         const response = await apiRequest(`/auth/users/${userId}/credentials/${accessKeyId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
@@ -167,40 +230,40 @@ class Auth {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return response.json()
     }
 
     async listPolicies(after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({after, amount})
         const response = await apiRequest(`/auth/policies?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async createPolicy(policyId, policyDocument) {
-        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        const policy = {id: policyId, ...JSON.parse(policyDocument)}
         const response = await apiRequest(`/auth/policies`, {
             method: 'POST',
             body: json(policy)
         });
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async editPolicy(policyId, policyDocument) {
-        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        const policy = {id: policyId, ...JSON.parse(policyDocument)}
         const response = await apiRequest(`/auth/policies/${policyId}`, {
             method: 'PUT',
             body: json(policy)
         });
         if (response.status !== 200) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async listCredentials(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -209,7 +272,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list credentials: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async createCredentials(userId) {
@@ -217,30 +280,30 @@ class Auth {
             method: 'POST',
         });
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async listUserGroups(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({after, amount})
         const response = await apiRequest(`/auth/users/${userId}/groups?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list user groups: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async listUserPolicies(userId, after, amount = DEFAULT_LISTING_AMOUNT, effective = false) {
-        let params = {after, amount};
+        let params = {after, amount}
         if (effective) {
-            params.effective =  'true';
+            params.effective =  'true'
         }
         const response = await apiRequest(`/auth/users/${userId}/policies?${qs(params)}`)
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async getPolicy(policyId) {
@@ -248,7 +311,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not get policy: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async listGroupPolicies(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -257,13 +320,13 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async deleteUser(userId) {
-        const response = await apiRequest(`/auth/users/${userId}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/users/${userId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
@@ -276,7 +339,7 @@ class Auth {
     }
 
     async deleteGroup(groupId) {
-        const response = await apiRequest(`/auth/groups/${groupId}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/groups/${groupId}`, {method: 'DELETE'})
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -284,29 +347,22 @@ class Auth {
 
     async deleteGroups (groupIds) {
         for (let i = 0; i < groupIds.length; i++) {
-            const groupId = groupIds[i];
-            await this.deleteGroup(groupId);
+            const groupId = groupIds[i]
+            await this.deleteGroup(groupId)
         }
     }
 
     async deletePolicy(policyId) {
-        const response = await apiRequest(`/auth/policies/${policyId}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/policies/${policyId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async deletePolicies (policyIds) {
         for (let i = 0; i < policyIds.length; i++) {
-            const policyId = policyIds[i];
-            await this.deletePolicy(policyId);
-        }
-    }
-
-    async logout() {
-        const response = await fetch('/auth/logout', {method: 'POST'});
-        if (response.status !== 200) {
-            throw new Error('unknown authentication error');
+            const policyId = policyIds[i]
+            await this.deletePolicy(policyId)
         }
     }
 }
@@ -314,13 +370,13 @@ class Auth {
 class Repositories {
 
     async get(repoId) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`)
         if (response.status === 404) {
-            throw new NotFoundError(`could not find repository ${repoId}`);
+            throw new NotFoundError(`could not find repository ${repoId}`)
         } else if (response.status !== 200) {
             throw new Error(`could not get repository: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async list(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
@@ -340,13 +396,13 @@ class Repositories {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return response.json()
     }
 
     async delete(repoId) {
-        const response = await apiRequest(`/repositories/${repoId}`, {method: 'DELETE'});
+        const response = await apiRequest(`/repositories/${repoId}`, {method: 'DELETE'})
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 }
@@ -354,13 +410,13 @@ class Repositories {
 class Branches {
 
     async get(repoId, branchId) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`);
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`)
         if (response.status === 404) {
-            throw new NotFoundError(`could not find branch ${branchId}`);
+            throw new NotFoundError(`could not find branch ${branchId}`)
         } else if (response.status !== 200) {
             throw new Error(`could not get branch: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async create(repoId, name, source) {
@@ -369,9 +425,9 @@ class Branches {
             body: json({name, source}),
         });
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async delete(repoId, name) {
@@ -379,7 +435,7 @@ class Branches {
             method: 'DELETE',
         });
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
@@ -389,64 +445,64 @@ class Branches {
             body: json(options),
         });
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
-        const response = await apiRequest(`/repositories/${repoId}/branches?${query}`);
+        const query = qs({prefix, after, amount})
+        const response = await apiRequest(`/repositories/${repoId}/branches?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 }
 
 class Objects {
 
     async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true) {
-        const query = qs({prefix:tree, amount, after, readUncommitted});
-        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
+        const query = qs({prefix:tree, amount, after, readUncommitted})
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`)
         if (response.status !== 200) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return await response.json();
+        return await response.json()
     }
 
     async upload(repoId, branchId, path, fileObject) {
         const data = new FormData();
-        data.append('content', fileObject);
-        const query = qs({path});
+        data.append('content', fileObject)
+        const query = qs({path})
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
             method: 'POST',
             body: data,
-        }, {}, {});
+        }, {}, {})
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async delete(repoId, branchId, path) {
-        const query = qs({path});
+        const query = qs({path})
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
             method: 'DELETE',
         });
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
     }
 }
 
 class Commits {
     async log(repoId, refId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
-        const response = await apiRequest(`/repositories/${repoId}/refs/${refId}/commits?${query}`);
+        const query = qs({after, amount})
+        const response = await apiRequest(`/repositories/${repoId}/refs/${refId}/commits?${query}`)
         if (response.status !== 200) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 
     async get(repoId, commitId) {
@@ -457,7 +513,7 @@ class Commits {
         } else if (response.status !== 200) {
             throw new Error(`could not get commit: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async commit(repoId, branchId, message, metadata ={}) {
@@ -466,30 +522,30 @@ class Commits {
             body: json({message, metadata}),
         });
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            throw new Error(await extractError(response))
         }
-        return response.json();
+        return response.json()
     }
 }
 
 class Refs {
 
     async changes(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({after, amount})
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/diff?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return response.json()
     }
 
     async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({after, amount})
         const response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return response.json()
     }
 
     async merge(repoId, sourceBranch, destinationBranch) {
@@ -499,13 +555,13 @@ class Refs {
         });
         switch (response.status) {
             case 200:
-                return response.json();
+                return response.json()
             case 409:
-                const resp = await response.json();
-                throw new MergeError(response.statusText, resp.body);
+                const resp = await response.json()
+                throw new MergeError(response.statusText, resp.body)
             case 412:
             default:
-                throw new Error(await extractError(response));
+                throw new Error(await extractError(response))
         }
     }
 }
@@ -513,8 +569,8 @@ class Refs {
 class Actions {
 
     async listRuns(repoId, branch = "", commit = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({branch, commit, after, amount});
-        const response = await apiRequest(`/repositories/${repoId}/actions/runs?${query}`);
+        const query = qs({branch, commit, after, amount})
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list actions runs: ${await extractError(response)}`)
         }
@@ -522,32 +578,30 @@ class Actions {
     }
 
     async getRun(repoId, runId) {
-        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}`);
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}`)
         if (response.status !== 200) {
             throw new Error(`could not get actions run: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async listRunHooks(repoId, runId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
-        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks?${query}`);
+        const query = qs({after, amount})
+        const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list actions run hooks: ${await extractError(response)}`)
         }
-        return response.json();
+        return response.json()
     }
 
     async getRunHookOutput(repoId, runId, hookRunId) {
         const response = await apiRequest(`/repositories/${repoId}/actions/runs/${runId}/hooks/${hookRunId}/output`, {
-            headers: {
-                "Content-Type": "application/octet-stream",
-            },
+            headers: {"Content-Type": "application/octet-stream"},
         })
         if (response.status !== 200) {
             throw new Error(`could not get actions run hook output: ${await extractError(response)}`)
         }
-        return response.text();
+        return response.text()
     }
 
 }
@@ -565,11 +619,11 @@ class Setup {
         });
         switch (response.status) {
             case 200:
-                return response.json();
+                return response.json()
             case 409:
-                throw new Error('Conflict');
+                throw new Error('Conflict')
             default:
-                throw new Error('Unknown');
+                throw new Error('Unknown')
         }
     }
 }
@@ -581,22 +635,22 @@ class Config {
         });
         switch (response.status) {
             case 200:
-                return await response.json();
+                return await response.json()
             case 409:
-                throw new Error('Conflict');
+                throw new Error('Conflict')
             default:
-                throw new Error('Unknown');
+                throw new Error('Unknown')
         }
     }
 }
 
 
-export const repositories = new Repositories();
-export const branches = new Branches();
-export const objects = new Objects();
-export const commits = new Commits();
-export const refs = new Refs();
-export const setup = new Setup();
-export const auth = new Auth();
-export const actions = new Actions();
-export const config = new Config();
+export const repositories = new Repositories()
+export const branches = new Branches()
+export const objects = new Objects()
+export const commits = new Commits()
+export const refs = new Refs()
+export const setup = new Setup()
+export const auth = new Auth()
+export const actions = new Actions()
+export const config = new Config()
