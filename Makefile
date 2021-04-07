@@ -14,7 +14,7 @@ ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0.dev
 endif
 
-PYTHON_IMAGE=python:#
+PYTHON_IMAGE=python:3
 
 export PATH:= $(PATH):$(GOBINPATH)
 
@@ -111,7 +111,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 clients: client-python
 
 package-python:
-	$(DOCKER) run --rm -v $(shell pwd):/mnt -w /mnt/clients/python python:3 ./build-package.sh
+	$(DOCKER) run --rm -v $(shell pwd):/mnt -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
 
 package: package-python
 
