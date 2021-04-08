@@ -15,7 +15,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 )
 
 const (
@@ -28,8 +29,8 @@ const (
 )
 
 var (
-	cfgFile    string
-	cfgFileErr error
+	cfgFile string
+	cfg *config.Config
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -47,19 +48,19 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 			return
 		}
 
-		if errors.As(cfgFileErr, &viper.ConfigFileNotFoundError{}) {
+		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
 			if cfgFile == "" {
 				// if the config file wasn't provided, try to run using the default values + env vars
 				return
 			}
 			// specific message in case the file isn't found
-			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
-		} else if cfgFileErr != nil {
+			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+		} else if cfg.Err() != nil {
 			// other errors while reading the config file
-			DieFmt("error reading configuration file: %v", cfgFileErr)
+			DieFmt("error reading configuration file: %v", cfg.Err())
 		}
 	},
-	Version: config.Version,
+	Version: version.Version,
 }
 
 func getClient() api.ClientWithResponsesInterface {
@@ -70,14 +71,14 @@ func getClient() api.ClientWithResponsesInterface {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	accessKeyID := viper.GetString(ConfigAccessKeyID)
-	secretAccessKey := viper.GetString(ConfigSecretAccessKey)
+	accessKeyID := cfg.Credentials.AccessKeyID
+	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := viper.GetString(ConfigServerEndpointURL)
+	serverEndpoint := cfg.Server.EndpointURL
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
@@ -174,5 +175,5 @@ func initConfig() {
 	// Configuration defaults
 	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
 
-	cfgFileErr = viper.ReadInConfig()
+	cfg = config.ReadConfig()
 }

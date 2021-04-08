@@ -1,5 +1,6 @@
 package cmd
 
+
 import (
 	"fmt"
 	"os"
@@ -8,7 +9,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -27,7 +28,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "lakefs-loadtest",
 	Short:   "Run a loadtest on a lakeFS instance.",
-	Version: config.Version,
+	Version: version.Version,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
