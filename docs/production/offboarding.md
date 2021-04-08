@@ -8,15 +8,6 @@ has_children: false
 ---
 
 # Migrating away from lakeFS
-{: .no_toc }
-
-{:.pb-3 }
-
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
 
 ## Copying data from a lakeFS repository to an S3 bucket
 

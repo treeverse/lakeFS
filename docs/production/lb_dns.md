@@ -36,3 +36,6 @@ For an AWS load balancer with Route53 DNS, create a simple record, and choose *A
 ![Configuring a simple record in Route53](../assets/img/route53.png)
 
 For other DNS providers, refer to the documentation on how to add CNAME records.
+
+You can now move on to the [Setup](setup.md) page.
+c
