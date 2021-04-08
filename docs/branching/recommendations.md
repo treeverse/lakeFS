@@ -38,8 +38,8 @@ _Creating a testing branch:_
 
    ```shell
    lakectl branch create \
-      lakefs://example-repo@testing-spark-3 \
-      --source lakefs://example-repo@main
+      lakefs://example-repo/testing-spark-3 \
+      --source lakefs://example-repo/main
    # output:
    # created branch 'testing-spark-3', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
@@ -47,7 +47,7 @@ _Creating a testing branch:_
 _Resetting changes to a branch:_
 
    ```shell
-   lakectl branch reset lakefs://example-repo@testing-spark-3
+   lakectl branch reset lakefs://example-repo/testing-spark-3
    # are you sure you want to reset all uncommitted changes?: y█
    ```
 
@@ -142,7 +142,7 @@ You can run quality tests for each merge (as presented in Example 1). Alas, test
 _Rolling back a branch to a previous commit using the CLI_
 
    ```shell
-   lakectl branch reset lakefs://example-repo@stream-1 --commit ~79RU9aUsQ9GLnU
+   lakectl branch reset lakefs://example-repo/stream-1 --commit ~79RU9aUsQ9GLnU
    ```
 
 ### Example 3: Cross collection consistency
