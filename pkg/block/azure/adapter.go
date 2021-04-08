@@ -18,6 +18,7 @@ import (
 
 var (
 	ErrNotImplemented = errors.New("not implemented")
+	ErrAsyncCopy      = errors.New("asynchronous copy not supported")
 )
 
 const (
@@ -303,8 +304,16 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 
 	destinationContainer := a.getContainerURL(qualifiedDestinationKey.ContainerURL)
 	destinationURL := destinationContainer.NewBlobURL(qualifiedDestinationKey.BlobURL)
-	_, err = destinationURL.StartCopyFromURL(ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
-	return err
+	resp, err := destinationURL.StartCopyFromURL(ctx, sourceURL.URL(), azblob.Metadata{}, azblob.ModifiedAccessConditions{}, azblob.BlobAccessConditions{}, azblob.AccessTierNone, azblob.BlobTagsMap{})
+	if err != nil {
+		return err
+	}
+	// validate copy is not asynchronous
+	copyStatus := resp.CopyStatus()
+	if copyStatus == "pending" {
+		return ErrAsyncCopy
+	}
+	return nil
 }
 
 func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (string, error) {
