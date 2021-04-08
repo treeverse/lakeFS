@@ -12,8 +12,8 @@ has_children: false
 
 The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages.
 
-For Python, this example uses [OpenAPI Generator](hhttps://openapi-generator.tech){: target="_blank" }
-which can generates Python client code for the OpenAPI definition served by a lakeFS server.
+For Python, this example uses [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" }
+that generates Python client code for the OpenAPI definition served by a lakeFS server.
 
 ## Table of contents
 {: .no_toc .text-delta }
