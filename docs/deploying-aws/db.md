@@ -14,7 +14,7 @@ lakeFS requires a PostgreSQL database to synchronize actions on your repositorie
 We will show you how to create a database on your cloud platform.
 You can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-If you already have a database, take note of the connection string and proceed to [Configuring the Storage](storage.md).
+If you already have a database, take note of the connection string and proceed to [Configuring the Storage](bucket.md).
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -32,7 +32,7 @@ You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.a
 
 3. Make sure your security group rules allow you to connect to the database instance. 
  
-You can now proceed to [Configuring the Storage](storage.md).
+You can now proceed to [Configuring the Storage](bucket.md).
 
 ## On Microsoft Azure Database
 
@@ -42,7 +42,7 @@ You can now proceed to [Configuring the Storage](storage.md).
    ![Azure postgres Connection String](../assets/img/azure_postgres_conn.png)
 1. Make sure your Access control roles allow you to connect to the database instance. 
 
-You can now proceed to [Configuring the Storage](storage.md).
+You can now proceed to [Configuring the Storage](bucket.md).
 
 ## On Google Cloud SQL
 
@@ -55,4 +55,4 @@ You can now proceed to [Configuring the Storage](storage.md).
 Depending on the chosen lakeFS installation method, you will need to make sure lakeFS can access your database.
 For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy from [this Helm chart](https://github.com/rimusz/charts/blob/master/stable/gcloud-sqlproxy/README.md), or as [a sidecar container in your lakeFS pod](https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine).
 
-You can now proceed to [Configuring the Storage](storage.md).
+You can now proceed to [Configuring the Storage](bucket.md).

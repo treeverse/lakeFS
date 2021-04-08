@@ -24,7 +24,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
     
    ![Create Repository](../assets/img/create_repo_s3.png)
 
-   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](storage.md).
+   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](bucket.md).
    
    
 # Next steps
