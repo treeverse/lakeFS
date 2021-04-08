@@ -22,7 +22,8 @@
 # Then explicitly reverse the ignore rule for a single file:
 #!docs/README.md
 
-
+.gitlab-ci.yml
 git_push.sh
 build-package.sh
 lakefs_client/client.py
+

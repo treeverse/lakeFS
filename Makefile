@@ -110,7 +110,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 
 clients: client-python
 
-package-python:
+package-python: client-python
 	$(DOCKER) run --rm -v $(shell pwd):/mnt -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
 
 package: package-python
@@ -174,7 +174,7 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 
 validate-client-python:
-	git diff --quiet -- client/python/lakefs/api
+	git diff --quiet -- client/python/lakefs_client/api
 
 checks-validator: lint validate-fmt validate-proto validate-client-python ## Run all validation/linting steps
 
