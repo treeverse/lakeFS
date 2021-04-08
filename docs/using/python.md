@@ -43,8 +43,8 @@ from lakefs import models
 from lakefs.client import Client
 
 configuration = lakefs.Configuration()
-configuration.username = 'AKIAJB3IHEJHOEXTPRNQ'
-configuration.password = 'nUkB0tadbOCgizyYKJB+1Y3fBkXJRbie35hCGnQ1'
+configuration.username = 'AKIAIOSFODNN7EXAMPLE'
+configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 configuration.host = 'http://localhost:8000/api/v1'
 
 client = Client(configuration)
