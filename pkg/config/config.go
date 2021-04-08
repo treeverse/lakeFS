@@ -215,9 +215,15 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.profile"))
 	}
 	if viper.IsSet("blockstore.s3.credentials.access_key_id") {
+		secretAccessKey := viper.GetString("blockstore.s3.credentials.secret_access_key")
+		if secretAccessKey == "" {
+			// try deprecated key
+			secretAccessKey = viper.GetString("blockstore.s3.credentials.access_secret_key")
+			logging.Default().Warn("Deprecated configuration key used: blockstore.s3.credentials.access_secret_key. Use instead: blockstore.s3.credentials.secret_access_key")
+		}
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.s3.credentials.access_key_id"),
-			viper.GetString("blockstore.s3.credentials.secret_access_key"),
+			secretAccessKey,
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
 
