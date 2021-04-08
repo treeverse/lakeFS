@@ -27,7 +27,7 @@ Install the Python client using pip:
 
 
 ```shell
-pip install 'lakefs==<lakeFS version>'
+pip install 'lakefs_client==<lakeFS version>'
 ```
 
 The package is available from version 0.34.0.
@@ -38,11 +38,11 @@ The package is available from version 0.34.0.
 How to instantiate a client:
 
 ```python
-import lakefs
-from lakefs import models
-from lakefs.client import Client
+import lakefs_client
+from lakefs_client import models
+from lakefs_client.client import Client
 
-configuration = lakefs.Configuration()
+configuration = lakefs_client.Configuration()
 configuration.username = 'AKIAIOSFODNN7EXAMPLE'
 configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 configuration.host = 'http://localhost:8000/api/v1'
