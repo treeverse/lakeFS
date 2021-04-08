@@ -51,9 +51,6 @@ func ReadConfig() (c *Config) {
 		return
 	}
 	c.err = viper.UnmarshalExact(&c.configuration)
-	if c.err != nil {
-		return
-	}
 	return
 }
 
