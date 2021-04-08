@@ -79,7 +79,7 @@ client.branches.list_branches('example-repo')
 Create a new branch:
 
 ```python
-client.branches.create_branch(models.BranchCreation(name='experiment-aggregations1', source='main'), 'example-repo')
+client.branches.create_branch(repository='example-repo', branch_creation=models.BranchCreation(name='experiment-aggregations1', source='main'))
 # output:
 # 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656'
 ```
@@ -95,7 +95,8 @@ client.branches.list_branches('example-repo').results
 Great. Now, let's upload a file into our new branch:
 
 ```python
-client.objects.upload_object(repository='example-repo', branch='experiment-aggregations1', path='path/to/file.csv', content='file.csv')
+with open('file.csv', 'rb') as f:
+    client.objects.upload_object(repository='example-repo', branch='experiment-aggregations1', path='path/to/file.csv', content=f)
 # output:
 # {'checksum': '0d3b39380e2500a0f60fb3c09796fdba',
 #  'mtime': 1617534834,
@@ -119,7 +120,7 @@ As expected, our change appears here. Let's commit it, and attach some arbitrary
 client.commits.commit(
     repository='example-repo',
     branch='experiment-aggregations1',
-    body=models.CommitCreation(message='Added a CSV file!', metadata={'using': 'python_api'}))
+    commit_creation=models.CommitCreation(message='Added a CSV file!', metadata={'using': 'python_api'}))
 # output:
 # {'committer': 'barak',
 #  'creation_date': 1617535120,
