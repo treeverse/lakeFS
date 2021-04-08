@@ -239,7 +239,7 @@ Class | Method | HTTP request | Description
 
 ## Author
 
-hello@treeverse.io
+services@treeverse.io
 
 
 ## Notes for Large OpenAPI documents
