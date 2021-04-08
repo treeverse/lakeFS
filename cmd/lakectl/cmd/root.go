@@ -14,9 +14,9 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/version"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 )
 
 const (
@@ -30,7 +30,7 @@ const (
 
 var (
 	cfgFile string
-	cfg *config.Config
+	cfg     *config.Config
 )
 
 // rootCmd represents the base command when called without any sub-commands

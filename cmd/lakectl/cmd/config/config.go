@@ -8,7 +8,7 @@ import (
 
 type configuration struct {
 	Credentials struct {
-		AccessKeyID    string `mapstructure:"access_key_id"`
+		AccessKeyID     string `mapstructure:"access_key_id"`
 		SecretAccessKey string `mapstructure:"secret_access_key"`
 	}
 	Server struct {
