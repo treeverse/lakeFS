@@ -1,4 +1,4 @@
-# lakefs.StagingApi
+# lakefs_client.StagingApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -19,14 +19,14 @@ get a physical address and a return token to write object to underlying storage
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import staging_api
-from lakefs.model.staging_location import StagingLocation
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import staging_api
+from lakefs_client.model.staging_location import StagingLocation
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -36,7 +36,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -48,7 +48,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
@@ -60,7 +60,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get a physical address and a return token to write object to underlying storage
         api_response = api_instance.get_physical_address(repository, branch, path)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->get_physical_address: %s\n" % e)
 ```
 
@@ -110,15 +110,15 @@ If the supplied token matches the current staging token, associate the object as
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import staging_api
-from lakefs.model.staging_metadata import StagingMetadata
-from lakefs.model.staging_location import StagingLocation
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import staging_api
+from lakefs_client.model.staging_location import StagingLocation
+from lakefs_client.model.error import Error
+from lakefs_client.model.staging_metadata import StagingMetadata
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -128,7 +128,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -140,7 +140,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
@@ -162,7 +162,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # associate staging on this physical address with a path
         api_instance.link_physical_address(repository, branch, path, staging_metadata)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->link_physical_address: %s\n" % e)
 ```
 

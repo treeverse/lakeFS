@@ -1,4 +1,4 @@
-# lakefs.ConfigApi
+# lakefs_client.ConfigApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -21,14 +21,14 @@ retrieve the lakefs config
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import config_api
-from lakefs.model.config import Config
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import config_api
+from lakefs_client.model.config import Config
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -38,7 +38,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -50,7 +50,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = config_api.ConfigApi(api_client)
 
@@ -58,7 +58,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         api_response = api_instance.get_config()
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ConfigApi->get_config: %s\n" % e)
 ```
 
@@ -97,21 +97,21 @@ setup lakeFS and create a first user
 
 ```python
 import time
-import lakefs
-from lakefs.api import config_api
-from lakefs.model.setup import Setup
-from lakefs.model.error import Error
-from lakefs.model.credentials_with_secret import CredentialsWithSecret
+import lakefs_client
+from lakefs_client.api import config_api
+from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
+from lakefs_client.model.setup import Setup
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient() as api_client:
+with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = config_api.ConfigApi(api_client)
     setup = Setup(
@@ -127,7 +127,7 @@ with lakefs.ApiClient() as api_client:
         # setup lakeFS and create a first user
         api_response = api_instance.setup(setup)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ConfigApi->setup: %s\n" % e)
 ```
 

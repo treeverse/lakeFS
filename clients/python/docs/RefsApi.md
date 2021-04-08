@@ -1,4 +1,4 @@
-# lakefs.RefsApi
+# lakefs_client.RefsApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -22,14 +22,14 @@ diff references
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import refs_api
-from lakefs.model.diff_list import DiffList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import refs_api
+from lakefs_client.model.diff_list import DiffList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -39,7 +39,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -51,7 +51,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = refs_api.RefsApi(api_client)
     repository = "repository_example" # str | 
@@ -67,7 +67,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # diff references
         api_response = api_instance.diff_refs(repository, left_ref, right_ref)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->diff_refs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -76,7 +76,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # diff references
         api_response = api_instance.diff_refs(repository, left_ref, right_ref, after=after, amount=amount, type=type, diff_type=diff_type)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->diff_refs: %s\n" % e)
 ```
 
@@ -128,14 +128,14 @@ Dump repository refs (tags, commits, branches) to object store
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import refs_api
-from lakefs.model.refs_dump import RefsDump
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import refs_api
+from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -145,7 +145,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -157,7 +157,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = refs_api.RefsApi(api_client)
     repository = "repository_example" # str | 
@@ -167,7 +167,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # Dump repository refs (tags, commits, branches) to object store
         api_response = api_instance.dump_refs(repository)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->dump_refs: %s\n" % e)
 ```
 
@@ -214,14 +214,14 @@ get commit log from ref
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import refs_api
-from lakefs.model.error import Error
-from lakefs.model.commit_list import CommitList
+import lakefs_client
+from lakefs_client.api import refs_api
+from lakefs_client.model.commit_list import CommitList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -231,7 +231,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -243,7 +243,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = refs_api.RefsApi(api_client)
     repository = "repository_example" # str | 
@@ -256,7 +256,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get commit log from ref
         api_response = api_instance.log_commits(repository, ref)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->log_commits: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -265,7 +265,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get commit log from ref
         api_response = api_instance.log_commits(repository, ref, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->log_commits: %s\n" % e)
 ```
 
@@ -314,15 +314,15 @@ merge references
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import refs_api
-from lakefs.model.merge import Merge
-from lakefs.model.error import Error
-from lakefs.model.merge_result import MergeResult
+import lakefs_client
+from lakefs_client.api import refs_api
+from lakefs_client.model.merge import Merge
+from lakefs_client.model.error import Error
+from lakefs_client.model.merge_result import MergeResult
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -332,7 +332,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -344,7 +344,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = refs_api.RefsApi(api_client)
     repository = "repository_example" # str | 
@@ -362,7 +362,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # merge references
         api_response = api_instance.merge_into_branch(repository, source_ref, destination_branch)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->merge_into_branch: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -371,7 +371,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # merge references
         api_response = api_instance.merge_into_branch(repository, source_ref, destination_branch, merge=merge)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->merge_into_branch: %s\n" % e)
 ```
 
@@ -423,14 +423,14 @@ Restore repository refs (tags, commits, branches) from object store
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import refs_api
-from lakefs.model.refs_dump import RefsDump
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import refs_api
+from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -440,7 +440,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -452,7 +452,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = refs_api.RefsApi(api_client)
     repository = "repository_example" # str | 
@@ -466,7 +466,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # Restore repository refs (tags, commits, branches) from object store
         api_instance.restore_refs(repository, refs_dump)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->restore_refs: %s\n" % e)
 ```
 

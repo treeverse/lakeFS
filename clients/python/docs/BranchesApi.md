@@ -1,4 +1,4 @@
-# lakefs.BranchesApi
+# lakefs_client.BranchesApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -24,14 +24,14 @@ create branch
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.error import Error
-from lakefs.model.branch_creation import BranchCreation
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.branch_creation import BranchCreation
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -41,7 +41,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -53,7 +53,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -67,7 +67,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create branch
         api_response = api_instance.create_branch(repository, branch_creation)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->create_branch: %s\n" % e)
 ```
 
@@ -115,13 +115,13 @@ delete branch
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -131,7 +131,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -143,7 +143,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -153,7 +153,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete branch
         api_instance.delete_branch(repository, branch)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->delete_branch: %s\n" % e)
 ```
 
@@ -200,14 +200,14 @@ diff branch
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.diff_list import DiffList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.diff_list import DiffList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -217,7 +217,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -229,7 +229,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -242,7 +242,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # diff branch
         api_response = api_instance.diff_branch(repository, branch)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->diff_branch: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -251,7 +251,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # diff branch
         api_response = api_instance.diff_branch(repository, branch, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->diff_branch: %s\n" % e)
 ```
 
@@ -300,14 +300,14 @@ get branch
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.error import Error
-from lakefs.model.ref import Ref
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.ref import Ref
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -317,7 +317,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -329,7 +329,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -340,7 +340,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get branch
         api_response = api_instance.get_branch(repository, branch)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->get_branch: %s\n" % e)
 ```
 
@@ -387,14 +387,14 @@ list branches
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.error import Error
-from lakefs.model.ref_list import RefList
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.ref_list import RefList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -404,7 +404,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -416,7 +416,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -428,7 +428,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list branches
         api_response = api_instance.list_branches(repository)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->list_branches: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -437,7 +437,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list branches
         api_response = api_instance.list_branches(repository, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->list_branches: %s\n" % e)
 ```
 
@@ -485,14 +485,14 @@ reset branch
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.reset_creation import ResetCreation
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.reset_creation import ResetCreation
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -502,7 +502,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -514,7 +514,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -529,7 +529,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # reset branch
         api_instance.reset_branch(repository, branch, reset_creation)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->reset_branch: %s\n" % e)
 ```
 
@@ -577,14 +577,14 @@ revert
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import branches_api
-from lakefs.model.revert_creation import RevertCreation
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import branches_api
+from lakefs_client.model.revert_creation import RevertCreation
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -594,7 +594,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -606,7 +606,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
@@ -620,7 +620,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # revert
         api_instance.revert_branch(repository, branch, revert_creation)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->revert_branch: %s\n" % e)
 ```
 

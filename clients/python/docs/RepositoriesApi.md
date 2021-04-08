@@ -1,4 +1,4 @@
-# lakefs.RepositoriesApi
+# lakefs_client.RepositoriesApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -21,15 +21,15 @@ create repository
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import repositories_api
-from lakefs.model.error import Error
-from lakefs.model.repository import Repository
-from lakefs.model.repository_creation import RepositoryCreation
+import lakefs_client
+from lakefs_client.api import repositories_api
+from lakefs_client.model.repository import Repository
+from lakefs_client.model.error import Error
+from lakefs_client.model.repository_creation import RepositoryCreation
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -39,7 +39,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -51,7 +51,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository_creation = RepositoryCreation(
@@ -66,7 +66,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create repository
         api_response = api_instance.create_repository(repository_creation)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->create_repository: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -75,7 +75,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create repository
         api_response = api_instance.create_repository(repository_creation, bare=bare)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->create_repository: %s\n" % e)
 ```
 
@@ -122,13 +122,13 @@ delete repository
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import repositories_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import repositories_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -138,7 +138,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -150,7 +150,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
@@ -159,7 +159,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete repository
         api_instance.delete_repository(repository)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->delete_repository: %s\n" % e)
 ```
 
@@ -205,14 +205,14 @@ get repository
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import repositories_api
-from lakefs.model.error import Error
-from lakefs.model.repository import Repository
+import lakefs_client
+from lakefs_client.api import repositories_api
+from lakefs_client.model.repository import Repository
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -222,7 +222,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -234,7 +234,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
@@ -244,7 +244,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get repository
         api_response = api_instance.get_repository(repository)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->get_repository: %s\n" % e)
 ```
 
@@ -290,14 +290,14 @@ list repositories
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import repositories_api
-from lakefs.model.error import Error
-from lakefs.model.repository_list import RepositoryList
+import lakefs_client
+from lakefs_client.api import repositories_api
+from lakefs_client.model.repository_list import RepositoryList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -307,7 +307,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -319,7 +319,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     after = "after_example" # str | return items after this value (optional)
@@ -331,7 +331,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list repositories
         api_response = api_instance.list_repositories(after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->list_repositories: %s\n" % e)
 ```
 

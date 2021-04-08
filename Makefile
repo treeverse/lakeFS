@@ -104,8 +104,8 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
-		--package-name lakefs \
-		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs,packageVersion=$(PACKAGE_VERSION),projectName=lakefs,packageUrl=https://github.com/treeverse/lakeFS/tree/feature/python-client/clients/python \
+		--package-name lakefs_client \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
 		-o /mnt/clients/python
 
 clients: client-python

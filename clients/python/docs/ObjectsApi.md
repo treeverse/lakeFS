@@ -1,4 +1,4 @@
-# lakefs.ObjectsApi
+# lakefs_client.ObjectsApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -24,13 +24,13 @@ delete object
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -40,7 +40,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -52,7 +52,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -63,7 +63,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete object
         api_instance.delete_object(repository, branch, path)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->delete_object: %s\n" % e)
 ```
 
@@ -111,13 +111,13 @@ get object content
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -127,7 +127,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -139,7 +139,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -151,7 +151,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get object content
         api_response = api_instance.get_object(repository, ref, path)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->get_object: %s\n" % e)
 ```
 
@@ -200,14 +200,14 @@ get object properties on underlying storage
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.error import Error
-from lakefs.model.underlying_object_properties import UnderlyingObjectProperties
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -217,7 +217,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -229,7 +229,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -241,7 +241,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get object properties on underlying storage
         api_response = api_instance.get_underlying_properties(repository, ref, path)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->get_underlying_properties: %s\n" % e)
 ```
 
@@ -289,14 +289,14 @@ list objects under a given prefix
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.object_stats_list import ObjectStatsList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.object_stats_list import ObjectStatsList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -306,7 +306,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -318,7 +318,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -333,7 +333,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list objects under a given prefix
         api_response = api_instance.list_objects(repository, ref)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->list_objects: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -342,7 +342,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list objects under a given prefix
         api_response = api_instance.list_objects(repository, ref, prefix=prefix, after=after, amount=amount, delimiter=delimiter)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->list_objects: %s\n" % e)
 ```
 
@@ -393,15 +393,15 @@ stage an object\"s metadata for the given branch
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.object_stats import ObjectStats
-from lakefs.model.error import Error
-from lakefs.model.object_stage_creation import ObjectStageCreation
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.object_stage_creation import ObjectStageCreation
+from lakefs_client.model.error import Error
+from lakefs_client.model.object_stats import ObjectStats
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -411,7 +411,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -423,7 +423,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -443,7 +443,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # stage an object\"s metadata for the given branch
         api_response = api_instance.stage_object(repository, branch, path, object_stage_creation)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->stage_object: %s\n" % e)
 ```
 
@@ -493,14 +493,14 @@ get object metadata
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.object_stats import ObjectStats
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.object_stats import ObjectStats
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -510,7 +510,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -522,7 +522,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -534,7 +534,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get object metadata
         api_response = api_instance.stat_object(repository, ref, path)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->stat_object: %s\n" % e)
 ```
 
@@ -583,14 +583,14 @@ Name | Type | Description  | Notes
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import objects_api
-from lakefs.model.object_stats import ObjectStats
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import objects_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.object_stats import ObjectStats
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -600,7 +600,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -612,7 +612,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = objects_api.ObjectsApi(api_client)
     repository = "repository_example" # str | 
@@ -625,7 +625,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         api_response = api_instance.upload_object(repository, branch, path)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -633,7 +633,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, content=content)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
 ```
 

@@ -1,4 +1,4 @@
-# lakefs.MetadataApi
+# lakefs_client.MetadataApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -20,14 +20,14 @@ creates symlink files corresponding to the given directory
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import metadata_api
-from lakefs.model.error import Error
-from lakefs.model.storage_uri import StorageURI
+import lakefs_client
+from lakefs_client.api import metadata_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.storage_uri import StorageURI
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -37,7 +37,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -49,7 +49,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = metadata_api.MetadataApi(api_client)
     repository = "repository_example" # str | 
@@ -61,7 +61,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # creates symlink files corresponding to the given directory
         api_response = api_instance.create_symlink_file(repository, branch)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->create_symlink_file: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -70,7 +70,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # creates symlink files corresponding to the given directory
         api_response = api_instance.create_symlink_file(repository, branch, location=location)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->create_symlink_file: %s\n" % e)
 ```
 
@@ -118,14 +118,14 @@ return URI to a meta-range file
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import metadata_api
-from lakefs.model.error import Error
-from lakefs.model.storage_uri import StorageURI
+import lakefs_client
+from lakefs_client.api import metadata_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.storage_uri import StorageURI
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -135,7 +135,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -147,7 +147,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = metadata_api.MetadataApi(api_client)
     repository = "repository_example" # str | 
@@ -158,7 +158,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # return URI to a meta-range file
         api_response = api_instance.get_meta_range(repository, meta_range)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->get_meta_range: %s\n" % e)
 ```
 
@@ -205,14 +205,14 @@ return URI to a range file
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import metadata_api
-from lakefs.model.error import Error
-from lakefs.model.storage_uri import StorageURI
+import lakefs_client
+from lakefs_client.api import metadata_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.storage_uri import StorageURI
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -222,7 +222,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -234,7 +234,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = metadata_api.MetadataApi(api_client)
     repository = "repository_example" # str | 
@@ -245,7 +245,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # return URI to a range file
         api_response = api_instance.get_range(repository, range)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->get_range: %s\n" % e)
 ```
 

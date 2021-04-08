@@ -1,4 +1,4 @@
-# lakefs.AuthApi
+# lakefs_client.AuthApi
 
 All URIs are relative to *http://localhost/api/v1*
 
@@ -45,13 +45,13 @@ add group membership
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -61,7 +61,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -73,7 +73,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -83,7 +83,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # add group membership
         api_instance.add_group_membership(group_id, user_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->add_group_membership: %s\n" % e)
 ```
 
@@ -130,13 +130,13 @@ attach policy to group
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -146,7 +146,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -158,7 +158,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -168,7 +168,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # attach policy to group
         api_instance.attach_policy_to_group(group_id, policy_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->attach_policy_to_group: %s\n" % e)
 ```
 
@@ -215,13 +215,13 @@ attach policy to user
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -231,7 +231,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -243,7 +243,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -253,7 +253,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # attach policy to user
         api_instance.attach_policy_to_user(user_id, policy_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->attach_policy_to_user: %s\n" % e)
 ```
 
@@ -300,14 +300,14 @@ create credentials
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
-from lakefs.model.credentials_with_secret import CredentialsWithSecret
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -317,7 +317,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -329,7 +329,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -339,7 +339,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create credentials
         api_response = api_instance.create_credentials(user_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->create_credentials: %s\n" % e)
 ```
 
@@ -385,15 +385,15 @@ create group
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.group import Group
-from lakefs.model.group_creation import GroupCreation
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.group_creation import GroupCreation
+from lakefs_client.model.error import Error
+from lakefs_client.model.group import Group
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -403,7 +403,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -415,7 +415,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_creation = GroupCreation(
@@ -428,7 +428,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create group
         api_response = api_instance.create_group(group_creation=group_creation)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->create_group: %s\n" % e)
 ```
 
@@ -474,14 +474,14 @@ create policy
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.policy import Policy
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.policy import Policy
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -491,7 +491,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -503,7 +503,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     policy = Policy(
@@ -525,7 +525,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create policy
         api_response = api_instance.create_policy(policy)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->create_policy: %s\n" % e)
 ```
 
@@ -571,15 +571,15 @@ create user
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.user import User
-from lakefs.model.error import Error
-from lakefs.model.user_creation import UserCreation
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.user import User
+from lakefs_client.model.user_creation import UserCreation
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -589,7 +589,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -601,7 +601,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_creation = UserCreation(
@@ -614,7 +614,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # create user
         api_response = api_instance.create_user(user_creation=user_creation)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->create_user: %s\n" % e)
 ```
 
@@ -660,13 +660,13 @@ delete credentials
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -676,7 +676,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -688,7 +688,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -698,7 +698,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete credentials
         api_instance.delete_credentials(user_id, access_key_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->delete_credentials: %s\n" % e)
 ```
 
@@ -745,13 +745,13 @@ delete group
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -761,7 +761,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -773,7 +773,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -782,7 +782,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete group
         api_instance.delete_group(group_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->delete_group: %s\n" % e)
 ```
 
@@ -828,13 +828,13 @@ delete group membership
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -844,7 +844,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -856,7 +856,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -866,7 +866,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete group membership
         api_instance.delete_group_membership(group_id, user_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->delete_group_membership: %s\n" % e)
 ```
 
@@ -913,13 +913,13 @@ delete policy
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -929,7 +929,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -941,7 +941,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     policy_id = "policyId_example" # str | 
@@ -950,7 +950,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete policy
         api_instance.delete_policy(policy_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->delete_policy: %s\n" % e)
 ```
 
@@ -996,13 +996,13 @@ delete user
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1012,7 +1012,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1024,7 +1024,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -1033,7 +1033,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # delete user
         api_instance.delete_user(user_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->delete_user: %s\n" % e)
 ```
 
@@ -1079,13 +1079,13 @@ detach policy from group
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1095,7 +1095,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1107,7 +1107,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -1117,7 +1117,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # detach policy from group
         api_instance.detach_policy_from_group(group_id, policy_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->detach_policy_from_group: %s\n" % e)
 ```
 
@@ -1164,13 +1164,13 @@ detach policy from user
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1180,7 +1180,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1192,7 +1192,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -1202,7 +1202,7 @@ with lakefs.ApiClient(configuration) as api_client:
     try:
         # detach policy from user
         api_instance.detach_policy_from_user(user_id, policy_id)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->detach_policy_from_user: %s\n" % e)
 ```
 
@@ -1249,14 +1249,14 @@ get credentials
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.credentials import Credentials
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.credentials import Credentials
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1266,7 +1266,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1278,7 +1278,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -1289,7 +1289,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get credentials
         api_response = api_instance.get_credentials(user_id, access_key_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->get_credentials: %s\n" % e)
 ```
 
@@ -1336,13 +1336,13 @@ get current user
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.current_user import CurrentUser
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.current_user import CurrentUser
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1352,7 +1352,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1364,7 +1364,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
 
@@ -1373,7 +1373,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get current user
         api_response = api_instance.get_current_user()
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->get_current_user: %s\n" % e)
 ```
 
@@ -1413,14 +1413,14 @@ get group
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.group import Group
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.group import Group
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1430,7 +1430,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1442,7 +1442,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -1452,7 +1452,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get group
         api_response = api_instance.get_group(group_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->get_group: %s\n" % e)
 ```
 
@@ -1498,14 +1498,14 @@ get policy
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.policy import Policy
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.policy import Policy
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1515,7 +1515,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1527,7 +1527,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     policy_id = "policyId_example" # str | 
@@ -1537,7 +1537,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get policy
         api_response = api_instance.get_policy(policy_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->get_policy: %s\n" % e)
 ```
 
@@ -1583,14 +1583,14 @@ get user
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.user import User
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.user import User
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1600,7 +1600,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1612,7 +1612,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -1622,7 +1622,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # get user
         api_response = api_instance.get_user(user_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->get_user: %s\n" % e)
 ```
 
@@ -1668,14 +1668,14 @@ list group members
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.user_list import UserList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.user_list import UserList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1685,7 +1685,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1697,7 +1697,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -1709,7 +1709,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list group members
         api_response = api_instance.list_group_members(group_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_group_members: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -1718,7 +1718,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list group members
         api_response = api_instance.list_group_members(group_id, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_group_members: %s\n" % e)
 ```
 
@@ -1765,14 +1765,14 @@ list group policies
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.policy_list import PolicyList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.policy_list import PolicyList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1782,7 +1782,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1794,7 +1794,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
@@ -1806,7 +1806,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list group policies
         api_response = api_instance.list_group_policies(group_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_group_policies: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -1815,7 +1815,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list group policies
         api_response = api_instance.list_group_policies(group_id, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_group_policies: %s\n" % e)
 ```
 
@@ -1863,14 +1863,14 @@ list groups
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
-from lakefs.model.group_list import GroupList
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.group_list import GroupList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1880,7 +1880,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1892,7 +1892,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     after = "after_example" # str | return items after this value (optional)
@@ -1904,7 +1904,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list groups
         api_response = api_instance.list_groups(after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_groups: %s\n" % e)
 ```
 
@@ -1950,14 +1950,14 @@ list policies
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.policy_list import PolicyList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.policy_list import PolicyList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -1967,7 +1967,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -1979,7 +1979,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     after = "after_example" # str | return items after this value (optional)
@@ -1991,7 +1991,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list policies
         api_response = api_instance.list_policies(after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_policies: %s\n" % e)
 ```
 
@@ -2037,14 +2037,14 @@ list user credentials
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.credentials_list import CredentialsList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.credentials_list import CredentialsList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -2054,7 +2054,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -2066,7 +2066,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -2078,7 +2078,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list user credentials
         api_response = api_instance.list_user_credentials(user_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_credentials: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -2087,7 +2087,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list user credentials
         api_response = api_instance.list_user_credentials(user_id, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_credentials: %s\n" % e)
 ```
 
@@ -2135,14 +2135,14 @@ list user groups
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.error import Error
-from lakefs.model.group_list import GroupList
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.group_list import GroupList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -2152,7 +2152,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -2164,7 +2164,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -2176,7 +2176,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list user groups
         api_response = api_instance.list_user_groups(user_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_groups: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -2185,7 +2185,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list user groups
         api_response = api_instance.list_user_groups(user_id, after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_groups: %s\n" % e)
 ```
 
@@ -2233,14 +2233,14 @@ list user policies
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.policy_list import PolicyList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.policy_list import PolicyList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -2250,7 +2250,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -2262,7 +2262,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
@@ -2275,7 +2275,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list user policies
         api_response = api_instance.list_user_policies(user_id)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_policies: %s\n" % e)
 
     # example passing only required values which don't have defaults set
@@ -2284,7 +2284,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list user policies
         api_response = api_instance.list_user_policies(user_id, after=after, amount=amount, effective=effective)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_policies: %s\n" % e)
 ```
 
@@ -2333,14 +2333,14 @@ list users
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.user_list import UserList
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.user_list import UserList
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -2350,7 +2350,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -2362,7 +2362,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     after = "after_example" # str | return items after this value (optional)
@@ -2374,7 +2374,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # list users
         api_response = api_instance.list_users(after=after, amount=amount)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_users: %s\n" % e)
 ```
 
@@ -2420,14 +2420,14 @@ update policy
 * Api Key Authentication (jwt_token):
 ```python
 import time
-import lakefs
-from lakefs.api import auth_api
-from lakefs.model.policy import Policy
-from lakefs.model.error import Error
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.policy import Policy
+from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     host = "http://localhost/api/v1"
 )
 
@@ -2437,7 +2437,7 @@ configuration = lakefs.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs.Configuration(
+configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
@@ -2449,7 +2449,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 # configuration.api_key_prefix['jwt_token'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with lakefs.ApiClient(configuration) as api_client:
+with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     policy_id = "policyId_example" # str | 
@@ -2472,7 +2472,7 @@ with lakefs.ApiClient(configuration) as api_client:
         # update policy
         api_response = api_instance.update_policy(policy_id, policy)
         pprint(api_response)
-    except lakefs.ApiException as e:
+    except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->update_policy: %s\n" % e)
 ```
 
