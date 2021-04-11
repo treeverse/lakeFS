@@ -4,6 +4,8 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    tag:
+      description: Tag/version to publish
 
 jobs:
   pypi:
@@ -11,9 +13,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
       - name: Extract version
         shell: bash
-        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+          else
+            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+          fi
         id: version
       - name: Python build and make package
         run: make package-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
