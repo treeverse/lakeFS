@@ -109,7 +109,7 @@ export const ActionGroup = ({ children, orientation = "left" }) => {
 
 export const ActionsBar = ({ children }) => {
     return (
-        <div className="action-bar mt-3">
+        <div className="action-bar clearfix mt-3">
             {children}
         </div>
     )

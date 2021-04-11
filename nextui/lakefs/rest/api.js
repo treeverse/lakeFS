@@ -473,11 +473,13 @@ class Objects {
     async upload(repoId, branchId, path, fileObject) {
         const data = new FormData();
         data.append('content', fileObject)
+        window.data = data;
         const query = qs({path})
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
             method: 'POST',
             body: data,
-        }, {}, {})
+            headers: new Headers({'Accept': 'application/json'})
+        })
         if (response.status !== 201) {
             throw new Error(await extractError(response))
         }
@@ -507,7 +509,6 @@ class Commits {
 
     async get(repoId, commitId) {
         const response = await apiRequest(`/repositories/${repoId}/commits/${commitId}`)
-        console.log('response: ', response)
         if (response.status === 404) {
             throw new NotFoundError(`could not find commit ${commitId}`)
         } else if (response.status !== 200) {

@@ -1,6 +1,7 @@
-import 'bootswatch/dist/lumen/bootstrap.css'
+import 'bootswatch/dist/materia/bootstrap.css'
 import '../styles/globals.css'
 
+// litera, cosmo, (materia)
 
 function MyApp({ Component, pageProps }) {
   return (

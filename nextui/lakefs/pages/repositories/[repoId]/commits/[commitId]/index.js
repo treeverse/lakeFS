@@ -6,7 +6,7 @@ import {
     Loading
 } from "../../../../../lib/components/controls";
 import React from "react";
-import {useRepoAndRef} from "../../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs, useRepoAndRef} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../rest/hooks";
 import { commits, refs} from "../../../../../rest/api";
@@ -156,12 +156,12 @@ const CommitInfo = ({ repo, commit }) => {
     )
 }
 
-const CommitContainer = ({ repo, reference, onPaginate, after }) => {
+const CommitView = ({ repo, commitId, onPaginate, after }) => {
 
     // pull commit itself
     const {response, loading, error} = useAPI(async () => {
-        return await commits.get(repo.id, reference.id)
-    }, [repo.id, reference.id])
+        return await commits.get(repo.id, commitId)
+    }, [repo.id, commitId])
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
@@ -196,39 +196,36 @@ const CommitContainer = ({ repo, reference, onPaginate, after }) => {
 
 }
 
-const RefContainer = ({ repoId, refId, onPaginate, after }) => {
-    const {loading, error, response} = useRepoAndRef(repoId, refId)
+const CommitContainer = () => {
+    const router = useRouter()
+    const { repo, loading, error } = useRefs()
+    const { after, commitId } = router.query
 
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
 
-    const { repo, ref } = response
+
     return (
-        <CommitContainer repo={repo} reference={ref} onPaginate={onPaginate} after={after}/>
+        <CommitView
+            repo={repo}
+            after={(!!after) ? after : ""}
+            commitId={commitId}
+            onPaginate={after => router.push({
+                pathname: '/repositories/[repoId]/commits/[commitId]',
+                query: {repoId: repo.id, commitId, after}
+            })}
+        />
     )
 }
 
 
 const RepositoryCommitPage = () => {
-    const router = useRouter()
-    const { repoId, commitId, after } = router.query;
-
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'commits'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RefContainer
-                    repoId={repoId}
-                    refId={commitId}
-                    onPaginate={after => {
-                        router.push({
-                            pathname: '/repositories/[repoId]/commits/[commitId]',
-                            query: {repoId, commitId, after}
-                        })
-                    }}
-                    after={(!!after) ? after : ""}/>
-            }
-        </RepositoryPageLayout>
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'commits'}>
+                <CommitContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

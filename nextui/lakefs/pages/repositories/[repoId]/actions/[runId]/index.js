@@ -2,7 +2,7 @@ import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {Error, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
 import React, {useState} from "react";
-import {useRepo} from "../../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs, useRepo} from "../../../../../lib/hooks/repo";
 import {useAPI, useAPIWithPagination} from "../../../../../rest/hooks";
 import {actions} from "../../../../../rest/api";
 import Row from "react-bootstrap/Row";
@@ -222,37 +222,38 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
     )
 }
 
-const RepoContainer = ({ repoId, runId, selectedAction, onSelectAction }) => {
-    const {loading, error, response} = useRepo(repoId)
+const ActionContainer = () => {
+    const router = useRouter()
+    const { runId, action } = router.query;
+    const {loading, error, repo} = useRefs()
+
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
 
-    return <RunContainer repo={response} runId={runId} selectedAction={selectedAction} onSelectAction={onSelectAction}/>
+    const repoId = repo.id
+
+    return <RunContainer
+        repo={repo}
+        runId={runId}
+        selectedAction={(!!action) ? action : null}
+        onSelectAction={action => {
+            const query = {repoId, runId}
+            if (!!action) query.action = action
+            router.push({
+                pathname: '/repositories/[repoId]/actions/[runId]',
+                query
+            })
+        }}
+    />
 }
 
 const RepositoryActionPage = () => {
-    const router = useRouter()
-    const { repoId, runId, action } = router.query;
-
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'actions'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RepoContainer
-                    repoId={repoId}
-                    runId={runId}
-                    selectedAction={(!!action) ? action : null}
-                    onSelectAction={action => {
-                        const query = {repoId, runId}
-                        if (!!action) query.action = action
-                        router.push({
-                            pathname: '/repositories/[repoId]/actions/[runId]',
-                            query
-                        })
-                    }}
-                />
-            }
-        </RepositoryPageLayout>
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'actions'}>
+                <ActionContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

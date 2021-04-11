@@ -22,7 +22,7 @@ import Button from "react-bootstrap/Button";
 
 import {refs, branches, commits} from "../../../rest/api";
 import {useAPIWithPagination} from "../../../rest/hooks";
-import {useRepoAndRef} from "../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import {ActionGroup, ActionsBar, Error, Loading} from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
@@ -149,11 +149,12 @@ const RevertButton =({ onRevert, enabled = false }) => {
     );
 }
 
-const ChangesContainer = ({ repo, reference, after, onPaginate, onSelectRef, showActions = true }) => {
+const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => {
     const [actionError, setActionError] = useState(null)
     const [internalRefresh, setInternalRefresh] = useState(true)
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
+        if (!repo) return
         return refs.changes(repo.id, reference.id, after)
     }, [repo.id, reference.id, internalRefresh, after])
 
@@ -212,7 +213,7 @@ const ChangesContainer = ({ repo, reference, after, onPaginate, onSelectRef, sho
                             <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => (
-                                    <ChangeEntryRow key={entry.path} entry={entry} showActions={showActions} onRevert={(entry) => {
+                                    <ChangeEntryRow key={entry.path} entry={entry} showActions={true} onRevert={(entry) => {
                                         branches
                                             .revert(repo.id, reference.id, {type: 'object', path: entry.path})
                                             .then(() => {
@@ -234,41 +235,39 @@ const ChangesContainer = ({ repo, reference, after, onPaginate, onSelectRef, sho
     )
 }
 
-const RefContainer = ({ repoId, refId, after, onSelectRef, onPaginate }) => {
-    const {loading, error, response} = useRepoAndRef(repoId, refId)
+const ChangesContainer = () => {
+    const router = useRouter()
+    const { repo, reference, loading, error } = useRefs()
+    const { after } = router.query
+
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
-    const { repo, ref } = response
+
     return (
-        <ChangesContainer repo={repo} reference={ref} onSelectRef={onSelectRef} after={after} onPaginate={onPaginate}/>
+        <ChangesBrowser
+            after={(!!after) ? after : ""}
+            repo={repo}
+            reference={reference}
+            onPaginate={after => router.push({
+                pathname: `/repositories/[repoId]/changes`,
+                query: {repoId: repo.id, ref: reference.id, after}
+            })}
+            onSelectRef={ref => router.push({
+                pathname: `/repositories/[repoId]/changes`,
+                query: {repoId: repo.id, ref: ref.id}
+            })}
+        />
     )
 }
 
-const RepositoryChangesPage = () => {
-    const router = useRouter()
-    const { repoId, ref, after } = router.query;
 
+const RepositoryChangesPage = () => {
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'changes'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RefContainer
-                    repoId={repoId}
-                    refId={ref}
-                    after={(!!after) ? after : ""}
-                    onSelectRef={ref => router.push({
-                        pathname: `/repositories/[repoId]/changes`,
-                        query: {repoId, ref: ref.id}
-                    })}
-                    onPaginate={after => {
-                        router.push({
-                            pathname: `/repositories/[repoId]/changes`,
-                            query: {repoId, ref, after}
-                        })
-                    }}
-                />
-            }
-        </RepositoryPageLayout>
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'changes'}>
+                <ChangesContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

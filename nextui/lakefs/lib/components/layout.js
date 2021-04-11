@@ -1,13 +1,14 @@
 import Container from 'react-bootstrap/Container'
 import TopNav from './navbar';
 
-const Layout = ({ children }) => {
+const Layout = ({ children, fluid = "xl" }) => {
     return (
         <>
             <TopNav/>
-            <Container fluid={"xl"} className="main-app">
+
+            <div className="main-app">
                 {children}
-            </Container>
+            </div>
         </>
     )
 }

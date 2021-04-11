@@ -5,6 +5,7 @@ import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon
 
 import Link from 'next/link';
 import {useRouter} from "next/router";
+import {useRefs} from "../../hooks/repo";
 
 
 const NavItem = ({ href, active, children }) => {
@@ -19,38 +20,46 @@ const NavItem = ({ href, active, children }) => {
     )
 }
 
-export const RepositoryNavTabs = ({ repoId, active }) => {
+export const RepositoryNavTabs = ({ active }) => {
+
+    const { repo, reference, loading, error } = useRefs()
 
     const router = useRouter()
 
     const withRefContext = (url) => {
-        const { ref } = router.query;
         const params = new URLSearchParams();
-        if (!!ref)
-            params.append('ref', ref)
+        if (!!reference) params.append('ref', reference.id)
+        if (!!params.toString())
+            return `${url}?${params.toString()}`
+        return url
+    }
+
+    const withBranchContext = (url) => {
+        const params = new URLSearchParams();
+        if (!!reference && reference.type === 'branch') params.append('ref', reference.id)
         if (!!params.toString())
             return `${url}?${params.toString()}`
         return url
     }
 
     const withRefAndPathContext = (url) => {
-        const { ref, path } = router.query;
+        const { path } = router.query;
         const params = new URLSearchParams();
-        if (!!ref)
-            params.append('ref', ref)
-        if (!!path)
-            params.append('path', path)
+        if (!!reference) params.append('ref', reference.id)
+        if (!!path) params.append('path', path)
         if (!!params.toString())
             return `${url}?${params.toString()}`
         return url
     }
+
+    const repoId = (loading && !error) ? '' : repo.id
 
     return (
         <Nav justify variant="tabs" >
             <NavItem active={active === 'objects'} href={withRefAndPathContext(`/repositories/${repoId}/objects`)}>
                 <DatabaseIcon/> Objects
             </NavItem>
-            <NavItem active={active === 'changes'} href={withRefAndPathContext(`/repositories/${repoId}/changes`)}>
+            <NavItem active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)}>
                 <FileDiffIcon/> Changes
             </NavItem>
             <NavItem active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)}>

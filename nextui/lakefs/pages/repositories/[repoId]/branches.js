@@ -1,15 +1,13 @@
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useMemo, useRef, useState} from "react";
 
 import {useRouter} from "next/router";
 import Link from "next/link";
 
 import {
-    BrowserIcon,
     GitBranchIcon,
     LinkIcon,
     PackageIcon,
     SyncIcon,
-    TrashcanIcon,
     TrashIcon
 } from "@primer/octicons-react";
 
@@ -28,15 +26,14 @@ import {
     Loading, useDebouncedState,
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {useRepo} from "../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../rest/hooks";
 import {Paginator} from "../../../lib/components/pagination";
-import moment from "moment";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import Badge from "react-bootstrap/Badge";
-import {ConfirmationButton, ConfirmationModal} from "../../../lib/components/modals";
+import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
 
 const ImportBranchName = 'import-from-inventory';
@@ -198,7 +195,7 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
     )
 }
 
-const BranchesContainer = ({ repo, prefix, after, onPaginate }) => {
+const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
     const [refresh, setRefresh] = useState(true)
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
@@ -245,50 +242,43 @@ const BranchesContainer = ({ repo, prefix, after, onPaginate }) => {
             {content}
         </div>
     )
-
-
 }
 
 
-const RefContainer = ({ repoId, prefix, after, onPaginate }) => {
-    const {loading, error, response} = useRepo(repoId)
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
-    const  repo = response
-
-    return (
-        <BranchesContainer repo={repo} after={after} prefix={prefix} onPaginate={onPaginate}/>
-    )
-}
-
-
-
-const RepositoryBranchesPage = () => {
+const BranchesContainer = () => {
     const router = useRouter()
-    const { repoId, after } = router.query;
-
+    const { repo, loading, error } = useRefs()
+    const { after } = router.query
     const routerPfx = (!!router.query.prefix) ? router.query.prefix : ""
     const [prefix, setPrefix] = useDebouncedState(
         routerPfx,
-        (prefix) => router.push({pathname: `/repositories/[repoId]/branches`, query: {repoId, prefix}})
+        (prefix) => router.push({pathname: `/repositories/[repoId]/branches`, query: {repoId: repo.id, prefix}})
     )
 
+    if (loading) return <Loading/>
+    if (!!error) return <Error error={error}/>
+
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'branches'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RefContainer
-                    repoId={repoId}
-                    after={(!!after) ? after : ""}
-                    prefix={routerPfx}
-                    onPaginate={after => {
-                        const query = {repoId, after}
-                        if (!!router.query.prefix) query.prefix = router.query.prefix
-                        router.push({pathname: `/repositories/[repoId]/branches`, query})
-                    }}
-                />
-            }
-        </RepositoryPageLayout>
+        <BranchList
+            repo={repo}
+            after={(!!after) ? after : ""}
+            prefix={routerPfx}
+            onPaginate={after => {
+                const query = {repoId: repo.id, after}
+                if (!!router.query.prefix) query.prefix = router.query.prefix
+                router.push({pathname: `/repositories/[repoId]/branches`, query})
+            }}/>
+    )
+}
+
+
+const RepositoryBranchesPage = () => {
+    return (
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'branches'}>
+                <BranchesContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

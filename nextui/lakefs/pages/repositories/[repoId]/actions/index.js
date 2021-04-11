@@ -9,7 +9,7 @@ import {
     TooltipButton
 } from "../../../../lib/components/controls";
 import React, {useState} from "react";
-import {useRepo} from "../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs, useRepo} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../rest/hooks";
 import {actions} from "../../../../rest/api";
 import {OverlayTrigger} from "react-bootstrap";
@@ -118,7 +118,7 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
     )
 }
 
-const ActionsContainer = ({ repo, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
+const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
 
     const [refresh, setRefresh] = useState(false)
     const {results, loading, error, nextPage} = useAPIWithPagination(async () => {
@@ -174,58 +174,52 @@ const ActionsContainer = ({ repo, after, onPaginate, branch, commit, onFilterBra
 }
 
 
-const RepoContainer = ({ repoId, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
-    const {loading, error, response} = useRepo(repoId)
+const ActionsContainer = () => {
+    const router = useRouter()
+    const { after } = router.query;
+    const commit = (!!router.query.commit) ? router.query.commit : ""
+    const branch = (!!router.query.branch) ? router.query.branch : ""
+
+    const { repo, loading, error } = useRefs()
+
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
+
+    const repoId = repo.id
+
     return (
-        <ActionsContainer
-            repo={response}
+        <ActionsList
+            repo={repo}
             after={after}
-            onPaginate={onPaginate}
+            onPaginate={after => {
+                const query = {repoId, after}
+                if (!!commit) query.commit = commit
+                if (!!branch) query.branch = branch
+                router.push({pathname: `/repositories/[repoId]/actions`, query})
+            }}
             branch={branch}
             commit={commit}
-            onFilterBranch={onFilterBranch}
-            onFilterCommit={onFilterCommit}
+            onFilterBranch={branch => {
+                const query = {repoId} // will reset pagination
+                if (!!branch) query.branch = branch
+                router.push({pathname: `/repositories/[repoId]/actions`, query})
+            }}
+            onFilterCommit={commit => {
+                const query = {repoId} // will reset pagination
+                if (!!commit) query.commit = commit
+                router.push({pathname: `/repositories/[repoId]/actions`, query})
+            }}
         />
     )
 }
 
 const RepositoryActionsPage = () => {
-    const router = useRouter()
-    const { repoId, after } = router.query;
-
-    const commit = (!!router.query.commit) ? router.query.commit : ""
-    const branch = (!!router.query.branch) ? router.query.branch : ""
-
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'actions'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RepoContainer
-                    repoId={repoId}
-                    after={(!!after) ? after : ""}
-                    commit={commit}
-                    branch={branch}
-                    onFilterCommit={commit => {
-                        const query = {repoId} // will reset pagination
-                        if (!!commit) query.commit = commit
-                        router.push({pathname: `/repositories/[repoId]/actions`, query})
-                    }}
-                    onFilterBranch={branch => {
-                        const query = {repoId} // will reset pagination
-                        if (!!branch) query.branch = branch
-                        router.push({pathname: `/repositories/[repoId]/actions`, query})
-                    }}
-                    onPaginate={after => {
-                        const query = {repoId, after}
-                        if (!!commit) query.commit = commit
-                        if (!!branch) query.branch = branch
-                        router.push({pathname: `/repositories/[repoId]/actions`, query})
-                    }}
-                />
-            }
-        </RepositoryPageLayout>
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'actions'}>
+                <ActionsContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

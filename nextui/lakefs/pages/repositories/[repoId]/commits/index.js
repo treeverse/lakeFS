@@ -22,7 +22,7 @@ import {
     Loading
 } from "../../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
-import {useRepoAndRef} from "../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs, useRepoAndRef} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../rest/hooks";
 import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
@@ -54,7 +54,10 @@ const CommitWidget = ({ repo, commit }) => {
                     <ButtonGroup className="commit-actions">
                         <LinkButton
                             buttonVariant="outline-primary"
-                            href="/repositories">
+                            href={{
+                                pathname: '/repositories/[repoId]/commits/[commitId]',
+                                query: {repoId: repo.id, commitId: commit.id}
+                            }}>
                             <code>{commit.id.substr(0, 16)}</code>
                         </LinkButton>
                         <LinkButton
@@ -86,7 +89,7 @@ const CommitWidget = ({ repo, commit }) => {
 }
 
 
-const CommitsContainer = ({ repo, reference, after, onPaginate, onSelectRef }) => {
+const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => {
 
     const [refresh, setRefresh] = useState(true)
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
@@ -135,42 +138,39 @@ const CommitsContainer = ({ repo, reference, after, onPaginate, onSelectRef }) =
 }
 
 
-const RefContainer = ({ repoId, refId, after, onPaginate, onSelectRef }) => {
-    const {loading, error, response} = useRepoAndRef(repoId, refId)
+const CommitsContainer = () => {
+    const router = useRouter()
+    const { after } = router.query
+    const { repo, reference, loading ,error } = useRefs()
+
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
-    const { repo, ref } = response
+
     return (
-        <CommitsContainer repo={repo} reference={ref} onSelectRef={onSelectRef} after={after} onPaginate={onPaginate}/>
+        <CommitsBrowser
+            repo={repo}
+            reference={reference}
+            onSelectRef={ref => router.push({
+                pathname: `/repositories/[repoId]/commits`,
+                query: {repoId: repo.id, ref: ref.id}
+            })}
+            after={(!!after) ? after : ""}
+            onPaginate={after => router.push({
+                    pathname: `/repositories/[repoId]/commits`,
+                    query: {repoId: repo.id, ref: reference.id, after}
+                })}
+        />
     )
 }
 
 
 const RepositoryCommitsPage = () => {
-    const router = useRouter()
-    const { repoId, ref, after } = router.query;
-
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'commits'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RefContainer
-                    repoId={repoId}
-                    refId={ref}
-                    after={(!!after) ? after : ""}
-                    onPaginate={after => {
-                        router.push({
-                            pathname: `/repositories/[repoId]/commits`,
-                            query: {repoId, ref, after}
-                        })
-                    }}
-                    onSelectRef={ref => router.push({
-                        pathname: `/repositories/[repoId]/commits`,
-                        query: {repoId, ref: ref.id}
-                    })}
-                />
-            }
-        </RepositoryPageLayout>
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'commits'}>
+                <CommitsContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

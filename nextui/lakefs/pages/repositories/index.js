@@ -14,13 +14,21 @@ import * as moment from "moment";
 import Link from 'next/link';
 
 import Layout from "../../lib/components/layout";
-import {debounce, DebouncedFormControl, Loading, useDebounce, useDebouncedState} from "../../lib/components/controls";
+import {
+    ActionsBar,
+    debounce,
+    DebouncedFormControl,
+    Loading,
+    useDebounce,
+    useDebouncedState
+} from "../../lib/components/controls";
 import {config, repositories} from '../../rest/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {Error} from "../../lib/components/controls"
 import {useRouter} from "next/router";
 import {useAPI, useAPIWithPagination} from "../../rest/hooks";
 import {Paginator} from "../../lib/components/pagination";
+import Container from "react-bootstrap/Container";
 
 
 
@@ -126,10 +134,8 @@ const Repositories = () => {
 
     return (
         <Layout>
-
-            <div className="mt-3">
-
-                <div className="action-bar">
+            <Container fluid="xl">
+                <ActionsBar>
                     <Form className="float-left" style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
                         <Form.Row>
                             <Col>
@@ -157,7 +163,7 @@ const Repositories = () => {
                             <RepoIcon/> Create Repository
                         </Button>
                     </ButtonToolbar>
-                </div>
+                </ActionsBar>
 
                 <RepositoryList
                     prefix={routerPfx}
@@ -175,8 +181,7 @@ const Repositories = () => {
                     show={showCreateModal}
                     error={createError}
                     onSubmit={(repo) => createRepo(repo)}/>
-            </div>
-
+            </Container>
         </Layout>
     )
 }

@@ -2,14 +2,14 @@ import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {ActionGroup, ActionsBar, Error, Loading} from "../../../lib/components/controls";
 import React, {useState} from "react";
-import {useRepoRefAndCompare} from "../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, GitMergeIcon, SyncIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {OverlayTrigger} from "react-bootstrap";
 import {useAPIWithPagination} from "../../../rest/hooks";
-import {branches, refs} from "../../../rest/api";
+import {refs} from "../../../rest/api";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
@@ -18,7 +18,7 @@ import {Paginator} from "../../../lib/components/pagination";
 import {ConfirmationButton} from "../../../lib/components/modals";
 
 
-const CompareContainer = ({ repo, reference, compareReference, after, onSelectRef, onSelectCompare, onPaginate }) => {
+const CompareList = ({ repo, reference, compareReference, after, onSelectRef, onSelectCompare, onPaginate }) => {
     if (compareReference === null) compareReference = reference
 
     const [internalRefresh, setInternalRefresh] = useState(true)
@@ -73,7 +73,7 @@ const CompareContainer = ({ repo, reference, compareReference, after, onSelectRe
                         withWorkspace={false}
                         selectRef={onSelectRef}/>
 
-                <ArrowLeftIcon className="mr-2 mt-2"/>
+                <ArrowLeftIcon className="mr-2 mt-3" size="small" verticalAlign="middle"/>
 
                     <RefDropdown
                         prefix={'Compared to '}
@@ -123,45 +123,37 @@ const CompareContainer = ({ repo, reference, compareReference, after, onSelectRe
 }
 
 
-const RefContainer = ({ repoId, refId, compareId, after, onSelectRef, onSelectCompare, onPaginate }) => {
-    const {loading, error, response} = useRepoRefAndCompare(repoId, refId, compareId)
+const CompareContainer = () => {
+    const router = useRouter()
+    const { loading, error, repo, reference, compare } = useRefs()
+
+    const { after } = router.query;
+
+    const route = query => router.push({pathname: `/repositories/[repoId]/compare`, query})
+
     if (loading) return <Loading/>
     if (!!error) return <Error error={error}/>
-    const { repo, ref, compare } = response
+
     return (
-        <CompareContainer
+        <CompareList
             repo={repo}
-            after={after}
-            reference={ref}
-            onSelectRef={onSelectRef}
+            after={(!!after) ? after : ""}
+            reference={reference}
+            onSelectRef={reference => route({repoId: repo.id, compare, ref: reference.id})}
             compareReference={compare}
-            onSelectCompare={onSelectCompare}
-            onPaginate={onPaginate}
+            onSelectCompare={compare => route({repoId: repo.id, ref: reference.id, compare: compare.id})}
+            onPaginate={after => route({repoId: repo.id, ref: reference.id, compare, after})}
         />
     )
 }
 
 const RepositoryComparePage = () => {
-    const router = useRouter()
-    const { repoId, ref, compare, after } = router.query;
-
-    const route = (query) => router.push({pathname: `/repositories/[repoId]/compare`, query})
-
     return (
-        <RepositoryPageLayout repoId={repoId} activePage={'compare'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RefContainer
-                    repoId={repoId}
-                    refId={ref}
-                    compareId={(!!compare) ? compare : ""}
-                    after={(!!after) ? after : ""}
-                    onSelectRef={ref => route({repoId, compare, ref: ref.id})}
-                    onSelectCompare={compare => route({repoId, ref, compare: compare.id})}
-                    onPaginate={after => route({repoId, ref, compare, after})}
-                />
-            }
-        </RepositoryPageLayout>
+        <RefContextProvider>
+            <RepositoryPageLayout activePage={'compare'}>
+                <CompareContainer/>
+            </RepositoryPageLayout>
+        </RefContextProvider>
     )
 }
 

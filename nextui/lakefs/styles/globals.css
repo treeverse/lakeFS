@@ -19,8 +19,6 @@
   padding-bottom: 10px;
   padding-top: 10px;
   margin-bottom: 10px;
-  border-bottom: 1px solid rgba(0,0,0,.125);
-  overflow: hidden;
 }
 
 .action-bar.borderless {
@@ -272,7 +270,7 @@
 }
 
 .tree-container .alert {
-  margin: 20px;
+  /*margin: 20px;*/
 }
 
 .tree-container {

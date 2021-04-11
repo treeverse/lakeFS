@@ -2,7 +2,7 @@ import {useRouter} from "next/router";
 import {SyncIcon, UploadIcon} from "@primer/octicons-react";
 
 import React, {useRef, useState} from "react";
-import {RefPage, RepositoryPageLayout} from "../../../lib/components/repository/layout";
+import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ActionGroup, ActionsBar, Loading} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
@@ -17,7 +17,7 @@ import {Tree} from "../../../lib/components/repository/tree";
 import {Error} from "../../../lib/components/controls";
 import {objects} from "../../../rest/api";
 import {useAPIWithPagination} from "../../../rest/hooks";
-import {useRepoAndRef} from "../../../lib/hooks/repo";
+import {RefContextProvider, useRefs, useRepoAndRef} from "../../../lib/hooks/repo";
 
 
 const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => {
@@ -48,11 +48,9 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
         })
         try {
             await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
-            setTimeout(() => {
-                setUploadState({...initialState})
-                setShow(false)
-                onDone()
-            }, 500)
+            setUploadState({...initialState})
+            setShow(false)
+            onDone()
         } catch (error) {
             setUploadState({...initialState, error})
         }
@@ -86,11 +84,16 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
                         </Form.Group>
 
                         <Form.Group controlId="content">
-                            <Form.Control type="file" name="content" ref={fileRef} onChange={(e) => {
-                                const currPath = textRef.current.value.substr(0, textRef.current.value.lastIndexOf('/')+1);
-                                const currName = e.currentTarget.files[0].name;
-                                textRef.current.value = currPath + currName;
-                            }}/>
+                            <Form.Control
+                                type="file"
+                                name="content"
+                                ref={fileRef}
+                                onChange={(e) => {
+                                    const currPath = textRef.current.value.substr(0, textRef.current.value.lastIndexOf('/')+1);
+                                    const currName = (e.currentTarget.files.length > 0) ? e.currentTarget.files[0].name : ""
+                                    textRef.current.value = currPath + currName;
+                                }}
+                            />
                         </Form.Group>
                     </Form>
                     {(!!uploadState.error) ? (<Error error={uploadState.error}/>) : (<></>)}
@@ -145,10 +148,19 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, re
 }
 
 
-const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, after, onPaginate, path = null }) => {
+const ObjectsBrowser = () => {
+    const router = useRouter()
+    const { path, after } = router.query;
+
+    const { repo, reference, loading, error } = useRefs()
+
+    console.log({repo, reference})
 
     const [refreshToken, setRefreshToken] = useState(false)
     const refresh = () => setRefreshToken(!refreshToken)
+
+    if (loading) return <Loading/>
+    if (!!error) return <Error error={error}/>
 
     return (
         <>
@@ -157,10 +169,13 @@ const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, after, onPagina
                     <RefDropdown
                         emptyText={'Select Branch'}
                         repo={repo}
-                        selected={(!!reference) ? reference : null}
+                        selected={reference}
                         withCommits={true}
                         withWorkspace={true}
-                        selectRef={onSelectRef}
+                        selectRef={ref => router.push({
+                            pathname: `/repositories/[repoId]/objects`,
+                            query: {repoId: repo.id, ref: ref.id}
+                        })}
                     />
                 </ActionGroup>
 
@@ -178,64 +193,31 @@ const RepositoryObjectBrowser = ({ repo, reference, onSelectRef, after, onPagina
                 </ActionGroup>
             </ActionsBar>
 
-
             <TreeContainer
                 reference={reference}
                 repo={repo}
-                path={path}
-                after={after}
-                onPaginate={onPaginate}
+                path={(!!path) ? path : ""}
+                after={(!!after) ? after : ""}
+                onPaginate={after => {
+                    const query = {repoId: repo.id, after}
+                    if (!!path) query.path = path
+                    if (!!reference) query.ref = reference.id
+                    const url = {pathname: `/repositories/[repoId]/objects`, query}
+                    router.push(url)
+                }}
                 refreshToken={refreshToken}
                 onRefresh={refresh}/>
         </>
     )
-
-}
-
-const RefContainer = ({ repoId, refId, path, after, onPaginate, onSelectRef }) => {
-    const {loading, error, response} = useRepoAndRef(repoId, refId)
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
-    const { repo, ref } = response
-    return (
-        <RepositoryObjectBrowser
-            repo={repo}
-            reference={ref}
-            path={path}
-            after={after}
-            onPaginate={onPaginate}
-            onSelectRef={onSelectRef}
-        />
-    )
 }
 
 const RepositoryObjectsPage = () => {
-    const router = useRouter()
-    const { repoId, ref, path, after } = router.query;
-
-      return (
-        <RepositoryPageLayout repoId={repoId} activePage={'objects'}>
-            {(!repoId) ?
-                <Loading/> :
-                <RefContainer
-                    repoId={repoId}
-                    refId={ref}
-                    path={(!!path) ? path : ""}
-                    after={(!!after) ? after : ""}
-                    onPaginate={after => {
-                        const query = {repoId, after}
-                        if (!!path) query.path = path
-                        if (!!ref) query.ref = ref
-                        const url = {pathname: `/repositories/[repoId]/objects`, query}
-                        router.push(url)
-                    }}
-                    onSelectRef={ref => router.push({
-                        pathname: `/repositories/[repoId]/objects`,
-                        query: {repoId, ref: ref.id}
-                    })}
-                />
-            }
-        </RepositoryPageLayout>
+    return (
+          <RefContextProvider>
+              <RepositoryPageLayout activePage={'objects'}>
+                <ObjectsBrowser/>
+              </RepositoryPageLayout>
+          </RefContextProvider>
     )
 }
 
