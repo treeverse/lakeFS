@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -42,10 +43,13 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	logger := logging.Default().WithField("phase", "startup")
 	if cfgFile != "" {
+		logger.WithField("file", cfgFile).Info("configuration file")
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
+		logger.Info("search for configuration file .lakefs")
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
@@ -65,16 +69,18 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	err := viper.ReadInConfig()
+	logger = logger.WithField("file", viper.ConfigFileUsed())
+
+	if err == nil {
+		logger.Info("loaded configuration from file")
 	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		panic(fmt.Sprintf("Error while reading config file %s: %v", viper.ConfigFileUsed(), err))
+		logger.WithError(err).Fatal("failed to read config file")
 	}
 
 	// setup config used by the executed command
-	var err error
 	cfg, err = config.NewConfig()
 	if err != nil {
-		panic(fmt.Errorf("config: %w", err))
+		logger.WithError(err).Fatal("load config")
 	}
 }

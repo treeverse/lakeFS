@@ -7,7 +7,7 @@ type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 	Profile         string
 	Credentials     *struct {
-		AccessKeyID     string `mapstructure:"access_key_id"`
+		AccessKeyID string `mapstructure:"access_key_id"`
 		// AccessSecretKey is the old name for SecretAccessKey.
 		//
 		// Deprecated: use SecretAccessKey instead.
