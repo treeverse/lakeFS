@@ -21,7 +21,7 @@ func NewMetadataProvider(logger logging.Logger) *MetadataProvider {
 
 type instanceMetadataResponse struct {
 	Compute struct {
-		SubscriptionId string `json:"subscriptionId"`
+		SubscriptionID string `json:"subscriptionId"`
 	} `json:"compute"`
 }
 
@@ -51,12 +51,12 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		m.logger.Warnf("%v: failed to get Azure subscription ID from instance metadata", err)
 		return nil
 	}
-	if responseObj.Compute.SubscriptionId == "" {
+	if responseObj.Compute.SubscriptionID == "" {
 		m.logger.Warn("got empty subscription id from azure")
 		return nil
 	}
 	return map[string]string{
-		cloud.IDKey:     fmt.Sprintf("%x", md5.Sum([]byte(responseObj.Compute.SubscriptionId))), //nolint:gosec
+		cloud.IDKey:     fmt.Sprintf("%x", md5.Sum([]byte(responseObj.Compute.SubscriptionID))), //nolint:gosec
 		cloud.IDTypeKey: "azure_subscription_id",
 	}
 }
