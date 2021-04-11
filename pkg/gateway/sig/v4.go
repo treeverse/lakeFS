@@ -132,7 +132,7 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 		return err
 	}
 	// sign
-	signingKey := createSignature(credentials.AccessSecretKey, auth.Date, auth.Region, auth.Service)
+	signingKey := createSignature(credentials.SecretAccessKey, auth.Date, auth.Region, auth.Service)
 	signature := hex.EncodeToString(sign(signingKey, stringToSign))
 
 	// compare signatures

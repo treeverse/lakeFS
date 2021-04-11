@@ -215,9 +215,14 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.profile"))
 	}
 	if viper.IsSet("blockstore.s3.credentials.access_key_id") {
+		secretAccessKey := viper.GetString("blockstore.s3.credentials.secret_access_key")
+		if secretAccessKey == "" {
+			logging.Default().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
+			secretAccessKey = viper.GetString("blockstore.s3.credentials.access_secret_key")
+		}
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.s3.credentials.access_key_id"),
-			viper.GetString("blockstore.s3.credentials.access_secret_key"),
+			secretAccessKey,
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
 
@@ -377,7 +382,7 @@ func GetMetastoreAwsConfig() *aws.Config {
 	if viper.IsSet("metastore.glue.credentials.access_key_id") {
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("metastore.glue.credentials.access_key_id"),
-			viper.GetString("metastore.glue.credentials.access_secret_key"),
+			viper.GetString("metastore.glue.credentials.secret_access_key"),
 			viper.GetString("metastore.glue.credentials.session_token"))
 	}
 	return cfg

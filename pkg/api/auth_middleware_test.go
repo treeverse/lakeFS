@@ -20,7 +20,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("valid basic auth", func(t *testing.T) {
 		ctx := context.Background()
-		authClient := setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.AccessSecretKey)
+		authClient := setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)

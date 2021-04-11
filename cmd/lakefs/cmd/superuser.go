@@ -68,7 +68,7 @@ var superuserCmd = &cobra.Command{
 		stats.CollectEvent("global", "superuser")
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
-			credentials.AccessKeyID, credentials.AccessSecretKey)
+			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()
 		<-stats.Done()
