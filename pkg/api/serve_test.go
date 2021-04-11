@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -76,11 +77,9 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 		blockstoreType = mem.BlockstoreType
 	}
 	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
+	viper.Set(config.BlockstoreTypeKey, mem.BlockstoreType)
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
-	cfg.Override(func(configurator config.Configurator) {
-		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
-	})
 	c, err := catalog.New(ctx, catalog.Config{
 		Config: cfg,
 		DB:     conn,

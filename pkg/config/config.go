@@ -177,21 +177,6 @@ func setDefaults() {
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
 }
 
-type Configurator interface {
-	SetDefault(key string, value interface{})
-}
-
-type viperConfigurator struct {
-}
-
-func (v viperConfigurator) SetDefault(key string, value interface{}) {
-	viper.SetDefault(key, value)
-}
-
-func (c *Config) Override(fn func(Configurator)) {
-	fn(viperConfigurator{})
-}
-
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
 		ConnectionString:      c.values.Database.ConnectionString,
