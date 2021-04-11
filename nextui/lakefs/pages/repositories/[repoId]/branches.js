@@ -232,7 +232,6 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
                         </Button>
                     </OverlayTrigger>
 
-
                     <CreateBranchButton repo={repo} variant="success" onCreate={doRefresh}>
                         <GitBranchIcon/> Create Branch
                     </CreateBranchButton>

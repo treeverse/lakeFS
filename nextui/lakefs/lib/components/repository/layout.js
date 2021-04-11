@@ -35,7 +35,7 @@ export const RepositoryPageLayout = ({ activePage, children, fluid = "xl" }) => 
                 <RepositoryNavTabs active={activePage}/>
 
                 <Container fluid={fluid}>
-                    <div className="mt-2">{children}</div>
+                    <div className="mt-4">{children}</div>
                 </Container>
             </div>
         </Layout>

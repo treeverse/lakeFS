@@ -4,7 +4,7 @@ import React, {useState} from "react";
 import Tooltip from "react-bootstrap/Tooltip";
 import {OverlayTrigger} from "react-bootstrap";
 
-export const ConfirmationModal = ({ show, onHide, msg, onConfirm }) => {
+export const ConfirmationModal = ({ show, onHide, msg, onConfirm, variant = "danger" }) => {
     return (
         <Modal show={show} onHide={onHide}>
             <Modal.Header>
@@ -14,7 +14,7 @@ export const ConfirmationModal = ({ show, onHide, msg, onConfirm }) => {
                 {msg}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="danger" onClick={onConfirm}>Yes</Button>
+                <Button variant={variant} onClick={onConfirm}>Yes</Button>
                 <Button variant="secondary" onClick={onHide}>Cancel</Button>
             </Modal.Footer>
         </Modal>
@@ -22,9 +22,9 @@ export const ConfirmationModal = ({ show, onHide, msg, onConfirm }) => {
 }
 
 
-export const ConfirmationButton = ({ msg, onConfirm, variant, disabled = false, tooltip = null, children }) => {
+export const ConfirmationButton = ({ msg, onConfirm, variant, modalVariant, size, disabled = false, tooltip = null, children }) => {
     const [show, setShow] = useState(false)
-    let btn = <Button variant={variant} disabled={disabled} onClick={() => setShow(true)}>{children}</Button>
+    let btn = <Button variant={variant} size={size} disabled={disabled} onClick={() => setShow(true)}>{children}</Button>
     if (tooltip !== null) {
         btn = (
             <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
@@ -39,6 +39,7 @@ export const ConfirmationButton = ({ msg, onConfirm, variant, disabled = false, 
         <>
             <ConfirmationModal
                 show={show}
+                variant={modalVariant}
                 onConfirm={() => {
                     onConfirm(hide)
                 }}
