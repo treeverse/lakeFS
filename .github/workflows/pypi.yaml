@@ -3,6 +3,7 @@ name: pypi
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   pypi:
