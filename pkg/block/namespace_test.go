@@ -14,7 +14,7 @@ func TestResolveNamespace(t *testing.T) {
 		Name             string
 		DefaultNamespace string
 		Key              string
-		Relative         bool
+		Type             block.IdentifierType
 		ExpectedErr      error
 		Expected         block.QualifiedKey
 	}{
@@ -22,7 +22,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_namespace_no_trailing_slash",
 			DefaultNamespace: "s3://foo",
 			Key:              "bar/baz",
-			Relative:         true,
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
@@ -34,7 +34,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_namespace_with_trailing_slash",
 			DefaultNamespace: "s3://foo/",
 			Key:              "bar/baz",
-			Relative:         true,
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
@@ -46,7 +46,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_namespace_mem_with_trailing_slash",
 			DefaultNamespace: "mem://foo/",
 			Key:              "bar/baz",
-			Relative:         true,
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeMem,
@@ -58,7 +58,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_fq_key",
 			DefaultNamespace: "mem://foo/",
 			Key:              "s3://example/bar/baz",
-			Relative:         false,
+			Type:             block.IdentifierTypeFull,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
@@ -70,7 +70,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "invalid_namespace_wrong_scheme",
 			DefaultNamespace: "memzzzz://foo/",
 			Key:              "bar/baz",
-			Relative:         true,
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      block.ErrInvalidNamespace,
 			Expected:         block.QualifiedKey{},
 		},
@@ -78,7 +78,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "invalid_namespace_invalid_uri",
 			DefaultNamespace: "foo",
 			Key:              "bar/baz",
-			Relative:         true,
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      block.ErrInvalidNamespace,
 			Expected:         block.QualifiedKey{},
 		},
@@ -86,7 +86,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "invalid_key_wrong_scheme",
 			DefaultNamespace: "s3://foo/",
 			Key:              "s4://bar/baz",
-			Relative:         false,
+			Type:             block.IdentifierTypeFull,
 			ExpectedErr:      block.ErrInvalidNamespace,
 			Expected:         block.QualifiedKey{},
 		},
@@ -94,7 +94,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "key_weird_format",
 			DefaultNamespace: "s3://foo/",
 			Key:              "://invalid/baz",
-			Relative:         true,
+			Type:             block.IdentifierTypeRelative,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "foo",
@@ -104,13 +104,14 @@ func TestResolveNamespace(t *testing.T) {
 	}
 
 	for _, cas := range cases {
-		for _, r := range []*bool{&cas.Relative, nil} {
+		for _, r := range []block.IdentifierType{cas.Type, block.IdentifierTypeUnknownDeprecated} {
 			relativeName := ""
-			if r == nil {
+			switch r {
+			case block.IdentifierTypeUnknownDeprecated:
 				relativeName = "unknown"
-			} else if *r {
-				relativeName = "relativeName"
-			} else {
+			case block.IdentifierTypeRelative:
+				relativeName = "relative"
+			case block.IdentifierTypeFull:
 				relativeName = "full"
 			}
 			t.Run(fmt.Sprintf("%s_%s", cas.Name, relativeName), func(t *testing.T) {

@@ -91,8 +91,7 @@ func formatPathWithNamespace(namespacePath, keyPath string) string {
 
 func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, error) {
 	// behaviour for key and prefix is the same
-	relative := true
-	key, err := ResolveNamespace(defaultNamespace, prefix, &relative)
+	key, err := resolveRelative(defaultNamespace, prefix)
 	if err != nil {
 		return QualifiedPrefix{}, fmt.Errorf("resolving namespace: %w", err)
 	}
@@ -104,16 +103,17 @@ func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, e
 	}, nil
 }
 
-func ResolveNamespace(defaultNamespace, key string, relative *bool) (QualifiedKey, error) {
-	if relative == nil {
+func ResolveNamespace(defaultNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {
+	switch identifierType {
+	case IdentifierTypeUnknownDeprecated:
 		return resolveNamespaceUnknown(defaultNamespace, key)
-	}
-
-	if *relative {
+	case IdentifierTypeRelative:
 		return resolveRelative(defaultNamespace, key)
+	case IdentifierTypeFull:
+		return resolveFull(key)
+	default:
+		panic(fmt.Sprintf("unknown identifier type: %d", identifierType))
 	}
-
-	return resolveFull(key)
 }
 
 func resolveFull(key string) (QualifiedKey, error) {

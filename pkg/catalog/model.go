@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/block"
 )
 
 const (
@@ -62,12 +64,12 @@ type Tag struct {
 type AddressType int32
 
 const (
-	// AddressTypeUnknown indicates that the address might be relative or full.
+	// Deprecated: indicates that the address might be relative or full.
 	// Used only for backward compatibility and should not be used for creating entries.
-	AddressTypeUnknown AddressType = 0
+	AddressTypeByPrefixDeprecated AddressType = 0
 
 	// AddressTypeRelative indicates that the address is relative to the storage namespace.
-	// For example: "/foo/bar"
+	// For example: "foo/bar"
 	AddressTypeRelative AddressType = 1
 
 	// AddressTypeFull indicates that the address is the full address of the object in the object store.
@@ -75,16 +77,15 @@ const (
 	AddressTypeFull AddressType = 2
 )
 
-func (at AddressType) IsRelative() *bool {
+// nolint:staticcheck
+func (at AddressType) ToIdentifierType() block.IdentifierType {
 	switch at {
-	case AddressTypeUnknown:
-		return nil
+	case AddressTypeByPrefixDeprecated:
+		return block.IdentifierTypeUnknownDeprecated
 	case AddressTypeRelative:
-		y := true
-		return &y
+		return block.IdentifierTypeRelative
 	case AddressTypeFull:
-		n := false
-		return &n
+		return block.IdentifierTypeFull
 	default:
 		panic(fmt.Sprintf("unknown address type: %d", at))
 	}

@@ -620,8 +620,8 @@ func EntryFromCatalogEntry(entry DBEntry) *Entry {
 
 func addressTypeToProto(t AddressType) Entry_AddressType {
 	switch t {
-	case AddressTypeUnknown:
-		return Entry_UNKNOWN
+	case AddressTypeByPrefixDeprecated:
+		return Entry_BY_PREFIX_DEPRECATED
 	case AddressTypeRelative:
 		return Entry_RELATIVE
 	case AddressTypeFull:
@@ -633,8 +633,8 @@ func addressTypeToProto(t AddressType) Entry_AddressType {
 
 func addressTypeToCatalog(t Entry_AddressType) AddressType {
 	switch t {
-	case Entry_UNKNOWN:
-		return AddressTypeUnknown
+	case Entry_BY_PREFIX_DEPRECATED:
+		return AddressTypeByPrefixDeprecated
 	case Entry_RELATIVE:
 		return AddressTypeRelative
 	case Entry_FULL:

@@ -35,7 +35,7 @@ var (
 )
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.Relative)
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return qualifiedKey, err
 	}
