@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// configuration is the user-visible configuration structure in Golang form.  When editing
+// make sure *all* fields have a `mapstructure:"..."` tag, to simplify future refactoring.
 type configuration struct {
 	Credentials struct {
 		AccessKeyID     string `mapstructure:"access_key_id"`
@@ -15,21 +17,21 @@ type configuration struct {
 		EndpointURL string `mapstructure:"endpoint_url"`
 	}
 	Metastore struct {
-		Type string
+		Type string `mapstructure:"type"`
 		Hive struct {
-			URI string
-		}
+			URI string `mapstructure:"uri"`
+		} `mapstructure:"hive"`
 		Glue struct {
 			// TODO(ariels): Refactor credentials to share with server side.
-			Profile         string
+			Profile         string `mapstructure:"profile"`
 			CredentialsFile string `mapstructure:"credentials_file"`
 			Credentials     *struct {
 				AccessKeyID     string `mapstructure:"access_key_id"`
 				AccessSecretKey string `mapstructure:"access_secret_key"`
 				SessionToken    string `mapstructure:"session_token"`
-			}
+			} `mapstructure:"credentials"`
 
-			Region    string
+			Region    string `mapstructure:"region"`
 			CatalogID string `mapstructure:"catalog_id"`
 		}
 	}
