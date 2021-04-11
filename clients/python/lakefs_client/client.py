@@ -1,5 +1,5 @@
 import lakefs
-from lakefs.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
+from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
 
 class Client:
     def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
