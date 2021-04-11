@@ -68,7 +68,7 @@ client.repositories.create_repository(repo)
 
 ### Creating a branch, uploading files, committing changes
 
-List current branches:
+List repository branches:
 
 ```python
 client.branches.list_branches('example-repo')
