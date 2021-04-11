@@ -771,7 +771,7 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 	}
 	response := CredentialsWithSecret{
 		AccessKeyId:     credentials.AccessKeyID,
-		AccessSecretKey: credentials.AccessSecretKey,
+		SecretAccessKey: credentials.SecretAccessKey,
 		CreationDate:    credentials.IssuedDate.Unix(),
 	}
 	writeResponse(w, http.StatusCreated, response)
@@ -2556,7 +2556,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	response := CredentialsWithSecret{
 		AccessKeyId:     cred.AccessKeyID,
-		AccessSecretKey: cred.AccessSecretKey,
+		SecretAccessKey: cred.SecretAccessKey,
 		CreationDate:    cred.IssuedDate.Unix(),
 	}
 	writeResponse(w, http.StatusOK, response)

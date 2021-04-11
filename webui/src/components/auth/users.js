@@ -418,16 +418,16 @@ const CredentialsCreateButton = connect(
                                 </td>
                             </tr>
                             <tr>
-                                <th>Access Secret Key</th>
-                                <td><code>{payload.access_secret_key}</code></td>
+                                <th>Secret Access Key</th>
+                                <td><code>{payload.secret_access_key}</code></td>
                                 <td>
-                                    <ClipboardButton variant="secondary" text={payload.access_secret_key}/>
+                                    <ClipboardButton variant="secondary" text={payload.secret_access_key}/>
                                 </td>
                             </tr>
                             </tbody>
                         </Table>
                         <Alert variant="warning">
-                            Copy the Access Secret Key and store it somewhere safe.
+                            Copy the Secret Access Key and store it somewhere safe.
                             You will not be able to access it again.
                         </Alert>
                     </>

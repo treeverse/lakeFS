@@ -1220,11 +1220,11 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				if c.key != nil && c.key.AccessKeyId != creds.AccessKeyId {
 					t.Errorf("got access key ID %s != %s", creds.AccessKeyId, c.key.AccessKeyId)
 				}
-				if c.key != nil && c.key.SecretAccessKey != creds.AccessSecretKey {
-					t.Errorf("got secret access key %s != %s", creds.AccessSecretKey, c.key.SecretAccessKey)
+				if c.key != nil && c.key.SecretAccessKey != creds.SecretAccessKey {
+					t.Errorf("got secret access key %s != %s", creds.SecretAccessKey, c.key.SecretAccessKey)
 				}
 
-				clt = setupClientByEndpoint(t, server.URL, creds.AccessKeyId, creds.AccessSecretKey)
+				clt = setupClientByEndpoint(t, server.URL, creds.AccessKeyId, creds.SecretAccessKey)
 				getCredResp, err := clt.GetCredentialsWithResponse(ctx, "admin", creds.AccessKeyId)
 				verifyResponseOK(t, getCredResp, err)
 				if err != nil {

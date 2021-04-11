@@ -61,7 +61,7 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	return &authmodel.Credential{
 		IssuedDate:      time.Unix(res.JSON200.CreationDate, 0),
 		AccessKeyID:     res.JSON200.AccessKeyId,
-		AccessSecretKey: res.JSON200.AccessSecretKey,
+		SecretAccessKey: res.JSON200.SecretAccessKey,
 	}
 }
 
@@ -158,6 +158,6 @@ func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
-	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.AccessSecretKey)
+	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 	return clt, deps
 }

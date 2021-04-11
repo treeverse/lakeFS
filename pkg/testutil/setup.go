@@ -100,7 +100,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 		logger.Info("Cluster setup successfully")
 		credentialsWithSecret := res.JSON200
 		viper.Set("access_key_id", credentialsWithSecret.AccessKeyId)
-		viper.Set("secret_access_key", credentialsWithSecret.AccessSecretKey)
+		viper.Set("secret_access_key", credentialsWithSecret.SecretAccessKey)
 	}
 
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(viper.GetString("access_key_id"), viper.GetString("secret_access_key"))

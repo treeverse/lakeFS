@@ -49,7 +49,7 @@ func NewLoginHandler(authService auth.Service) http.Handler {
 
 		// load credentials by access key
 		credentials, err := authService.GetCredentials(r.Context(), login.AccessKeyID)
-		if err != nil || credentials.AccessSecretKey != login.SecretAccessKey {
+		if err != nil || credentials.SecretAccessKey != login.SecretAccessKey {
 			writeError(w, http.StatusUnauthorized, nil)
 			return
 		}

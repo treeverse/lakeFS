@@ -106,7 +106,7 @@ func userByAuth(ctx context.Context, logger logging.Logger, authService auth.Ser
 		logger.WithError(err).Error("failed getting credentials for key")
 		return nil, ErrAuthenticationFailed
 	}
-	if secretKey != cred.AccessSecretKey {
+	if secretKey != cred.SecretAccessKey {
 		logger.Debug("access key secret does not match")
 		return nil, ErrAuthenticationFailed
 	}

@@ -23,7 +23,7 @@ import (
 var (
 	mockCreds = &model.Credential{
 		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
-		AccessSecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 	}
 )
 
@@ -169,7 +169,7 @@ func TestSingleChunkPut(t *testing.T) {
 
 			err = authenticator.Verify(&model.Credential{
 				AccessKeyID:     ID,
-				AccessSecretKey: SECRET,
+				SecretAccessKey: SECRET,
 				IssuedDate:      time.Now(),
 			}, "")
 			if err != nil {
@@ -231,7 +231,7 @@ func TestStreaming(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		AccessKeyID:     ID,
-		AccessSecretKey: SECRET,
+		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
 	}, "")
 	if err != nil {
@@ -288,7 +288,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		AccessKeyID:     ID,
-		AccessSecretKey: SECRET,
+		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
 	}, "")
 	if err != nil {
@@ -333,7 +333,7 @@ func TestUnsignedPayload(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		AccessKeyID:     testID,
-		AccessSecretKey: testSecret,
+		SecretAccessKey: testSecret,
 		IssuedDate:      time.Now(),
 	}, "")
 	if err != nil {
