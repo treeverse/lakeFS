@@ -4,8 +4,9 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    tag:
-      description: Tag/version to publish
+    inputs: 
+      tag:
+        description: Tag/version to publish
 
 jobs:
   pypi:
