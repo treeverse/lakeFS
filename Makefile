@@ -7,6 +7,15 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
+# https://openapi-generator.tech
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
+OPENAPI_GENERATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+ifndef PACKAGE_VERSION
+	PACKAGE_VERSION=0.1.0.dev
+endif
+
+PYTHON_IMAGE=python:3
+
 export PATH:= $(PATH):$(GOBINPATH)
 
 GOBUILD=$(GOCMD) build
@@ -91,6 +100,21 @@ go-install: go-mod-download ## Install dependencies
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
 
+client-python: api/swagger.yml  ## Generate SDK for Python client
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/$< \
+		-g python \
+		--package-name lakefs_client \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
+		-o /mnt/clients/python
+
+clients: client-python
+
+package-python: client-python
+	$(DOCKER) run --rm -v $(shell pwd):/mnt -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
+
+package: package-python
+
 gen-api: go-install ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api
 
@@ -149,7 +173,10 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/committed/committed.pb.go
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 
-checks-validator: lint validate-fmt validate-proto  ## Run all validation/linting steps
+validate-client-python:
+	git diff --quiet -- client/python/lakefs_client/api
+
+checks-validator: lint validate-fmt validate-proto validate-client-python ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -175,4 +202,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-api gen-ui gen-ddl gen-mockgen
+gen: gen-api gen-ui gen-ddl gen-mockgen clients

@@ -1,0 +1,26 @@
+name: pypi
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  pypi:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
+        id: version
+      - name: Python build and make package
+        run: make package-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+      - name: Python publish package
+        if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: clients/python/dist/
+          verbose: true
