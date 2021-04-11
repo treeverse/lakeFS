@@ -40,7 +40,11 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 		return nil
 	}
 	defer resp.Body.Close()
-	responseBody, _ := ioutil.ReadAll(resp.Body)
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		m.logger.Warnf("%v: failed to get Azure subscription ID from instance metadata", err)
+		return nil
+	}
 	responseObj := &instanceMetadataResponse{}
 	err = json.Unmarshal(responseBody, responseObj)
 	if err != nil {
