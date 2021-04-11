@@ -1714,9 +1714,6 @@ paths:
         201:
           description: reference
           content:
-#            application/json:
-#              schema:
-#                $ref: "#/components/schemas/Ref"
             text/html:
               schema:
                 type: string
