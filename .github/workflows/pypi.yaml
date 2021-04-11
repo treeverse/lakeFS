@@ -13,6 +13,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        # Extract the version to 'version' based on work flow dispatch or trigged tag in published event
       - name: Extract version
         shell: bash
         run: |
