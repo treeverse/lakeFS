@@ -137,5 +137,27 @@ func TestConfig_JSONLogger(t *testing.T) {
 	if _, ok := m["msg"]; !ok {
 		t.Fatalf("expected a msg field, could not find one")
 	}
+}
 
+func verifyAWSConfig(t *testing.T, c *config.Config) {
+	awsConfig := c.GetAwsConfig()
+	credentials, err := awsConfig.Credentials.Get()
+	testutil.Must(t, err)
+	if credentials.AccessKeyID != "my-key-id" {
+		t.Fatalf("unexpected key id in credentials. expected %s got %s", "my-key-id", credentials.AccessKeyID)
+	}
+	if credentials.SecretAccessKey != "my-secret-key" {
+		t.Fatalf("unexpected secret access key in credentials. expected %s got %s", "my-secret-key", credentials.SecretAccessKey)
+	}
+}
+
+func TestConfig_AWSConfig(t *testing.T) {
+	t.Run("use secret_access_key configuration", func(t *testing.T) {
+		c := newConfigFromFile("testdata/aws_credentials.yaml")
+		verifyAWSConfig(t, c)
+	})
+	t.Run("use alias access_secret_key configuration", func(t *testing.T) {
+		c := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
+		verifyAWSConfig(t, c)
+	})
 }

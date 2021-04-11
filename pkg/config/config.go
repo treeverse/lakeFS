@@ -174,8 +174,6 @@ func setDefaults() {
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultAzureTryTimeout)
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
-	// allow using deprecated key for AWS secret key:
-	viper.RegisterAlias("blockstore.s3.credentials.secret_access_key", "blockstore.s3.credentials.access_secret_key")
 }
 
 type Configurator interface {
@@ -217,9 +215,14 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.profile"))
 	}
 	if viper.IsSet("blockstore.s3.credentials.access_key_id") {
+		secretAccessKey := viper.GetString("blockstore.s3.credentials.secret_access_key")
+		if secretAccessKey == "" {
+			logging.Default().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
+			secretAccessKey = viper.GetString("blockstore.s3.credentials.access_secret_key")
+		}
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.s3.credentials.access_key_id"),
-			viper.GetString("blockstore.s3.credentials.secret_access_key"),
+			secretAccessKey,
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
 
