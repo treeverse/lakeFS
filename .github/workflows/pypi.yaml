@@ -27,7 +27,6 @@ jobs:
       - name: Python build and make package
         run: make package-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
       - name: Python publish package
-        if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
