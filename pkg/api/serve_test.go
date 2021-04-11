@@ -98,7 +98,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
-	meta := auth.NewDBMetadataManager("dev", conn)
+	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
 	t.Cleanup(func() {

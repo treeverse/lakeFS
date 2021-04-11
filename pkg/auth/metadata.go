@@ -17,9 +17,9 @@ type MetadataManager interface {
 }
 
 type DBMetadataManager struct {
-	version string
+	version        string
 	installationID string
-	db      db.Database
+	db             db.Database
 }
 
 const (
@@ -29,9 +29,9 @@ const (
 
 func NewDBMetadataManager(version string, fixedInstallationID string, database db.Database) *DBMetadataManager {
 	return &DBMetadataManager{
-		version: version,
+		version:        version,
 		installationID: generateInstallationID(fixedInstallationID),
-		db:      database,
+		db:             database,
 	}
 }
 

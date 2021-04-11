@@ -83,8 +83,8 @@ type configuration struct {
 		} `mapstructure:"local_cache"`
 		BlockStoragePrefix string `mapstructure:"block_storage_prefix"`
 		Permanent          struct {
-			MinRangeSizeBytes      uint64   `mapstructure:"min_range_size_bytes"`
-			MaxRangeSizeBytes      uint64   `mapstructure:"max_range_size_bytes"`
+			MinRangeSizeBytes      uint64  `mapstructure:"min_range_size_bytes"`
+			MaxRangeSizeBytes      uint64  `mapstructure:"max_range_size_bytes"`
 			RangeRaggednessEntries float64 `mapstructure:"range_raggedness_entries"`
 		}
 		SSTable struct {
