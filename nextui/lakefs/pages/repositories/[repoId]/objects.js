@@ -17,7 +17,7 @@ import {Tree} from "../../../lib/components/repository/tree";
 import {Error} from "../../../lib/components/controls";
 import {objects} from "../../../rest/api";
 import {useAPIWithPagination} from "../../../rest/hooks";
-import {RefContextProvider, useRefs, useRepoAndRef} from "../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 
 
 const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => {

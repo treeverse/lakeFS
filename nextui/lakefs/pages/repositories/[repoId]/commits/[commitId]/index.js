@@ -6,7 +6,7 @@ import {
     Loading
 } from "../../../../../lib/components/controls";
 import React from "react";
-import {RefContextProvider, useRefs, useRepoAndRef} from "../../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../rest/hooks";
 import { commits, refs} from "../../../../../rest/api";

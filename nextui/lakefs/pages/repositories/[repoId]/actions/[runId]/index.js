@@ -2,22 +2,17 @@ import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {Error, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
 import React, {useState} from "react";
-import {RefContextProvider, useRefs, useRepo} from "../../../../../lib/hooks/repo";
-import {useAPI, useAPIWithPagination} from "../../../../../rest/hooks";
+import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
+import {useAPI} from "../../../../../rest/hooks";
 import {actions} from "../../../../../rest/api";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import ListGroup from "react-bootstrap/ListGroup";
 import {
-    CheckCircleFillIcon,
     ChevronDownIcon, ChevronRightIcon,
     HomeIcon,
     PlayIcon,
-    PlusCircleIcon,
-    TriangleDownIcon,
-    TriangleRightIcon, XCircleFillIcon
 } from "@primer/octicons-react";
-import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
 import moment from "moment";
 import {ActionStatusIcon} from "../../../../../lib/components/repository/actions";

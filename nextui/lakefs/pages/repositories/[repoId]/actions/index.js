@@ -9,19 +9,13 @@ import {
     TooltipButton
 } from "../../../../lib/components/controls";
 import React, {useState} from "react";
-import {RefContextProvider, useRefs, useRepo} from "../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../rest/hooks";
 import {actions} from "../../../../rest/api";
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
-import Button from "react-bootstrap/Button";
 import {
-    CheckCircleFillIcon,
     FilterIcon,
-    StopwatchIcon,
     SyncIcon,
-    XCircleFillIcon,
-    XCircleIcon, XIcon
+    XIcon
 } from "@primer/octicons-react";
 import Table from "react-bootstrap/Table";
 import Link from 'next/link';

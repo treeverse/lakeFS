@@ -22,7 +22,7 @@ import {
     Loading
 } from "../../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
-import {RefContextProvider, useRefs, useRepoAndRef} from "../../../../lib/hooks/repo";
+import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../rest/hooks";
 import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
