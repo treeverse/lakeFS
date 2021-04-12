@@ -74,7 +74,7 @@ class CredentialsWithSecret(ModelNormal):
         """
         return {
             'access_key_id': (str,),  # noqa: E501
-            'access_secret_key': (str,),  # noqa: E501
+            'secret_access_key': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
         }
 
@@ -85,7 +85,7 @@ class CredentialsWithSecret(ModelNormal):
 
     attribute_map = {
         'access_key_id': 'access_key_id',  # noqa: E501
-        'access_secret_key': 'access_secret_key',  # noqa: E501
+        'secret_access_key': 'secret_access_key',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
     }
 
@@ -101,12 +101,12 @@ class CredentialsWithSecret(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, access_key_id, access_secret_key, creation_date, *args, **kwargs):  # noqa: E501
+    def __init__(self, access_key_id, secret_access_key, creation_date, *args, **kwargs):  # noqa: E501
         """CredentialsWithSecret - a model defined in OpenAPI
 
         Args:
             access_key_id (str):
-            access_secret_key (str):
+            secret_access_key (str):
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -166,7 +166,7 @@ class CredentialsWithSecret(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.access_key_id = access_key_id
-        self.access_secret_key = access_secret_key
+        self.secret_access_key = secret_access_key
         self.creation_date = creation_date
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
