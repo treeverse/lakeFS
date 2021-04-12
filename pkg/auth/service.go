@@ -113,10 +113,11 @@ func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params 
 		slice = slice.Slice(0, params.Amount)
 		p.Amount = params.Amount
 		elem := slice.Index(slice.Len() - 1).Elem()
+		tokenColumnParts := strings.Split(tokenColumnName, ".")
 		for i := 0; i < elem.NumField(); i++ {
 			f := elem.Type().Field(i)
 			dbTagValue := strings.Split(f.Tag.Get("db"), ",")[0] // use split to ignore tag "options" like omitempty, etc.
-			if dbTagValue == tokenColumnName {
+			if dbTagValue == tokenColumnParts[len(tokenColumnParts)-1] {
 				p.NextPageToken = elem.FieldByName(f.Name).String()
 				break
 			}
