@@ -175,6 +175,7 @@ validate-proto: proto  ## build proto and check if diff found
 
 validate-client-python:
 	git diff --quiet -- client/python/lakefs_client/api
+	git diff --quiet -- client/python/lakefs_client/model
 
 checks-validator: lint validate-fmt validate-proto validate-client-python ## Run all validation/linting steps
 
