@@ -38,7 +38,7 @@ var commitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		branchURI := uri.Must(uri.Parse(args[0]))
+		branchURI := MustParseURI(args[0])
 
 		// do commit
 		metadata := api.CommitCreation_Metadata{

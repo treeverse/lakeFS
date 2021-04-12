@@ -80,7 +80,7 @@ var repoCreateCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
@@ -116,7 +116,7 @@ var repoCreateBareCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
@@ -151,7 +151,7 @@ var repoDeleteCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)

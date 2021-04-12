@@ -32,7 +32,7 @@ var tagListCmd = &cobra.Command{
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		ctx := cmd.Context()
 		client := getClient()
 		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
@@ -77,7 +77,7 @@ var tagCreateCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := uri.Must(uri.Parse(args[0]))
+		tagURI := MustParseURI(args[0])
 		client := getClient()
 		commitRef := args[1]
 		ctx := cmd.Context()
@@ -105,7 +105,7 @@ var tagDeleteCmd = &cobra.Command{
 			Die("Delete tag aborted", 1)
 		}
 		client := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnResponseError(resp, err)
@@ -121,7 +121,7 @@ var tagShowCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnResponseError(resp, err)

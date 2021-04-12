@@ -40,7 +40,7 @@ var fsStatCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParseURI(args[0])
 		client := getClient()
 		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path: *pathURI.Path,
@@ -60,21 +60,24 @@ const fsLsTemplate = `{{ range $val := . -}}
 var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParseURI(args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
+
+		fmt.Println("Path", pathURI.String())
+		if !pathURI.IsFullyQualified() {
+			Die("Invalid path", 1)
+		}
+
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non recursive)
 		const delimiter = "/"
 		var trimPrefix string
 		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
-			trimPrefix = prefix[:idx]
+			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
 		var paramsDelimiter *string
@@ -121,7 +124,7 @@ var fsCatCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParseURI(args[0]))
 		direct, _ := cmd.Flags().GetBool("direct")
 		var contents []byte
 		if direct {
@@ -197,7 +200,7 @@ var fsUploadCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParseURI(args[0])
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		direct, _ := cmd.Flags().GetBool("direct")
@@ -252,7 +255,7 @@ var fsStageCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParseURI(args[0])
 		size, _ := cmd.Flags().GetInt64("size")
 		location, _ := cmd.Flags().GetString("location")
 		checksum, _ := cmd.Flags().GetString("checksum")
@@ -287,7 +290,7 @@ var fsRmCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParseURI(args[0])
 		client := getClient()
 		resp, err := client.DeleteObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
 			Path: *pathURI.Path,

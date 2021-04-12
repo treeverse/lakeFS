@@ -32,7 +32,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := uri.Must(uri.Parse(args[0]))
+		repoURI := MustParseURI(args[0])
 		manifestFileName, _ := cmd.Flags().GetString("manifest")
 		fp := OpenByPath(manifestFileName)
 		defer func() {
@@ -66,7 +66,7 @@ var refsDumpCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := uri.Must(uri.Parse(args[0]))
+		repoURI := MustParseURI(args[0])
 
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)

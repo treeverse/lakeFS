@@ -18,7 +18,7 @@ var catHookOutputCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		runID := args[1]
 		hookRunID := args[2]
 		client := getClient()

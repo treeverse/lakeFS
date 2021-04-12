@@ -34,14 +34,14 @@ var diffCmd = &cobra.Command{
 			if err := uri.ValidateRefURI(args[1]); err != nil {
 				DieErr(err)
 			}
-			leftRefURI := uri.Must(uri.Parse(args[0]))
-			rightRefURI := uri.Must(uri.Parse(args[1]))
+			leftRefURI := MustParseURI(args[0])
+			rightRefURI := MustParseURI(args[1])
 			if leftRefURI.Repository != rightRefURI.Repository {
 				Die("both references must belong to the same repository", 1)
 			}
 			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		} else {
-			branchURI := uri.Must(uri.Parse(args[0]))
+			branchURI := MustParseURI(args[0])
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 		}
 	},

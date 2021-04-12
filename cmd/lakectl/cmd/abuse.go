@@ -55,7 +55,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
@@ -109,7 +109,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
@@ -169,7 +169,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 
 		cleanOnly := MustBool(cmd.Flags().GetBool("clean-only"))
 		branchPrefix := MustString(cmd.Flags().GetString("branch-prefix"))

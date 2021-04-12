@@ -37,7 +37,7 @@ var runsDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		runID := args[1]
 
 		client := getClient()

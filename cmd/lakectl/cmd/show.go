@@ -18,7 +18,7 @@ var showCmd = &cobra.Command{
 		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		oneOf := []string{"commit"}
 		var found bool
 		var showType, identifier string

@@ -26,7 +26,7 @@ var runsListCmd = &cobra.Command{
 		commit, _ := cmd.Flags().GetString("commit")
 		branch, _ := cmd.Flags().GetString("branch")
 
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseURI(args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)
 		}

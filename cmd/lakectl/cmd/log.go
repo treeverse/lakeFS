@@ -45,7 +45,7 @@ var logCmd = &cobra.Command{
 		}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
-		branchURI := uri.Must(uri.Parse(args[0]))
+		branchURI := MustParseURI(args[0])
 		res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),

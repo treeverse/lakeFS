@@ -38,8 +38,8 @@ var mergeCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := uri.Must(uri.Parse(args[0]))
-		destinationRef := uri.Must(uri.Parse(args[1]))
+		sourceRef := MustParseURI(args[0])
+		destinationRef := MustParseURI(args[1])
 
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
