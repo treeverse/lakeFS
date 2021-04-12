@@ -126,7 +126,7 @@ gen-mockgen: go-install ## Run the generator for inline commands
 	$(GOGENERATE) ./pkg/onboard
 	$(GOGENERATE) ./pkg/actions
 
-LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/config.Version=$(VERSION)-$(REVISION)"
+LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)

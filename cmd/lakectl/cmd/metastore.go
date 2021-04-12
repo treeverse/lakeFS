@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/glue"
 	"github.com/treeverse/lakefs/pkg/metastore/hive"
@@ -37,10 +36,10 @@ var metastoreCopyCmd = &cobra.Command{
 
 		var client metastoreClient
 		var err error
-		msType := config.GetMetastoreType()
+		msType := cfg.GetMetastoreType()
 		switch msType {
 		case "hive":
-			hiveClient, err := hive.NewMSClient(cmd.Context(), config.GetMetastoreHiveURI(), false)
+			hiveClient, err := hive.NewMSClient(cmd.Context(), cfg.GetMetastoreHiveURI(), false)
 			if err != nil {
 				DieErr(err)
 			}
@@ -53,7 +52,7 @@ var metastoreCopyCmd = &cobra.Command{
 			client = hiveClient
 
 		case "glue":
-			client, err = glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+			client, err = glue.NewMSClient(cmd.Context(), cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID())
 			if err != nil {
 				DieErr(err)
 			}
@@ -130,11 +129,11 @@ var metastoreDiffCmd = &cobra.Command{
 		var diff *metastore.MetaDiff
 		var client metastoreClient
 		var err error
-		msType := config.GetMetastoreType()
+		msType := cfg.GetMetastoreType()
 		switch msType {
 		case "hive":
 			var hiveClient *hive.MSClient
-			hiveClient, err = hive.NewMSClient(cmd.Context(), config.GetMetastoreHiveURI(), false)
+			hiveClient, err = hive.NewMSClient(cmd.Context(), cfg.GetMetastoreHiveURI(), false)
 			if err != nil {
 				DieErr(err)
 			}
@@ -147,7 +146,7 @@ var metastoreDiffCmd = &cobra.Command{
 			client = hiveClient
 
 		case "glue":
-			client, err = glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+			client, err = glue.NewMSClient(cmd.Context(), cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID())
 			if err != nil {
 				DieErr(err)
 			}
@@ -205,7 +204,7 @@ var glueSymlinkCmd = &cobra.Command{
 		}
 		location := res.JSON201.Location
 
-		msClient, err := glue.NewMSClient(cmd.Context(), config.GetMetastoreAwsConfig(), config.GetMetastoreGlueCatalogID())
+		msClient, err := glue.NewMSClient(cmd.Context(), cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID())
 		if err != nil {
 			DieErr(err)
 		}
@@ -222,11 +221,11 @@ func init() {
 	rootCmd.AddCommand(metastoreCmd)
 	metastoreCmd.AddCommand(metastoreCopyCmd)
 	_ = metastoreCopyCmd.Flags().String("type", "", "metastore type [hive, glue]")
-	_ = viper.BindPFlag(config.MetaStoreType, metastoreCopyCmd.Flag("type"))
+	_ = viper.BindPFlag("metastore.type", metastoreCopyCmd.Flag("type"))
 	_ = metastoreCopyCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
-	_ = viper.BindPFlag(config.MetaStoreHiveURI, metastoreCopyCmd.Flag("metastore-uri"))
+	_ = viper.BindPFlag("metastore.hive.uri", metastoreCopyCmd.Flag("metastore-uri"))
 	_ = metastoreCopyCmd.Flags().String("catalog-id", "", "Glue catalog ID")
-	_ = viper.BindPFlag(config.MetastoreGlueCatalogID, metastoreCopyCmd.Flag("catalog-id"))
+	_ = viper.BindPFlag("metastore.glue.catalog_id", metastoreCopyCmd.Flag("catalog-id"))
 	_ = metastoreCopyCmd.Flags().String("from-schema", "", "source schema name")
 	_ = metastoreCopyCmd.MarkFlagRequired("from-schema")
 	_ = metastoreCopyCmd.Flags().String("from-table", "", "source table name")
@@ -240,11 +239,11 @@ func init() {
 
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("type", "", "metastore type [hive, glue]")
-	_ = viper.BindPFlag(config.MetaStoreType, metastoreDiffCmd.Flag("type"))
+	_ = viper.BindPFlag("metastore.type", metastoreDiffCmd.Flag("type"))
 	_ = metastoreDiffCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
-	_ = viper.BindPFlag(config.MetaStoreHiveURI, metastoreDiffCmd.Flag("metastore-uri"))
+	_ = viper.BindPFlag("metastore.hive.URI", metastoreDiffCmd.Flag("metastore-uri"))
 	_ = metastoreDiffCmd.Flags().String("catalog-id", "", "Glue catalog ID")
-	_ = viper.BindPFlag(config.MetastoreGlueCatalogID, metastoreDiffCmd.Flag("catalog-id"))
+	_ = viper.BindPFlag("metastore.glue.catalog_id", metastoreDiffCmd.Flag("catalog-id"))
 	_ = metastoreDiffCmd.Flags().String("from-schema", "", "source schema name")
 	_ = metastoreDiffCmd.MarkFlagRequired("from-schema")
 	_ = metastoreDiffCmd.Flags().String("from-table", "", "source table name")
@@ -271,7 +270,7 @@ func init() {
 	_ = glueSymlinkCmd.Flags().String("path", "", "path to table on lakeFS")
 	_ = glueSymlinkCmd.MarkFlagRequired("path")
 	_ = glueSymlinkCmd.Flags().String("catalog-id", "", "Glue catalog ID")
-	_ = viper.BindPFlag(config.MetastoreGlueCatalogID, glueSymlinkCmd.Flag("catalog-id"))
+	_ = viper.BindPFlag("metastore.glue.catalog_id", glueSymlinkCmd.Flag("catalog-id"))
 	_ = glueSymlinkCmd.Flags().String("from-schema", "", "source schema name")
 	_ = glueSymlinkCmd.MarkFlagRequired("from-schema")
 	_ = glueSymlinkCmd.Flags().String("from-table", "", "source table name")
