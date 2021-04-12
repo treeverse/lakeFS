@@ -36,9 +36,23 @@ The data we gather is limited to the following:
 1. Periodic aggregated action counters (e.g. how many "get_object" operations occurred).
 
 ### 7. What is the difference between lakeFS / Delta Lake /  Hudi / Iceberg?
-We support different use-cases. Delta Lake, Hudi and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using git-like operations.  Read our [blog](https://lakefs.io/2020/08/10/data-versioning/) for a more detailed comparison. 
+We support different use-cases. Delta Lake, Hudi and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using git-like operations.  Read our [blog](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/) for a more detailed comparison. 
 
-### 8. What inspired your logo?
+### 8. What is the difference between lakeFS and MLOps tools that provide data versioning such as Pachyderm, DVC and DotScience?
+There are three main differences:
+
+*Who is it for?*
+The MLOps tools service data scientists in their daily work, and intend to provide them with an end to end solution for developing and maintaining ML models.
+lakeFS is an organizational infrastructure that provides all data providers and consumers with the ability to manage their data using git-like operations. Read why we believe data versioning is infrastructure [here](https://lakefs.io/data-versioning-as-an-infrastructure/).
+
+*Performance and scale*
+lakeFS is built over a state of the art versioning engine. It allows git-like operations at scale, managing billions of objects and exabytes of data while providing low latency operations with negligible performance overhead. The MLops tools are built for manual ML modeling work and are hence built for human scale of actions. 
+
+*Compatibility with other tools*
+lakeFS is format agnostic and compatible with all applications using object storage. The MLOps tools are compatible with storage, but expose branches and commits only to the users of their application limiting your ability to use branches with other applications. lakeFS is infrastructure and enables the entire data environment with Git-like operations.
+
+
+### 9. What inspired your logo?
 The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a species of salamander, also known as the Mexican Lake Monster or the Peter Pan of the animal kingdom. It's a magical creature, living in a lake, just like us :-).
 
 ![Axolotl](https://upload.wikimedia.org/wikipedia/commons/f/f6/AxolotlBE.jpg)
