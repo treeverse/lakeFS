@@ -2,6 +2,7 @@ package block_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -13,6 +14,7 @@ func TestResolveNamespace(t *testing.T) {
 		Name             string
 		DefaultNamespace string
 		Key              string
+		Type             block.IdentifierType
 		ExpectedErr      error
 		Expected         block.QualifiedKey
 	}{
@@ -20,6 +22,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_namespace_no_trailing_slash",
 			DefaultNamespace: "s3://foo",
 			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
@@ -31,6 +34,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_namespace_with_trailing_slash",
 			DefaultNamespace: "s3://foo/",
 			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
@@ -42,6 +46,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_namespace_mem_with_trailing_slash",
 			DefaultNamespace: "mem://foo/",
 			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeMem,
@@ -53,6 +58,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "valid_fq_key",
 			DefaultNamespace: "mem://foo/",
 			Key:              "s3://example/bar/baz",
+			Type:             block.IdentifierTypeFull,
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeS3,
@@ -64,6 +70,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "invalid_namespace_wrong_scheme",
 			DefaultNamespace: "memzzzz://foo/",
 			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      block.ErrInvalidNamespace,
 			Expected:         block.QualifiedKey{},
 		},
@@ -71,6 +78,7 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "invalid_namespace_invalid_uri",
 			DefaultNamespace: "foo",
 			Key:              "bar/baz",
+			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      block.ErrInvalidNamespace,
 			Expected:         block.QualifiedKey{},
 		},
@@ -78,21 +86,45 @@ func TestResolveNamespace(t *testing.T) {
 			Name:             "invalid_key_wrong_scheme",
 			DefaultNamespace: "s3://foo/",
 			Key:              "s4://bar/baz",
+			Type:             block.IdentifierTypeFull,
 			ExpectedErr:      block.ErrInvalidNamespace,
 			Expected:         block.QualifiedKey{},
+		},
+		{
+			Name:             "key_weird_format",
+			DefaultNamespace: "s3://foo/",
+			Key:              "://invalid/baz",
+			Type:             block.IdentifierTypeRelative,
+			Expected: block.QualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "foo",
+				Key:              "://invalid/baz",
+			},
 		},
 	}
 
 	for _, cas := range cases {
-		t.Run(cas.Name, func(t *testing.T) {
-			resolved, err := block.ResolveNamespace(cas.DefaultNamespace, cas.Key)
-			if err != nil && !errors.Is(err, cas.ExpectedErr) {
-				t.Fatalf("got unexpected error :%v - expected %v", err, cas.ExpectedErr)
+		for _, r := range []block.IdentifierType{cas.Type, block.IdentifierTypeUnknownDeprecated} {
+			relativeName := ""
+			switch r {
+			case block.IdentifierTypeUnknownDeprecated:
+				relativeName = "unknown"
+			case block.IdentifierTypeRelative:
+				relativeName = "relative"
+			case block.IdentifierTypeFull:
+				relativeName = "full"
 			}
-			if cas.ExpectedErr == nil && !reflect.DeepEqual(resolved, cas.Expected) {
-				t.Fatalf("expected %v got %v", cas.Expected, resolved)
-			}
-		})
+			t.Run(fmt.Sprintf("%s/%s", cas.Name, relativeName), func(t *testing.T) {
+				resolved, err := block.ResolveNamespace(cas.DefaultNamespace, cas.Key, r)
+				if err != nil && !errors.Is(err, cas.ExpectedErr) {
+					t.Fatalf("got unexpected error :%v - expected %v", err, cas.ExpectedErr)
+				}
+				if cas.ExpectedErr == nil && !reflect.DeepEqual(resolved, cas.Expected) {
+					t.Fatalf("expected %v got %v", cas.Expected, resolved)
+				}
+			})
+		}
+
 	}
 }
 
