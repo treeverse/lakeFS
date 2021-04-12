@@ -56,30 +56,23 @@ var authUsersList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
+
 		clt := getClient()
-		var pagination api.Pagination
-		rows := make([][]interface{}, 0)
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListUsersWithResponse(cmd.Context(), &api.ListUsersParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
-			users := resp.JSON200.Results
-			for _, user := range users {
-				ts := time.Unix(user.CreationDate, 0).String()
-				rows = append(rows, []interface{}{user.Id, ts})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+
+		resp, err := clt.ListUsersWithResponse(cmd.Context(), &api.ListUsersParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		users := resp.JSON200.Results
+		rows := make([][]interface{}, len(users))
+		for i, user := range users {
+			ts := time.Unix(user.CreationDate, 0).String()
+			rows[i] = []interface{}{user.Id, ts}
 		}
+
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"User ID", "Creation Date"}, &pagination, amount)
 	},
 }
@@ -125,31 +118,23 @@ var authUsersGroupsList = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		rows := make([][]interface{}, 0)
-		var pagination api.Pagination
-		clt := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &api.ListUserGroupsParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
 
-			groups := resp.JSON200.Results
-			for _, group := range groups {
-				ts := time.Unix(group.CreationDate, 0).String()
-				rows = append(rows, []interface{}{group.Id, ts})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+		clt := getClient()
+
+		resp, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &api.ListUserGroupsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		groups := resp.JSON200.Results
+		rows := make([][]interface{}, len(groups))
+		for i, group := range groups {
+			ts := time.Unix(group.CreationDate, 0).String()
+			rows[i] = []interface{}{group.Id, ts}
 		}
+
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
 	},
 }
@@ -167,34 +152,27 @@ var authUsersPoliciesList = &cobra.Command{
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 		effective, _ := cmd.Flags().GetBool("effective")
-		rows := make([][]interface{}, 0)
-		var pagination api.Pagination
-		clt := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &api.ListUserPoliciesParams{
-				After:     api.PaginationAfterPtr(after),
-				Amount:    api.PaginationAmountPtr(amountForPagination),
-				Effective: &effective,
-			})
-			DieOnResponseError(resp, err)
 
-			policies := resp.JSON200.Results
-			for _, policy := range policies {
-				for i, statement := range policy.Statement {
-					ts := time.Unix(*policy.CreationDate, 0).String()
-					rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
-				}
+		clt := getClient()
+
+		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &api.ListUserPoliciesParams{
+			After:     api.PaginationAfterPtr(after),
+			Amount:    api.PaginationAmountPtr(amount),
+			Effective: &effective,
+		})
+		DieOnResponseError(resp, err)
+
+		policies := resp.JSON200.Results
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(*policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+
 		}
+
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
 	},
 }
@@ -280,37 +258,27 @@ var authUsersCredentialsList = &cobra.Command{
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 		id, _ := cmd.Flags().GetString("id")
-		rows := make([][]interface{}, 0)
-		var pagination api.Pagination
 
 		clt := getClient()
-		for {
-			if id == "" {
-				resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-				DieOnResponseError(resp, err)
-				id = resp.JSON200.User.Id
-			}
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListUserCredentialsWithResponse(cmd.Context(), id, &api.ListUserCredentialsParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
+		if id == "" {
+			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
 			DieOnResponseError(resp, err)
-
-			credentials := resp.JSON200.Results
-			for _, c := range credentials {
-				ts := time.Unix(c.CreationDate, 0).String()
-				rows = append(rows, []interface{}{c.AccessKeyId, ts})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+			id = resp.JSON200.User.Id
 		}
+
+		resp, err := clt.ListUserCredentialsWithResponse(cmd.Context(), id, &api.ListUserCredentialsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		credentials := resp.JSON200.Results
+		rows := make([][]interface{}, len(credentials))
+		for i, c := range credentials {
+			ts := time.Unix(c.CreationDate, 0).String()
+			rows[i] = []interface{}{c.AccessKeyId, ts}
+		}
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, &pagination, amount)
 	},
 }
@@ -389,32 +357,22 @@ var authGroupsListMembers = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		rows := make([][]interface{}, 0)
-		var pagination api.Pagination
 
 		clt := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListGroupMembersWithResponse(cmd.Context(), id, &api.ListGroupMembersParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
 
-			users := resp.JSON200.Results
-			rows = make([][]interface{}, len(users))
-			for _, user := range users {
-				rows = append(rows, []interface{}{user.Id})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+		resp, err := clt.ListGroupMembersWithResponse(cmd.Context(), id, &api.ListGroupMembersParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		users := resp.JSON200.Results
+		rows := make([][]interface{}, len(users))
+		for i, user := range users {
+			rows[i] = []interface{}{user.Id}
 		}
+
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"User ID"}, &pagination, amount)
 	},
 }
@@ -459,35 +417,26 @@ var authGroupsPoliciesList = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		var pagination api.Pagination
-		rows := make([][]interface{}, 0)
+
 		clt := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &api.ListGroupPoliciesParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
 
-			policies := resp.JSON200.Results
-			rows = make([][]interface{}, 0)
-			for _, policy := range policies {
-				for i, statement := range policy.Statement {
-					ts := time.Unix(*policy.CreationDate, 0).String()
-					rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
-				}
+		resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &api.ListGroupPoliciesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
+		policies := resp.JSON200.Results
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(*policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+
 		}
+
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
 	},
 }
@@ -534,31 +483,22 @@ var authPoliciesList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		rows := make([][]interface{}, 0)
-		var pagination api.Pagination
-		clt := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := clt.ListPoliciesWithResponse(cmd.Context(), &api.ListPoliciesParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
 
-			policies := resp.JSON200.Results
-			for _, policy := range policies {
-				ts := time.Unix(*policy.CreationDate, 0).String()
-				rows = append(rows, []interface{}{policy.Id, ts})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+		clt := getClient()
+
+		resp, err := clt.ListPoliciesWithResponse(cmd.Context(), &api.ListPoliciesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		policies := resp.JSON200.Results
+		rows := make([][]interface{}, len(policies))
+		for i, policy := range policies {
+			ts := time.Unix(*policy.CreationDate, 0).String()
+			rows[i] = []interface{}{policy.Id, ts}
 		}
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, &pagination, amount)
 	},
 }
@@ -650,7 +590,7 @@ var authPoliciesDelete = &cobra.Command{
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
-	cmd.Flags().Int("amount", 100, "number of results to return. By default, all results are returned.")
+	cmd.Flags().Int("amount", 100, "how many results to return")
 	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
 

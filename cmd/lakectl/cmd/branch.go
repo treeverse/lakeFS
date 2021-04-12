@@ -9,10 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const (
-	branchRevertCmdArgs     = 2
-	defaultPaginationAmount = 20
-)
+const branchRevertCmdArgs = 2
 
 const (
 	ParentNumberFlagName = "parent-number"
@@ -42,30 +39,37 @@ var branchListCmd = &cobra.Command{
 		after, _ := cmd.Flags().GetString("after")
 		u := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		var pagination api.Pagination
-		rows := make([][]interface{}, 0)
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
+		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
-			refs := resp.JSON200.Results
-			for _, row := range refs {
-				rows = append(rows, []interface{}{row.Id, row.CommitId})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+		refs := resp.JSON200.Results
+		rows := make([][]interface{}, len(refs))
+		for i, row := range refs {
+			rows[i] = []interface{}{row.Id, row.CommitId}
 		}
-		PrintTable(rows, []interface{}{"Branch", "Commit ID"}, &pagination, amount)
+
+		pagination := resp.JSON200.Pagination
+		data := struct {
+			BranchTable *Table
+			Pagination  *Pagination
+		}{
+			BranchTable: &Table{
+				Headers: []interface{}{"Branch", "Commit ID"},
+				Rows:    rows,
+			},
+		}
+		if pagination.HasMore {
+			data.Pagination = &Pagination{
+				Amount:  amount,
+				HasNext: true,
+				After:   pagination.NextOffset,
+			}
+		}
+
+		Write(branchListTemplate, data)
 	},
 }
 
@@ -240,7 +244,7 @@ func init() {
 	branchCmd.AddCommand(branchResetCmd)
 	branchCmd.AddCommand(branchRevertCmd)
 
-	branchListCmd.Flags().Int("amount", -1, "number of results to return. By default, all results are returned.")
+	branchListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
