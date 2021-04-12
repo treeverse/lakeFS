@@ -202,6 +202,7 @@ var glueSymlinkCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		DieOnResponseError(res, err)
 		location := res.JSON201.Location
 
 		msClient, err := glue.NewMSClient(cmd.Context(), cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID())
