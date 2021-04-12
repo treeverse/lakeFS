@@ -1,8 +1,9 @@
+import lakefs_client
 from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
 
 class LakeFSClient:
     def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
-        self._api = lakefs.ApiClient(configuration=configuration, header_name=header_name, header_value=header_value, cookie=cookie, pool_threads=pool_threads)
+        self._api = lakefs_client.ApiClient(configuration=configuration, header_name=header_name, header_value=header_value, cookie=cookie, pool_threads=pool_threads)
         self.actions = ActionsApi(self._api)
         self.auth = AuthApi(self._api)
         self.branches = BranchesApi(self._api)
