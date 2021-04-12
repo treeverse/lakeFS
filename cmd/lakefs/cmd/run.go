@@ -22,7 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multiparts"
@@ -30,6 +29,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -50,7 +50,7 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		ctx := cmd.Context()
-		logger.WithField("version", config.Version).Infof("lakeFS run")
+		logger.WithField("version", version.Version).Infof("lakeFS run")
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
@@ -102,7 +102,7 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		authMetadataManager := auth.NewDBMetadataManager(version.Version, dbPool)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.GetBlockstoreType(), authMetadataManager, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
@@ -209,7 +209,7 @@ const runBanner = `
 
 func printWelcome(w io.Writer) {
 	_, _ = fmt.Fprint(w, runBanner)
-	_, _ = fmt.Fprintf(w, "Version %s\n\n", config.Version)
+	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
@@ -222,7 +222,7 @@ func registerPrometheusCollector(db sqlstats.StatsGetter) {
 
 func gracefulShutdown(ctx context.Context, quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
 	logger := logging.Default()
-	logger.WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
+	logger.WithField("version", version.Version).Info("Up and running (^C to shutdown)...")
 
 	printWelcome(os.Stderr)
 

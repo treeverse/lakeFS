@@ -10,10 +10,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 // superuserCmd represents the init command
@@ -45,7 +45,7 @@ var superuserCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		authMetadataManager := auth.NewDBMetadataManager(version.Version, dbPool)
 		metadataProvider := stats.BuildMetadataProvider(logging.Default(), cfg)
 		metadata := stats.NewMetadata(ctx, logging.Default(), cfg.GetBlockstoreType(), authMetadataManager, metadataProvider)
 		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{

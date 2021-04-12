@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "lakefs",
 	Short:   "lakeFS is a data lake management platform",
-	Version: config.Version,
+	Version: version.Version,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

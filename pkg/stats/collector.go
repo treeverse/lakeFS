@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -228,7 +229,7 @@ func getBufferedCollectorArgs(c *config.Config) (processID string, opts []Buffer
 		return "", nil
 	}
 	var sender Sender
-	if c.GetStatsEnabled() && !strings.HasPrefix(config.Version, config.UnreleasedVersion) {
+	if c.GetStatsEnabled() && !strings.HasPrefix(version.Version, version.UnreleasedVersion) {
 		sender = NewHTTPSender(c.GetStatsAddress(), time.Now)
 	} else {
 		sender = NewDummySender()

@@ -57,10 +57,6 @@ const (
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
 
-	MetaStoreType          = "metastore.type"
-	MetaStoreHiveURI       = "metastore.hive.uri"
-	MetastoreGlueCatalogID = "metastore.glue.catalog_id"
-
 	DefaultAzureTryTimeout = 10 * time.Minute
 	DefaultAzureAuthMethod = "access-key"
 )
@@ -367,36 +363,6 @@ func (c *Config) GetCommittedParams() *committed.Params {
 		RangeSizeEntriesRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
 		MaxUploaders:               viper.GetInt(CommittedLocalCacheNumUploadersKey),
 	}
-}
-
-func GetMetastoreAwsConfig() *aws.Config {
-	cfg := &aws.Config{
-		Region: aws.String(viper.GetString("metastore.glue.region")),
-		Logger: &LogrusAWSAdapter{},
-	}
-	if viper.IsSet("metastore.glue.profile") || viper.IsSet("metastore.glue.credentials_file") {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("metastore.glue.credentials_file"),
-			viper.GetString("metastore.glue.profile"))
-	}
-	if viper.IsSet("metastore.glue.credentials.access_key_id") {
-		cfg.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("metastore.glue.credentials.access_key_id"),
-			viper.GetString("metastore.glue.credentials.secret_access_key"),
-			viper.GetString("metastore.glue.credentials.session_token"))
-	}
-	return cfg
-}
-
-func GetMetastoreHiveURI() string {
-	return viper.GetString(MetaStoreHiveURI)
-}
-
-func GetMetastoreGlueCatalogID() string {
-	return viper.GetString(MetastoreGlueCatalogID)
-}
-func GetMetastoreType() string {
-	return viper.GetString(MetaStoreType)
 }
 
 func GetFixedInstallationID() string {
