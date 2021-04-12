@@ -94,6 +94,8 @@ func fieldByTag(t reflect.Type, key, tag string) string {
 	return ""
 }
 
+const maxPage = 1000
+
 func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
 	ptrType := reflect.PtrTo(retType)
 	tokenField := fieldByTag(retType, "db", tokenColumnName)
@@ -102,11 +104,18 @@ func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params 
 	}
 	slice := reflect.MakeSlice(reflect.SliceOf(ptrType), 0, 0)
 	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
+	amount := 0
 	if params != nil {
 		queryBuilder = queryBuilder.Where(sq.Gt{tokenColumnName: params.After})
 		if params.Amount >= 0 {
-			queryBuilder = queryBuilder.Limit(uint64(params.Amount) + 1)
+			amount = params.Amount + 1
 		}
+	}
+	if amount > maxPage {
+		amount = maxPage
+	}
+	if amount > 0 {
+		queryBuilder = queryBuilder.Limit(uint64(amount))
 	}
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
