@@ -9,10 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const (
-	branchRevertCmdArgs     = 2
-	defaultPaginationAmount = 20
-)
+const branchRevertCmdArgs = 2
 
 const (
 	ParentNumberFlagName = "parent-number"

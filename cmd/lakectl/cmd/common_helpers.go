@@ -26,6 +26,8 @@ const (
 	DeathMessage              = "Error executing command: {{.Error|red}}\n"
 )
 
+const defaultPaginationAmount = 20
+
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
