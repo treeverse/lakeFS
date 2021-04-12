@@ -58,7 +58,6 @@ var logCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(res, err)
-
 			commits = append(commits, res.JSON200.Results...)
 			pagination = res.JSON200.Pagination
 			if amount != -1 || !pagination.HasMore {

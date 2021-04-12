@@ -25,10 +25,6 @@ var branchCmd = &cobra.Command{
 	Long:  `Create delete and list branches within a lakeFS repository`,
 }
 
-const branchListTemplate = `{{.BranchTable | table -}}
-{{.Pagination | paginate }}
-`
-
 var branchListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
 	Short:   "list branches in a repository",
@@ -41,9 +37,9 @@ var branchListCmd = &cobra.Command{
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 		u := uri.Must(uri.Parse(args[0]))
-		client := getClient()
 		var pagination api.Pagination
 		rows := make([][]interface{}, 0)
+		client := getClient()
 		for {
 			amountForPagination := amount
 			if amountForPagination == -1 {
@@ -54,7 +50,6 @@ var branchListCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(resp, err)
-
 			refs := resp.JSON200.Results
 			for _, row := range refs {
 				rows = append(rows, []interface{}{row.Id, row.CommitId})

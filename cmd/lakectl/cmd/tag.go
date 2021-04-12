@@ -47,7 +47,6 @@ var tagListCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(resp, err)
-
 			refs := resp.JSON200.Results
 			for _, row := range refs {
 				rows = append(rows, []interface{}{row.Id, row.CommitId})

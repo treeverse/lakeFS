@@ -20,19 +20,15 @@ var repoCmd = &cobra.Command{
 	Short: "manage and explore repos",
 }
 
-var repoListTemplate = `{{.RepoTable | table -}}
-{{.Pagination | paginate }}
-`
-
 var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list repositories",
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		clt := getClient()
 		var pagination api.Pagination
 		rows := make([][]interface{}, 0)
+		clt := getClient()
 		for {
 			amountForPagination := amount
 			if amountForPagination == -1 {
@@ -43,14 +39,12 @@ var repoListCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(res, err)
-
 			repos := res.JSON200.Results
 			for _, repo := range repos {
 				ts := time.Unix(repo.CreationDate, 0).String()
 				rows = append(rows, []interface{}{repo.Id, ts, repo.DefaultBranch, repo.StorageNamespace})
 			}
 			pagination = res.JSON200.Pagination
-
 			if amount != -1 || !pagination.HasMore {
 				break
 			}

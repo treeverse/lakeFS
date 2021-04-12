@@ -57,7 +57,6 @@ var runsListCmd = &cobra.Command{
 				Commit: optionalCommit,
 			})
 			DieOnResponseError(resp, err)
-
 			results := resp.JSON200.Results
 			for _, row := range results {
 				rows = append(rows, []interface{}{
