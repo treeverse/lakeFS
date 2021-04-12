@@ -106,7 +106,9 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	adb, _ := testutil.GetDB(t, databaseURI)
-	type row struct{ TheKey string `db:"the_key"` }
+	type row struct {
+		TheKey string `db:"the_key"`
+	}
 	if _, err := adb.Exec(ctx, `CREATE TABLE test_pages (the_key text PRIMARY KEY)`); err != nil {
 		t.Fatalf("CREATE TABLE test_pages: %s", err)
 	}

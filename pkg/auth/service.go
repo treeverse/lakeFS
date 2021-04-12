@@ -300,7 +300,7 @@ func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationP
 
 func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.Credential
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "auth_credentials.access_key_id", psql.Select("auth_credentials.*").
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "access_key_id", psql.Select("auth_credentials.*").
 		From("auth_credentials").
 		Join("auth_users ON (auth_credentials.user_id = auth_users.id)").
 		Where(sq.Eq{"auth_users.display_name": username}))
@@ -353,7 +353,7 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 
 func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "auth_policies.display_name", psql.Select("auth_policies.*").
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name", psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
 		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
@@ -412,7 +412,7 @@ func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username stri
 
 func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "auth_policies.display_name",
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("auth_policies.*").
 			From("auth_policies").
 			Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
