@@ -114,7 +114,7 @@ func TestResolveNamespace(t *testing.T) {
 			case block.IdentifierTypeFull:
 				relativeName = "full"
 			}
-			t.Run(fmt.Sprintf("%s_%s", cas.Name, relativeName), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/%s", cas.Name, relativeName), func(t *testing.T) {
 				resolved, err := block.ResolveNamespace(cas.DefaultNamespace, cas.Key, r)
 				if err != nil && !errors.Is(err, cas.ExpectedErr) {
 					t.Fatalf("got unexpected error :%v - expected %v", err, cas.ExpectedErr)
