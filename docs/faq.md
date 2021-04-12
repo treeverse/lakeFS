@@ -42,7 +42,7 @@ We support different use-cases. Delta Lake, Hudi and Iceberg all define dedicate
 There are three main differences:
 
 *Who is it for?*
-The MLOps tools service data scientists in their daily work, and intend to provide them with an end to end solution for developing and maintaining ML models.
+The MLOps tools serve data scientists in their daily work, and intend to provide them with an end to end solution for developing and maintaining ML models.
 lakeFS is an organizational infrastructure that provides all data providers and consumers with the ability to manage their data using git-like operations. Read why we believe data versioning is infrastructure [here](https://lakefs.io/data-versioning-as-an-infrastructure/).
 
 *Performance and scale*
