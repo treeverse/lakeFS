@@ -1,4 +1,3 @@
-import lakefs
 from lakefs_client.apis import ActionsApi, AuthApi, BranchesApi, CommitsApi, ConfigApi, HealthCheckApi, MetadataApi, ObjectsApi, RefsApi, RepositoriesApi, StagingApi, TagsApi
 
 class LakeFSClient:
