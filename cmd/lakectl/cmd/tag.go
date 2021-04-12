@@ -31,33 +31,22 @@ var tagListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		var pagination api.Pagination
-		rows := make([][]interface{}, 0)
 
 		u := uri.Must(uri.Parse(args[0]))
 		ctx := cmd.Context()
 		client := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
+		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
 
-			refs := resp.JSON200.Results
-			for _, row := range refs {
-				rows = append(rows, []interface{}{row.Id, row.CommitId})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+		refs := resp.JSON200.Results
+		rows := make([][]interface{}, len(refs))
+		for i, row := range refs {
+			rows[i] = []interface{}{row.Id, row.CommitId}
 		}
+
 		tmplArgs := struct {
 			TagTable   *Table
 			Pagination *Pagination
@@ -67,6 +56,7 @@ var tagListCmd = &cobra.Command{
 				Rows:    rows,
 			},
 		}
+		pagination := resp.JSON200.Pagination
 		if pagination.HasMore {
 			tmplArgs.Pagination = &Pagination{
 				Amount:  amount,
@@ -74,6 +64,7 @@ var tagListCmd = &cobra.Command{
 				After:   pagination.NextOffset,
 			}
 		}
+
 		Write(tagListTemplate, tmplArgs)
 	},
 }
@@ -143,6 +134,6 @@ func init() {
 	rootCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tagCreateCmd, tagDeleteCmd, tagListCmd, tagShowCmd)
 	flags := tagListCmd.Flags()
-	flags.Int("amount", -1, "number of results to return. By default, all results are returned.")
+	flags.Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
 	flags.String("after", "", "show results after this value (used for pagination)")
 }
