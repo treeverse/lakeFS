@@ -81,8 +81,25 @@ type Service interface {
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
+// fieldNameByTag returns the name of the field of t that is tagged tag on key, or an empty string.
+func fieldByTag(t reflect.Type, key, tag string) string {
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if l, ok := field.Tag.Lookup(key); ok {
+			if l == tag {
+				return field.Name
+			}
+		}
+	}
+	return ""
+}
+
 func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
 	ptrType := reflect.PtrTo(retType)
+	tokenField := fieldByTag(retType, "db", tokenColumnName)
+	if tokenField == "" {
+		return nil, nil, fmt.Errorf("[I] no field %s: %w", tokenColumnName, ErrNoField)
+	}
 	slice := reflect.MakeSlice(reflect.SliceOf(ptrType), 0, 0)
 	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
 	if params != nil {
@@ -112,7 +129,8 @@ func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params 
 		// we have more pages
 		slice = slice.Slice(0, params.Amount)
 		p.Amount = params.Amount
-		p.NextPageToken = slice.Index(slice.Len() - 1).Elem().FieldByName(tokenColumnName).String()
+		lastElem := slice.Index(slice.Len() - 1).Elem()
+		p.NextPageToken = lastElem.FieldByName(tokenField).String()
 		return &slice, p, nil
 	}
 	p.Amount = slice.Len()
