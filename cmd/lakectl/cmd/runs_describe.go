@@ -37,6 +37,9 @@ var runsDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
+		var pagination api.Pagination
+		hooks := make([]api.HookRun, 0)
+
 		u := uri.Must(uri.Parse(args[0]))
 		runID := args[1]
 
@@ -49,24 +52,32 @@ var runsDescribeCmd = &cobra.Command{
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
-
-		// iterator over hooks - print information and output
-		runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-		})
-		DieOnResponseError(runHooksRes, err)
-
-		response := runHooksRes.JSON200.Results
-		pagination := runHooksRes.JSON200.Pagination
+		for {
+			amountForPagination := amount
+			if amountForPagination == -1 {
+				amountForPagination = defaultPaginationAmount
+			}
+			// iterator over hooks - print information and output
+			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(amountForPagination),
+			})
+			DieOnResponseError(runHooksRes, err)
+			hooks = append(hooks, runHooksRes.JSON200.Results...)
+			pagination = runHooksRes.JSON200.Pagination
+			if amount != -1 || !pagination.HasMore {
+				break
+			}
+			after = pagination.NextOffset
+		}
 		data := struct {
-			Hooks      []api.HookRun
+			Hooks      []api.HookRun ``
 			HooksTable []*Table
 			HookLog    func(hookRunID string) (string, error)
 			Pagination *Pagination
 		}{
-			Hooks:      response,
-			HooksTable: convertHookResultsTables(response),
+			Hooks:      hooks,
+			HooksTable: convertHookResultsTables(hooks),
 			HookLog:    makeHookLog(ctx, client, u.Repository, runID),
 		}
 		if pagination.HasMore {
@@ -130,6 +141,6 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsDescribeCmd)
-	runsDescribeCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	runsDescribeCmd.Flags().Int("amount", -1, "number of results to return. By default, all results are returned.")
 	runsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

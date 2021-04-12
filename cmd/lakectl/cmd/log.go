@@ -43,16 +43,29 @@ var logCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		var pagination api.Pagination
+		commits := make([]api.Commit, 0)
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-		})
-		DieOnResponseError(res, err)
+		for {
+			amountForPagination := amount
+			if amountForPagination == -1 {
+				amountForPagination = defaultPaginationAmount
+			}
+			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(amountForPagination),
+			})
+			DieOnResponseError(res, err)
 
-		commits := res.JSON200.Results
+			commits = append(commits, res.JSON200.Results...)
+			pagination = res.JSON200.Pagination
+			if amount != -1 || !pagination.HasMore {
+				break
+			}
+			after = pagination.NextOffset
+		}
 		data := struct {
 			Commits         []api.Commit
 			Pagination      *Pagination
@@ -61,7 +74,6 @@ var logCmd = &cobra.Command{
 			Commits:         commits,
 			ShowMetaRangeID: showMetaRangeID,
 		}
-		pagination := res.JSON200.Pagination
 		if pagination.HasMore {
 			data.Pagination = &Pagination{
 				Amount:  amount,
@@ -76,7 +88,7 @@ var logCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	logCmd.Flags().Int("amount", -1, "number of results to return. By default, all results are returned.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }
