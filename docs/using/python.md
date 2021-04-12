@@ -12,8 +12,8 @@ has_children: false
 
 The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages.
 
-For Python, this example uses [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" }
-that generates Python client code for the OpenAPI definition served by a lakeFS server.
+For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" }.
+The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" } using our OpenAPI definition served by a lakeFS server.
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -40,14 +40,14 @@ How to instantiate a client:
 ```python
 import lakefs_client
 from lakefs_client import models
-from lakefs_client.client import Client
+from lakefs_client.client import LakeFSClient
 
 configuration = lakefs_client.Configuration()
 configuration.username = 'AKIAIOSFODNN7EXAMPLE'
 configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 configuration.host = 'http://localhost:8000/api/v1'
 
-client = Client(configuration)
+client = LakeFSClient(configuration)
 ``` 
 
 ## Using the generated client
