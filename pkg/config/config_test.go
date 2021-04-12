@@ -159,11 +159,13 @@ func verifyAWSConfig(t *testing.T, c *config.Config) {
 
 func TestConfig_AWSConfig(t *testing.T) {
 	t.Run("use secret_access_key configuration", func(t *testing.T) {
-		c := newConfigFromFile("testdata/aws_credentials.yaml")
+		c, err := newConfigFromFile("testdata/aws_credentials.yaml")
+		testutil.Must(t, err)
 		verifyAWSConfig(t, c)
 	})
 	t.Run("use alias access_secret_key configuration", func(t *testing.T) {
-		c := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
+		c, err := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
+		testutil.Must(t, err)
 		verifyAWSConfig(t, c)
 	})
 }

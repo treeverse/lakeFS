@@ -50,7 +50,7 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		ctx := cmd.Context()
-		logger.WithField("version", version.Version).Infof("lakeFS run")
+		logger.WithField("version", version.Version).Info("lakeFS run")
 
 		// validate service names and turn on the right flags
 		dbParams := cfg.GetDatabaseParams()
