@@ -55,6 +55,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 		fromFile := MustString(cmd.Flags().GetString("from-file"))
 
+		Fmt("Source ref: %s\n", u.String())
 		// read the input file
 		keys, err := readLines(fromFile)
 		if err != nil {
@@ -105,6 +106,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 		prefix := MustString(cmd.Flags().GetString("prefix"))
 
+		Fmt("Source branch: %s\n", u.String())
 		generator := stress.NewGenerator(parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
@@ -162,6 +164,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 
+		Fmt("Source ref: %s\n", u.String())
 		deleteGen := stress.NewGenerator(parallelism)
 
 		const paginationAmount = 1000

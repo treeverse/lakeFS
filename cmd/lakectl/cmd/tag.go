@@ -28,6 +28,7 @@ var tagListCmd = &cobra.Command{
 		after, _ := cmd.Flags().GetString("after")
 
 		u := MustParseRepoURI("repository", args[0])
+
 		ctx := cmd.Context()
 		client := getClient()
 		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
@@ -70,6 +71,8 @@ var tagCreateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag", args[0])
+		Fmt("Tag ref: %s\n", tagURI.String())
+
 		client := getClient()
 		commitRef := args[1]
 		ctx := cmd.Context()
@@ -95,6 +98,8 @@ var tagDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
+		Fmt("Tag ref: %s\n", u.String())
+
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnResponseError(resp, err)
@@ -108,6 +113,8 @@ var tagShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
+		Fmt("Tag ref: %s\n", u.String())
+
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnResponseError(resp, err)

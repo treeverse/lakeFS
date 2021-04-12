@@ -14,6 +14,8 @@ var showCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
+
 		oneOf := []string{"commit"}
 		var found bool
 		var showType, identifier string

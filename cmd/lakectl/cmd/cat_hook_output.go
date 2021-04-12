@@ -14,6 +14,7 @@ var catHookOutputCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(catHookOutputRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 		hookRunID := args[2]
 		client := getClient()

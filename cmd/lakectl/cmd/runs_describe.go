@@ -33,6 +33,7 @@ var runsDescribeCmd = &cobra.Command{
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 
 		client := getClient()
