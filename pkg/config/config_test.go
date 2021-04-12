@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -21,7 +23,7 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 	viper.SetConfigFile(fn)
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return config.NewConfig()
 }
@@ -35,7 +37,7 @@ func TestConfig_Setup(t *testing.T) {
 	}
 }
 
-func TestNewFromFile(t *testing.T) {
+func TestConfig_NewFromFile(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
@@ -48,36 +50,43 @@ func TestNewFromFile(t *testing.T) {
 	})
 
 	t.Run("invalid config", func(t *testing.T) {
-		var causedPanic bool
-		defer func() {
-			if r := recover(); r != nil {
-				causedPanic = true
-			}
-		}()
-		if causedPanic {
-			t.Fatalf("did not expect panic before reading invalid file")
-		}
-		_, _ = newConfigFromFile("testdata/invalid_config.yaml")
-		if !causedPanic {
-			t.Fatalf("expected panic after reading invalid file")
+		_, err := newConfigFromFile("testdata/invalid_config.yaml")
+		// viper errors are not 
+		if err == nil || !strings.HasPrefix(err.Error(), "While parsing config:") {
+			t.Fatalf("expected invalid configuration file to fail, got %v", err)
 		}
 	})
 
 	t.Run("missing config", func(t *testing.T) {
-		var causedPanic bool
-		defer func() {
-			if r := recover(); r != nil {
-				causedPanic = true
-			}
-		}()
-		if causedPanic {
-			t.Fatalf("did not expect panic before reading missing file")
-		}
-		_, _ = newConfigFromFile("testdata/valid_configgggggggggggggggg.yaml")
-		if !causedPanic {
-			t.Fatalf("expected panic after reading missing file")
+		_, err := newConfigFromFile("testdata/valid_configgggggggggggggggg.yaml")
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("expected missing configuration file to fail, got %v", err)
 		}
 	})
+}
+
+func pushEnv(key, value string) func() {
+	var oldValue = os.Getenv(key)
+	os.Setenv(key, value)
+	return func() {
+		os.Setenv(key, oldValue)
+	}
+}
+
+func TestConfig_EnvironmentVariables(t *testing.T) {
+	const dbString = "not://a/database"
+	defer pushEnv("LAKEFS_DATABASE_CONNECTION_STRING", dbString)()
+
+	viper.SetEnvPrefix("LAKEFS")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
+	// read in environment variables
+	viper.AutomaticEnv()
+
+	c, err := newConfigFromFile("testdata/valid_config.yaml")
+	testutil.Must(t, err)
+	if c.GetDatabaseParams().ConnectionString != dbString {
+		t.Errorf("got DB connection string %s, expected to override to %s", c.GetDatabaseParams().ConnectionString, dbString)
+	}
 }
 
 func TestConfig_BuildBlockAdapter(t *testing.T) {
