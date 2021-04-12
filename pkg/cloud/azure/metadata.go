@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
+
+const azureMetadataIP = "169.254.169.254"
+const metadataRequestTimeout = 5 * time.Second
 
 type MetadataProvider struct {
 	logger logging.Logger
@@ -26,33 +31,36 @@ type instanceMetadataResponse struct {
 }
 
 func (m *MetadataProvider) GetMetadata() map[string]string {
-	var PTransport = &http.Transport{Proxy: nil}
-	client := http.Client{Transport: PTransport}
-	req, _ := http.NewRequest("GET", "http://169.254.169.254/metadata/instance", nil)
+	client := http.Client{Timeout: metadataRequestTimeout}
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/metadata/instance", azureMetadataIP), nil)
+	if err != nil {
+		m.logger.WithError(err).Warn("Failed to create request for Azure instance metadata")
+		return nil
+	}
 	req.Header.Add("Metadata", "True")
-	q := req.URL.Query()
-	q.Add("format", "json")
-	q.Add("api-version", "2019-03-11")
+	q := url.Values{"format": {"json"}, "api-version": {"2019-03-11"}}
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
 	if err != nil {
-		m.logger.Warnf("%v: failed to get Azure subscription ID from instance metadata", err)
+		m.logger.WithError(err).Warn("Failed to get Azure subscription ID from instance metadata", err)
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		m.logger.Warnf("%v: failed to get Azure subscription ID from instance metadata", err)
+		m.logger.WithError(err).Warn("Failed to get Azure subscription ID from instance metadata", err)
 		return nil
 	}
 	responseObj := &instanceMetadataResponse{}
 	err = json.Unmarshal(responseBody, responseObj)
 	if err != nil {
-		m.logger.Warnf("%v: failed to get Azure subscription ID from instance metadata", err)
+		m.logger.WithError(err).Warn("Failed to get Azure subscription ID from instance metadata", err)
 		return nil
 	}
 	if responseObj.Compute.SubscriptionID == "" {
-		m.logger.Warn("got empty subscription id from azure")
+		m.logger.Info("Got empty subscription id from azure")
 		return nil
 	}
 	return map[string]string{
