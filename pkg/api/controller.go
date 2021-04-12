@@ -211,6 +211,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 	response := GroupList{
 		Results: make([]Group, 0, len(groups)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -324,6 +325,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	response := UserList{
 		Results: make([]User, 0, len(users)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -397,6 +399,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	response := PolicyList{
 		Results: make([]Policy, 0, len(policies)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -485,6 +488,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	response := PolicyList{
 		Results: make([]Policy, 0, len(policies)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -632,6 +636,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	response := UserList{
 		Results: make([]User, 0, len(users)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -742,6 +747,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 	response := CredentialsList{
 		Results: make([]Credentials, 0, len(credentials)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -850,6 +856,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	response := GroupList{
 		Results: make([]Group, 0, len(groups)),
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -892,6 +899,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	response := PolicyList{
 		Pagination: Pagination{
+			HasMore: paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
