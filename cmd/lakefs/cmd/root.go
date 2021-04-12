@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -36,7 +37,10 @@ func Execute() {
 
 //nolint:gochecknoinits
 func init() {
-	cobra.OnInitialize(initConfig)
+	var initOnce sync.Once
+	cobra.OnInitialize(func() {
+		initOnce.Do(initConfig)
+	})
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakefs.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
