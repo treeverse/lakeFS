@@ -98,6 +98,8 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 
 1. Use a configuration file like the one used to start your lakeFS installation. This will be used to access your database. An example can be found [here](http://localhost:4000/reference/configuration.html#example-aws-deployment).
 
+1. lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch/ref.
+
 **Warning:** the *import-from-inventory* branch should only be used by lakeFS. You should not make any operations on it.
 {: .note } 
 

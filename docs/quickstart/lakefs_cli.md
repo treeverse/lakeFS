@@ -60,6 +60,8 @@ has_children: false
        
      ```
 
+     **Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
+
 ### Next steps
 
 Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploying-aws/index.md).

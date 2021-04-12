@@ -37,6 +37,5 @@ commit_extract = BashOperator(
 )
 ```
 
-
-
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
 

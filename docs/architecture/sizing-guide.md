@@ -142,6 +142,8 @@ lakectl abuse random-read \
     lakefs://example-repo/<commit hash>
 ```
 
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and commit hash.
+
 **Result Histogram (raw):**
 
 ```
@@ -187,6 +189,9 @@ lakectl abuse random-write \
     lakefs://example-repo/main
 ```
 
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
+
+
 **Result Histogram (raw):**
 
 ```
@@ -231,6 +236,8 @@ lakectl abuse create-branches \
     --parallelism 256 \
     lakefs://example-repo/<commit hash>
 ```
+
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and commit hash.
 
 **Result Histogram (raw):**
 
