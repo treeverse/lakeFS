@@ -4,9 +4,6 @@ package helpers
 import (
 	"github.com/treeverse/lakefs/pkg/api"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-
 	"context"
 	"fmt"
 	"io"
@@ -40,45 +37,21 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
 		}
 
-		// TODO(ariels): plug-in support for other protocols
-		if parsedAddress.Scheme != "s3" {
-			return nil, fmt.Errorf("%w %s", ErrUnsupportedProtocol, parsedAddress.Scheme)
+		adapter, err := NewAdapter(parsedAddress.Scheme)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", parsedAddress.Scheme, err)
 		}
 
-		bucket := parsedAddress.Hostname()
-		sess, err := session.NewSessionWithOptions(session.Options{
-			SharedConfigState: session.SharedConfigEnable,
-		})
+		stats, err := adapter.Upload(ctx, parsedAddress, contents)
 		if err != nil {
-			return nil, fmt.Errorf("connect to S3 session: %w", err)
-		}
-		sess.ClientConfig(s3.ServiceName)
-		svc := s3.New(sess)
-
-		// TODO(ariels): Allow customization of request
-		putObjectResponse, err := svc.PutObject(&s3.PutObjectInput{
-			Body:   contents,
-			Bucket: &bucket,
-			Key:    &parsedAddress.Path,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("upload to backing store %v: %w", parsedAddress, err)
-		}
-
-		size, err := contents.Seek(0, io.SeekEnd)
-		if err != nil {
-			return nil, fmt.Errorf("read size: %w", err)
-		}
-		_, err = contents.Seek(0, io.SeekStart)
-		if err != nil {
-			return nil, fmt.Errorf("rewind: %w", err)
+			return nil, fmt.Errorf("upload to backing store: %w", err)
 		}
 
 		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &api.LinkPhysicalAddressParams{
 			Path: filePath,
 		}, api.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  api.StringValue(putObjectResponse.ETag),
-			SizeBytes: size,
+			Checksum:  stats.ETag,
+			SizeBytes: stats.Size,
 			Staging:   stagingLocation,
 			UserMetadata: &api.StagingMetadata_UserMetadata{
 				AdditionalProperties: metadata,
@@ -89,14 +62,14 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 		}
 		if resp.StatusCode() == http.StatusOK {
 			return &api.ObjectStats{
-				Checksum: *putObjectResponse.ETag,
+				Checksum: stats.ETag,
 				// BUG(ariels): Unavailable on S3, remove this field entirely
 				//     OR add it to the server staging manager API.
 				Mtime:           time.Now().Unix(),
 				Path:            filePath,
 				PathType:        "object",
 				PhysicalAddress: physicalAddress,
-				SizeBytes:       &size,
+				SizeBytes:       &stats.Size,
 			}, nil
 		}
 		if resp.JSON409 == nil {
@@ -104,5 +77,8 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 		}
 		// Try again!
 		stagingLocation = *resp.JSON409
+		if _, err = contents.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("rewind: %w", err)
+		}
 	}
 }
