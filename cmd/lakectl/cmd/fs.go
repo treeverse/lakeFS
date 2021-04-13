@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -121,11 +122,26 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		resp, err := client.GetObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
-			Path: *pathURI.Path,
-		})
-		DieOnResponseError(resp, err)
-		Fmt("%s\n", string(resp.Body))
+		direct, _ := cmd.Flags().GetBool("direct")
+		var contents []byte
+		if direct {
+			_, body, err := helpers.ClientDownload(cmd.Context(), client, pathURI.Repository, pathURI.Ref, *pathURI.Path)
+			if err != nil {
+				DieErr(err)
+			}
+			defer body.Close()
+			contents, err = ioutil.ReadAll(body)
+			if err != nil {
+				DieErr(err)
+			}
+		} else {
+			resp, err := client.GetObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
+				Path: *pathURI.Path,
+			})
+			DieOnResponseError(resp, err)
+			contents = resp.Body
+		}
+		Fmt("%s\n", string(contents))
 	},
 }
 
@@ -296,6 +312,8 @@ func init() {
 	fsCmd.AddCommand(fsUploadCmd)
 	fsCmd.AddCommand(fsStageCmd)
 	fsCmd.AddCommand(fsRmCmd)
+
+	fsCatCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (faster but requires more credentials)")
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
