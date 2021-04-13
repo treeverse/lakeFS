@@ -30,7 +30,7 @@ Install the Python client using pip:
 pip install 'lakefs_client==<lakeFS version>'
 ```
 
-The package is available from version > 0.33.1.
+The package is available from version >= 0.34.0.
 
 
 ## Working with the Client API
