@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -80,9 +81,18 @@ type Config struct {
 }
 
 func NewConfig() (*Config, error) {
+	c := &Config{}
+
+	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
+	// environment.
+	keys := GetStructKeys(reflect.TypeOf(c.values), "mapstructure")
+	for _, key := range keys {
+		viper.SetDefault(key, nil)
+	}
+
 	setDefaults()
 	setupLogger()
-	c := &Config{}
+
 	err := viper.UnmarshalExact(&c.values)
 	return c, err
 }
