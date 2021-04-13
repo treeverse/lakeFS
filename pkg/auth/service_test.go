@@ -106,8 +106,10 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	adb, _ := testutil.GetDB(t, databaseURI)
-	type row struct{ A string }
-	if _, err := adb.Exec(ctx, `CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
+	type row struct {
+		TheKey string `db:"the_key"`
+	}
+	if _, err := adb.Exec(ctx, `CREATE TABLE test_pages (the_key text PRIMARY KEY)`); err != nil {
 		t.Fatalf("CREATE TABLE test_pages: %s", err)
 	}
 	insert := psql.Insert("test_pages")
@@ -131,7 +133,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 			got := ""
 			for {
 				values, paginator, err := auth.ListPaged(ctx,
-					adb, reflect.TypeOf(row{}), pagination, "A", psql.Select("a").From("test_pages"))
+					adb, reflect.TypeOf(row{}), pagination, "the_key", psql.Select("the_key").From("test_pages"))
 				if err != nil {
 					t.Errorf("ListPaged: %s", err)
 					break
@@ -141,7 +143,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 				}
 				letters := values.Interface().([]*row)
 				for _, c := range letters {
-					got = got + c.A
+					got = got + c.TheKey
 				}
 				if paginator.NextPageToken == "" {
 					if size > 0 && len(letters) > size {
