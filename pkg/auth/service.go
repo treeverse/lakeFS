@@ -543,7 +543,7 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 			WHERE
 				auth_groups.display_name = $1
 				AND auth_users.display_name > $2
-			ORDER BY auth_groups.display_name
+			ORDER BY auth_users.display_name
 			LIMIT $3`,
 			groupDisplayName, params.After, params.Amount+1)
 		if err != nil {

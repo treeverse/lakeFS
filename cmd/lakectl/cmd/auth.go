@@ -398,9 +398,7 @@ var authGroupsListMembers = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(resp, err)
-
 			users := resp.JSON200.Results
-			rows = make([][]interface{}, len(users))
 			for _, user := range users {
 				rows = append(rows, []interface{}{user.Id})
 			}
@@ -468,7 +466,6 @@ var authGroupsPoliciesList = &cobra.Command{
 			})
 			DieOnResponseError(resp, err)
 			policies := resp.JSON200.Results
-			rows = make([][]interface{}, 0)
 			for _, policy := range policies {
 				for i, statement := range policy.Statement {
 					ts := time.Unix(*policy.CreationDate, 0).String()
