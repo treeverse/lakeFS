@@ -46,8 +46,10 @@ func NewAdapter(protocol string) (ClientAdapter, error) {
 }
 
 var adapterFactory = AdapterFactory{
-	"s3": newS3Adapter,
+	s3Scheme: newS3Adapter,
 }
+
+const s3Scheme = "s3"
 
 type s3Adapter struct {
 	svc *s3.S3
@@ -65,6 +67,9 @@ func newS3Adapter() (ClientAdapter, error) {
 }
 
 func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error) {
+	if physicalAddress.Scheme != s3Scheme {
+		return ObjectStats{}, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
+	}
 	// TODO(ariels): Allow customization of request
 	putObjectResponse, err := s.svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
 		Body:   contents,
@@ -86,6 +91,9 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 }
 
 func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error) {
+	if physicalAddress.Scheme != s3Scheme {
+		return nil, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
+	}
 	// TODO(ariels): Allow customization of request
 	getObjectResponse, err := s.svc.GetObjectWithContext(ctx, &s3.GetObjectInput{
 		Bucket: api.StringPtr(physicalAddress.Hostname()),
