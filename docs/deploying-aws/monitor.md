@@ -2,7 +2,7 @@
 layout: default
 title: Monitoring using Prometheus
 description: Users looking to monitor their lakeFS instances can point Prometheus configuration to scrape data from this endpoint. This guide explains how to setup
-parent: AWS Deployment
+parent: Production Deployment
 nav_order: 30
 has_children: false
 ---
@@ -42,7 +42,9 @@ In addition, lakeFS exposes the following metrics to help monitor your deploymen
 | api_requests_total               | [lakeFS API](../reference/api.md) requests (counter)| **code**: http status<br/>**method**: http method                                         
 | api_request_duration_seconds     | Durations of lakeFS API requests (histogram)| <br/>**operation**: name of API operation<br/>**code**: http status                          
 | gateway_request_duration_seconds | lakeFS [S3-compatible endpoint](../reference/s3.md) request (histogram)| <br/>**operation**: name of gateway operation<br/>**code**: http status                      
-| s3_operation_duration_seconds    | Outgoing S3 operations (histogram)| <br/>**operation**: name of S3 operation<br/>**error**: "true" if error, "false" otherwise 
+| s3_operation_duration_seconds    | Outgoing S3 operations (histogram)| <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
+| gs_operation_duration_seconds    | Outgoing Google Storage operations (histogram)| <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
+| azure_operation_duration_seconds    | Outgoing Azure storage operations (histogram)| <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | go_sql_stats_*                   | [Go DB stats](https://golang.org/pkg/database/sql/#DB.Stats){: target="_blank" } metrics have this prefix.<br/>[dlmiddlecote/sqlstats](https://github.com/dlmiddlecote/sqlstats){: target="_blank" } is used to expose them.| 
 
 

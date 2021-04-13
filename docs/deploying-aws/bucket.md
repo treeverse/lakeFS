@@ -1,17 +1,29 @@
 ---
 layout: default
-title: Configuring the S3 bucket
-description: For information on configuring the S3 bucket to provide the data storage layer for our installation. 
-parent: AWS Deployment
+title: Configuring the Storage
+description: Providing the data storage layer for our installation. 
+parent: Production Deployment
 nav_order: 15
 has_children: false
 ---
 
-# Configuring the S3 bucket
+# Configuring the Storage
+{: .no_toc }
 
-The S3 bucket will provide the data storage layer for our installation.
-You can choose to create a new S3 bucket (recommended) or use an existing bucket with a path prefix.
-The path under the existing bucket should be empty.
+A production installation of lakeFS will usually use your cloud provider's object storage as the underlying storage layer.
+You can choose to create a new bucket/container (recommended), or use an existing one with a path prefix. The path under the existing bucket/container should be empty.
+
+After you have a bucket/container configured, proceed to [Installing lakeFS](./install.md).
+
+Choose your cloud provider to configure your storage.
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+## AWS S3
 
 1. From the S3 Administration console, choose `Create Bucket`.
 2. Make sure you:
@@ -57,4 +69,34 @@ The path under the existing bucket should be empty.
     "Principal": {
       "AWS": ["arn:aws:iam::<ACCOUNT_ID>:user/<IAM_USER>"]
     }
-   ```  
+   ```
+You can now proceed to [Installing lakeFS](./install.md).   
+
+## Microsoft Azure Blob Storage
+
+[Create a container in Azure portal](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal#create-a-container)
+1. From the Azure portal, Storage Accounts, choose your account, then in the container tab click `+ Container`.
+2. Make sure you block public access
+
+### Authenticate with Secret Key
+{: .no_toc }
+
+In case you want to use the secret key for authentication you will need to use the account key in the configuration
+Go to the `Access Keys` tab and click on `Show Keys` save the values under `Storage account name` and `Key` we will need them in the [installing lakeFS](install.md) step
+### Authenticate with Active Directory
+{: .no_toc }
+
+In case you want your lakeFS Installation (we will install in the next step) to access this Container using Active Directory authentication,
+First go to the container you created in step 1.
+* Go to `Access Control (IAM)`
+* Go to the `Role assignments` tab
+* Add the `Storage Blob Data Contributor` role to the Installation running lakeFS. 
+  
+You can now proceed to [Installing lakeFS](./install.md).
+
+## Google Cloud Storage
+1. On the Google Cloud Storage console, click *Create Bucket*. Follow the instructions.
+   
+1. On the *Permissions* tab, add the service account you intend to use lakeFS with. Give it a role that allows reading and writing to the bucket, e.g. *Storage Object Creator*.
+
+You can now proceed to [Installing lakeFS](./install.md).
