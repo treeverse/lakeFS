@@ -36,6 +36,7 @@ export const GroupNav = ({ groupId, page = 'groups' }) => {
     )
 }
 
+
 export const UserHeader = ({ userId, page }) => {
     return (
         <div className="mb-4">
@@ -66,6 +67,21 @@ export const GroupHeader = ({ groupId, page }) => {
             </Breadcrumb>
 
             <GroupNav groupId={groupId} page={page}/>
+        </div>
+    )
+}
+
+export const PolicyHeader = ({ policyId }) => {
+    return (
+        <div className="mb-4">
+            <Breadcrumb>
+                <Link href='/auth/policies' passHref>
+                    <BreadcrumbItem>Policies</BreadcrumbItem>
+                </Link>
+                <Link href={{pathname: '/auth/policies/[policyId]', query: {policyId}}} passHref>
+                    <BreadcrumbItem>{policyId}</BreadcrumbItem>
+                </Link>
+            </Breadcrumb>
         </div>
     )
 }

@@ -12,22 +12,22 @@ import {SearchIcon} from "@primer/octicons-react";
 export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                           emptyState = 'No matches', modalTitle = 'Add',
                      filterPlaceholder = 'Filter...'}) => {
-    const search = useRef(null)
-    const [searchPrefix, setSearchPrefix] = useState("")
-    const [selected, setSelected] = useState([])
+    const search = useRef(null);
+    const [searchPrefix, setSearchPrefix] = useState("");
+    const [selected, setSelected] = useState([]);
 
     useEffect(() => {
         if (!!search.current && search.current.value === "")
-            search.current.focus()
-    })
+            search.current.focus();
+    });
 
     const { response, error, loading } = useAPI(() => {
-        return searchFn(searchPrefix)
-    }, [searchPrefix])
+        return searchFn(searchPrefix);
+    }, [searchPrefix]);
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content = <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content = <Error error={error}/>;
     else content = (
             <>
                 <DataTable
@@ -89,18 +89,18 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                 <Button variant="secondary" onClick={onHide}>Cancel</Button>
             </Modal.Footer>
         </Modal>
-    )
+    );
 }
 
 
 export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder }) => {
-    const [error, setError] = useState(null)
-    const idField = useRef(null)
+    const [error, setError] = useState(null);
+    const idField = useRef(null);
 
     useEffect(() => {
         if (!!idField.current && idField.current.value === "")
             idField.current.focus()
-    })
+    });
 
     const onSubmit = () => {
         onCreate(idField.current.value).catch(err => setError(err))
@@ -129,5 +129,5 @@ export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder
                 <Button onClick={onHide} variant="secondary">Cancel</Button>
             </Modal.Footer>
         </Modal>
-    )
+    );
 }

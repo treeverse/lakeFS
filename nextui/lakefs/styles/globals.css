@@ -328,14 +328,13 @@ textarea.form-control.policy-document {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
   color: #e83e8c;
-  background-color: #FBFBFB;
+  background-color: #F8F8F8;
   padding: 10px;
 }
 textarea.form-control.policy-document:focus {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
   color: #e83e8c;
-  background-color: #FFFFFF;
   padding: 10px;
 }
 
