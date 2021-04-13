@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -114,30 +113,6 @@ func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		DieErr(err)
-	}
-}
-
-// ParseDocument parses the contents of filename into dest, which
-// should be a JSON-deserializable struct.  If filename is "-" it
-// reads standard input.  If any errors occur it dies with an error
-// message containing fileTitle.
-func ParseDocument(dest interface{}, filename string, fileTitle string) {
-	var (
-		fp  io.ReadCloser
-		err error
-	)
-	if filename == "-" {
-		fp = os.Stdin
-	} else {
-		if fp, err = os.Open(filename); err != nil {
-			DieFmt("open %s %s for read: %v", fileTitle, filename, err)
-		}
-		defer func() {
-			_ = fp.Close()
-		}()
-	}
-	if err := json.NewDecoder(fp).Decode(dest); err != nil {
-		DieFmt("could not parse %s document: %v", fileTitle, err)
 	}
 }
 

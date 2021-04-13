@@ -7,13 +7,12 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
-	diffCmdMinArgs  = 1
-	diffCmdMaxArgs  = 2
+	diffCmdMinArgs = 1
+	diffCmdMaxArgs = 2
+
 	minDiffPageSize = 50
 	maxDiffPageSize = 100000
 )
@@ -22,26 +21,18 @@ var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
-	Args: cmdutils.ValidationChain(
-		cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-
-		const diffWithOtherArgsCount = 2
-		if len(args) == diffWithOtherArgsCount {
-			if err := uri.ValidateRefURI(args[1]); err != nil {
-				DieErr(err)
-			}
-			leftRefURI := MustParseURI(args[0])
-			rightRefURI := MustParseURI(args[1])
+		if len(args) == diffCmdMaxArgs {
+			leftRefURI := MustParseRefURI("left ref", args[0])
+			rightRefURI := MustParseRefURI("right ref", args[1])
 			if leftRefURI.Repository != rightRefURI.Repository {
 				Die("both references must belong to the same repository", 1)
 			}
 			printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		} else {
-			branchURI := MustParseURI(args[0])
+			branchURI := MustParseRefURI("ref", args[0])
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 		}
 	},

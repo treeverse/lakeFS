@@ -3,8 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
@@ -16,17 +14,13 @@ var runsListCmd = &cobra.Command{
 	Short:   "List runs",
 	Long:    `List all runs on a repository optional filter by branch or commit`,
 	Example: "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 		commit, _ := cmd.Flags().GetString("commit")
 		branch, _ := cmd.Flags().GetString("branch")
-
-		u := MustParseURI(args[0])
+		u := MustParseRepoURI("repository", args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)
 		}

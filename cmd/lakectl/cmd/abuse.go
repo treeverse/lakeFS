@@ -13,9 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 var abuseCmd = &cobra.Command{
@@ -50,13 +48,9 @@ var abuseRandomReadsCmd = &cobra.Command{
 	Use:    "random-read <source ref uri>",
 	Short:  "Read keys from a file and generate random reads from the source ref for those keys.",
 	Hidden: false,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseURI(args[0])
-
+		u := MustParseRefURI("source ref", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 		fromFile := MustString(cmd.Flags().GetString("from-file"))
@@ -104,13 +98,9 @@ var abuseRandomWritesCmd = &cobra.Command{
 	Use:    "random-write <source branch uri>",
 	Short:  "Generate random writes to the source branch",
 	Hidden: false,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseURI(args[0])
-
+		u := MustParseRefURI("source branch", args[0])
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
 		prefix := MustString(cmd.Flags().GetString("prefix"))
@@ -164,13 +154,9 @@ var abuseCreateBranchesCmd = &cobra.Command{
 	Use:    "create-branches <source ref uri>",
 	Short:  "Create a lot of branches very quickly.",
 	Hidden: false,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseURI(args[0])
-
+		u := MustParseRefURI("source ref", args[0])
 		cleanOnly := MustBool(cmd.Flags().GetBool("clean-only"))
 		branchPrefix := MustString(cmd.Flags().GetString("branch-prefix"))
 		amount := MustInt(cmd.Flags().GetInt("amount"))

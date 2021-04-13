@@ -5,8 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -31,16 +29,11 @@ var mergeCmd = &cobra.Command{
 	Use:   "merge <source ref> <destination ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
-	Args: cmdutils.ValidationChain(
-		cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-		cmdutils.FuncValidator(1, uri.ValidateRefURI),
-	),
+	Args:  cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseURI(args[0])
-		destinationRef := MustParseURI(args[1])
-
+		sourceRef := MustParseRefURI("source ref", args[0])
+		destinationRef := MustParseRefURI("destination ref", args[1])
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}

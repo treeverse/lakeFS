@@ -127,39 +127,6 @@ func Equals(a, b *URI) bool {
 			(a.Path != nil && b.Path != nil && *a.Path == *b.Path))
 }
 
-func ValidateRepoURI(str string) error {
-	u, err := Parse(str)
-	if err != nil {
-		return err
-	}
-	if !u.IsRepository() {
-		return ErrInvalidRepoURI
-	}
-	return nil
-}
-
-func ValidatePathURI(str string) error {
-	u, err := Parse(str)
-	if err != nil {
-		return err
-	}
-	if !u.IsFullyQualified() {
-		return ErrInvalidPathURI
-	}
-	return nil
-}
-
-func ValidateRefURI(str string) error {
-	u, err := Parse(str)
-	if err != nil {
-		return err
-	}
-	if !u.IsRef() {
-		return ErrInvalidRefURI
-	}
-	return nil
-}
-
 func IsValid(str string) bool {
 	_, err := Parse(str)
 	return err == nil

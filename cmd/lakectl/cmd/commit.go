@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -24,10 +23,7 @@ var errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be se
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
 	Short: "commit changes on a given branch",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
 		kvPairs, err := getKV(cmd, "meta")
@@ -38,7 +34,7 @@ var commitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		branchURI := MustParseURI(args[0])
+		branchURI := MustParseRefURI("branch", args[0])
 
 		// do commit
 		metadata := api.CommitCreation_Metadata{

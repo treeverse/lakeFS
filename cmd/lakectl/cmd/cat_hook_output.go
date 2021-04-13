@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const catHookOutputRequiredArgs = 3
@@ -13,12 +11,9 @@ var catHookOutputCmd = &cobra.Command{
 	Short:   "Cat actions hook output",
 	Hidden:  true,
 	Example: "lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(catHookOutputRequiredArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(catHookOutputRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseURI(args[0])
+		u := MustParseRepoURI("repository", args[0])
 		runID := args[1]
 		hookRunID := args[2]
 		client := getClient()
