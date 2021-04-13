@@ -10,7 +10,7 @@ has_children: false
 # Calling the lakeFS API from Python
 {: .no_toc }
 
-The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages.
+The [lakeFS API](../reference/api.md){: target="_blank" } is OpenAPI 3.0 compliant, allowing the generation of clients from multiple languages or directly accessed by any HTTP client.
 
 For Python, this example uses [lakeFS's python package](https://pypi.org/project/lakefs-client/){: target="_blank" }.
 The lakefs-client pacakge was created by [OpenAPI Generator](https://openapi-generator.tech){: target="_blank" } using our OpenAPI definition served by a lakeFS server.
@@ -42,10 +42,11 @@ import lakefs_client
 from lakefs_client import models
 from lakefs_client.client import LakeFSClient
 
+# lakeFS credentials and endpoint
 configuration = lakefs_client.Configuration()
 configuration.username = 'AKIAIOSFODNN7EXAMPLE'
 configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-configuration.host = 'http://localhost:8000/api/v1'
+configuration.host = 'http://localhost:8000'
 
 client = LakeFSClient(configuration)
 ``` 
