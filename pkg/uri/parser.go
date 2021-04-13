@@ -8,10 +8,9 @@ import (
 )
 
 const (
-	ProtocolSeparator = "://"
-	LakeFSProtocol    = "lakefs"
-
-	PathSeparator = "/"
+	LakeFSSchema          = "lakefs"
+	LakeFSSchemaSeparator = "://"
+	PathSeparator         = "/"
 )
 
 var (
@@ -22,8 +21,6 @@ var (
 )
 
 type URI struct {
-	// Protocol must always match "lakefs" to be considered valid
-	Protocol string
 	// Repository is the name of the repository being addressed
 	Repository string
 	// Ref represents the reference in the repository (commit, tag, branch, etc.)
@@ -55,8 +52,8 @@ func (u *URI) GetPath() string {
 
 func (u *URI) String() string {
 	var buf strings.Builder
-	buf.WriteString(u.Protocol)
-	buf.WriteString(ProtocolSeparator)
+	buf.WriteString(LakeFSSchema)
+	buf.WriteString(LakeFSSchemaSeparator)
 	buf.WriteString(u.Repository)
 	if len(u.Ref) == 0 {
 		return buf.String()
@@ -73,7 +70,7 @@ func (u *URI) String() string {
 
 // ParseWithBaseURI parse URI uses base URI as prefix when set and input doesn't start with lakeFS protocol
 func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
-	if len(baseURI) > 0 && !strings.HasPrefix(s, LakeFSProtocol+ProtocolSeparator) {
+	if len(baseURI) > 0 && !strings.HasPrefix(s, LakeFSSchema+LakeFSSchemaSeparator) {
 		s = baseURI + s
 	}
 	u, err := Parse(s)
@@ -85,7 +82,7 @@ func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
 
 func Parse(s string) (*URI, error) {
 	u, err := url.Parse(s)
-	if err != nil || u.Scheme != LakeFSProtocol {
+	if err != nil || u.Scheme != LakeFSSchema || u.User != nil {
 		return nil, ErrMalformedURI
 	}
 	repository := u.Hostname()
@@ -95,11 +92,11 @@ func Parse(s string) (*URI, error) {
 	var ref string
 	var path *string
 	if len(u.Path) > 0 {
-		if !strings.HasPrefix(u.Path, "/") {
+		if !strings.HasPrefix(u.Path, PathSeparator) {
 			return nil, ErrMalformedURI
 		}
 		const refAndPathParts = 2
-		levels := strings.SplitN(u.Path[1:], "/", refAndPathParts)
+		levels := strings.SplitN(u.Path[1:], PathSeparator, refAndPathParts)
 		if len(levels) == refAndPathParts {
 			ref = levels[0]
 			path = &levels[1]
@@ -108,7 +105,6 @@ func Parse(s string) (*URI, error) {
 		}
 	}
 	return &URI{
-		Protocol:   u.Scheme,
 		Repository: repository,
 		Ref:        ref,
 		Path:       path,
@@ -116,15 +112,10 @@ func Parse(s string) (*URI, error) {
 }
 
 func Equals(a, b *URI) bool {
-	// same protocol
-	return a.Protocol == b.Protocol &&
-		// same repository
-		a.Repository == b.Repository &&
-		// same ref
+	return a.Repository == b.Repository &&
 		a.Ref == b.Ref &&
 		// either both contain no path, or both do, and that path is equal
-		((a.Path == nil && b.Path == nil) ||
-			(a.Path != nil && b.Path != nil && *a.Path == *b.Path))
+		((a.Path == nil && b.Path == nil) || (a.Path != nil && b.Path != nil && *a.Path == *b.Path))
 }
 
 func IsValid(str string) bool {

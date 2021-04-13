@@ -124,8 +124,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
-	baseURIDefault := os.Getenv("LAKECTL_BASE_URI")
-	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", baseURIDefault, "base URI used for lakeFS address parse")
+	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
 }
 
 // initConfig reads in config file and ENV variables if set.
