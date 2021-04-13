@@ -78,7 +78,7 @@ func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
 	}
 	u, err := Parse(s)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", err, s)
+		return nil, fmt.Errorf("parsing %s: %w", s, err)
 	}
 	return u, nil
 }
