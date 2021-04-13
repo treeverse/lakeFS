@@ -11,4 +11,5 @@ var (
 	ErrAlreadyExists           = db.ErrAlreadyExists
 	ErrInvalidArn              = errors.New("invalid ARN")
 	ErrInsufficientPermissions = errors.New("insufficient permissions")
+	ErrNoField                 = errors.New("no field tagged in struct")
 )
