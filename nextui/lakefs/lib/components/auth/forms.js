@@ -1,12 +1,13 @@
 import {useEffect, useRef, useState} from "react";
 import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import {FormControl, InputGroup} from "react-bootstrap";
-import {Checkbox, DataTable, DebouncedFormControl, Error, Loading} from "../controls";
-import Button from "react-bootstrap/Button";
-import {useAPI} from "../../../rest/hooks";
 import Badge from "react-bootstrap/Badge";
+import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
+import {FormControl, InputGroup} from "react-bootstrap";
 import {SearchIcon} from "@primer/octicons-react";
+
+import {useAPI} from "../../../rest/hooks";
+import {Checkbox, DataTable, DebouncedFormControl, Error, Loading} from "../controls";
 
 
 export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
@@ -90,7 +91,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
             </Modal.Footer>
         </Modal>
     );
-}
+};
 
 
 export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder }) => {
@@ -130,4 +131,4 @@ export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder
             </Modal.Footer>
         </Modal>
     );
-}
+};

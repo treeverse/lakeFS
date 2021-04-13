@@ -1,6 +1,16 @@
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import {useState} from "react";
+import Link from 'next/link';
 import {useRouter} from "next/router";
-import {GroupHeader, UserHeader} from "../../../../lib/components/auth/nav";
+
+import Button from "react-bootstrap/Button";
+
+import {AuthLayout} from "../../../../lib/components/auth/layout";
+import {GroupHeader} from "../../../../lib/components/auth/nav";
+import {useAPIWithPagination} from "../../../../rest/hooks";
+import {auth} from "../../../../rest/api";
+import {Paginator} from "../../../../lib/components/pagination";
+import {AttachModal} from "../../../../lib/components/auth/forms";
+import {ConfirmationButton} from "../../../../lib/components/modals";
 import {
     ActionGroup,
     ActionsBar,
@@ -10,29 +20,21 @@ import {
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
-import {Paginator} from "../../../../lib/components/pagination";
-import Link from 'next/link';
-import {useState} from "react";
-import {AttachModal} from "../../../../lib/components/auth/forms";
-import {ConfirmationButton} from "../../../../lib/components/modals";
 
 
 const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
 
-    const [refresh, setRefresh] = useState(false)
-    const [showAddModal, setShowAddModal] = useState(false)
-    const [attachError, setAttachError] = useState(null)
+    const [refresh, setRefresh] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [attachError, setAttachError] = useState(null);
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listGroupPolicies(groupId, after)
-    }, [groupId, after, refresh])
+        return auth.listGroupPolicies(groupId, after);
+    }, [groupId, after, refresh]);
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content=  <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -82,7 +84,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                     }}/>
                 }
             </>
-        )
+        );
 
     return (
         <>
@@ -102,25 +104,25 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                 {content}
             </div>
         </>
-    )
-}
+    );
+};
 
 const GroupPoliciesContainer = () => {
-    const router = useRouter()
-    const { groupId, after } = router.query
+    const router = useRouter();
+    const { groupId, after } = router.query;
     return (!groupId) ? <></> : <GroupPoliciesList
         groupId={groupId}
         after={(!!after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/groups/[groupId]/policies', query: {groupId, after}})}
-    />
-}
+    />;
+};
 
 const GroupPoliciesPage = () => {
     return (
         <AuthLayout activeTab="groups">
             <GroupPoliciesContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default GroupPoliciesPage
+export default GroupPoliciesPage;

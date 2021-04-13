@@ -1,14 +1,15 @@
-import {useEffect, useRef, useState} from "react";
+import {useState} from "react";
 import {useRouter} from "next/router";
 import Link from 'next/link';
-import {auth} from "../../../rest/api";
-import Button from "react-bootstrap/Button";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import {FormControl} from "react-bootstrap";
 
+import Button from "react-bootstrap/Button";
+
+import {auth} from "../../../rest/api";
 import {useAPIWithPagination} from "../../../rest/hooks";
 import {AuthLayout} from "../../../lib/components/auth/layout";
+import {ConfirmationButton} from "../../../lib/components/modals";
+import {Paginator} from "../../../lib/components/pagination";
+import {PolicyEditor} from "../../../lib/components/auth/policy";
 import {
     ActionGroup,
     ActionsBar,
@@ -18,9 +19,7 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import {ConfirmationButton} from "../../../lib/components/modals";
-import {Paginator} from "../../../lib/components/pagination";
-import {PolicyEditor} from "../../../lib/components/auth/policy";
+
 
 const PoliciesContainer = () => {
     const [selected, setSelected] = useState([]);

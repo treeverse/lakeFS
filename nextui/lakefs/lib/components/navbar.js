@@ -1,20 +1,21 @@
-import Navbar from 'react-bootstrap/Navbar'
-import Nav from 'react-bootstrap/Nav'
-import NavDropdown from 'react-bootstrap/NavDropdown'
+import {useRouter} from 'next/router';
+import Link from 'next/link';
 
-import {useRouter} from 'next/router'
-import Link from 'next/link'
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
+import NavDropdown from 'react-bootstrap/NavDropdown';
+
 import useUser from '../hooks/user'
 import {auth} from "../../rest/api";
 
 
 const NavUserInfo = () => {
-    const router = useRouter()
-    const { user, loading, error } = useUser()
+    const router = useRouter();
+    const { user, loading, error } = useUser();
 
-    if (loading)  return <Navbar.Text>Loading...</Navbar.Text>
+    if (loading)  return <Navbar.Text>Loading...</Navbar.Text>;
 
-    if (!user || !!error) return (<></>)
+    if (!user || !!error) return (<></>);
 
     return (
         <Navbar.Collapse className="justify-content-end">
@@ -43,18 +44,18 @@ const NavUserInfo = () => {
             </NavDropdown>
         </Navbar.Collapse>
     );
-}
+};
 
 const TopNavLink = ({ href, children }) => {
-    const router = useRouter()
-    const isActive = (prefix) => router.route.indexOf(prefix) === 0
+    const router = useRouter();
+    const isActive = (prefix) => router.route.indexOf(prefix) === 0;
 
     return (
         <Link href={href}>
             <Nav.Link href={href} active={isActive(href)}>{children}</Nav.Link>
         </Link>
-    )
-}
+    );
+};
 
 const TopNav = () => {
     return (
@@ -72,7 +73,7 @@ const TopNav = () => {
 
             <NavUserInfo/>
         </Navbar>
-    )
-}
+    );
+};
 
-export default TopNav
+export default TopNav;

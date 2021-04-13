@@ -1,25 +1,27 @@
+import {useState} from "react";
+
 import Modal from "react-bootstrap/Modal";
 import Table from "react-bootstrap/Table";
-import {ClipboardButton, DataTable, Error, FormattedDate, Loading} from "../controls";
 import Alert from "react-bootstrap/Alert";
-import {useState} from "react";
-import {useAPIWithPagination} from "../../../rest/hooks";
+
 import {auth} from "../../../rest/api";
+import {useAPIWithPagination} from "../../../rest/hooks";
+import {ClipboardButton, DataTable, Error, FormattedDate, Loading} from "../controls";
 import {ConfirmationButton} from "../modals";
 import {Paginator} from "../pagination";
 
 
 export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPaginate}) => {
-    const [internalRefresh, setInternalRefresh] = useState(false)
-    const [revokeError, setRevokeError] = useState(null)
+    const [internalRefresh, setInternalRefresh] = useState(false);
+    const [revokeError, setRevokeError] = useState(null);
 
     const {results, error, loading, nextPage} = useAPIWithPagination(() => {
-        return auth.listCredentials(userId, after)
-    }, [refresh, internalRefresh, userId, after])
+        return auth.listCredentials(userId, after);
+    }, [refresh, internalRefresh, userId, after]);
 
-    if (!!error) return <Error error={error}/>
-    if (!!revokeError) return <Error error={revokeError}/>
-    if (loading) return <Loading/>
+    if (!!error) return <Error error={error}/>;
+    if (!!revokeError) return <Error error={revokeError}/>;
+    if (loading) return <Loading/>;
 
     return (
         <>
@@ -53,12 +55,12 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
             />
             <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage}/>
         </>
-    )
-}
+    );
+};
 
 
 export const CredentialsShowModal = ({ credentials, show, onHide }) => {
-    if (!credentials) return <></>
+    if (!credentials) return <></>;
 
     return (
         <Modal show={show} onHide={onHide} size="lg">
@@ -89,5 +91,5 @@ export const CredentialsShowModal = ({ credentials, show, onHide }) => {
                 <Alert variant="warning" className="mt-3">Copy the Secret Access Key and store it somewhere safe. You will not be able to access it again.</Alert>
             </Modal.Body>
         </Modal>
-    )
-}
+    );
+};

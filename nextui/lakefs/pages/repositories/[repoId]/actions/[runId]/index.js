@@ -245,7 +245,7 @@ const ActionContainer = () => {
 const RepositoryActionPage = () => {
     return (
         <RefContextProvider>
-            <RepositoryPageLayout activePage={'actions'}>
+            <RepositoryPageLayout activePage={'actions'} fluid>
                 <ActionContainer/>
             </RepositoryPageLayout>
         </RefContextProvider>

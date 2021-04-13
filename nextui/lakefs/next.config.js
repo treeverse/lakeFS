@@ -13,4 +13,8 @@ module.exports = (phase, {defaultConfig}) => {
             },
         }
     }
+
+    return {
+        distDir: 'build'
+    }
 }

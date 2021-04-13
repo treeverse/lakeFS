@@ -34,15 +34,15 @@ const humanSize = (bytes) => {
 const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
-    const [isDropdownOpen, setDropdownOpen] = useState(false)
-    const [show, setShow] = useState(false)
-    const handleClose = () => setShow(false)
-    const handleShow = () => setShow(true)
+    const [isDropdownOpen, setDropdownOpen] = useState(false);
+    const [show, setShow] = useState(false);
+    const handleClose = () => setShow(false);;
+    const handleShow = () => setShow(true);
     const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`
     const onSubmit = () => {
-        onDelete(entry)
-        setShow(false)
-    }
+        onDelete(entry);
+        setShow(false);
+    };
     return (
         <>
             <Dropdown alignRight onToggle={setDropdownOpen}>
@@ -222,7 +222,7 @@ function pathParts(path, rootName = "root") {
 
 const URINavigator = ({ repo, reference, path }) => {
     const parts = pathParts(path);
-    const refQuery = {repoId: repo.id, ref: reference.id, path}
+    const refQuery = {repoId: repo.id, ref: reference.id, path};
 
     return (
         <span className="lakefs-uri">
@@ -242,7 +242,6 @@ const URINavigator = ({ repo, reference, path }) => {
 };
 
 const GetStarted = ({ onUpload }) => {
-
     return (
         <Container className="m-4 mb-5">
             <h2 className="mt-2">To get started with this repository, you can:</h2>
@@ -258,15 +257,15 @@ const GetStarted = ({ onUpload }) => {
                    target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
         </Container>
-    )
-}
+    );
+};
 
 export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, onUpload, onDelete, showActions = false, path = "" }) => {
 
     let body;
     if (results.length === 0 && path === "") {
         // empty state!
-        body = <GetStarted onUpload={onUpload}/>
+        body = <GetStarted onUpload={onUpload}/>;
     } else {
         body = (
             <>
@@ -286,7 +285,7 @@ export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, on
                     </tbody>
                 </Table>
             </>
-        )
+        );
     }
 
     return (
@@ -303,4 +302,4 @@ export const Tree = ({ repo, reference, results, after, onPaginate, nextPage, on
             <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
         </div>
     );
-}
+};

@@ -1,4 +1,4 @@
-import React, {useRef, useState, useEffect} from 'react';
+import React, {useRef, useState} from 'react';
 
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
@@ -24,7 +24,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const repoNameField = useRef(null);
 
     const checkRepoValidity = () => {
-        const isRepoValid = repoValidityRegex.test(repoNameField.current.value)
+        const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
         setRepoValid(isRepoValid);
         setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
     };

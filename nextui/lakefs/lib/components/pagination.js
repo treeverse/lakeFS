@@ -3,7 +3,7 @@ import React from "react";
 
 
 export const Paginator = ({ onPaginate, nextPage = null, after = "" }) => {
-    if (after === "" && nextPage === null) return <></>
+    if (after === "" && nextPage === null) return <></>;
     return (
         <div className="paginator mt-2 mb-2">
 
@@ -13,5 +13,5 @@ export const Paginator = ({ onPaginate, nextPage = null, after = "" }) => {
             <Button variant="primary" disabled={(nextPage === null)} onClick={() => onPaginate(nextPage)}>Next Page</Button>
 
         </div>
-    )
-}
+    );
+};

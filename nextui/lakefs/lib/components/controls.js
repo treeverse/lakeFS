@@ -1,14 +1,16 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
+import Link from "next/link";
+import moment from "moment";
+
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import {CheckIcon, ClippyIcon, PlayIcon, ShareIcon, SyncIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
-import {OverlayTrigger} from "react-bootstrap";
-import Link from "next/link";
-import moment from "moment";
 import Table from "react-bootstrap/Table";
+import {OverlayTrigger} from "react-bootstrap";
+import {CheckIcon, ClippyIcon, SyncIcon} from "@primer/octicons-react";
+
 
 const defaultDebounceMs = 300;
 
@@ -30,17 +32,17 @@ export function debounce(func, wait, immediate) {
 export const useDebounce = (func, wait = defaultDebounceMs) => {
     const debouncedRef = useRef(debounce(func, wait))
     return debouncedRef.current;
-}
+};
 
 export const useDebouncedState = (dependsOn, debounceFn, wait = 300) => {
-    const [state, setState] = useState(dependsOn)
-    useEffect(() => setState(dependsOn), [dependsOn])
-    const dfn = useDebounce(debounceFn, wait)
+    const [state, setState] = useState(dependsOn);
+    useEffect(() => setState(dependsOn), [dependsOn]);
+    const dfn = useDebounce(debounceFn, wait);
 
     return [state, newState => {
         setState(newState)
         dfn(newState)
-    }]
+    }];
 }
 
 export const DebouncedFormControl = React.forwardRef((props, ref) => {
@@ -51,60 +53,59 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
 export const Loading = () => {
     return (
         <Alert variant={"info"}>Loading...</Alert>
-    )
-}
+    );
+};
 
 export const Na = () => {
     return (
         <span>&mdash;</span>
-    )
-}
+    );
+};
 
 export const Error = ({error, onDismiss = null, className = null}) => {
-    let msg = error.toString()
+    let msg = error.toString();
     // handle wrapped errors
-    let err = error
-    while (!!err.error) err = err.error
-    if (!!err.message) msg = err.message
+    let err = error;
+    while (!!err.error) err = err.error;
+    if (!!err.message) msg = err.message;
     if (onDismiss !== null) {
-        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>
+        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>;
     }
     return (
         <Alert className={className} variant="danger">{msg}</Alert>
-    )
+    );
 }
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
     if (typeof dateValue === 'number') {
         return (
             <span>{moment.unix(dateValue).format(format)}</span>
-        )
+        );
     }
 
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{dateValue}</Tooltip>}>
             <span>{moment(dateValue).format(format)}</span>
         </OverlayTrigger>
-    )
+    );
+};
 
-
-}
 
 export const ActionGroup = ({ children, orientation = "left" }) => {
     return (
         <div role="toolbar" className={`float-${orientation} mb-2 btn-toolbar`}>
             {children}
         </div>
-    )
-}
+    );
+};
 
 export const ActionsBar = ({ children }) => {
     return (
         <div className="action-bar clearfix">
             {children}
         </div>
-    )
-}
+    );
+};
 
 const copyTextToClipboard = (text, onSuccess, onError) => {
     const textArea = document.createElement('textarea');
@@ -171,12 +172,12 @@ const copyTextToClipboard = (text, onSuccess, onError) => {
 };
 
 export const useHover = () => {
-    const [value, setValue] = useState(false)
+    const [value, setValue] = useState(false);
 
-    const ref = useRef(null)
+    const ref = useRef(null);
 
-    const handleMouseOver = () => setValue(true)
-    const handleMouseOut = () => setValue(false)
+    const handleMouseOver = () => setValue(true);
+    const handleMouseOut = () => setValue(false);
 
     useEffect(
         () => {
@@ -192,10 +193,10 @@ export const useHover = () => {
             }
         },
         [ref] // Recall only if ref changes
-    )
+    );
 
-    return [ref, value]
-}
+    return [ref, value];
+};
 
 const RefButton = React.forwardRef(({ href, variant, children, tooltip = null }, ref) => {
     if (tooltip === null) {
@@ -203,7 +204,7 @@ const RefButton = React.forwardRef(({ href, variant, children, tooltip = null },
             <Button variant={variant} as="a" href={href} ref={ref}>
                 {children}
             </Button>
-        )
+        );
     }
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
@@ -211,16 +212,16 @@ const RefButton = React.forwardRef(({ href, variant, children, tooltip = null },
                 {children}
             </Button>
         </OverlayTrigger>
-    )
-})
+    );
+});
 
 export const LinkButton = ({ href, children, tooltip, buttonVariant }) => {
     return (
         <Link passHref href={href}>
             <RefButton tooltip={tooltip} variant={buttonVariant}>{children}</RefButton>
         </Link>
-    )
-}
+    );
+};
 
 export const TooltipButton = ({ onClick, variant, children, tooltip, className="", size = "sm" }) => {
     return (
@@ -229,16 +230,16 @@ export const TooltipButton = ({ onClick, variant, children, tooltip, className="
                 {children}
             </Button>
         </OverlayTrigger>
-    )
-}
+    );
+};
 
 export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>, onError, tooltip = "Copy to clipboard"}) => {
 
-    const [show, setShow] = useState(false)
-    const [copied, setCopied] = useState(false)
-    const [target, isHovered] = useHover()
+    const [show, setShow] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [target, isHovered] = useHover();
 
-    const currentIcon = (!copied) ? icon : <CheckIcon/>
+    const currentIcon = (!copied) ? icon : <CheckIcon/>;
 
     let updater = null;
 
@@ -267,7 +268,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
             </Button>
         </>
     );
-}
+};
 
 export const RefreshButton = ({ onClick, size = "lg", variant = "outline-primary", tooltip = "Refresh", icon = <SyncIcon/> }) => {
     return (
@@ -278,13 +279,13 @@ export const RefreshButton = ({ onClick, size = "lg", variant = "outline-primary
             size={size}>
             {icon}
         </TooltipButton>
-    )
-}
+    );
+};
 
 export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [], emptyState = null }) => {
 
     if ((!results || results.length === 0) && emptyState !== null) {
-        return <Alert variant="warning">{emptyState}</Alert>
+        return <Alert variant="warning">{emptyState}</Alert>;
     }
 
     return (
@@ -320,8 +321,8 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
             ))}
             </tbody>
         </Table>
-    )
-}
+    );
+};
 
 export const Checkbox = ({ name, onAdd, onRemove, disabled = false, defaultChecked = false }) => {
     return (
@@ -334,5 +335,5 @@ export const Checkbox = ({ name, onAdd, onRemove, disabled = false, defaultCheck
                 }
             }}/>
         </Form.Group>
-    )
-}
+    );
+};

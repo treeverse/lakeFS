@@ -1,4 +1,15 @@
+import {useState} from "react";
+import {useRouter} from "next/router";
+import Link from 'next/link';
+
+import Button from "react-bootstrap/Button";
+
 import {AuthLayout} from "../../../lib/components/auth/layout";
+import {useAPIWithPagination} from "../../../rest/hooks";
+import {auth} from "../../../rest/api";
+import {ConfirmationButton} from "../../../lib/components/modals";
+import {EntityCreateModal} from "../../../lib/components/auth/forms";
+import {Paginator} from "../../../lib/components/pagination";
 import {
     ActionGroup,
     ActionsBar,
@@ -8,35 +19,21 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import {useAPIWithPagination} from "../../../rest/hooks";
-import {auth} from "../../../rest/api";
-import {useRouter} from "next/router";
-import {useState} from "react";
-import Link from 'next/link';
-import moment from "moment";
-
-import Button from "react-bootstrap/Button";
-
-import useUser from "../../../lib/hooks/user";
-import {ConfirmationButton} from "../../../lib/components/modals";
-import {EntityCreateModal} from "../../../lib/components/auth/forms";
-import {Paginator} from "../../../lib/components/pagination";
-
 
 const GroupsContainer = () => {
-    const [selected, setSelected] = useState([])
-    const [deleteError, setDeleteError] = useState(null)
-    const [showCreate, setShowCreate] = useState(false)
-    const [refresh, setRefresh] = useState(false)
+    const [selected, setSelected] = useState([]);
+    const [deleteError, setDeleteError] = useState(null);
+    const [showCreate, setShowCreate] = useState(false);
+    const [refresh, setRefresh] = useState(false);
 
-    const router = useRouter()
-    const after = (!!router.query.after) ? router.query.after : ""
+    const router = useRouter();
+    const after = (!!router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listGroups(after)
-    }, [after, refresh])
+        return auth.listGroups(after);
+    }, [after, refresh]);
 
-    if (!!error) return <Error error={error}/>
-    if (loading) return <Loading/>
+    if (!!error) return <Error error={error}/>;
+    if (loading) return <Loading/>;
 
     return (
         <>
@@ -106,15 +103,15 @@ const GroupsContainer = () => {
                 onPaginate={after => router.push({pathname: '/auth/groups', query: {after}})}
             />
         </>
-    )
-}
+    );
+};
 
 const GroupsPage = () => {
     return (
         <AuthLayout activeTab="groups">
             <GroupsContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default GroupsPage
+export default GroupsPage;

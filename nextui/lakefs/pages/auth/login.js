@@ -18,7 +18,7 @@ const LoginForm = () => {
 
     return (
         <Row>
-            <Col md={{offset: 2, span: 8}}>
+            <Col md={{offset: 4, span: 4}}>
                 <Card className="login-widget">
                     <Card.Header>Login</Card.Header>
                     <Card.Body>

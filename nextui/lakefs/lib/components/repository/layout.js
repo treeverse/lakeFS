@@ -1,15 +1,15 @@
 import Link from 'next/link';
 
+import Container from "react-bootstrap/Container";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 
-import {RepositoryNavTabs} from "./tabs";
-import Layout from "../layout";
-import Container from "react-bootstrap/Container";
 import {useRefs} from "../../hooks/repo";
+import Layout from "../layout";
+import {RepositoryNavTabs} from "./tabs";
+
 
 const RepoNav = () => {
-
-    const { repo } = useRefs()
+    const { repo } = useRefs();
     const repoId = (!!repo) ? repo.id : '';
 
     return (
@@ -23,7 +23,7 @@ const RepoNav = () => {
         </Breadcrumb>
 
     )
-}
+};
 
 export const RepositoryPageLayout = ({ activePage, children, fluid = "xl" }) => {
     return (
@@ -39,5 +39,5 @@ export const RepositoryPageLayout = ({ activePage, children, fluid = "xl" }) => 
                 </Container>
             </div>
         </Layout>
-    )
-}
+    );
+};

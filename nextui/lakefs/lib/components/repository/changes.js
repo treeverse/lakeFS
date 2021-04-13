@@ -1,18 +1,20 @@
 import React, {useState} from "react";
+
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {CircleSlashIcon, HistoryIcon, PencilIcon, PlusIcon, TrashIcon} from "@primer/octicons-react";
+
 import {ConfirmationModal} from "../modals";
 
 
 const ChangeRowActions = ({ entry, onRevert }) => {
     const [show, setShow] = useState(false);
-    const revertConfirmMsg = `are you sure you wish to revert "${entry.path}" (${entry.type})?`
+    const revertConfirmMsg = `are you sure you wish to revert "${entry.path}" (${entry.type})?`;
     const onSubmit = () => {
         onRevert(entry)
         setShow(false)
-    }
+    };
 
     return (
         <>
@@ -27,7 +29,7 @@ const ChangeRowActions = ({ entry, onRevert }) => {
             <ConfirmationModal show={show} onHide={() => setShow(false)} msg={revertConfirmMsg} onConfirm={onSubmit}/>
         </>
     );
-}
+};
 
 export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
     let rowClass = 'tree-row ';
@@ -115,4 +117,4 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
             </tr>
         </>
     );
-}
+};

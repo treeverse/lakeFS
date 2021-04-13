@@ -1,19 +1,21 @@
-import {AuthLayout} from "../../../lib/components/auth/layout";
+import {useState} from "react";
 import {useRouter} from "next/router";
+
+import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
+import {PencilIcon} from "@primer/octicons-react";
+
+import {AuthLayout} from "../../../lib/components/auth/layout";
 import {PolicyHeader} from "../../../lib/components/auth/nav";
+import {useAPI} from "../../../rest/hooks";
+import {auth} from "../../../rest/api";
+import {PolicyDisplay, PolicyEditor} from "../../../lib/components/auth/policy";
 import {
     ActionGroup,
     ActionsBar,
     Loading,
     Error,
 } from "../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import {useAPI} from "../../../rest/hooks";
-import {auth} from "../../../rest/api";
-import {useState} from "react";
-import {CopyIcon, PencilIcon} from "@primer/octicons-react";
-import Form from "react-bootstrap/Form";
-import {PolicyDisplay, PolicyEditor} from "../../../lib/components/auth/policy";
 
 
 const PolicyView = ({ policyId }) => {

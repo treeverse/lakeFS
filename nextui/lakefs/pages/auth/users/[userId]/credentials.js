@@ -1,52 +1,47 @@
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import {useState} from "react";
 import {useRouter} from "next/router";
+
+import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {UserHeader} from "../../../../lib/components/auth/nav";
+import {useAPIWithPagination} from "../../../../rest/hooks";
+import {auth} from "../../../../rest/api";
+import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
+import useUser from "../../../../lib/hooks/user";
+import {ConfirmationButton} from "../../../../lib/components/modals";
 import {
     ActionGroup,
     ActionsBar,
-    DataTable,
-    FormattedDate,
     Loading,
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
-import {Paginator} from "../../../../lib/components/pagination";
-import Link from 'next/link';
-import {useState} from "react";
-import {AttachModal} from "../../../../lib/components/auth/forms";
-import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
-import useUser from "../../../../lib/hooks/user";
-import {ConfirmationButton} from "../../../../lib/components/modals";
 
 
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
 
-    const {user} = useUser()
-    const [refresh, setRefresh] = useState(false)
-    const [createError, setCreateError] = useState(null)
-    const [createdKey, setCreatedKey] = useState(null)
+    const {user} = useUser();
+    const [refresh, setRefresh] = useState(false);
+    const [createError, setCreateError] = useState(null);
+    const [createdKey, setCreatedKey] = useState(null);
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listUserPolicies(userId, false, after)
-    }, [userId, after, refresh])
+        return auth.listUserPolicies(userId, false, after);
+    }, [userId, after, refresh]);
 
     const createKey = () => {
         return auth.createCredentials(userId)
             .catch(err => {
-                setCreateError(err)
+                setCreateError(err);
             }).then(key => {
-                setCreateError(null)
-                setRefresh(!refresh)
-                return key
-            })
-    }
+                setCreateError(null);
+                setRefresh(!refresh);
+                return key;
+            });
+    };
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content=  <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
     else content = (
             <>
                 {createError && <Error error={createError}/>}
@@ -59,7 +54,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                     onPaginate={onPaginate}
                 />
             </>
-        )
+        );
 
     return (
         <>
@@ -95,7 +90,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                 {content}
             </div>
         </>
-    )
+    );
 }
 
 const UserCredentialsContainer = () => {
@@ -105,15 +100,15 @@ const UserCredentialsContainer = () => {
         userId={userId}
         after={(!!after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/users/[userId]/credentials', query: {userId, after}})}
-    />
-}
+    />;
+};
 
 const UserCredentialsPage = () => {
     return (
         <AuthLayout activeTab="users">
             <UserCredentialsContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default UserCredentialsPage
+export default UserCredentialsPage;

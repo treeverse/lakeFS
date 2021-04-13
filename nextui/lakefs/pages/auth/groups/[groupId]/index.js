@@ -4,14 +4,14 @@ import Layout from "../../../../lib/components/layout";
 
 
 export default function Home() {
-    const router = useRouter()
-    const { groupId } = router.query
+    const router = useRouter();
+    const { groupId } = router.query;
     useEffect(() => {
         if (!!groupId)  router.push({
             pathname: '/auth/groups/[groupId]/members',
             query: {groupId}
-        })
-    }, [groupId])
+        });
+    }, [groupId]);
 
-    return <Layout/>
-}
+    return <Layout/>;
+};

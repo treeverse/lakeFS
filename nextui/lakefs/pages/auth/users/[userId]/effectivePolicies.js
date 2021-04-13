@@ -1,6 +1,12 @@
+import {useState} from "react";
+import Link from 'next/link';
+
 import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {useRouter} from "next/router";
 import {UserHeader} from "../../../../lib/components/auth/nav";
+import {useAPIWithPagination} from "../../../../rest/hooks";
+import {auth} from "../../../../rest/api";
+import {Paginator} from "../../../../lib/components/pagination";
 import {
     ActionGroup,
     ActionsBar,
@@ -10,24 +16,19 @@ import {
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
-import {Paginator} from "../../../../lib/components/pagination";
-import Link from 'next/link';
-import {useState} from "react";
 
 
 const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
-    const [refresh, setRefresh] = useState(false)
+    const [refresh, setRefresh] = useState(false);
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listUserPolicies(userId, true, after)
-    }, [userId, after, refresh])
+        return auth.listUserPolicies(userId, true, after);
+    }, [userId, after, refresh]);
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content=  <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
     else content = (
             <>
                <DataTable
@@ -43,7 +44,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
                 <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage}/>
             </>
-        )
+        );
 
     return (
         <>
@@ -69,8 +70,8 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
                 {content}
             </div>
         </>
-    )
-}
+    );
+};
 
 const UserEffectivePoliciesContainer = () => {
     const router = useRouter()

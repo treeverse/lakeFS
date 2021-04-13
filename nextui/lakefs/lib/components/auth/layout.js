@@ -1,11 +1,12 @@
-import Layout from "../layout";
+import Link from 'next/link';
+
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Nav from "react-bootstrap/Nav";
 import Card from "react-bootstrap/Card";
 
-import Link from 'next/link'
+import Layout from "../layout";
 
 
 export const AuthLayout = ({ children, activeTab }) => {
@@ -48,6 +49,6 @@ export const AuthLayout = ({ children, activeTab }) => {
                 </Row>
             </Container>
         </Layout>
-    )
-}
+    );
+};
 

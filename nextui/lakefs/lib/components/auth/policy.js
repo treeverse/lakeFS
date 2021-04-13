@@ -1,10 +1,13 @@
-import Table from "react-bootstrap/Table";
-import {Error, FormattedDate} from "../controls";
 import {useEffect, useRef, useState} from "react";
+
+import Table from "react-bootstrap/Table";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import {FormControl} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
+
+import {Error, FormattedDate} from "../controls";
+
 
 export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
     const [error, setError] = useState(null);
@@ -19,9 +22,9 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
     const [body, setBody] = useState('')
     useEffect(() => {
         if (policy !== null) {
-            setBody(JSON.stringify({statement: policy.statement}, null, 4))
+            setBody(JSON.stringify({statement: policy.statement}, null, 4));
         }
-    }, [policy])
+    }, [policy]);
 
     const submit = () => {
         const statement = bodyField.current.value;
@@ -78,7 +81,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null }) => {
                 <Button onClick={hide} variant="secondary">Cancel</Button>
             </Modal.Footer>
         </Modal>
-    )
+    );
 };
 
 export const PolicyDisplay = ({ policy, asJSON }) => {
@@ -120,4 +123,4 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
             {childComponent}
         </div>
     );
-}
+};

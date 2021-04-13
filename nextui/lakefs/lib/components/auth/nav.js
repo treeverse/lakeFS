@@ -1,8 +1,10 @@
 import Nav from "react-bootstrap/Nav";
-import {NavItem} from "../nav";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import Link from "next/link";
 import {BreadcrumbItem} from "react-bootstrap";
+import Link from "next/link";
+
+import {NavItem} from "../nav";
+
 
 export const UserNav = ({ userId, page = 'groups' }) => {
     return (
@@ -20,8 +22,9 @@ export const UserNav = ({ userId, page = 'groups' }) => {
                 Access Credentials
             </NavItem>
         </Nav>
-    )
-}
+    );
+};
+
 
 export const GroupNav = ({ groupId, page = 'groups' }) => {
     return (
@@ -33,8 +36,8 @@ export const GroupNav = ({ groupId, page = 'groups' }) => {
                 Attached Policies
             </NavItem>
         </Nav>
-    )
-}
+    );
+};
 
 
 export const UserHeader = ({ userId, page }) => {
@@ -51,8 +54,8 @@ export const UserHeader = ({ userId, page }) => {
 
             <UserNav userId={userId} page={page}/>
         </div>
-    )
-}
+    );
+};
 
 export const GroupHeader = ({ groupId, page }) => {
     return (
@@ -68,8 +71,8 @@ export const GroupHeader = ({ groupId, page }) => {
 
             <GroupNav groupId={groupId} page={page}/>
         </div>
-    )
-}
+    );
+};
 
 export const PolicyHeader = ({ policyId }) => {
     return (
@@ -83,5 +86,5 @@ export const PolicyHeader = ({ policyId }) => {
                 </Link>
             </Breadcrumb>
         </div>
-    )
-}
+    );
+};

@@ -14,15 +14,15 @@ import {branches, commits} from '../../../rest/api';
 const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
 
     // used for branch pagination
-    const [pagination, setPagination] = useState({after: "", prefix: "", amount})
+    const [pagination, setPagination] = useState({after: "", prefix: "", amount});
 
     // used for commit listing
     const initialCommitList = {branch: selected, commits: null, loading: false};
     const [commitList, setCommitList] = useState(initialCommitList);
 
     useEffect(()=> {
-        listBranches(repo.id, pagination.prefix, pagination.after, pagination.amount)
-    }, [repo.id, listBranches, pagination])
+        listBranches(repo.id, pagination.prefix, pagination.after, pagination.amount);
+    }, [repo.id, listBranches, pagination]);
 
     const form = (
         <div className="ref-filter-form">

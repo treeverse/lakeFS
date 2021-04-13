@@ -1,6 +1,16 @@
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import {useState} from "react";
+import Link from 'next/link';
 import {useRouter} from "next/router";
-import {GroupHeader, UserHeader} from "../../../../lib/components/auth/nav";
+
+import Button from "react-bootstrap/Button";
+
+import {GroupHeader} from "../../../../lib/components/auth/nav";
+import {AuthLayout} from "../../../../lib/components/auth/layout";
+import {useAPIWithPagination} from "../../../../rest/hooks";
+import {auth} from "../../../../rest/api";
+import {Paginator} from "../../../../lib/components/pagination";
+import {AttachModal} from "../../../../lib/components/auth/forms";
+import {ConfirmationButton} from "../../../../lib/components/modals";
 import {
     ActionGroup,
     ActionsBar,
@@ -10,29 +20,21 @@ import {
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
-import {Paginator} from "../../../../lib/components/pagination";
-import Link from 'next/link';
-import {useState} from "react";
-import {AttachModal} from "../../../../lib/components/auth/forms";
-import {ConfirmationButton} from "../../../../lib/components/modals";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
-    const [refresh, setRefresh] = useState(false)
-    const [showAddModal, setShowAddModal] = useState(false)
-    const [attachError, setAttachError] = useState(null)
+    const [refresh, setRefresh] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [attachError, setAttachError] = useState(null);
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listGroupMembers(groupId, after)
-    }, [groupId, after, refresh])
+        return auth.listGroupMembers(groupId, after);
+    }, [groupId, after, refresh]);
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content=  <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
@@ -80,7 +82,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     }}/>
                 }
             </>
-        )
+        );
 
     return (
         <>
@@ -100,25 +102,25 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 {content}
             </div>
         </>
-    )
-}
+    );
+};
 
 const GroupMembersContainer = () => {
-    const router = useRouter()
-    const { groupId, after } = router.query
+    const router = useRouter();
+    const { groupId, after } = router.query;
     return (!groupId) ? <></> : <GroupMemberList
         groupId={groupId}
         after={(!!after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/groups/[groupId]/members', query: {groupId, after}})}
-    />
-}
+    />;
+};
 
 const UserGroupsPage = () => {
     return (
         <AuthLayout activeTab="groups">
             <GroupMembersContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default UserGroupsPage
+export default UserGroupsPage;
