@@ -51,7 +51,7 @@ func TestConfig_NewFromFile(t *testing.T) {
 
 	t.Run("invalid config", func(t *testing.T) {
 		_, err := newConfigFromFile("testdata/invalid_config.yaml")
-		// viper errors are not 
+		// viper errors are not
 		if err == nil || !strings.HasPrefix(err.Error(), "While parsing config:") {
 			t.Fatalf("expected invalid configuration file to fail, got %v", err)
 		}

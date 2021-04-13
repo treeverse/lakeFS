@@ -32,7 +32,7 @@ func appendStructKeys(typ reflect.Type, tag string, prefix []string, keys []stri
 		if name, ok = field.Tag.Lookup(tag); !ok {
 			name = field.Name
 		}
-		
+
 		key := append(prefix, name)
 		keys = appendStructKeys(field.Type, tag, key, keys)
 	}

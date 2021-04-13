@@ -37,11 +37,11 @@ func TestStructKeysSimple(t *testing.T) {
 
 func TestStructKeysNested(t *testing.T) {
 	type s struct {
-		A struct{
+		A struct {
 			X string
 			Y int
 		}
-		B ***struct{
+		B ***struct {
 			Z float32
 			W float64
 		}
@@ -50,7 +50,7 @@ func TestStructKeysNested(t *testing.T) {
 	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName)
 	if diffs := deep.Equal(keys, []string{"A.X", "A.Y", "B.Z", "B.W"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
-	}	
+	}
 }
 
 func TestStructKeysSimpleTagged(t *testing.T) {
@@ -69,10 +69,10 @@ func TestStructKeysSimpleTagged(t *testing.T) {
 func TestStructKeysNestedTagged(t *testing.T) {
 	type s struct {
 		A struct {
-			X int `test:"eks"`
+			X  int `test:"eks"`
 			BE string
 		} `test:"aaa"`
-		B **struct{
+		B **struct {
 			Gamma int32
 			Delta uint8 `test:"dee"`
 		}
