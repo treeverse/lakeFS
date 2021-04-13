@@ -141,7 +141,7 @@ class Auth {
         return cache.get('user')
     }
 
-    async listUsers(after, amount = DEFAULT_LISTING_AMOUNT) {
+    async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount})
         const response = await apiRequest(`/auth/users?${query}`)
         if (response.status !== 200) {
@@ -158,8 +158,8 @@ class Auth {
         return response.json()
     }
 
-    async listGroups(after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+    async listGroups(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount});
         const response = await apiRequest(`/auth/groups?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list groups: ${await extractError(response)}`)
@@ -233,8 +233,8 @@ class Auth {
         return response.json()
     }
 
-    async listPolicies(after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount})
+    async listPolicies(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount})
         const response = await apiRequest(`/auth/policies?${query}`)
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
@@ -294,7 +294,7 @@ class Auth {
         return response.json()
     }
 
-    async listUserPolicies(userId, after, amount = DEFAULT_LISTING_AMOUNT, effective = false) {
+    async listUserPolicies(userId, effective = false, after = "", amount = DEFAULT_LISTING_AMOUNT) {
         let params = {after, amount}
         if (effective) {
             params.effective =  'true'

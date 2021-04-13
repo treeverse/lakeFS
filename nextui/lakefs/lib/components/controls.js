@@ -2,12 +2,13 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import {CheckIcon, ClippyIcon, PlayIcon, ShareIcon} from "@primer/octicons-react";
+import {CheckIcon, ClippyIcon, PlayIcon, ShareIcon, SyncIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import {OverlayTrigger} from "react-bootstrap";
 import Link from "next/link";
 import moment from "moment";
+import Table from "react-bootstrap/Table";
 
 const defaultDebounceMs = 300;
 
@@ -42,16 +43,6 @@ export const useDebouncedState = (dependsOn, debounceFn, wait = 300) => {
     }]
 }
 
-// export const useDebouncedState = (initialValue, debounceOnChangeFn, wait = defaultDebounceMs) => {
-//     const [value, setValue] = useState(initialValue)
-//     const debouncedFn = useDebounce(debounceOnChangeFn, wait)
-//
-//     return [value, (newValue) => {
-//         setValue(newValue)
-//         debouncedFn(newValue)
-//     }];
-// }
-
 export const DebouncedFormControl = React.forwardRef((props, ref) => {
     const onChange = debounce(props.onChange, (props.debounce !== undefined) ? props.debounce : defaultDebounceMs)
     return (<Form.Control ref={ref} {...{...props, onChange}}/>);
@@ -69,17 +60,17 @@ export const Na = () => {
     )
 }
 
-export const Error = ({error, onDismiss = null}) => {
+export const Error = ({error, onDismiss = null, className = null}) => {
     let msg = error.toString()
     // handle wrapped errors
     let err = error
     while (!!err.error) err = err.error
     if (!!err.message) msg = err.message
     if (onDismiss !== null) {
-        return <Alert variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>
+        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{msg}</Alert>
     }
     return (
-        <Alert variant="danger">{msg}</Alert>
+        <Alert className={className} variant="danger">{msg}</Alert>
     )
 }
 
@@ -276,4 +267,72 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
             </Button>
         </>
     );
+}
+
+export const RefreshButton = ({ onClick, size = "lg", variant = "outline-primary", tooltip = "Refresh", icon = <SyncIcon/> }) => {
+    return (
+        <TooltipButton
+            tooltip={tooltip}
+            variant={variant}
+            onClick={onClick}
+            size={size}>
+            {icon}
+        </TooltipButton>
+    )
+}
+
+export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [], emptyState = null }) => {
+
+    if ((!results || results.length === 0) && emptyState !== null) {
+        return <Alert variant="warning">{emptyState}</Alert>
+    }
+
+    return (
+        <Table>
+            <thead>
+                <tr>
+                {headers.map(header => (
+                    <th key={header}>{header}</th>
+                ))}
+                {(!!actions && actions.length > 0) && <th/>}
+                </tr>
+            </thead>
+            <tbody>
+            {results.map(row => (
+                <tr key={keyFn(row)}>
+                    {rowFn(row).map((cell, i) => (
+                        <td key={`${keyFn(row)}-${i}`}>
+                            {cell}
+                        </td>
+                    ))}
+                    {(!!actions && actions.length > 0) && (
+                        <td>
+                            <span className="row-hover">
+                                {actions.map(action => (
+                                    <span key={`${keyFn(row)}-${action.key}`}>
+                                        {action.buttonFn(row)}
+                                    </span>
+                                ))}
+                            </span>
+                        </td>
+                    )}
+                </tr>
+            ))}
+            </tbody>
+        </Table>
+    )
+}
+
+export const Checkbox = ({ name, onAdd, onRemove, disabled = false, defaultChecked = false }) => {
+    return (
+        <Form.Group>
+            <Form.Check defaultChecked={defaultChecked} disabled={disabled} type="checkbox" name={name} onChange={(e) => {
+                if (e.currentTarget.checked) {
+                    onAdd(name)
+                } else {
+                    onRemove(name)
+                }
+            }}/>
+        </Form.Group>
+    )
 }

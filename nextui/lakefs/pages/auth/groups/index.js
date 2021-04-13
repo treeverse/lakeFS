@@ -4,7 +4,7 @@ import {
     ActionsBar,
     Checkbox,
     DataTable,
-    Error,
+    Error, FormattedDate,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
@@ -23,10 +23,7 @@ import {EntityCreateModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
 
 
-const UsersContainer = () => {
-    const { user } = useUser()
-    const currentUser = user
-
+const GroupsContainer = () => {
     const [selected, setSelected] = useState([])
     const [deleteError, setDeleteError] = useState(null)
     const [showCreate, setShowCreate] = useState(false)
@@ -35,7 +32,7 @@ const UsersContainer = () => {
     const router = useRouter()
     const after = (!!router.query.after) ? router.query.after : ""
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listUsers(after)
+        return auth.listGroups(after)
     }, [after, refresh])
 
     if (!!error) return <Error error={error}/>
@@ -48,12 +45,12 @@ const UsersContainer = () => {
                     <Button
                         variant="success"
                         onClick={() => setShowCreate(true)}>
-                        Create User
+                        Create Group
                     </Button>
 
                     <ConfirmationButton
                         onConfirm={() => {
-                            auth.deleteUsers(selected.map(u => u.id))
+                            auth.deleteGroups(selected.map(g => g.id))
                                 .catch(err => setDeleteError(err))
                                 .then(() => {
                                     setSelected([])
@@ -62,7 +59,7 @@ const UsersContainer = () => {
                         }}
                         disabled={(selected.length === 0)}
                         variant="danger"
-                        msg={`Are you sure you'd like to delete ${selected.length} users?`}>
+                        msg={`Are you sure you'd like to delete ${selected.length} groups?`}>
                         Delete Selected
                     </ConfirmationButton>
 
@@ -77,48 +74,47 @@ const UsersContainer = () => {
             <EntityCreateModal
                 show={showCreate}
                 onHide={() => setShowCreate(false)}
-                onCreate={userId => {
-                    return auth.createUser(userId).then(() => {
+                onCreate={groupId => {
+                    return auth.createGroup(groupId).then(() => {
                         setShowCreate(false)
                         setRefresh(!refresh)
                     })
                 }}
-                title="Create User"
-                idPlaceholder="Username (e.g. 'jane.doe')"
+                title="Create Group"
+                idPlaceholder="Group Name (e.g. 'DataTeam')"
             />
 
             <DataTable
                 results={results}
-                headers={['', 'User ID', 'Created At']}
-                keyFn={user => user.id}
-                rowFn={user => [
+                headers={['', 'Group ID', 'Created At']}
+                keyFn={group => group.id}
+                rowFn={group => [
                     <Checkbox
-                        disabled={(!!currentUser && currentUser.id === user.id)}
-                        name={user.id}
-                        onAdd={() => setSelected([...selected, user])}
-                        onRemove={() => setSelected(selected.filter(u => u !== user))}
+                        name={group.id}
+                        onAdd={() => setSelected([...selected, group])}
+                        onRemove={() => setSelected(selected.filter(g => g !== group))}
                     />,
-                    <Link href={{pathname: '/auth/users/[userId]', query: {userId: user.id}}}>
-                        {user.id}
+                    <Link href={{pathname: '/auth/groups/[groupId]', query: {groupId: group.id}}}>
+                        {group.id}
                     </Link>,
-                    moment.unix(user.creation_date).format()
+                    <FormattedDate dateValue={group.creation_date}/>
                 ]}/>
 
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/users', query: {after}})}
+                onPaginate={after => router.push({pathname: '/auth/groups', query: {after}})}
             />
         </>
     )
 }
 
-const UsersPage = () => {
+const GroupsPage = () => {
     return (
-        <AuthLayout activeTab="users">
-            <UsersContainer/>
+        <AuthLayout activeTab="groups">
+            <GroupsContainer/>
         </AuthLayout>
     )
 }
 
-export default UsersPage
+export default GroupsPage

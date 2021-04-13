@@ -1,24 +1,12 @@
 
 import Nav from "react-bootstrap/Nav";
-import Alert from "react-bootstrap/Alert";
 import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon} from "@primer/octicons-react";
 
-import Link from 'next/link';
 import {useRouter} from "next/router";
 import {useRefs} from "../../hooks/repo";
+import {NavItem} from "../nav";
 
 
-const NavItem = ({ href, active, children }) => {
-    return (
-        <Nav.Item>
-            <Link href={href}>
-                <Nav.Link href={href} active={active}>
-                    <>{children}</>
-                </Nav.Link>
-            </Link>
-        </Nav.Item>
-    )
-}
 
 export const RepositoryNavTabs = ({ active }) => {
 
