@@ -111,7 +111,7 @@ var fsCatCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI(args[0])
+		pathURI := MustParsePathURI("path", args[0])
 		direct, _ := cmd.Flags().GetBool("direct")
 		var contents []byte
 		if direct {
