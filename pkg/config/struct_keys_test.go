@@ -8,9 +8,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
-const tagName = "test"
+const (
+	tagName        = "test"
+	squashTagValue = "squash"
+)
 
-func TestStructKeysSimple(t *testing.T) {
+func TestStructKeys_Simple(t *testing.T) {
 	type s struct {
 		A int
 		B string
@@ -18,24 +21,24 @@ func TestStructKeysSimple(t *testing.T) {
 		D []rune
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName)
+	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 
-	keys = config.GetStructKeys(reflect.TypeOf(&s{}), tagName)
+	keys = config.GetStructKeys(reflect.TypeOf(&s{}), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
 		t.Error("wrong keys for pointer to struct: ", diffs)
 	}
 
 	ps := &s{}
-	keys = config.GetStructKeys(reflect.TypeOf(&ps), tagName)
+	keys = config.GetStructKeys(reflect.TypeOf(&ps), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
 		t.Error("wrong keys for pointer to pointer to struct: ", diffs)
 	}
 }
 
-func TestStructKeysNested(t *testing.T) {
+func TestStructKeys_Nested(t *testing.T) {
 	type s struct {
 		A struct {
 			X string
@@ -47,26 +50,26 @@ func TestStructKeysNested(t *testing.T) {
 		}
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName)
+	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"A.X", "A.Y", "B.Z", "B.W"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
 
-func TestStructKeysSimpleTagged(t *testing.T) {
+func TestStructKeys_SimpleTagged(t *testing.T) {
 	type s struct {
 		A int `test:"Aaa"`
 		B int `toast:"bee"`
 		c int `test:"ccc" toast:"sea"`
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName)
+	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"Aaa", "B", "ccc"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
 
-func TestStructKeysNestedTagged(t *testing.T) {
+func TestStructKeys_NestedTagged(t *testing.T) {
 	type s struct {
 		A struct {
 			X  int `test:"eks"`
@@ -78,8 +81,28 @@ func TestStructKeysNestedTagged(t *testing.T) {
 		}
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName)
+	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"aaa.eks", "aaa.BE", "B.Gamma", "B.dee"}); diffs != nil {
+		t.Error("wrong keys for struct: ", diffs)
+	}
+}
+
+func TestStructKeys_Squash(t *testing.T) {
+	type I struct {
+		A int
+		B int
+	}
+	type J struct {
+		C uint
+		D uint
+	}
+	type s struct {
+		I `test:",squash"`
+		J `test:"ignore,squash"`
+	}
+
+	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	if diffs := deep.Equal(keys, []string{"A", "B", "C", "D"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 }
