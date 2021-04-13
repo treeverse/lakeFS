@@ -214,7 +214,6 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 
@@ -329,7 +328,6 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 	for _, u := range users {
@@ -404,7 +402,6 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 	for _, p := range policies {
@@ -494,7 +491,6 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 	for _, p := range policies {
@@ -643,7 +639,6 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 	for _, u := range users {
@@ -755,7 +750,6 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 	for _, c := range credentials {
@@ -865,7 +859,6 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 	}
 	for _, g := range groups {
@@ -909,7 +902,6 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
-			HasMore:    paginator.NextPageToken != "",
 		},
 		Results: make([]Policy, 0, len(policies)),
 	}
