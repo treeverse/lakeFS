@@ -10,19 +10,21 @@ has_children: false
 # Installing lakeFS
 {: .no_toc }
 
+For production deployments, install the lakeFS binary on your host of choice.
+
 ## Preqrequisites
 {: .no_toc }
 A production-suitable lakeFS installation will require three DNS records **pointing at your lakeFS server**.
-A good convention for those will be, assuming you own the domain `example.com`:
+A good convention for those will be, assuming you already own the domain `example.com`:
   
   * `lakefs.example.com` 
   * `s3.lakefs.example.com` - **this is the S3 Gateway Domain**
   * `*.s3.lakefs.example.com`
 
 
-Take note of the second one, which is the *S3 Gateway Domain*. You will have to use it in the lakeFS configuration. [Why do I need these three DNS records?](#why-do-i-need-the-three-dns-records)
+The second record, the *S3 Gateway Domain*. is used in lakeFS configuration to differentiate between the S3 Gateway API and the OpenAPI Server. For more info, see [Why do I need these three DNS records?](#why-do-i-need-the-three-dns-records)
 
-You can now move on to your preferred installation method:
+Find your preferred installation method:
 
 1. TOC
 {:toc}
@@ -146,7 +148,7 @@ Once your installation is running, move on to [Load Balancing and DNS](./lb_dns.
 ## Why do I need the three DNS records?
 {: .no_toc }
 
-They are needed to access the two different lakeFS APIs (these are also covered in the [Architecture](../architecture/overview.md) section):
+Multiple DNS records are needed to access the two different lakeFS APIs (covered in more detail in the [Architecture](../architecture/overview.md) section):
 
 1. **The lakeFS OpenAPI**: used by the `lakectl` CLI tool. Exposes git-like operations (branching, diffing, merging etc.).
 1. **An S3-compatible API**: read and write your data in any tool that can communicate with S3. Examples include: AWS CLI, Boto, Presto and Spark.
