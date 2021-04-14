@@ -9,10 +9,12 @@ import (
 	"math"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/go-test/deep"
@@ -26,7 +28,6 @@ import (
 )
 
 const (
-	//timeout       = 10 * time.Second
 	DefaultUserID = "example_user"
 )
 
@@ -1284,4 +1285,100 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+var listRepositoryRunsActionTemplate = template.Must(template.New("").Parse(`---
+name: CommitAction
+on:
+  pre-commit:
+    branches:
+      - "*"
+hooks:
+  - id: hook1
+    type: webhook
+    properties:
+      url: {{.URL}}
+`))
+
+func TestController_ListRepositoryRuns(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer httpServer.Close()
+	// create repository
+	resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("master"),
+		Name:             "repo9",
+		StorageNamespace: "mem://repo9",
+	})
+	verifyResponseOK(t, resp, err)
+	// upload action for pre-commit
+	var b bytes.Buffer
+	testutil.MustDo(t, "execute action template", listRepositoryRunsActionTemplate.Execute(&b, httpServer))
+	actionContent := b.String()
+	uploadResp, err := uploadObjectHelper(t, ctx, clt, "_lakefs_actions/pre_commit.yaml", strings.NewReader(actionContent), "repo9", "master")
+	verifyResponseOK(t, uploadResp, err)
+	// commit
+	respCommit, err := clt.CommitWithResponse(ctx, "repo9", "master", api.CommitJSONRequestBody{
+		Message: "pre-commit action",
+	})
+	verifyResponseOK(t, respCommit, err)
+	// work branch
+	branchResp, err := clt.CreateBranchWithResponse(ctx, "repo9", api.CreateBranchJSONRequestBody{
+		Name:   "work",
+		Source: "master",
+	})
+	verifyResponseOK(t, branchResp, err)
+	// upload and commit content on branch
+	commitIDs := []string{respCommit.JSON201.Id}
+	const contentCount = 5
+	for i := 0; i < contentCount; i++ {
+		content := fmt.Sprintf("content-%d", i)
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, content, strings.NewReader(content), "repo9", "work")
+		verifyResponseOK(t, uploadResp, err)
+		respCommit, err := clt.CommitWithResponse(ctx, "repo9", "work", api.CommitJSONRequestBody{Message: content})
+		verifyResponseOK(t, respCommit, err)
+		commitIDs = append(commitIDs, respCommit.JSON201.Id)
+	}
+
+	t.Run("total", func(t *testing.T) {
+		respList, err := clt.ListRepositoryRunsWithResponse(ctx, "repo9", &api.ListRepositoryRunsParams{
+			Amount: api.PaginationAmountPtr(100),
+		})
+		verifyResponseOK(t, respList, err)
+		runsCount := len(respList.JSON200.Results)
+		if runsCount != contentCount+1 {
+			t.Fatalf("ListRepositoryRuns() got %d results, expected %d+1", runsCount, contentCount)
+		}
+	})
+
+	t.Run("on branch", func(t *testing.T) {
+		respList, err := clt.ListRepositoryRunsWithResponse(ctx, "repo9", &api.ListRepositoryRunsParams{
+			Branch: api.StringPtr("work"),
+			Amount: api.PaginationAmountPtr(100),
+		})
+		verifyResponseOK(t, respList, err)
+		runsCount := len(respList.JSON200.Results)
+		if runsCount != contentCount {
+			t.Fatalf("ListRepositoryRuns() on `work` branch got %d results, expected %d", runsCount, contentCount)
+		}
+	})
+
+	t.Run("on deleted branch", func(t *testing.T) {
+		// delete work branch and list them again
+		delResp, err := clt.DeleteBranchWithResponse(ctx, "repo9", "work")
+		verifyResponseOK(t, delResp, err)
+
+		respList, err := clt.ListRepositoryRunsWithResponse(ctx, "repo9", &api.ListRepositoryRunsParams{
+			Branch: api.StringPtr("work"),
+			Amount: api.PaginationAmountPtr(100),
+		})
+		verifyResponseOK(t, respList, err)
+		runsCount := len(respList.JSON200.Results)
+		if runsCount != contentCount {
+			t.Fatalf("ListRepositoryRuns() got %d results, expected %d (after delete repository)", runsCount, contentCount)
+		}
+	})
 }
