@@ -601,17 +601,21 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	branchLocker := ref.NewBranchLocker(conn)
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	const expectedCommitID2 = graveler.CommitID("expectedCommitId2")
+	const mergeDestination = "destinationID"
 	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
 		CommitID: expectedCommitID,
-		Branch:   &graveler.Branch{CommitID: expectedCommitID},
-		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+		Branch:   &graveler.Branch{CommitID: expectedCommitID2},
+		RevParseRes: map[graveler.Ref]graveler.Reference{
+			graveler.Ref(mergeDestination): testutil.NewFakeReference(graveler.ReferenceTypeBranch, mergeDestination, expectedCommitID2),
+		},
+		Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}, expectedCommitID2: {MetaRangeID: expectedRangeID}},
 	}
 	// tests
 	errSomethingBad := errors.New("first error")
 	const mergeRepositoryID = "repoID"
-	const mergeDestination = "destinationID"
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
 	mergeMetadata := graveler.Metadata{"key1": "val1"}
@@ -658,6 +662,16 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			var hookErr *graveler.HookAbortError
 			if err != nil && !errors.As(err, &hookErr) {
 				t.Fatalf("Merge err=%v, pre-merge error expected HookAbortError", err)
+			}
+			if refManager.AddedCommit.MetaRangeID == "" {
+				t.Fatalf("Empty MetaRangeID, commit was successful")
+			}
+			parents := refManager.AddedCommit.Parents
+			if len(parents) != 2 {
+				t.Fatal("Merge commit should have 2 parents")
+			}
+			if parents[0] != expectedCommitID2 || parents[1] != expectedCommitID {
+				t.Fatalf("Wrong CommitParents order, expected: (%s, %s), got: (%s, %s)", expectedCommitID2, expectedCommitID, parents[0], parents[1])
 			}
 			// verify that calls made until the first error
 			if tt.hook != h.Called {

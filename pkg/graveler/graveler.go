@@ -1365,7 +1365,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			Message:      commitParams.Message,
 			CreationDate: time.Now(),
 			MetaRangeID:  metaRangeID,
-			Parents:      []CommitID{fromCommit.CommitID, toCommit.CommitID},
+			Parents:      []CommitID{toCommit.CommitID, fromCommit.CommitID},
 			Metadata:     commitParams.Metadata,
 		}
 		preRunID = NewRunID()
