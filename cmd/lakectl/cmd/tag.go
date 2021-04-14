@@ -122,6 +122,6 @@ func init() {
 	rootCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tagCreateCmd, tagDeleteCmd, tagListCmd, tagShowCmd)
 	flags := tagListCmd.Flags()
-	flags.Int("amount", -1, "number of results to return. By default, all results are returned.")
+	flags.Int("amount", 100, "number of results to return")
 	flags.String("after", "", "show results after this value (used for pagination)")
 }

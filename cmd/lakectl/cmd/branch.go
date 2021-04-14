@@ -223,7 +223,7 @@ func init() {
 	branchCmd.AddCommand(branchResetCmd)
 	branchCmd.AddCommand(branchRevertCmd)
 
-	branchListCmd.Flags().Int("amount", -1, "number of results to return. By default, all results are returned.")
+	branchListCmd.Flags().Int("amount", 100, "number of results to return")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")

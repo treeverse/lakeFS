@@ -43,7 +43,9 @@ var logCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		var pagination api.Pagination
+		pagination := api.Pagination{
+			HasMore: true,
+		}
 		commits := make([]api.Commit, 0)
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
@@ -52,7 +54,7 @@ var logCmd = &cobra.Command{
 		if amountForPagination == -1 {
 			amountForPagination = defaultPaginationAmount
 		}
-		for {
+		for pagination.HasMore {
 			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
 				After:  api.PaginationAfterPtr(after),
 				Amount: api.PaginationAmountPtr(amountForPagination),
@@ -60,9 +62,6 @@ var logCmd = &cobra.Command{
 			DieOnResponseError(res, err)
 			commits = append(commits, res.JSON200.Results...)
 			pagination = res.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
 			after = pagination.NextOffset
 			data := struct {
 				Commits         []api.Commit
@@ -76,7 +75,7 @@ var logCmd = &cobra.Command{
 				data.Pagination = &Pagination{
 					Amount:  amount,
 					HasNext: true,
-					After:   pagination.NextOffset,
+					Affter:  pagination.NextOffset,
 				}
 				Write(commitsTemplate, data)
 				break
