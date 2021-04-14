@@ -7,10 +7,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const tagListTemplate = `{{.TagTable | table -}}
-{{.Pagination | paginate }}
-`
-
 const tagCreateRequiredArgs = 2
 
 // tagCmd represents the tag command
@@ -57,23 +53,7 @@ var tagListCmd = &cobra.Command{
 			}
 			after = pagination.NextOffset
 		}
-		tmplArgs := struct {
-			TagTable   *Table
-			Pagination *Pagination
-		}{
-			TagTable: &Table{
-				Headers: []interface{}{"Tag", "Commit ID"},
-				Rows:    rows,
-			},
-		}
-		if pagination.HasMore {
-			tmplArgs.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
-			}
-		}
-		Write(tagListTemplate, tmplArgs)
+		PrintTable(rows, []interface{}{"Tag", "Commit ID"}, &pagination, amount)
 	},
 }
 

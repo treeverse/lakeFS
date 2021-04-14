@@ -71,7 +71,7 @@ var runsDescribeCmd = &cobra.Command{
 			after = pagination.NextOffset
 		}
 		data := struct {
-			Hooks      []api.HookRun ``
+			Hooks      []api.HookRun
 			HooksTable []*Table
 			HookLog    func(hookRunID string) (string, error)
 			Pagination *Pagination

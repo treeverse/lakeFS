@@ -34,29 +34,20 @@ var branchListCmd = &cobra.Command{
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 		u := uri.Must(uri.Parse(args[0]))
-		var pagination api.Pagination
-		rows := make([][]interface{}, 0)
 		client := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
-			}
-			resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
-			refs := resp.JSON200.Results
-			for _, row := range refs {
-				rows = append(rows, []interface{}{row.Id, row.CommitId})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
+		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		refs := resp.JSON200.Results
+		rows := make([][]interface{}, len(refs))
+		for i, row := range refs {
+			rows[i] = []interface{}{row.Id, row.CommitId}
 		}
+
+		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Branch", "Commit ID"}, &pagination, amount)
 	},
 }
