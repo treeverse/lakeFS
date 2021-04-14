@@ -39,12 +39,10 @@ var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
 	Long:  fmt.Sprintf("Import from an S3 inventory to lakeFS without copying the data. It will be added as a new commit in branch %s", onboard.DefaultImportBranchName),
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(ImportCmdNumArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:  cobra.ExactArgs(ImportCmdNumArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		os.Exit(runImport(cmd, args))
+		rc := runImport(cmd, args)
+		os.Exit(rc)
 	},
 }
 
@@ -53,12 +51,10 @@ var importBaseCmd = &cobra.Command{
 	Short:  "Import data from S3 to a lakeFS repository on top of existing commit",
 	Long:   "Creates a new commit with the imported data, on top of the given commit. Does not affect any branch",
 	Hidden: true,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(ImportCmdNumArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:   cobra.ExactArgs(ImportCmdNumArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		os.Exit(runImport(cmd, args))
+		rc := runImport(cmd, args)
+		os.Exit(rc)
 	},
 }
 
@@ -110,6 +106,11 @@ func runImport(cmd *cobra.Command, args []string) (statusCode int) {
 	c.SetHooksHandler(actionsService)
 
 	u := uri.Must(uri.Parse(args[0]))
+	if !u.IsRepository() {
+		fmt.Printf("Invalid 'repository': %s\n", uri.ErrInvalidRefURI)
+		return 1
+	}
+
 	blockStore, err := factory.BuildBlockAdapter(ctx, cfg)
 	if err != nil {
 		fmt.Printf("Failed to create block adapter: %s\n", err)

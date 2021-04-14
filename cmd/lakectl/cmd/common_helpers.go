@@ -10,6 +10,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/uri"
+
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -204,4 +206,37 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 	}
 
 	Write(resourceListTemplate, ctx)
+}
+
+func MustParseRepoURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsRepository() {
+		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidRepoURI)
+	}
+	return u
+}
+
+func MustParseRefURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsRef() {
+		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	}
+	return u
+}
+
+func MustParsePathURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsFullyQualified() {
+		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
+	}
+	return u
 }

@@ -55,7 +55,7 @@ type deleteOnClose struct {
 
 func (d *deleteOnClose) Close() error {
 	if err := os.Remove(d.Name()); err != nil {
-		d.File.Close() // "Only" file descriptor leak if close fails (but data might stay).
+		_ = d.File.Close() // "Only" file descriptor leak if close fails (but data might stay).
 		return fmt.Errorf("delete on close: %w", err)
 	}
 	return d.File.Close()
