@@ -113,9 +113,12 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		T:          t,
 	}
 
+	conf, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
+
 	conn, _ := testutil.GetDB(t, databaseURI)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config: config.NewConfig(),
+		Config: conf,
 		DB:     conn,
 	})
 	testutil.MustDo(t, "build c", err)

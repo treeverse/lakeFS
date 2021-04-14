@@ -154,7 +154,7 @@ func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, f
 	}
 
 	if err := tfs.adapter.Put(ctx, tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
-		return fmt.Errorf("adapter put %s: %w", filename, err)
+		return fmt.Errorf("adapter put %s %s: %w", namespace, filename, err)
 	}
 
 	if err := f.Close(); err != nil {
