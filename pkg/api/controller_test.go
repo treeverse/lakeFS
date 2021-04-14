@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/go-test/deep"
@@ -1286,6 +1287,19 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 	}
 }
 
+var listRepositoryRunsActionTemplate = template.Must(template.New("").Parse(`---
+name: CommitAction
+on:
+  pre-commit:
+    branches:
+      - "*"
+hooks:
+  - id: hook1
+    type: webhook
+    properties:
+      url: {{.URL}}
+`))
+
 func TestController_ListRepositoryRuns(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t, "")
 	ctx := context.Background()
@@ -1301,17 +1315,9 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	})
 	verifyResponseOK(t, resp, err)
 	// upload action for pre-commit
-	actionContent := `--- 
-name: CommitAction
-on:
-  pre-commit:
-    branches:
-      - "*"
-hooks:
-  - id: hook1
-    type: webhook
-    properties:
-      url: ` + httpServer.URL
+	var b bytes.Buffer
+	testutil.MustDo(t, "execute action template", listRepositoryRunsActionTemplate.Execute(&b, httpServer))
+	actionContent := b.String()
 	uploadResp, err := uploadObjectHelper(t, ctx, clt, "_lakefs_actions/pre_commit.yaml", strings.NewReader(actionContent), "repo9", "master")
 	verifyResponseOK(t, uploadResp, err)
 	// commit
@@ -1343,9 +1349,8 @@ hooks:
 		})
 		verifyResponseOK(t, respList, err)
 		runsCount := len(respList.JSON200.Results)
-		expectedRunsCount := contentCount + 1 // additional one for the actions commit
-		if runsCount != expectedRunsCount {
-			t.Fatalf("ListRepositoryRuns() got %d results, expected %d", runsCount, expectedRunsCount)
+		if runsCount != contentCount+1 {
+			t.Fatalf("ListRepositoryRuns() got %d results, expected %d+1", runsCount, contentCount)
 		}
 	})
 
