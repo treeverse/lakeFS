@@ -76,7 +76,6 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	if blockstoreType == "" {
 		blockstoreType = mem.BlockstoreType
 	}
-	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 	viper.Set(config.BlockstoreTypeKey, mem.BlockstoreType)
 	cfg, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)
@@ -90,7 +89,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	actionsService := actions.NewService(
 		conn,
 		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(blockAdapter),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
 	)
 	c.SetHooksHandler(actionsService)
 
@@ -109,7 +108,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	handler := api.Serve(
 		c,
 		authService,
-		blockAdapter,
+		c.BlockAdapter,
 		meta,
 		migrator,
 		collector,
@@ -120,7 +119,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	)
 
 	return handler, &dependencies{
-		blocks:      blockAdapter,
+		blocks:      c.BlockAdapter,
 		authService: authService,
 		catalog:     c,
 		collector:   collector,
