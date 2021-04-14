@@ -2,10 +2,14 @@
 layout: default
 title: Load Balancing and DNS
 description: Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.
-parent: AWS Deployment
+parent: Production Deployment
 nav_order: 25
 has_children: false
 ---
+#  Load Balancing and DNS
+
+This page covers how to point your Load Balancer to lakeFS, and how to set the DNS records.
+If you already have those, move on to the [Setup](setup.md) page.
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
@@ -20,17 +24,18 @@ By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint whic
 
 ## DNS
 
-You should create 3 DNS records for lakeFS:
+As mentioned in a previous step, you should create 3 DNS records for lakeFS:
 1. One record for the lakeFS API: `lakefs.example.com`
 1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
 
-All records should point to your Load Balancer.
+All records should point to your Load Balancer, preferably with a short TTL value.
+
+### In AWS Route53
 For an AWS load balancer with Route53 DNS, create a simple record, and choose *Alias to Application and Classic Load Balancer* with an `A` record type.
 
 ![Configuring a simple record in Route53](../assets/img/route53.png)
 
 For other DNS providers, refer to the documentation on how to add CNAME records.
 
-In this case, it's recommended to use a short TTL value.
-
- 
+You can now move on to the [Setup](setup.md) page.
+c
