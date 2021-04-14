@@ -283,7 +283,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repositoryID graveler.R
 			// LIMIT 2 is used to test if a truncated commit ID resolves to *one* commit.
 			// if we get 2 results that start with the truncated ID, that's enough to determine this prefix is not unique
 			err := tx.Select(&records, `
-					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata
+					SELECT id, committer, message, creation_date, parents, meta_range_id, metadata, version
 					FROM graveler_commits
 					WHERE repository_id = $1 AND id LIKE $2 || '%'
 					LIMIT 2`,

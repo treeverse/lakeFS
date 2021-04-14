@@ -452,6 +452,7 @@ func TestManager_Log(t *testing.T) {
 	var previous graveler.CommitID
 	for i := 0; i < 20; i++ {
 		c := graveler.Commit{
+			Version:      "commit:v1",
 			Committer:    "user1",
 			Message:      "message1",
 			MetaRangeID:  "deadbeef123",
@@ -609,6 +610,7 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	hex := ident.NewHexAddressProvider()
 
 	commit := graveler.Commit{
+		Version:      "commit:v1",
 		Committer:    "some-committer",
 		Message:      "I just committed",
 		MetaRangeID:  "123456789987654321",

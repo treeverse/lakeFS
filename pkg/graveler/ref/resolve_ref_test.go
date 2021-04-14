@@ -26,6 +26,7 @@ func TestResolveRef_Dereference(t *testing.T) {
 	var previous graveler.CommitID
 	for i := 0; i < 20; i++ {
 		c := graveler.Commit{
+			Version:      "commit:v1",
 			Committer:    "user1",
 			Message:      "message1",
 			MetaRangeID:  "deadbeef123",
@@ -199,6 +200,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 	addCommit := func(message string, parents ...graveler.CommitID) graveler.CommitID {
 		c := graveler.Commit{
+			Version:      "commit:v1",
 			Message:      message,
 			Committer:    "tester",
 			MetaRangeID:  "deadbeef1",
