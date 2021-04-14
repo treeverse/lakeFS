@@ -7,8 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const commitsTemplate = `
-{{ range $val := .Commits }}
+const commitsTemplate = `{{ range $val := .Commits }}
 ID:            {{ $val.Id|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
@@ -22,9 +21,8 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
 		{{ $key }} = {{ $value }}
 	{{ end -}}
-{{ end }}
-{{.Pagination | paginate }}
-`
+{{ end }}{{ if .Pagination  }}
+{{.Pagination | paginate }}{{ end }}`
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
@@ -46,7 +44,6 @@ var logCmd = &cobra.Command{
 		pagination := api.Pagination{
 			HasMore: true,
 		}
-		commits := make([]api.Commit, 0)
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
@@ -60,7 +57,6 @@ var logCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(res, err)
-			commits = append(commits, res.JSON200.Results...)
 			pagination = res.JSON200.Pagination
 			after = pagination.NextOffset
 			data := struct {
@@ -68,14 +64,14 @@ var logCmd = &cobra.Command{
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{
-				Commits:         commits,
+				Commits:         res.JSON200.Results,
 				ShowMetaRangeID: showMetaRangeID,
 			}
 			if pagination.HasMore && amount != -1 {
 				data.Pagination = &Pagination{
 					Amount:  amount,
 					HasNext: true,
-					Affter:  pagination.NextOffset,
+					After:   pagination.NextOffset,
 				}
 				Write(commitsTemplate, data)
 				break
