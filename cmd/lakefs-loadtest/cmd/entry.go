@@ -54,7 +54,10 @@ var entryCmd = &cobra.Command{
 		lockDB := connectToDB(ctx, connectionString)
 		defer lockDB.Close()
 
-		conf := config.NewConfig()
+		conf, err := config.NewConfig()
+		if err != nil {
+			fmt.Printf("config: %s\n", err)
+		}
 		c, err := catalog.New(ctx, catalog.Config{
 			Config: conf,
 			DB:     database,
