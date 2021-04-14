@@ -12,16 +12,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const actionRunResultTemplate = `
-{{ . | table -}}
-`
+const actionRunResultTemplate = `{{ . | table -}}`
 
-const actionTaskResultTemplate = `{{ $r := . }}
-{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}
-{{ printf $val.HookRunId | call $r.HookLog }}
-{{ end }}
-{{ .Pagination | paginate }}
-`
+const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}{{ printf $val.HookRunId | call $r.HookLog }}{{ end }}{{ if .Pagination }}
+{{ .Pagination | paginate }}{{ end }}`
 
 const runsShowRequiredArgs = 2
 
@@ -37,8 +31,9 @@ var runsDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		var pagination api.Pagination
-		hooks := make([]api.HookRun, 0)
+		pagination := api.Pagination{
+			HasMore: true,
+		}
 
 		u := uri.Must(uri.Parse(args[0]))
 		runID := args[1]
@@ -52,7 +47,7 @@ var runsDescribeCmd = &cobra.Command{
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
-		for {
+		for pagination.HasMore {
 			amountForPagination := amount
 			if amountForPagination == -1 {
 				amountForPagination = defaultPaginationAmount
@@ -63,31 +58,28 @@ var runsDescribeCmd = &cobra.Command{
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
 			DieOnResponseError(runHooksRes, err)
-			hooks = append(hooks, runHooksRes.JSON200.Results...)
 			pagination = runHooksRes.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
+			data := struct {
+				Hooks      []api.HookRun
+				HooksTable []*Table
+				HookLog    func(hookRunID string) (string, error)
+				Pagination *Pagination
+			}{
+				Hooks:      runHooksRes.JSON200.Results,
+				HooksTable: convertHookResultsTables(runHooksRes.JSON200.Results),
+				HookLog:    makeHookLog(ctx, client, u.Repository, runID),
 			}
+			if amount != -1 && pagination.HasMore {
+				// show pagination to user
+				data.Pagination = &Pagination{
+					Amount:  amount,
+					HasNext: true,
+					After:   pagination.NextOffset,
+				}
+			}
+			Write(actionTaskResultTemplate, data)
 			after = pagination.NextOffset
 		}
-		data := struct {
-			Hooks      []api.HookRun
-			HooksTable []*Table
-			HookLog    func(hookRunID string) (string, error)
-			Pagination *Pagination
-		}{
-			Hooks:      hooks,
-			HooksTable: convertHookResultsTables(hooks),
-			HookLog:    makeHookLog(ctx, client, u.Repository, runID),
-		}
-		if pagination.HasMore {
-			data.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
-			}
-		}
-		Write(actionTaskResultTemplate, data)
 	},
 }
 
