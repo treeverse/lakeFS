@@ -7,6 +7,7 @@ import (
 )
 
 type commitRecord struct {
+	Version      string            `db:"version"`
 	CommitID     string            `db:"id"`
 	Committer    string            `db:"committer"`
 	Message      string            `db:"message"`
@@ -22,6 +23,7 @@ func (c *commitRecord) toGravelerCommit() *graveler.Commit {
 		parents[i] = graveler.CommitID(c.Parents[i])
 	}
 	return &graveler.Commit{
+		Version:      c.Version,
 		Committer:    c.Committer,
 		Message:      c.Message,
 		MetaRangeID:  graveler.MetaRangeID(c.RangeID),

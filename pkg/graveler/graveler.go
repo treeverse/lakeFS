@@ -150,8 +150,13 @@ func (cp CommitParents) AsStringSlice() []string {
 // FirstCommitMsg is the message of the first (zero) commit of a lakeFS repository
 const FirstCommitMsg = "Repository created"
 
+// CommitVersion is the current version of the commit and is updated from time to time.
+// Change it if a change was applied to the schema of the Commit struct.
+const CommitVersion = "commit:v2"
+
 // Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
+	Version      string        `db:"version"`
 	Committer    string        `db:"committer"`
 	Message      string        `db:"message"`
 	MetaRangeID  MetaRangeID   `db:"meta_range_id"`
@@ -162,7 +167,7 @@ type Commit struct {
 
 func (c Commit) Identity() []byte {
 	b := ident.NewAddressWriter()
-	b.MarshalString("commit:v1")
+	b.MarshalString(c.Version)
 	b.MarshalString(c.Committer)
 	b.MarshalString(c.Message)
 	b.MarshalString(string(c.MetaRangeID))
@@ -971,6 +976,7 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
 		commit = Commit{
+			Version:      CommitVersion,
 			Committer:    params.Committer,
 			Message:      params.Message,
 			CreationDate: time.Now(),
@@ -1300,6 +1306,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			return "", err
 		}
 		commit := Commit{
+			Version:      CommitVersion,
 			Committer:    commitParams.Committer,
 			Message:      commitParams.Message,
 			MetaRangeID:  metaRangeID,
@@ -1361,6 +1368,7 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			return "", err
 		}
 		commit = Commit{
+			Version:      CommitVersion,
 			Committer:    commitParams.Committer,
 			Message:      commitParams.Message,
 			CreationDate: time.Now(),
@@ -1540,6 +1548,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 			parents[i] = CommitID(p)
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
+			Version:      commit.Version,
 			Committer:    commit.GetCommitter(),
 			Message:      commit.GetMessage(),
 			MetaRangeID:  MetaRangeID(commit.GetMetaRangeId()),
@@ -1861,6 +1870,7 @@ func (c *commitValueIterator) setValue() bool {
 	}
 	commit := c.src.Value()
 	data, err := proto.Marshal(&CommitData{
+		Version:      commit.Version,
 		Id:           string(commit.CommitID),
 		Committer:    commit.Committer,
 		Message:      commit.Message,

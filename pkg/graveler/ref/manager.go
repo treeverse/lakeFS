@@ -71,6 +71,7 @@ func createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, reposito
 
 func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
 	firstCommit := graveler.Commit{
+		Version:      graveler.CommitVersion,
 		Message:      graveler.FirstCommitMsg,
 		CreationDate: time.Now(),
 	}
@@ -317,7 +318,7 @@ func (m *Manager) GetCommit(ctx context.Context, repositoryID graveler.Repositor
 		return m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
 			var rec commitRecord
 			err := tx.Get(&rec, `
-					SELECT committer, message, creation_date, parents, meta_range_id, metadata
+					SELECT committer, message, creation_date, parents, meta_range_id, metadata, version
 					FROM graveler_commits WHERE repository_id = $1 AND id = $2`,
 				repositoryID, commitID)
 			if err != nil {
@@ -357,11 +358,11 @@ func (m *Manager) addCommit(tx db.Tx, repositoryID graveler.RepositoryID, commit
 	// it will necessarily have the same attributes as the existing one, so no need to overwrite it
 	_, err := tx.Exec(`
 				INSERT INTO graveler_commits 
-				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				(repository_id, id, committer, message, creation_date, parents, meta_range_id, metadata, version)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 				ON CONFLICT DO NOTHING`,
 		repositoryID, commitID, commit.Committer, commit.Message,
-		commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata)
+		commit.CreationDate.UTC(), parents, commit.MetaRangeID, commit.Metadata, commit.Version)
 
 	return err
 }

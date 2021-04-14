@@ -146,6 +146,7 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 	}
 
 	commit := graveler.Commit{
+		Version:      graveler.CommitVersion,
 		Committer:    c.committer,
 		Message:      commitMsg,
 		MetaRangeID:  *c.createdMetaRangeID,

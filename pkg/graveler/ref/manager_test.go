@@ -422,7 +422,7 @@ func TestManager_AddCommit(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if cid != "2277b5abd2d3ba6b4d35c48a0e358b0c4bcf5cd6d891c67437fb4c4af0d2fd4b" {
+	if cid != "b0c8486887ed31da0d3c1cd72daacbef7c14fe7e050be69dca4bb24c3e66b6ad" {
 		t.Fatalf("unexpected commit ID: %s", cid)
 	}
 
