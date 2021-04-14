@@ -145,7 +145,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		multipartsTracker,
 		blockAdapter,
 		authService,
-		authService.BareDomains,
+		[]string{authService.BareDomain},
 		&mockCollector{},
 		nil,
 	)
@@ -166,7 +166,7 @@ func newGatewayAuthFromFile(t *testing.T, directory string) *simulator.PlayBackM
 	}
 	err = json.Unmarshal(confStr, m)
 	if err != nil {
-		t.Fatal("Failed to unmarshal configuration\n ")
+		t.Fatalf("Failed to unmarshal configuration: %s", err.Error())
 	}
 	return m
 }

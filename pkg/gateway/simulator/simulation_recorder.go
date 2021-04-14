@@ -147,6 +147,9 @@ func logRequest(r *http.Request, uploadID []byte, nameBase string, statusCode in
 }
 
 func createConfFile(r *http.Request, authService GatewayAuthService, region string, bareDomains []string, recordingDir string) {
+	if len(bareDomains) != 1 {
+		panic("cannot record with more than one s3 bare domain")
+	}
 	authenticator := sig.ChainedAuthenticator(
 		sig.NewV4Authenticator(r),
 		sig.NewV2SigAuthenticator(r))
@@ -164,7 +167,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region stri
 			Fatal("failed getting credentials")
 	}
 	conf := &PlayBackMockConf{
-		BareDomains:      bareDomains,
+		BareDomain:      bareDomains[0],
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: creds.SecretAccessKey,
 		UserID:          creds.UserID,

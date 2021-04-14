@@ -84,7 +84,7 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := &operations.Operation{
-			Region:            sc.region,
+			Region: sc.region,
 			// BUG(ariels): This is wrong many times when there is >1 domain.  Can
 			//     we use req.Host?
 			FQDN:              sc.bareDomains[0],

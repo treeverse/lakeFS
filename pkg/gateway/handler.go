@@ -42,7 +42,7 @@ var (
 )
 
 type handler struct {
-	BareDomains         []string
+	BareDomains        []string
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
 	operationHandlers  map[operations.OperationID]http.Handler
@@ -50,7 +50,7 @@ type handler struct {
 
 type ServerContext struct {
 	region            string
-	bareDomains        []string
+	bareDomains       []string
 	catalog           catalog.Interface
 	multipartsTracker multiparts.Tracker
 	blockStore        block.Adapter
@@ -86,7 +86,7 @@ func NewHandler(
 		catalog:           catalog,
 		multipartsTracker: multipartsTracker,
 		region:            region,
-		bareDomains:        bareDomains,
+		bareDomains:       bareDomains,
 		blockStore:        blockStore,
 		authService:       authService,
 		stats:             stats,
@@ -95,7 +95,7 @@ func NewHandler(
 	// setup routes
 	var h http.Handler
 	h = &handler{
-		BareDomains:         bareDomains,
+		BareDomains:        bareDomains,
 		sc:                 sc,
 		ServerErrorHandler: nil,
 		operationHandlers: map[operations.OperationID]http.Handler{

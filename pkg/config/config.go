@@ -133,7 +133,6 @@ const (
 
 	CommittedPebbleSSTableCacheSizeBytesKey = "committed.sstable.memory.cache_size_bytes"
 
-	GatewaysS3DomainNameKey  = "gateways.s3.domain_name"
 	GatewaysS3DomainNamesKey = "gateways.s3.domain_name"
 	GatewaysS3RegionKey      = "gateways.s3.region"
 
@@ -175,7 +174,7 @@ func setDefaults() {
 	viper.SetDefault(CommittedPermanentStorageRangeRaggednessKey, DefaultCommittedPermanentRangeRaggednessEntries)
 	viper.SetDefault(CommittedPebbleSSTableCacheSizeBytesKey, DefaultCommittedPebbleSSTableCacheSizeBytes)
 
-	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
+	viper.SetDefault(GatewaysS3DomainNamesKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
 
 	viper.SetDefault(BlockstoreGSS3EndpointKey, DefaultBlockStoreGSS3Endpoint)
@@ -299,20 +298,7 @@ func (c *Config) GetS3GatewayRegion() string {
 }
 
 func (c *Config) GetS3GatewayDomainNames() []string {
-	oneDomainName := c.values.Gateways.S3.DomainName
-	manyDomainNames := c.values.Gateways.S3.DomainNames
-	if manyDomainNames != nil {
-		if oneDomainName != "" {
-			// TODO(ozkatz): This fatal error can occur quite late during
-			//     operation.
-			logging.Default().WithFields(logging.Fields{
-				"domain_name": oneDomainName,
-				"domain_names": manyDomainNames,
-			}).Fatal("both single domain_name and multiple domain_names configured")
-		}
-		return manyDomainNames
-	}
-	return []string{oneDomainName}
+	return c.values.Gateways.S3.DomainNames
 }
 
 func (c *Config) GetS3GatewayFallbackURL() string {

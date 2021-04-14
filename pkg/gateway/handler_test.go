@@ -13,7 +13,7 @@ import (
 
 func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
 	h, _ := getBasicHandler(t, &simulator.PlayBackMockConf{
-		BareDomains:      []string{"example.net", "example.com"},
+		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		SecretAccessKey: "MockAccessSecretKey",
 		UserID:          1,
