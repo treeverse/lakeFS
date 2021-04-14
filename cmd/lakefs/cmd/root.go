@@ -35,9 +35,10 @@ func Execute() {
 	}
 }
 
+var initOnce sync.Once
+
 //nolint:gochecknoinits
 func init() {
-	var initOnce sync.Once
 	cobra.OnInitialize(func() {
 		initOnce.Do(initConfig)
 	})
