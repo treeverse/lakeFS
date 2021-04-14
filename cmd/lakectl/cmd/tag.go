@@ -27,31 +27,38 @@ var tagListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		var pagination api.Pagination
-		rows := make([][]interface{}, 0)
 
 		u := uri.Must(uri.Parse(args[0]))
 		ctx := cmd.Context()
 		client := getClient()
-		for {
-			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
+		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnResponseError(resp, err)
+
+		refs := resp.JSON200.Results
+		rows := make([][]interface{}, len(refs))
+		for i, row := range refs {
+			rows[i] = []interface{}{row.Id, row.CommitId}
+		}
+
+		tmplArgs := struct {
+			TagTable   *Table
+			Pagination *Pagination
+		}{
+			TagTable: &Table{
+				Headers: []interface{}{"Tag", "Commit ID"},
+				Rows:    rows,
+			},
+		}
+		pagination := resp.JSON200.Pagination
+		if pagination.HasMore {
+			tmplArgs.Pagination = &Pagination{
+				Amount:  amount,
+				HasNext: true,
+				After:   pagination.NextOffset,
 			}
-			resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
-				After:  api.PaginationAfterPtr(after),
-				Amount: api.PaginationAmountPtr(amountForPagination),
-			})
-			DieOnResponseError(resp, err)
-			refs := resp.JSON200.Results
-			for _, row := range refs {
-				rows = append(rows, []interface{}{row.Id, row.CommitId})
-			}
-			pagination = resp.JSON200.Pagination
-			if amount != -1 || !pagination.HasMore {
-				break
-			}
-			after = pagination.NextOffset
 		}
 		PrintTable(rows, []interface{}{"Tag", "Commit ID"}, &pagination, amount)
 	},
