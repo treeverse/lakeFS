@@ -30,6 +30,13 @@ const (
 var (
 	cfgFile string
 	cfg     *config.Config
+
+	// baseURI default value is set by the environment variable LAKECTL_BASE_URI and
+	// override by flag 'base-url'. The baseURI is used as a prefix when we parse lakefs address (repo, ref or path).
+	// The prefix is used only when the address we parse is not a full address (starts with 'lakefs://' scheme).
+	// Examples:
+	//   `--base-uri lakefs:// repo1` will resolve to repository `lakefs://repo1`
+	//   `--base-uri lakefs://repo1 /master/file.md` will resolve to path `lakefs://repo1/master/file.md`
 	baseURI string
 )
 
