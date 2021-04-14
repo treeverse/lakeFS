@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -26,14 +25,11 @@ var branchListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://<repository>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
 			After:  api.PaginationAfterPtr(after),
@@ -55,18 +51,16 @@ var branchListCmd = &cobra.Command{
 var branchCreateCmd = &cobra.Command{
 	Use:   "create <ref uri>",
 	Short: "create a new branch in a repository",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRefURI("branch", args[0])
 		client := getClient()
 		sourceRawURI, _ := cmd.Flags().GetString("source")
-		sourceURI, err := uri.Parse(sourceRawURI)
+		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, baseURI)
 		if err != nil {
 			DieFmt("failed to parse source URI: %s", err)
 		}
+		Fmt("Source ref: %s\n", sourceURI.String())
 		if sourceURI.Repository != u.Repository {
 			Die("source branch must be in the same repository", 1)
 		}
@@ -83,32 +77,28 @@ var branchCreateCmd = &cobra.Command{
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete <branch uri>",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
 		if err != nil || !confirmation {
 			Die("Delete branch aborted", 1)
 		}
 		client := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRefURI("branch", args[0])
+		Fmt("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnResponseError(resp, err)
 	},
 }
 
-// lakectl branch revert lakefs://myrepo@master commitId
+// lakectl branch revert lakefs://myrepo/master commitId
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert <branch uri> <commit ref to revert>",
 	Short: "given a commit, record a new commit to reverse the effect of this commit",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(branchRevertCmdArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(branchRevertCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRefURI("branch", args[0])
+		Fmt("Branch: %s\n", u.String())
 		commitRef := args[1]
 		clt := getClient()
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
@@ -128,23 +118,20 @@ var branchRevertCmd = &cobra.Command{
 	},
 }
 
-// lakectl branch reset lakefs://myrepo@master --commit commitId --prefix path --object path
+// lakectl branch reset lakefs://myrepo/master --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
 	Use:   "reset <branch uri> [flags]",
 	Short: "reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
 	Long: `reset changes.  There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo@master --commit commitId
-  2. reset all uncommitted changes - reset lakefs://myrepo@master 
-  3. reset uncommitted changes under specific path -	reset lakefs://myrepo@master --prefix path
-  4. reset uncommitted changes for specific object - reset lakefs://myrepo@master --object path`,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/master --commit commitId
+  2. reset all uncommitted changes - reset lakefs://myrepo/master 
+  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/master --prefix path
+  4. reset uncommitted changes for specific object - reset lakefs://myrepo/master --object path`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
-
+		u := MustParseRefURI("branch", args[0])
+		Fmt("Branch: %s\n", u.String())
 		commitID, err := cmd.Flags().GetString("commit")
 		if err != nil {
 			DieErr(err)
@@ -199,13 +186,11 @@ var branchResetCmd = &cobra.Command{
 var branchShowCmd = &cobra.Command{
 	Use:   "show <branch uri>",
 	Short: "show branch latest commit reference",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRefURI("branch", args[0])
+		Fmt("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnResponseError(resp, err)
 		branch := resp.JSON200

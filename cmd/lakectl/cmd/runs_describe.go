@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const actionRunResultTemplate = `{{ . | table -}}`
@@ -24,18 +22,14 @@ var runsDescribeCmd = &cobra.Command{
 	Short:   "Describe run results",
 	Long:    `Show information about the run and all the hooks that were executed as part of the run`,
 	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(runsShowRequiredArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(runsShowRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		pagination := api.Pagination{
-			HasMore: true,
-		}
+		u := MustParseRepoURI("repository", args[0])
+		pagination := api.Pagination{HasMore: true}
 
-		u := uri.Must(uri.Parse(args[0]))
+		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 
 		client := getClient()

@@ -4,12 +4,6 @@ logging:
   level: DEBUG
   output: "/tmp/lakefs_json_logger_test.log"
 
-metadata:
-  db:
-    type: badger
-    badger:
-      path: /tmp
-
 blockstore:
   type: local
   local:

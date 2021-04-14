@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"mime/multipart"
@@ -47,6 +48,10 @@ func verifyResponseOK(t testing.TB, resp Statuser, err error) {
 	}
 }
 
+func onBlock(deps *dependencies, path string) string {
+	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
+}
+
 func TestController_ListRepositoriesHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
@@ -69,11 +74,11 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("list some repos", func(t *testing.T) {
 		// write some repos
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", "s3://foo1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "foo2", "s3://foo1", "master")
+		_, err = deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "foo3", "s3://foo1", "master")
+		_, err = deps.catalog.CreateRepository(ctx, "foo3", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
 
 		resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
@@ -155,7 +160,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 
 	t.Run("get existing repo", func(t *testing.T) {
 		const testBranchName = "non-default"
-		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName)
+		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName)
 		testutil.Must(t, err)
 
 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
@@ -173,7 +178,7 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("get missing branch", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", "ns1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "ns1"), "master")
 		testutil.Must(t, err)
 
 		resp, err := clt.LogCommitsWithResponse(ctx, "repo1", "otherbranch", &api.LogCommitsParams{})
@@ -184,14 +189,14 @@ func TestController_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	})
 
 	t.Run("get branch log", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo2", "ns1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "repo2", onBlock(deps, "ns1"), "master")
 		testutil.Must(t, err)
 
 		const commitsLen = 2
 		for i := 0; i < commitsLen; i++ {
 			n := strconv.Itoa(i + 1)
 			p := "foo/bar" + n
-			err := deps.catalog.CreateEntry(ctx, "repo2", "master", catalog.DBEntry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+			err := deps.catalog.CreateEntry(ctx, "repo2", "master", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 			testutil.MustDo(t, "create entry "+p, err)
 			_, err = deps.catalog.Commit(ctx, "repo2", "master", "commit"+n, "some_user", nil)
 			testutil.MustDo(t, "commit "+p, err)
@@ -226,7 +231,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 
 	t.Run("get existing commit", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", "s3://foo1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, "foo1", "master", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, "foo1", "master", "some message", DefaultUserID, nil)
@@ -267,7 +272,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", "s3://foo1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "master")
 		testutil.MustDo(t, "create repo foo1", err)
 		testutil.MustDo(t, "commit bar on foo1", deps.catalog.CreateEntry(ctx, "foo1", "master", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, "foo1", "master", api.CommitJSONRequestBody{
@@ -284,7 +289,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("master"),
 			Name:             "my-new-repo",
-			StorageNamespace: "s3://foo-bucket",
+			StorageNamespace: onBlock(deps, "foo-bucket"),
 		})
 		verifyResponseOK(t, resp, err)
 
@@ -295,14 +300,14 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("create repo duplicate", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo2", "s3://foo1/", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "repo2", onBlock(deps, "foo1"), "master")
 		if err != nil {
 			t.Fatal(err)
 		}
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("master"),
 			Name:             "repo2",
-			StorageNamespace: "s3://foo-bucket/",
+			StorageNamespace: onBlock(deps, "foo-bucket"),
 		})
 		if resp == nil {
 			t.Fatal("CreateRepository missing response")
@@ -319,7 +324,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete repo success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
 
 		resp, err := clt.DeleteRepositoryWithResponse(ctx, "my-new-repo")
@@ -342,7 +347,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
 		names := []string{"rr0", "rr1", "rr11", "rr2"}
 		for _, name := range names {
-			_, err := deps.catalog.CreateRepository(ctx, name, "s3://foo1", "master")
+			_, err := deps.catalog.CreateRepository(ctx, name, onBlock(deps, "foo1"), "master")
 			testutil.Must(t, err)
 		}
 
@@ -367,7 +372,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 	t.Run("list branches only default", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
 		resp, err := clt.ListBranchesWithResponse(ctx, "repo1", &api.ListBranchesParams{
 			Amount: api.PaginationAmountPtr(-1),
@@ -383,7 +388,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 	t.Run("list branches pagination", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "repo2", "s3://foo2", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "repo2", onBlock(deps, "foo2"), "master")
 		testutil.Must(t, err)
 
 		// create first dummy commit on master so that we can create branches from it
@@ -439,7 +444,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	ctx := context.Background()
 
 	// setup test data
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "local://foo1", "master")
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "master")
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "obj1"}))
 	commitLog, err := deps.catalog.Commit(ctx, "repo1", "master", "first commit", "test", nil)
@@ -518,7 +523,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 
 	t.Run("get default branch", func(t *testing.T) {
 		const testBranch = "master"
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
+		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), testBranch)
 		testutil.Must(t, err)
 		// create first dummy commit on master so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", testBranch, catalog.DBEntry{Path: "a/b"}))
@@ -559,7 +564,7 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 
 	ctx := context.Background()
 	const testBranch = "master"
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", testBranch)
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), testBranch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -602,7 +607,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://foo1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "repo1", "master", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, "repo1", "master", "first commit", "test", nil)
@@ -689,7 +694,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete branch success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master")
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "master")
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "master", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, "my-new-repo", "master", "first commit", "test", nil)
@@ -724,7 +729,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://some-bucket", "master")
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "some-bucket"), "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -753,7 +758,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if api.Int64Value(objectStats.SizeBytes) != entry.Size {
 			t.Fatalf("expected correct size, got %d", objectStats.SizeBytes)
 		}
-		if objectStats.PhysicalAddress != "s3://some-bucket/"+entry.PhysicalAddress {
+		if objectStats.PhysicalAddress != onBlock(deps, "some-bucket/")+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", objectStats.PhysicalAddress)
 		}
 	})
@@ -763,7 +768,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "master")
 	testutil.Must(t, err)
 	dbEntries := []catalog.DBEntry{
 		{
@@ -912,7 +917,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "gs://bucket/prefix", "master")
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -965,7 +970,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "s3")
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://bucket/prefix", "master")
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "bucket/prefix"), "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -974,7 +979,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		const expectedSizeBytes = 38
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "master", &api.StageObjectParams{Path: "foo/bar"}, api.StageObjectJSONRequestBody{
 			Checksum:        "afb0689fe58b82c5f762991453edbbec",
-			PhysicalAddress: "s3://another-bucket/some/location",
+			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
 			SizeBytes:       expectedSizeBytes,
 		})
 		verifyResponseOK(t, resp, err)
@@ -988,7 +993,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		statResp, err := clt.StatObjectWithResponse(ctx, "repo1", "master", &api.StatObjectParams{Path: "foo/bar"})
 		verifyResponseOK(t, statResp, err)
 		objectStat := statResp.JSON200
-		if objectStat.PhysicalAddress != "s3://another-bucket/some/location" {
+		if objectStat.PhysicalAddress != onBlock(deps, "another-bucket/some/location") {
 			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})
@@ -997,7 +1002,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		resp, err := clt.StageObjectWithResponse(ctx, "repo1", "master1234", &api.StageObjectParams{Path: "foo/bar"},
 			api.StageObjectJSONRequestBody{
 				Checksum:        "afb0689fe58b82c5f762991453edbbec",
-				PhysicalAddress: "s3://another-bucket/some/location",
+				PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
 				SizeBytes:       38,
 			})
 		testutil.Must(t, err)
@@ -1016,7 +1021,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		})
 		testutil.Must(t, err)
 		if resp.JSON400 == nil {
-			t.Fatal("Wrong storage adapter should return 400")
+			t.Fatalf("Wrong storage adapter should return 400, got status %s [%d]\n\tbody: %s", resp.Status(), resp.StatusCode(), string(resp.Body))
 		}
 	})
 }
@@ -1025,7 +1030,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "repo1", "s3://some-bucket/prefix", "master")
+	_, err := deps.catalog.CreateRepository(ctx, "repo1", onBlock(deps, "some-bucket/prefix"), "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1144,9 +1149,10 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
-	const ExpectedExample = "s3://example-bucket/"
-	clt, _ := setupClientWithAdmin(t, "s3")
+	clt, deps := setupClientWithAdmin(t, "s3")
 	ctx := context.Background()
+
+	var ExpectedExample = onBlock(deps, "example-bucket/")
 
 	t.Run("Get config (currently only block store type)", func(t *testing.T) {
 		resp, err := clt.GetConfigWithResponse(ctx)

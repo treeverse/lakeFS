@@ -3,8 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const tagCreateRequiredArgs = 2
@@ -20,15 +18,13 @@ var tagListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
 	Short:   "list tags in a repository",
 	Example: "lakectl tag list lakefs://<repository>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
+
 		ctx := cmd.Context()
 		client := getClient()
 		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
@@ -67,12 +63,11 @@ var tagListCmd = &cobra.Command{
 var tagCreateCmd = &cobra.Command{
 	Use:   "create <tag uri> <commit ref>",
 	Short: "create a new tag in a repository",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(tagCreateRequiredArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(tagCreateRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := uri.Must(uri.Parse(args[0]))
+		tagURI := MustParseRefURI("tag", args[0])
+		Fmt("Tag ref: %s\n", tagURI.String())
+
 		client := getClient()
 		commitRef := args[1]
 		ctx := cmd.Context()
@@ -90,17 +85,16 @@ var tagCreateCmd = &cobra.Command{
 var tagDeleteCmd = &cobra.Command{
 	Use:   "delete <tag uri>",
 	Short: "delete a tag from a repository",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete tag")
 		if err != nil || !confirmation {
 			Die("Delete tag aborted", 1)
 		}
 		client := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRefURI("tag", args[0])
+		Fmt("Tag ref: %s\n", u.String())
+
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnResponseError(resp, err)
@@ -110,13 +104,12 @@ var tagDeleteCmd = &cobra.Command{
 var tagShowCmd = &cobra.Command{
 	Use:   "show <tag uri>",
 	Short: "show tag's commit reference",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRefURI("tag", args[0])
+		Fmt("Tag ref: %s\n", u.String())
+
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
 		DieOnResponseError(resp, err)

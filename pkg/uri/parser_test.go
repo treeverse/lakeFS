@@ -18,48 +18,93 @@ func TestParse(t *testing.T) {
 		Err      error
 		Expected *uri.URI
 	}{
-		{"lakefs://foo@bar/baz", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "foo",
-			Ref:        "bar",
-			Path:       strp("baz"),
-		}},
-		{"lakefs://foo@bar/baz/path", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "foo",
-			Ref:        "bar",
-			Path:       strp("baz/path"),
-		}},
-		{"lakefs://foo@bar/baz/path@withappendix.foo", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "foo",
-			Ref:        "bar",
-			Path:       strp("baz/path@withappendix.foo"),
-		}},
-		{"lakefs://fo/o@bar/baz/path@withappendix.foo", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "fo/o",
-			Ref:        "bar",
-			Path:       strp("baz/path@withappendix.foo"),
-		}},
-		{"lakefs://foo", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "foo",
-		}},
-		{"lakefs://foo@bar/", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "foo",
-			Ref:        "bar",
-			Path:       strp(""),
-		}},
-		{"lakefs://foo@bar", nil, &uri.URI{
-			Protocol:   "lakefs",
-			Repository: "foo",
-			Ref:        "bar",
-		}},
-		{"lakefssss://foo@bar/baz", uri.ErrMalformedURI, nil},
-		{"lakefs:/foo@bar/baz", uri.ErrMalformedURI, nil},
-		{"lakefs//foo@bar/baz", uri.ErrMalformedURI, nil},
+		{
+			Input: "lakefs://foo/bar/baz",
+			Expected: &uri.URI{
+				Repository: "foo",
+				Ref:        "bar",
+				Path:       strp("baz"),
+			},
+		},
+		{
+			Input: "lakefs://foo",
+			Expected: &uri.URI{
+				Repository: "foo",
+			},
+		},
+		{
+			Input: "lakefs://foo/bar/baz/path",
+			Expected: &uri.URI{
+				Repository: "foo",
+				Ref:        "bar",
+				Path:       strp("baz/path"),
+			},
+		},
+		{
+			Input: "lakefs://foo/bar/baz/path@withappendix.foo",
+			Expected: &uri.URI{
+				Repository: "foo",
+				Ref:        "bar",
+				Path:       strp("baz/path@withappendix.foo"),
+			},
+		},
+		{
+			Input: "lakefs://fo-o/bar/baz/path@withappendix.foo",
+			Expected: &uri.URI{
+				Repository: "fo-o",
+				Ref:        "bar",
+				Path:       strp("baz/path@withappendix.foo"),
+			},
+		},
+		{
+			Input: "lakefs://foo",
+			Expected: &uri.URI{
+				Repository: "foo",
+			},
+		},
+		{
+			Input: "lakefs://foo/bar/",
+			Expected: &uri.URI{
+				Repository: "foo",
+				Ref:        "bar",
+				Path:       strp(""),
+			},
+		},
+		{
+			Input: "lakefs://foo/bar//",
+			Expected: &uri.URI{
+				Repository: "foo",
+				Ref:        "bar",
+				Path:       strp("/"),
+			},
+		},
+		{
+			Input: "lakefs://foo/bar",
+			Expected: &uri.URI{
+				Repository: "foo",
+				Ref:        "bar",
+			},
+		},
+		{
+			Input: "lakefs://foo@bar",
+			Err:   uri.ErrMalformedURI,
+		},
+		{
+			Input: "lakefs://foo@bar/baz",
+			Err:   uri.ErrMalformedURI,
+		},
+		{
+			Input: "lakefssss://foo/bar/baz",
+			Err:   uri.ErrMalformedURI,
+		},
+		{
+			Input: "lakefs:/foo/bar/baz",
+			Err:   uri.ErrMalformedURI,
+		},
+		{
+			Input: "lakefs//foo/bar/baz",
+			Err:   uri.ErrMalformedURI,
+		},
 	}
 
 	for i, test := range cases {
@@ -67,12 +112,11 @@ func TestParse(t *testing.T) {
 		if test.Err != nil {
 			if !errors.Is(err, test.Err) {
 				t.Fatalf("case (%d) - expected error %v for input %s, got error: %v", i, test.Err, test.Input, err)
-			} else {
-				continue
 			}
+			continue
 		}
 		if !uri.Equals(u, test.Expected) {
-			t.Fatalf("case (%d) - expected uri %s for input %s, got uri: %v", i, test.Expected, test.Input, u)
+			t.Fatalf("case (%d) - expected uri '%s' for input '%s', got uri: '%v'", i, test.Expected, test.Input, u)
 		}
 	}
 }
@@ -83,24 +127,20 @@ func TestURI_String(t *testing.T) {
 		Expected string
 	}{
 		{&uri.URI{
-			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
 			Path:       strp("baz/file.csv"),
-		}, "lakefs://foo@bar/baz/file.csv"},
+		}, "lakefs://foo/bar/baz/file.csv"},
 		{&uri.URI{
-			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
 			Path:       strp(""),
-		}, "lakefs://foo@bar/"},
+		}, "lakefs://foo/bar/"},
 		{&uri.URI{
-			Protocol:   "lakefs",
 			Repository: "foo",
 			Ref:        "bar",
-		}, "lakefs://foo@bar"},
+		}, "lakefs://foo/bar"},
 		{&uri.URI{
-			Protocol:   "lakefs",
 			Repository: "foo",
 		}, "lakefs://foo"},
 	}
@@ -117,8 +157,8 @@ func TestIsValid(t *testing.T) {
 		Input    string
 		Expected bool
 	}{
-		{"lakefs://foo@bar/baz", true},
-		{"lekefs://foo@bar/baz", false},
+		{"lakefs://foo/bar/baz", true},
+		{"lekefs://foo/bar/baz", false},
 	}
 
 	for i, test := range cases {
@@ -130,9 +170,8 @@ func TestIsValid(t *testing.T) {
 
 func TestMust(t *testing.T) {
 	// should not panic
-	u := uri.Must(uri.Parse("lakefs://foo@bar/baz"))
+	u := uri.Must(uri.Parse("lakefs://foo/bar/baz"))
 	if !uri.Equals(u, &uri.URI{
-		Protocol:   "lakefs",
 		Repository: "foo",
 		Ref:        "bar",
 		Path:       strp("baz"),
@@ -146,7 +185,7 @@ func TestMust(t *testing.T) {
 				recovered = true
 			}
 		}()
-		uri.Must(uri.Parse("lakefsssss://foo@bar"))
+		uri.Must(uri.Parse("lakefsssss://foo/bar"))
 	}()
 
 	if !recovered {
