@@ -3,8 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const commitsTemplate = `
@@ -30,10 +28,7 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 var logCmd = &cobra.Command{
 	Use:   "log <branch uri>",
 	Short: "show log of commits for the given branch",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, err := cmd.Flags().GetInt("amount")
 		if err != nil {
@@ -45,7 +40,7 @@ var logCmd = &cobra.Command{
 		}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
-		branchURI := uri.Must(uri.Parse(args[0]))
+		branchURI := MustParseRefURI("branch", args[0])
 		res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),

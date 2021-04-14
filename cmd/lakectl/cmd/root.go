@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -31,6 +30,14 @@ const (
 var (
 	cfgFile string
 	cfg     *config.Config
+
+	// baseURI default value is set by the environment variable LAKECTL_BASE_URI and
+	// override by flag 'base-url'. The baseURI is used as a prefix when we parse lakefs address (repo, ref or path).
+	// The prefix is used only when the address we parse is not a full address (starts with 'lakefs://' scheme).
+	// Examples:
+	//   `--base-uri lakefs:// repo1` will resolve to repository `lakefs://repo1`
+	//   `--base-uri lakefs://repo1 /master/file.md` will resolve to path `lakefs://repo1/master/file.md`
+	baseURI string
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -116,30 +123,6 @@ func Execute() {
 	}
 }
 
-// ParseDocument parses the contents of filename into dest, which
-// should be a JSON-deserializable struct.  If filename is "-" it
-// reads standard input.  If any errors occur it dies with an error
-// message containing fileTitle.
-func ParseDocument(dest interface{}, filename string, fileTitle string) {
-	var (
-		fp  io.ReadCloser
-		err error
-	)
-	if filename == "-" {
-		fp = os.Stdin
-	} else {
-		if fp, err = os.Open(filename); err != nil {
-			DieFmt("open %s %s for read: %v", fileTitle, filename, err)
-		}
-		defer func() {
-			_ = fp.Close()
-		}()
-	}
-	if err := json.NewDecoder(fp).Decode(dest); err != nil {
-		DieFmt("could not parse %s document: %v", fileTitle, err)
-	}
-}
-
 //nolint:gochecknoinits
 func init() {
 	// Here you will define your flags and configuration settings.
@@ -148,6 +131,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
+	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
 }
 
 // initConfig reads in config file and ENV variables if set.

@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -35,12 +34,9 @@ Human Total Size: {{.Bytes|human_bytes}}
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
 	Short: "view object metadata",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
 		res, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path: *pathURI.Path,
@@ -60,13 +56,10 @@ const fsLsTemplate = `{{ range $val := . -}}
 var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		prefix := *pathURI.Path
 
@@ -74,7 +67,7 @@ var fsListCmd = &cobra.Command{
 		const delimiter = "/"
 		var trimPrefix string
 		if idx := strings.LastIndex(prefix, delimiter); idx != -1 {
-			trimPrefix = prefix[:idx]
+			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
 		var paramsDelimiter *string
@@ -115,13 +108,10 @@ var fsListCmd = &cobra.Command{
 var fsCatCmd = &cobra.Command{
 	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParsePathURI("path", args[0])
 		direct, _ := cmd.Flags().GetBool("direct")
 		var contents []byte
 		if direct {
@@ -191,13 +181,10 @@ func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParsePathURI("path", args[0])
 		source, _ := cmd.Flags().GetString("source")
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		direct, _ := cmd.Flags().GetBool("direct")
@@ -246,13 +233,10 @@ var fsStageCmd = &cobra.Command{
 	Use:    "stage <path uri>",
 	Short:  "stages a reference to an existing object, to be managed in lakeFS",
 	Hidden: true,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParsePathURI("path", args[0])
 		size, _ := cmd.Flags().GetInt64("size")
 		location, _ := cmd.Flags().GetString("location")
 		checksum, _ := cmd.Flags().GetString("checksum")
@@ -282,12 +266,9 @@ var fsStageCmd = &cobra.Command{
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "delete object",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidatePathURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := uri.Must(uri.Parse(args[0]))
+		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
 		resp, err := client.DeleteObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
 			Path: *pathURI.Path,

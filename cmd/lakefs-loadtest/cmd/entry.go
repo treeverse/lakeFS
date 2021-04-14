@@ -15,7 +15,6 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -26,12 +25,13 @@ const createEntryPathLength = 110
 var entryCmd = &cobra.Command{
 	Use:   "entry <ref uri>",
 	Short: "Load test database with create entry calls",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRefURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
+		if !u.IsRef() {
+			fmt.Printf("Invalid 'ref': %s", uri.ErrInvalidRefURI)
+			os.Exit(1)
+		}
 		connectionString, _ := cmd.Flags().GetString("db")
 		requests, _ := cmd.Flags().GetInt("requests")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
