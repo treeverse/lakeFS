@@ -1,0 +1,114 @@
+import {useState} from "react";
+import {useRouter} from "next/router";
+
+import {AuthLayout} from "../../../../lib/components/auth/layout";
+import {UserHeader} from "../../../../lib/components/auth/nav";
+import {useAPIWithPagination} from "../../../../rest/hooks";
+import {auth} from "../../../../rest/api";
+import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
+import useUser from "../../../../lib/hooks/user";
+import {ConfirmationButton} from "../../../../lib/components/modals";
+import {
+    ActionGroup,
+    ActionsBar,
+    Loading,
+    Error,
+    RefreshButton
+} from "../../../../lib/components/controls";
+
+
+const UserCredentialsList = ({ userId, after, onPaginate }) => {
+
+    const {user} = useUser();
+    const [refresh, setRefresh] = useState(false);
+    const [createError, setCreateError] = useState(null);
+    const [createdKey, setCreatedKey] = useState(null);
+
+    const {results, loading, error, nextPage} = useAPIWithPagination(() => {
+        return auth.listUserPolicies(userId, false, after);
+    }, [userId, after, refresh]);
+
+    const createKey = () => {
+        return auth.createCredentials(userId)
+            .catch(err => {
+                setCreateError(err);
+            }).then(key => {
+                setCreateError(null);
+                setRefresh(!refresh);
+                return key;
+            });
+    };
+
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
+    else content = (
+            <>
+                {createError && <Error error={createError}/>}
+
+                <CredentialsTable
+                    userId={userId}
+                    currentAccessKey={(!!user) ? user.accessKeyId : ""}
+                    refresh={refresh}
+                    after={after}
+                    onPaginate={onPaginate}
+                />
+            </>
+        );
+
+    return (
+        <>
+            <UserHeader userId={userId} page={'credentials'}/>
+
+            <ActionsBar>
+                <ActionGroup orientation="left">
+                    <ConfirmationButton
+                        variant="success"
+                        modalVariant="success"
+                        msg={<span>Create a new Access Key for user <strong>{userId}</strong>?</span>}
+                        onConfirm={hide => {
+                            createKey()
+                                .then(key => { setCreatedKey(key) })
+                                .finally(hide)
+                        }}>
+                        Create Access Key
+                    </ConfirmationButton>
+                </ActionGroup>
+
+                <ActionGroup orientation="right">
+                    <RefreshButton onClick={() => setRefresh(!refresh)}/>
+                </ActionGroup>
+            </ActionsBar>
+
+            <div className="mt-2">
+
+                <CredentialsShowModal
+                    credentials={createdKey}
+                    show={(!!createdKey)}
+                    onHide={() => { setCreatedKey(null) }}/>
+
+                {content}
+            </div>
+        </>
+    );
+}
+
+const UserCredentialsContainer = () => {
+    const router = useRouter()
+    const { userId, after } = router.query
+    return (!userId) ? <></> : <UserCredentialsList
+        userId={userId}
+        after={(!!after) ? after : ""}
+        onPaginate={after => router.push({pathname: '/auth/users/[userId]/credentials', query: {userId, after}})}
+    />;
+};
+
+const UserCredentialsPage = () => {
+    return (
+        <AuthLayout activeTab="users">
+            <UserCredentialsContainer/>
+        </AuthLayout>
+    );
+};
+
+export default UserCredentialsPage;

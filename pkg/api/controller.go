@@ -34,7 +34,7 @@ import (
 type contextKey string
 
 const (
-	// Maximum amount of results returned for paginated queries to the API
+	// DefaultMaxPerPage is the maximum amount of results returned for paginated queries to the API
 	DefaultMaxPerPage int        = 1000
 	lakeFSPrefix                 = "symlinks"
 	UserContextKey    contextKey = "user"
@@ -60,6 +60,50 @@ type Controller struct {
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
 	Logger                logging.Logger
+}
+
+func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	writeResponse(w, http.StatusOK, nil)
+}
+
+func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
+	ctx := r.Context()
+	_, err := userByAuth(ctx, c.Logger, c.Auth, body.AccessKeyId, body.SecretAccessKey)
+	if errors.Is(err, ErrAuthenticationFailed) {
+		writeResponse(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	}
+
+	loginTime := time.Now()
+	expires := loginTime.Add(DefaultLoginExpiration)
+	secret := c.Auth.SecretStore().SharedSecret()
+	tokenString, err := GenerateJWT(secret, body.AccessKeyId, loginTime, expires)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    tokenString,
+		Path:     "/",
+		Expires:  expires,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	response := AuthenticationToken{
+		Token: tokenString,
+	}
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetPhysicalAddressParams) {
@@ -2735,7 +2779,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []p
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
-		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
 		return false
 	}
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{

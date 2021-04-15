@@ -1,0 +1,120 @@
+import React, {useState} from "react";
+
+import {OverlayTrigger} from "react-bootstrap";
+import Tooltip from "react-bootstrap/Tooltip";
+import Button from "react-bootstrap/Button";
+import {CircleSlashIcon, HistoryIcon, PencilIcon, PlusIcon, TrashIcon} from "@primer/octicons-react";
+
+import {ConfirmationModal} from "../modals";
+
+
+const ChangeRowActions = ({ entry, onRevert }) => {
+    const [show, setShow] = useState(false);
+    const revertConfirmMsg = `are you sure you wish to revert "${entry.path}" (${entry.type})?`;
+    const onSubmit = () => {
+        onRevert(entry)
+        setShow(false)
+    };
+
+    return (
+        <>
+            <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>revert change</Tooltip>)}>
+                <Button variant="link" disabled={false} onClick={(e) => {
+                    e.preventDefault();
+                    setShow(true)
+                }} >
+                    <HistoryIcon/>
+                </Button>
+            </OverlayTrigger>
+            <ConfirmationModal show={show} onHide={() => setShow(false)} msg={revertConfirmMsg} onConfirm={onSubmit}/>
+        </>
+    );
+};
+
+export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
+    let rowClass = 'tree-row ';
+    switch (entry.type) {
+        case 'changed':
+            rowClass += 'diff-changed';
+            break;
+        case 'added':
+            rowClass += 'diff-added';
+            break;
+        case 'removed':
+            rowClass += 'diff-removed';
+            break;
+        case 'conflict':
+            rowClass += 'diff-conflict';
+            break;
+        default:
+            break;
+    }
+
+    const pathText = entry.path;
+
+    let diffIndicator;
+    switch (entry.type) {
+        case 'removed':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>removed</Tooltip>)}>
+                    <span>
+                        <TrashIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'added':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>added</Tooltip>)}>
+                    <span>
+                        <PlusIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'changed':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>changed</Tooltip>)}>
+                    <span>
+                        <PencilIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'conflict':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>conflict</Tooltip>)}>
+                    <span>
+                        <CircleSlashIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        default:
+            break;
+    }
+
+    let entryActions;
+    if (showActions && entry.path_type === 'object') {
+        entryActions = <ChangeRowActions
+            entry={entry}
+            onRevert={onRevert}
+        />;
+    }
+
+    return (
+        <>
+            <tr className={rowClass}>
+                <td className="diff-indicator">
+                    {diffIndicator}
+                </td>
+                <td className="tree-path">
+                    <span>{pathText}</span>
+                </td>
+                <td className={"tree-row-actions"}>
+                    {entryActions}
+                </td>
+            </tr>
+        </>
+    );
+};
