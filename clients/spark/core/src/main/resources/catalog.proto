@@ -12,4 +12,13 @@ message Entry {
 	int64 size = 3;
 	string e_tag = 4;
 	map<string,string> metadata = 5;
+	enum AddressType {
+		// Deprecated.
+		// Unknown address type (should only exist for old commits)
+		// is resolved (to Relative or Full) by the prefix of the address.
+		BY_PREFIX_DEPRECATED = 0;
+		RELATIVE = 1;
+		FULL = 2;
+	}
+	AddressType address_type = 6;
 }

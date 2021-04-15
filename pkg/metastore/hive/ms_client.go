@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -22,6 +23,11 @@ type ThriftHiveMetastoreClient interface {
 	AlterPartition(ctx context.Context, dbName string, tableName string, values *hive_metastore.Partition) (err error)
 	AddPartition(ctx context.Context, newPartition *hive_metastore.Partition) (r *hive_metastore.Partition, err error)
 	DropPartition(ctx context.Context, dbName string, tableName string, values []string, deleteData bool) (r bool, err error)
+	GetDatabase(ctx context.Context, name string) (r *hive_metastore.Database, err error)
+	GetDatabases(ctx context.Context, pattern string) (r []string, err error)
+	GetAllDatabases(ctx context.Context) (r []string, err error)
+	CreateDatabase(ctx context.Context, database *hive_metastore.Database) (err error)
+	GetTables(ctx context.Context, dbName string, pattern string) (r []string, err error)
 }
 
 type MSClient struct {
@@ -41,6 +47,35 @@ func NewMSClient(ctx context.Context, addr string, secure bool) (*MSClient, erro
 	return msClient, nil
 }
 
+func CopyOrMergeAll(ctx context.Context, fromClient, toClient *MSClient, schemaFilter, tableFilter, toBranch string) error {
+	databases, err := fromClient.client.GetDatabases(ctx, schemaFilter)
+	if err != nil {
+		return err
+	}
+	for _, dbName := range databases {
+		database, err := fromClient.client.GetDatabase(ctx, dbName)
+		if err != nil {
+			return err
+		}
+		err = toClient.client.CreateDatabase(ctx, database)
+		var alreadyExistsErr *hive_metastore.AlreadyExistsException
+		if err != nil && !errors.As(err, &alreadyExistsErr) {
+			return err
+		}
+		tablesNames, err := fromClient.client.GetTables(ctx, dbName, tableFilter)
+		if err != nil {
+			return err
+		}
+		for _, tableName := range tablesNames {
+			fmt.Printf("copy table %s.%s\n", dbName, tableName)
+			err = fromClient.CopyOrMergeTo(dbName, tableName, dbName, tableName, toBranch, tableName, nil, toClient.client)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 func (c *MSClient) open(addr string, secure bool) error {
 	var err error
 	cfg := &thrift.TConfiguration{}
@@ -76,22 +111,26 @@ func (c *MSClient) Close() error {
 }
 
 func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
+	return c.CopyOrMergeTo(fromDB, fromTable, toDB, toTable, toBranch, serde, partition, c.client)
+}
+
+func (c *MSClient) CopyOrMergeTo(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string, toClient ThriftHiveMetastoreClient) error {
 	if len(partition) > 0 {
 		return c.CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 	}
-	table, err := c.client.GetTable(c.ctx, toDB, toTable)
-	if err != nil {
-		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
-			return err
-		}
+
+	table, err := toClient.GetTable(c.ctx, toDB, toTable)
+	var noSuchObjectErr *hive_metastore.NoSuchObjectException
+	if err != nil && !errors.As(err, &noSuchObjectErr) {
+		return err
 	}
 	if table == nil {
-		return c.Copy(fromDB, fromTable, toDB, toTable, toBranch, serde)
+		return c.Copy(fromDB, fromTable, toDB, toTable, toBranch, serde, toClient)
 	}
-	return c.Merge(fromDB, fromTable, toDB, toTable, toBranch, serde)
+	return c.Merge(fromDB, fromTable, toDB, toTable, toBranch, serde, toClient)
 }
 
-func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
+func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string, toClient ThriftHiveMetastoreClient) error {
 	table, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -124,15 +163,15 @@ func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string
 			}
 		}
 	}
-	err = c.client.CreateTable(c.ctx, table)
+	err = toClient.CreateTable(c.ctx, table)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddPartitions(c.ctx, partitions)
+	_, err = toClient.AddPartitions(c.ctx, partitions)
 	return err
 }
 
-func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
+func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde string, toClient ThriftHiveMetastoreClient) error {
 	table, err := c.client.GetTable(c.ctx, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -152,7 +191,7 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 	if err != nil {
 		return err
 	}
-	toPartitions, err := c.client.GetPartitions(c.ctx, toDB, toTable, -1)
+	toPartitions, err := toClient.GetPartitions(c.ctx, toDB, toTable, -1)
 	if err != nil {
 		return err
 	}
@@ -191,21 +230,21 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 		return err
 	}
 
-	err = c.client.AlterTable(c.ctx, toDB, toTable, table)
+	err = toClient.AlterTable(c.ctx, toDB, toTable, table)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddPartitions(c.ctx, addPartitions)
+	_, err = toClient.AddPartitions(c.ctx, addPartitions)
 	if err != nil {
 		return err
 	}
-	err = c.client.AlterPartitions(c.ctx, toDB, toTable, alterPartitions)
+	err = toClient.AlterPartitions(c.ctx, toDB, toTable, alterPartitions)
 	if err != nil {
 		return err
 	}
 	// drop one by one
 	for _, partition := range removePartitions {
-		_, err = c.client.DropPartition(c.ctx, toDB, toTable, partition.Values, true)
+		_, err = toClient.DropPartition(c.ctx, toDB, toTable, partition.Values, true)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ import (
 type PlayBackMockConf struct {
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyID     string `json:"access_key_id"`
-	AccessSecretKey string `json:"access_secret_Key"`
+	SecretAccessKey string `json:"access_secret_key"`
 	UserID          int    `json:"user_id"`
 	Region          string `json:"region"`
 }
@@ -145,7 +145,7 @@ func (m *PlayBackMockConf) GetCredentials(_ context.Context, accessKey string) (
 	}
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey
-	aCred.AccessSecretKey = m.AccessSecretKey
+	aCred.SecretAccessKey = m.SecretAccessKey
 	aCred.UserID = m.UserID
 	return aCred, nil
 }

@@ -404,7 +404,7 @@ class Branches {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return response.json();
+        return response.text();
     }
 
     async delete(repoId, name) {

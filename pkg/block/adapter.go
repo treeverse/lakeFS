@@ -10,11 +10,31 @@ import (
 
 type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 
+// IdentifierType is the type the ObjectPointer Identifier
+type IdentifierType int32
+
+const (
+	// Deprecated: indicates that the identifier might be relative or full.
+	IdentifierTypeUnknownDeprecated IdentifierType = 0
+
+	// IdentifierTypeRelative indicates that the address is relative to the storage namespace.
+	// For example: "/foo/bar"
+	IdentifierTypeRelative IdentifierType = 1
+
+	// IdentifierTypeFull indicates that the address is the full address of the object in the object store.
+	// For example: "s3://bucket/foo/bar"
+	IdentifierTypeFull IdentifierType = 2
+)
+
 // ObjectPointer is a unique identifier of an object in the object
 // store: the store is a 1:1 mapping between pointers and objects.
 type ObjectPointer struct {
 	StorageNamespace string
 	Identifier       string
+
+	// Indicates whether the Identifier is relative to the StorageNamespace,
+	// full address to an object, or unknown.
+	IdentifierType IdentifierType
 }
 
 // PutOpts contains optional arguments for Put.  These should be

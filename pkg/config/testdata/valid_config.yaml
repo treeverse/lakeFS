@@ -4,11 +4,11 @@ logging:
   level: NONE
   output: "-"
 
-metadata:
-  db:
-    type: badger
-    badger:
-      path: /tmp
+database:
+  connection_string: test:///dev/null
+  max_open_connections: 12
+  max_idle_connections: 13
+  connection_max_lifetime: 2s
 
 blockstore:
   type: local

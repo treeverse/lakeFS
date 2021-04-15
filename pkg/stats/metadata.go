@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/pkg/auth"
+	azurestorage "github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/cloud/aws"
+	"github.com/treeverse/lakefs/pkg/cloud/azure"
 	"github.com/treeverse/lakefs/pkg/cloud/gcp"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -53,6 +55,8 @@ func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.Metada
 		return gcp.NewMetadataProvider(logger)
 	case s3a.BlockstoreType:
 		return aws.NewMetadataProvider(logger, c.GetAwsConfig())
+	case azurestorage.BlockstoreType:
+		return azure.NewMetadataProvider(logger)
 	default:
 		return nil
 	}

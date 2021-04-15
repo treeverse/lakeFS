@@ -3,22 +3,22 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/uri"
+
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"golang.org/x/term"
 )
 
-var ErrRequestFailed = errors.New("request failed")
 var isTerminal = true
 var noColorRequested = false
 
@@ -177,29 +177,9 @@ func DieOnResponseError(response interface{}, err error) {
 	if err != nil {
 		DieErr(err)
 	}
-	// check http response code
-	var statusCode int
-	if stat, ok := response.(StatusCoder); ok {
-		statusCode = stat.StatusCode()
-		if api.IsStatusCodeOK(statusCode) {
-			return
-		}
-	}
-	// read body and try to parse Error
-	r := reflect.ValueOf(response)
-	f := reflect.Indirect(r).FieldByName("Body")
-	if f.IsZero() {
-		// no body - format error
-		DieFmt("%s: code %d\n", ErrRequestFailed, statusCode)
-	}
-	body := f.Bytes()
-	var apiError api.Error
-	if err := json.Unmarshal(body, &apiError); err != nil {
-		// general case
-		DieFmt("%s: %s (code %d)\n", ErrRequestFailed, string(body), statusCode)
-	} else {
-		// message
-		Die(apiError.Message, 1)
+	err = helpers.ResponseAsError(response)
+	if err != nil {
+		DieErr(err)
 	}
 }
 
@@ -226,4 +206,37 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 	}
 
 	Write(resourceListTemplate, ctx)
+}
+
+func MustParseRepoURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsRepository() {
+		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidRepoURI)
+	}
+	return u
+}
+
+func MustParseRefURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsRef() {
+		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	}
+	return u
+}
+
+func MustParsePathURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	if !u.IsFullyQualified() {
+		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
+	}
+	return u
 }

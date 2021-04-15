@@ -35,7 +35,7 @@ var (
 )
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return qualifiedKey, err
 	}
@@ -243,7 +243,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	objectOutput, err := a.s3.GetObjectWithContext(ctx, &getObjectInput)
 	if err != nil {
-		log.WithError(err).Error("failed to get S3 object")
+		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
 		return nil, err
 	}
 	sizeBytes = *objectOutput.ContentLength

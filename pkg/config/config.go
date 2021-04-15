@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -57,17 +58,14 @@ const (
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
 
-	MetaStoreType          = "metastore.type"
-	MetaStoreHiveURI       = "metastore.hive.uri"
-	MetastoreGlueCatalogID = "metastore.glue.catalog_id"
-
 	DefaultAzureTryTimeout = 10 * time.Minute
 	DefaultAzureAuthMethod = "access-key"
 )
 
 var (
-	ErrMissingSecretKey  = errors.New("auth.encrypt.secret_key cannot be empty")
-	ErrInvalidProportion = errors.New("total proportion isn't 1.0")
+	ErrBadConfiguration  = errors.New("bad configuration")
+	ErrMissingSecretKey  = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
+	ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
 )
 
 type LogrusAWSAdapter struct {
@@ -78,12 +76,25 @@ func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
 	l.logger.Debug(vars...)
 }
 
-type Config struct{}
+type Config struct {
+	values configuration
+}
 
-func NewConfig() *Config {
+func NewConfig() (*Config, error) {
+	c := &Config{}
+
+	// Inform viper of all expected fields.  Otherwise it fails to deserialize from the
+	// environment.
+	keys := GetStructKeys(reflect.TypeOf(c.values), "mapstructure", "squash")
+	for _, key := range keys {
+		viper.SetDefault(key, nil)
+	}
+
 	setDefaults()
 	setupLogger()
-	return &Config{}
+
+	err := viper.UnmarshalExact(&c.values)
+	return c, err
 }
 
 // Default flag keys
@@ -176,65 +187,57 @@ func setDefaults() {
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
 }
 
-type Configurator interface {
-	SetDefault(key string, value interface{})
-}
-
-type viperConfigurator struct {
-}
-
-func (v viperConfigurator) SetDefault(key string, value interface{}) {
-	viper.SetDefault(key, value)
-}
-
-func (c *Config) Override(fn func(Configurator)) {
-	fn(viperConfigurator{})
-}
-
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{
-		ConnectionString:      viper.GetString("database.connection_string"),
-		MaxOpenConnections:    viper.GetInt32("database.max_open_connections"),
-		MaxIdleConnections:    viper.GetInt32("database.max_idle_connections"),
-		ConnectionMaxLifetime: viper.GetDuration("database.connection_max_lifetime"),
+		ConnectionString:      c.values.Database.ConnectionString,
+		MaxOpenConnections:    c.values.Database.MaxOpenConnections,
+		MaxIdleConnections:    c.values.Database.MaxIdleConnections,
+		ConnectionMaxLifetime: c.values.Database.ConnectionMaxLifetime,
 	}
 }
 
 func (c *Config) GetAwsConfig() *aws.Config {
 	cfg := &aws.Config{
-		Region: aws.String(viper.GetString(BlockstoreS3RegionKey)),
+		Region: aws.String(c.values.Blockstore.S3.Region),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
 	}
 	level := strings.ToLower(logging.Level())
 	if level == "trace" {
 		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 	}
-	if viper.IsSet("blockstore.s3.profile") || viper.IsSet("blockstore.s3.credentials_file") {
+	if c.values.Blockstore.S3.Profile != "" || c.values.Blockstore.S3.CredentialsFile != "" {
 		cfg.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("blockstore.s3.credentials_file"),
-			viper.GetString("blockstore.s3.profile"))
+			c.values.Blockstore.S3.CredentialsFile,
+			c.values.Blockstore.S3.Profile,
+		)
 	}
-	if viper.IsSet("blockstore.s3.credentials.access_key_id") {
+	if c.values.Blockstore.S3.Credentials != nil {
+		secretAccessKey := c.values.Blockstore.S3.Credentials.SecretAccessKey
+		if secretAccessKey == "" {
+			logging.Default().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
+			secretAccessKey = c.values.Blockstore.S3.Credentials.AccessSecretKey
+		}
 		cfg.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("blockstore.s3.credentials.access_key_id"),
-			viper.GetString("blockstore.s3.credentials.access_secret_key"),
-			viper.GetString("blockstore.s3.credentials.session_token"))
+			c.values.Blockstore.S3.Credentials.AccessKeyID,
+			secretAccessKey,
+			c.values.Blockstore.S3.Credentials.SessionToken,
+		)
 	}
 
-	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
+	s3Endpoint := c.values.Blockstore.S3.Endpoint
 	if len(s3Endpoint) > 0 {
 		cfg = cfg.WithEndpoint(s3Endpoint)
 	}
-	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
+	s3ForcePathStyle := c.values.Blockstore.S3.ForcePathStyle
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
-	cfg = cfg.WithMaxRetries(viper.GetInt(BlockstoreS3MaxRetriesKey))
+	cfg = cfg.WithMaxRetries(c.values.Blockstore.S3.MaxRetries)
 	return cfg
 }
 
 func (c *Config) GetBlockstoreType() string {
-	return viper.GetString(BlockstoreTypeKey)
+	return c.values.Blockstore.Type
 }
 
 func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
@@ -242,47 +245,48 @@ func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 
 	return blockparams.S3{
 		AwsConfig:             cfg,
-		StreamingChunkSize:    viper.GetInt(BlockstoreS3StreamingChunkSizeKey),
-		StreamingChunkTimeout: viper.GetDuration(BlockstoreS3StreamingChunkTimeoutKey),
+		StreamingChunkSize:    c.values.Blockstore.S3.StreamingChunkSize,
+		StreamingChunkTimeout: c.values.Blockstore.S3.StreamingChunkTimeout,
 	}, nil
 }
 
 func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
-	localPath := viper.GetString(BlockstoreLocalPathKey)
+	localPath := c.values.Blockstore.Local.Path
 	path, err := homedir.Expand(localPath)
 	if err != nil {
-		return blockparams.Local{}, fmt.Errorf("could not parse blockstore location URI: %w", err)
+		return blockparams.Local{}, fmt.Errorf("parse blockstore location URI %s: %w", localPath, err)
 	}
 
-	return blockparams.Local{Path: path}, err
+	return blockparams.Local{Path: path}, nil
 }
 
 func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
 	return blockparams.GS{
-		CredentialsFile: viper.GetString("blockstore.gs.credentials_file"),
-		CredentialsJSON: viper.GetString("blockstore.gs.credentials_json"),
+		CredentialsFile: c.values.Blockstore.GS.CredentialsFile,
+		CredentialsJSON: c.values.Blockstore.GS.CredentialsJSON,
 	}, nil
 }
+
 func (c *Config) GetBlockAdapterAzureParams() (blockparams.Azure, error) {
 	return blockparams.Azure{
-		StorageAccount:   viper.GetString(BlockstoreAzureStorageAccountKey),
-		StorageAccessKey: viper.GetString(BlockstoreAzureStorageAccessKey),
-		AuthMethod:       viper.GetString(BlockstoreAzureAuthMethod),
-		TryTimeout:       viper.GetDuration(BlockstoreAzureTryTimeoutKey),
+		StorageAccount:   c.values.Blockstore.Azure.StorageAccount,
+		StorageAccessKey: c.values.Blockstore.Azure.StorageAccessKey,
+		AuthMethod:       c.values.Blockstore.Azure.AuthMethod,
+		TryTimeout:       c.values.Blockstore.Azure.TryTimeout,
 	}, nil
 }
 
 func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
 	return authparams.ServiceCache{
-		Enabled:        viper.GetBool(AuthCacheEnabledKey),
-		Size:           viper.GetInt(AuthCacheSizeKey),
-		TTL:            viper.GetDuration(AuthCacheTTLKey),
-		EvictionJitter: viper.GetDuration(AuthCacheJitterKey),
+		Enabled:        c.values.Auth.Cache.Enabled,
+		Size:           c.values.Auth.Cache.Size,
+		TTL:            c.values.Auth.Cache.TTL,
+		EvictionJitter: c.values.Auth.Cache.Jitter,
 	}
 }
 
 func (c *Config) GetAuthEncryptionSecret() []byte {
-	secret := viper.GetString("auth.encrypt.secret_key")
+	secret := c.values.Auth.Encrypt.SecretKey
 	if len(secret) == 0 {
 		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
 	}
@@ -290,31 +294,31 @@ func (c *Config) GetAuthEncryptionSecret() []byte {
 }
 
 func (c *Config) GetS3GatewayRegion() string {
-	return viper.GetString(GatewaysS3RegionKey)
+	return c.values.Gateways.S3.Region
 }
 
 func (c *Config) GetS3GatewayDomainName() string {
-	return viper.GetString(GatewaysS3DomainNameKey)
+	return c.values.Gateways.S3.DomainName
 }
 
 func (c *Config) GetS3GatewayFallbackURL() string {
-	return viper.GetString("gateways.s3.fallback_url")
+	return c.values.Gateways.S3.FallbackURL
 }
 
 func (c *Config) GetListenAddress() string {
-	return viper.GetString(ListenAddressKey)
+	return c.values.ListenAddress
 }
 
 func (c *Config) GetStatsEnabled() bool {
-	return viper.GetBool(StatsEnabledKey)
+	return c.values.Stats.Enabled
 }
 
 func (c *Config) GetStatsAddress() string {
-	return viper.GetString(StatsAddressKey)
+	return c.values.Stats.Address
 }
 
 func (c *Config) GetStatsFlushInterval() time.Duration {
-	return viper.GetDuration(StatsFlushIntervalKey)
+	return c.values.Stats.FlushInterval
 }
 
 const floatSumTolerance = 1e-6
@@ -326,16 +330,16 @@ func (c *Config) GetCommittedTierFSParams(ctx context.Context) (*pyramidparams.E
 	if err != nil {
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
-	rangePro := viper.GetFloat64(CommittedLocalCacheRangeProportionKey)
-	metaRangePro := viper.GetFloat64(CommittedLocalCacheMetaRangeProportionKey)
+	rangePro := c.values.Committed.LocalCache.RangeProportion
+	metaRangePro := c.values.Committed.LocalCache.MetaRangeProportion
 
 	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
 		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
 	}
 
-	localCacheDir, err := homedir.Expand(viper.GetString(CommittedLocalCacheDirKey))
+	localCacheDir, err := homedir.Expand(c.values.Committed.LocalCache.Dir)
 	if err != nil {
-		return nil, fmt.Errorf("expand %s: %w", viper.GetString(CommittedLocalCacheDirKey), err)
+		return nil, fmt.Errorf("expand %s: %w", c.values.Committed.LocalCache.Dir, err)
 	}
 
 	logger := logging.Default().WithField("module", "pyramid")
@@ -345,55 +349,25 @@ func (c *Config) GetCommittedTierFSParams(ctx context.Context) (*pyramidparams.E
 		SharedParams: pyramidparams.SharedParams{
 			Logger:             logger,
 			Adapter:            adapter,
-			BlockStoragePrefix: viper.GetString(CommittedBlockStoragePrefixKey),
+			BlockStoragePrefix: c.values.Committed.BlockStoragePrefix,
 			Local: pyramidparams.LocalDiskParams{
 				BaseDir:             localCacheDir,
-				TotalAllocatedBytes: viper.GetInt64(CommittedLocalCacheSizeBytesKey),
+				TotalAllocatedBytes: c.values.Committed.LocalCache.SizeBytes,
 			},
-			PebbleSSTableCacheSizeBytes: viper.GetInt64(CommittedPebbleSSTableCacheSizeBytesKey),
+			PebbleSSTableCacheSizeBytes: c.values.Committed.SSTable.Memory.CacheSizeBytes,
 		},
 	}, nil
 }
 
 func (c *Config) GetCommittedParams() *committed.Params {
 	return &committed.Params{
-		MinRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMinRangeSizeKey),
-		MaxRangeSizeBytes:          viper.GetUint64(CommittedPermanentStorageMaxRangeSizeKey),
-		RangeSizeEntriesRaggedness: viper.GetFloat64(CommittedPermanentStorageRangeRaggednessKey),
-		MaxUploaders:               viper.GetInt(CommittedLocalCacheNumUploadersKey),
+		MinRangeSizeBytes:          c.values.Committed.Permanent.MinRangeSizeBytes,
+		MaxRangeSizeBytes:          c.values.Committed.Permanent.MaxRangeSizeBytes,
+		RangeSizeEntriesRaggedness: c.values.Committed.Permanent.RangeRaggednessEntries,
+		MaxUploaders:               c.values.Committed.LocalCache.MaxUploadersPerWriter,
 	}
 }
 
-func GetMetastoreAwsConfig() *aws.Config {
-	cfg := &aws.Config{
-		Region: aws.String(viper.GetString("metastore.glue.region")),
-		Logger: &LogrusAWSAdapter{},
-	}
-	if viper.IsSet("metastore.glue.profile") || viper.IsSet("metastore.glue.credentials_file") {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("metastore.glue.credentials_file"),
-			viper.GetString("metastore.glue.profile"))
-	}
-	if viper.IsSet("metastore.glue.credentials.access_key_id") {
-		cfg.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("metastore.glue.credentials.access_key_id"),
-			viper.GetString("metastore.glue.credentials.access_secret_key"),
-			viper.GetString("metastore.glue.credentials.session_token"))
-	}
-	return cfg
-}
-
-func GetMetastoreHiveURI() string {
-	return viper.GetString(MetaStoreHiveURI)
-}
-
-func GetMetastoreGlueCatalogID() string {
-	return viper.GetString(MetastoreGlueCatalogID)
-}
-func GetMetastoreType() string {
-	return viper.GetString(MetaStoreType)
-}
-
-func GetFixedInstallationID() string {
-	return viper.GetString("installation.fixed_id")
+func (c *Config) GetFixedInstallationID() string {
+	return c.values.Installation.FixedID
 }

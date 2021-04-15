@@ -620,10 +620,37 @@ func (c *Catalog) GetEntry(ctx context.Context, repository string, reference str
 func EntryFromCatalogEntry(entry DBEntry) *Entry {
 	return &Entry{
 		Address:      entry.PhysicalAddress,
+		AddressType:  addressTypeToProto(entry.AddressType),
 		Metadata:     entry.Metadata,
 		LastModified: timestamppb.New(entry.CreationDate),
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
+	}
+}
+
+func addressTypeToProto(t AddressType) Entry_AddressType {
+	switch t {
+	case AddressTypeByPrefixDeprecated:
+		return Entry_BY_PREFIX_DEPRECATED
+	case AddressTypeRelative:
+		return Entry_RELATIVE
+	case AddressTypeFull:
+		return Entry_FULL
+	default:
+		panic(fmt.Sprintf("unknown address type: %d", t))
+	}
+}
+
+func addressTypeToCatalog(t Entry_AddressType) AddressType {
+	switch t {
+	case Entry_BY_PREFIX_DEPRECATED:
+		return AddressTypeByPrefixDeprecated
+	case Entry_RELATIVE:
+		return AddressTypeRelative
+	case Entry_FULL:
+		return AddressTypeFull
+	default:
+		panic(fmt.Sprintf("unknown address type: %d", t))
 	}
 }
 
@@ -1114,11 +1141,13 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntr
 	}
 	if ent != nil {
 		catEnt.PhysicalAddress = ent.Address
+		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
 		catEnt.CreationDate = ent.LastModified.AsTime()
 		catEnt.Size = ent.Size
 		catEnt.Checksum = ent.ETag
 		catEnt.Metadata = ent.Metadata
 		catEnt.Expired = false
+		catEnt.AddressType = addressTypeToCatalog(ent.AddressType)
 	}
 	return catEnt
 }

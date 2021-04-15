@@ -81,15 +81,41 @@ type Service interface {
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
+// fieldNameByTag returns the name of the field of t that is tagged tag on key, or an empty string.
+func fieldByTag(t reflect.Type, key, tag string) string {
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if l, ok := field.Tag.Lookup(key); ok {
+			if l == tag {
+				return field.Name
+			}
+		}
+	}
+	return ""
+}
+
+const maxPage = 1000
+
 func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
 	ptrType := reflect.PtrTo(retType)
+	tokenField := fieldByTag(retType, "db", tokenColumnName)
+	if tokenField == "" {
+		return nil, nil, fmt.Errorf("[I] no field %s: %w", tokenColumnName, ErrNoField)
+	}
 	slice := reflect.MakeSlice(reflect.SliceOf(ptrType), 0, 0)
 	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
+	amount := 0
 	if params != nil {
 		queryBuilder = queryBuilder.Where(sq.Gt{tokenColumnName: params.After})
 		if params.Amount >= 0 {
-			queryBuilder = queryBuilder.Limit(uint64(params.Amount) + 1)
+			amount = params.Amount + 1
 		}
+	}
+	if amount > maxPage {
+		amount = maxPage
+	}
+	if amount > 0 {
+		queryBuilder = queryBuilder.Limit(uint64(amount))
 	}
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
@@ -112,7 +138,8 @@ func ListPaged(ctx context.Context, db db.Querier, retType reflect.Type, params 
 		// we have more pages
 		slice = slice.Slice(0, params.Amount)
 		p.Amount = params.Amount
-		p.NextPageToken = slice.Index(slice.Len() - 1).Elem().FieldByName(tokenColumnName).String()
+		lastElem := slice.Index(slice.Len() - 1).Elem()
+		p.NextPageToken = lastElem.FieldByName(tokenField).String()
 		return &slice, p, nil
 	}
 	p.Amount = slice.Len()
@@ -164,7 +191,7 @@ func genAccessKeyID() string {
 	return fmt.Sprintf("%s%s%s", "AKIAJ", key, "Q")
 }
 
-func genAccessSecretKey() string {
+func genSecretAccessKey() string {
 	const secretKeyLength = 30
 	return Base64StringGenerator(secretKeyLength)
 }
@@ -273,7 +300,7 @@ func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationP
 
 func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	var credential model.Credential
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "auth_credentials.access_key_id", psql.Select("auth_credentials.*").
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "access_key_id", psql.Select("auth_credentials.*").
 		From("auth_credentials").
 		Join("auth_users ON (auth_credentials.user_id = auth_users.id)").
 		Where(sq.Eq{"auth_users.display_name": username}))
@@ -326,7 +353,7 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 
 func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "auth_policies.display_name", psql.Select("auth_policies.*").
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name", psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
 		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
@@ -385,7 +412,7 @@ func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username stri
 
 func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "auth_policies.display_name",
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("auth_policies.*").
 			From("auth_policies").
 			Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
@@ -642,7 +669,7 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 
 func (s *DBAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := genAccessKeyID()
-	secretAccessKey := genAccessSecretKey()
+	secretAccessKey := genSecretAccessKey()
 	return s.AddCredentials(ctx, username, accessKeyID, secretAccessKey)
 }
 
@@ -659,13 +686,13 @@ func (s *DBAuthService) AddCredentials(ctx context.Context, username, accessKeyI
 		}
 		c := &model.Credential{
 			AccessKeyID:                   accessKeyID,
-			AccessSecretKey:               secretAccessKey,
-			AccessSecretKeyEncryptedBytes: encryptedKey,
+			SecretAccessKey:               secretAccessKey,
+			SecretAccessKeyEncryptedBytes: encryptedKey,
 			IssuedDate:                    now,
 			UserID:                        user.ID,
 		}
 		_, err = tx.Exec(`
-			INSERT INTO auth_credentials (access_key_id, access_secret_key, issued_date, user_id)
+			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
 			c.AccessKeyID,
 			encryptedKey,
@@ -765,11 +792,11 @@ func (s *DBAuthService) GetCredentials(ctx context.Context, accessKeyID string) 
 			if err != nil {
 				return nil, err
 			}
-			key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
+			key, err := s.decryptSecret(credentials.SecretAccessKeyEncryptedBytes)
 			if err != nil {
 				return nil, err
 			}
-			credentials.AccessSecretKey = key
+			credentials.SecretAccessKey = key
 			return credentials, nil
 		})
 		if err != nil {

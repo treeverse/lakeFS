@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -61,7 +62,7 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	return &authmodel.Credential{
 		IssuedDate:      time.Unix(res.JSON200.CreationDate, 0),
 		AccessKeyID:     res.JSON200.AccessKeyId,
-		AccessSecretKey: res.JSON200.AccessSecretKey,
+		SecretAccessKey: res.JSON200.SecretAccessKey,
 	}
 }
 
@@ -75,11 +76,9 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	if blockstoreType == "" {
 		blockstoreType = mem.BlockstoreType
 	}
-	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
-	cfg := config.NewConfig()
-	cfg.Override(func(configurator config.Configurator) {
-		configurator.SetDefault(config.BlockstoreTypeKey, mem.BlockstoreType)
-	})
+	viper.Set(config.BlockstoreTypeKey, mem.BlockstoreType)
+	cfg, err := config.NewConfig()
+	testutil.MustDo(t, "config", err)
 	c, err := catalog.New(ctx, catalog.Config{
 		Config: cfg,
 		DB:     conn,
@@ -90,14 +89,14 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	actionsService := actions.NewService(
 		conn,
 		catalog.NewActionsSource(c),
-		catalog.NewActionsOutputWriter(blockAdapter),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
 	)
 	c.SetHooksHandler(actionsService)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
-	meta := auth.NewDBMetadataManager("dev", conn)
+	meta := auth.NewDBMetadataManager("dev", cfg.GetFixedInstallationID(), conn)
 	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: handlerDatabaseURI})
 
 	t.Cleanup(func() {
@@ -109,7 +108,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	handler := api.Serve(
 		c,
 		authService,
-		blockAdapter,
+		c.BlockAdapter,
 		meta,
 		migrator,
 		collector,
@@ -120,7 +119,7 @@ func setupHandler(t testing.TB, blockstoreType string, opts ...testutil.GetDBOpt
 	)
 
 	return handler, &dependencies{
-		blocks:      blockAdapter,
+		blocks:      c.BlockAdapter,
 		authService: authService,
 		catalog:     c,
 		collector:   collector,
@@ -158,6 +157,6 @@ func setupClientWithAdmin(t testing.TB, blockstoreType string, opts ...testutil.
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
-	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.AccessSecretKey)
+	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 	return clt, deps
 }

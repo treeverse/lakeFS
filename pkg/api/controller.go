@@ -148,7 +148,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	if token != nil {
 		tokenPart = *token + "/"
 	}
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name))
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, fmt.Sprintf("data/%s%s", tokenPart, name), block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -184,7 +184,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	// write metadata
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -211,6 +211,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		CommonLevel:     false,
 		Path:            params.Path,
 		PhysicalAddress: *body.Staging.PhysicalAddress,
+		AddressType:     catalog.AddressTypeFull,
 		CreationDate:    writeTime,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
@@ -253,6 +254,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 	response := GroupList{
 		Results: make([]Group, 0, len(groups)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -366,6 +368,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	response := UserList{
 		Results: make([]User, 0, len(users)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -439,6 +442,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	response := PolicyList{
 		Results: make([]Policy, 0, len(policies)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -527,6 +531,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	response := PolicyList{
 		Results: make([]Policy, 0, len(policies)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -674,6 +679,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	response := UserList{
 		Results: make([]User, 0, len(users)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -784,6 +790,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 	response := CredentialsList{
 		Results: make([]Credentials, 0, len(credentials)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -814,7 +821,7 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 	}
 	response := CredentialsWithSecret{
 		AccessKeyId:     credentials.AccessKeyID,
-		AccessSecretKey: credentials.AccessSecretKey,
+		SecretAccessKey: credentials.SecretAccessKey,
 		CreationDate:    credentials.IssuedDate.Unix(),
 	}
 	writeResponse(w, http.StatusCreated, response)
@@ -892,6 +899,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	response := GroupList{
 		Results: make([]Group, 0, len(groups)),
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -934,6 +942,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 	response := PolicyList{
 		Pagination: Pagination{
+			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,
 			Results:    paginator.Amount,
 		},
@@ -1196,18 +1205,6 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 	_, err := c.Catalog.GetRepository(ctx, repository)
 	if handleAPIError(w, err) {
 		return
-	}
-
-	branchID := StringValue(params.Branch)
-	if branchID != "" {
-		exists, err := c.Catalog.BranchExists(ctx, repository, branchID)
-		if handleAPIError(w, err) {
-			return
-		}
-		if !exists {
-			writeError(w, http.StatusNotFound, catalog.ErrBranchNotFound)
-			return
-		}
 	}
 
 	branch := StringValue(params.Branch)
@@ -1694,11 +1691,17 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
+	addressType := catalog.AddressTypeFull
+	if blob.RelativePath {
+		addressType = catalog.AddressTypeRelative
+	}
+
 	// write metadata
 	writeTime := time.Now()
 	entry := catalog.DBEntry{
 		Path:            params.Path,
 		PhysicalAddress: blob.PhysicalAddress,
+		AddressType:     addressType,
 		CreationDate:    writeTime,
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
@@ -1708,7 +1711,12 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress)
+	identifierType := block.IdentifierTypeFull
+	if blob.RelativePath {
+		identifierType = block.IdentifierTypeRelative
+	}
+
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -1742,7 +1750,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 	// write metadata
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -1762,6 +1770,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		CommonLevel:     false,
 		Path:            params.Path,
 		PhysicalAddress: body.PhysicalAddress,
+		AddressType:     catalog.AddressTypeFull,
 		CreationDate:    writeTime,
 		Size:            body.SizeBytes,
 		Checksum:        body.Checksum,
@@ -2051,7 +2060,11 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		}
 		// loop all entries enter to map[path] physicalAddress
 		for _, entry := range entries {
-			address := fmt.Sprintf("%s/%s", repo.StorageNamespace, entry.PhysicalAddress)
+			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, fmt.Sprintf("error while resolving address: %s", err))
+				return
+			}
 			idx := strings.LastIndex(entry.Path, "/")
 			var path string
 			if idx != -1 {
@@ -2065,9 +2078,9 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 					return
 				}
 				currentPath = path
-				currentAddresses = []string{address}
+				currentAddresses = []string{qk.Format()}
 			} else {
-				currentAddresses = append(currentAddresses, address)
+				currentAddresses = append(currentAddresses, qk.Format())
 			}
 		}
 		after = entries[len(entries)-1].Path
@@ -2283,7 +2296,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 
 	objList := make([]ObjectStats, 0, len(res))
 	for _, entry := range res {
-		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -2346,7 +2359,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress)
+	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2600,7 +2613,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 	response := CredentialsWithSecret{
 		AccessKeyId:     cred.AccessKeyID,
-		AccessSecretKey: cred.AccessSecretKey,
+		SecretAccessKey: cred.SecretAccessKey,
 		CreationDate:    cred.IssuedDate.Unix(),
 	}
 	writeResponse(w, http.StatusOK, response)

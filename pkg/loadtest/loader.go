@@ -127,7 +127,7 @@ func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
 		// using an existing repo, no need to create a client
 		return nil, nil
 	}
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(t.Config.Credentials.AccessKeyID, t.Config.Credentials.AccessSecretKey)
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(t.Config.Credentials.AccessKeyID, t.Config.Credentials.SecretAccessKey)
 	if err != nil {
 		return nil, err
 	}
@@ -219,5 +219,5 @@ func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 }
 
 func getAuth(credentials *model.Credential) string {
-	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyID + ":" + credentials.AccessSecretKey))
+	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyID + ":" + credentials.SecretAccessKey))
 }

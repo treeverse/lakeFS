@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
 const actionRunResultTemplate = `
@@ -30,14 +28,12 @@ var runsDescribeCmd = &cobra.Command{
 	Short:   "Describe run results",
 	Long:    `Show information about the run and all the hooks that were executed as part of the run`,
 	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(runsShowRequiredArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(runsShowRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 
 		client := getClient()
@@ -87,10 +83,7 @@ func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, r
 			return "", err
 		}
 		if res.StatusCode() != http.StatusOK {
-			if res.JSONDefault != nil {
-				return "", fmt.Errorf("%w: %s", ErrRequestFailed, res.JSONDefault.Message)
-			}
-			return "", fmt.Errorf("%w: status code %d", ErrRequestFailed, res.StatusCode())
+			return "", helpers.ResponseAsError(res)
 		}
 		return string(res.Body), nil
 	}

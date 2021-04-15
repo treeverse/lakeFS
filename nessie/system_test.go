@@ -17,14 +17,26 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const masterBranch = "master"
 
-var errUploadFailed = errors.New("upload failed")
+const minHTTPErrorStatusCode = 400
+
+var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
+
+// verifyResponse returns an error based on failed if resp failed to perform action.  It uses
+// body in errors.
+func verifyResponse(resp *http.Response, body []byte) error {
+	if resp.StatusCode >= minHTTPErrorStatusCode {
+		return fmt.Errorf("%w: got %d %s: %s", errNotVerified, resp.StatusCode, resp.Status, string(body))
+	}
+	return nil
+}
 
 // makeRepositoryName changes name to make it an acceptable repository name by replacing all
 // non-alphanumeric characters with a `-`.
@@ -75,22 +87,30 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		StorageNamespace: repoStorage,
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
-	require.Equalf(t, http.StatusCreated, resp.StatusCode(),
-		"failed to create repository '%s', storage '%s': response %s", name, repoStorage, string(resp.Body))
+	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string) (checksum, content string, err error) {
+func uploadFileRandomDataAndReport(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
 
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
-	if err != nil {
-		return "", "", err
+	if direct {
+		stats, err := helpers.ClientUpload(ctx, client, repo, branch, objPath, nil, strings.NewReader(objContent))
+		if err != nil {
+			return "", "", err
+		}
+		return stats.Checksum, objContent, nil
+	} else {
+		resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
+		if err != nil {
+			return "", "", err
+		}
+		if err := verifyResponse(resp.HTTPResponse, resp.Body); err != nil {
+			return "", "", err
+		}
+		return resp.JSON201.Checksum, objContent, nil
 	}
-	if resp.StatusCode() != http.StatusCreated {
-		return "", "", fmt.Errorf("%w: %s (%d)", errUploadFailed, resp.Status(), resp.StatusCode())
-	}
-	return resp.JSON201.Checksum, objContent, nil
 }
 
 func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*api.UploadObjectResponse, error) {
@@ -110,8 +130,8 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	}, w.FormDataContentType(), &b)
 }
 
-func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath)
+func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, t, repo, branch, objPath, direct)
 	require.NoError(t, err, "failed to upload file")
 	return checksum, content
 }
@@ -127,7 +147,8 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		require.NoError(t, err, "listing objects")
-		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+			"failed to list repo %s ref %s after %s amount %d", repository, ref, after, amount)
 
 		entries = append(entries, resp.JSON200.Results...)
 		after = resp.JSON200.Pagination.NextOffset
@@ -157,6 +178,8 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 			Amount: api.PaginationAmountPtr(repoPerPage),
 		})
 		require.NoError(t, err, "list repositories")
+		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+			"failed to list repositories after %s amount %d", after, repoPerPage)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		payload := resp.JSON200
 		listedRepos = append(listedRepos, payload.Results...)

@@ -3,13 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -19,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -76,8 +74,8 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to create repository, storage '%s': %w", ns, err)
 	}
-	if err := responseAsError("create repository", createRepoResp); err != nil {
-		return err
+	if err := helpers.ResponseAsError(createRepoResp); err != nil {
+		return fmt.Errorf("create repository: %w", err)
 	}
 
 	repo := createRepoResp.JSON201
@@ -88,8 +86,8 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to create a branch from master: %w", err)
 	}
-	if err := responseAsError("create branch", createBranchResp); err != nil {
-		return err
+	if err := helpers.ResponseAsError(createBranchResp); err != nil {
+		return fmt.Errorf("create branch: %w", err)
 	}
 
 	parallelism := viper.GetInt("parallelism_level")
@@ -108,8 +106,8 @@ func testBenchmarkLakeFS() error {
 	if err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
-	if err := responseAsError("commit", commitResp); err != nil {
-		return err
+	if err := helpers.ResponseAsError(commitResp); err != nil {
+		return fmt.Errorf("commit: %w", err)
 	}
 
 	merge(ctx)
@@ -182,7 +180,10 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 				if err != nil {
 					return err
 				}
-				return responseAsError("upload object", resp)
+				if err = helpers.ResponseAsError(resp); err != nil {
+					return fmt.Errorf("upload object: %w", err)
+				}
+				return nil
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -202,7 +203,10 @@ func merge(ctx context.Context) {
 		if err != nil {
 			return err
 		}
-		return responseAsError("merge", resp)
+		if err = helpers.ResponseAsError(resp); err != nil {
+			return fmt.Errorf("merge: %w", err)
+		}
+		return nil
 	}, retry.Attempts(retryAttempts),
 		retry.Delay(retryDelay),
 		retry.LastErrorOnly(true),
@@ -229,7 +233,10 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 				if err != nil {
 					return err
 				}
-				return responseAsError("get object", resp)
+				if err = helpers.ResponseAsError(resp); err != nil {
+					return fmt.Errorf("get object: %w", err)
+				}
+				return nil
 			}, retry.Attempts(retryAttempts),
 				retry.Delay(retryDelay),
 				retry.LastErrorOnly(true),
@@ -248,21 +255,4 @@ type APIError struct {
 
 func (a *APIError) Error() string {
 	return fmt.Sprintf("%s failed: %s", a.Action, a.Message)
-}
-
-func responseAsError(action string, response interface{}) error {
-	r := reflect.ValueOf(response)
-	f := reflect.Indirect(r).FieldByName("HTTPResponse")
-	resp := f.Interface().(*http.Response)
-	if api.IsStatusCodeOK(resp.StatusCode) {
-		return nil
-	}
-	f = reflect.Indirect(r).FieldByName("Body")
-	body := f.Bytes()
-	var apiError api.Error
-	if err := json.Unmarshal(body, &apiError); err != nil {
-		// general case
-		return &APIError{Action: action, Message: resp.Status}
-	}
-	return &APIError{Action: action, Message: apiError.Message}
 }

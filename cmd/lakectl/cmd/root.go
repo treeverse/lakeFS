@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,8 +13,9 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const (
@@ -28,8 +28,16 @@ const (
 )
 
 var (
-	cfgFile    string
-	cfgFileErr error
+	cfgFile string
+	cfg     *config.Config
+
+	// baseURI default value is set by the environment variable LAKECTL_BASE_URI and
+	// override by flag 'base-url'. The baseURI is used as a prefix when we parse lakefs address (repo, ref or path).
+	// The prefix is used only when the address we parse is not a full address (starts with 'lakefs://' scheme).
+	// Examples:
+	//   `--base-uri lakefs:// repo1` will resolve to repository `lakefs://repo1`
+	//   `--base-uri lakefs://repo1 /master/file.md` will resolve to path `lakefs://repo1/master/file.md`
+	baseURI string
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -47,19 +55,19 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 			return
 		}
 
-		if errors.As(cfgFileErr, &viper.ConfigFileNotFoundError{}) {
+		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
 			if cfgFile == "" {
 				// if the config file wasn't provided, try to run using the default values + env vars
 				return
 			}
 			// specific message in case the file isn't found
-			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
-		} else if cfgFileErr != nil {
+			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+		} else if cfg.Err() != nil {
 			// other errors while reading the config file
-			DieFmt("error reading configuration file: %v", cfgFileErr)
+			DieFmt("error reading configuration file: %v", cfg.Err())
 		}
 	},
-	Version: config.Version,
+	Version: version.Version,
 }
 
 func getClient() api.ClientWithResponsesInterface {
@@ -70,14 +78,14 @@ func getClient() api.ClientWithResponsesInterface {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 
-	accessKeyID := viper.GetString(ConfigAccessKeyID)
-	secretAccessKey := viper.GetString(ConfigSecretAccessKey)
+	accessKeyID := cfg.Credentials.AccessKeyID
+	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := viper.GetString(ConfigServerEndpointURL)
+	serverEndpoint := cfg.Server.EndpointURL
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
@@ -115,30 +123,6 @@ func Execute() {
 	}
 }
 
-// ParseDocument parses the contents of filename into dest, which
-// should be a JSON-deserializable struct.  If filename is "-" it
-// reads standard input.  If any errors occur it dies with an error
-// message containing fileTitle.
-func ParseDocument(dest interface{}, filename string, fileTitle string) {
-	var (
-		fp  io.ReadCloser
-		err error
-	)
-	if filename == "-" {
-		fp = os.Stdin
-	} else {
-		if fp, err = os.Open(filename); err != nil {
-			DieFmt("open %s %s for read: %v", fileTitle, filename, err)
-		}
-		defer func() {
-			_ = fp.Close()
-		}()
-	}
-	if err := json.NewDecoder(fp).Decode(dest); err != nil {
-		DieFmt("could not parse %s document: %v", fileTitle, err)
-	}
-}
-
 //nolint:gochecknoinits
 func init() {
 	// Here you will define your flags and configuration settings.
@@ -147,6 +131,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
+	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -174,5 +159,5 @@ func initConfig() {
 	// Configuration defaults
 	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
 
-	cfgFileErr = viper.ReadInConfig()
+	cfg = config.ReadConfig()
 }

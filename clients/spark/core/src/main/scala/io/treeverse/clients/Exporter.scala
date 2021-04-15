@@ -1,19 +1,19 @@
 package io.treeverse.clients
-import io.treeverse.clients.Exporter.resolveURL
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
 import org.apache.spark.SerializableWritable
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
-import java.io.{FileNotFoundException, IOException}
+import java.io.{FileNotFoundException, IOException, Serializable}
 import java.net.URI
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
+import scala.collection.JavaConverters._
 
 
-class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String) {
-
+class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, repoName: String, dstRoot: String, parallelism: Int) {
   def this(spark : SparkSession, apiClient: ApiClient, repoName: String, dstRoot: String) {
-    this(spark, apiClient, new SparkFilter(), repoName, dstRoot)
+    this(spark, apiClient, new SparkFilter(), repoName, dstRoot, Exporter.defaultParallelism)
   }
 
   def exportAllFromBranch(branch: String): Unit = {
@@ -42,16 +42,24 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
     val hadoopConf = spark.sparkContext.hadoopConfiguration
     val serializedConf = new SerializableWritable(hadoopConf)
     val f = filter
-    val errs = actionsDF.map(
-      row =>
-        Exporter.handleRow(f, round, ns, rel, serializedConf, row)
+    val par = parallelism
+    val errs = actionsDF.mapPartitions( part => {
+      val pool: ExecutorService = Executors.newFixedThreadPool(par)
+
+      val res = pool.invokeAll(
+        part.map(row =>
+          new Handler(f, round, ns, rel, serializedConf, row)
+        ).toList.asJava).asScala.map(fut => fut.get()).iterator
+      pool.shutdown()
+      res
+    }
     ).filter(status => !status.success)
 
     if (errs.isEmpty){
       return true
     }
-
-    writeSummaryFile(false, commitID, errs.sample(maxLoggedErrors).map(s => s.msg).reduce(_+"\n"+_))
+    val count = errs.count()
+    writeSummaryFile(false, commitID, errs.sample(math.min(1.0, maxLoggedErrors.toDouble/count)).map(s => s.msg).reduce(_+"\n"+_))
     false
   }
 
@@ -102,7 +110,8 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
 
   private def writeSummaryFile(success: Boolean, commitID: String, content : String) = {
     val suffix = if(success) "SUCCESS" else "FAILURE"
-    val dstPath = resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${suffix}")
+    val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
+    val dstPath = URLResolver.resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${time}_${suffix}")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
 
     val stream = dstFS.create(dstPath)
@@ -117,20 +126,28 @@ class Exporter(spark : SparkSession, apiClient: ApiClient, filter: KeyFilter, re
   }
 }
 
-object Exporter {
-  private def handleRow(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) : ExportStatus =  {
+object Exporter{
+  final val defaultParallelism = 10
+}
+
+class Handler(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) extends Callable[ExportStatus] with Serializable {
+  def call() : ExportStatus = {
+    handleRow(filter, round, ns, rootDst, serializedConf, row)
+  }
+
+  def handleRow(filter: KeyFilter, round:Int, ns: String, rootDst: String, serializedConf: SerializableWritable[Configuration], row: Row) : ExportStatus =  {
     val action = row(0)
-    val key = row(1).toString()
-    val address = row(2).toString()
+    val key = row(1).toString
+    val address = row(2).toString
 
     if (filter.roundForKey(key) != round){
       // skip this round
-      return null
+      return ExportStatus(key, success = true, "skipped")
     }
 
     val conf = serializedConf.value
-    val srcPath = resolveURL(new URI(ns), address)
-    val dstPath = resolveURL(new URI(rootDst), key)
+    val srcPath = URLResolver.resolveURL(new URI(ns), address)
+    val dstPath = URLResolver.resolveURL(new URI(rootDst), key)
 
     val dstFS = dstPath.getFileSystem(conf)
 
@@ -138,7 +155,7 @@ object Exporter {
       case "delete" => {
         try {
           dstFS.delete(dstPath, false)
-          null
+          ExportStatus(key, success = true, "")
         } catch {
           case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to delete file ${dstPath}: ${e}")
         }
@@ -153,17 +170,12 @@ object Exporter {
             dstPath,
             false,
             conf)
-          null
+          ExportStatus(key, success = true, "")
         } catch  {
           case e : (FileNotFoundException) =>  ExportStatus(dstPath.toString, success = true, s"Unable to copy file ${dstPath} from source ${srcPath} since source file is missing: ${e}")
           case e : (IOException) =>  ExportStatus(dstPath.toString, success = false, s"Unable to copy file ${dstPath} from source ${srcPath}: ${e}")
         }
       }
     }
-  }
-
-  private def resolveURL(uri: URI, extraPath: String): Path = {
-    val newPath: String = uri.getPath + '/' + extraPath
-    new Path(uri.resolve(newPath))
   }
 }
