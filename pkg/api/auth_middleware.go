@@ -108,7 +108,7 @@ func userByAuth(ctx context.Context, logger logging.Logger, authService auth.Ser
 		return nil, ErrAuthenticationFailed
 	}
 	if subtle.ConstantTimeCompare([]byte(secretKey), []byte(cred.SecretAccessKey)) != 1 {
-		logger.Debug("secret access key does not match")
+		logger.Debug("access key secret does not match")
 		return nil, ErrAuthenticationFailed
 	}
 	user, err := authService.GetUserByID(ctx, cred.UserID)

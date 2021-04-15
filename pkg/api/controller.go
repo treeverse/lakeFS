@@ -99,7 +99,6 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSO
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
-
 	response := AuthenticationToken{
 		Token: tokenString,
 	}
@@ -1025,7 +1024,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error listing repositories: %s", err))
 		return
@@ -1206,18 +1205,6 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 	_, err := c.Catalog.GetRepository(ctx, repository)
 	if handleAPIError(w, err) {
 		return
-	}
-
-	branchID := StringValue(params.Branch)
-	if branchID != "" {
-		exists, err := c.Catalog.BranchExists(ctx, repository, branchID)
-		if handleAPIError(w, err) {
-			return
-		}
-		if !exists {
-			writeError(w, http.StatusNotFound, catalog.ErrBranchNotFound)
-			return
-		}
 	}
 
 	branch := StringValue(params.Branch)
@@ -1425,7 +1412,7 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches")
 
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, "", paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}
@@ -1624,6 +1611,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "diff_workspace")
+	c.Logger.WithField("after", paginationAfter(params.After)).Warn("pagination after")
 	diff, hasMore, err := c.Catalog.DiffUncommitted(ctx, repository, branch, paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
@@ -2701,6 +2689,13 @@ func writeResponse(w http.ResponseWriter, code int, response interface{}) {
 }
 
 func paginationAfter(v *PaginationAfter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func paginationPrefix(v *PaginationPrefix) string {
 	if v == nil {
 		return ""
 	}

@@ -63,7 +63,7 @@ type Interface interface {
 
 	// ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
-	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
+	ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error)
 
 	GetStagingToken(ctx context.Context, repository string, branch string) (*string, error)
 

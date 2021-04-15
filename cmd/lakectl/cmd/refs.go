@@ -6,8 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 var metadataDumpTemplate = `
@@ -27,12 +25,10 @@ This command is expected to run on a bare repository (i.e. one created with 'lak
 Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.`,
 	Example: "aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-load lakefs://my-bare-repository --manifest -",
 	Hidden:  true,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := uri.Must(uri.Parse(args[0]))
+		repoURI := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", repoURI.String())
 		manifestFileName, _ := cmd.Flags().GetString("manifest")
 		fp := OpenByPath(manifestFileName)
 		defer func() {
@@ -61,13 +57,10 @@ var refsDumpCmd = &cobra.Command{
 	Use:    "refs-dump <repository uri>",
 	Short:  "dumps refs (branches, commits, tags) to the underlying object store",
 	Hidden: true,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:   cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := uri.Must(uri.Parse(args[0]))
-
+		repoURI := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", repoURI.String())
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
 		DieOnResponseError(resp, err)

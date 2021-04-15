@@ -93,7 +93,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			}
 			// test method
 			ctx := context.Background()
-			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, tt.args.after)
+			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, "", tt.args.after)
 			if tt.wantErr && err == nil {
 				t.Fatal("ListRepositories err nil, expected error")
 			}

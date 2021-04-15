@@ -29,6 +29,12 @@ components:
       name: access_token
 
   parameters:
+    PaginationPrefix:
+      in: query
+      name: prefix
+      description: return items prefixed with this value
+      schema:
+        type: string
     PaginationAfter:
       in: query
       name: after
@@ -1495,6 +1501,7 @@ paths:
       tags:
         - repositories
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listRepositories
@@ -1754,6 +1761,7 @@ paths:
       operationId: listBranches
       summary: list branches
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:

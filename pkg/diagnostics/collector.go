@@ -186,7 +186,7 @@ func (c *Collector) writeTableCount(ctx context.Context, writer *zip.Writer, nam
 
 func (c *Collector) rangesStats(ctx context.Context, writer *zip.Writer) error {
 	var combinedErr error
-	repos, _, err := c.catalog.ListRepositories(ctx, -1, "")
+	repos, _, err := c.catalog.ListRepositories(ctx, -1, "", "")
 	if err != nil {
 		// Cannot list repos, nothing to do..
 		combinedErr = multierror.Append(combinedErr, fmt.Errorf("listing repositories: %w", err))

@@ -5,8 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/cmdutils"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -73,14 +71,11 @@ var repoListCmd = &cobra.Command{
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(repoCreateCmdArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
-
+	Args:  cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
@@ -109,14 +104,11 @@ var repoCreateBareCmd = &cobra.Command{
 	Use:    "create-bare <repository uri> <storage namespace>",
 	Short:  "create a new repository with no initial branch or commit",
 	Hidden: true,
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(repoCreateCmdArgs),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
-
+	Args:   cobra.ExactArgs(repoCreateCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
@@ -145,13 +137,11 @@ var repoCreateBareCmd = &cobra.Command{
 var repoDeleteCmd = &cobra.Command{
 	Use:   "delete <repository uri>",
 	Short: "delete existing repository",
-	Args: cmdutils.ValidationChain(
-		cobra.ExactArgs(1),
-		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
-	),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := uri.Must(uri.Parse(args[0]))
+		u := MustParseRepoURI("repository", args[0])
+		Fmt("Repository: %s\n", u.String())
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
