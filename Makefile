@@ -33,7 +33,7 @@ GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/pkg/api/gen/')
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
-UI_DIR=webui
+UI_DIR=ui
 UI_BUILD_DIR=$(UI_DIR)/build
 
 DOCKER_IMAGE=lakefs
