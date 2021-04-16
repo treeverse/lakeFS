@@ -6,7 +6,7 @@ import Button from "react-bootstrap/Button";
 import {FormControl, InputGroup} from "react-bootstrap";
 import {SearchIcon} from "@primer/octicons-react";
 
-import {useAPI} from "../../../rest/hooks";
+import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, Error, Loading} from "../controls";
 
 
@@ -100,12 +100,12 @@ export const EntityCreateModal = ({ show, onHide, onCreate, title, idPlaceholder
 
     useEffect(() => {
         if (!!idField.current && idField.current.value === "")
-            idField.current.focus()
+            idField.current.focus();
     });
 
     const onSubmit = () => {
-        onCreate(idField.current.value).catch(err => setError(err))
-    }
+        onCreate(idField.current.value).catch(err => setError(err));
+    };
 
     return (
         <Modal show={show} onHide={onHide}>

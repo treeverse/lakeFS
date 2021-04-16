@@ -1,13 +1,11 @@
-import {useState} from "react";
-import Link from 'next/link';
-import {useRouter} from "next/router";
+import {useEffect, useState} from "react";
 
 import Button from "react-bootstrap/Button";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {GroupHeader} from "../../../../lib/components/auth/nav";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
+import {useAPIWithPagination} from "../../../../lib/hooks/api";
+import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import {AttachModal} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
@@ -20,10 +18,11 @@ import {
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
+import {Link} from "../../../../lib/components/nav";
+import {useRouter} from "../../../../lib/hooks/router";
 
 
 const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
-
     const [refresh, setRefresh] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [attachError, setAttachError] = useState(null);
@@ -31,6 +30,8 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return auth.listGroupPolicies(groupId, after);
     }, [groupId, after, refresh]);
+
+    useEffect(() => { setAttachError(null); }, [refresh, after])
 
     let content;
     if (loading) content = <Loading/>;
@@ -42,7 +43,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={policy => policy.id}
                     rowFn={policy => [
-                        <Link href={{pathname: '/auth/policies/[policyId]', query: {policyId: policy.id}}}>{policy.id}</Link>,
+                        <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>{policy.id}</Link>,
                         <FormattedDate dateValue={policy.creation_date}/>
                     ]}
                     headers={['Policy ID', 'Created At']}
@@ -113,7 +114,7 @@ const GroupPoliciesContainer = () => {
     return (!groupId) ? <></> : <GroupPoliciesList
         groupId={groupId}
         after={(!!after) ? after : ""}
-        onPaginate={after => router.push({pathname: '/auth/groups/[groupId]/policies', query: {groupId, after}})}
+        onPaginate={after => router.push({pathname: '/auth/groups/:groupId/policies', params: {groupId}, query: {after}})}
     />;
 };
 

@@ -5,16 +5,15 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import {useState} from "react";
 import Button from "react-bootstrap/Button";
-import {auth} from "../../rest/api";
-import {useRouter} from "next/router";
+import {auth} from "../../lib/api";
 import {Error} from "../../lib/components/controls"
+import {useRouter} from "../../lib/hooks/router";
 
 const LoginForm = () => {
+    const router = useRouter();
+    const [loginError, setLoginError] = useState(null);
 
-    const router = useRouter()
-    const [loginError, setLoginError] = useState(null)
-
-    const { next } = router.query
+    const { next } = router.query;
 
     return (
         <Row>
@@ -27,11 +26,11 @@ const LoginForm = () => {
                             auth
                                 .login(e.target.username.value, e.target.password.value)
                                 .then(user => {
-                                    setLoginError(null)
-                                    return router.push((!!next) ? next : '/')
+                                    setLoginError(null);
+                                    return router.push((!!next) ? next : '/');
                                 })
                                 .catch(err => {
-                                    setLoginError(err)
+                                    setLoginError(err);
                                 })
 
                         }}>

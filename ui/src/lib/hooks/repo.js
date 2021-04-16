@@ -1,7 +1,7 @@
 import {useContext, useState, createContext, useEffect} from "react";
-import {useRouter} from "next/router";
 
-import {repositories, branches, commits, NotFoundError} from "../../rest/api";
+import {repositories, branches, commits, NotFoundError} from "../api";
+import {useRouter} from "./router";
 
 
 export const resolveRef = async (repoId, refId) => {
@@ -26,7 +26,6 @@ export const resolveRef = async (repoId, refId) => {
 
     throw new NotFoundError('ref not found');
 };
-
 
 
 const RefContext =  createContext(null);

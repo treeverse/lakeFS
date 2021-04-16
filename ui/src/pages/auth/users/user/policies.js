@@ -1,5 +1,4 @@
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {useRouter} from "next/router";
 import {UserHeader} from "../../../../lib/components/auth/nav";
 import {
     ActionGroup,
@@ -11,36 +10,35 @@ import {
     RefreshButton
 } from "../../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
+import {useAPIWithPagination} from "../../../../lib/hooks/api";
+import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
-import Link from 'next/link';
 import {useState} from "react";
 import {AttachModal} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
+import {Link} from "../../../../lib/components/nav";
+import {useRouter} from "../../../../lib/hooks/router";
 
 
 const UserPoliciesList = ({ userId, after, onPaginate }) => {
-
-    const [refresh, setRefresh] = useState(false)
-    const [showAddModal, setShowAddModal] = useState(false)
-    const [attachError, setAttachError] = useState(null)
+    const [refresh, setRefresh] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [attachError, setAttachError] = useState(null);
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listUserPolicies(userId, false, after)
-    }, [userId, after, refresh])
+        return auth.listUserPolicies(userId, false, after);
+    }, [userId, after, refresh]);
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content=  <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
     else content = (
             <>
                 {attachError && <Error error={attachError}/>}
-
                 <DataTable
                     keyFn={policy => policy.id}
                     rowFn={policy => [
-                        <Link href={{pathname: '/auth/policies/[policyId]', query: {policyId: policy.id}}}>{policy.id}</Link>,
+                        <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>{policy.id}</Link>,
                         <FormattedDate dateValue={policy.creation_date}/>
                     ]}
                     headers={['Policy ID', 'Created At']}
@@ -78,7 +76,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                         Promise.all(selected.map(policyId => auth.attachPolicyToUser(userId, policyId)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
-                            .finally(() => { setShowAddModal(false) })
+                            .finally(() => { setShowAddModal(false) });
                     }}/>
                 }
             </>
@@ -102,25 +100,25 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                 {content}
             </div>
         </>
-    )
+    );
 }
 
 const UserPoliciesContainer = () => {
-    const router = useRouter()
-    const { userId, after } = router.query
+    const router = useRouter();
+    const { userId, after } = router.query;
     return (!userId) ? <></> : <UserPoliciesList
         userId={userId}
         after={(!!after) ? after : ""}
-        onPaginate={after => router.push({pathname: '/auth/users/[userId]/policies', query: {userId, after}})}
-    />
-}
+        onPaginate={after => router.push({pathname: '/auth/users/:userId/policies', params: {userId}, query: {after}})}
+    />;
+};
 
 const UserPoliciesPage = () => {
     return (
         <AuthLayout activeTab="users">
             <UserPoliciesContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default UserPoliciesPage
+export default UserPoliciesPage;

@@ -1,15 +1,34 @@
-import {useRouter} from "next/router";
-import {useEffect} from "react";
-import Layout from "../../lib/components/layout";
+import {Redirect, Route, Switch} from "react-router-dom";
+import CredentialsPage from "./credentials";
+import GroupsIndexPage from "./groups";
+import UsersIndexPage from "./users";
+import PoliciesIndexPage from "./policies";
+import LoginPage from "./login";
 
-const AuthHome = () => {
-    const router = useRouter()
-    useEffect(() => {
-        router.push('/auth/credentials')
-    }, [])
+const Auth = () => {
     return (
-        <Layout/>
+        <Switch>
+            <Route exact path="/auth">
+                <Redirect to="/auth/credentials"/>
+            </Route>
+            <Route path="/auth/login">
+                <LoginPage/>
+            </Route>
+
+            <Route path="/auth/credentials">
+                <CredentialsPage/>
+            </Route>
+            <Route path="/auth/users">
+                <UsersIndexPage/>
+            </Route>
+            <Route path="/auth/groups">
+                <GroupsIndexPage/>
+            </Route>
+            <Route path="/auth/policies">
+                <PoliciesIndexPage/>
+            </Route>
+        </Switch>
     )
 }
 
-export default AuthHome
+export default Auth;

@@ -217,9 +217,7 @@ const RefButton = React.forwardRef(({ href, variant, children, tooltip = null },
 
 export const LinkButton = ({ href, children, tooltip, buttonVariant }) => {
     return (
-        <Link passHref href={href}>
-            <RefButton tooltip={tooltip} variant={buttonVariant}>{children}</RefButton>
-        </Link>
+        <Link href={href} component={Button} tooltip={tooltip} variant={buttonVariant}>{children}</Link>
     );
 };
 

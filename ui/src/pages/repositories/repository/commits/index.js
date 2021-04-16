@@ -1,11 +1,9 @@
 import React, {useState} from "react";
 
-import {useRouter} from "next/router";
-import Link from "next/link";
 import moment from "moment";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon, SyncIcon} from "@primer/octicons-react";
 
-import {commits} from "../../../../rest/api";
+import {commits} from "../../../../lib/api";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
@@ -23,9 +21,13 @@ import {
 } from "../../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
-import {useAPIWithPagination} from "../../../../rest/hooks";
+import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
+import {Link} from "../../../../lib/components/nav";
+import {useRouter} from "../../../../lib/hooks/router";
+import {Route, Switch} from "react-router-dom";
+import RepositoryCommitPage from "./commit";
 
 
 const CommitWidget = ({ repo, commit }) => {
@@ -38,8 +40,8 @@ const CommitWidget = ({ repo, commit }) => {
                 <div className="float-left">
                     <h6>
                         <Link href={{
-                            pathname: '/repositories/[repoId]/commits/[commitId]',
-                            query: {repoId: repo.id, commitId: commit.id}
+                            pathname: '/repositories/:repoId/commits/:commitId',
+                            params: {repoId: repo.id, commitId: commit.id}
                         }}>
                             <a>{commit.message}</a>
                         </Link>
@@ -55,19 +57,19 @@ const CommitWidget = ({ repo, commit }) => {
                         <LinkButton
                             buttonVariant="outline-primary"
                             href={{
-                                pathname: '/repositories/[repoId]/commits/[commitId]',
-                                query: {repoId: repo.id, commitId: commit.id}
+                                pathname: '/repositories/:repoId/commits/:commitId',
+                                params: {repoId: repo.id, commitId: commit.id}
                             }}>
                             <code>{commit.id.substr(0, 16)}</code>
                         </LinkButton>
                         <LinkButton
                             buttonVariant={buttonVariant}
-                            href={{pathname: '/repositories/[repoId]/actions', query: {repoId: repo.id, commit: commit.id}}}
+                            href={{pathname: '/repositories/:repoId/actions', query: {commit: commit.id}, params: {repoId: repo.id}}}
                             tooltip="View Commit Action runs">
                             <PlayIcon/>
                         </LinkButton>
                         <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
-                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
+                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="copy S3 URI to clipboard" icon={<PackageIcon/>}/>
 
                     </ButtonGroup>
@@ -76,7 +78,7 @@ const CommitWidget = ({ repo, commit }) => {
                         <ButtonGroup className="commit-actions">
                             <LinkButton
                                 buttonVariant="primary"
-                                href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: commit.id}}}
+                                href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
                                 tooltip="Browse objects at this commit">
                                 <BrowserIcon/>
                             </LinkButton>
@@ -139,29 +141,33 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
 
 
 const CommitsContainer = () => {
-    const router = useRouter()
-    const { after } = router.query
-    const { repo, reference, loading ,error } = useRefs()
+    const router = useRouter();
+    const { after } = router.query;
+    const { repo, reference, loading ,error } = useRefs();
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
+
+    const params = {repoId: repo.id};
 
     return (
         <CommitsBrowser
             repo={repo}
             reference={reference}
             onSelectRef={ref => router.push({
-                pathname: `/repositories/[repoId]/commits`,
-                query: {repoId: repo.id, ref: ref.id}
+                pathname: `/repositories/:repoId/commits`,
+                query: {ref: ref.id},
+                params
             })}
             after={(!!after) ? after : ""}
             onPaginate={after => router.push({
-                    pathname: `/repositories/[repoId]/commits`,
-                    query: {repoId: repo.id, ref: reference.id, after}
+                    pathname: `/repositories/:repoId/commits`,
+                    query: {ref: reference.id, after},
+                    params
                 })}
         />
-    )
-}
+    );
+};
 
 
 const RepositoryCommitsPage = () => {
@@ -171,7 +177,20 @@ const RepositoryCommitsPage = () => {
                 <CommitsContainer/>
             </RepositoryPageLayout>
         </RefContextProvider>
+    );
+};
+
+const RepositoryCommitsIndexPage = () => {
+    return (
+        <Switch>
+            <Route exact path="/repositories/:repoId/commits">
+                <RepositoryCommitsPage/>
+            </Route>
+            <Route path="/repositories/:repoId/commits/:commitId">
+                <RepositoryCommitPage/>
+            </Route>
+        </Switch>
     )
 }
 
-export default RepositoryCommitsPage;
+export default RepositoryCommitsIndexPage;

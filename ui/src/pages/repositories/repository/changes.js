@@ -1,5 +1,4 @@
 import React, {useRef, useState} from "react";
-import {useRouter} from "next/router";
 
 import {
     GitCommitIcon,
@@ -20,8 +19,8 @@ import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 
-import {refs, branches, commits} from "../../../rest/api";
-import {useAPIWithPagination} from "../../../rest/hooks";
+import {refs, branches, commits} from "../../../lib/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import {ActionGroup, ActionsBar, Error, Loading} from "../../../lib/components/controls";
@@ -30,6 +29,7 @@ import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
 import {ChangeEntryRow} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
+import {useRouter} from "../../../lib/hooks/router";
 
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -236,7 +236,7 @@ const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => 
 }
 
 const ChangesContainer = () => {
-    const router = useRouter()
+    const router = useRouter();
     const { repo, reference, loading, error } = useRefs()
     const { after } = router.query
 
@@ -249,12 +249,14 @@ const ChangesContainer = () => {
             repo={repo}
             reference={reference}
             onPaginate={after => router.push({
-                pathname: `/repositories/[repoId]/changes`,
-                query: {repoId: repo.id, ref: reference.id, after}
+                pathname: `/repositories/:repoId/changes`,
+                params: {repoId: repo.id},
+                query: {ref: reference.id, after}
             })}
             onSelectRef={ref => router.push({
-                pathname: `/repositories/[repoId]/changes`,
-                query: {repoId: repo.id, ref: ref.id}
+                pathname: `/repositories/:repoId/changes`,
+                params: {repoId: repo.id},
+                query: {ref: ref.id}
             })}
         />
     )

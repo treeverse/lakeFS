@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -7,6 +5,7 @@ import Nav from "react-bootstrap/Nav";
 import Card from "react-bootstrap/Card";
 
 import Layout from "../layout";
+import {Link} from "../nav";
 
 
 export const AuthLayout = ({ children, activeTab }) => {
@@ -21,22 +20,23 @@ export const AuthLayout = ({ children, activeTab }) => {
                             </Card.Header>
                             <Card.Body>
                                 <Nav variant="pills" className="flex-column">
-                                    <Link passHref href="/auth/credentials">
-                                        <Nav.Link active={activeTab === 'credentials'}>My Credentials</Nav.Link>
+                                    <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'}>
+                                        My Credentials
                                     </Link>
                                 </Nav>
 
                                 <hr/>
 
                                 <Nav variant="pills" className="flex-column">
-                                    <Link passHref href="/auth/users">
-                                        <Nav.Link active={activeTab === 'users'}>Users</Nav.Link>
+                                    <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'}>
+                                       Users
                                     </Link>
-                                    <Link passHref href="/auth/groups">
-                                        <Nav.Link active={activeTab === 'groups'}>Groups</Nav.Link>
+
+                                    <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
+                                        Groups
                                     </Link>
-                                    <Link passHref href="/auth/policies">
-                                        <Nav.Link active={activeTab === 'policies'}>Policies</Nav.Link>
+                                    <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
+                                        Policies
                                     </Link>
                                 </Nav>
                             </Card.Body>

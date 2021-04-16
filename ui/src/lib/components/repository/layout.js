@@ -1,11 +1,10 @@
-import Link from 'next/link';
-
 import Container from "react-bootstrap/Container";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 
 import {useRefs} from "../../hooks/repo";
 import Layout from "../layout";
 import {RepositoryNavTabs} from "./tabs";
+import {Link} from "../nav";
 
 
 const RepoNav = () => {
@@ -14,11 +13,11 @@ const RepoNav = () => {
 
     return (
         <Breadcrumb>
-            <Link passHref href={{pathname: '/repositories'}}>
-                <Breadcrumb.Item>Repositories</Breadcrumb.Item>
+            <Link href={{pathname: '/repositories'}} component={Breadcrumb.Item}>
+                Repositories
             </Link>
-            <Link passHref href={{pathname: '/repositories/[repoId]/objects', query: {repoId}}}>
-                <Breadcrumb.Item active>{repoId}</Breadcrumb.Item>
+            <Link href={{pathname: '/repositories/:repoId/objects', params: {repoId}}} component={Breadcrumb.Item} active>
+                {repoId}
             </Link>
         </Breadcrumb>
 

@@ -1,11 +1,9 @@
-import {useState} from "react";
-import {useRouter} from "next/router";
-import Link from 'next/link';
+import {useEffect, useState} from "react";
 
 import Button from "react-bootstrap/Button";
 
-import {auth} from "../../../rest/api";
-import {useAPIWithPagination} from "../../../rest/hooks";
+import {auth} from "../../../lib/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {AuthLayout} from "../../../lib/components/auth/layout";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {Paginator} from "../../../lib/components/pagination";
@@ -19,6 +17,10 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
+import {useRouter} from "../../../lib/hooks/router";
+import {Link} from "../../../lib/components/nav";
+import {Route, Switch} from "react-router-dom";
+import PolicyPage from "./policy";
 
 
 const PoliciesContainer = () => {
@@ -32,6 +34,8 @@ const PoliciesContainer = () => {
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
         return auth.listPolicies("", after);
     }, [after, refresh]);
+
+    useEffect(() => { setSelected([]); }, [after, refresh]);
 
     if (!!error) return <Error error={error}/>;
     if (loading) return <Loading/>;
@@ -72,6 +76,7 @@ const PoliciesContainer = () => {
             <PolicyEditor
                 onSubmit={(policyId, policyBody) => {
                     return auth.createPolicy(policyId, policyBody).then(() => {
+                        setSelected([]);
                         setShowCreate(false);
                         setRefresh(!refresh);
                     })
@@ -90,7 +95,7 @@ const PoliciesContainer = () => {
                         onAdd={() => setSelected([...selected, policy])}
                         onRemove={() => setSelected(selected.filter(p => p !== policy))}
                     />,
-                    <Link href={{pathname: '/auth/policies/[policyId]', query: {policyId: policy.id}}}>
+                    <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>
                         {policy.id}
                     </Link>,
                     <FormattedDate dateValue={policy.creation_date}/>
@@ -114,4 +119,17 @@ const PoliciesPage = () => {
     );
 };
 
-export default PoliciesPage;
+const PoliciesIndexPage = () => {
+    return (
+        <Switch>
+            <Route exact path="/auth/policies">
+                <PoliciesPage/>
+            </Route>
+            <Route path="/auth/policies/:policyId">
+                <PolicyPage/>
+            </Route>
+        </Switch>
+    )
+}
+
+export default PoliciesIndexPage;

@@ -1,4 +1,3 @@
-import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {ActionGroup, ActionsBar, Error, Loading} from "../../../lib/components/controls";
 import React, {useState} from "react";
@@ -8,14 +7,15 @@ import {ArrowLeftIcon, GitMergeIcon, SyncIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {OverlayTrigger} from "react-bootstrap";
-import {useAPIWithPagination} from "../../../rest/hooks";
-import {refs} from "../../../rest/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
+import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {ChangeEntryRow} from "../../../lib/components/repository/changes";
 import {Paginator} from "../../../lib/components/pagination";
 import {ConfirmationButton} from "../../../lib/components/modals";
+import {useRouter} from "../../../lib/hooks/router";
 
 
 const CompareList = ({ repo, reference, compareReference, after, onSelectRef, onSelectCompare, onPaginate }) => {
@@ -73,7 +73,7 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
                         withWorkspace={false}
                         selectRef={onSelectRef}/>
 
-                <ArrowLeftIcon className="mr-2 mt-3" size="small" verticalAlign="middle"/>
+                <ArrowLeftIcon className="mr-2 mt-2" size="small" verticalAlign="middle"/>
 
                     <RefDropdown
                         prefix={'Compared to '}
@@ -124,28 +124,33 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
 
 
 const CompareContainer = () => {
-    const router = useRouter()
-    const { loading, error, repo, reference, compare } = useRefs()
+    const router = useRouter();
+    const { loading, error, repo, reference, compare } = useRefs();
 
     const { after } = router.query;
 
-    const route = query => router.push({pathname: `/repositories/[repoId]/compare`, query})
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    const route = query => router.push({pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id}, query});
 
     return (
         <CompareList
             repo={repo}
             after={(!!after) ? after : ""}
             reference={reference}
-            onSelectRef={reference => route({repoId: repo.id, compare, ref: reference.id})}
+            onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
             compareReference={compare}
-            onSelectCompare={compare => route({repoId: repo.id, ref: reference.id, compare: compare.id})}
-            onPaginate={after => route({repoId: repo.id, ref: reference.id, compare, after})}
+            onSelectCompare={compare => route(reference ? {ref: reference.id, compare: compare.id} : {compare: compare.id})}
+            onPaginate={after => {
+                const query = {after};
+                if (compare) query.compare = compare.id;
+                if (reference) query.ref = reference.id;
+                route(query)
+            }}
         />
-    )
-}
+    );
+};
 
 const RepositoryComparePage = () => {
     return (
@@ -154,7 +159,7 @@ const RepositoryComparePage = () => {
                 <CompareContainer/>
             </RepositoryPageLayout>
         </RefContextProvider>
-    )
-}
+    );
+};
 
 export default RepositoryComparePage;

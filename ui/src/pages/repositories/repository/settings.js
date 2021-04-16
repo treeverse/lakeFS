@@ -1,4 +1,3 @@
-import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import React, {useRef, useState} from "react";
@@ -10,16 +9,17 @@ import {TrashIcon} from "@primer/octicons-react";
 import Col from "react-bootstrap/Col";
 import {Error, Loading} from "../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
-import {repositories} from "../../../rest/api";
+import {repositories} from "../../../lib/api";
+import {useRouter} from "../../../lib/hooks/router";
 
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
-    const [isDisabled, setIsDisabled] = useState(true)
-    const repoNameField = useRef(null)
+    const [isDisabled, setIsDisabled] = useState(true);
+    const repoNameField = useRef(null);
 
     const compareRepoName = () => {
-        setIsDisabled(repoNameField.current.value !== repo.id)
-    }
+        setIsDisabled(repoNameField.current.value !== repo.id);
+    };
 
     return (
         <Modal show={show} onHide={onCancel} size="lg">
@@ -46,18 +46,18 @@ const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
                 <Button disabled={isDisabled} variant="danger" onClick={onSubmit}>I understand the consequences, delete this repository</Button>
             </Modal.Footer>
         </Modal>
-    )
-}
+    );
+};
 
 const SettingsContainer = () => {
-    const router = useRouter()
-    const { repo, loading, error} = useRefs()
-    const [showingDeleteModal, setShowDeleteModal] = useState(false)
-    const [ deletionError, setDeletionError ] = useState(null)
+    const router = useRouter();
+    const { repo, loading, error} = useRefs();
+    const [showingDeleteModal, setShowDeleteModal] = useState(false);
+    const [ deletionError, setDeletionError ] = useState(null);
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
-    if (!!deletionError) return <Error error={deletionError}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
+    if (!!deletionError) return <Error error={deletionError}/>;
 
     return (
         <div className="mt-3 mb-5">
@@ -109,8 +109,8 @@ const SettingsContainer = () => {
                 }}
                 show={showingDeleteModal}/>
         </div>
-    )
-}
+    );
+};
 
 
 const RepositorySettingsPage = () => {

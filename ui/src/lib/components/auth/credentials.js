@@ -4,8 +4,8 @@ import Modal from "react-bootstrap/Modal";
 import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
 
-import {auth} from "../../../rest/api";
-import {useAPIWithPagination} from "../../../rest/hooks";
+import {auth} from "../../api";
+import {useAPIWithPagination} from "../../hooks/api";
 import {ClipboardButton, DataTable, Error, FormattedDate, Loading} from "../controls";
 import {ConfirmationButton} from "../modals";
 import {Paginator} from "../pagination";

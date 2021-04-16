@@ -1,10 +1,9 @@
-import {useRouter} from "next/router";
-
 import Nav from "react-bootstrap/Nav";
 import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon} from "@primer/octicons-react";
 
 import {useRefs} from "../../hooks/repo";
-import {NavItem} from "../nav";
+import {Link, NavItem} from "../nav";
+import {useRouter} from "../../hooks/router";
 
 
 
@@ -13,6 +12,8 @@ export const RepositoryNavTabs = ({ active }) => {
     const { repo, reference, loading, error } = useRefs();
 
     const router = useRouter();
+
+    const repoId = (loading && !error) ? '' : repo.id;
 
     const withRefContext = (url) => {
         const params = new URLSearchParams();
@@ -40,31 +41,29 @@ export const RepositoryNavTabs = ({ active }) => {
         return url;
     };
 
-    const repoId = (loading && !error) ? '' : repo.id;
-
     return (
         <Nav justify variant="tabs" >
-            <NavItem active={active === 'objects'} href={withRefAndPathContext(`/repositories/${repoId}/objects`)}>
+            <Link active={active === 'objects'} href={withRefAndPathContext(`/repositories/${repoId}/objects`)} component={NavItem}>
                 <DatabaseIcon/> Objects
-            </NavItem>
-            <NavItem active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)}>
+            </Link>
+            <Link active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)} component={NavItem}>
                 <FileDiffIcon/> Changes
-            </NavItem>
-            <NavItem active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)}>
+            </Link>
+            <Link active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)} component={NavItem}>
                 <GitCommitIcon/> Commits
-            </NavItem>
-            <NavItem active={active === 'branches'} href={`/repositories/${repoId}/branches`}>
+            </Link>
+            <Link active={active === 'branches'} href={`/repositories/${repoId}/branches`} component={NavItem}>
                 <GitBranchIcon/> Branches
-            </NavItem>
-            <NavItem active={active === 'compare'} href={withRefContext(`/repositories/${repoId}/compare`)}>
+            </Link>
+            <Link active={active === 'compare'} href={withRefContext(`/repositories/${repoId}/compare`)} component={NavItem}>
                 <GitCompareIcon/> Compare
-            </NavItem>
-            <NavItem active={active === 'actions'} href={`/repositories/${repoId}/actions`}>
+            </Link>
+            <Link active={active === 'actions'} href={`/repositories/${repoId}/actions`} component={NavItem}>
                 <PlayIcon/> Actions
-            </NavItem>
-            <NavItem active={active === 'settings'} href={`/repositories/${repoId}/settings`}>
+            </Link>
+            <Link active={active === 'settings'} href={`/repositories/${repoId}/settings`} component={NavItem}>
                 <GearIcon/> Settings
-            </NavItem>
+            </Link>
         </Nav>
     );
 };

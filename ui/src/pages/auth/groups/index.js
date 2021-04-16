@@ -1,12 +1,10 @@
-import {useState} from "react";
-import {useRouter} from "next/router";
-import Link from 'next/link';
+import {useEffect, useState} from "react";
 
 import Button from "react-bootstrap/Button";
 
 import {AuthLayout} from "../../../lib/components/auth/layout";
-import {useAPIWithPagination} from "../../../rest/hooks";
-import {auth} from "../../../rest/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
+import {auth} from "../../../lib/api";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {EntityCreateModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
@@ -19,6 +17,11 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
+import {Route, Switch} from "react-router-dom";
+import {useRouter} from "../../../lib/hooks/router";
+import {Link} from "../../../lib/components/nav";
+import GroupPage from "./group";
+
 
 const GroupsContainer = () => {
     const [selected, setSelected] = useState([]);
@@ -30,6 +33,10 @@ const GroupsContainer = () => {
     const after = (!!router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
         return auth.listGroups(after);
+    }, [after, refresh]);
+
+    useEffect(() => {
+        setSelected([]);
     }, [after, refresh]);
 
     if (!!error) return <Error error={error}/>;
@@ -50,7 +57,7 @@ const GroupsContainer = () => {
                             auth.deleteGroups(selected.map(g => g.id))
                                 .catch(err => setDeleteError(err))
                                 .then(() => {
-                                    setSelected([])
+                                    setSelected([]);
                                     setRefresh(!refresh)
                                 })
                         }}
@@ -73,9 +80,10 @@ const GroupsContainer = () => {
                 onHide={() => setShowCreate(false)}
                 onCreate={groupId => {
                     return auth.createGroup(groupId).then(() => {
-                        setShowCreate(false)
-                        setRefresh(!refresh)
-                    })
+                        setSelected([]);
+                        setShowCreate(false);
+                        setRefresh(!refresh);
+                    });
                 }}
                 title="Create Group"
                 idPlaceholder="Group Name (e.g. 'DataTeam')"
@@ -91,7 +99,7 @@ const GroupsContainer = () => {
                         onAdd={() => setSelected([...selected, group])}
                         onRemove={() => setSelected(selected.filter(g => g !== group))}
                     />,
-                    <Link href={{pathname: '/auth/groups/[groupId]', query: {groupId: group.id}}}>
+                    <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                         {group.id}
                     </Link>,
                     <FormattedDate dateValue={group.creation_date}/>
@@ -114,4 +122,17 @@ const GroupsPage = () => {
     );
 };
 
-export default GroupsPage;
+const GroupsIndexPage = () => {
+    return (
+        <Switch>
+            <Route path="/auth/groups/:groupId">
+                <GroupPage/>
+            </Route>
+            <Route path="/auth/groups">
+                <GroupsPage/>
+            </Route>
+        </Switch>
+    )
+}
+
+export default GroupsIndexPage;

@@ -8,7 +8,7 @@ import Overlay from "react-bootstrap/Overlay";
 import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
 import Popover from "react-bootstrap/Popover";
 
-import {branches, commits} from '../../../rest/api';
+import {branches, commits} from '../../api';
 
 
 const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {

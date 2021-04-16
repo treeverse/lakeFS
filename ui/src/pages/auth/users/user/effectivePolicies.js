@@ -1,11 +1,9 @@
 import {useState} from "react";
-import Link from 'next/link';
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {useRouter} from "next/router";
 import {UserHeader} from "../../../../lib/components/auth/nav";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
+import {useAPIWithPagination} from "../../../../lib/hooks/api";
+import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import {
     ActionGroup,
@@ -16,6 +14,8 @@ import {
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
+import {Link} from "../../../../lib/components/nav";
+import {useRouter} from "../../../../lib/hooks/router";
 
 
 const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
@@ -34,7 +34,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
                <DataTable
                     keyFn={policy => policy.id}
                     rowFn={policy => [
-                        <Link href={{pathname: '/auth/policies/[policyId]', query: {policyId: policy.id}}}>{policy.id}</Link>,
+                        <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>{policy.id}</Link>,
                         <FormattedDate dateValue={policy.creation_date}/>
                     ]}
                     headers={['Policy ID', 'Created At']}
@@ -74,21 +74,21 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 };
 
 const UserEffectivePoliciesContainer = () => {
-    const router = useRouter()
-    const { userId, after } = router.query
+    const router = useRouter();
+    const { after, userId } = router.query;
     return (!userId) ? <></> : <UserEffectivePoliciesList
         userId={userId}
         after={(!!after) ? after : ""}
-        onPaginate={after => router.push({pathname: '/auth/users/[userId]/effectivePolicies', query: {userId, after}})}
-    />
-}
+        onPaginate={after => router.push({pathname: '/auth/users/:userId/policies/effective', params: {userId}, query: {after}})}
+    />;
+};
 
 const UserEffectivePoliciesPage = () => {
     return (
         <AuthLayout activeTab="users">
             <UserEffectivePoliciesContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default UserEffectivePoliciesPage
+export default UserEffectivePoliciesPage;

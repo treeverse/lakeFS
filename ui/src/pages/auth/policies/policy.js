@@ -1,5 +1,4 @@
 import {useState} from "react";
-import {useRouter} from "next/router";
 
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
@@ -7,8 +6,8 @@ import {PencilIcon} from "@primer/octicons-react";
 
 import {AuthLayout} from "../../../lib/components/auth/layout";
 import {PolicyHeader} from "../../../lib/components/auth/nav";
-import {useAPI} from "../../../rest/hooks";
-import {auth} from "../../../rest/api";
+import {useAPI} from "../../../lib/hooks/api";
+import {auth} from "../../../lib/api";
 import {PolicyDisplay, PolicyEditor} from "../../../lib/components/auth/policy";
 import {
     ActionGroup,
@@ -16,6 +15,7 @@ import {
     Loading,
     Error,
 } from "../../../lib/components/controls";
+import {useRouter} from "../../../lib/hooks/router";
 
 
 const PolicyView = ({ policyId }) => {

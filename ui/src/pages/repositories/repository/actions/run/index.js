@@ -1,10 +1,9 @@
-import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {Error, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
 import React, {useState} from "react";
 import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
-import {useAPI} from "../../../../../rest/hooks";
-import {actions} from "../../../../../rest/api";
+import {useAPI} from "../../../../../lib/hooks/api";
+import {actions} from "../../../../../lib/api";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import ListGroup from "react-bootstrap/ListGroup";
@@ -17,7 +16,8 @@ import Button from "react-bootstrap/Button";
 import moment from "moment";
 import {ActionStatusIcon} from "../../../../../lib/components/repository/actions";
 import Table from "react-bootstrap/Table";
-import Link from "next/link";
+import {Link} from "../../../../../lib/components/nav";
+import {useRouter} from "../../../../../lib/hooks/router";
 
 
 const RunSummary = ({ repo, run }) => {
@@ -40,11 +40,12 @@ const RunSummary = ({ repo, run }) => {
                     <td><strong>Branch</strong></td>
                     <td>
                     {(!run.branch) ? <Na/> :
-                        <Link href={{
-                            pathname: '/repositories/[repoId]/objects',
-                            query: {repoId: repo.id, ref: run.branch}
+                        <Link className="mr-2" href={{
+                            pathname: '/repositories/:repoId/objects',
+                            params: {repoId: repo.id},
+                            query: {ref: run.branch}
                         }}>
-                            <a className="mr-2">{run.branch}</a>
+                            {run.branch}
                         </Link>
                     }
                     </td>
@@ -52,13 +53,11 @@ const RunSummary = ({ repo, run }) => {
                 <tr>
                     <td><strong>Commit</strong></td>
                     <td>
-                        {(!run.commit_id) ? <Na/> : <Link href={{
-                        pathname: '/repositories/[repoId]/commits/[commitId]',
-                        query: {repoId: repo.id, commitId: run.commit_id}
+                        {(!run.commit_id) ? <Na/> : <Link className="mr-2" href={{
+                        pathname: '/repositories/:repoId/commits/:commitId',
+                        params: {repoId: repo.id, commitId: run.commit_id}
                         }}>
-                            <a className="mr-2" >
-                                <code>{run.commit_id.substr(0, 12)}</code>
-                            </a>
+                            <code>{run.commit_id.substr(0, 12)}</code>
                         </Link>
                         }
                     </td>
@@ -73,34 +72,34 @@ const RunSummary = ({ repo, run }) => {
                 </tr>
             </tbody>
         </Table>
-    )
-}
+    );
+};
 
 
 const HookLog = ({ repo, run, execution }) => {
-    const [expanded, setExpanded] = useState(false)
+    const [expanded, setExpanded] = useState(false);
     const {response, loading, error} = useAPI(() => {
-        if (!expanded) return ''
-        return actions.getRunHookOutput(repo.id, run.run_id, execution.hook_run_id)
-    }, [repo.id, execution.hook_id, execution.hook_run_id, expanded])
+        if (!expanded) return '';
+        return actions.getRunHookOutput(repo.id, run.run_id, execution.hook_run_id);
+    }, [repo.id, execution.hook_id, execution.hook_run_id, expanded]);
 
-    let content = <></>
+    let content = <></>;
     if (expanded) {
         if (loading) {
-            content = <pre>Loading...</pre>
+            content = <pre>Loading...</pre>;
         } else if (!!error) {
-            content = <Error error={error}/>
+            content = <Error error={error}/>;
         } else {
-            content = <pre>{response}</pre>
+            content = <pre>{response}</pre>;
         }
     }
 
-    let duration = '(running)'
+    let duration = '(running)';
     if (execution.status === 'completed' || execution.status === 'failed') {
-        const endTs = moment(execution.end_time)
-        const startTs = moment(execution.start_time)
-        const diff = moment.duration(endTs.diff(startTs)).asSeconds()
-        duration = `(${execution.status} in ${diff}s)`
+        const endTs = moment(execution.end_time);
+        const startTs = moment(execution.start_time);
+        const diff = moment.duration(endTs.diff(startTs)).asSeconds();
+        duration = `(${execution.status} in ${diff}s)`;
     }
 
     return (
@@ -134,17 +133,17 @@ const ExecutionsExplorer = ({ repo, run, executions }) => {
                 <HookLog key={`${exec.hook_id}-${exec.hook_run_id}`} repo={repo} run={run} execution={exec}/>
             ))}
         </div>
-    )
-}
+    );
+};
 
 const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null }) => {
 
     const hookRuns = hooks.results;
 
     // group by action
-    const actionNames = {}
-    hookRuns.forEach(hookRun => { actionNames[hookRun.action] = true })
-    const actions = Object.getOwnPropertyNames(actionNames).sort()
+    const actionNames = {};
+    hookRuns.forEach(hookRun => { actionNames[hookRun.action] = true });
+    const actions = Object.getOwnPropertyNames(actionNames).sort();
 
     let content = <RunSummary repo={repo} run={run}/>
     if (selectedAction !== null) {
@@ -152,11 +151,11 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
         const actionRuns = hookRuns
             .filter(hook => hook.action === selectedAction)
             .sort((a, b) => {
-                if (a.hook_run_id > b.hook_run_id) return 1
-                else if (a.hook_run_id < b.hook_run_id) return -1
-                return 0
+                if (a.hook_run_id > b.hook_run_id) return 1;
+                else if (a.hook_run_id < b.hook_run_id) return -1;
+                return 0;
             })
-        content = <ExecutionsExplorer run={run} repo={repo} executions={actionRuns}/>
+        content = <ExecutionsExplorer run={run} repo={repo} executions={actionRuns}/>;
     }
 
     return (
@@ -190,8 +189,8 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
                 {content}
             </Col>
         </Row>
-    )
-}
+    );
+};
 
 
 const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
@@ -199,12 +198,12 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
         const [ run, hooks ] = await Promise.all([
             actions.getRun(repo.id, runId),
             actions.listRunHooks(repo.id, runId)
-        ])
-        return {run, hooks}
-    }, [repo.id, runId])
+        ]);
+        return {run, hooks};
+    }, [repo.id, runId]);
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
         <ActionBrowser
@@ -218,26 +217,25 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
 }
 
 const ActionContainer = () => {
-    const router = useRouter()
+    const router = useRouter();
     const { runId, action } = router.query;
-    const {loading, error, repo} = useRefs()
+    const {loading, error, repo} = useRefs();
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
-    const repoId = repo.id
+    const params = {repoId: repo.id, runId};
 
     return <RunContainer
         repo={repo}
         runId={runId}
         selectedAction={(!!action) ? action : null}
         onSelectAction={action => {
-            const query = {repoId, runId}
-            if (!!action) query.action = action
+            const query = {};
+            if (!!action) query.action = action;
             router.push({
-                pathname: '/repositories/[repoId]/actions/[runId]',
-                query
-            })
+                pathname: '/repositories/:repoId/actions/:runId', query, params
+            });
         }}
     />
 }
@@ -249,7 +247,7 @@ const RepositoryActionPage = () => {
                 <ActionContainer/>
             </RepositoryPageLayout>
         </RefContextProvider>
-    )
-}
+    );
+};
 
 export default RepositoryActionPage;

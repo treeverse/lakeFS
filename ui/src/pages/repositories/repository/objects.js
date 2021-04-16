@@ -1,4 +1,3 @@
-import {useRouter} from "next/router";
 import {SyncIcon, UploadIcon} from "@primer/octicons-react";
 
 import React, {useRef, useState} from "react";
@@ -15,9 +14,10 @@ import Col from "react-bootstrap/Col";
 
 import {Tree} from "../../../lib/components/repository/tree";
 import {Error} from "../../../lib/components/controls";
-import {objects} from "../../../rest/api";
-import {useAPIWithPagination} from "../../../rest/hooks";
+import {objects} from "../../../lib/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
+import {useRouter} from "../../../lib/hooks/router";
 
 
 const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => {
@@ -147,20 +147,15 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, re
     )
 }
 
-
 const ObjectsBrowser = () => {
-    const router = useRouter()
+    const router = useRouter();
     const { path, after } = router.query;
+    const { repo, reference, loading, error } = useRefs();
+    const [refreshToken, setRefreshToken] = useState(false);
+    const refresh = () => setRefreshToken(!refreshToken);
 
-    const { repo, reference, loading, error } = useRefs()
-
-    console.log({repo, reference})
-
-    const [refreshToken, setRefreshToken] = useState(false)
-    const refresh = () => setRefreshToken(!refreshToken)
-
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
         <>
@@ -173,8 +168,9 @@ const ObjectsBrowser = () => {
                         withCommits={true}
                         withWorkspace={true}
                         selectRef={ref => router.push({
-                            pathname: `/repositories/[repoId]/objects`,
-                            query: {repoId: repo.id, ref: ref.id}
+                            pathname: `/repositories/:repoId/objects`,
+                            params: {repoId: repo.id},
+                            query: {ref: ref.id}
                         })}
                     />
                 </ActionGroup>
@@ -199,17 +195,17 @@ const ObjectsBrowser = () => {
                 path={(!!path) ? path : ""}
                 after={(!!after) ? after : ""}
                 onPaginate={after => {
-                    const query = {repoId: repo.id, after}
+                    const query = {after}
                     if (!!path) query.path = path
                     if (!!reference) query.ref = reference.id
-                    const url = {pathname: `/repositories/[repoId]/objects`, query}
+                    const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
                     router.push(url)
                 }}
                 refreshToken={refreshToken}
                 onRefresh={refresh}/>
         </>
-    )
-}
+    );
+};
 
 const RepositoryObjectsPage = () => {
     return (
@@ -218,7 +214,7 @@ const RepositoryObjectsPage = () => {
                 <ObjectsBrowser/>
               </RepositoryPageLayout>
           </RefContextProvider>
-    )
-}
+    );
+};
 
 export default RepositoryObjectsPage;

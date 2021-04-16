@@ -8,5 +8,4 @@ module.exports = function(app) {
         changeOrigin: true,
     });
     app.use('/api', handler)
-    app.use('/auth', handler)
 };

@@ -1,45 +1,48 @@
+import {useEffect, useState} from "react";
+import {Route, Switch} from "react-router-dom";
+
+import Button from "react-bootstrap/Button";
+
 import {AuthLayout} from "../../../lib/components/auth/layout";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
+import {auth} from "../../../lib/api";
+import useUser from "../../../lib/hooks/user";
+import {ConfirmationButton} from "../../../lib/components/modals";
+import {EntityCreateModal} from "../../../lib/components/auth/forms";
+import {Paginator} from "../../../lib/components/pagination";
+import {useRouter} from "../../../lib/hooks/router";
+import {Link} from "../../../lib/components/nav";
 import {
     ActionGroup,
     ActionsBar,
     Checkbox,
     DataTable,
-    Error,
+    Error, FormattedDate,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import {useAPIWithPagination} from "../../../rest/hooks";
-import {auth} from "../../../rest/api";
-import {useRouter} from "next/router";
-import {useState} from "react";
-import Link from 'next/link';
-import moment from "moment";
-
-import Button from "react-bootstrap/Button";
-
-import useUser from "../../../lib/hooks/user";
-import {ConfirmationButton} from "../../../lib/components/modals";
-import {EntityCreateModal} from "../../../lib/components/auth/forms";
-import {Paginator} from "../../../lib/components/pagination";
+import UserPage from "./user";
 
 
 const UsersContainer = () => {
-    const { user } = useUser()
-    const currentUser = user
+    const { user } = useUser();
+    const currentUser = user;
 
-    const [selected, setSelected] = useState([])
-    const [deleteError, setDeleteError] = useState(null)
-    const [showCreate, setShowCreate] = useState(false)
-    const [refresh, setRefresh] = useState(false)
+    const [selected, setSelected] = useState([]);
+    const [deleteError, setDeleteError] = useState(null);
+    const [showCreate, setShowCreate] = useState(false);
+    const [refresh, setRefresh] = useState(false);
 
-    const router = useRouter()
-    const after = (!!router.query.after) ? router.query.after : ""
+    const router = useRouter();
+    const after = (!!router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listUsers(after)
-    }, [after, refresh])
+        return auth.listUsers(after);
+    }, [after, refresh]);
 
-    if (!!error) return <Error error={error}/>
-    if (loading) return <Loading/>
+    useEffect(() => { setSelected([]); }, [refresh, after]);
+
+    if (!!error) return <Error error={error}/>;
+    if (loading) return <Loading/>;
 
     return (
         <>
@@ -56,8 +59,8 @@ const UsersContainer = () => {
                             auth.deleteUsers(selected.map(u => u.id))
                                 .catch(err => setDeleteError(err))
                                 .then(() => {
-                                    setSelected([])
-                                    setRefresh(!refresh)
+                                    setSelected([]);
+                                    setRefresh(!refresh);
                                 })
                         }}
                         disabled={(selected.length === 0)}
@@ -79,9 +82,10 @@ const UsersContainer = () => {
                 onHide={() => setShowCreate(false)}
                 onCreate={userId => {
                     return auth.createUser(userId).then(() => {
-                        setShowCreate(false)
-                        setRefresh(!refresh)
-                    })
+                        setSelected([]);
+                        setShowCreate(false);
+                        setRefresh(!refresh);
+                    });
                 }}
                 title="Create User"
                 idPlaceholder="Username (e.g. 'jane.doe')"
@@ -98,10 +102,10 @@ const UsersContainer = () => {
                         onAdd={() => setSelected([...selected, user])}
                         onRemove={() => setSelected(selected.filter(u => u !== user))}
                     />,
-                    <Link href={{pathname: '/auth/users/[userId]', query: {userId: user.id}}}>
+                    <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
                         {user.id}
                     </Link>,
-                    moment.unix(user.creation_date).format()
+                    <FormattedDate dateValue={user.creation_date}/>
                 ]}/>
 
             <Paginator
@@ -110,15 +114,28 @@ const UsersContainer = () => {
                 onPaginate={after => router.push({pathname: '/auth/users', query: {after}})}
             />
         </>
-    )
-}
+    );
+};
 
 const UsersPage = () => {
     return (
         <AuthLayout activeTab="users">
             <UsersContainer/>
         </AuthLayout>
+    );
+};
+
+const UsersIndexPage = () => {
+    return (
+        <Switch>
+            <Route path="/auth/users/:userId">
+                <UserPage/>
+            </Route>
+            <Route path="/auth/users">
+                <UsersPage/>
+            </Route>
+        </Switch>
     )
 }
 
-export default UsersPage
+export default UsersIndexPage;

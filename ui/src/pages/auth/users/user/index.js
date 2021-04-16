@@ -1,17 +1,36 @@
-import {useRouter} from "next/router";
-import {useEffect} from "react";
-import Layout from "../../../../lib/components/layout";
+import {Redirect, Route, Switch} from "react-router-dom";
+
+import {useRouter} from "../../../../lib/hooks/router";
+import UserGroupsPage from "./groups";
+import UserCredentialsPage from "./credentials";
+import UserEffectivePoliciesPage from "./effectivePolicies";
+import UserPoliciesPage from "./policies";
 
 
-export default function Home() {
-    const router = useRouter()
-    const { userId } = router.query
-    useEffect(() => {
-        if (!!userId)  router.push({
-            pathname: '/auth/users/[userId]/groups',
-            query: {userId}
-        })
-    }, [userId])
+const UserRedirect = ({ subPath }) => {
+    const router = useRouter();
+    const {userId} = router.query;
+    return <Redirect to={`/auth/users/${userId}${subPath}`}/>;
+}
 
-    return <Layout/>
+export default function UserPage() {
+    return (
+        <Switch>
+            <Route exact path="/auth/users/:userId">
+                <UserRedirect subPath="/groups"/>
+            </Route>
+            <Route exact path="/auth/users/:userId/groups">
+                <UserGroupsPage/>
+            </Route>
+            <Route exact path="/auth/users/:userId/credentials">
+                <UserCredentialsPage/>
+            </Route>
+            <Route exact path="/auth/users/:userId/policies/effective">
+                <UserEffectivePoliciesPage/>
+            </Route>
+            <Route exact path="/auth/users/:userId/policies">
+                <UserPoliciesPage/>
+            </Route>
+        </Switch>
+    );
 }

@@ -2,37 +2,34 @@ import {AuthLayout} from "../../lib/components/auth/layout";
 import {
     ActionGroup,
     ActionsBar,
-    Loading,
     Error,
-    ClipboardButton,
-    DataTable, RefreshButton, FormattedDate
+    RefreshButton
 } from "../../lib/components/controls";
 import {ConfirmationButton} from "../../lib/components/modals";
 import useUser from "../../lib/hooks/user";
-import {auth} from "../../rest/api";
+import {auth} from "../../lib/api";
 import {useState} from "react";
-import {useRouter} from "next/router";
-
 import {CredentialsShowModal, CredentialsTable} from "../../lib/components/auth/credentials";
+import {useRouter} from "../../lib/hooks/router";
 
 
 const CredentialsContainer = () => {
-    const router = useRouter()
-    const { user } = useUser()
-    const userId = (!!user) ? user.id : ""
-    const [refreshToken, setRefreshToken] = useState(false)
-    const [createError, setCreateError] = useState(null)
-    const [createdKey, setCreatedKey] = useState(null)
-    const { after } = router.query
+    const router = useRouter();
+    const { user } = useUser();
+    const userId = (!!user) ? user.id : "";
+    const [refreshToken, setRefreshToken] = useState(false);
+    const [createError, setCreateError] = useState(null);
+    const [createdKey, setCreatedKey] = useState(null);
+    const { after } = router.query;
 
     const createKey = () => {
         return auth.createCredentials(user.id)
             .catch(err => {
-                setCreateError(err)
+                setCreateError(err);
             }).then(key => {
-                setCreateError(null)
-                setRefreshToken(!refreshToken)
-                return key
+                setCreateError(null);
+                setRefreshToken(!refreshToken);
+                return key;
             })
     }
 
@@ -47,7 +44,7 @@ const CredentialsContainer = () => {
                         onConfirm={hide => {
                             createKey()
                                 .then(key => { setCreatedKey(key) })
-                                .finally(hide)
+                                .finally(hide);
                         }}>
                         Create Access Key
                     </ConfirmationButton>
@@ -75,16 +72,16 @@ const CredentialsContainer = () => {
                 })}
             />}
         </>
-    )
-}
+    );
+};
 
 const CredentialsPage = () => {
     return (
         <AuthLayout activeTab="credentials">
             <CredentialsContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
 
-export default CredentialsPage
+export default CredentialsPage;

@@ -9,20 +9,21 @@ import './styles/Home.module.css';
 
 // pages
 import Repositories from './pages/repositories'
+import Auth from "./pages/auth";
 
 ReactDOM.render(
-  <React.StrictMode>
     <Router>
         <Switch>
             <Route exact path="/">
                 <Redirect to="/repositories"/>
             </Route>
-
-            <Route exact path="/repositories">
+            <Route path="/repositories">
                 <Repositories/>
             </Route>
+            <Route path="/auth">
+                <Auth/>
+            </Route>
         </Switch>
-    </Router>
-  </React.StrictMode>,
+    </Router>,
   document.getElementById('root')
 );

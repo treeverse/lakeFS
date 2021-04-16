@@ -26,6 +26,9 @@ import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
 
+import {Route, Switch} from "react-router-dom";
+import RepositoryPage from './repository';
+
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
@@ -64,7 +67,6 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 const RepositoryList = ({ onPaginate, prefix, after, lastListUpdate = null  }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        console.log('using API with pagination?');
         return repositories.list(prefix, after)
     }, [lastListUpdate, prefix, after])
 
@@ -106,11 +108,8 @@ const RepositoryList = ({ onPaginate, prefix, after, lastListUpdate = null  }) =
 
 
 
-const Repositories = () => {
+const RepositoriesPage = () => {
     const router = useRouter();
-
-    console.log(router)
-
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [lastListUpdate, setLastListUpdate] = useState(new Date());
@@ -187,4 +186,17 @@ const Repositories = () => {
     );
 }
 
-export default Repositories;
+const RepositoriesIndex = () => {
+    return (
+        <Switch>
+            <Route exact path="/repositories">
+                <RepositoriesPage/>
+            </Route>
+            <Route path="/repositories/:repoId">
+                <RepositoryPage/>
+            </Route>
+        </Switch>
+    );
+};
+
+export default RepositoriesIndex;

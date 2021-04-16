@@ -1,8 +1,5 @@
 import React, {useMemo, useRef, useState} from "react";
 
-import {useRouter} from "next/router";
-import Link from "next/link";
-
 import {
     GitBranchIcon,
     LinkIcon,
@@ -10,14 +7,14 @@ import {
     SyncIcon,
     TrashIcon
 } from "@primer/octicons-react";
-
-import {branches} from "../../../rest/api";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
+
+import {branches} from "../../../lib/api";
 
 import {
     ActionGroup,
@@ -27,7 +24,7 @@ import {
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
-import {useAPIWithPagination} from "../../../rest/hooks";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {Paginator} from "../../../lib/components/pagination";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
@@ -35,26 +32,28 @@ import RefDropdown from "../../../lib/components/repository/refDropdown";
 import Badge from "react-bootstrap/Badge";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
+import {Link} from "../../../lib/components/nav";
+import {useRouter} from "../../../lib/hooks/router";
 
 const ImportBranchName = 'import-from-inventory';
 
 
 const BranchWidget = ({ repo, branch, onDelete }) => {
 
-    const buttonVariant = "primary"
-    const isDefault = repo.default_branch === branch.id
+    const buttonVariant = "primary";
+    const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
             Are you sure you wish to delete branch <strong>{branch.id}</strong> ?
         </>
-    )
+    );
     if (branch.id === ImportBranchName) {
         deleteMsg = (
             <>
                 <p>{deleteMsg}</p>
                 <Alert variant="warning"><strong>Warning</strong> this is a system branch used for importing data to lakeFS</Alert>
             </>
-        )
+        );
     }
 
     return (
@@ -63,10 +62,11 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                 <div className="float-left">
                     <h6>
                         <Link href={{
-                            pathname: '/repositories/[repoId]/objects',
-                            query: {repoId: repo.id, ref: branch.id}
+                            pathname: '/repositories/:repoId/objects',
+                            params: {repoId: repo.id},
+                            query: {ref: branch.id}
                         }}>
-                            <a>{branch.id}</a>
+                            {branch.id}
                         </Link>
 
                         {isDefault &&
@@ -98,56 +98,59 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                     }
 
                     <ButtonGroup className="branch-actions ml-2">
-                        <LinkButton href={{
-                            pathname: '/repositories/[repoId]/commits/[commitId]',
-                            query: {repoId: repo.id, commitId: branch.commit_id}
-                        }} buttonVariant="outline-primary" tooltip="View referenced commit">
+                        <LinkButton
+                            href={{
+                                pathname: '/repositories/:repoId/commits/:commitId',
+                                params:{repoId: repo.id, commitId: branch.commit_id},
+                            }}
+                            buttonVariant="outline-primary"
+                            tooltip="View referenced commit">
                             {branch.commit_id.substr(0, 12)}
                         </LinkButton>
                         <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
-                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
+                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${branch.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}`} tooltip="copy S3 URI to clipboard" icon={<PackageIcon/>}/>
                     </ButtonGroup>
                 </div>
             </div>
         </ListGroup.Item>
-    )
-}
+    );
+};
 
 
 const CreateBranchButton = ({ repo, variant = "success", onCreate = null, children }) => {
-    const [show, setShow] = useState(false)
-    const [disabled, setDisabled] = useState(false)
-    const [error, setError] = useState(null)
-    const textRef = useRef(null)
-    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: "branch"}), [repo.id])
-    const [selectedBranch, setSelectedBranch] = useState(defaultBranch)
+    const [show, setShow] = useState(false);
+    const [disabled, setDisabled] = useState(false);
+    const [error, setError] = useState(null);
+    const textRef = useRef(null);
+    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: "branch"}), [repo.id]);
+    const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
 
 
     const hide = () => {
-        if (disabled) return
-        setShow(false)
-    }
+        if (disabled) return;
+        setShow(false);
+    };
 
     const display = () => {
-        setShow(true)
-    }
+        setShow(true);
+    };
 
     const onSubmit = () => {
-        setDisabled(true)
-        const branchId = textRef.current.value
-        const sourceRef = selectedBranch.id
+        setDisabled(true);
+        const branchId = textRef.current.value;
+        const sourceRef = selectedBranch.id;
         branches.create(repo.id, branchId, sourceRef)
             .catch(err => {
-                setError(err)
+                setError(err);
             })
             .then((response) => {
-                setError(false)
-                setDisabled(false)
-                setShow(false)
-                if (onCreate !== null) onCreate(response)
-            })
-    }
+                setError(false);
+                setDisabled(false);
+                setShow(false);
+                if (onCreate !== null) onCreate(response);
+            });
+    };
 
     return (
         <>
@@ -192,22 +195,22 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
             </Modal>
             <Button variant={variant} onClick={display}>{children}</Button>
         </>
-    )
-}
+    );
+};
 
 const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
-    const [refresh, setRefresh] = useState(true)
+    const [refresh, setRefresh] = useState(true);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        return branches.list(repo.id, prefix, after)
-    }, [repo.id, refresh, prefix, after])
+        return branches.list(repo.id, prefix, after);
+    }, [repo.id, refresh, prefix, after]);
 
-    const doRefresh = () =>  setRefresh(!refresh)
+    const doRefresh = () =>  setRefresh(!refresh);
 
     let content;
 
-    if (loading) content = <Loading/>
-    else if (!!error) content = <Error error={error}/>
+    if (loading) content = <Loading/>;
+    else if (!!error) content = <Error error={error}/>;
     else content = (
         <>
             <Card>
@@ -219,7 +222,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
             </Card>
             <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
         </>
-    )
+    );
 
     return (
         <div className="mb-5">
@@ -240,22 +243,22 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
             </ActionsBar>
             {content}
         </div>
-    )
-}
+    );
+};
 
 
 const BranchesContainer = () => {
     const router = useRouter()
-    const { repo, loading, error } = useRefs()
-    const { after } = router.query
-    const routerPfx = (!!router.query.prefix) ? router.query.prefix : ""
+    const { repo, loading, error } = useRefs();
+    const { after } = router.query;
+    const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
         routerPfx,
-        (prefix) => router.push({pathname: `/repositories/[repoId]/branches`, query: {repoId: repo.id, prefix}})
-    )
+        (prefix) => router.push({pathname: `/repositories/repoId/branches`, params: {repoId: repo.id}, query: {prefix}})
+    );
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
         <BranchList
@@ -263,12 +266,12 @@ const BranchesContainer = () => {
             after={(!!after) ? after : ""}
             prefix={routerPfx}
             onPaginate={after => {
-                const query = {repoId: repo.id, after}
-                if (!!router.query.prefix) query.prefix = router.query.prefix
-                router.push({pathname: `/repositories/[repoId]/branches`, query})
+                const query = {after};
+                if (!!router.query.prefix) query.prefix = router.query.prefix;
+                router.push({pathname: '/repositories/:repoId/branches', params: {repoId: repo.id}, query});
             }}/>
-    )
-}
+    );
+};
 
 
 const RepositoryBranchesPage = () => {

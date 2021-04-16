@@ -1,4 +1,3 @@
-import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {
     ActionGroup,
@@ -10,40 +9,43 @@ import {
 } from "../../../../lib/components/controls";
 import React, {useState} from "react";
 import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {actions} from "../../../../rest/api";
+import {useAPIWithPagination} from "../../../../lib/hooks/api";
+import {actions} from "../../../../lib/api";
 import {
     FilterIcon,
     SyncIcon,
     XIcon
 } from "@primer/octicons-react";
 import Table from "react-bootstrap/Table";
-import Link from 'next/link';
 import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
+import {Route, Switch} from "react-router-dom";
+import {Link} from "../../../../lib/components/nav";
+import {useRouter} from "../../../../lib/hooks/router";
+import RepositoryActionPage from "./run";
 
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
-
     return (
         <tr>
             <td>
                 <ActionStatusIcon className="mr-2" status={run.status}/>
                 {' '}
                 <Link href={{
-                    pathname: '/repositories/[repoId]/actions/[runId]',
-                    query: {repoId: repo.id, runId: run.run_id}
+                    pathname: '/repositories/:repoId/actions/:runId',
+                    params: {repoId: repo.id, runId: run.run_id}
                 }}>
-                    <a>{run.run_id}</a>
+                    {run.run_id}
                 </Link>
             </td>
             <td>{run.event_type}</td>
             <td>
-                <Link href={{
-                    pathname: '/repositories/[repoId]/objects',
-                    query: {repoId: repo.id, ref: run.branch}
+                <Link className="mr-2" href={{
+                    pathname: '/repositories/:repoId/objects',
+                    params: {repoId: repo.id},
+                    query: {ref: run.branch}
                 }}>
-                    <a className="mr-2">{run.branch}</a>
+                    {run.branch}
                 </Link>
                 <TooltipButton
                     onClick={() => onFilterBranch(run.branch)}
@@ -61,13 +63,11 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
             <td>
                 {(!run.commit_id) ? <Na/> : (
                     <>
-                        <Link href={{
-                            pathname: '/repositories/[repoId]/commits/[commitId]',
-                            query: {repoId: repo.id, commitId: run.commit_id}
+                        <Link className="mr-2" href={{
+                            pathname: '/repositories/:repoId/commits/:commitId',
+                            params: {repoId: repo.id, commitId: run.commit_id}
                         }}>
-                            <a className="mr-2" >
-                                <code>{run.commit_id.substr(0, 12)}</code>
-                            </a>
+                            <code>{run.commit_id.substr(0, 12)}</code>
                         </Link>
                         <TooltipButton
                             onClick={() => onFilterCommit(run.commit_id)}
@@ -169,43 +169,43 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
 
 
 const ActionsContainer = () => {
-    const router = useRouter()
+    const router = useRouter();
     const { after } = router.query;
-    const commit = (!!router.query.commit) ? router.query.commit : ""
-    const branch = (!!router.query.branch) ? router.query.branch : ""
+    const commit = (!!router.query.commit) ? router.query.commit : "";
+    const branch = (!!router.query.branch) ? router.query.branch : "";
 
-    const { repo, loading, error } = useRefs()
+    const { repo, loading, error } = useRefs();
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
-    const repoId = repo.id
+    const params = {repoId: repo.id};
 
     return (
         <ActionsList
             repo={repo}
             after={after}
             onPaginate={after => {
-                const query = {repoId, after}
-                if (!!commit) query.commit = commit
-                if (!!branch) query.branch = branch
-                router.push({pathname: `/repositories/[repoId]/actions`, query})
+                const query = {after};
+                if (!!commit) query.commit = commit;
+                if (!!branch) query.branch = branch;
+                router.push({pathname: `/repositories/:repoId/actions`, query, params})
             }}
             branch={branch}
             commit={commit}
             onFilterBranch={branch => {
-                const query = {repoId} // will reset pagination
-                if (!!branch) query.branch = branch
-                router.push({pathname: `/repositories/[repoId]/actions`, query})
+                const query = {}; // will reset pagination
+                if (!!branch) query.branch = branch;
+                router.push({pathname: `/repositories/:repoId/actions`, query, params})
             }}
             onFilterCommit={commit => {
-                const query = {repoId} // will reset pagination
-                if (!!commit) query.commit = commit
-                router.push({pathname: `/repositories/[repoId]/actions`, query})
+                const query = {} // will reset pagination
+                if (!!commit) query.commit = commit;
+                router.push({pathname: `/repositories/:repoId/actions`, query, params})
             }}
         />
-    )
-}
+    );
+};
 
 const RepositoryActionsPage = () => {
     return (
@@ -214,7 +214,20 @@ const RepositoryActionsPage = () => {
                 <ActionsContainer/>
             </RepositoryPageLayout>
         </RefContextProvider>
-    )
-}
+    );
+};
 
-export default RepositoryActionsPage;
+const RepositoryActionsIndexPage = () => {
+    return (
+        <Switch>
+            <Route exact path="/repositories/:repoId/actions">
+                <RepositoryActionsPage/>
+            </Route>
+            <Route exact path="/repositories/:repoId/actions/:runId">
+                <RepositoryActionPage/>
+            </Route>
+        </Switch>
+    );
+};
+
+export default RepositoryActionsIndexPage;

@@ -1,4 +1,3 @@
-import {useRouter} from "next/router";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {
     ClipboardButton,
@@ -8,27 +7,28 @@ import {
 import React from "react";
 import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
-import {useAPI, useAPIWithPagination} from "../../../../../rest/hooks";
-import { commits, refs} from "../../../../../rest/api";
+import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
+import {commits, refs} from "../../../../../lib/api";
 import moment from "moment";
-import Link from 'next/link';
 import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
 import {ChangeEntryRow} from "../../../../../lib/components/repository/changes";
 import {Paginator} from "../../../../../lib/components/pagination";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
+import {Link} from "../../../../../lib/components/nav";
+import {useRouter} from "../../../../../lib/hooks/router";
 
 
 const ChangeList = ({ repo, commit, after, onPaginate }) => {
-
     const {results, loading, error, nextPage} = useAPIWithPagination(async() => {
-        if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}}
-        return refs.diff(repo.id, commit.id, commit.parents[(commit.parents.length === 2) ? 1 : 0], after)
-    }, [repo.id, commit.id, after])
+        if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
+        // TODO (ozkatz): change after fixing https://github.com/treeverse/lakeFS/issues/1730
+        return refs.diff(repo.id, commit.id, commit.parents[(commit.parents.length === 2) ? 1 : 0], after);
+    }, [repo.id, commit.id, after]);
 
-    if (!!loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (!!loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
         <div className="tree-container">
@@ -48,35 +48,35 @@ const ChangeList = ({ repo, commit, after, onPaginate }) => {
 
             <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after}/>
         </div>
-    )
-}
+    );
+};
 
 const CommitActions = ({ repo, commit }) => {
 
-    const buttonVariant = "primary"
+    const buttonVariant = "primary";
 
     return (
         <div>
             <ButtonGroup className="commit-actions">
                 <LinkButton
                     buttonVariant="primary"
-                    href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: commit.id}}}
+                    href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
                     tooltip="Browse objects at this commit">
                     <BrowserIcon/>
                 </LinkButton>
                 <LinkButton
                     buttonVariant={buttonVariant}
-                    href={{pathname: '/repositories/[repoId]/actions', query: {repoId: repo.id, commit: commit.id}}}
+                    href={{pathname: '/repositories/:repoId/actions', params: {repoId: repo.id}, query: {commit: commit.id}}}
                     tooltip="View Commit Action runs">
                     <PlayIcon/>
                 </LinkButton>
                 <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
-                <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
+                <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                 <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="copy S3 URI to clipboard" icon={<PackageIcon/>}/>
             </ButtonGroup>
         </div>
-    )
-}
+    );
+};
 
 
 const CommitMetadataTable = ({ commit }) => {
@@ -103,21 +103,21 @@ const CommitMetadataTable = ({ commit }) => {
             </tbody>
         </Table>
         </>
-    )
-}
+    );
+};
 
 const CommitLink = ({ repoId, commitId }) => {
     return (
         <>
             <Link href={{
-                pathname: '/repositories/[repoId]/commits/[commitId]',
-                query: {repoId, commitId}
+                pathname: '/repositories/:repoId/commits/:commitId',
+                params: {repoId, commitId}
             }}>
-                <a><code>{commitId}</code></a>
+                <code>{commitId}</code>
             </Link>
             <br/>
         </>
-    )
+    );
 }
 
 const CommitInfo = ({ repo, commit }) => {
@@ -153,20 +153,20 @@ const CommitInfo = ({ repo, commit }) => {
             ) : <></>}
             </tbody>
         </Table>
-    )
-}
+    );
+};
 
 const CommitView = ({ repo, commitId, onPaginate, after }) => {
 
     // pull commit itself
     const {response, loading, error} = useAPI(async () => {
-        return await commits.get(repo.id, commitId)
-    }, [repo.id, commitId])
+        return await commits.get(repo.id, commitId);
+    }, [repo.id, commitId]);
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
-    const commit = response
+    const commit = response;
 
     return (
         <div className="mb-5 mt-3">
@@ -192,18 +192,16 @@ const CommitView = ({ repo, commitId, onPaginate, after }) => {
                 <ChangeList repo={repo} commit={commit} onPaginate={onPaginate} after={after}/>
             </div>
         </div>
-    )
-
-}
+    );
+};
 
 const CommitContainer = () => {
-    const router = useRouter()
-    const { repo, loading, error } = useRefs()
-    const { after, commitId } = router.query
+    const router = useRouter();
+    const { repo, loading, error } = useRefs();
+    const { after, commitId } = router.query;
 
-    if (loading) return <Loading/>
-    if (!!error) return <Error error={error}/>
-
+    if (loading) return <Loading/>;
+    if (!!error) return <Error error={error}/>;
 
     return (
         <CommitView
@@ -211,8 +209,9 @@ const CommitContainer = () => {
             after={(!!after) ? after : ""}
             commitId={commitId}
             onPaginate={after => router.push({
-                pathname: '/repositories/[repoId]/commits/[commitId]',
-                query: {repoId: repo.id, commitId, after}
+                pathname: '/repositories/:repoId/commits/:commitId',
+                params: {repoId: repo.id, commitId},
+                query: {after}
             })}
         />
     )

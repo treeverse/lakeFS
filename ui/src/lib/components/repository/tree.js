@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import Link from 'next/link';
+
 import moment from "moment";
 import {
     DotIcon,
@@ -10,7 +10,6 @@ import {
     PlusIcon,
     TrashIcon
 } from "@primer/octicons-react";
-
 import Tooltip from "react-bootstrap/Tooltip";
 import Table from "react-bootstrap/Table";
 import Card from "react-bootstrap/Card";
@@ -20,9 +19,10 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import {linkToPath} from "../../../rest/api";
+import {linkToPath} from "../../api";
 import {ConfirmationModal} from "../modals";
 import {Paginator} from "../pagination";
+import {Link} from "../nav";
 
 
 const humanSize = (bytes) => {
@@ -97,11 +97,12 @@ const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {
 
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
 
-    const query = {repoId: repo.id, ref: reference.id, path: entry.path};
+    const params = {repoId: repo.id};
+    const query = { ref: reference.id, path: entry.path};
 
     let button;
     if (entry.path_type === 'common_prefix') {
-        button = (<Link href={{pathname: '/repositories/[repoId]/objects', query}}><a>{buttonText}</a></Link>);
+        button = (<Link href={{pathname: '/repositories/:repoId/objects', query, params}}>{buttonText}</Link>);
     } else if (entry.diff_type === 'removed') {
         button = (<span>{buttonText}</span>);
     } else {
@@ -222,18 +223,19 @@ function pathParts(path, rootName = "root") {
 
 const URINavigator = ({ repo, reference, path }) => {
     const parts = pathParts(path);
-    const refQuery = {repoId: repo.id, ref: reference.id, path};
+    const params = {repoId: repo.id};
+    const refQuery = {ref: reference.id, path};
 
     return (
         <span className="lakefs-uri">
             <strong>{'lakefs://'}</strong>
-            <Link href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id}}}><a>{repo.id}</a></Link>
-            <strong>{'@'}</strong>
-            <Link href={{pathname: '/repositories/[repoId]/objects', query: {repoId: repo.id, ref: reference.id}}}><a>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</a></Link>
+            <Link href={{pathname: '/repositories/:repoId/objects', params}}>{repo.id}</Link>
+            <strong>{'/'}</strong>
+            <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</Link>
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
-                    <Link href={{pathname: '/repositories/[repoId]/objects', query: refQuery}}><a>{part.name}</a></Link>
+                    <Link href={{pathname: '/repositories/:repoId/objects', params, query: refQuery}}>{part.name}</Link>
                     <strong>{'/'}</strong>
                 </span>
             ))}

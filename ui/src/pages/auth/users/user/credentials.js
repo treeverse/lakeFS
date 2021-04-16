@@ -1,32 +1,25 @@
 import {useState} from "react";
-import {useRouter} from "next/router";
 
 import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {UserHeader} from "../../../../lib/components/auth/nav";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
+import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
 import useUser from "../../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../../lib/components/modals";
 import {
     ActionGroup,
     ActionsBar,
-    Loading,
     Error,
     RefreshButton
 } from "../../../../lib/components/controls";
+import {useRouter} from "../../../../lib/hooks/router";
 
 
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
-
     const {user} = useUser();
     const [refresh, setRefresh] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);
-
-    const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listUserPolicies(userId, false, after);
-    }, [userId, after, refresh]);
 
     const createKey = () => {
         return auth.createCredentials(userId)
@@ -38,14 +31,9 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                 return key;
             });
     };
-
-    let content;
-    if (loading) content = <Loading/>;
-    else if (!!error) content=  <Error error={error}/>;
-    else content = (
+    const content = (
             <>
                 {createError && <Error error={createError}/>}
-
                 <CredentialsTable
                     userId={userId}
                     currentAccessKey={(!!user) ? user.accessKeyId : ""}
@@ -94,12 +82,12 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
 }
 
 const UserCredentialsContainer = () => {
-    const router = useRouter()
-    const { userId, after } = router.query
+    const router = useRouter();
+    const { userId, after } = router.query;
     return (!userId) ? <></> : <UserCredentialsList
         userId={userId}
         after={(!!after) ? after : ""}
-        onPaginate={after => router.push({pathname: '/auth/users/[userId]/credentials', query: {userId, after}})}
+        onPaginate={after => router.push({pathname: '/auth/users/:userId/credentials', query: {after}, params: {userId}})}
     />;
 };
 

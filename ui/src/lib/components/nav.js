@@ -35,18 +35,20 @@ const wrapComponent = (component) => {
                 }
             }
         };
-        return React.createElement(component, props)
+        return React.createElement(component, props);
     });
 }
 
 export const Link = (props) => {
+    const dontPassTheseProps = ['href', 'to', 'children', 'components'];
     const linkProps = {to: (!!props.href) ? buildURL(props.href) : props.href};
     Object.getOwnPropertyNames(props)
-        .filter(k => ['href', 'to', 'children', 'component'].indexOf(k) >= 0)
-        .forEach(k => linkProps[k] = props[k])
+        .filter(k => dontPassTheseProps.indexOf(k) === -1)
+        .forEach(k => linkProps[k] = props[k]);
     if (!!props.component)
-        linkProps.component = wrapComponent(props.component)
-    return React.createElement(RouterLink, linkProps, props.children)
+        linkProps.component = wrapComponent(props.component);
+
+    return React.createElement(RouterLink, linkProps, props.children);
 }
 
 export const NavItem = ({ href, active, children }) => {

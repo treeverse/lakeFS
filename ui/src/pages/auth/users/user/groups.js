@@ -1,5 +1,4 @@
 import {AuthLayout} from "../../../../lib/components/auth/layout";
-import {useRouter} from "next/router";
 import {UserHeader} from "../../../../lib/components/auth/nav";
 import {
     ActionGroup,
@@ -11,28 +10,28 @@ import {
     RefreshButton
 } from "../../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
-import {useAPIWithPagination} from "../../../../rest/hooks";
-import {auth} from "../../../../rest/api";
+import {useAPIWithPagination} from "../../../../lib/hooks/api";
+import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
-import Link from 'next/link';
 import {useState} from "react";
 import {AttachModal} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
+import {useRouter} from "../../../../lib/hooks/router";
+import {Link} from "../../../../lib/components/nav";
 
 
 const UserGroupsList = ({ userId, after, onPaginate }) => {
-
-    const [refresh, setRefresh] = useState(false)
-    const [showAddModal, setShowAddModal] = useState(false)
-    const [attachError, setAttachError] = useState(null)
+    const [refresh, setRefresh] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [attachError, setAttachError] = useState(null);
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return auth.listUserGroups(userId, after)
-    }, [userId, after, refresh])
+        return auth.listUserGroups(userId, after);
+    }, [userId, after, refresh]);
 
-    let content
-    if (loading) content = <Loading/>
-    else if (!!error) content=  <Error error={error}/>
+    let content;
+    if (loading) content = <Loading/>;
+    else if (!!error) content=  <Error error={error}/>;
     else content = (
         <>
             {attachError && <Error error={attachError}/>}
@@ -40,7 +39,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             <DataTable
                 keyFn={group => group.id}
                 rowFn={group => [
-                    <Link href={{pathname: '/auth/groups/[groupId]', query: {groupId: group.id}}}>{group.id}</Link>,
+                    <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>{group.id}</Link>,
                     <FormattedDate dateValue={group.creation_date}/>
                 ]}
                 headers={['Group ID', 'Created At']}
@@ -80,7 +79,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                 }}/>
             }
         </>
-    )
+    );
 
     return (
         <>
@@ -100,25 +99,25 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                 {content}
             </div>
         </>
-    )
-}
+    );
+};
 
 const UserGroupsContainer = () => {
-    const router = useRouter()
-    const { userId, after } = router.query
+    const router = useRouter();
+    const { userId, after } = router.query;
     return (!userId) ? <></> : <UserGroupsList
         userId={userId}
         after={(!!after) ? after : ""}
-        onPaginate={after => router.push({pathname: '/auth/users/[userId]/groups', query: {userId, after}})}
-    />
-}
+        onPaginate={after => router.push({pathname: '/auth/users/:userId/groups', params: {userId}, query: {after}})}
+    />;
+};
 
 const UserGroupsPage = () => {
     return (
         <AuthLayout activeTab="users">
             <UserGroupsContainer/>
         </AuthLayout>
-    )
-}
+    );
+};
 
-export default UserGroupsPage
+export default UserGroupsPage;

@@ -1,26 +1,25 @@
 import Nav from "react-bootstrap/Nav";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import {BreadcrumbItem} from "react-bootstrap";
-import Link from "next/link";
 
-import {NavItem} from "../nav";
+import {Link, NavItem} from "../nav";
 
 
 export const UserNav = ({ userId, page = 'groups' }) => {
     return (
         <Nav justify variant="tabs">
-            <NavItem active={page === 'groups'} href={{pathname: '/auth/users/[userId]/groups', query: {userId}}}>
+            <Link component={NavItem} active={page === 'groups'} href={{pathname: '/auth/users/:userId/groups', params: {userId}}}>
                 Group Memberships
-            </NavItem>
-            <NavItem active={page === 'policies'} href={{pathname: '/auth/users/[userId]/policies', query: {userId}}}>
+            </Link>
+            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
                 Directly Attached Policies
-            </NavItem>
-            <NavItem active={page === 'effectivePolicies'} href={{pathname: '/auth/users/[userId]/effectivePolicies', query: {userId}}}>
+            </Link>
+            <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
                 Effective Attached Policies
-            </NavItem>
-            <NavItem active={page === 'credentials'} href={{pathname: '/auth/users/[userId]/credentials', query: {userId}}}>
+            </Link>
+            <Link component={NavItem} active={page === 'credentials'} href={{pathname: '/auth/users/:userId/credentials', params: {userId}}}>
                 Access Credentials
-            </NavItem>
+            </Link>
         </Nav>
     );
 };
@@ -29,12 +28,12 @@ export const UserNav = ({ userId, page = 'groups' }) => {
 export const GroupNav = ({ groupId, page = 'groups' }) => {
     return (
         <Nav justify variant="tabs">
-            <NavItem active={page === 'members'} href={{pathname: '/auth/groups/[groupId]/groups', query: {groupId}}}>
+            <Link component={NavItem} active={page === 'members'} href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
                 Group Memberships
-            </NavItem>
-            <NavItem active={page === 'policies'} href={{pathname: '/auth/groups/[groupId]/policies', query: {groupId}}}>
+            </Link>
+            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}}>
                 Attached Policies
-            </NavItem>
+            </Link>
         </Nav>
     );
 };
@@ -44,11 +43,11 @@ export const UserHeader = ({ userId, page }) => {
     return (
         <div className="mb-4">
             <Breadcrumb>
-                <Link href='/auth/users' passHref>
-                    <BreadcrumbItem>Users</BreadcrumbItem>
+                <Link component={BreadcrumbItem} href='/auth/users'>
+                    Users
                 </Link>
-                <Link href={{pathname: '/auth/users/[userId]', query: {userId}}} passHref>
-                    <BreadcrumbItem>{userId}</BreadcrumbItem>
+                <Link component={BreadcrumbItem} href={{pathname: '/auth/users/:userId', params: {userId}}}>
+                    {userId}
                 </Link>
             </Breadcrumb>
 
@@ -61,11 +60,11 @@ export const GroupHeader = ({ groupId, page }) => {
     return (
         <div className="mb-4">
             <Breadcrumb>
-                <Link href='/auth/groups' passHref>
-                    <BreadcrumbItem>Groups</BreadcrumbItem>
+                <Link component={BreadcrumbItem} href='/auth/groups'>
+                    Groups
                 </Link>
-                <Link href={{pathname: '/auth/groups/[groupId]', query: {groupId}}} passHref>
-                    <BreadcrumbItem>{groupId}</BreadcrumbItem>
+                <Link component={BreadcrumbItem} href={{pathname: '/auth/groups/:groupId', params: {groupId}}}>
+                    {groupId}
                 </Link>
             </Breadcrumb>
 
@@ -78,11 +77,11 @@ export const PolicyHeader = ({ policyId }) => {
     return (
         <div className="mb-4">
             <Breadcrumb>
-                <Link href='/auth/policies' passHref>
-                    <BreadcrumbItem>Policies</BreadcrumbItem>
+                <Link component={BreadcrumbItem} href='/auth/policies'>
+                    Policies
                 </Link>
-                <Link href={{pathname: '/auth/policies/[policyId]', query: {policyId}}} passHref>
-                    <BreadcrumbItem>{policyId}</BreadcrumbItem>
+                <Link component={BreadcrumbItem} href={{pathname: '/auth/policies/:policyId', params: {policyId}}}>
+                    {policyId}
                 </Link>
             </Breadcrumb>
         </div>

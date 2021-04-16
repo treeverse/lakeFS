@@ -353,11 +353,13 @@ func (s *DBAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayN
 
 func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name", psql.Select("auth_policies.*").
+	sub := psql.Select("auth_policies.*").
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
 		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
-		Where(sq.Eq{"auth_users.display_name": username}))
+		Where(sq.Eq{"auth_users.display_name": username})
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
+		psql.Select("*").FromSelect(sub, "p"))
 	if slice == nil {
 		return nil, paginator, err
 	}
@@ -412,12 +414,13 @@ func (s *DBAuthService) ListEffectivePolicies(ctx context.Context, username stri
 
 func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	var policy model.Policy
+	query := psql.Select("auth_policies.*").
+		From("auth_policies").
+		Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
+		Join("auth_groups ON (auth_group_policies.group_id = auth_groups.id)").
+		Where(sq.Eq{"auth_groups.display_name": groupDisplayName})
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
-		psql.Select("auth_policies.*").
-			From("auth_policies").
-			Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
-			Join("auth_groups ON (auth_group_policies.group_id = auth_groups.id)").
-			Where(sq.Eq{"auth_groups.display_name": groupDisplayName}))
+		psql.Select("*").FromSelect(query, "p"))
 	if err != nil {
 		return nil, paginator, err
 	}
