@@ -233,8 +233,9 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f nessie/ops/docker-compose.yaml logs --tail=1000 lakefs
-      - name: Publish coverage
-        uses: codecov/codecov-action@v1
-        with:
-          files: ./nessie-cover.out
-          fail_ci_if_error: false
+      - name: See the env when we would have tried to publish coverage
+        run: env
+        # uses: codecov/codecov-action@v1
+        # with:
+        #   files: ./nessie-cover.out
+        #   fail_ci_if_error: false
