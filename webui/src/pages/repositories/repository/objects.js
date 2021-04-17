@@ -1,12 +1,10 @@
-import {SyncIcon, UploadIcon} from "@primer/octicons-react";
+import {UploadIcon} from "@primer/octicons-react";
 
 import React, {useRef, useState} from "react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ActionGroup, ActionsBar, Loading} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, Loading, RefreshButton} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -176,16 +174,8 @@ const ObjectsBrowser = () => {
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-
-                    <OverlayTrigger placement="bottom"
-                                    overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
-                        <Button variant="light" onClick={refresh}>
-                            <SyncIcon/>
-                        </Button>
-                    </OverlayTrigger>
-
+                    <RefreshButton onClick={refresh} />
                     <UploadButton path={path} repo={repo} reference={reference} onDone={refresh}/>
-
                 </ActionGroup>
             </ActionsBar>
 

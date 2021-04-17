@@ -4,12 +4,9 @@ import {
     GitBranchIcon,
     LinkIcon,
     PackageIcon,
-    SyncIcon,
     TrashIcon
 } from "@primer/octicons-react";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
@@ -20,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     Error, LinkButton,
-    Loading, useDebouncedState,
+    Loading, RefreshButton, useDebouncedState,
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
@@ -40,7 +37,7 @@ const ImportBranchName = 'import-from-inventory';
 
 const BranchWidget = ({ repo, branch, onDelete }) => {
 
-    const buttonVariant = "primary";
+    const buttonVariant = "outline-dark";
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
@@ -103,7 +100,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params:{repoId: repo.id, commitId: branch.commit_id},
                             }}
-                            buttonVariant="outline-primary"
+                            buttonVariant="outline-dark"
                             tooltip="View referenced commit">
                             {branch.commit_id.substr(0, 12)}
                         </LinkButton>
@@ -228,12 +225,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         <div className="mb-5">
             <ActionsBar>
                 <ActionGroup orientation="right">
-                    <OverlayTrigger placement="bottom"
-                                    overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
-                        <Button variant="light" onClick={doRefresh}>
-                            <SyncIcon/>
-                        </Button>
-                    </OverlayTrigger>
+                    <RefreshButton onClick={doRefresh}/>
 
                     <CreateBranchButton repo={repo} variant="success" onCreate={doRefresh}>
                         <GitBranchIcon/> Create Branch

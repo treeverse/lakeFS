@@ -217,12 +217,12 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     const cancelButton = (!!onCancel && !!selected) ? (<Button onClick={() => {
         setShow(false);
         onCancel();
-    }} variant="light"><XIcon/></Button>) : (<span/>);
+    }} variant="outline-dark"><XIcon/></Button>) : (<span/>);
 
     if (!selected) {
         return (
             <>
-                <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
+                <Button ref={target} variant="outline-dark" onClick={()=> { setShow(!show) }}>
                     {emptyText} {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Button>
                 {cancelButton}
@@ -242,7 +242,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
         <>
-            <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
+            <Button ref={target} variant="outline-dark" onClick={()=> { setShow(!show) }}>
                 {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
             </Button>
             {cancelButton}

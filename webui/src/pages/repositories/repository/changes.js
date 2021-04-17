@@ -15,15 +15,13 @@ import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
 import Card from "react-bootstrap/Card";
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 
 import {refs, branches, commits} from "../../../lib/api";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
-import {ActionGroup, ActionsBar, Error, Loading} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
@@ -182,12 +180,7 @@ const ChangesBrowser = ({ repo, reference, after, onSelectRef, onPaginate }) => 
 
                 <ActionGroup orientation="right">
 
-                    <OverlayTrigger placement="bottom"
-                                    overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
-                        <Button variant="light" onClick={refresh}>
-                            <SyncIcon/>
-                        </Button>
-                    </OverlayTrigger>
+                    <RefreshButton onClick={refresh}/>
 
                     <RevertButton enabled={results.length > 0} onRevert={() => {
                         branches.revert(repo.id, reference.id, {type: 'reset'})

@@ -4,7 +4,7 @@ import {
     ActionsBar,
     Error,
     FormattedDate,
-    Loading, Na,
+    Loading, Na, RefreshButton,
     TooltipButton
 } from "../../../../lib/components/controls";
 import React, {useState} from "react";
@@ -13,7 +13,6 @@ import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {actions} from "../../../../lib/api";
 import {
     FilterIcon,
-    SyncIcon,
     XIcon
 } from "@primer/octicons-react";
 import Table from "react-bootstrap/Table";
@@ -156,9 +155,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-                    <TooltipButton tooltip="Refresh" onClick={doRefresh} variant="light">
-                        <SyncIcon/>
-                    </TooltipButton>
+                    <RefreshButton onClick={doRefresh}/>
                 </ActionGroup>
             </ActionsBar>
 

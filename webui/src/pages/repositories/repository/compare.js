@@ -1,12 +1,9 @@
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {ActionGroup, ActionsBar, Error, Loading} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
 import React, {useState} from "react";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, GitMergeIcon, SyncIcon} from "@primer/octicons-react";
-import Tooltip from "react-bootstrap/Tooltip";
-import Button from "react-bootstrap/Button";
-import {OverlayTrigger} from "react-bootstrap";
+import {ArrowLeftIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
@@ -86,12 +83,8 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-                    <OverlayTrigger placement="bottom"
-                                    overlay={<Tooltip id="refreshCompareTooltipId">Refresh</Tooltip>}>
-                        <Button variant="light" onClick={refresh}>
-                            <SyncIcon/>
-                        </Button>
-                    </OverlayTrigger>
+
+                    <RefreshButton onClick={refresh}/>
 
                     {(compareReference.type === 'branch' && reference.type === 'branch') &&
                     <ConfirmationButton

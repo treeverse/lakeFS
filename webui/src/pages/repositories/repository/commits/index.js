@@ -17,7 +17,7 @@ import {
     ClipboardButton,
     Error,
     LinkButton,
-    Loading
+    Loading, RefreshButton
 } from "../../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
@@ -32,7 +32,7 @@ import RepositoryCommitPage from "./commit";
 
 const CommitWidget = ({ repo, commit }) => {
 
-    const buttonVariant = "primary"
+    const buttonVariant = "outline-dark";
 
     return (
         <ListGroup.Item>
@@ -55,7 +55,7 @@ const CommitWidget = ({ repo, commit }) => {
                 <div className="float-right">
                     <ButtonGroup className="commit-actions">
                         <LinkButton
-                            buttonVariant="outline-primary"
+                            buttonVariant="outline-dark"
                             href={{
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params: {repoId: repo.id, commitId: commit.id}
@@ -77,7 +77,7 @@ const CommitWidget = ({ repo, commit }) => {
                     <div className="float-right ml-2">
                         <ButtonGroup className="commit-actions">
                             <LinkButton
-                                buttonVariant="primary"
+                                buttonVariant="outline-dark"
                                 href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
                                 tooltip="Browse objects at this commit">
                                 <BrowserIcon/>
@@ -116,12 +116,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-                    <OverlayTrigger placement="bottom"
-                                    overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
-                        <Button variant="light" onClick={() =>  setRefresh(!refresh) }>
-                            <SyncIcon/>
-                        </Button>
-                    </OverlayTrigger>
+                    <RefreshButton onClick={() => { setRefresh(!refresh); }}/>
                 </ActionGroup>
             </ActionsBar>
 

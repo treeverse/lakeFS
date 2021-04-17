@@ -53,13 +53,13 @@ const ChangeList = ({ repo, commit, after, onPaginate }) => {
 
 const CommitActions = ({ repo, commit }) => {
 
-    const buttonVariant = "primary";
+    const buttonVariant = "outline-dark";
 
     return (
         <div>
             <ButtonGroup className="commit-actions">
                 <LinkButton
-                    buttonVariant="primary"
+                    buttonVariant="outline-dark"
                     href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
                     tooltip="Browse objects at this commit">
                     <BrowserIcon/>
