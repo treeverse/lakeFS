@@ -4,7 +4,6 @@ import {
     GitCommitIcon,
     HistoryIcon,
     PlusIcon,
-    SyncIcon,
     XIcon
 } from "@primer/octicons-react";
 

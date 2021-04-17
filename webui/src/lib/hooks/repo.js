@@ -31,7 +31,7 @@ export const resolveRef = async (repoId, refId) => {
 const RefContext =  createContext(null);
 
 export const useRefs = () => {
-    const [ refs, refresh ] = useContext(RefContext);
+    const [ refs ] = useContext(RefContext);
     return refs;
 }
 
@@ -39,33 +39,36 @@ export const useRefsWithRefresh = () => {
     return useContext(RefContext);
 };
 
+const refContextInitialState = {
+    loading: true,
+    error: null,
+    repo: null,
+    reference: null,
+    compare: null
+};
+
 export const RefContextProvider = ({ children }) => {
     const router = useRouter();
     const {repoId, ref, compare} = router.query;
-    const initialState = {
-        loading: true,
-        error: null,
-        repo: null,
-        reference: null,
-        compare: null
-    };
-    const [refState, setRefState] = useState(initialState);
 
-    const fetch = async () => {
-        setRefState(initialState);
-        if (!repoId) return;
-        try {
-            const repo = await repositories.get(repoId);
-            const reference = await resolveRef(repoId, (!!ref) ? ref : repo.default_branch);
-            let comparedRef = null;
-            if (!!compare) comparedRef = await resolveRef(repoId, compare);
-            setRefState({...initialState, loading: false, repo, reference, compare: comparedRef});
-        } catch (err) {
-            setRefState({...initialState, loading: false, error: err});
-        }
-    };
+    const [refState, setRefState] = useState(refContextInitialState);
 
-    useEffect(fetch, [repoId, ref, compare]);
+    useEffect(() => {
+        const fetch = async () => {
+            setRefState(refContextInitialState);
+            if (!repoId) return;
+            try {
+                const repo = await repositories.get(repoId);
+                const reference = await resolveRef(repoId, (!!ref) ? ref : repo.default_branch);
+                let comparedRef = null;
+                if (!!compare) comparedRef = await resolveRef(repoId, compare);
+                setRefState({...refContextInitialState, loading: false, repo, reference, compare: comparedRef});
+            } catch (err) {
+                setRefState({...refContextInitialState, loading: false, error: err});
+            }
+        };
+        fetch();
+    }, [repoId, ref, compare]);
 
     return (
         <RefContext.Provider value={[refState, fetch]}>

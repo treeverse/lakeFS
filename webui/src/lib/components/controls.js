@@ -198,23 +198,6 @@ export const useHover = () => {
     return [ref, value];
 };
 
-const RefButton = React.forwardRef(({ href, variant, children, tooltip = null }, ref) => {
-    if (tooltip === null) {
-        return (
-            <Button variant={variant} as="a" href={href} ref={ref}>
-                {children}
-            </Button>
-        );
-    }
-    return (
-        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
-            <Button variant={variant} as="a" href={href} ref={ref}>
-                {children}
-            </Button>
-        </OverlayTrigger>
-    );
-});
-
 export const LinkButton = ({ href, children, tooltip, buttonVariant }) => {
     return (
         <Link href={href} component={Button} tooltip={tooltip} variant={buttonVariant}>{children}</Link>

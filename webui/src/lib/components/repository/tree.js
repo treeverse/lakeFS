@@ -34,7 +34,6 @@ const humanSize = (bytes) => {
 const Na = () => (<span>&mdash;</span>);
 
 const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
-    const [isDropdownOpen, setDropdownOpen] = useState(false);
     const [show, setShow] = useState(false);
     const handleClose = () => setShow(false);;
     const handleShow = () => setShow(true);
@@ -45,7 +44,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
     };
     return (
         <>
-            <Dropdown alignRight onToggle={setDropdownOpen}>
+            <Dropdown alignRight>
                 <Dropdown.Toggle variant="light" size="sm">
                     More Actions
                 </Dropdown.Toggle>

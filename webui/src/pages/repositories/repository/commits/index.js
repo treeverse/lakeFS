@@ -1,13 +1,10 @@
 import React, {useState} from "react";
 
 import moment from "moment";
-import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon, SyncIcon} from "@primer/octicons-react";
+import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 
 import {commits} from "../../../../lib/api";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
-import {OverlayTrigger} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
-import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
 
@@ -43,7 +40,7 @@ const CommitWidget = ({ repo, commit }) => {
                             pathname: '/repositories/:repoId/commits/:commitId',
                             params: {repoId: repo.id, commitId: commit.id}
                         }}>
-                            <a>{commit.message}</a>
+                            {commit.message}
                         </Link>
                     </h6>
                     <p>

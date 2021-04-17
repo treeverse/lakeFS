@@ -58,12 +58,12 @@ const LoginForm = () => {
 }
 
 
-const LoginPage = ({ }) => {
+const LoginPage = () => {
     return (
         <Layout>
             <LoginForm/>
         </Layout>
-    )
-}
+    );
+};
 
 export default LoginPage;

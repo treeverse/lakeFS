@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     Error, LinkButton,
-    Loading, RefreshButton, useDebouncedState,
+    Loading, RefreshButton
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
@@ -120,7 +120,9 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
-    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: "branch"}), [repo.id]);
+    const defaultBranch = useMemo(
+        () => ({ id: repo.default_branch, type: "branch"}),
+        [repo.default_branch]);
     const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
 
 
@@ -244,10 +246,6 @@ const BranchesContainer = () => {
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
     const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
-    const [prefix, setPrefix] = useDebouncedState(
-        routerPfx,
-        (prefix) => router.push({pathname: `/repositories/repoId/branches`, params: {repoId: repo.id}, query: {prefix}})
-    );
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;
