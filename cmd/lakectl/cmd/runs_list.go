@@ -16,10 +16,10 @@ var runsListCmd = &cobra.Command{
 	Example: "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-		commit, _ := cmd.Flags().GetString("commit")
-		branch, _ := cmd.Flags().GetString("branch")
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
+		commit := MustString(cmd.Flags().GetString("commit"))
+		branch := MustString(cmd.Flags().GetString("branch"))
 		u := MustParseRepoURI("repository", args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)
@@ -93,7 +93,7 @@ var runsListCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsListCmd)
-	runsListCmd.Flags().Int("amount", 100, "number of results to return")
+	runsListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	runsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	runsListCmd.Flags().String("branch", "", "show results for specific branch")
 	runsListCmd.Flags().String("commit", "", "show results for specific commit ID")

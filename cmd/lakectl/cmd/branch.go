@@ -27,8 +27,8 @@ var branchListCmd = &cobra.Command{
 	Example: "lakectl branch list lakefs://<repository>",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		u := MustParseRepoURI("repository", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
@@ -208,7 +208,7 @@ func init() {
 	branchCmd.AddCommand(branchResetCmd)
 	branchCmd.AddCommand(branchRevertCmd)
 
-	branchListCmd.Flags().Int("amount", 100, "number of results to return")
+	branchListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")

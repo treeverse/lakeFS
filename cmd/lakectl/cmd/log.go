@@ -28,21 +28,15 @@ var logCmd = &cobra.Command{
 	Short: "show log of commits for the given branch",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, err := cmd.Flags().GetInt("amount")
-		if err != nil {
-			DieErr(err)
-		}
-		after, err := cmd.Flags().GetString("after")
-		if err != nil {
-			DieErr(err)
-		}
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		pagination := api.Pagination{HasMore: true}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := MustParseRefURI("branch", args[0])
 		amountForPagination := amount
-		if amountForPagination == -1 {
-			amountForPagination = defaultPaginationAmount
+		if amountForPagination <= 0 {
+			amountForPagination = internalPageSize
 		}
 		for pagination.HasMore {
 			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
@@ -59,17 +53,17 @@ var logCmd = &cobra.Command{
 			}{
 				Commits:         res.JSON200.Results,
 				ShowMetaRangeID: showMetaRangeID,
-			}
-			if pagination.HasMore && amount != -1 {
-				data.Pagination = &Pagination{
+				Pagination: &Pagination{
 					Amount:  amount,
-					HasNext: true,
+					HasNext: pagination.HasMore,
 					After:   pagination.NextOffset,
-				}
-				Write(commitsTemplate, data)
-				break
+				},
 			}
 			Write(commitsTemplate, data)
+			if amount != 0 {
+				// user request only one page
+				break
+			}
 		}
 	},
 }
@@ -77,7 +71,7 @@ var logCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().Int("amount", -1, "number of results to return. By default, all results are returned.")
+	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }

@@ -22,9 +22,8 @@ var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list repositories",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		clt := getClient()
 
 		res, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
@@ -137,7 +136,7 @@ func init() {
 	repoCmd.AddCommand(repoCreateBareCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
 
-	repoListCmd.Flags().Int("amount", 100, "number of results to return")
+	repoListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")

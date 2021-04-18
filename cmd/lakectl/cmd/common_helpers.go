@@ -28,7 +28,9 @@ const (
 	DeathMessage              = "Error executing command: {{.Error|red}}\n"
 )
 
-const defaultPaginationAmount = 1000
+const internalPageSize = 1000          // when retreiving all records, use this page size under the hood
+const defaultAmountArgumentValue = 100 // when no amount is specified, use this value for the argument
+
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
@@ -86,7 +88,7 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 			return string(encoded)
 		},
 		"paginate": func(pag *Pagination) string {
-			if pag != nil && pag.HasNext && isTerminal {
+			if pag != nil && pag.Amount > 0 && pag.HasNext && isTerminal {
 				params := text.FgHiYellow.Sprintf("--amount %d --after \"%s\"", pag.Amount, pag.After)
 				return fmt.Sprintf("for more results run with %s\n", params)
 			}

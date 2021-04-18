@@ -24,8 +24,8 @@ var runsDescribeCmd = &cobra.Command{
 	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
 	Args:    cobra.ExactArgs(runsShowRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		u := MustParseRepoURI("repository", args[0])
 		pagination := api.Pagination{HasMore: true}
 
@@ -43,8 +43,8 @@ var runsDescribeCmd = &cobra.Command{
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
 		for pagination.HasMore {
 			amountForPagination := amount
-			if amountForPagination == -1 {
-				amountForPagination = defaultPaginationAmount
+			if amountForPagination <= 0 {
+				amountForPagination = internalPageSize
 			}
 			// iterator over hooks - print information and output
 			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
@@ -62,17 +62,18 @@ var runsDescribeCmd = &cobra.Command{
 				Hooks:      runHooksRes.JSON200.Results,
 				HooksTable: convertHookResultsTables(runHooksRes.JSON200.Results),
 				HookLog:    makeHookLog(ctx, client, u.Repository, runID),
-			}
-			if amount != -1 && pagination.HasMore {
-				// show pagination to user
-				data.Pagination = &Pagination{
+				Pagination: &Pagination{
 					Amount:  amount,
-					HasNext: true,
+					HasNext: pagination.HasMore,
 					After:   pagination.NextOffset,
-				}
+				},
 			}
 			Write(actionTaskResultTemplate, data)
 			after = pagination.NextOffset
+			if amount != 0 {
+				// user request only one page
+				break
+			}
 		}
 	},
 }
@@ -127,6 +128,6 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsDescribeCmd)
-	runsDescribeCmd.Flags().Int("amount", -1, "number of results to return. By default, all results are returned.")
+	runsDescribeCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
 	runsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

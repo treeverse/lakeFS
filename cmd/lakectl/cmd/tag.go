@@ -20,8 +20,8 @@ var tagListCmd = &cobra.Command{
 	Example: "lakectl tag list lakefs://<repository>",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 
 		u := MustParseRepoURI("repository", args[0])
 
@@ -122,6 +122,6 @@ func init() {
 	rootCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tagCreateCmd, tagDeleteCmd, tagListCmd, tagShowCmd)
 	flags := tagListCmd.Flags()
-	flags.Int("amount", 100, "number of results to return")
+	flags.Int("amount", defaultAmountArgumentValue, "number of results to return")
 	flags.String("after", "", "show results after this value (used for pagination)")
 }
