@@ -13,6 +13,7 @@ const (
 )
 
 type PaginationParams struct {
+	Prefix string
 	After  string
 	Amount int
 }

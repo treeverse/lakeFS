@@ -245,6 +245,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 	c.LogAction(ctx, "list_groups")
 	groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -359,6 +360,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	c.LogAction(ctx, "list_group_users")
 	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -433,6 +435,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	c.LogAction(ctx, "list_user_policies")
 	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -522,6 +525,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	c.LogAction(ctx, "list_policies")
 	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -670,6 +674,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	c.LogAction(ctx, "list_users")
 	users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -781,6 +786,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 	c.LogAction(ctx, "list_user_credentials")
 	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -890,6 +896,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	c.LogAction(ctx, "list_user_groups")
 	groups, paginator, err := c.Auth.ListUserGroups(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -934,6 +941,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	}
 	policies, paginator, err := listPolicies(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {

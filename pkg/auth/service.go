@@ -291,7 +291,10 @@ func (s *DBAuthService) GetUserByID(ctx context.Context, userID int) (*model.Use
 
 func (s *DBAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	var user model.User
-	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(user), params, "display_name", psql.Select("*").From("auth_users"))
+	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(user), params, "display_name",
+		psql.Select("*").
+			From("auth_users").
+			Where(sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")}))
 	if slice == nil {
 		return nil, paginator, err
 	}
@@ -303,7 +306,10 @@ func (s *DBAuthService) ListUserCredentials(ctx context.Context, username string
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(credential), params, "access_key_id", psql.Select("auth_credentials.*").
 		From("auth_credentials").
 		Join("auth_users ON (auth_credentials.user_id = auth_users.id)").
-		Where(sq.Eq{"auth_users.display_name": username}))
+		Where(sq.And{
+			sq.Eq{"auth_users.display_name": username},
+			sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")},
+		}))
 	if slice == nil {
 		return nil, paginator, err
 	}
@@ -357,7 +363,10 @@ func (s *DBAuthService) ListUserPolicies(ctx context.Context, username string, p
 		From("auth_policies").
 		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
 		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
-		Where(sq.Eq{"auth_users.display_name": username})
+		Where(sq.And{
+			sq.Eq{"auth_users.display_name": username},
+			sq.Like{"auth_policies.display_name": fmt.Sprint(params.Prefix, "%")},
+		})
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("*").FromSelect(sub, "p"))
 	if slice == nil {
@@ -388,7 +397,10 @@ func (s *DBAuthService) getEffectivePolicies(ctx context.Context, username strin
 		psql.Select("id", "created_at", "display_name", "statement").
 			Prefix(resolvedCte).
 			From("resolved_policies_view").
-			Where(sq.Eq{"user_display_name": username}))
+			Where(sq.And{
+				sq.Eq{"user_display_name": username},
+				sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")},
+			}))
 
 	if slice == nil {
 		return nil, paginator, err
@@ -418,7 +430,10 @@ func (s *DBAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName 
 		From("auth_policies").
 		Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
 		Join("auth_groups ON (auth_group_policies.group_id = auth_groups.id)").
-		Where(sq.Eq{"auth_groups.display_name": groupDisplayName})
+		Where(sq.And{
+			sq.Eq{"auth_groups.display_name": groupDisplayName},
+			sq.Like{"auth_policies.display_name": fmt.Sprint(params.Prefix, "%")},
+		})
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(policy), params, "display_name",
 		psql.Select("*").FromSelect(query, "p"))
 	if err != nil {
@@ -458,7 +473,9 @@ func (s *DBAuthService) GetGroup(ctx context.Context, groupDisplayName string) (
 func (s *DBAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	var group model.Group
 	slice, paginator, err := ListPaged(ctx, s.db, reflect.TypeOf(group), params, "display_name",
-		psql.Select("*").From("auth_groups"))
+		psql.Select("*").
+			From("auth_groups").
+			Where(sq.Like{"display_name": fmt.Sprint(params.Prefix, "%")}))
 	if err != nil {
 		return nil, paginator, err
 	}
@@ -523,9 +540,10 @@ func (s *DBAuthService) ListUserGroups(ctx context.Context, username string, par
 			WHERE
 				auth_users.display_name = $1
 				AND auth_groups.display_name > $2
+				AND auth_groups.display_name like $3
 			ORDER BY auth_groups.display_name
-			LIMIT $3`,
-			username, params.After, params.Amount+1)
+			LIMIT $4`,
+			username, params.After, fmt.Sprint(params.Prefix, "%"), params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
@@ -564,9 +582,10 @@ func (s *DBAuthService) ListGroupUsers(ctx context.Context, groupDisplayName str
 			WHERE
 				auth_groups.display_name = $1
 				AND auth_users.display_name > $2
+				AND auth_users.display_name like $3
 			ORDER BY auth_groups.display_name
-			LIMIT $3`,
-			groupDisplayName, params.After, params.Amount+1)
+			LIMIT $4`,
+			groupDisplayName, params.After, fmt.Sprint(params.Prefix, "%"), params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
@@ -645,9 +664,10 @@ func (s *DBAuthService) ListPolicies(ctx context.Context, params *model.Paginati
 			SELECT *
 			FROM auth_policies
 			WHERE display_name > $1
+			AND display_name LIKE $2
 			ORDER BY display_name
-			LIMIT $2`,
-			params.After, params.Amount+1)
+			LIMIT $3`,
+			params.After, fmt.Sprint(params.Prefix, "%"), params.Amount+1)
 		if err != nil {
 			return nil, err
 		}

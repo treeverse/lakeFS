@@ -12,7 +12,6 @@ import {branches, commits} from '../../api';
 
 
 const BranchSelector = ({ repo, selected, branches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
-
     // used for branch pagination
     const [pagination, setPagination] = useState({after: "", prefix: "", amount});
 
@@ -177,8 +176,8 @@ const Paginator = ({ pagination, onPaginate, results, from }) => {
     );
 };
 
+const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", prefix = '', emptyText = '', withCommits = true, withWorkspace = true }) => {
 
-const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyText = '', withCommits = true, withWorkspace = true }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
 
@@ -217,12 +216,12 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     const cancelButton = (!!onCancel && !!selected) ? (<Button onClick={() => {
         setShow(false);
         onCancel();
-    }} variant="outline-dark"><XIcon/></Button>) : (<span/>);
+    }} variant={variant}><XIcon/></Button>) : (<span/>);
 
     if (!selected) {
         return (
             <>
-                <Button ref={target} variant="outline-dark" onClick={()=> { setShow(!show) }}>
+                <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
                     {emptyText} {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Button>
                 {cancelButton}
@@ -242,7 +241,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
         <>
-            <Button ref={target} variant="outline-dark" onClick={()=> { setShow(!show) }}>
+            <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
                 {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
             </Button>
             {cancelButton}

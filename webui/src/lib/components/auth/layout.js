@@ -11,7 +11,7 @@ import {Link} from "../nav";
 export const AuthLayout = ({ children, activeTab }) => {
     return (
         <Layout>
-            <Container fluid>
+            <Container fluid="xl">
                 <Row className="mt-5">
                     <Col md={{span: 3}}>
                         <Card>

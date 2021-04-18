@@ -251,7 +251,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
     );
 };
 
-export const RefreshButton = ({ onClick, size = "md", variant = "outline-dark", tooltip = "Refresh", icon = <SyncIcon/> }) => {
+export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip = "Refresh", icon = <SyncIcon/> }) => {
     return (
         <TooltipButton
             tooltip={tooltip}

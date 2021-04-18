@@ -883,6 +883,7 @@ paths:
       operationId: listUsers
       summary: list users
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -971,6 +972,7 @@ paths:
       operationId: listGroups
       summary: list groups
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -1055,6 +1057,7 @@ paths:
       operationId: listPolicies
       summary: list policies
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -1170,6 +1173,7 @@ paths:
       operationId: listGroupMembers
       summary: list group members
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -1237,6 +1241,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listUserCredentials
@@ -1331,6 +1336,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listUserGroups
@@ -1360,6 +1366,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
@@ -1436,6 +1443,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listGroupPolicies

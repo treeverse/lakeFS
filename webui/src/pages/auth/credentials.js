@@ -50,7 +50,7 @@ const CredentialsContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
-                    <RefreshButton variant="outline-dark" size="md" onClick={() => setRefreshToken(!refreshToken)}/>
+                    <RefreshButton onClick={() => setRefreshToken(!refreshToken)}/>
                 </ActionGroup>
             </ActionsBar>
 

@@ -140,7 +140,7 @@ class Auth {
     }
 
     async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({prefix, after, amount});
         const response = await apiRequest(`/auth/users?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list users: ${await extractError(response)}`);
