@@ -103,6 +103,8 @@ Provide a basic wrapper around something like [pyArrow](https://pypi.org/project
 ### Airflow Operators
 Provide a set of reusable building blocks for Airflow that can create branches, commit and merge. The idea here is to enhance existing pipelines that, for example, run a series of Spark jobs, with an easy way to create a lakeFS branch before starting, passing that branch as a parameter to all Spark jobs, and upon successful execution, commit and merge their output to master.
 
+[Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
+
 ### Webhook Support integration: Data Quality testing
 Provide a webhook around a tool such as [Great Expectations](https://greatexpectations.io/) that runs data quality tests before merging into a main/master branch.
 
