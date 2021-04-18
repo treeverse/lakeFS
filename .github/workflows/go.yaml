@@ -2,7 +2,6 @@ name: Go
 on:
   push:
     paths-ignore:
-      - ".github/**"
       - "docs/**"
       - "webui/**"
       - "design/**"
@@ -10,7 +9,6 @@ on:
       - master
   pull_request:
     paths-ignore:
-      - ".github/**"
       - "docs/**"
       - "webui/**"
       - "design/**"
