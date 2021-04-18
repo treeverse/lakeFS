@@ -5,7 +5,6 @@ import {BrowserRouter as Router, Switch, Route, Redirect} from 'react-router-dom
 // styles
 import 'bootstrap/dist/css/bootstrap.css';
 import './styles/globals.css';
-import './styles/Home.module.css';
 
 // pages
 import Repositories from './pages/repositories'

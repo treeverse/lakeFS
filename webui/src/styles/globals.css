@@ -1,10 +1,9 @@
-
 .logo {
   height: 30px;
 }
 
 .navbar-brand {
-  padding: 0px;
+  padding: 0;
 }
 
 .navbar > div {
@@ -96,10 +95,6 @@
 .ref-scroller {
   max-height: 250px;
   overflow: auto;
-}
-
-.ref-list {
-
 }
 
 .ref-list .list-group-item:first-child {
