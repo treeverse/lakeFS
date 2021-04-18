@@ -1,17 +1,28 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
-import './index.css';
+import {BrowserRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
 
-import {Provider} from 'react-redux';
+// styles
+import 'bootstrap/dist/css/bootstrap.css';
+import './styles/globals.css';
 
-import store from './store';
-
-
-
+// pages
+import Repositories from './pages/repositories'
+import Auth from "./pages/auth";
 
 ReactDOM.render(
-    <Provider store={store}>
-        <App/>
-    </Provider>,
-    document.getElementById('root'));
+    <Router>
+        <Switch>
+            <Route exact path="/">
+                <Redirect to="/repositories"/>
+            </Route>
+            <Route path="/repositories">
+                <Repositories/>
+            </Route>
+            <Route path="/auth">
+                <Auth/>
+            </Route>
+        </Switch>
+    </Router>,
+  document.getElementById('root')
+);

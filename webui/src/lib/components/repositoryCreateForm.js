@@ -1,0 +1,116 @@
+import React, {useRef, useState} from 'react';
+
+import Form from "react-bootstrap/Form";
+import Alert from "react-bootstrap/Alert";
+import Button from "react-bootstrap/Button";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+
+const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
+const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
+
+export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null, inProgress = false, sm = 6 }) => {
+    const fieldNameOffset = 3;
+    const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
+
+    const [formValid, setFormValid] = useState(false);
+    const [repoValid, setRepoValid] = useState(true);
+
+    const [storageNamespaceValid, setStorageNamespaceValid] = useState(true);
+    const [defaultBranchValid, setDefaultBranchValid] = useState(true);
+
+    const storageNamespaceField = useRef(null);
+    const defaultBranchField = useRef(null);
+    const repoNameField = useRef(null);
+
+    const checkRepoValidity = () => {
+        const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
+        setRepoValid(isRepoValid);
+        setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
+    };
+
+    const checkStorageNamespaceValidity = () => {
+        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value)
+        setStorageNamespaceValid(isStorageNamespaceValid);
+        setFormValid(isStorageNamespaceValid && defaultBranchValid && repoValid);
+    };
+
+    const checkDefaultBranchValidity = () => {
+        const isBranchValid = defaultBranchField.current.value.length;
+        setDefaultBranchValid(isBranchValid);
+        setFormValid(isBranchValid && storageNamespaceValid && repoValid);
+    };
+
+    const storageNamespaceValidityRegexStr = config ? config['blockstore_namespace_ValidityRegex'] : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
+    const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
+    const storageNamespaceExample = config ? config['blockstore_namespace_example'] : DEFAULT_BLOCKSTORE_EXAMPLE;
+    return (
+        <Form className={"mt-5"} onSubmit={(e) => {
+            e.preventDefault();
+            if (!formValid) {
+                return;
+            }
+            onSubmit({
+                name: repoNameField.current.value,
+                storage_namespace: storageNamespaceField.current.value,
+                default_branch: defaultBranchField.current.value
+            });
+        }}>
+            <Form.Group as={Row} controlId="id">
+                <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
+                <Col sm={sm}>
+                    <Form.Control type="text" autoFocus ref={repoNameField} onChange={checkRepoValidity}/>
+                    {!repoValid &&
+                    <Form.Text className="text-danger">
+                        Min 2 characters. Only lowercase alphanumeric characters and '-' allowed.
+                    </Form.Text>
+                    }
+                </Col>
+            </Form.Group>
+
+            <Form.Group as={Row}>
+                <Form.Label column sm={fieldNameOffset}>Storage Namespace</Form.Label>
+                <Col sm={sm}>
+                    <Form.Control type="text" ref={storageNamespaceField} placeholder={storageNamespaceExample} onChange={checkStorageNamespaceValidity}/>
+                    {!storageNamespaceValid &&
+                    <Form.Text className="text-danger">
+                        Invalid Storage Namespace.
+                    </Form.Text>
+                    }
+                </Col>
+            </Form.Group>
+            <Form.Group as={Row} controlId="defaultBranch">
+                <Form.Label column sm={fieldNameOffset}>Default Branch</Form.Label>
+                <Col sm={sm}>
+                    <Form.Control type="text" ref={defaultBranchField} placeholder="defaultBranch" defaultValue={"master"} onChange={checkDefaultBranchValidity}/>
+                    {!defaultBranchValid &&
+                    <Form.Text className="text-danger">
+                        Invalid Branch.
+                    </Form.Text>
+                    }
+                </Col>
+            </Form.Group>
+
+            {error &&
+            <Row>
+                <Col md={{span: sm, offset: fieldNameOffset}} >
+                    <Alert variant={"danger"}>{error.message}</Alert>
+                </Col>
+            </Row>}
+
+            <Row>
+                <Col md={{span: sm, offset: fieldNameOffset}} >
+                    <Button variant="success" type="submit" className="mr-2" disabled={!formValid || inProgress}>
+                        { inProgress ? 'Creating...' : 'Create Repository' }
+                    </Button>
+                    <Button variant="secondary" onClick={(e) => {
+                        e.preventDefault();
+                        onCancel();
+                    }}>Cancel</Button>
+                </Col>
+            </Row>
+        </Form>
+    );
+}
+
+export default RepositoryCreateForm;

@@ -17,8 +17,6 @@ import (
 
 func NewUIHandler(authService auth.Service, gatewayDomain string) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/auth/login", NewLoginHandler(authService))
-	mux.Handle("/auth/logout", NewLogoutHandler())
 	staticFiles, _ := fs.NewWithNamespace(webui.Webui)
 	mux.Handle("/", NewHandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/", gatewayDomain))
 	return mux

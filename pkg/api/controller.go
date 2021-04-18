@@ -34,7 +34,7 @@ import (
 type contextKey string
 
 const (
-	// Maximum amount of results returned for paginated queries to the API
+	// DefaultMaxPerPage is the maximum amount of results returned for paginated queries to the API
 	DefaultMaxPerPage int        = 1000
 	lakeFSPrefix                 = "symlinks"
 	UserContextKey    contextKey = "user"
@@ -60,6 +60,49 @@ type Controller struct {
 	CloudMetadataProvider cloud.MetadataProvider
 	Actions               actionsHandler
 	Logger                logging.Logger
+}
+
+func (c *Controller) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	writeResponse(w, http.StatusOK, nil)
+}
+
+func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body LoginJSONRequestBody) {
+	ctx := r.Context()
+	_, err := userByAuth(ctx, c.Logger, c.Auth, body.AccessKeyId, body.SecretAccessKey)
+	if errors.Is(err, ErrAuthenticationFailed) {
+		writeResponse(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	}
+
+	loginTime := time.Now()
+	expires := loginTime.Add(DefaultLoginExpiration)
+	secret := c.Auth.SecretStore().SharedSecret()
+	tokenString, err := GenerateJWT(secret, body.AccessKeyId, loginTime, expires)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     JWTCookieName,
+		Value:    tokenString,
+		Path:     "/",
+		Expires:  expires,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+	response := AuthenticationToken{
+		Token: tokenString,
+	}
+	writeResponse(w, http.StatusOK, response)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository string, branch string, params GetPhysicalAddressParams) {
@@ -202,6 +245,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params L
 	c.LogAction(ctx, "list_groups")
 	groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -316,6 +360,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	c.LogAction(ctx, "list_group_users")
 	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -390,6 +435,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	c.LogAction(ctx, "list_group_policies")
 	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -479,6 +525,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	c.LogAction(ctx, "list_policies")
 	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -627,6 +674,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	c.LogAction(ctx, "list_users")
 	users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -738,6 +786,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 	c.LogAction(ctx, "list_user_credentials")
 	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -847,6 +896,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	c.LogAction(ctx, "list_user_groups")
 	groups, paginator, err := c.Auth.ListUserGroups(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -891,6 +941,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	}
 	policies, paginator, err := listPolicies(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
+		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
 	if handleAPIError(w, err) {
@@ -981,7 +1032,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error listing repositories: %s", err))
 		return
@@ -1369,7 +1420,7 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches")
 
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, "", paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
 	if handleAPIError(w, err) {
 		return
 	}
@@ -2651,6 +2702,13 @@ func paginationAfter(v *PaginationAfter) string {
 	return string(*v)
 }
 
+func paginationPrefix(v *PaginationPrefix) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
 func paginationAmount(v *PaginationAmount) int {
 	if v == nil {
 		return DefaultMaxPerPage
@@ -2723,7 +2781,7 @@ func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms []p
 	ctx := r.Context()
 	user, ok := ctx.Value(UserContextKey).(*model.User)
 	if !ok || user == nil {
-		writeError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		writeError(w, http.StatusUnauthorized, ErrAuthenticationFailed)
 		return false
 	}
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
