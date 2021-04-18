@@ -1164,18 +1164,6 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	branchID := StringValue(params.Branch)
-	if branchID != "" {
-		exists, err := c.Catalog.BranchExists(ctx, repository, branchID)
-		if handleAPIError(w, err) {
-			return
-		}
-		if !exists {
-			writeError(w, http.StatusNotFound, catalog.ErrBranchNotFound)
-			return
-		}
-	}
-
 	branch := StringValue(params.Branch)
 	commitID := StringValue(params.Commit)
 	runsIter, err := c.Actions.ListRunResults(ctx, repository, branch, commitID, paginationAfter(params.After))
