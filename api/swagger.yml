@@ -12,6 +12,7 @@ servers:
 security:
   - jwt_token: []
   - basic_auth: []
+  - cookie_auth: []
 
 components:
   securitySchemes:
@@ -22,8 +23,18 @@ components:
       type: apiKey
       in: header
       name: X-JWT-Authorization
+    cookie_auth:
+      type: apiKey
+      in: cookie
+      name: access_token
 
   parameters:
+    PaginationPrefix:
+      in: query
+      name: prefix
+      description: return items prefixed with this value
+      schema:
+        type: string
     PaginationAfter:
       in: query
       name: after
@@ -569,6 +580,26 @@ components:
           items:
             $ref: "#/components/schemas/User"
 
+    LoginInformation:
+      type: object
+      required:
+        - access_key_id
+        - secret_access_key
+      properties:
+        access_key_id:
+          type: string
+        secret_access_key:
+          type: string
+
+    AuthenticationToken:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          description: a JWT token that could be used to authenticate requests
+          type: string
+
     GroupCreation:
       type: object
       required:
@@ -800,6 +831,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
+  /auth/login:
+    post:
+      tags:
+        - auth
+      operationId: login
+      summary: perform a login
+      security: []  # No authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInformation"
+      responses:
+        200:
+          description: successful login
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "access_token=abcde12356; Path=/; HttpOnly"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      operationId: logout
+      summary: logs out a cookie-authenticated user
+      security:
+        - cookie_auth: []
+      responses:
+        200:
+          description: successful logout
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /auth/users:
     get:
       tags:
@@ -807,6 +883,7 @@ paths:
       operationId: listUsers
       summary: list users
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -895,6 +972,7 @@ paths:
       operationId: listGroups
       summary: list groups
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -979,6 +1057,7 @@ paths:
       operationId: listPolicies
       summary: list policies
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -1094,6 +1173,7 @@ paths:
       operationId: listGroupMembers
       summary: list group members
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
@@ -1161,6 +1241,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listUserCredentials
@@ -1255,6 +1336,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listUserGroups
@@ -1284,6 +1366,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
@@ -1360,6 +1443,7 @@ paths:
       tags:
         - auth
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listGroupPolicies
@@ -1425,6 +1509,7 @@ paths:
       tags:
         - repositories
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       operationId: listRepositories
@@ -1684,6 +1769,7 @@ paths:
       operationId: listBranches
       summary: list branches
       parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
       responses:

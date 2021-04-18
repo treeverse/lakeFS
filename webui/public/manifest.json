@@ -1,6 +1,6 @@
 {
-  "short_name": "lakeFS App",
-  "name": "Treeverse lakeFS App",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "favicon.ico",
@@ -19,5 +19,7 @@
     }
   ],
   "start_url": ".",
-  "display": "standalone"
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
 }

@@ -32,7 +32,7 @@ var diagnoseCmd = &cobra.Command{
 		defer func() { _ = c.Close() }()
 
 		numFailures := 0
-		repos, _, err := c.ListRepositories(ctx, -1, "")
+		repos, _, err := c.ListRepositories(ctx, -1, "", "")
 		if err != nil {
 			// Cannot advance last so fail everything
 			logger.WithField("error", err).Fatal("Failed to list repositories")
