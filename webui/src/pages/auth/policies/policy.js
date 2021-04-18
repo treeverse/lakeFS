@@ -79,7 +79,7 @@ const PolicyView = ({ policyId }) => {
 
 const PolicyContainer = () => {
     const router = useRouter();
-    const { policyId } = router.query;
+    const { policyId } = router.params;
     return (!policyId) ? <></> : <PolicyView policyId={policyId}/>;
 }
 

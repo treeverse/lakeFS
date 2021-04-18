@@ -22,7 +22,10 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
     const [mergeError, setMergeError] = useState(null)
     const [merging, setMerging] = useState(false)
 
-    const refresh = () => setInternalRefresh(!internalRefresh)
+    const refresh = () => {
+        setInternalRefresh(!internalRefresh)
+        setMergeError(null)
+    }
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         if (compareReference.id !== reference.id)
@@ -33,7 +36,6 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
     let content;
     if (loading) content = <Loading/>
     else if (!!error) content = <Error error={error}/>
-    else if (!!mergeError) content = <Error error={mergeError}/>
     else if (compareReference.id === reference.id) content = (
         <Alert variant="warning">
             <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
@@ -96,20 +98,23 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
                             setMerging(true)
                             hide()
                             refs.merge(repo.id, compareReference.id, reference.id)
-                                .catch(err => setMergeError(err))
                                 .then(() => {
                                     setMergeError(null)
                                     setMerging(false)
                                     refresh()
                                 })
+                                .catch(err => {
+                                    setMergeError(err)
+                                    setMerging(false)
+                                })
                         }}>
                         <GitMergeIcon/> {(merging) ? 'Merging...' : 'Merge'}
                     </ConfirmationButton>
                     }
-
                 </ActionGroup>
             </ActionsBar>
 
+            {mergeError && <Error error={mergeError}/>}
             {content}
         </>
     )

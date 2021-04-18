@@ -9,7 +9,7 @@ import UserPoliciesPage from "./policies";
 
 const UserRedirect = ({ subPath }) => {
     const router = useRouter();
-    const {userId} = router.query;
+    const {userId} = router.params;
     return <Redirect to={`/auth/users/${userId}${subPath}`}/>;
 }
 

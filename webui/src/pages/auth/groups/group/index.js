@@ -6,7 +6,7 @@ import GroupPoliciesPage from "./policies";
 
 const GroupRedirect = ({ subPath }) => {
     const router = useRouter();
-    const { groupId } = router.query;
+    const { groupId } = router.params;
     return <Redirect to={`/auth/groups/${groupId}${subPath}`}/>;
 };
 

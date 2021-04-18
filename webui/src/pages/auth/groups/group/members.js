@@ -110,7 +110,8 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
 const GroupMembersContainer = () => {
     const router = useRouter();
-    const { groupId, after } = router.query;
+    const { after } = router.query;
+    const { groupId } = router.params;
     return (!groupId) ? <></> : <GroupMemberList
         groupId={groupId}
         after={(!!after) ? after : ""}

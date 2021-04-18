@@ -218,7 +218,8 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
 
 const ActionContainer = () => {
     const router = useRouter();
-    const { runId, action } = router.query;
+    const { action } = router.query;
+    const { runId } = router.params;
     const {loading, error, repo} = useRefs();
 
     if (loading) return <Loading/>;

@@ -110,7 +110,8 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
 
 const GroupPoliciesContainer = () => {
     const router = useRouter();
-    const { groupId, after } = router.query;
+    const { after } = router.query;
+    const { groupId } = router.params;
     return (!groupId) ? <></> : <GroupPoliciesList
         groupId={groupId}
         after={(!!after) ? after : ""}

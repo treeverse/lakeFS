@@ -21,10 +21,12 @@ export const buildURL = (url) => {
 export const useRouter = () => {
     const location = useLocation();
     const history = useHistory();
-    const query = {...useParams(), ...useQuery()};
+    const query = useQuery();
+    const params = useParams();
     return {
         query,
-        push: (url) => history.push(buildURL(url)),
-        route: location.pathname
+        params,
+        route: location.pathname,
+        push: (url) => history.push(buildURL(url))
     };
 };

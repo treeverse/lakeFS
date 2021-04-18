@@ -198,7 +198,8 @@ const CommitView = ({ repo, commitId, onPaginate, after }) => {
 const CommitContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
-    const { after, commitId } = router.query;
+    const { after } = router.query;
+    const { commitId } = router.params;
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>;

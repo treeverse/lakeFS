@@ -105,7 +105,8 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
 
 const UserPoliciesContainer = () => {
     const router = useRouter();
-    const { userId, after } = router.query;
+    const { after } = router.query;
+    const { userId } = router.params;
     return (!userId) ? <></> : <UserPoliciesList
         userId={userId}
         after={(!!after) ? after : ""}

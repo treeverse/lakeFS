@@ -18,14 +18,12 @@ import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
 
 
-const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => {
+const UploadButton = ({ repo, reference, path, onDone, variant = "success", onClick, onHide, show = false}) => {
     const initialState = {
         inProgress: false,
         error: null,
         done: false
     }
-
-    const [show, setShow] = useState(false)
     const [uploadState, setUploadState] = useState(initialState)
 
     const textRef = useRef(null);
@@ -33,10 +31,10 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
 
     if (!reference || reference.type !== 'branch') return <></>
 
-    const onHide = () => {
+    const hide = () => {
         if (uploadState.inProgress) return;
         setUploadState(initialState)
-        setShow(false)
+        onHide()
     };
 
     const upload = async () => {
@@ -47,11 +45,11 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
         try {
             await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
             setUploadState({...initialState})
-            setShow(false)
             onDone()
         } catch (error) {
             setUploadState({...initialState, error})
         }
+        onHide();
     }
 
     const basePath = `${repo.id}/${reference.id}/\u00A0`;
@@ -60,7 +58,7 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
 
     return (
         <>
-            <Modal show={show} onHide={onHide}>
+            <Modal show={show} onHide={hide}>
                 <Modal.Header closeButton>
                     <Modal.Title>Upload Object</Modal.Title>
                 </Modal.Header>
@@ -98,7 +96,7 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
 
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary"  disabled={uploadState.inProgress} onClick={onHide}>
+                    <Button variant="secondary"  disabled={uploadState.inProgress} onClick={hide}>
                         Cancel
                     </Button>
                     <Button variant="success" disabled={uploadState.inProgress} onClick={() => {
@@ -110,14 +108,14 @@ const UploadButton = ({ repo, reference, path, onDone, variant = "success"}) => 
                 </Modal.Footer>
             </Modal>
 
-            <Button variant={variant} onClick={() => { setShow(true) }}>
+            <Button variant={variant} onClick={onClick}>
                 <UploadIcon/> Upload Object
             </Button>
         </>
     );
 }
 
-const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, refreshToken }) => {
+const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, onUpload, refreshToken }) => {
     const { results, error, loading, nextPage } = useAPIWithPagination( () => {
         return objects.list(repo.id, reference.id, path, after)
     },[repo.id, reference.id, path, after, refreshToken])
@@ -135,6 +133,7 @@ const TreeContainer = ({ repo, reference, path, after, onPaginate, onRefresh, re
             after={after}
             nextPage={nextPage}
             onPaginate={onPaginate}
+            onUpload={onUpload}
             onDelete={entry => {
                 objects
                     .delete(repo.id, reference.id, entry.path)
@@ -149,6 +148,7 @@ const ObjectsBrowser = () => {
     const router = useRouter();
     const { path, after } = router.query;
     const { repo, reference, loading, error } = useRefs();
+    const [showUpload, setShowUpload] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
     const refresh = () => setRefreshToken(!refreshToken);
 
@@ -175,7 +175,15 @@ const ObjectsBrowser = () => {
 
                 <ActionGroup orientation="right">
                     <RefreshButton onClick={refresh} />
-                    <UploadButton path={path} repo={repo} reference={reference} onDone={refresh}/>
+                    <UploadButton
+                        path={path}
+                        repo={repo}
+                        reference={reference}
+                        onDone={refresh}
+                        onClick={() => { setShowUpload(true); }}
+                        onHide={ () => { setShowUpload(false); }}
+                        show={showUpload}
+                    />
                 </ActionGroup>
             </ActionsBar>
 
@@ -192,6 +200,7 @@ const ObjectsBrowser = () => {
                     router.push(url)
                 }}
                 refreshToken={refreshToken}
+                onUpload={() => { setShowUpload(true); }}
                 onRefresh={refresh}/>
         </>
     );

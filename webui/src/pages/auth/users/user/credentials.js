@@ -83,7 +83,8 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
 
 const UserCredentialsContainer = () => {
     const router = useRouter();
-    const { userId, after } = router.query;
+    const { after } = router.query;
+    const { userId } = router.params;
     return (!userId) ? <></> : <UserCredentialsList
         userId={userId}
         after={(!!after) ? after : ""}

@@ -253,9 +253,8 @@ const GetStarted = ({ onUpload }) => {
             </Row>
 
             <Row className="pt-2 ml-2">
-                <DotIcon className="mr-1 mt-1"/>See the &nbsp;
-                <a href="https://docs.lakefs.io/using/"
-                   target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
+                <DotIcon className="mr-1 mt-1"/>
+                See the &nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.
             </Row>
         </Container>
     );

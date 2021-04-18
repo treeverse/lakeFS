@@ -49,7 +49,8 @@ const refContextInitialState = {
 
 export const RefContextProvider = ({ children }) => {
     const router = useRouter();
-    const {repoId, ref, compare} = router.query;
+    const { repoId } = router.params;
+    const {ref, compare} = router.query;
 
     const [refState, setRefState] = useState(refContextInitialState);
 
