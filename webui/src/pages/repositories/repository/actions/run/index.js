@@ -33,7 +33,7 @@ const RunSummary = ({ repo, run }) => {
                     <td>{run.event_type}</td>
                 </tr>
                 <tr>
-                    <td><strong>status</strong></td>
+                    <td><strong>Status</strong></td>
                     <td>{run.status}</td>
                 </tr>
                 <tr>

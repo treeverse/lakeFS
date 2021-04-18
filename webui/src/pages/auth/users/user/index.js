@@ -22,14 +22,14 @@ export default function UserPage() {
             <Route exact path="/auth/users/:userId/groups">
                 <UserGroupsPage/>
             </Route>
-            <Route exact path="/auth/users/:userId/credentials">
-                <UserCredentialsPage/>
+            <Route exact path="/auth/users/:userId/policies">
+                <UserPoliciesPage/>
             </Route>
             <Route exact path="/auth/users/:userId/policies/effective">
                 <UserEffectivePoliciesPage/>
             </Route>
-            <Route exact path="/auth/users/:userId/policies">
-                <UserPoliciesPage/>
+            <Route exact path="/auth/users/:userId/credentials">
+                <UserCredentialsPage/>
             </Route>
         </Switch>
     );

@@ -42,7 +42,7 @@ export const RepositoryNavTabs = ({ active }) => {
     };
 
     return (
-        <Nav justify variant="tabs" >
+        <Nav variant="tabs" >
             <Link active={active === 'objects'} href={withRefAndPathContext(`/repositories/${repoId}/objects`)} component={NavItem}>
                 <DatabaseIcon/> Objects
             </Link>

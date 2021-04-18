@@ -54,7 +54,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                                     .catch(error => alert(error))
                                     .then(() => { setRefresh(!refresh) })
                             }}>
-                            Remove
+                            Detach
                         </ConfirmationButton>
                     }]}
                     results={results}

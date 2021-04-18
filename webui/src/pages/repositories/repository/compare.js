@@ -60,6 +60,8 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
             </div>
     )
 
+    const emptyDiff = (!loading && !error && !!results && results.length === 0);
+
     return (
         <>
             <ActionsBar>
@@ -72,7 +74,7 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
                         withWorkspace={false}
                         selectRef={onSelectRef}/>
 
-                <ArrowLeftIcon className="mr-2 mt-2" size="small" verticalAlign="middle"/>
+                    <ArrowLeftIcon className="mr-2 mt-2" size="small" verticalAlign="middle"/>
 
                     <RefDropdown
                         prefix={'Compared to '}
@@ -91,7 +93,7 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
                     {(compareReference.type === 'branch' && reference.type === 'branch') &&
                     <ConfirmationButton
                         variant="success"
-                        disabled={((compareReference.id === reference.id) || merging)}
+                        disabled={((compareReference.id === reference.id) || merging || emptyDiff)}
                         msg={`Are you sure you'd like to merge '${compareReference.id}' into '${reference.id}'?`}
                         tooltip={`merge '${compareReference.id}' into '${reference.id}'`}
                         onConfirm={hide => {
@@ -117,8 +119,8 @@ const CompareList = ({ repo, reference, compareReference, after, onSelectRef, on
             {mergeError && <Error error={mergeError}/>}
             {content}
         </>
-    )
-}
+    );
+};
 
 
 const CompareContainer = () => {
@@ -144,7 +146,7 @@ const CompareContainer = () => {
                 const query = {after};
                 if (compare) query.compare = compare.id;
                 if (reference) query.ref = reference.id;
-                route(query)
+                route(query);
             }}
         />
     );

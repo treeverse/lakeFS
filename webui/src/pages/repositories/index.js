@@ -64,11 +64,11 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
 
 
 
-const RepositoryList = ({ onPaginate, prefix, after, lastListUpdate = null  }) => {
+const RepositoryList = ({ onPaginate, prefix, after, refresh }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after)
-    }, [lastListUpdate, prefix, after])
+    }, [refresh, prefix, after])
 
     if (loading) return <Loading/>;
     if (!!error) return <Error error={error}/>
@@ -112,7 +112,7 @@ const RepositoriesPage = () => {
     const router = useRouter();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createError, setCreateError] = useState(null);
-    const [lastListUpdate, setLastListUpdate] = useState(new Date());
+    const [refresh, setRefresh] = useState(false);
 
     const routerPfx = (!!router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
@@ -123,7 +123,7 @@ const RepositoriesPage = () => {
     const createRepo = async (repo) => {
         try {
             await repositories.create(repo)
-            setLastListUpdate(new Date())
+            setRefresh(!refresh);
             setCreateError(null)
             router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: repo.name}});
         } catch (error) {
@@ -166,10 +166,9 @@ const RepositoriesPage = () => {
 
                 <RepositoryList
                     prefix={routerPfx}
-                    lastListUpdate={lastListUpdate}
+                    refresh={refresh}
                     after={(!!router.query.after) ? router.query.after : ""}
                     onPaginate={after => {
-                        console.log('paginate?')
                         const query = {after};
                         if (!!router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});

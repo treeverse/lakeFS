@@ -200,7 +200,7 @@ export const useHover = () => {
 
 export const LinkButton = ({ href, children, tooltip, buttonVariant }) => {
     return (
-        <Link href={href} component={Button} tooltip={tooltip} variant={buttonVariant}>{children}</Link>
+        <Link href={href} component={TooltipButton} tooltip={tooltip} variant={buttonVariant}>{children}</Link>
     );
 };
 

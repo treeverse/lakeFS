@@ -10,7 +10,7 @@ import {ConfirmationModal} from "../modals";
 
 const ChangeRowActions = ({ entry, onRevert }) => {
     const [show, setShow] = useState(false);
-    const revertConfirmMsg = `are you sure you wish to revert "${entry.path}" (${entry.type})?`;
+    const revertConfirmMsg = `Are you sure you wish to revert "${entry.path}" (${entry.type})?`;
     const onSubmit = () => {
         onRevert(entry)
         setShow(false)
@@ -18,7 +18,7 @@ const ChangeRowActions = ({ entry, onRevert }) => {
 
     return (
         <>
-            <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>revert change</Tooltip>)}>
+            <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>Revert change</Tooltip>)}>
                 <Button variant="link" disabled={false} onClick={(e) => {
                     e.preventDefault();
                     setShow(true)
@@ -56,7 +56,7 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
     switch (entry.type) {
         case 'removed':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>removed</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>Removed</Tooltip>)}>
                     <span>
                         <TrashIcon/>
                     </span>
@@ -65,7 +65,7 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
             break;
         case 'added':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>added</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>Added</Tooltip>)}>
                     <span>
                         <PlusIcon/>
                     </span>
@@ -74,7 +74,7 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
             break;
         case 'changed':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>changed</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>Changed</Tooltip>)}>
                     <span>
                         <PencilIcon/>
                     </span>
@@ -83,7 +83,7 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
             break;
         case 'conflict':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>conflict</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>Conflict</Tooltip>)}>
                     <span>
                         <CircleSlashIcon/>
                     </span>
@@ -95,7 +95,7 @@ export const ChangeEntryRow = ({ entry, showActions, onRevert }) => {
     }
 
     let entryActions;
-    if (showActions && entry.path_type === 'object') {
+    if (showActions) {
         entryActions = <ChangeRowActions
             entry={entry}
             onRevert={onRevert}

@@ -61,7 +61,7 @@ const CommitActions = ({ repo, commit }) => {
                 <LinkButton
                     buttonVariant="outline-dark"
                     href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
-                    tooltip="Browse objects at this commit">
+                    tooltip="Browse commit objects">
                     <BrowserIcon/>
                 </LinkButton>
                 <LinkButton
@@ -70,9 +70,9 @@ const CommitActions = ({ repo, commit }) => {
                     tooltip="View Commit Action runs">
                     <PlayIcon/>
                 </LinkButton>
-                <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
-                <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
-                <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="copy S3 URI to clipboard" icon={<PackageIcon/>}/>
+                <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="Copy ID to clipboard"/>
+                <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
+                <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
             </ButtonGroup>
         </div>
     );

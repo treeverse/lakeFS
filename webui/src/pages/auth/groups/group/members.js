@@ -112,7 +112,7 @@ const GroupMembersContainer = () => {
     const router = useRouter();
     const { after } = router.query;
     const { groupId } = router.params;
-    return (!groupId) ? <></> : <GroupMemberList
+    return groupId && <GroupMemberList
         groupId={groupId}
         after={(!!after) ? after : ""}
         onPaginate={after => router.push({pathname: '/auth/groups/:groupId/members', params: {groupId},query: {after}})}

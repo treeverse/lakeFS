@@ -104,9 +104,9 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                             tooltip="View referenced commit">
                             {branch.commit_id.substr(0, 12)}
                         </LinkButton>
-                        <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
-                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${branch.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
-                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}`} tooltip="copy S3 URI to clipboard" icon={<PackageIcon/>}/>
+                        <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="Copy ID to clipboard"/>
+                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${branch.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
+                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
                     </ButtonGroup>
                 </div>
             </div>
