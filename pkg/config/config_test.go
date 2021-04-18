@@ -45,7 +45,7 @@ func TestConfig_NewFromFile(t *testing.T) {
 		if c.GetListenAddress() != "0.0.0.0:8005" {
 			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.GetListenAddress())
 		}
-		if diffs := deep.Equal(c.GetS3GatewayDomainNames(), []string{"s3.example.com", "gcp.example.net"}); diffs != nil {
+		if diffs := deep.Equal(c.GetS3GatewayDomainNames(), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
 			t.Fatalf("expected domain name s3.example.com, diffs %s", diffs)
 		}
 	})
@@ -87,6 +87,13 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 	testutil.Must(t, err)
 	if c.GetDatabaseParams().ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", c.GetDatabaseParams().ConnectionString, dbString)
+	}
+}
+
+func TestConfig_DomainNamePrefix(t *testing.T) {
+	_, err := newConfigFromFile("testdata/domain_name_prefix.yaml")
+	if !errors.Is(err, config.ErrBadDomainNames) {
+		t.Errorf("got error %s not %s", err, config.ErrBadDomainNames)
 	}
 }
 

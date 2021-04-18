@@ -19,6 +19,7 @@ gateways:
   s3:
     domain_name:
       - s3.example.com
+      - gs3.example.com
       - gcp.example.net
     region: us-east-1
 
