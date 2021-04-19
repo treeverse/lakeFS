@@ -82,7 +82,7 @@ func EnrichWithParts(bareDomains []string, next http.Handler) http.Handler {
 
 func getBareDomain(hostname string, bareDomains []string) string {
 	for _, bd := range bareDomains {
-		if strings.HasSuffix(hostname, "." + bd) {
+		if hostname == bd || strings.HasSuffix(hostname, "."+bd) {
 			return bd
 		}
 	}
