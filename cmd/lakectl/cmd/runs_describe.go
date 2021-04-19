@@ -10,16 +10,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
-const actionRunResultTemplate = `
-{{ . | table -}}
-`
+const actionRunResultTemplate = `{{ . | table -}}`
 
-const actionTaskResultTemplate = `{{ $r := . }}
-{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}
-{{ printf $val.HookRunId | call $r.HookLog }}
-{{ end }}
-{{ .Pagination | paginate }}
-`
+const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{{ index $r.HooksTable $idx | table -}}{{ printf $val.HookRunId | call $r.HookLog }}{{ end }}{{ if .Pagination }}
+{{ .Pagination | paginate }}{{ end }}`
 
 const runsShowRequiredArgs = 2
 
@@ -30,9 +24,11 @@ var runsDescribeCmd = &cobra.Command{
 	Example: "lakectl actions runs describe lakefs://<repository> <run_id>",
 	Args:    cobra.ExactArgs(runsShowRequiredArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		u := MustParseRepoURI("repository", args[0])
+		pagination := api.Pagination{HasMore: true}
+
 		Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 
@@ -45,34 +41,40 @@ var runsDescribeCmd = &cobra.Command{
 
 		runResult := runsRes.JSON200
 		Write(actionRunResultTemplate, convertRunResultTable(runResult))
-
-		// iterator over hooks - print information and output
-		runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-		})
-		DieOnResponseError(runHooksRes, err)
-
-		response := runHooksRes.JSON200.Results
-		pagination := runHooksRes.JSON200.Pagination
-		data := struct {
-			Hooks      []api.HookRun
-			HooksTable []*Table
-			HookLog    func(hookRunID string) (string, error)
-			Pagination *Pagination
-		}{
-			Hooks:      response,
-			HooksTable: convertHookResultsTables(response),
-			HookLog:    makeHookLog(ctx, client, u.Repository, runID),
-		}
-		if pagination.HasMore {
-			data.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
+		for pagination.HasMore {
+			amountForPagination := amount
+			if amountForPagination <= 0 {
+				amountForPagination = internalPageSize
+			}
+			// iterator over hooks - print information and output
+			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(amountForPagination),
+			})
+			DieOnResponseError(runHooksRes, err)
+			pagination = runHooksRes.JSON200.Pagination
+			data := struct {
+				Hooks      []api.HookRun
+				HooksTable []*Table
+				HookLog    func(hookRunID string) (string, error)
+				Pagination *Pagination
+			}{
+				Hooks:      runHooksRes.JSON200.Results,
+				HooksTable: convertHookResultsTables(runHooksRes.JSON200.Results),
+				HookLog:    makeHookLog(ctx, client, u.Repository, runID),
+				Pagination: &Pagination{
+					Amount:  amount,
+					HasNext: pagination.HasMore,
+					After:   pagination.NextOffset,
+				},
+			}
+			Write(actionTaskResultTemplate, data)
+			after = pagination.NextOffset
+			if amount != 0 {
+				// user request only one page
+				break
 			}
 		}
-		Write(actionTaskResultTemplate, data)
 	},
 }
 
@@ -126,6 +128,6 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsDescribeCmd)
-	runsDescribeCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	runsDescribeCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
 	runsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

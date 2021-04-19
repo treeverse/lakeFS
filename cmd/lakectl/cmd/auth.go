@@ -590,7 +590,7 @@ var authPoliciesDelete = &cobra.Command{
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
-	cmd.Flags().Int("amount", 100, "how many results to return")
+	cmd.Flags().Int("amount", defaultAmountArgumentValue, "how many results to return")
 	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
 
