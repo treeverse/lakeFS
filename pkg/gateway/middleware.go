@@ -93,7 +93,7 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := &operations.Operation{
-			Region: sc.region,
+			Region:            sc.region,
 			FQDN:              getBareDomain(req.URL.Hostname(), sc.bareDomains),
 			Catalog:           sc.catalog,
 			MultipartsTracker: sc.multipartsTracker,

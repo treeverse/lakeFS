@@ -67,7 +67,7 @@ var (
 	ErrBadConfiguration  = errors.New("bad configuration")
 	ErrMissingSecretKey  = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
 	ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
-	ErrBadDomainNames = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrBadDomainNames    = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 )
 
 type LogrusAWSAdapter struct {
@@ -218,7 +218,7 @@ func (c *Config) validateDomainNames() error {
 		domainNames[i] = reverse(d)
 	}
 	for i := 0; i < len(domainNames)-1; i++ {
-		if strings.HasSuffix(domainNames[i+1], "." + domainNames[i]) {
+		if strings.HasSuffix(domainNames[i+1], "."+domainNames[i]) {
 			return fmt.Errorf("%w: %s, %s", ErrBadDomainNames, domainNames[i], domainNames[i+1])
 		}
 	}
