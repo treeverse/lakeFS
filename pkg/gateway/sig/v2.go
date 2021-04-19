@@ -219,7 +219,7 @@ func buildPath(host string, bareDomain string, path string) string {
 	return ""
 }
 
-func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomains []string) error {
+func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) error {
 	/*
 		s3 sigV2 implementation:
 		the s3 signature  is somewhat different than general aws signature implementation.
@@ -247,10 +247,9 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomains []strin
 	patchedPath = strings.ReplaceAll(patchedPath, "+", "%20")
 	patchedPath = strings.ReplaceAll(patchedPath, "*", "%2A")
 	patchedPath = strings.ReplaceAll(patchedPath, "%7E", "~")
-	// TODO(ariels): Can we support sigV2 with multiple domains?
-	path := buildPath(a.r.Host, bareDomains[0], patchedPath)
-	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
-	digest := signCanonicalString(stringToSigh, []byte(creds.SecretAccessKey))
+	path := buildPath(a.r.Host, bareDomain, patchedPath)
+	stringToSign := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
+	digest := signCanonicalString(stringToSign, []byte(creds.SecretAccessKey))
 	if !Equal(digest, a.ctx.signature) {
 		return errors.ErrSignatureDoesNotMatch
 	}

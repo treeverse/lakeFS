@@ -47,7 +47,7 @@ func AuthenticationHandler(authService simulator.GatewayAuthService, bareDomains
 			}
 			return
 		}
-		err = authenticator.Verify(creds, bareDomains)
+		err = authenticator.Verify(creds, o.FQDN)
 		logger = logger.WithField("authenticator", authenticator)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
