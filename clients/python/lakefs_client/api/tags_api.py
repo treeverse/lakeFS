@@ -114,6 +114,7 @@ class TagsApi(object):
                 'response_type': (Ref,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags',
@@ -244,6 +245,7 @@ class TagsApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags/{tag}',
@@ -373,6 +375,7 @@ class TagsApi(object):
                 'response_type': (Ref,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags/{tag}',
@@ -500,6 +503,7 @@ class TagsApi(object):
                 'response_type': (RefList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags',

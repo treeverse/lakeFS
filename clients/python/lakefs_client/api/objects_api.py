@@ -119,6 +119,7 @@ class ObjectsApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',
@@ -258,6 +259,7 @@ class ObjectsApi(object):
                 'response_type': (file_type,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects',
@@ -398,6 +400,7 @@ class ObjectsApi(object):
                 'response_type': (UnderlyingObjectProperties,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/underlyingProperties',
@@ -537,6 +540,7 @@ class ObjectsApi(object):
                 'response_type': (ObjectStatsList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/ls',
@@ -700,6 +704,7 @@ class ObjectsApi(object):
                 'response_type': (ObjectStats,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',
@@ -846,6 +851,7 @@ class ObjectsApi(object):
                 'response_type': (ObjectStats,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/objects/stat',
@@ -987,6 +993,7 @@ class ObjectsApi(object):
                 'response_type': (ObjectStats,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',

@@ -114,6 +114,7 @@ class ActionsApi(object):
                 'response_type': (ActionRun,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs/{run_id}',
@@ -247,6 +248,7 @@ class ActionsApi(object):
                 'response_type': (file_type,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output',
@@ -383,6 +385,7 @@ class ActionsApi(object):
                 'response_type': (ActionRunList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs',
@@ -534,6 +537,7 @@ class ActionsApi(object):
                 'response_type': (HookRunList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/actions/runs/{run_id}/hooks',
