@@ -401,7 +401,8 @@ func TestManager_ListTags(t *testing.T) {
 
 func TestManager_AddCommit(t *testing.T) {
 	r := testRefManager(t)
-	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "master",
@@ -417,16 +418,17 @@ func TestManager_AddCommit(t *testing.T) {
 		Metadata:     graveler.Metadata{"foo": "bar"},
 	}
 
-	cid, err := r.AddCommit(context.Background(), "repo1", c)
+	cid, err := r.AddCommit(ctx, "repo1", c)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if cid != "b0c8486887ed31da0d3c1cd72daacbef7c14fe7e050be69dca4bb24c3e66b6ad" {
-		t.Fatalf("unexpected commit ID: %s", cid)
+	const expectedCommitID = "2277b5abd2d3ba6b4d35c48a0e358b0c4bcf5cd6d891c67437fb4c4af0d2fd4b"
+	if cid != expectedCommitID {
+		t.Fatalf("Commit ID '%s', expected '%s'", cid, expectedCommitID)
 	}
 
-	commit, err := r.GetCommit(context.Background(), "repo1", cid)
+	commit, err := r.GetCommit(ctx, "repo1", cid)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -452,7 +454,6 @@ func TestManager_Log(t *testing.T) {
 	var previous graveler.CommitID
 	for i := 0; i < 20; i++ {
 		c := graveler.Commit{
-			Version:      "commit:v1",
 			Committer:    "user1",
 			Message:      "message1",
 			MetaRangeID:  "deadbeef123",
@@ -610,7 +611,6 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	hex := ident.NewHexAddressProvider()
 
 	commit := graveler.Commit{
-		Version:      "commit:v1",
 		Committer:    "some-committer",
 		Message:      "I just committed",
 		MetaRangeID:  "123456789987654321",

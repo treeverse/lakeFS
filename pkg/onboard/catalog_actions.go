@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
@@ -145,14 +144,11 @@ func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metad
 		return "", ErrNoMetaRange
 	}
 
-	commit := graveler.Commit{
-		Version:      graveler.CommitVersion,
-		Committer:    c.committer,
-		Message:      commitMsg,
-		MetaRangeID:  *c.createdMetaRangeID,
-		CreationDate: time.Now(),
-		Metadata:     graveler.Metadata(metadata),
-	}
+	commit := graveler.NewCommit()
+	commit.Committer = c.committer
+	commit.Message = commitMsg
+	commit.MetaRangeID = *c.createdMetaRangeID
+	commit.Metadata = graveler.Metadata(metadata)
 	if c.previousCommitID != "" {
 		commit.Parents = graveler.CommitParents{c.previousCommitID}
 	}

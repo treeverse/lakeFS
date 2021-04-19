@@ -1,4 +1,4 @@
 BEGIN;
 ALTER TABLE graveler_commits
-    ADD COLUMN IF NOT EXISTS version text DEFAULT 'commit:v1' NOT NULL;
+    ADD COLUMN IF NOT EXISTS version integer DEFAULT 0 NOT NULL;
 COMMIT;

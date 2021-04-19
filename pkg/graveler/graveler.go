@@ -150,13 +150,21 @@ func (cp CommitParents) AsStringSlice() []string {
 // FirstCommitMsg is the message of the first (zero) commit of a lakeFS repository
 const FirstCommitMsg = "Repository created"
 
-// CommitVersion is the current version of the commit and is updated from time to time.
+// CommitVersion used to track changes in Commit schema. Each version is change that a constant describes.
+type CommitVersion int
+
+const (
+	CommitVersionInitial CommitVersion = iota
+	CommitVersionParentSwitch
+
+	CurrentCommitVersion = CommitVersionParentSwitch
+)
+
 // Change it if a change was applied to the schema of the Commit struct.
-const CommitVersion = "commit:v2"
 
 // Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
-	Version      string        `db:"version"`
+	Version      CommitVersion `db:"version"`
 	Committer    string        `db:"committer"`
 	Message      string        `db:"message"`
 	MetaRangeID  MetaRangeID   `db:"meta_range_id"`
@@ -165,9 +173,16 @@ type Commit struct {
 	Metadata     Metadata      `db:"metadata"`
 }
 
+func NewCommit() Commit {
+	return Commit{
+		Version:      CurrentCommitVersion,
+		CreationDate: time.Now(),
+	}
+}
+
 func (c Commit) Identity() []byte {
 	b := ident.NewAddressWriter()
-	b.MarshalString(c.Version)
+	b.MarshalString("commit:v1")
 	b.MarshalString(c.Committer)
 	b.MarshalString(c.Message)
 	b.MarshalString(string(c.MetaRangeID))
@@ -311,10 +326,10 @@ type VersionController interface {
 	// Reset throws all staged data on the repository / branch
 	Reset(ctx context.Context, repositoryID RepositoryID, branchID BranchID) error
 
-	// Reset throws all staged data under the specified key on the repository / branch
+	// ResetKey throws all staged data under the specified key on the repository / branch
 	ResetKey(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
-	// Reset throws all staged data starting with the given prefix on the repository / branch
+	// ResetPrefix throws all staged data starting with the given prefix on the repository / branch
 	ResetPrefix(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
 
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
@@ -345,7 +360,7 @@ type VersionController interface {
 // Plumbing includes commands for fiddling more directly with graveler implementation
 // internals.
 type Plumbing interface {
-	// GetMetarange returns information where metarangeID is stored.
+	// GetMetaRange returns information where metarangeID is stored.
 	GetMetaRange(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) (MetaRangeInfo, error)
 	// GetRange returns information where rangeID is stored.
 	GetRange(ctx context.Context, repositoryID RepositoryID, rangeID RangeID) (RangeInfo, error)
@@ -536,7 +551,7 @@ type CommittedManager interface {
 	// it returns a new MetaRangeID that is expected to be immediately addressable
 	Apply(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID, iterator ValueIterator) (MetaRangeID, DiffSummary, error)
 
-	// GetMetarange returns information where metarangeID is stored.
+	// GetMetaRange returns information where metarangeID is stored.
 	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeInfo, error)
 	// GetRange returns information where rangeID is stored.
 	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeInfo, error)
@@ -564,7 +579,7 @@ type StagingManager interface {
 	DropByPrefix(ctx context.Context, st StagingToken, prefix Key) error
 }
 
-// BranchLockerFunc
+// BranchLockerFunc callback function when branch is locked for operation (ex: writer or metadata updater)
 type BranchLockerFunc func() (interface{}, error)
 
 type BranchLocker interface {
@@ -975,13 +990,10 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
-		commit = Commit{
-			Version:      CommitVersion,
-			Committer:    params.Committer,
-			Message:      params.Message,
-			CreationDate: time.Now(),
-			Metadata:     params.Metadata,
-		}
+		commit = NewCommit()
+		commit.Committer = params.Committer
+		commit.Message = params.Message
+		commit.Metadata = params.Metadata
 		if branch.CommitID != "" {
 			commit.Parents = CommitParents{branch.CommitID}
 		}
@@ -1305,15 +1317,12 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 			}
 			return "", err
 		}
-		commit := Commit{
-			Version:      CommitVersion,
-			Committer:    commitParams.Committer,
-			Message:      commitParams.Message,
-			MetaRangeID:  metaRangeID,
-			CreationDate: time.Now(),
-			Parents:      []CommitID{branch.CommitID},
-			Metadata:     commitParams.Metadata,
-		}
+		commit := NewCommit()
+		commit.Committer = commitParams.Committer
+		commit.Message = commitParams.Message
+		commit.MetaRangeID = metaRangeID
+		commit.Parents = []CommitID{branch.CommitID}
+		commit.Metadata = commitParams.Metadata
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
@@ -1367,15 +1376,12 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 			}
 			return "", err
 		}
-		commit = Commit{
-			Version:      CommitVersion,
-			Committer:    commitParams.Committer,
-			Message:      commitParams.Message,
-			CreationDate: time.Now(),
-			MetaRangeID:  metaRangeID,
-			Parents:      []CommitID{toCommit.CommitID, fromCommit.CommitID},
-			Metadata:     commitParams.Metadata,
-		}
+		commit = NewCommit()
+		commit.Committer = commitParams.Committer
+		commit.Message = commitParams.Message
+		commit.MetaRangeID = metaRangeID
+		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		commit.Metadata = commitParams.Metadata
 		preRunID = NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
@@ -1548,7 +1554,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 			parents[i] = CommitID(p)
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
-			Version:      commit.Version,
+			Version:      CommitVersion(commit.Version),
 			Committer:    commit.GetCommitter(),
 			Message:      commit.GetMessage(),
 			MetaRangeID:  MetaRangeID(commit.GetMetaRangeId()),
@@ -1870,7 +1876,7 @@ func (c *commitValueIterator) setValue() bool {
 	}
 	commit := c.src.Value()
 	data, err := proto.Marshal(&CommitData{
-		Version:      commit.Version,
+		Version:      int32(commit.Version),
 		Id:           string(commit.CommitID),
 		Committer:    commit.Committer,
 		Message:      commit.Message,

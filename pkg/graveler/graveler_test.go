@@ -600,9 +600,9 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	conn, _ := tu.GetDB(t, databaseURI)
 	branchLocker := ref.NewBranchLocker(conn)
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
-	const expectedCommitID = graveler.CommitID("expectedCommitId")
-	const expectedCommitID2 = graveler.CommitID("expectedCommitId2")
-	const mergeDestination = "destinationID"
+	const expectedCommitID = graveler.CommitID("expectedCommitID")
+	const expectedCommitID2 = graveler.CommitID("expectedCommitID2")
+	const mergeDestination = graveler.BranchID("destinationID")
 	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
@@ -664,7 +664,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 				t.Fatalf("Merge err=%v, pre-merge error expected HookAbortError", err)
 			}
 			if refManager.AddedCommit.MetaRangeID == "" {
-				t.Fatalf("Empty MetaRangeID, commit was successful")
+				t.Fatalf("Empty MetaRangeID, commit was successful - %+v", refManager.AddedCommit)
 			}
 			parents := refManager.AddedCommit.Parents
 			if len(parents) != 2 {

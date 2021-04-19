@@ -15,7 +15,7 @@ import (
 // IteratorPrefetchSize is the amount of records to maybeFetch from PG
 const IteratorPrefetchSize = 1000
 
-// 3ms was chosen as a max delay time for critical path queries.
+// MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
 // It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
 // Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
 // 	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
@@ -70,11 +70,8 @@ func createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, reposito
 }
 
 func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
-	firstCommit := graveler.Commit{
-		Version:      graveler.CommitVersion,
-		Message:      graveler.FirstCommitMsg,
-		CreationDate: time.Now(),
-	}
+	firstCommit := graveler.NewCommit()
+	firstCommit.Message = graveler.FirstCommitMsg
 	commitID := m.addressProvider.ContentAddress(firstCommit)
 
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
