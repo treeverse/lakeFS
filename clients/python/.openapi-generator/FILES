@@ -139,6 +139,4 @@ setup.cfg
 setup.py
 test-requirements.txt
 test/__init__.py
-test/test_authentication_token.py
-test/test_login_information.py
 tox.ini
