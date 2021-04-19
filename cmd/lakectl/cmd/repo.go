@@ -18,17 +18,12 @@ var repoCmd = &cobra.Command{
 	Short: "manage and explore repos",
 }
 
-var repoListTemplate = `{{.RepoTable | table -}}
-{{.Pagination | paginate }}
-`
-
 var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list repositories",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		clt := getClient()
 
 		res, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
@@ -36,33 +31,14 @@ var repoListCmd = &cobra.Command{
 			Amount: api.PaginationAmountPtr(amount),
 		})
 		DieOnResponseError(res, err)
-
 		repos := res.JSON200.Results
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
 			ts := time.Unix(repo.CreationDate, 0).String()
 			rows[i] = []interface{}{repo.Id, ts, repo.DefaultBranch, repo.StorageNamespace}
 		}
-
-		ctx := struct {
-			RepoTable  *Table
-			Pagination *Pagination
-		}{
-			RepoTable: &Table{
-				Headers: []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"},
-				Rows:    rows,
-			},
-		}
 		pagination := res.JSON200.Pagination
-		if pagination.HasMore {
-			ctx.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
-			}
-		}
-
-		Write(repoListTemplate, ctx)
+		PrintTable(rows, []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"}, &pagination, amount)
 	},
 }
 
@@ -160,7 +136,7 @@ func init() {
 	repoCmd.AddCommand(repoCreateBareCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
 
-	repoListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	repoListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")

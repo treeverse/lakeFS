@@ -5,8 +5,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-const commitsTemplate = `
-{{ range $val := .Commits }}
+const commitsTemplate = `{{ range $val := .Commits }}
 ID:            {{ $val.Id|yellow }}{{if $val.Committer }}
 Author:        {{ $val.Committer }}{{end}}
 Date:          {{ $val.CreationDate|date }}
@@ -20,9 +19,8 @@ Merge:         {{ $val.Parents|join ", "|bold }}
 	{{ range $key, $value := $val.Metadata.AdditionalProperties }}
 		{{ $key }} = {{ $value }}
 	{{ end -}}
-{{ end }}
-{{.Pagination | paginate }}
-`
+{{ end }}{{ if .Pagination  }}
+{{.Pagination | paginate }}{{ end }}`
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
@@ -30,48 +28,50 @@ var logCmd = &cobra.Command{
 	Short: "show log of commits for the given branch",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, err := cmd.Flags().GetInt("amount")
-		if err != nil {
-			DieErr(err)
-		}
-		after, err := cmd.Flags().GetString("after")
-		if err != nil {
-			DieErr(err)
-		}
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
+		pagination := api.Pagination{HasMore: true}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
 		branchURI := MustParseRefURI("branch", args[0])
-		res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-		})
-		DieOnResponseError(res, err)
-
-		commits := res.JSON200.Results
-		data := struct {
-			Commits         []api.Commit
-			Pagination      *Pagination
-			ShowMetaRangeID bool
-		}{
-			Commits:         commits,
-			ShowMetaRangeID: showMetaRangeID,
+		amountForPagination := amount
+		if amountForPagination <= 0 {
+			amountForPagination = internalPageSize
 		}
-		pagination := res.JSON200.Pagination
-		if pagination.HasMore {
-			data.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
+		for pagination.HasMore {
+			res, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.LogCommitsParams{
+				After:  api.PaginationAfterPtr(after),
+				Amount: api.PaginationAmountPtr(amountForPagination),
+			})
+			DieOnResponseError(res, err)
+			pagination = res.JSON200.Pagination
+			after = pagination.NextOffset
+			data := struct {
+				Commits         []api.Commit
+				Pagination      *Pagination
+				ShowMetaRangeID bool
+			}{
+				Commits:         res.JSON200.Results,
+				ShowMetaRangeID: showMetaRangeID,
+				Pagination: &Pagination{
+					Amount:  amount,
+					HasNext: pagination.HasMore,
+					After:   pagination.NextOffset,
+				},
+			}
+			Write(commitsTemplate, data)
+			if amount != 0 {
+				// user request only one page
+				break
 			}
 		}
-		Write(commitsTemplate, data)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
-	logCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 }

@@ -21,18 +21,14 @@ var branchCmd = &cobra.Command{
 	Long:  `Create delete and list branches within a lakeFS repository`,
 }
 
-const branchListTemplate = `{{.BranchTable | table -}}
-{{.Pagination | paginate }}
-`
-
 var branchListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://<repository>",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := MustInt(cmd.Flags().GetInt("amount"))
+		after := MustString(cmd.Flags().GetString("after"))
 		u := MustParseRepoURI("repository", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
@@ -48,24 +44,7 @@ var branchListCmd = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		data := struct {
-			BranchTable *Table
-			Pagination  *Pagination
-		}{
-			BranchTable: &Table{
-				Headers: []interface{}{"Branch", "Commit ID"},
-				Rows:    rows,
-			},
-		}
-		if pagination.HasMore {
-			data.Pagination = &Pagination{
-				Amount:  amount,
-				HasNext: true,
-				After:   pagination.NextOffset,
-			}
-		}
-
-		Write(branchListTemplate, data)
+		PrintTable(rows, []interface{}{"Branch", "Commit ID"}, &pagination, amount)
 	},
 }
 
@@ -229,7 +208,7 @@ func init() {
 	branchCmd.AddCommand(branchResetCmd)
 	branchCmd.AddCommand(branchRevertCmd)
 
-	branchListCmd.Flags().Int("amount", -1, "how many results to return, or '-1' for default (used for pagination)")
+	branchListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")

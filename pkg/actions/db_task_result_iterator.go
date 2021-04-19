@@ -61,7 +61,7 @@ func (it *DBTaskResultIterator) maybeFetch() {
 		Select("run_id", "hook_run_id", "hook_id", "action_name", "start_time", "end_time", "passed").
 		From("actions_run_hooks").
 		Where(sq.Eq{"repository_id": it.repositoryID, "run_id": it.runID}).
-		Where(sq.Gt{"action_name": it.offset}).
+		Where(sq.Gt{"hook_run_id": it.offset}).
 		OrderBy("hook_run_id").
 		Limit(uint64(it.fetchSize))
 
