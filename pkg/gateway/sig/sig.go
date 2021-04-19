@@ -108,8 +108,8 @@ func Equal(sig1, sig2 []byte) bool {
 	return hmac.Equal(sig1, sig2)
 }
 
-func (c *chainedAuthenticator) Verify(creds *model.Credential, domain string) error {
-	return c.chosen.Verify(creds, domain)
+func (c *chainedAuthenticator) Verify(creds *model.Credential, fqdn string) error {
+	return c.chosen.Verify(creds, fqdn)
 }
 
 func (c *chainedAuthenticator) String() string {

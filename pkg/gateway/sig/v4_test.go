@@ -20,6 +20,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 
+const sigV4NoDomain = ""
+
 var (
 	mockCreds = &model.Credential{
 		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
@@ -99,7 +101,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 				return
 			}
 
-			err = authenticator.Verify(mockCreds, "")
+			err = authenticator.Verify(mockCreds, sigV4NoDomain)
 			if err != nil {
 				if !tc.ExpectedError {
 					t.Fatal(err)
@@ -171,7 +173,7 @@ func TestSingleChunkPut(t *testing.T) {
 				AccessKeyID:     ID,
 				SecretAccessKey: SECRET,
 				IssuedDate:      time.Now(),
-			}, "")
+			}, sigV4NoDomain)
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
 			}
@@ -233,7 +235,7 @@ func TestStreaming(t *testing.T) {
 		AccessKeyID:     ID,
 		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, sigV4NoDomain)
 	if err != nil {
 		t.Error(err)
 	}
@@ -290,7 +292,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 		AccessKeyID:     ID,
 		SecretAccessKey: SECRET,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -335,7 +337,7 @@ func TestUnsignedPayload(t *testing.T) {
 		AccessKeyID:     testID,
 		SecretAccessKey: testSecret,
 		IssuedDate:      time.Now(),
-	}, "")
+	}, sigV4NoDomain)
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}

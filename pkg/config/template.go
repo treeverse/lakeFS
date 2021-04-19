@@ -1,6 +1,32 @@
 package config
 
-import "time"
+import (
+	"reflect"
+	"time"
+)
+
+// Strings is a []string that mapstructure can deserialize from a single string or from a list
+// of strings.
+type Strings []string
+
+var ourStringsType = reflect.TypeOf(Strings{})
+var stringType = reflect.TypeOf("")
+var stringSliceType = reflect.TypeOf([]string{})
+
+// decodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
+// of strings into Strings.
+func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{}, error) {
+	if toValue.Type() != ourStringsType {
+		return fromValue.Interface(), nil
+	}
+	if fromValue.Type() == stringSliceType {
+		return Strings(fromValue.Interface().([]string)), nil
+	}
+	if fromValue.Type() == stringType {
+		return Strings{fromValue.String()}, nil
+	}
+	return fromValue.Interface(), nil
+}
 
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
@@ -95,7 +121,7 @@ type configuration struct {
 	}
 	Gateways struct {
 		S3 struct {
-			DomainName  string `mapstructure:"domain_name"`
+			DomainNames Strings `mapstructure:"domain_name"`
 			Region      string
 			FallbackURL string `mapstructure:"fallback_url"`
 		}

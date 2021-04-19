@@ -96,7 +96,7 @@ func TestLocalLoad(t *testing.T) {
 		nil,
 		actionsService,
 		logging.Default(),
-		"",
+		nil,
 	)
 
 	ts := httptest.NewServer(handler)

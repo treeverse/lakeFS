@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -66,6 +67,7 @@ var (
 	ErrBadConfiguration  = errors.New("bad configuration")
 	ErrMissingSecretKey  = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
 	ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
+	ErrBadDomainNames    = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 )
 
 type LogrusAWSAdapter struct {
@@ -94,6 +96,14 @@ func NewConfig() (*Config, error) {
 	setupLogger()
 
 	err := viper.UnmarshalExact(&c.values)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.validateDomainNames()
+	if err != nil {
+		return nil, err
+	}
 	return c, err
 }
 
@@ -133,8 +143,8 @@ const (
 
 	CommittedPebbleSSTableCacheSizeBytesKey = "committed.sstable.memory.cache_size_bytes"
 
-	GatewaysS3DomainNameKey = "gateways.s3.domain_name"
-	GatewaysS3RegionKey     = "gateways.s3.region"
+	GatewaysS3DomainNamesKey = "gateways.s3.domain_name"
+	GatewaysS3RegionKey      = "gateways.s3.region"
 
 	BlockstoreGSS3EndpointKey = "blockstore.gs.s3_endpoint"
 
@@ -174,7 +184,7 @@ func setDefaults() {
 	viper.SetDefault(CommittedPermanentStorageRangeRaggednessKey, DefaultCommittedPermanentRangeRaggednessEntries)
 	viper.SetDefault(CommittedPebbleSSTableCacheSizeBytesKey, DefaultCommittedPebbleSSTableCacheSizeBytes)
 
-	viper.SetDefault(GatewaysS3DomainNameKey, DefaultS3GatewayDomainName)
+	viper.SetDefault(GatewaysS3DomainNamesKey, DefaultS3GatewayDomainName)
 	viper.SetDefault(GatewaysS3RegionKey, DefaultS3GatewayRegion)
 
 	viper.SetDefault(BlockstoreGSS3EndpointKey, DefaultBlockStoreGSS3Endpoint)
@@ -185,6 +195,34 @@ func setDefaults() {
 
 	viper.SetDefault(BlockstoreAzureTryTimeoutKey, DefaultAzureTryTimeout)
 	viper.SetDefault(BlockstoreAzureAuthMethod, DefaultAzureAuthMethod)
+}
+
+func reverse(s string) string {
+	chars := []rune(s)
+	for i := 0; i < len(chars)/2; i++ {
+		j := len(chars) - 1 - i
+		chars[i], chars[j] = chars[j], chars[i]
+	}
+	return string(chars)
+}
+
+func (c *Config) validateDomainNames() error {
+	domainStrings := c.GetS3GatewayDomainNames()
+	domainNames := make([]string, len(domainStrings))
+	copy(domainNames, domainStrings)
+	for i, d := range domainNames {
+		domainNames[i] = reverse(d)
+	}
+	sort.Strings(domainNames)
+	for i, d := range domainNames {
+		domainNames[i] = reverse(d)
+	}
+	for i := 0; i < len(domainNames)-1; i++ {
+		if strings.HasSuffix(domainNames[i+1], "."+domainNames[i]) {
+			return fmt.Errorf("%w: %s, %s", ErrBadDomainNames, domainNames[i], domainNames[i+1])
+		}
+	}
+	return nil
 }
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
@@ -297,8 +335,8 @@ func (c *Config) GetS3GatewayRegion() string {
 	return c.values.Gateways.S3.Region
 }
 
-func (c *Config) GetS3GatewayDomainName() string {
-	return c.values.Gateways.S3.DomainName
+func (c *Config) GetS3GatewayDomainNames() []string {
+	return c.values.Gateways.S3.DomainNames
 }
 
 func (c *Config) GetS3GatewayFallbackURL() string {

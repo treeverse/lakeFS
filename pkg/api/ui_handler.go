@@ -15,20 +15,20 @@ import (
 	"github.com/treeverse/lakefs/pkg/webui"
 )
 
-func NewUIHandler(authService auth.Service, gatewayDomain string) http.Handler {
+func NewUIHandler(authService auth.Service, gatewayDomains []string) http.Handler {
 	mux := http.NewServeMux()
 	staticFiles, _ := fs.NewWithNamespace(webui.Webui)
-	mux.Handle("/", NewHandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/", gatewayDomain))
+	mux.Handle("/", NewHandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/", gatewayDomains))
 	return mux
 }
 
-func NewHandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath, gatewayDomain string) http.Handler {
+func NewHandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath string, gatewayDomains []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
 			// s3 signed request reaching the ui handler, return an error response instead of the default path
 			o := operations.Operation{}
 			err := errors.Codes[errors.ERRLakeFSWrongEndpoint]
-			err.Description = fmt.Sprintf("%s (%s)", err.Description, gatewayDomain)
+			err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
 			o.EncodeError(w, r, err)
 			return
 		}
