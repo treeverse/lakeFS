@@ -80,14 +80,21 @@ func EnrichWithParts(bareDomains []string, next http.Handler) http.Handler {
 	})
 }
 
+func getBareDomain(hostname string, bareDomains []string) string {
+	for _, bd := range bareDomains {
+		if strings.HasSuffix(hostname, "." + bd) {
+			return bd
+		}
+	}
+	return bareDomains[0]
+}
+
 func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := &operations.Operation{
 			Region: sc.region,
-			// BUG(ariels): This is wrong many times when there is >1 domain.  Can
-			//     we use req.Host?
-			FQDN:              sc.bareDomains[0],
+			FQDN:              getBareDomain(req.URL.Hostname(), sc.bareDomains),
 			Catalog:           sc.catalog,
 			MultipartsTracker: sc.multipartsTracker,
 			BlockStore:        sc.blockStore,
