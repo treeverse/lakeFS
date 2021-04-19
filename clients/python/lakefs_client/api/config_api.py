@@ -106,6 +106,7 @@ class ConfigApi(object):
                 'response_type': (Config,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/config',

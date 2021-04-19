@@ -117,6 +117,7 @@ class StagingApi(object):
                 'response_type': (StagingLocation,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/staging/backing',
@@ -261,6 +262,7 @@ class StagingApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/staging/backing',

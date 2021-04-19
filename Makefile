@@ -174,8 +174,9 @@ validate-proto: proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/graveler/graveler.pb.go
 
 validate-client-python:
-	git diff --quiet -- client/python/lakefs_client/api
-	git diff --quiet -- client/python/lakefs_client/model
+	git diff --quiet -- clients/python/lakefs_client/api
+	git diff --quiet -- clients/python/lakefs_client/model
+	git diff --quiet -- clients/python/.openapi-generator/FILES
 
 checks-validator: lint validate-fmt validate-proto validate-client-python ## Run all validation/linting steps
 

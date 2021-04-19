@@ -111,6 +111,7 @@ class RepositoriesApi(object):
                 'response_type': (Repository,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories',
@@ -236,6 +237,7 @@ class RepositoriesApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}',
@@ -355,6 +357,7 @@ class RepositoriesApi(object):
                 'response_type': (Repository,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}',
@@ -418,6 +421,7 @@ class RepositoriesApi(object):
 
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -471,6 +475,7 @@ class RepositoriesApi(object):
                 'response_type': (RepositoryList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories',
@@ -480,6 +485,7 @@ class RepositoriesApi(object):
             },
             params_map={
                 'all': [
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -503,16 +509,20 @@ class RepositoriesApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
                         (int,),
                 },
                 'attribute_map': {
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
