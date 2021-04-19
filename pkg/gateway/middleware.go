@@ -91,6 +91,7 @@ func getBareDomain(hostname string, bareDomains []string) string {
 }
 
 var trailingPortRegexp = regexp.MustCompile(`:\d+$`)
+
 func stripPort(host string) string {
 	return trailingPortRegexp.ReplaceAllString(host, "")
 }
