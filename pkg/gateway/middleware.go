@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -89,12 +90,17 @@ func getBareDomain(hostname string, bareDomains []string) string {
 	return bareDomains[0]
 }
 
+var trailingPortRegexp = regexp.MustCompile(`:\d+$`)
+func stripPort(host string) string {
+	return trailingPortRegexp.ReplaceAllString(host, "")
+}
+
 func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := &operations.Operation{
 			Region:            sc.region,
-			FQDN:              getBareDomain(req.URL.Hostname(), sc.bareDomains),
+			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
 			Catalog:           sc.catalog,
 			MultipartsTracker: sc.multipartsTracker,
 			BlockStore:        sc.blockStore,
