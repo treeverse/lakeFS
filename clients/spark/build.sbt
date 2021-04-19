@@ -56,9 +56,14 @@ def generateExamplesProject(buildType: BuildType) =
       sharedSettings,
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
-      libraryDependencies += "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+      libraryDependencies ++= Seq("org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+        "software.amazon.awssdk" % "bom" % "2.15.15",
+        "software.amazon.awssdk" % "s3" % "2.15.15",
+        "com.amazonaws" % "aws-java-sdk" % "1.7.4", // should match hadoop-aws version(!)
+      ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
-      target := file(s"target/examples-${buildType.name}/")
+      target := file(s"target/examples-${buildType.name}/"),
+      run / fork := true, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
