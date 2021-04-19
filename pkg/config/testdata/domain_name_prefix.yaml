@@ -1,0 +1,10 @@
+---
+gateways:
+  s3:
+    domain_name:
+      - gs.example.com
+      - s4.s3.example.com
+      - s3.example.com
+    region: us-east-1
+
+listen_address: "0.0.0.0:8005"
