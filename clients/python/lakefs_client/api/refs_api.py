@@ -124,6 +124,7 @@ class RefsApi(object):
                 'response_type': (DiffList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{leftRef}/diff/{rightRef}',
@@ -287,6 +288,7 @@ class RefsApi(object):
                 'response_type': (RefsDump,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/dump',
@@ -412,6 +414,7 @@ class RefsApi(object):
                 'response_type': (CommitList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{ref}/commits',
@@ -562,6 +565,7 @@ class RefsApi(object):
                 'response_type': (MergeResult,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}',
@@ -703,6 +707,7 @@ class RefsApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/restore',

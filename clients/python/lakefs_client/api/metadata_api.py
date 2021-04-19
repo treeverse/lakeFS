@@ -113,6 +113,7 @@ class MetadataApi(object):
                 'response_type': (StorageURI,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/refs/{branch}/symlink',
@@ -247,6 +248,7 @@ class MetadataApi(object):
                 'response_type': (StorageURI,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/metadata/meta_range/{meta_range}',
@@ -376,6 +378,7 @@ class MetadataApi(object):
                 'response_type': (StorageURI,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/metadata/range/{range}',

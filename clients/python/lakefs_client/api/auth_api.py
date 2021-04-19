@@ -22,6 +22,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
+from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.credentials import Credentials
 from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
@@ -30,6 +31,7 @@ from lakefs_client.model.error import Error
 from lakefs_client.model.group import Group
 from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList
+from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
 from lakefs_client.model.user import User
@@ -123,6 +125,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/members/{userId}',
@@ -252,6 +255,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/policies/{policyId}',
@@ -381,6 +385,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/policies/{policyId}',
@@ -506,6 +511,7 @@ class AuthApi(object):
                 'response_type': (CredentialsWithSecret,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials',
@@ -621,6 +627,7 @@ class AuthApi(object):
                 'response_type': (Group,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups',
@@ -739,6 +746,7 @@ class AuthApi(object):
                 'response_type': (Policy,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/policies',
@@ -855,6 +863,7 @@ class AuthApi(object):
                 'response_type': (User,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users',
@@ -977,6 +986,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials/{accessKeyId}',
@@ -1102,6 +1112,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}',
@@ -1225,6 +1236,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/members/{userId}',
@@ -1350,6 +1362,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/policies/{policyId}',
@@ -1469,6 +1482,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}',
@@ -1592,6 +1606,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/policies/{policyId}',
@@ -1721,6 +1736,7 @@ class AuthApi(object):
                 'response_type': None,
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/policies/{policyId}',
@@ -1850,6 +1866,7 @@ class AuthApi(object):
                 'response_type': (Credentials,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials/{accessKeyId}',
@@ -1970,6 +1987,7 @@ class AuthApi(object):
                 'response_type': (CurrentUser,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/user',
@@ -2082,6 +2100,7 @@ class AuthApi(object):
                 'response_type': (Group,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}',
@@ -2201,6 +2220,7 @@ class AuthApi(object):
                 'response_type': (Policy,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/policies/{policyId}',
@@ -2320,6 +2340,7 @@ class AuthApi(object):
                 'response_type': (User,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}',
@@ -2386,6 +2407,7 @@ class AuthApi(object):
                 group_id (str):
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -2441,6 +2463,7 @@ class AuthApi(object):
                 'response_type': (UserList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/members',
@@ -2451,6 +2474,7 @@ class AuthApi(object):
             params_map={
                 'all': [
                     'group_id',
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -2478,6 +2502,8 @@ class AuthApi(object):
                 'openapi_types': {
                     'group_id':
                         (str,),
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
@@ -2485,11 +2511,13 @@ class AuthApi(object):
                 },
                 'attribute_map': {
                     'group_id': 'groupId',
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
                     'group_id': 'path',
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -2523,6 +2551,7 @@ class AuthApi(object):
                 group_id (str):
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -2578,6 +2607,7 @@ class AuthApi(object):
                 'response_type': (PolicyList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/policies',
@@ -2588,6 +2618,7 @@ class AuthApi(object):
             params_map={
                 'all': [
                     'group_id',
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -2615,6 +2646,8 @@ class AuthApi(object):
                 'openapi_types': {
                     'group_id':
                         (str,),
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
@@ -2622,11 +2655,13 @@ class AuthApi(object):
                 },
                 'attribute_map': {
                     'group_id': 'groupId',
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
                     'group_id': 'path',
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -2657,6 +2692,7 @@ class AuthApi(object):
 
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -2710,6 +2746,7 @@ class AuthApi(object):
                 'response_type': (GroupList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/groups',
@@ -2719,6 +2756,7 @@ class AuthApi(object):
             },
             params_map={
                 'all': [
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -2742,16 +2780,20 @@ class AuthApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
                         (int,),
                 },
                 'attribute_map': {
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -2782,6 +2824,7 @@ class AuthApi(object):
 
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -2835,6 +2878,7 @@ class AuthApi(object):
                 'response_type': (PolicyList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/policies',
@@ -2844,6 +2888,7 @@ class AuthApi(object):
             },
             params_map={
                 'all': [
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -2867,16 +2912,20 @@ class AuthApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
                         (int,),
                 },
                 'attribute_map': {
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -2910,6 +2959,7 @@ class AuthApi(object):
                 user_id (str):
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -2965,6 +3015,7 @@ class AuthApi(object):
                 'response_type': (CredentialsList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/credentials',
@@ -2975,6 +3026,7 @@ class AuthApi(object):
             params_map={
                 'all': [
                     'user_id',
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -3002,6 +3054,8 @@ class AuthApi(object):
                 'openapi_types': {
                     'user_id':
                         (str,),
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
@@ -3009,11 +3063,13 @@ class AuthApi(object):
                 },
                 'attribute_map': {
                     'user_id': 'userId',
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
                     'user_id': 'path',
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -3047,6 +3103,7 @@ class AuthApi(object):
                 user_id (str):
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -3102,6 +3159,7 @@ class AuthApi(object):
                 'response_type': (GroupList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/groups',
@@ -3112,6 +3170,7 @@ class AuthApi(object):
             params_map={
                 'all': [
                     'user_id',
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -3139,6 +3198,8 @@ class AuthApi(object):
                 'openapi_types': {
                     'user_id':
                         (str,),
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
@@ -3146,11 +3207,13 @@ class AuthApi(object):
                 },
                 'attribute_map': {
                     'user_id': 'userId',
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
                     'user_id': 'path',
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -3184,6 +3247,7 @@ class AuthApi(object):
                 user_id (str):
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 effective (bool): will return all distinct policies attached to the user or any of its groups. [optional] if omitted the server will use the default value of False
@@ -3240,6 +3304,7 @@ class AuthApi(object):
                 'response_type': (PolicyList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users/{userId}/policies',
@@ -3250,6 +3315,7 @@ class AuthApi(object):
             params_map={
                 'all': [
                     'user_id',
+                    'prefix',
                     'after',
                     'amount',
                     'effective',
@@ -3278,6 +3344,8 @@ class AuthApi(object):
                 'openapi_types': {
                     'user_id':
                         (str,),
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
@@ -3287,12 +3355,14 @@ class AuthApi(object):
                 },
                 'attribute_map': {
                     'user_id': 'userId',
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                     'effective': 'effective',
                 },
                 'location_map': {
                     'user_id': 'path',
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                     'effective': 'query',
@@ -3324,6 +3394,7 @@ class AuthApi(object):
 
 
             Keyword Args:
+                prefix (str): return items prefixed with this value. [optional]
                 after (str): return items after this value. [optional]
                 amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
                 _return_http_data_only (bool): response data without head status
@@ -3377,6 +3448,7 @@ class AuthApi(object):
                 'response_type': (UserList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/users',
@@ -3386,6 +3458,7 @@ class AuthApi(object):
             },
             params_map={
                 'all': [
+                    'prefix',
                     'after',
                     'amount',
                 ],
@@ -3409,16 +3482,20 @@ class AuthApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
+                    'prefix':
+                        (str,),
                     'after':
                         (str,),
                     'amount':
                         (int,),
                 },
                 'attribute_map': {
+                    'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
                 },
                 'location_map': {
+                    'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
                 },
@@ -3433,6 +3510,223 @@ class AuthApi(object):
             },
             api_client=api_client,
             callable=__list_users
+        )
+
+        def __login(
+            self,
+            **kwargs
+        ):
+            """perform a login  # noqa: E501
+
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
+
+            >>> thread = api.login(async_req=True)
+            >>> result = thread.get()
+
+
+            Keyword Args:
+                login_information (LoginInformation): [optional]
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (float/tuple): timeout setting for this request. If one
+                    number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
+
+            Returns:
+                AuthenticationToken
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            return self.call_with_http_info(**kwargs)
+
+        self.login = _Endpoint(
+            settings={
+                'response_type': (AuthenticationToken,),
+                'auth': [],
+                'endpoint_path': '/auth/login',
+                'operation_id': 'login',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'login_information',
+                ],
+                'required': [],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'login_information':
+                        (LoginInformation,),
+                },
+                'attribute_map': {
+                },
+                'location_map': {
+                    'login_information': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client,
+            callable=__login
+        )
+
+        def __logout(
+            self,
+            **kwargs
+        ):
+            """logs out a cookie-authenticated user  # noqa: E501
+
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
+
+            >>> thread = api.logout(async_req=True)
+            >>> result = thread.get()
+
+
+            Keyword Args:
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (float/tuple): timeout setting for this request. If one
+                    number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
+
+            Returns:
+                None
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            return self.call_with_http_info(**kwargs)
+
+        self.logout = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'cookie_auth'
+                ],
+                'endpoint_path': '/auth/logout',
+                'operation_id': 'logout',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                ],
+                'required': [],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                },
+                'attribute_map': {
+                },
+                'location_map': {
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__logout
         )
 
         def __update_policy(
@@ -3509,6 +3803,7 @@ class AuthApi(object):
                 'response_type': (Policy,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/auth/policies/{policyId}',

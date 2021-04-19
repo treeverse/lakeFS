@@ -71,6 +71,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -130,6 +136,8 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_user_groups**](docs/AuthApi.md#list_user_groups) | **GET** /auth/users/{userId}/groups | list user groups
 *AuthApi* | [**list_user_policies**](docs/AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
+*AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
+*AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**delete_branch**](docs/BranchesApi.md#delete_branch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
@@ -176,6 +184,7 @@ Class | Method | HTTP request | Description
  - [AccessKeyCredentials](docs/AccessKeyCredentials.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
+ - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
@@ -193,6 +202,7 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
  - [MergeResultSummary](docs/MergeResultSummary.md)
@@ -228,6 +238,13 @@ Class | Method | HTTP request | Description
 ## basic_auth
 
 - **Type**: HTTP basic authentication
+
+
+## cookie_auth
+
+- **Type**: API key
+- **API key parameter name**: access_token
+- **Location**: 
 
 
 ## jwt_token

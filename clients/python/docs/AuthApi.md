@@ -31,6 +31,8 @@ Method | HTTP request | Description
 [**list_user_groups**](AuthApi.md#list_user_groups) | **GET** /auth/users/{userId}/groups | list user groups
 [**list_user_policies**](AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
+[**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
+[**logout**](AuthApi.md#logout) | **POST** /auth/logout | logs out a cookie-authenticated user
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -42,6 +44,7 @@ add group membership
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -65,6 +68,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -101,7 +110,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -127,6 +136,7 @@ attach policy to group
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -150,6 +160,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -186,7 +202,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -212,6 +228,7 @@ attach policy to user
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -235,6 +252,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -271,7 +294,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -297,6 +320,7 @@ create credentials
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -321,6 +345,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -356,7 +386,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -382,6 +412,7 @@ create group
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -407,6 +438,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -445,7 +482,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -471,6 +508,7 @@ create policy
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -495,6 +533,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -542,7 +586,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -568,6 +612,7 @@ create user
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -593,6 +638,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -631,7 +682,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -657,6 +708,7 @@ delete credentials
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -680,6 +732,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -716,7 +774,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -742,6 +800,7 @@ delete group
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -765,6 +824,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -799,7 +864,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -825,6 +890,7 @@ delete group membership
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -848,6 +914,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -884,7 +956,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -910,6 +982,7 @@ delete policy
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -933,6 +1006,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -967,7 +1046,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -993,6 +1072,7 @@ delete user
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1016,6 +1096,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1050,7 +1136,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1076,6 +1162,7 @@ detach policy from group
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1099,6 +1186,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1135,7 +1228,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1161,6 +1254,7 @@ detach policy from user
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1184,6 +1278,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1220,7 +1320,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1246,6 +1346,7 @@ get credentials
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1270,6 +1371,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1307,7 +1414,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1333,6 +1440,7 @@ get current user
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1356,6 +1464,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1387,7 +1501,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1410,6 +1524,7 @@ get group
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1434,6 +1549,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1469,7 +1590,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1495,6 +1616,7 @@ get policy
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1519,6 +1641,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1554,7 +1682,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1580,6 +1708,7 @@ get user
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1604,6 +1733,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -1639,7 +1774,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1665,6 +1800,7 @@ list group members
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1690,6 +1826,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -1701,6 +1843,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -1716,7 +1859,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list group members
-        api_response = api_instance.list_group_members(group_id, after=after, amount=amount)
+        api_response = api_instance.list_group_members(group_id, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_group_members: %s\n" % e)
@@ -1728,6 +1871,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **group_id** | **str**|  |
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -1737,7 +1881,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1762,6 +1906,7 @@ list group policies
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1787,6 +1932,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -1798,6 +1949,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_id = "groupId_example" # str | 
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -1813,7 +1965,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list group policies
-        api_response = api_instance.list_group_policies(group_id, after=after, amount=amount)
+        api_response = api_instance.list_group_policies(group_id, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_group_policies: %s\n" % e)
@@ -1825,6 +1977,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **group_id** | **str**|  |
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -1834,7 +1987,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1860,6 +2013,7 @@ list groups
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1885,6 +2039,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -1895,6 +2055,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -1902,7 +2063,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list groups
-        api_response = api_instance.list_groups(after=after, amount=amount)
+        api_response = api_instance.list_groups(prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_groups: %s\n" % e)
@@ -1913,6 +2074,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -1922,7 +2084,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1947,6 +2109,7 @@ list policies
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -1972,6 +2135,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -1982,6 +2151,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -1989,7 +2159,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list policies
-        api_response = api_instance.list_policies(after=after, amount=amount)
+        api_response = api_instance.list_policies(prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_policies: %s\n" % e)
@@ -2000,6 +2170,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -2009,7 +2180,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2034,6 +2205,7 @@ list user credentials
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -2059,6 +2231,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -2070,6 +2248,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -2085,7 +2264,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list user credentials
-        api_response = api_instance.list_user_credentials(user_id, after=after, amount=amount)
+        api_response = api_instance.list_user_credentials(user_id, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_credentials: %s\n" % e)
@@ -2097,6 +2276,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  |
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -2106,7 +2286,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2132,6 +2312,7 @@ list user groups
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -2157,6 +2338,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -2168,6 +2355,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -2183,7 +2371,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list user groups
-        api_response = api_instance.list_user_groups(user_id, after=after, amount=amount)
+        api_response = api_instance.list_user_groups(user_id, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_groups: %s\n" % e)
@@ -2195,6 +2383,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  |
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -2204,7 +2393,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2230,6 +2419,7 @@ list user policies
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -2255,6 +2445,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -2266,6 +2462,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     user_id = "userId_example" # str | 
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
     effective = False # bool | will return all distinct policies attached to the user or any of its groups (optional) if omitted the server will use the default value of False
@@ -2282,7 +2479,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list user policies
-        api_response = api_instance.list_user_policies(user_id, after=after, amount=amount, effective=effective)
+        api_response = api_instance.list_user_policies(user_id, prefix=prefix, after=after, amount=amount, effective=effective)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_user_policies: %s\n" % e)
@@ -2294,6 +2491,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  |
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
  **effective** | **bool**| will return all distinct policies attached to the user or any of its groups | [optional] if omitted the server will use the default value of False
@@ -2304,7 +2502,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2330,6 +2528,7 @@ list users
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -2355,6 +2554,12 @@ configuration = lakefs_client.Configuration(
     password = 'YOUR_PASSWORD'
 )
 
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 
@@ -2365,6 +2570,7 @@ configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
+    prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
 
@@ -2372,7 +2578,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list users
-        api_response = api_instance.list_users(after=after, amount=amount)
+        api_response = api_instance.list_users(prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->list_users: %s\n" % e)
@@ -2383,6 +2589,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+ **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
 
@@ -2392,7 +2599,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2409,6 +2616,148 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **login**
+> AuthenticationToken login()
+
+perform a login
+
+### Example
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.authentication_token import AuthenticationToken
+from lakefs_client.model.login_information import LoginInformation
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+    login_information = LoginInformation(
+        access_key_id="access_key_id_example",
+        secret_access_key="secret_access_key_example",
+    ) # LoginInformation |  (optional)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # perform a login
+        api_response = api_instance.login(login_information=login_information)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->login: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **login_information** | [**LoginInformation**](LoginInformation.md)|  | [optional]
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful login |  * Set-Cookie -  <br>  |
+**401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **logout**
+> logout()
+
+logs out a cookie-authenticated user
+
+### Example
+
+* Api Key Authentication (cookie_auth):
+```python
+import time
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+
+    # example, this endpoint has no required or optional parameters
+    try:
+        # logs out a cookie-authenticated user
+        api_instance.logout()
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->logout: %s\n" % e)
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[cookie_auth](../README.md#cookie_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful logout |  -  |
+**401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **update_policy**
 > Policy update_policy(policy_id, policy)
 
@@ -2417,6 +2766,7 @@ update policy
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -2441,6 +2791,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -2490,7 +2846,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

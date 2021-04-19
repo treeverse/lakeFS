@@ -118,6 +118,7 @@ class CommitsApi(object):
                 'response_type': (Commit,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',
@@ -254,6 +255,7 @@ class CommitsApi(object):
                 'response_type': (Commit,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/commits/{commitId}',
@@ -385,6 +387,7 @@ class CommitsApi(object):
                 'response_type': (CommitList,),
                 'auth': [
                     'basic_auth',
+                    'cookie_auth',
                     'jwt_token'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',

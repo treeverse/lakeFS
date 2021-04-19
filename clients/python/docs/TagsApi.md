@@ -18,6 +18,7 @@ create tag
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -43,6 +44,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -83,7 +90,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -110,6 +117,7 @@ delete tag
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -133,6 +141,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -169,7 +183,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -195,6 +209,7 @@ get tag
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -219,6 +234,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -256,7 +277,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -282,6 +303,7 @@ list tags
 ### Example
 
 * Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
 * Api Key Authentication (jwt_token):
 ```python
 import time
@@ -306,6 +328,12 @@ configuration = lakefs_client.Configuration(
     username = 'YOUR_USERNAME',
     password = 'YOUR_PASSWORD'
 )
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
 # Configure API key authorization: jwt_token
 configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
@@ -354,7 +382,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
