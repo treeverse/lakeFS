@@ -601,17 +601,20 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	branchLocker := ref.NewBranchLocker(conn)
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
-	const expectedCommitID2 = graveler.CommitID("expectedCommitID2")
+	const destinationCommitID = graveler.CommitID("destinationCommitID")
 	const mergeDestination = graveler.BranchID("destinationID")
 	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
 	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
 	refManager := &testutil.RefsFake{
 		CommitID: expectedCommitID,
-		Branch:   &graveler.Branch{CommitID: expectedCommitID2},
+		Branch:   &graveler.Branch{CommitID: destinationCommitID},
 		RevParseRes: map[graveler.Ref]graveler.Reference{
-			graveler.Ref(mergeDestination): testutil.NewFakeReference(graveler.ReferenceTypeBranch, mergeDestination, expectedCommitID2),
+			graveler.Ref(mergeDestination): testutil.NewFakeReference(graveler.ReferenceTypeBranch, mergeDestination, destinationCommitID),
 		},
-		Commits: map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}, expectedCommitID2: {MetaRangeID: expectedRangeID}},
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			expectedCommitID:    {MetaRangeID: expectedRangeID},
+			destinationCommitID: {MetaRangeID: expectedRangeID},
+		},
 	}
 	// tests
 	errSomethingBad := errors.New("first error")
@@ -668,10 +671,10 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			}
 			parents := refManager.AddedCommit.Parents
 			if len(parents) != 2 {
-				t.Fatal("Merge commit should have 2 parents")
+				t.Fatalf("Merge commit should have 2 parents (%v)", parents)
 			}
-			if parents[0] != expectedCommitID2 || parents[1] != expectedCommitID {
-				t.Fatalf("Wrong CommitParents order, expected: (%s, %s), got: (%s, %s)", expectedCommitID2, expectedCommitID, parents[0], parents[1])
+			if parents[0] != destinationCommitID || parents[1] != expectedCommitID {
+				t.Fatalf("Wrong CommitParents order, expected: (%s, %s), got: (%s, %s)", destinationCommitID, expectedCommitID, parents[0], parents[1])
 			}
 			// verify that calls made until the first error
 			if tt.hook != h.Called {
