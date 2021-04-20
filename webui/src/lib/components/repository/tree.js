@@ -223,7 +223,6 @@ function pathParts(path, rootName = "root") {
 const URINavigator = ({ repo, reference, path }) => {
     const parts = pathParts(path);
     const params = {repoId: repo.id};
-    const refQuery = {ref: reference.id, path};
 
     return (
         <span className="lakefs-uri">
@@ -232,12 +231,16 @@ const URINavigator = ({ repo, reference, path }) => {
             <strong>{'/'}</strong>
             <Link href={{pathname: '/repositories/:repoId/objects',params, query: {ref: reference.id}}}>{(reference.type === 'commit') ? reference.id.substr(0, 12) : reference.id}</Link>
             <strong>{'/'}</strong>
-            {parts.map((part, i) => (
-                <span key={i}>
-                    <Link href={{pathname: '/repositories/:repoId/objects', params, query: refQuery}}>{part.name}</Link>
-                    <strong>{'/'}</strong>
-                </span>
-            ))}
+            {parts.map((part, i) => {
+                const path = parts.slice(0, i+1).map(p => p.name).join('/') + '/';
+                const query = {path, ref: reference.id};
+                return (
+                    <span key={i}>
+                        <Link href={{pathname: '/repositories/:repoId/objects', params, query}}>{part.name}</Link>
+                        <strong>{'/'}</strong>
+                    </span>
+                );
+            })}
         </span>
     );
 };
