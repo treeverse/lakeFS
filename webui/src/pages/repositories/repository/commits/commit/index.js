@@ -23,8 +23,7 @@ import {useRouter} from "../../../../../lib/hooks/router";
 const ChangeList = ({ repo, commit, after, onPaginate }) => {
     const {results, loading, error, nextPage} = useAPIWithPagination(async() => {
         if (!commit.parents || commit.parents.length === 0) return {results: [], pagination: {has_more: false}};
-        // TODO (ozkatz): change after fixing https://github.com/treeverse/lakeFS/issues/1730
-        return refs.diff(repo.id, commit.id, commit.parents[(commit.parents.length === 2) ? 1 : 0], after);
+        return refs.diff(repo.id, commit.id, commit.parents[0], after);
     }, [repo.id, commit.id, after]);
 
     if (!!loading) return <Loading/>;
