@@ -44,7 +44,7 @@ It is important to note that due to the deduplication feature of lakeFS, data wi
 when accessing it through other branches. In a sense, your original bucket becomes an initial snapshot of your data.
 
 **Note:** lakeFS will never make any changes to the import source bucket.
-{: .note .pb-3 }  
+{: .note .pb-3 }
 
 ### Prerequisites
 - Your bucket should have S3 Inventory enabled.
@@ -72,9 +72,9 @@ Commit ref: cf349ded0a0e65e20bd3b25ea8d9b656c2870b7f1f32f60eb1d90ca5873b6c03
 
 Import to branch import-from-inventory finished successfully.
 To list imported objects, run:
-	$ lakectl fs ls lakefs://example-repo@cf349ded0a0e65e20bd3b25ea8d9b656c2870b7f1f32f60eb1d90ca5873b6c03/
+	$ lakectl fs ls lakefs://example-repo/cf349ded0a0e65e20bd3b25ea8d9b656c2870b7f1f32f60eb1d90ca5873b6c03/
 To merge the changes to your main branch, run:
-	$ lakectl merge lakefs://example-repo@import-from-inventory lakefs://goo@master
+	$ lakectl merge lakefs://example-repo/import-from-inventory lakefs://goo/master
 ```
 
 #### Merging imported data to the main branch

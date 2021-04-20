@@ -22,12 +22,14 @@ In order to import existing data to lakeFS, you may choose to copy it using [S3 
 or using tools like [Apache DistCp](../using/distcp.md#from-s3-to-lakefs). This is the most straightforward way, and we recommend it if it’s applicable for you.
 
 ## Limitations
+
 Unfortunately, copying data is not always feasible for the following reasons:
 1. Some data is just too big to copy.
 2. It requires you to stop making changes to the data before starting to copy.
 3. It requires you to switch to using the lakeFS endpoint in all places at once.
 
 ## Using lakeFS import tool
+
 To solve this we offer an import tool that does not copy any data, allowing for a more gradual onboarding process.
 
 The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
@@ -43,9 +45,10 @@ It is important to note that due to the deduplication feature of lakeFS, data wi
 when accessing it through other branches. In a sense, your original bucket becomes an initial snapshot of your data.
 
 **Note:** lakeFS will never make any changes to the import source bucket.
-{: .note .pb-3 }  
+{: .note .pb-3 }
 
 ### Prerequisites
+
 - Your bucket should have S3 Inventory enabled.
 - The inventory should be in Parquet or ORC format.
 - The inventory must contain (at least) the size, last-modified-at, and e-tag columns.
@@ -53,6 +56,7 @@ when accessing it through other branches. In a sense, your original bucket becom
 - If you want to use the tool for [gradual import](#gradual-import), you should not delete the data for the most recently imported inventory, until a more recent inventory is successfully imported.
 
 ### Using the import tool
+
 Import is performed by `lakefs` 's `import` command.
 
 Assuming your manifest.json is at `s3://example-bucket/path/to/inventory/YYYY-MM-DDT00-00Z/manifest.json`, and your lakeFS configuration yaml is at `config.yaml` (see notes below), run the following command to start the import:
@@ -71,9 +75,9 @@ Commit ref: ~AcT47Svc1Q3MqayUwSqETVW9JRerMzAq6
 
 Import to branch import-from-inventory finished successfully.
 To list imported objects, run:
-	$ lakectl fs ls lakefs://example-repo@~AcT47Svc1Q3MqayUwSqETVW9JRerMzAq6/
+	$ lakectl fs ls lakefs://example-repo/~AcT47Svc1Q3MqayUwSqETVW9JRerMzAq6/
 To merge the changes to your main branch, run:
-	$ lakectl merge lakefs://example-repo@import-from-inventory lakefs://goo@master
+	$ lakectl merge lakefs://example-repo/import-from-inventory lakefs://goo/master
 ```
 
 #### Merging imported data to the main branch
@@ -86,12 +90,15 @@ lakefs import --with-merge lakefs://example-repo -m s3://example-bucket/path/to/
 ```
 
 #### Notes
+
 {: .no_toc }
 1. Perform the import from a machine with access to your database, and on the same region of your destination bucket.
 
 1. You can download the `lakefs` binary from [here](https://github.com/treeverse/lakeFS/releases). Make sure you choose one compatible with your installation of lakeFS.
 
 1. Use a configuration file like the one used to start your lakeFS installation. This will be used to access your database. An example can be found [here](http://localhost:4000/reference/configuration.html#example-aws-deployment).
+
+1. lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch/ref.
 
 **Warning:** the *import-from-inventory* branch should only be used by lakeFS. You should not make any operations on it.
 {: .note } 
