@@ -11,6 +11,7 @@ import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";
 import {setup, API_ENDPOINT} from "../../lib/api";
 import {ClipboardButton, Error} from "../../lib/components/controls";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
 
 const SetupPage = () => {
     const usernameRef = useRef(null);
@@ -71,10 +72,9 @@ server:
                                 This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
                             </Alert>
                             <hr/>
-                            <ButtonToolbar>
-                                <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><DownloadIcon /> Download Configuration</Button>{' '}
-                                <Button variant="link" href="/login">Go To Login</Button>
-                            </ButtonToolbar>
+                            <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><DownloadIcon />Download Configuration </Button>
+                            {' '}
+                            <Button variant="link" href="/">Go To Login</Button>
                         </Card.Body>
                     </Card>
                 </Col>
