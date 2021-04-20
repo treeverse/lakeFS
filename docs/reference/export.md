@@ -12,7 +12,7 @@ has_children: false
 The export operation copies all data from a given lakeFS commit to 
 a designated object store location.
 
-For instance, the contents `lakefs://example@master` might be exported on
+For instance, the contents `lakefs://example/master` might be exported on
 `s3://company-bucket/example/latest`.  Clients entirely unaware of lakeFS could use that
 base URL to access latest files on `master`.  Clients aware of lakeFS can continue to use
 the lakeFS S3 endpoint to access repository files on `s3://example/master`, as well as
@@ -38,7 +38,7 @@ The client exposes the `Exporter` object with 3 export options:
 
 1. Export *all* objects at the HEAD of a given branch. Does not include
 files that were added to that branch, but were not committed.
-   
+
 ```scala
 exportAllFromBranch(branch: String)
 ```

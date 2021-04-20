@@ -139,8 +139,10 @@ lakectl abuse random-read \
     --from-file randomly_selected_paths.txt \
     --amount 500000 \
     --parallelism 128 \
-    lakefs://example-repo@<commit hash>
+    lakefs://example-repo/<commit hash>
 ```
+
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and commit hash.
 
 **Result Histogram (raw):**
 
@@ -184,8 +186,11 @@ All paths are pre-generated and do not overwrite each other (as overwrites are r
 lakectl abuse random-write \
     --amount 500000 \
     --parallelism 64 \
-    lakefs://example-repo@main
+    lakefs://example-repo/main
 ```
+
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
+
 
 **Result Histogram (raw):**
 
@@ -229,8 +234,10 @@ lakectl abuse create-branches \
     --amount 500000 \
     --branch-prefix "benchmark-" \
     --parallelism 256 \
-    lakefs://example-repo@<commit hash>
+    lakefs://example-repo/<commit hash>
 ```
+
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and commit hash.
 
 **Result Histogram (raw):**
 

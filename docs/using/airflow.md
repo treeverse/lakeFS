@@ -32,11 +32,10 @@ For example, a commit task using the bashOperator:
 ```python
 commit_extract = BashOperator(
    task_id='commit_extract',
-   bash_command='lakectl commit lakefs://example_repo@example_dag_branch -m "extract data"',
+   bash_command='lakectl commit lakefs://example_repo/example_dag_branch -m "extract data"',
    dag=dag,
 )
 ```
 
-
-
+**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.
 
