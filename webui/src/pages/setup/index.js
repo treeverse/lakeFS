@@ -1,6 +1,5 @@
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
@@ -11,7 +10,6 @@ import {DownloadIcon} from "@primer/octicons-react";
 import {useState} from "react";
 import {setup, API_ENDPOINT} from "../../lib/api";
 import {ClipboardButton, Error} from "../../lib/components/controls";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
 
 const SetupPage = () => {
     const usernameRef = useRef(null);
