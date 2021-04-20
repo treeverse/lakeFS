@@ -25,6 +25,7 @@ var (
 	ErrAuthenticationFailed    = errors.New("error authenticating request")
 )
 
+// extractSecurityRequirements using swagger return an array of security requirements set for the request
 func extractSecurityRequirements(router routers.Router, r *http.Request) (openapi3.SecurityRequirements, error) {
 	// Find route
 	route, _, err := router.FindRoute(r)
@@ -44,58 +45,68 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authServic
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			var user *model.User
-			var err error
-
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			if len(securityRequirements) > 0 {
-				// validate jwt token from cookie
-				jwtCookie, _ := r.Cookie(JWTCookieName)
-				if jwtCookie != nil {
-					user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
-					if err != nil {
-						writeError(w, http.StatusUnauthorized, err)
-						return
-					}
-				}
-
-				// validate jwt token from header
-				if user == nil {
-					token := r.Header.Get(JWTAuthorizationHeaderName)
-					if token != "" {
-						user, err = userByToken(ctx, logger, authService, token)
-						if err != nil {
-							writeError(w, http.StatusUnauthorized, err)
-							return
-						}
-					}
-				}
-
-				// validate using basic auth
-				if user == nil {
-					accessKey, secretKey, ok := r.BasicAuth()
-					if ok {
-						user, err = userByAuth(ctx, logger, authService, accessKey, secretKey)
-						if err != nil {
-							writeError(w, http.StatusUnauthorized, err)
-							return
-						}
-					}
-				}
-
-				// keep user on the request context
-				if user != nil {
-					r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
-				}
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authService)
+			if err != nil {
+				writeError(w, http.StatusUnauthorized, err)
+				return
+			}
+			if user != nil {
+				r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
 			}
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// checkSecurityRequirements goes over the security requirements and check the authentication. returns the user information and error if the security check was required.
+// it will return nil user and error in case of no security checks to match.
+func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.SecurityRequirements, logger logging.Logger, authService auth.Service) (*model.User, error) {
+	ctx := r.Context()
+	var user *model.User
+	var err error
+	for _, securityRequirement := range securityRequirements {
+		for provider := range securityRequirement {
+			switch provider {
+			case "jwt_token":
+				// validate jwt token from header
+				token := r.Header.Get(JWTAuthorizationHeaderName)
+				if token == "" {
+					continue
+				}
+				user, err = userByToken(ctx, logger, authService, token)
+			case "basic_auth":
+				// validate using basic auth
+				accessKey, secretKey, ok := r.BasicAuth()
+				if !ok {
+					continue
+				}
+				user, err = userByAuth(ctx, logger, authService, accessKey, secretKey)
+			case "cookie_auth":
+				// validate jwt token from cookie
+				jwtCookie, _ := r.Cookie(JWTCookieName)
+				if jwtCookie == nil {
+					continue
+				}
+				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
+			default:
+				// unknown security requirement to check
+				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
+				return nil, ErrAuthenticationFailed
+			}
+			if err != nil {
+				return nil, err
+			}
+			if user != nil {
+				return user, nil
+			}
+		}
+	}
+	return nil, nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
