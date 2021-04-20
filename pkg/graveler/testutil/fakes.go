@@ -191,6 +191,7 @@ type AddedCommitData struct {
 type RefsFake struct {
 	ListRepositoriesRes graveler.RepositoryIterator
 	ListBranchesRes     graveler.BranchIterator
+	RevParseRes         map[graveler.Ref]graveler.Reference
 	ListTagsRes         graveler.TagIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
@@ -211,7 +212,13 @@ func (m *RefsFake) ListCommits(ctx context.Context, repositoryID graveler.Reposi
 	return nil, nil
 }
 
-func (m *RefsFake) RevParse(context.Context, graveler.RepositoryID, graveler.Ref) (graveler.Reference, error) {
+func (m *RefsFake) RevParse(ctx context.Context, repoID graveler.RepositoryID, ref graveler.Ref) (graveler.Reference, error) {
+	if m.RevParseRes != nil {
+		if res, ok := m.RevParseRes[ref]; ok {
+			return res, nil
+		}
+	}
+
 	var branch graveler.BranchID
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID

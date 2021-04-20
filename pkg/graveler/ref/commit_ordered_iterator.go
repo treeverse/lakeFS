@@ -66,7 +66,7 @@ func (iter *OrderedCommitIterator) maybeFetch() {
 
 	var buf []*commitRecord
 	err := iter.db.Select(iter.ctx, &buf, `
-			SELECT id, committer, message, creation_date, meta_range_id, parents, metadata
+			SELECT id, committer, message, creation_date, meta_range_id, parents, metadata, version
 			FROM graveler_commits
 			WHERE repository_id = $1
 			AND id `+offsetCondition+` $2
