@@ -7,8 +7,9 @@ import 'bootstrap/dist/css/bootstrap.css';
 import './styles/globals.css';
 
 // pages
-import Repositories from './pages/repositories'
-import Auth from "./pages/auth";
+import Repositories from './pages/repositories';
+import Auth from './pages/auth';
+import Setup from './pages/setup';
 
 ReactDOM.render(
     <Router>
@@ -21,6 +22,9 @@ ReactDOM.render(
             </Route>
             <Route path="/auth">
                 <Auth/>
+            </Route>
+            <Route path="/setup">
+                <Setup/>
             </Route>
         </Switch>
     </Router>,
