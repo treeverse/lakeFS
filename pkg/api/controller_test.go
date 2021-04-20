@@ -1382,3 +1382,40 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 		}
 	})
 }
+
+func TestController_MergeDiffWithParent(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+
+	const repoName = "repo7"
+	repoResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("master"),
+		Name:             repoName,
+		StorageNamespace: "mem://",
+	})
+	verifyResponseOK(t, repoResp, err)
+
+	branchResp, err := clt.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{Name: "work", Source: "master"})
+	verifyResponseOK(t, branchResp, err)
+
+	const content = "awesome content"
+	resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, "work")
+	verifyResponseOK(t, resp, err)
+
+	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", api.CommitJSONRequestBody{Message: "file 1 commit to work"})
+	verifyResponseOK(t, commitResp, err)
+
+	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "work", "master", api.MergeIntoBranchJSONRequestBody{
+		Message: api.StringPtr("merge work to master"),
+	})
+	verifyResponseOK(t, mergeResp, err)
+
+	diffResp, err := clt.DiffRefsWithResponse(ctx, repoName, "master", "master~1", &api.DiffRefsParams{})
+	verifyResponseOK(t, diffResp, err)
+	expectedResults := []api.Diff{
+		{Path: "file1", PathType: "object", Type: "added"},
+	}
+	if diff := deep.Equal(diffResp.JSON200.Results, expectedResults); diff != nil {
+		t.Fatal("Diff results not as expected:", diff)
+	}
+}

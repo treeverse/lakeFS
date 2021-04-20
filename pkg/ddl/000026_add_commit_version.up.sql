@@ -1,0 +1,5 @@
+BEGIN;
+ALTER TABLE graveler_commits
+    ADD COLUMN IF NOT EXISTS version integer DEFAULT 0 NOT NULL;
+COMMIT;
+
