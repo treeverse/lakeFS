@@ -7,6 +7,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getkin/kin-openapi/routers"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/getkin/kin-openapi/routers/legacy"
+
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -20,12 +25,38 @@ var (
 	ErrAuthenticationFailed    = errors.New("error authenticating request")
 )
 
-func AuthMiddleware(logger logging.Logger, authService auth.Service) func(next http.Handler) http.Handler {
+func extractSecurityRequirements(router routers.Router, r *http.Request) (openapi3.SecurityRequirements, error) {
+	// Find route
+	route, _, err := router.FindRoute(r)
+	if err != nil {
+		return nil, err
+	}
+	if route.Operation.Security == nil {
+		return route.Swagger.Security, nil
+	}
+	return *route.Operation.Security, nil
+}
+
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authService auth.Service) func(next http.Handler) http.Handler {
+	router, err := legacy.NewRouter(swagger)
+	if err != nil {
+		panic(err)
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			var user *model.User
 			var err error
+
+			securityRequirements, err := extractSecurityRequirements(router, r)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, err)
+				return
+			}
+			if len(securityRequirements) == 0 {
+				// nothing to check
+				return
+			}
 
 			// validate jwt token from cookie
 			jwtCookie, _ := r.Cookie(JWTCookieName)
