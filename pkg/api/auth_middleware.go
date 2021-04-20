@@ -53,48 +53,45 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authServic
 				writeError(w, http.StatusBadRequest, err)
 				return
 			}
-			if len(securityRequirements) == 0 {
-				// nothing to check
-				return
-			}
-
-			// validate jwt token from cookie
-			jwtCookie, _ := r.Cookie(JWTCookieName)
-			if jwtCookie != nil {
-				user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
-				if err != nil {
-					writeError(w, http.StatusUnauthorized, err)
-					return
-				}
-			}
-
-			// validate jwt token from header
-			if user == nil {
-				token := r.Header.Get(JWTAuthorizationHeaderName)
-				if token != "" {
-					user, err = userByToken(ctx, logger, authService, token)
+			if len(securityRequirements) > 0 {
+				// validate jwt token from cookie
+				jwtCookie, _ := r.Cookie(JWTCookieName)
+				if jwtCookie != nil {
+					user, err = userByToken(ctx, logger, authService, jwtCookie.Value)
 					if err != nil {
 						writeError(w, http.StatusUnauthorized, err)
 						return
 					}
 				}
-			}
 
-			// validate using basic auth
-			if user == nil {
-				accessKey, secretKey, ok := r.BasicAuth()
-				if ok {
-					user, err = userByAuth(ctx, logger, authService, accessKey, secretKey)
-					if err != nil {
-						writeError(w, http.StatusUnauthorized, err)
-						return
+				// validate jwt token from header
+				if user == nil {
+					token := r.Header.Get(JWTAuthorizationHeaderName)
+					if token != "" {
+						user, err = userByToken(ctx, logger, authService, token)
+						if err != nil {
+							writeError(w, http.StatusUnauthorized, err)
+							return
+						}
 					}
 				}
-			}
 
-			// keep user on the request context
-			if user != nil {
-				r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
+				// validate using basic auth
+				if user == nil {
+					accessKey, secretKey, ok := r.BasicAuth()
+					if ok {
+						user, err = userByAuth(ctx, logger, authService, accessKey, secretKey)
+						if err != nil {
+							writeError(w, http.StatusUnauthorized, err)
+							return
+						}
+					}
+				}
+
+				// keep user on the request context
+				if user != nil {
+					r = r.WithContext(context.WithValue(r.Context(), UserContextKey, user))
+				}
 			}
 			next.ServeHTTP(w, r)
 		})
