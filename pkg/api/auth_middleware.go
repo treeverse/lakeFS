@@ -23,7 +23,7 @@ var (
 	ErrAuthenticationFailed    = errors.New("error authenticating request")
 )
 
-// extractSecurityRequirements using swagger return an array of security requirements set for the request
+// extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
 func extractSecurityRequirements(router routers.Router, r *http.Request) (openapi3.SecurityRequirements, error) {
 	// Find route
 	route, _, err := router.FindRoute(r)
