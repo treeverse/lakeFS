@@ -107,10 +107,6 @@ jobs:
     name: Run latest lakeFS app
     needs: deploy-image
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        cataloger:
-          - rocks
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -140,7 +136,6 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -148,7 +143,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           NESSIE_TEST_DATA_ACCESS: true,false
-          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
           NESSIE_AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           NESSIE_AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
@@ -157,7 +152,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
-            FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }} --recursive | wc -l`
+            FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
             [ $FILES_COUNT -gt 5 ]
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
@@ -170,13 +165,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
             cd nessie/ops
-            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}/dump.gz
+            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
       - name: Run lakeFS S3 to use with local API key
         env:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -184,7 +178,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           NESSIE_TEST_DATA_ACCESS: true,false
-          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}-local-api-key
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-local-api-key
         run: |
           docker-compose -f nessie/ops/docker-compose.yaml down -v
           docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
@@ -193,7 +187,6 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -201,7 +194,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ""
           AWS_SECRET_ACCESS_KEY: ""
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
-          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
+          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}
         run: |
             docker-compose -f nessie/ops/docker-compose.yaml down -v
             docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
@@ -214,7 +207,6 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           # Setting Account_ID as a secret as a way to avoid specifying it here
           REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          LAKEFS_CATALOGER_TYPE: ${{ matrix.cataloger }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -223,7 +215,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ""
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
-          NESSIE_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/nessie-system-testing/${{ github.run_number }}-${{ matrix.cataloger }}
+          NESSIE_STORAGE_NAMESPACE: https://${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/nessie-system-testing/${{ github.run_number }}
         run: |
           docker-compose -f nessie/ops/docker-compose.yaml down -v
           docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull --exit-code-from=nessie
