@@ -58,7 +58,7 @@ func Serve(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
-		AuthMiddleware(logger, authService),
+		AuthMiddleware(logger, swagger, authService),
 		httputil.LoggingMiddleware(RequestIDHeaderName, logging.Fields{"service_name": LoggerServiceName}),
 		MetricsMiddleware(swagger),
 	)
