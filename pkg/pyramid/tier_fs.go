@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -74,7 +75,7 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 
 // log returns a logger with added fields from ctx.
 func (tfs *TierFS) log(ctx context.Context) logging.Logger {
-	// TODO(ariels): Does this add the fields?  (Uses a different logrus path...)
+	// TODO(ariels): Does this add the fields?  (Uses a different logging path...)
 	return tfs.logger.WithContext(ctx)
 }
 

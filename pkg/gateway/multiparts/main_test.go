@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/ory/dockertest/v3"
-	"github.com/sirupsen/logrus"
+
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -20,7 +21,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if !testing.Verbose() {
 		// keep the log level calm
-		logrus.SetLevel(logrus.PanicLevel)
+		logging.SetLevel("panic")
 	}
 
 	// postgres container

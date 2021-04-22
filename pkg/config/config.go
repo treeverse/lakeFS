@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
@@ -69,14 +69,6 @@ var (
 	ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
 	ErrBadDomainNames    = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 )
-
-type LogrusAWSAdapter struct {
-	logger *log.Entry
-}
-
-func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
-	l.logger.Debug(vars...)
-}
 
 type Config struct {
 	values configuration
@@ -235,9 +227,10 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 }
 
 func (c *Config) GetAwsConfig() *aws.Config {
+	logger := logging.Default().WithField("sdk", "aws")
 	cfg := &aws.Config{
 		Region: aws.String(c.values.Blockstore.S3.Region),
-		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
+		Logger: &logging.AWSAdapter{Logger: logger},
 	}
 	level := strings.ToLower(logging.Level())
 	if level == "trace" {

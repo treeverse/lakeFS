@@ -9,7 +9,9 @@ import (
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
+
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -19,8 +21,6 @@ import (
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/block/transient"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
 )
 
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
@@ -114,7 +114,7 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 		return nil, err
 	}
 	adapter := gs.NewAdapter(client)
-	log.WithField("type", "gs").Info("initialized blockstore adapter")
+	logging.Default().WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }
 

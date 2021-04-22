@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/logging"
+
 	"github.com/go-test/deep"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -138,7 +139,7 @@ func TestConfig_JSONLogger(t *testing.T) {
 	_, err := newConfigFromFile("testdata/valid_json_logger_config.yaml")
 	testutil.Must(t, err)
 
-	log.Info("some message that I should be looking for")
+	logging.Default().Info("some message that I should be looking for")
 
 	content, err := os.Open(logfile)
 	if err != nil {

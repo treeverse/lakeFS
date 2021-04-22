@@ -14,10 +14,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/schollz/progressbar/v3"
-	log "github.com/sirupsen/logrus"
+	vegeta "github.com/tsenart/vegeta/v12/lib"
+
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	vegeta "github.com/tsenart/vegeta/v12/lib"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Loader struct {
@@ -88,7 +89,7 @@ func (t *Loader) Run() error {
 		if errors.Is(err, io.ErrClosedPipe) {
 			continue
 		}
-		log.Errorf("error during request pipeline: %s", err)
+		logging.Default().WithError(err).Error("error during request pipeline")
 		return err
 	}
 	err = printResults(t.Metrics, t.TotalMetrics)
@@ -153,7 +154,7 @@ func (t *Loader) doAttack() (hasErrors bool) {
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
 		typ := GetRequestType(*res)
 		if len(res.Error) > 0 {
-			log.Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
+			logging.Default().Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
 			hasErrors = true
 		}
 		typeMetrics := t.Metrics[typ]
