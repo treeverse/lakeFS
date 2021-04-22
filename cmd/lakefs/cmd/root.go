@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"os"
 	"strings"
 	"sync"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
