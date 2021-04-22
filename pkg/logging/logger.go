@@ -28,7 +28,6 @@ var (
 	defaultLogger     = logrus.New()
 )
 
-
 func Level() string {
 	return defaultLogger.GetLevel().String()
 }
@@ -60,6 +59,8 @@ func SetLevel(level string) {
 		defaultLogger.SetLevel(logrus.WarnLevel)
 	case "error":
 		defaultLogger.SetLevel(logrus.ErrorLevel)
+	case "panic":
+		defaultLogger.SetLevel(logrus.PanicLevel)
 	case "null", "none":
 		defaultLogger.SetOutput(ioutil.Discard)
 	}
@@ -97,7 +98,8 @@ func SetOutput(output string) {
 
 func SetOutputFormat(format string) {
 	var formatter logrus.Formatter
-	if strings.EqualFold(format, "text") {
+	switch strings.ToLower(format) {
+	case "text":
 		formatter = &logrus.TextFormatter{
 			FullTimestamp:          true,
 			DisableLevelTruncation: true,
@@ -105,13 +107,13 @@ func SetOutputFormat(format string) {
 			QuoteEmptyFields:       true,
 			CallerPrettyfier:       logCallerTrimmer,
 		}
-	} else if strings.EqualFold(format, "json") {
+	case "json":
 		formatter = &logrus.JSONFormatter{
 			CallerPrettyfier: logCallerTrimmer,
 			PrettyPrint:      false,
 		}
-	} else {
-		return
+	default:
+		return // no known formatter found
 	}
 
 	// wrap it with our caller formatter

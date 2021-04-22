@@ -15,11 +15,11 @@ import (
 	"github.com/go-test/deep"
 	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
-	"github.com/sirupsen/logrus"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -54,7 +54,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	logrus.SetLevel(logrus.PanicLevel)
+	logging.SetLevel("panic")
 	var err error
 	var closer func()
 	pool, err = dockertest.NewPool("")
