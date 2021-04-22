@@ -1,7 +1,7 @@
 on:
   pre-merge:
     branches:
-      - master
+      - main
 hooks:
   - id: hook1
     type: webhook

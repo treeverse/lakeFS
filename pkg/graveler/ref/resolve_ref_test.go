@@ -19,7 +19,7 @@ func TestResolveRef_Dereference(t *testing.T) {
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
-		DefaultBranchID:  "master",
+		DefaultBranchID:  "main",
 	}, ""))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
@@ -193,7 +193,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
-		DefaultBranchID:  "master",
+		DefaultBranchID:  "main",
 	}, ""))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
@@ -263,7 +263,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	testutil.Must(t, r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
-		DefaultBranchID:  "master",
+		DefaultBranchID:  "main",
 	}, ""))
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")

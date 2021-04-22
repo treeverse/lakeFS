@@ -23,7 +23,7 @@ const (
 func TestMultipartUpload(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	file := "multipart_file"
-	path := masterBranch + "/" + file
+	path := mainBranch + "/" + file
 	input := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
 		Key:    aws.String(path),
@@ -47,7 +47,7 @@ func TestMultipartUpload(t *testing.T) {
 
 	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
 
-	getResp, err := client.GetObjectWithResponse(ctx, repo, masterBranch, &api.GetObjectParams{Path: file})
+	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, getResp.StatusCode())
 	require.Equal(t, getResp.Body, partsConcat, "uploaded object did not match")

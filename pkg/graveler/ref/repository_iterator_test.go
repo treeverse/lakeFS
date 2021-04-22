@@ -20,7 +20,7 @@ func TestRepositoryIterator(t *testing.T) {
 		testutil.Must(t, r.CreateRepository(context.Background(), repoId, graveler.Repository{
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
-			DefaultBranchID:  "master",
+			DefaultBranchID:  "main",
 		}, ""))
 	}
 

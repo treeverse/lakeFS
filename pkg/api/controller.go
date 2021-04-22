@@ -1076,7 +1076,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
-		defaultBranch = "master"
+		defaultBranch = "main"
 	}
 
 	if params.Bare != nil && *params.Bare {

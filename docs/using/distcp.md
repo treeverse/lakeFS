@@ -31,8 +31,8 @@ hadoop distcp \
   -Dfs.s3a.access.key="AKIAIOSFODNN7EXAMPLE" \
   -Dfs.s3a.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -Dfs.s3a.endpoint="https://s3.lakefs.example.com" \
-  "s3a://example-repo-1/master/example-file.parquet" \
-  "s3a://example-repo-2/master/example-file.parquet"
+  "s3a://example-repo-1/main/example-file.parquet" \
+  "s3a://example-repo-2/main/example-file.parquet"
 ```
 
 val workDir = s"s3a://${repo}/${branch}/collection/shows"
@@ -51,7 +51,7 @@ hadoop distcp \
   -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNN3EXAMPLE" \
   -Dfs.s3a.bucket.example-bucket.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
   "s3a://example-bucket/example-file.parquet" \
-  "s3a://example-repo/master/example-file.parquet"
+  "s3a://example-repo/main/example-file.parquet"
 ```
 
 ### From lakeFS to S3
@@ -62,6 +62,6 @@ hadoop distcp \
   -Dfs.s3a.bucket.example-repo.endpoint="https://s3.lakefs.example.com" \
   -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNN3EXAMPLE" \
   -Dfs.s3a.bucket.example-bucket.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
-  "s3a://example-repo/master/myfile" \
+  "s3a://example-repo/main/myfile" \
   "s3a://example-bucket/myfile"
 ```

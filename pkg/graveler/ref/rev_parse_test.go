@@ -17,17 +17,17 @@ func TestRevParse(t *testing.T) {
 	}{
 		{
 			Name:  "just_branch",
-			Input: "master",
+			Input: "main",
 			Expected: ref.ParsedRev{
-				BaseRev:   "master",
+				BaseRev:   "main",
 				Modifiers: make([]ref.RevModifier, 0),
 			},
 		},
 		{
 			Name:  "branch_one_caret",
-			Input: "master^",
+			Input: "main^",
 			Expected: ref.ParsedRev{
-				BaseRev: "master",
+				BaseRev: "main",
 				Modifiers: []ref.RevModifier{
 					{
 						Type:  ref.RevModTypeCaret,
@@ -38,9 +38,9 @@ func TestRevParse(t *testing.T) {
 		},
 		{
 			Name:  "branch_two_caret",
-			Input: "master^^",
+			Input: "main^^",
 			Expected: ref.ParsedRev{
-				BaseRev: "master",
+				BaseRev: "main",
 				Modifiers: []ref.RevModifier{
 					{
 						Type:  ref.RevModTypeCaret,
@@ -55,9 +55,9 @@ func TestRevParse(t *testing.T) {
 		},
 		{
 			Name:  "branch_two_caret_one_qualified",
-			Input: "master^2^",
+			Input: "main^2^",
 			Expected: ref.ParsedRev{
-				BaseRev: "master",
+				BaseRev: "main",
 				Modifiers: []ref.RevModifier{
 					{
 						Type:  ref.RevModTypeCaret,
@@ -72,9 +72,9 @@ func TestRevParse(t *testing.T) {
 		},
 		{
 			Name:  "branch_tilde_caret_tilde",
-			Input: "master~^~3",
+			Input: "main~^~3",
 			Expected: ref.ParsedRev{
-				BaseRev: "master",
+				BaseRev: "main",
 				Modifiers: []ref.RevModifier{
 					{
 						Type:  ref.RevModTypeTilde,
@@ -98,7 +98,7 @@ func TestRevParse(t *testing.T) {
 		},
 		{
 			Name:        "non_numeric_qualifier",
-			Input:       "master^a",
+			Input:       "main^a",
 			ExpectedErr: graveler.ErrInvalidRef,
 		},
 	}

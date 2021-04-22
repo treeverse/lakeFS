@@ -18,7 +18,7 @@ func TestBranchIterator(t *testing.T) {
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
-		DefaultBranchID:  "master",
+		DefaultBranchID:  "main",
 	}, ""))
 
 	// prepare data
@@ -38,7 +38,7 @@ func TestBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(ids, []graveler.BranchID{"a", "aa", "b", "c", "d", "e", "master"}); diffs != nil {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"a", "aa", "b", "c", "d", "e", "main"}); diffs != nil {
 			t.Fatalf("got wrong list of IDs: %v", diffs)
 		}
 	})
@@ -56,7 +56,7 @@ func TestBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "main"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs: %v", diffs)
 		}
 	})
@@ -73,7 +73,7 @@ func TestBranchIterator(t *testing.T) {
 			t.Fatalf("unexpected error: %v", iter.Err())
 		}
 
-		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "master"}); diffs != nil {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"b", "c", "d", "e", "main"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs: %v", diffs)
 		}
 
@@ -89,7 +89,7 @@ func TestBranchIterator(t *testing.T) {
 		}
 		iter.Close()
 
-		if diffs := deep.Equal(ids, []graveler.BranchID{"aa", "b", "c", "d", "e", "master"}); diffs != nil {
+		if diffs := deep.Equal(ids, []graveler.BranchID{"aa", "b", "c", "d", "e", "main"}); diffs != nil {
 			t.Fatalf("got wrong list of branch IDs")
 		}
 	})

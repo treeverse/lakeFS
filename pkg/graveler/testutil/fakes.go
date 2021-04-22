@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 )
 
-const DefaultBranchID = graveler.BranchID("master")
+const DefaultBranchID = graveler.BranchID("main")
 
 type AppliedData struct {
 	Values      graveler.ValueIterator

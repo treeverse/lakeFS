@@ -3,7 +3,7 @@ description: set of checks to verify that branch is good
 on:
   pre-merge:
     branches:
-      - master
+      - main
       - stage
   pre-commit:
     branches:

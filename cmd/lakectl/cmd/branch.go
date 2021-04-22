@@ -91,7 +91,7 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
-// lakectl branch revert lakefs://myrepo/master commitId
+// lakectl branch revert lakefs://myrepo/main commitId
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert <branch uri> <commit ref to revert>",
 	Short: "given a commit, record a new commit to reverse the effect of this commit",
@@ -118,15 +118,15 @@ var branchRevertCmd = &cobra.Command{
 	},
 }
 
-// lakectl branch reset lakefs://myrepo/master --commit commitId --prefix path --object path
+// lakectl branch reset lakefs://myrepo/main --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
 	Use:   "reset <branch uri> [flags]",
 	Short: "reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
 	Long: `reset changes.  There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/master --commit commitId
-  2. reset all uncommitted changes - reset lakefs://myrepo/master 
-  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/master --prefix path
-  4. reset uncommitted changes for specific object - reset lakefs://myrepo/master --object path`,
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/main --commit commitId
+  2. reset all uncommitted changes - reset lakefs://myrepo/main 
+  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  4. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()

@@ -256,7 +256,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	tableName := "table"
 	dbName := "default"
 	repoLocation := "s3a://example"
-	branch := "master"
+	branch := "main"
 	tableDir := "table_by_partition"
 	location := fmt.Sprintf("%s/%s/%s", repoLocation, branch, tableDir)
 

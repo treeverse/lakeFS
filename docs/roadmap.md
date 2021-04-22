@@ -86,11 +86,11 @@ Throwaway development or experimentation branches that live for a pre-configured
 The ability to explicitly depend on data residing in another repository. While it is possible to state these cross links by sticking them in the report’s commit metadata, we think a more explicit and structured approach would be valuable. Stating our dependencies in something that resembles a [pom.xml](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html#:~:text=A%20Project%20Object%20Model%20or,default%20values%20for%20most%20projects.) or [go.mod](https://github.com/golang/go/wiki/Modules#gomod) file would allow us to support better CI and CD integrations that ensure reproducibility without vendoring or copying data.
 
 ### Webhook Support
-Being able to have pre-defined code execute before a commit or merge operation - potentially preventing that action from taking place. This allows lakeFS users to codify best practices (format and schema enforcement before merging to master) as well as run tools such as [Great Expectations](https://greatexpectations.io/) or [Monte Carlo](https://www.montecarlodata.com/) **before** data ever reaches consumers. 
+Being able to have pre-defined code execute before a commit or merge operation - potentially preventing that action from taking place. This allows lakeFS users to codify best practices (format and schema enforcement before merging to main) as well as run tools such as [Great Expectations](https://greatexpectations.io/) or [Monte Carlo](https://www.montecarlodata.com/) **before** data ever reaches consumers. 
 
 ### Protected Branches
-A way to ensure certain branches (i.e. main or master) are only merged to, and are not being directly written to. In combination with [Webhook Support](#webhook-support) (see above), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from 
-master ensures schema never breaks and all partitions are complete and tested)
+A way to ensure certain branches (i.e. main) are only merged to, and are not being directly written to. In combination with [Webhook Support](#webhook-support) (see above), this allows users to provide a set of quality guarantees about a given branch (i.e., reading from
+main ensures schema never breaks and all partitions are complete and tested)
 
 ### Webhook Support integration: Metastore registration
 Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](https://docs.lakefs.io/using/glue_hive_metastore.html#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
@@ -101,13 +101,13 @@ Provide a basic wrapper around something like [pyArrow](https://pypi.org/project
 ## Use Case: Continuous Deployment
 
 ### Airflow Operators
-Provide a set of reusable building blocks for Airflow that can create branches, commit and merge. The idea here is to enhance existing pipelines that, for example, run a series of Spark jobs, with an easy way to create a lakeFS branch before starting, passing that branch as a parameter to all Spark jobs, and upon successful execution, commit and merge their output to master.
+Provide a set of reusable building blocks for Airflow that can create branches, commit and merge. The idea here is to enhance existing pipelines that, for example, run a series of Spark jobs, with an easy way to create a lakeFS branch before starting, passing that branch as a parameter to all Spark jobs, and upon successful execution, commit and merge their output to main.
 
 [Track and discuss on GitHub](https://github.com/treeverse/lakeFS/issues/1771){: target="_blank" class="btn" }
 
 ### Webhook Support integration: Data Quality testing
-Provide a webhook around a tool such as [Great Expectations](https://greatexpectations.io/) that runs data quality tests before merging into a main/master branch.
+Provide a webhook around a tool such as [Great Expectations](https://greatexpectations.io/) that runs data quality tests before merging into a main branch.
 
 
 ### Webhook Alerting
-Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main/master due to a quality issue, so will alert the owning team.
+Support integration into existing alerting systems that trigger in the event a webhook returns a failure. This is useful for example when a data quality test fails, so new data is not merged into main due to a quality issue, so will alert the owning team.

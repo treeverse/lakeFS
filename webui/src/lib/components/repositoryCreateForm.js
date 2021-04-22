@@ -82,7 +82,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             <Form.Group as={Row} controlId="defaultBranch">
                 <Form.Label column sm={fieldNameOffset}>Default Branch</Form.Label>
                 <Col sm={sm}>
-                    <Form.Control type="text" ref={defaultBranchField} placeholder="defaultBranch" defaultValue={"master"} onChange={checkDefaultBranchValidity}/>
+                    <Form.Control type="text" ref={defaultBranchField} placeholder="defaultBranch" defaultValue={"main"} onChange={checkDefaultBranchValidity}/>
                     {!defaultBranchValid &&
                     <Form.Text className="text-danger">
                         Invalid Branch.
