@@ -21,8 +21,7 @@ func TestCommitSingle(t *testing.T) {
 			ctx, _, repo := setupTest(t)
 			objPath := "1.txt"
 
-			checksum, objContent, err := uploadFileRandomDataAndReport(ctx, repo, mainBranch, objPath, direct)
-			require.NoError(t, err, "failed uploading file")
+			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
 			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
 				Message: "nessie:singleCommit",
 			})
@@ -37,14 +36,6 @@ func TestCommitSingle(t *testing.T) {
 
 			body := string(getObjResp.Body)
 			require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
-
-			// upload the same content again, and verify that the diff remains empty
-			checksumNew, err := uploadFileAndReport(ctx, repo, mainBranch, objPath, objContent, direct)
-			require.Equal(t, checksum, checksumNew, "Same file uploaded to committed branch, expected no checksum difference")
-
-			diff, err := client.DiffBranchWithResponse(ctx, repo, mainBranch, &api.DiffBranchParams{})
-			require.NoError(t, err, "Diff uncommitted failed")
-			require.Empty(t, diff.JSON200.Results, "Expected no uncommitted files")
 		})
 	}
 }

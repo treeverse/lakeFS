@@ -26,6 +26,7 @@ func EntryToValue(entry *Entry) (*graveler.Value, error) {
 	}
 	// calculate entry identity
 	checksum := ident.NewAddressWriter().
+		MarshalString(entry.Address).
 		MarshalInt64(entry.Size).
 		MarshalString(entry.ETag).
 		MarshalStringMap(entry.Metadata).
