@@ -110,15 +110,15 @@ func TestAction_Match(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit master - on pre-commit master",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"master"}}},
-			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "master"},
+			name:    "pre-commit main - on pre-commit main",
+			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"main"}}},
+			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "main"},
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit master - on pre-commit x",
-			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"master"}}},
+			name:    "pre-commit main - on pre-commit x",
+			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"main"}}},
 			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "x"},
 			want:    false,
 			wantErr: false,
@@ -138,9 +138,9 @@ func TestAction_Match(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "pre-commit branch invalid - on pre-commit master",
+			name:    "pre-commit branch invalid - on pre-commit main",
 			on:      actions.OnEvents{PreCommit: &actions.ActionOn{Branches: []string{"\\"}}},
-			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "master"},
+			spec:    actions.MatchSpec{EventType: graveler.EventTypePreCommit, BranchID: "main"},
 			want:    false,
 			wantErr: true,
 		},
@@ -201,7 +201,7 @@ func TestLoadActions(t *testing.T) {
 				source.EXPECT().Load(gomock.Any(), gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
 					On: actions.OnEvents{
-						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+						PreCommit: &actions.ActionOn{Branches: []string{"main"}},
 					},
 					Hooks: []actions.ActionHook{
 						{
@@ -225,7 +225,7 @@ func TestLoadActions(t *testing.T) {
 				source.EXPECT().Load(gomock.Any(), gomock.Any(), gomock.Eq(ref1)).Return(yaml.Marshal(actions.Action{
 					Name: "some-action",
 					On: actions.OnEvents{
-						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+						PreCommit: &actions.ActionOn{Branches: []string{"main"}},
 					},
 					Hooks: []actions.ActionHook{
 						{
@@ -244,7 +244,7 @@ func TestLoadActions(t *testing.T) {
 				{
 					Name: "some-action",
 					On: actions.OnEvents{
-						PreCommit: &actions.ActionOn{Branches: []string{"master"}},
+						PreCommit: &actions.ActionOn{Branches: []string{"main"}},
 					},
 					Hooks: []actions.ActionHook{
 						{

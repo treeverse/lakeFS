@@ -21,7 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const masterBranch = "master"
+const mainBranch = "main"
 
 const minHTTPErrorStatusCode = 400
 
@@ -82,7 +82,7 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		"name":              name,
 	}).Debug("Create repository for test")
 	resp, err := client.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr(masterBranch),
+		DefaultBranch:    api.StringPtr(mainBranch),
 		Name:             name,
 		StorageNamespace: repoStorage,
 	})

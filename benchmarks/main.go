@@ -67,7 +67,7 @@ func testBenchmarkLakeFS() error {
 		"name":              repoName,
 	}).Debug("Create repository for test")
 	createRepoResp, err := client.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr("master"),
+		DefaultBranch:    api.StringPtr("main"),
 		Name:             repoName,
 		StorageNamespace: ns,
 	})
@@ -81,10 +81,10 @@ func testBenchmarkLakeFS() error {
 	repo := createRepoResp.JSON201
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo.Id, api.CreateBranchJSONRequestBody{
 		Name:   branchName,
-		Source: "master",
+		Source: "main",
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create a branch from master: %w", err)
+		return fmt.Errorf("failed to create a branch from main: %w", err)
 	}
 	if err := helpers.ResponseAsError(createBranchResp); err != nil {
 		return fmt.Errorf("create branch: %w", err)
@@ -197,8 +197,8 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 
 func merge(ctx context.Context) {
 	err := retry.Do(func() error {
-		resp, err := client.MergeIntoBranchWithResponse(ctx, repoName, branchName, "master", api.MergeIntoBranchJSONRequestBody{
-			Message: api.StringPtr("merging all objects to master"),
+		resp, err := client.MergeIntoBranchWithResponse(ctx, repoName, branchName, "main", api.MergeIntoBranchJSONRequestBody{
+			Message: api.StringPtr("merging all objects to main"),
 		})
 		if err != nil {
 			return err
@@ -212,7 +212,7 @@ func merge(ctx context.Context) {
 		retry.LastErrorOnly(true),
 		retry.DelayType(retry.FixedDelay))
 	if err != nil {
-		logger.WithError(err).Error("Failed merging branch to master")
+		logger.WithError(err).Error("Failed merging branch to main")
 	}
 }
 

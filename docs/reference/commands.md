@@ -1075,10 +1075,10 @@ reset changes to specified commit, or reset uncommitted changes - all changes, o
 #### Synopsis
 
 reset changes.  There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/master --commit commitId
-  2. reset all uncommitted changes - reset lakefs://myrepo/master 
-  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/master --prefix path
-  4. reset uncommitted changes for specific object - reset lakefs://myrepo/master --object path
+  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/main --commit commitId
+  2. reset all uncommitted changes - reset lakefs://myrepo/main 
+  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  4. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
 
 ```
 lakectl branch reset <branch uri> [flags]
@@ -1704,7 +1704,7 @@ lakectl repo create <repository uri> <storage namespace> [flags]
 #### Options
 
 ```
-  -d, --default-branch string   the default branch of this repository (default "master")
+  -d, --default-branch string   the default branch of this repository (default "main")
   -h, --help                    help for create
 ```
 
@@ -1724,7 +1724,7 @@ lakectl repo create-bare <repository uri> <storage namespace> [flags]
 #### Options
 
 ```
-  -d, --default-branch string   the default branch name of this repository (will not be created) (default "master")
+  -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
   -h, --help                    help for create-bare
 ```
 

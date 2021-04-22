@@ -67,16 +67,16 @@ In file ``` hdfs-site.xml``` add to the configuration:
 Here are some examples based on examples from the [Presto Hive connector documentation](https://prestodb.io/docs/current/connector/hive.html#examples)
 
 ### Example with schema
-Create a new schema named ```master``` that will store tables in a lakeFS repository named ```example``` branch: ```master```:
+Create a new schema named ```main``` that will store tables in a lakeFS repository named ```example``` branch: ```master```:
 ```sql
-CREATE SCHEMA master
-WITH (location = 's3a://example/master')
+CREATE SCHEMA main
+WITH (location = 's3a://example/main')
 ```
 
 Create a new Hive table named ```page_views``` in the ```web``` schema that is stored using the ORC file format,
  partitioned by date and country, and bucketed by user into ```50``` buckets (note that Hive requires the partition columns to be the last columns in the table):
 ```sql
-CREATE TABLE master.page_views (
+CREATE TABLE main.page_views (
   view_time timestamp,
   user_id bigint,
   page_url varchar,
@@ -94,7 +94,7 @@ WITH (
 Create an external Hive table named ```request_logs``` that points at existing data in lakeFS:
 
 ```sql
-CREATE TABLE master.request_logs (
+CREATE TABLE main.request_logs (
   request_time timestamp,
   url varchar,
   ip varchar,
@@ -102,14 +102,14 @@ CREATE TABLE master.request_logs (
 )
 WITH (
   format = 'TEXTFILE',
-  external_location = 's3a://example/master/data/logs/'
+  external_location = 's3a://example/main/data/logs/'
 )
 ```
 
 ### Example of copying a table with [metastore tools](glue_hive_metastore.md):
-Copy the created table `page_views` on schema `master` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
+Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
 ```shell
-lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
+lakectl metastore copy --from-schema main --from-table page_views   --to-branch example_branch 
 ```
 
 

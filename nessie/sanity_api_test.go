@@ -13,7 +13,7 @@ func TestSanityAPI(t *testing.T) {
 	ctx, log, repo := setupTest(t)
 
 	log.Debug("list entries")
-	entries := listRepositoryObjects(ctx, t, repo, masterBranch)
+	entries := listRepositoryObjects(ctx, t, repo, mainBranch)
 	require.Len(t, entries, 0, "expected no entries")
 
 	log.Debug("upload some files")
@@ -22,12 +22,12 @@ func TestSanityAPI(t *testing.T) {
 	contents := make([]string, numOfFiles)
 	for i := 0; i < numOfFiles; i++ {
 		paths[i] = fmt.Sprintf("file%d", i)
-		_, contents[i] = uploadFileRandomData(ctx, t, repo, masterBranch, paths[i], false)
+		_, contents[i] = uploadFileRandomData(ctx, t, repo, mainBranch, paths[i], false)
 	}
 
 	log.Debug("verify upload content")
 	for i, p := range paths {
-		resp, err := client.GetObjectWithResponse(ctx, repo, masterBranch, &api.GetObjectParams{Path: p})
+		resp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: p})
 		require.NoError(t, err, "get object for", p)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		content := string(resp.Body)
@@ -35,26 +35,26 @@ func TestSanityAPI(t *testing.T) {
 	}
 
 	log.Debug("list uncommitted files")
-	entries = listRepositoryObjects(ctx, t, repo, masterBranch)
+	entries = listRepositoryObjects(ctx, t, repo, mainBranch)
 	require.Len(t, entries, numOfFiles, "repository should have files")
 
 	log.Debug("commit changes")
-	commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
 		Message: "first commit",
 	})
 	require.NoError(t, err, "initial commit")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	log.Debug("list files on master")
-	entries = listRepositoryObjects(ctx, t, repo, masterBranch)
+	log.Debug("list files on main")
+	entries = listRepositoryObjects(ctx, t, repo, mainBranch)
 	require.Len(t, entries, numOfFiles, "repository should have files")
 
-	log.Debug("create 'branch1' based on 'master'")
+	log.Debug("create 'branch1' based on 'main'")
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   "branch1",
-		Source: masterBranch,
+		Source: mainBranch,
 	})
-	require.NoError(t, err, "failed to create branch1 from master")
+	require.NoError(t, err, "failed to create branch1 from main")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 	branchRef := string(createBranchResp.Body)
 	require.NotEmpty(t, branchRef, "reference to new branch")
@@ -74,7 +74,7 @@ func TestSanityAPI(t *testing.T) {
 		// collect the branch names
 		branches = append(branches, branch)
 	}
-	require.ElementsMatch(t, branches, []string{masterBranch, "branch1"},
+	require.ElementsMatch(t, branches, []string{mainBranch, "branch1"},
 		"match existing branches")
 
 	log.Debug("branch1 - change file0")
@@ -88,27 +88,27 @@ func TestSanityAPI(t *testing.T) {
 	log.Debug("branch1 - add fileX")
 	_, _ = uploadFileRandomData(ctx, t, repo, "branch1", "fileX", false)
 
-	log.Debug("master - list files")
-	masterObjects := listRepositoryObjects(ctx, t, repo, "master")
-	masterPaths := make([]string, len(masterObjects))
-	for i, obj := range masterObjects {
-		masterPaths[i] = obj.Path
+	log.Debug("main - list files")
+	mainObjects := listRepositoryObjects(ctx, t, repo, "main")
+	mainPaths := make([]string, len(mainObjects))
+	for i, obj := range mainObjects {
+		mainPaths[i] = obj.Path
 	}
-	require.EqualValues(t, masterPaths, paths)
+	require.EqualValues(t, mainPaths, paths)
 
 	log.Debug("branch1 - list objects")
 	branch1Objects := listRepositoryObjects(ctx, t, repo, "branch1")
 	for i := range branch1Objects {
-		masterPaths[i] = branch1Objects[i].Path
+		mainPaths[i] = branch1Objects[i].Path
 	}
 	pathsBranch1 := make([]string, len(paths))
 	copy(pathsBranch1, paths)
 	pathsBranch1 = append(append(paths[:1], paths[2:]...), "fileX")
-	require.EqualValues(t, pathsBranch1, masterPaths)
+	require.EqualValues(t, pathsBranch1, mainPaths)
 
-	log.Debug("branch1 - diff changes with master")
-	diffResp, err := client.DiffRefsWithResponse(ctx, repo, "branch1", masterBranch, &api.DiffRefsParams{})
-	require.NoError(t, err, "diff between branch1 and master")
+	log.Debug("branch1 - diff changes with main")
+	diffResp, err := client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{})
+	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
 	require.Len(t, diffResp.JSON200.Results, 0, "no changes should be found as we didn't commit anything")
 
@@ -119,11 +119,11 @@ func TestSanityAPI(t *testing.T) {
 	require.NoError(t, err, "commit 3 changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	log.Debug("branch1 - diff changes with master")
-	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", masterBranch, &api.DiffRefsParams{
+	log.Debug("branch1 - diff changes with main")
+	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{
 		Amount: api.PaginationAmountPtr(-1),
 	})
-	require.NoError(t, err, "diff between branch1 and master")
+	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
 	require.ElementsMatch(t, diffResp.JSON200.Results, []api.Diff{
 		{Path: "file0", PathType: "object", Type: "changed"},
@@ -131,23 +131,23 @@ func TestSanityAPI(t *testing.T) {
 		{Path: "fileX", PathType: "object", Type: "added"},
 	})
 
-	log.Debug("branch1 - merge changes to master")
-	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, "branch1", masterBranch, api.MergeIntoBranchJSONRequestBody{})
-	require.NoError(t, err, "merge branch1 to master")
+	log.Debug("branch1 - merge changes to main")
+	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, "branch1", mainBranch, api.MergeIntoBranchJSONRequestBody{})
+	require.NoError(t, err, "merge branch1 to main")
 	require.Equal(t, http.StatusOK, mergeResp.StatusCode())
 	require.NotEmpty(t, mergeResp.JSON200.Reference, "merge should return a commit reference")
 
 	log.Debug("branch1 - diff after merge")
-	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", masterBranch, &api.DiffRefsParams{})
-	require.NoError(t, err, "diff between branch1 and master")
+	diffResp, err = client.DiffRefsWithResponse(ctx, repo, "branch1", mainBranch, &api.DiffRefsParams{})
+	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
-	require.Len(t, diffResp.JSON200.Results, 0, "no diff between branch1 and master")
+	require.Len(t, diffResp.JSON200.Results, 0, "no diff between branch1 and main")
 
-	log.Debug("master - diff with branch1")
-	diffResp, err = client.DiffRefsWithResponse(ctx, repo, masterBranch, "branch1", &api.DiffRefsParams{})
-	require.NoError(t, err, "diff between master and branch1")
+	log.Debug("main - diff with branch1")
+	diffResp, err = client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &api.DiffRefsParams{})
+	require.NoError(t, err, "diff between main and branch1")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())
-	require.Len(t, diffResp.JSON200.Results, 0, "no diff between master and branch1")
+	require.Len(t, diffResp.JSON200.Results, 0, "no diff between main and branch1")
 
 	log.Debug("delete test repository")
 	deleteRepoResp, err := client.DeleteRepositoryWithResponse(ctx, repo)

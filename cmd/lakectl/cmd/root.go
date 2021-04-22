@@ -36,7 +36,7 @@ var (
 	// The prefix is used only when the address we parse is not a full address (starts with 'lakefs://' scheme).
 	// Examples:
 	//   `--base-uri lakefs:// repo1` will resolve to repository `lakefs://repo1`
-	//   `--base-uri lakefs://repo1 /master/file.md` will resolve to path `lakefs://repo1/master/file.md`
+	//   `--base-uri lakefs://repo1 /main/file.md` will resolve to path `lakefs://repo1/main/file.md`
 	baseURI string
 )
 

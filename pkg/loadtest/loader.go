@@ -109,7 +109,7 @@ func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string,
 	t.NewRepoName = uuid.New().String()
 	ctx := context.Background()
 	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr("master"),
+		DefaultBranch:    api.StringPtr("main"),
 		Name:             t.NewRepoName,
 		StorageNamespace: t.Config.StorageNamespace,
 	})

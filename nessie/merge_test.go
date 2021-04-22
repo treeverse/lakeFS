@@ -13,21 +13,21 @@ func TestMergeAndList(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	const branch = "feature-1"
 
-	logger.WithField("branch", masterBranch).Info("Upload initial content")
-	checksum, content := uploadFileRandomData(ctx, t, repo, masterBranch, "README", false)
+	logger.WithField("branch", mainBranch).Info("Upload initial content")
+	checksum, content := uploadFileRandomData(ctx, t, repo, mainBranch, "README", false)
 	checksums := map[string]string{
 		checksum: content,
 	}
 
-	logger.WithField("branch", masterBranch).Info("Commit initial content")
-	commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{Message: "Initial content"})
+	logger.WithField("branch", mainBranch).Info("Commit initial content")
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	logger.WithField("branch", branch).Info("Create branch")
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch,
-		Source: masterBranch,
+		Source: mainBranch,
 	})
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
@@ -50,12 +50,12 @@ func TestMergeAndList(t *testing.T) {
 	require.NoError(t, err, "failed to commit changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, masterBranch, api.MergeIntoBranchJSONRequestBody{})
+	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err, "failed to merge branches")
 	require.Equal(t, http.StatusOK, mergeRes.StatusCode())
 	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
 
-	resp, err := client.ListObjectsWithResponse(ctx, repo, masterBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
+	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
 	require.NoError(t, err, "failed to list objects")
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	payload := resp.JSON200
@@ -68,6 +68,6 @@ func TestMergeAndList(t *testing.T) {
 
 	for _, obj := range objs {
 		_, ok := checksums[obj.Checksum]
-		require.True(t, ok, "file exists in master but shouldn't, obj: %s", obj)
+		require.True(t, ok, "file exists in main but shouldn't, obj: %s", obj)
 	}
 }

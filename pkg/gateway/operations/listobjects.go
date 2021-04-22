@@ -364,7 +364,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
 	o.Incr("list_objects")
 	// parse request parameters
-	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
+	// GET /example?list-type=2&prefix=main%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 
 	// handle GET /?versioning
 	query := req.URL.Query()

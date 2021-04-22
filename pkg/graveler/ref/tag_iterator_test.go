@@ -18,7 +18,7 @@ func TestTagIterator(t *testing.T) {
 	testutil.Must(t, r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
-		DefaultBranchID:  "master",
+		DefaultBranchID:  "main",
 	}, ""))
 
 	// prepare data

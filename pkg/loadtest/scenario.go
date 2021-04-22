@@ -22,11 +22,11 @@ func (s *SimpleScenario) Play(serverAddress string, repoName string, stopCh chan
 	go func() {
 		defer close(out)
 		for i := 0; true; i++ {
-			for _, tgt := range targetGenerator.GenerateCreateFileTargets(repoName, "master", FileCountInCommit) {
+			for _, tgt := range targetGenerator.GenerateCreateFileTargets(repoName, "main", FileCountInCommit) {
 				out <- tgt
 			}
 			commitMsg := fmt.Sprintf("commit%d", i)
-			out <- targetGenerator.GenerateCommitTarget(repoName, "master", commitMsg)
+			out <- targetGenerator.GenerateCommitTarget(repoName, "main", commitMsg)
 			branchName := fmt.Sprintf("branch%d", i)
 			out <- targetGenerator.GenerateBranchTarget(repoName, branchName)
 
@@ -35,9 +35,9 @@ func (s *SimpleScenario) Play(serverAddress string, repoName string, stopCh chan
 			}
 			out <- targetGenerator.GenerateCommitTarget(repoName, branchName, commitMsg)
 			out <- targetGenerator.GenerateMergeToMasterTarget(repoName, branchName)
-			out <- targetGenerator.GenerateListTarget(repoName, "master", 100)
-			out <- targetGenerator.GenerateListTarget(repoName, "master", 1000)
-			out <- targetGenerator.GenerateDiffTarget(repoName, "master")
+			out <- targetGenerator.GenerateListTarget(repoName, "main", 100)
+			out <- targetGenerator.GenerateListTarget(repoName, "main", 1000)
+			out <- targetGenerator.GenerateDiffTarget(repoName, "main")
 
 			select {
 			case <-stopCh:

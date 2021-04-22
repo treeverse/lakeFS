@@ -27,6 +27,6 @@ store.url=https://s3.lakefs.example.com
 aws.access.key.id=AKIAIOSFODNN7EXAMPLE
 aws.secret.access.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
-# master being the branch we want to write to
-topics.dir=master/topics 
+# main being the branch we want to write to
+topics.dir=main/topics 
 ```

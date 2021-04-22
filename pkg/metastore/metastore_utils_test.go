@@ -16,7 +16,7 @@ func TestReplaceBranchName(t *testing.T) {
 		{
 			name: "table",
 			args: args{
-				location: "s3a://repo/master/path/to/table",
+				location: "s3a://repo/main/path/to/table",
 				branch:   "br1",
 			},
 			want: "s3a://repo/br1/path/to/table",
@@ -24,7 +24,7 @@ func TestReplaceBranchName(t *testing.T) {
 		{
 			name: "partition",
 			args: args{
-				location: "s3a://repo/master/path/to/table/partition=value",
+				location: "s3a://repo/main/path/to/table/partition=value",
 				branch:   "br1",
 			},
 			want: "s3a://repo/br1/path/to/table/partition=value",
@@ -82,26 +82,26 @@ func TestGetSymlinkLocation1(t *testing.T) {
 		{
 			name: "table location - repo is bucket",
 			args: args{
-				location:       "s3a://repo/master/tableName",
+				location:       "s3a://repo/main/tableName",
 				locationPrefix: "s3://bucket/lakeFS",
 			},
-			want: "s3://bucket/lakeFS/repo/master/tableName",
+			want: "s3://bucket/lakeFS/repo/main/tableName",
 		},
 		{
 			name: "partition location - repo is bucket",
 			args: args{
-				location:       "s3a://repo/master/tableName/partition=value",
+				location:       "s3a://repo/main/tableName/partition=value",
 				locationPrefix: "s3://bucket/lakeFS",
 			},
-			want: "s3://bucket/lakeFS/repo/master/tableName/partition=value",
+			want: "s3://bucket/lakeFS/repo/main/tableName/partition=value",
 		},
 		{
 			name: "partition location - repo is path",
 			args: args{
-				location:       "s3a://repo/master/tableName/partition=value",
+				location:       "s3a://repo/main/tableName/partition=value",
 				locationPrefix: "s3://bucket/some/path/lakeFS",
 			},
-			want: "s3://bucket/some/path/lakeFS/repo/master/tableName/partition=value",
+			want: "s3://bucket/some/path/lakeFS/repo/main/tableName/partition=value",
 		},
 		{
 			name: "no schema",
