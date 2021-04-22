@@ -151,6 +151,9 @@ func (lf logrusCallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 func Default() Logger {
 	// wrap formatter with our own formatter that overrides caller
 	formatterInitOnce.Do(func() {
+		if !defaultLogger.ReportCaller {
+			panic("logging has not been initialized prior to calling logging.Default()")
+		}
 		defaultLogger.SetNoLock()
 		defaultLogger.Formatter = logrusCallerFormatter{defaultLogger.Formatter}
 	})
