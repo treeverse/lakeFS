@@ -23,9 +23,6 @@ const (
 )
 
 func setupLogger() {
-	// add calling function/line numbers to log lines
-	log.SetReportCaller(true)
-
 	// trim calling function so it looks more readable
 	logPrettyfier := func(frame *runtime.Frame) (function string, file string) {
 		indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)

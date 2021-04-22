@@ -48,10 +48,13 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	logger := logging.Default().WithField("phase", "startup")
 	if cfgFile != "" {
+		logger.WithField("file", cfgFile).Info("configuration file")
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
+		logger.Info("search for configuration file .lakefs")
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
@@ -72,20 +75,17 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
+	logger = logger.WithField("file", viper.ConfigFileUsed())
 
-	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			panic("failed to read config file")
-		}
+	if err == nil {
+		logger.Info("loaded configuration from file")
+	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		logger.WithError(err).Fatal("failed to read config file")
 	}
 
 	// setup config used by the executed command
 	cfg, err = config.NewConfig()
 	if err != nil {
-		panic(fmt.Sprintf("Failed loading config: %v", err))
+		logger.WithError(err).Fatal("load config")
 	}
-
-	logging.Default()
-
-	logging.Default().WithField("config_file", viper.ConfigFileUsed()).Info("configuration loaded")
 }
