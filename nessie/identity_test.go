@@ -41,8 +41,12 @@ func TestIdentity(t *testing.T) {
 				Source: mainBranch,
 			})
 			require.NoError(t, err, "failed creating branch2")
-			checksumNew, err := uploadFileAndReport(ctx, repo, mainBranch, objPath, objContent, direct)
+			checksumNew, err := uploadFileAndReport(ctx, repo, branch2, objPath, objContent, direct)
 			require.Equal(t, checksum, checksumNew, "Same file uploaded to committed branch, expected no checksum difference")
+			commitResp, err = client.CommitWithResponse(ctx, repo, branch2, api.CommitJSONRequestBody{
+				Message: "commit on branch2",
+			})
+			require.NoError(t, err, "failed to commit changes")
 
 			diff, err := client.DiffRefsWithResponse(ctx, repo, branch1, branch2, &api.DiffRefsParams{})
 			require.NoError(t, err, "Diff refs failed")
