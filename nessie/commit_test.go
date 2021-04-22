@@ -21,7 +21,8 @@ func TestCommitSingle(t *testing.T) {
 			ctx, _, repo := setupTest(t)
 			objPath := "1.txt"
 
-			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
+			checksum, objContent, err := uploadFileRandomDataAndReport(ctx, repo, mainBranch, objPath, direct)
+			require.NoError(t, err, "failed uploading file")
 			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
 				Message: "nessie:singleCommit",
 			})
@@ -36,6 +37,14 @@ func TestCommitSingle(t *testing.T) {
 
 			body := string(getObjResp.Body)
 			require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
+
+			// upload the same content again, and verify that the diff remains empty
+			checksumNew, err := uploadFileAndReport(ctx, repo, mainBranch, objPath, objContent, direct)
+			require.Equal(t, checksum, checksumNew, "Same file uploaded to committed branch, expected no checksum difference")
+
+			diff, err := client.DiffBranchWithResponse(ctx, repo, mainBranch, &api.DiffBranchParams{})
+			require.NoError(t, err, "Diff uncommitted failed")
+			require.Empty(t, diff.JSON200.Results, "Expected no uncommitted files")
 		})
 	}
 }
@@ -54,9 +63,9 @@ type Upload struct {
 }
 
 // upload uploads random file data for uploads.
-func upload(ctx context.Context, t *testing.T, uploads chan Upload, direct bool) error {
+func upload(ctx context.Context, uploads chan Upload, direct bool) error {
 	for u := range uploads {
-		_, _, err := uploadFileRandomDataAndReport(ctx, t, u.Repo, u.Branch, u.Path, direct)
+		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, direct)
 		if err != nil {
 			return err
 		}
@@ -84,7 +93,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 			for i := 0; i < parallelism; i++ {
 				wg.Add(1)
 				go func() {
-					if err := upload(ctx, t, uploads, direct); err != nil {
+					if err := upload(ctx, uploads, direct); err != nil {
 						t.Error(err)
 					}
 					wg.Done()
@@ -113,7 +122,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 			for i := 0; i < parallelism; i++ {
 				wg.Add(1)
 				go func() {
-					if err := upload(ctx, t, uploads, direct); err != nil {
+					if err := upload(ctx, uploads, direct); err != nil {
 						t.Error(err)
 					}
 					wg.Done()

@@ -91,25 +91,33 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func uploadFileRandomDataAndReport(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
+func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
 
+	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
+	if err != nil {
+		return "", "", err
+	}
+	return checksum, objContent, nil
+}
+
+func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
 	if direct {
 		stats, err := helpers.ClientUpload(ctx, client, repo, branch, objPath, nil, strings.NewReader(objContent))
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
-		return stats.Checksum, objContent, nil
+		return stats.Checksum, nil
 	} else {
 		resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		if err := verifyResponse(resp.HTTPResponse, resp.Body); err != nil {
-			return "", "", err
+			return "", err
 		}
-		return resp.JSON201.Checksum, objContent, nil
+		return resp.JSON201.Checksum, nil
 	}
 }
 
@@ -131,7 +139,7 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 }
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, t, repo, branch, objPath, direct)
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, direct)
 	require.NoError(t, err, "failed to upload file")
 	return checksum, content
 }
