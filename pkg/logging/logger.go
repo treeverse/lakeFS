@@ -67,7 +67,7 @@ func SetLevel(level string) {
 }
 
 func SetOutput(output string) {
-	if strings.EqualFold(output, "-") {
+	if output == "-" {
 		defaultLogger.SetOutput(os.Stdout)
 	} else {
 		filename := output
