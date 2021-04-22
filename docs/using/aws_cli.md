@@ -54,7 +54,7 @@ After configuring the credentials, This is how a command should look:
 ```shell 
 aws s3 --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  ls s3://example-repo/master/example-directory
+  ls s3://example-repo/main/example-directory
 ```
 
 Where endpoint-url should be the same value [configured](../reference/configuration.md#reference)
@@ -69,7 +69,7 @@ We could use an [alias](aws_cli.md#adding-an-alias) to make it shorter and more 
 ```shell 
 aws --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  s3 ls s3://example-repo/master/example-directory
+  s3 ls s3://example-repo/main/example-directory
 ```
 
 ### Copy from lakeFS to lakeFS
@@ -77,33 +77,33 @@ aws --profile lakefs \
 ```shell
 aws --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  s3 cp s3://example-repo/master/example-file-1 s3://example-repo/master/example-file-2
+  s3 cp s3://example-repo/main/example-file-1 s3://example-repo/main/example-file-2
 ```
 
 ### Copy from lakeFS to a local path
 ```shell
 aws --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  s3 cp s3://example-repo/master/example-file-1 /path/to/local/file
+  s3 cp s3://example-repo/main/example-file-1 /path/to/local/file
 ```
 ### Copy from a local path to lakeFS
 ```shell
 aws --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  s3 cp /path/to/local/file s3://example-repo/master/example-file-1
+  s3 cp /path/to/local/file s3://example-repo/main/example-file-1
 ```
 ### Delete file 
 ```shell 
 aws --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  s3 rm s3://example-repo/master/example-directory/example-file
+  s3 rm s3://example-repo/main/example-directory/example-file
 ```
 
 ### Delete directory
 ```shell 
 aws --profile lakefs \
   --endpoint-url https://s3.lakefs.example.com \
-  s3 rm s3://example-repo/master/example-directory/ --recursive
+  s3 rm s3://example-repo/main/example-directory/ --recursive
 ```
 
 ## Adding an alias
@@ -116,5 +116,5 @@ alias awslfs='aws --endpoint https://s3.lakefs.example.com --profile lakefs'
 
 Now, the ls command using the alias will be:
 ```shell
-awslfs s3 ls s3://example-repo/master/example-directory
+awslfs s3 ls s3://example-repo/main/example-directory
 ```

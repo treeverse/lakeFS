@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	DefaultBranch     = "master"
+	DefaultBranch     = "main"
 	repoCreateCmdArgs = 2
 )
 

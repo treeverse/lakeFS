@@ -44,7 +44,7 @@ func hookFailToCommit(t *testing.T, path string) {
 	logger.WithField("branch", branch).Info("Create branch")
 	resp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch,
-		Source: masterBranch,
+		Source: mainBranch,
 	})
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, resp.StatusCode())

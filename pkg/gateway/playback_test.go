@@ -136,6 +136,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 		storageNamespace = "replay"
 	}
 
+	// keeping the name 'master' and not 'main' below as the recordings point to that
 	_, err = c.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master")
 	testutil.Must(t, err)
 

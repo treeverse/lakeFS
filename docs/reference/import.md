@@ -74,7 +74,7 @@ Import to branch import-from-inventory finished successfully.
 To list imported objects, run:
 	$ lakectl fs ls lakefs://example-repo/cf349ded0a0e65e20bd3b25ea8d9b656c2870b7f1f32f60eb1d90ca5873b6c03/
 To merge the changes to your main branch, run:
-	$ lakectl merge lakefs://example-repo/import-from-inventory lakefs://goo/master
+	$ lakectl merge lakefs://example-repo/import-from-inventory lakefs://goo/main
 ```
 
 #### Merging imported data to the main branch

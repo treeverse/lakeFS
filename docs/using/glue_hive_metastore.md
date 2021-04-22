@@ -82,7 +82,7 @@ For simplicity, we recommend creating a schema for each branch, this way you can
 
 For example:
 after creating branch `example_branch` also create a schema named `example_branch`.
-for a table named `example_table` under the schema `master` we would like to create a new table called `example_table` under the schema `example_branch`  
+for a table named `example_table` under the schema `main` we would like to create a new table called `example_table` under the schema `example_branch`  
  
 
 # Commands:
@@ -102,7 +102,7 @@ In case the destination table already exists, the command will only merge the ch
 
 Example:
 
-Suppose we have the table `example_by_dt` on branch `master` on schema `default`.
+Suppose we have the table `example_by_dt` on branch `main` on schema `default`.
 We create a new branch `example_branch` .
 we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
 
@@ -129,29 +129,29 @@ Example:
 
 So no we have the copied table `example_by_dt` on schema `example_branch` and we've added a new partition `2020-08-01`.
 
-Suppose we merged back the data to master, and we want the data to be available on our original table on master `example_by_dt` on schema `default`.
+Suppose we merged back the data to main, and we want the data to be available on our original table on main `example_by_dt` on schema `default`.
 
 We would like to merge back the partition:  
 
 Recommended:
 ``` bash
-lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
+lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch main -p 2020-08-01 
 ```
 
 Glue:
 ``` bash
-lakectl metastore copy --type glue --address 123456789012 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
+lakectl metastore copy --type glue --address 123456789012 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch main -p 2020-08-01
 ```
 
 Hive:
 ``` bash
-lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch main -p 2020-08-01
 ```
 
 In case our table is partitioned by more than one value, for example partitioned by year/month/day for year ```2020``` month ```08``` day ```01``` 
 
 ``` bash
-lakectl metastore copy --from-schema example_branch --from-table branch_example_by_dt --to-schema default --to-branch master -p 2020 -p 08 -p 01
+lakectl metastore copy --from-schema example_branch --from-table branch_example_by_dt --to-schema default --to-branch main -p 2020 -p 08 -p 01
 ```
 
 
@@ -203,13 +203,13 @@ create-symlink receives a source table, destination table and the location of th
 Example:
 
 Let's assume we have the table `example_by_dt` in glue.
-The table is pointing to repo `example-repo` branch `master` and the data is located at `path/to/table/in/lakeFS`
+The table is pointing to repo `example-repo` branch `main` and the data is located at `path/to/table/in/lakeFS`
 
 We want to query the table using Amazon Athena.
 
 To do this, we run the command:
 ``` bash
-lakectl metastore create-symlink --address 123456789012 --branch master --from-schema default --from-table branch_example_by_dt --to-schema default --to-table sym_example_by_dt --repo example-repository --path path/to/table/in/lakeFS
+lakectl metastore create-symlink --address 123456789012 --branch main --from-schema default --from-table branch_example_by_dt --to-schema default --to-table sym_example_by_dt --repo example-repository --path path/to/table/in/lakeFS
 ```
 
 Now we can use  Amazon Athena and query the created table `sym_example_by_dt`

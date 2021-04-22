@@ -140,7 +140,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 # []
 ```
 
-### Merging changes from a branch into master 
+### Merging changes from a branch into main 
 
 Let's diff between our branch and the main branch:
 

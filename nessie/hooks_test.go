@@ -18,7 +18,7 @@ description: set of checks to verify that branch is good
 on:
   pre-merge:
     branches:
-      - master
+      - main
 hooks:
   - id: test_webhook
     type: webhook
@@ -49,7 +49,7 @@ func TestHooksSuccess(t *testing.T) {
 	logger.WithField("branch", branch).Info("Create branch")
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch,
-		Source: masterBranch,
+		Source: mainBranch,
 	})
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
@@ -110,7 +110,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, branch, commitEvent.SourceRef)
 	require.Equal(t, commitRecord.Metadata.AdditionalProperties, commitEvent.Metadata)
 
-	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, masterBranch, api.MergeIntoBranchJSONRequestBody{})
+	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, "Test Merge", mergeEvent.ActionName)
 	require.Equal(t, "test_webhook", mergeEvent.HookID)
 	require.Equal(t, repo, mergeEvent.RepositoryID)
-	require.Equal(t, masterBranch, mergeEvent.BranchID)
+	require.Equal(t, mainBranch, mergeEvent.BranchID)
 	require.Equal(t, commitRecord.Id, mergeEvent.SourceRef)
 
 	t.Log("List repository runs", mergeRef)
@@ -142,7 +142,7 @@ func TestHooksSuccess(t *testing.T) {
 	require.Equal(t, mergeRef, run.CommitId)
 	require.Equal(t, "pre-merge", run.EventType)
 	require.Equal(t, "completed", run.Status)
-	require.Equal(t, "master", run.Branch)
+	require.Equal(t, "main", run.Branch)
 }
 
 type webhookEventInfo struct {

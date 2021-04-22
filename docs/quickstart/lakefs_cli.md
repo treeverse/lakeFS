@@ -39,18 +39,18 @@ has_children: false
      # +----------+------------------------------------------------------------------+
      # | REF NAME | COMMIT ID                                                        |
      # +----------+------------------------------------------------------------------+
-     # | master   | a91f56a7e11be1348fc405053e5234e4af7d6da01ed02f3d9a8ba7b1f71499c8 |
+     # | main     | a91f56a7e11be1348fc405053e5234e4af7d6da01ed02f3d9a8ba7b1f71499c8 |
      # +----------+------------------------------------------------------------------+
      
-     lakectl commit lakefs://example/master -m 'added our first file!'
+     lakectl commit lakefs://example/main -m 'added our first file!'
      # output:
-     # Commit for branch "master" done.
+     # Commit for branch "main" done.
      # 
      # ID: 901f7b21e1508e761642b142aea0ccf28451675199655381f65101ea230ebb87
      # Timestamp: 2020-05-18 19:26:37 +0300 IDT
      # Parents: a91f56a7e11be1348fc405053e5234e4af7d6da01ed02f3d9a8ba7b1f71499c8
   
-     lakectl log lakefs://example/master
+     lakectl log lakefs://example/main
      # output:  
      # commit 901f7b21e1508e761642b142aea0ccf28451675199655381f65101ea230ebb87
      # Author: Example User <user@example.com>

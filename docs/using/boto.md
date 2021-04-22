@@ -35,7 +35,7 @@ Use a branch name and a path to put an object in lakeFS:
 
 ```python
 with open('/local/path/to/file_0', 'rb') as f:
-    s3.put_object(Body=f, Bucket='example-repo', Key='master/example-file.parquet')
+    s3.put_object(Body=f, Bucket='example-repo', Key='main/example-file.parquet')
 ```
 
 ### List Objects
@@ -43,7 +43,7 @@ with open('/local/path/to/file_0', 'rb') as f:
 List branch objects starting with a prefix:
  
 ```python
-list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='master/example-prefix')
+list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='main/example-prefix')
 for obj in list_resp['Contents']:
     print(obj['Key'])
 ```
@@ -59,7 +59,7 @@ for obj in list_resp['Contents']:
 ### Head Object
 Get object metadata using branch and path:
 ```python
-s3.head_object(Bucket='example-repo', Key='master/example-file.parquet')
+s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # output:
 # {'ResponseMetadata': {'RequestId': '72A9EBD1210E90FA',
 #  'HostId': '',

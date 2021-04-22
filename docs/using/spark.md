@@ -63,7 +63,7 @@ Here is an example for reading a parquet file from lakeFS to a Spark DataFrame:
 
 ```scala
 val repo = "example-repo"
-val branch = "master"
+val branch = "main"
 val dataPath = s"s3a://${repo}/${branch}/example-path/example-file.parquet"
 
 val df = spark.read.parquet(dataPath)

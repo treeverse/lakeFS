@@ -55,7 +55,7 @@ For example, we could add the configurations to the file ``` hdfs-site.xml```:
 ### Example with schema
 
 ```hql
-CREATE  SCHEMA example LOCATION 's3a://example/master/' ;
+CREATE  SCHEMA example LOCATION 's3a://example/main/' ;
 CREATE TABLE example.request_logs (
     request_time timestamp,
     url string,
@@ -71,7 +71,7 @@ CREATE EXTERNAL TABLE request_logs (
     url string,
     ip string,
     user_agent string
-) LOCATION 's3a://example/master/request_logs' ;
+) LOCATION 's3a://example/main/request_logs' ;
 ```
 
 

@@ -21,18 +21,18 @@ func TestCommitSingle(t *testing.T) {
 			ctx, _, repo := setupTest(t)
 			objPath := "1.txt"
 
-			_, objContent := uploadFileRandomData(ctx, t, repo, masterBranch, objPath, direct)
-			commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
+			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
 				Message: "nessie:singleCommit",
 			})
 			require.NoError(t, err, "failed to commit changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
-				"failed to commit changes repo %s branch %s", repo, masterBranch)
+				"failed to commit changes repo %s branch %s", repo, mainBranch)
 
-			getObjResp, err := client.GetObjectWithResponse(ctx, repo, masterBranch, &api.GetObjectParams{Path: objPath})
+			getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: objPath})
 			require.NoError(t, err, "failed to get object")
 			require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-				"failed to get object repo %s branch %s path %s", repo, masterBranch, objPath)
+				"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
 
 			body := string(getObjResp.Body)
 			require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
@@ -91,7 +91,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 				}()
 			}
 			for _, name := range names1 {
-				uploads <- Upload{Repo: repo, Branch: masterBranch, Path: name}
+				uploads <- Upload{Repo: repo, Branch: mainBranch, Path: name}
 			}
 			close(uploads)
 			wg.Wait()
@@ -100,12 +100,12 @@ func TestCommitInMixedOrder(t *testing.T) {
 				t.FailNow()
 			}
 
-			commitResp, err := client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
 				Message: "nessie:mixedOrderCommit1",
 			})
 			require.NoError(t, err, "failed to commit changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
-				"failed to commit changes repo %s branch %s", repo, masterBranch)
+				"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 			names2 := genNames(size, "run1/foo")
 			uploads = make(chan Upload, size)
@@ -120,7 +120,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 				}()
 			}
 			for _, name := range names2 {
-				uploads <- Upload{Repo: repo, Branch: masterBranch, Path: name}
+				uploads <- Upload{Repo: repo, Branch: mainBranch, Path: name}
 			}
 			close(uploads)
 			wg.Wait()
@@ -129,12 +129,12 @@ func TestCommitInMixedOrder(t *testing.T) {
 				t.FailNow()
 			}
 
-			commitResp, err = client.CommitWithResponse(ctx, repo, masterBranch, api.CommitJSONRequestBody{
+			commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, api.CommitJSONRequestBody{
 				Message: "nessie:mixedOrderCommit2",
 			})
 			require.NoError(t, err, "failed to commit second set of changes")
 			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
-				"failed to commit second set of changes repo %s branch %s", repo, masterBranch)
+				"failed to commit second set of changes repo %s branch %s", repo, mainBranch)
 		})
 	}
 }
