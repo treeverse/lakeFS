@@ -14,10 +14,10 @@ jobs:
       - name: Unshallow
         run: git fetch --prune --unshallow
 
-      - name: Setup UI (node 10)
+      - name: Setup UI
         uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '15.x'
 
       - name: Setup Go
         uses: actions/setup-go@v2
