@@ -27,7 +27,7 @@ With lakeFS you can build repeatable, atomic and versioned data lake operations 
 lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage as its underlying storage service. It is API compatible with S3, and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
 
-For more information see the [Official Documentation](https://docs.lakefs.io).
+For more information see the [official lakeFS documentation](https://docs.lakefs.io).
 
 <div style="background: #ffdddd border: 3px solid #dd4444; margine: 15px;">
 
@@ -88,7 +88,7 @@ Binaries are available at [https://github.com/treeverse/lakeFS/releases](https:/
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
-For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io).
+For more detailed information on how to set up lakeFS, please visit the [lakeFS documentation](https://docs.lakefs.io).
 
 ## Community
 
@@ -99,7 +99,6 @@ Stay up to date and get lakeFS support via:
 - [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
 
-
 ## More information
 
 - [lakeFS documentation](https://docs.lakefs.io)
@@ -109,4 +108,3 @@ Stay up to date and get lakeFS support via:
 ## Licensing
 
 lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
-
