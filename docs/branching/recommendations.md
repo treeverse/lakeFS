@@ -110,7 +110,7 @@ lakeFS will assist in enforcing best practices by giving you a designated branch
 
 By using this branching model and implementing best practices as pre merge hooks, you ensure the main lake is never compromised.
 
-<img src="../assets/img/branching_5.png" alt="branching_5" width="500px"/>
+<img src="../assets/img/branching_5.png" alt="branching_4" width="500px"/>
 
 
 ## Continuous Deployment
