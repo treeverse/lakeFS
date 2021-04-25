@@ -3,9 +3,8 @@ package nessie
 import (
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/api"
-
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api"
 )
 
 func TestIdentity(t *testing.T) {
@@ -51,6 +50,10 @@ func TestIdentity(t *testing.T) {
 			diff, err := client.DiffRefsWithResponse(ctx, repo, branch1, branch2, &api.DiffRefsParams{})
 			require.NoError(t, err, "Diff refs failed")
 			require.Empty(t, diff.JSON200.Results, "Expected no diff files")
+
+			resp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch1, branch2, api.MergeIntoBranchJSONRequestBody{})
+			require.NoError(t, err, "error during merge")
+			require.NotNil(t, resp.JSON400, "merge should fail since there are no changes between the branches")
 		})
 	}
 }
