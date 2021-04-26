@@ -1,0 +1,5 @@
+credentials:
+  access_key_id: AKIAIOSFODNN7EXAMPLE
+  secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+server:
+  endpoint_url: http://lakefs:8000
