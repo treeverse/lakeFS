@@ -3,6 +3,7 @@ layout: default
 title: Databricks
 description: Interact with your lakeFS data from Databricks
 parent: Using lakeFS with...
+tags: using/saas-apps
 nav_order: 60
 has_children: false
 ---

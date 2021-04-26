@@ -3,6 +3,7 @@ layout: default
 title: Kafka
 description: This section covers how you can start using lakeFS with Kafka using Confluent’s S3 Sink Connector
 parent: Using lakeFS with...
+tags: using/client-apps
 nav_order: 70
 has_children: false
 ---

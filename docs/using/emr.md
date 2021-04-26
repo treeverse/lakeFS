@@ -3,6 +3,7 @@ layout: default
 title: EMR
 description: This section covers how you can start using lakeFS with Amazon EMR, an AWS managed service that simplifies running open-source big data frameworks.
 parent: Using lakeFS with...
+tags: using/saas-apps
 nav_order: 35
 has_children: false
 ---
