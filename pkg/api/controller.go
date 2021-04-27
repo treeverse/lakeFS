@@ -1692,7 +1692,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
 		if StringValue(params.IfNoneMatch) != "*" {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("Unsupported value for If-None-Match - Only \"*\" is supported"))
+			writeError(w, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
 			return
 		}
 		// check if exists
@@ -1736,11 +1736,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
 	}
-	if allowOverwrite {
-		err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	} else {
-		err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent())
-	}
+
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent(!allowOverwrite))
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, http.StatusPreconditionFailed, "path already exists")
 		return

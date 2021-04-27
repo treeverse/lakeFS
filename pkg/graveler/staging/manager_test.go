@@ -32,6 +32,16 @@ func TestSetGet(t *testing.T) {
 	if string(e.Identity) != "identity1" {
 		t.Errorf("got wrong value. expected=%s, got=%s", "identity1", string(e.Identity))
 	}
+
+	t.Run("test overwrites", func(t *testing.T) {
+		err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
+		testutil.Must(t, err)
+
+		err = s.Set(ctx, "t2", []byte("a/b/c/d"), value, false)
+		if err != graveler.ErrPreconditionFailed {
+			t.Fatalf("expected a precondition error when overwriting")
+		}
+	})
 }
 
 func TestMultiToken(t *testing.T) {

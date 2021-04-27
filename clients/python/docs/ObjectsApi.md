@@ -668,7 +668,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     path = "path_example" # str | 
     storage_class = "storageClass_example" # str |  (optional)
-    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. (optional)
+    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
     content = open('/path/to/file', 'rb') # file_type | Object content to upload (optional)
 
     # example passing only required values which don't have defaults set
@@ -696,7 +696,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  |
  **path** | **str**|  |
  **storage_class** | **str**|  | [optional]
- **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. | [optional]
+ **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
  **content** | **file_type**| Object content to upload | [optional]
 
 ### Return type

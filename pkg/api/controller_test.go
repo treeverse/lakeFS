@@ -703,9 +703,10 @@ func TestController_UploadObject(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
 
+	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+	testutil.Must(t, err)
+
 	t.Run("upload object", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
-		testutil.Must(t, err)
 		// write
 		contentType, buf := writeMultipart("content", "bar", "hello world!")
 		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
@@ -722,27 +723,42 @@ func TestController_UploadObject(t *testing.T) {
 	})
 
 	t.Run("overwrite", func(t *testing.T) {
-		// write
-		contentType, buf := writeMultipart("content", "bar", "hello world!")
+		// write first
+		contentType, buf := writeMultipart("content", "baz1", "hello world!")
 		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
-			Path: "foo/bar",
+			Path: "foo/baz1",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+		// overwrite
+		contentType, buf = writeMultipart("content", "baz1", "something else!")
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path: "foo/baz1",
 		}, contentType, buf)
 
 		testutil.Must(t, err)
-		if b.StatusCode() == 500 {
-			t.Fatalf("got 500 while uploading: %v", b.JSONDefault)
-		}
 		if b.StatusCode() != 201 {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 	})
 
 	t.Run("disable overwrite with if-none-match (uncommitted entry)", func(t *testing.T) {
-		// write
-		contentType, buf := writeMultipart("content", "bar", "hello world!")
-		all := "*"
+		// write first
+		contentType, buf := writeMultipart("content", "baz2", "hello world!")
 		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
-			Path:        "foo/bar",
+			Path: "foo/baz2",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+		// overwrite
+		contentType, buf = writeMultipart("content", "baz2", "something else!")
+		all := "*"
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path:        "foo/baz2",
 			IfNoneMatch: &all,
 		}, contentType, buf)
 
@@ -757,14 +773,11 @@ func TestController_UploadObject(t *testing.T) {
 		testutil.Must(t, err)
 
 		// write first
-		contentType, buf := writeMultipart("content", "baz", "hello world!")
+		contentType, buf := writeMultipart("content", "baz3", "hello world!")
 		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &api.UploadObjectParams{
-			Path: "foo/baz",
+			Path: "foo/baz3",
 		}, contentType, buf)
 		testutil.Must(t, err)
-		if b.StatusCode() == 500 {
-			t.Fatalf("got 500 while uploading: %v", b.JSONDefault)
-		}
 		if b.StatusCode() != 201 {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
@@ -775,9 +788,9 @@ func TestController_UploadObject(t *testing.T) {
 
 		// overwrite after commit
 		all := "*"
-		contentType, buf = writeMultipart("content", "baz", "something else!")
+		contentType, buf = writeMultipart("content", "baz3", "something else!")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &api.UploadObjectParams{
-			Path:        "foo/baz",
+			Path:        "foo/baz3",
 			IfNoneMatch: &all,
 		}, contentType, buf)
 

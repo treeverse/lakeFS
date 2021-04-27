@@ -2391,12 +2391,12 @@ paths:
             type: string
         - in: header
           name: If-None-Match
-          description: Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+          description: Currently supports only "*" to allow uploading an object only if one doesn't exist yet
           example: "*"
           required: false
           schema:
             type: string
-            pattern: '\*'  # Currently, only "*" is supported
+            pattern: '^\*$'  # Currently, only "*" is supported
       responses:
         201:
           description: object metadata

@@ -56,11 +56,15 @@ type RangeInfo struct {
 }
 
 type WriteCondition struct {
-	ifAbsent bool
+	IfAbsent bool
 }
 
-func IfAbsent() WriteCondition {
-	return WriteCondition{ifAbsent: true}
+type WriteConditionOption func(condition *WriteCondition)
+
+func IfAbsent(v bool) WriteConditionOption {
+	return func(condition *WriteCondition) {
+		condition.IfAbsent = v
+	}
 }
 
 // function/methods receiving the following basic types could assume they passed validation
@@ -253,7 +257,7 @@ type KeyValueStore interface {
 	Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error)
 
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
-	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteCondition) error
+	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error
 
 	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
@@ -879,32 +883,32 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 }
 
-func (g *Graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteCondition) error {
+func (g *Graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
 		branch, err := g.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err
 		}
-		allowOverwrite := true
+		writeCondition := &WriteCondition{}
 		for _, cond := range writeConditions {
-			if cond.ifAbsent {
-				allowOverwrite = false
-			}
+			cond(writeCondition)
 		}
-		if !allowOverwrite {
-			// ensure the given key doesn't exist in the underlying commit first
+
+		if writeCondition.IfAbsent {
+			// Ensure the given key doesn't exist in the underlying commit first
 			// Since we're being protected by the branch locker, we're guaranteed the commit
 			// won't change before we finish the operation
 			_, err := g.Get(ctx, repositoryID, Ref(branch.CommitID), key)
 			if err == nil {
 				// we got a key here already!
 				return nil, ErrPreconditionFailed
-			} else if !errors.Is(err, ErrNotFound) {
+			}
+			if !errors.Is(err, ErrNotFound) {
 				// another error occurred!
 				return nil, err
 			}
 		}
-		err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value, allowOverwrite)
+		err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value, !writeCondition.IfAbsent)
 		return nil, err
 	})
 	return err

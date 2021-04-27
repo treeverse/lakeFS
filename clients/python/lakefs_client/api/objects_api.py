@@ -935,7 +935,7 @@ class ObjectsApi(object):
 
             Keyword Args:
                 storage_class (str): [optional]
-                if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet.. [optional]
+                if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. [optional]
                 content (file_type): Object content to upload. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
@@ -1029,7 +1029,7 @@ class ObjectsApi(object):
                     ('if_none_match',): {
 
                         'regex': {
-                            'pattern': r'\*',  # noqa: E501
+                            'pattern': r'^\*$',  # noqa: E501
                         },
                     },
                 },

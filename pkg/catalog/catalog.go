@@ -654,7 +654,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 	}
 }
 
-func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteCondition) error {
+func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
