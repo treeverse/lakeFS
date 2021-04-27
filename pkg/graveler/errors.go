@@ -15,6 +15,7 @@ var (
 	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
 	ErrNotFound               = wrapError(db.ErrNotFound, "not found")
 	ErrNotUnique              = errors.New("not unique")
+	ErrPreconditionFailed     = errors.New("precondition failed")
 	ErrInvalidValue           = errors.New("invalid value")
 	ErrInvalidMergeBase       = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
 	ErrNoMergeBase            = errors.New("no merge base")

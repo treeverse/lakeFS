@@ -70,6 +70,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    PreconditionFailed:
+      description: Precondition Failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     ValidationError:
       description: Validation Error
       content:
@@ -2383,6 +2389,14 @@ paths:
           required: false
           schema:
             type: string
+        - in: header
+          name: If-None-Match
+          description: Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+          example: "*"
+          required: false
+          schema:
+            type: string
+            pattern: '\*'  # Currently, only "*" is supported
       responses:
         201:
           description: object metadata
@@ -2396,6 +2410,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
         default:
           $ref: "#/components/responses/ServerError"
     delete:

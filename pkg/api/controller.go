@@ -1686,6 +1686,28 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
+	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
+	// once before uploading the body to save resources and time,
+	//	and then graveler will check again when passed a WriteCondition.
+	allowOverwrite := true
+	if params.IfNoneMatch != nil {
+		if StringValue(params.IfNoneMatch) != "*" {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("Unsupported value for If-None-Match - Only \"*\" is supported"))
+			return
+		}
+		// check if exists
+		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{ReturnExpired: true})
+		if err == nil {
+			writeError(w, http.StatusPreconditionFailed, "path already exists")
+			return
+		}
+		if !errors.Is(err, catalog.ErrNotFound) {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		allowOverwrite = false
+	}
+
 	// write the content
 	file, handler, err := r.FormFile("content")
 	if err != nil {
@@ -1714,7 +1736,15 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
 	}
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if allowOverwrite {
+		err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	} else {
+		err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.IfAbsent())
+	}
+	if errors.Is(err, graveler.ErrPreconditionFailed) {
+		writeError(w, http.StatusPreconditionFailed, "path already exists")
+		return
+	}
 	if handleAPIError(w, err) {
 		return
 	}
