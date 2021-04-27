@@ -668,6 +668,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     path = "path_example" # str | 
     storage_class = "storageClass_example" # str |  (optional)
+    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
     content = open('/path/to/file', 'rb') # file_type | Object content to upload (optional)
 
     # example passing only required values which don't have defaults set
@@ -680,7 +681,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, content=content)
+        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, content=content)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
@@ -695,6 +696,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  |
  **path** | **str**|  |
  **storage_class** | **str**|  | [optional]
+ **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
  **content** | **file_type**| Object content to upload | [optional]
 
 ### Return type
@@ -718,6 +720,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**412** | Precondition Failed |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

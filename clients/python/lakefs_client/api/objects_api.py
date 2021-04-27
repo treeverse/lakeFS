@@ -935,6 +935,7 @@ class ObjectsApi(object):
 
             Keyword Args:
                 storage_class (str): [optional]
+                if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. [optional]
                 content (file_type): Object content to upload. [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
@@ -1007,6 +1008,7 @@ class ObjectsApi(object):
                     'branch',
                     'path',
                     'storage_class',
+                    'if_none_match',
                     'content',
                 ],
                 'required': [
@@ -1019,10 +1021,17 @@ class ObjectsApi(object):
                 'enum': [
                 ],
                 'validation': [
+                    'if_none_match',
                 ]
             },
             root_map={
                 'validations': {
+                    ('if_none_match',): {
+
+                        'regex': {
+                            'pattern': r'^\*$',  # noqa: E501
+                        },
+                    },
                 },
                 'allowed_values': {
                 },
@@ -1035,6 +1044,8 @@ class ObjectsApi(object):
                         (str,),
                     'storage_class':
                         (str,),
+                    'if_none_match':
+                        (str,),
                     'content':
                         (file_type,),
                 },
@@ -1043,6 +1054,7 @@ class ObjectsApi(object):
                     'branch': 'branch',
                     'path': 'path',
                     'storage_class': 'storageClass',
+                    'if_none_match': 'If-None-Match',
                     'content': 'content',
                 },
                 'location_map': {
@@ -1050,6 +1062,7 @@ class ObjectsApi(object):
                     'branch': 'path',
                     'path': 'query',
                     'storage_class': 'query',
+                    'if_none_match': 'header',
                     'content': 'form',
                 },
                 'collection_format_map': {

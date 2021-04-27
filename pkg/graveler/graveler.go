@@ -55,6 +55,18 @@ type RangeInfo struct {
 	Address string
 }
 
+type WriteCondition struct {
+	IfAbsent bool
+}
+
+type WriteConditionOption func(condition *WriteCondition)
+
+func IfAbsent(v bool) WriteConditionOption {
+	return func(condition *WriteCondition) {
+		condition.IfAbsent = v
+	}
+}
+
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
@@ -245,7 +257,7 @@ type KeyValueStore interface {
 	Get(ctx context.Context, repositoryID RepositoryID, ref Ref, key Key) (*Value, error)
 
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
-	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error
+	Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error
 
 	// Delete value from repository / branch branch by key
 	Delete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key) error
@@ -564,7 +576,7 @@ type StagingManager interface {
 	Get(ctx context.Context, st StagingToken, key Key) (*Value, error)
 
 	// Set writes a (possibly nil) value under the given staging token and key.
-	Set(ctx context.Context, st StagingToken, key Key, value *Value) error
+	Set(ctx context.Context, st StagingToken, key Key, value *Value, overwrite bool) error
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken) (ValueIterator, error)
@@ -871,13 +883,32 @@ func (g *Graveler) Get(ctx context.Context, repositoryID RepositoryID, ref Ref, 
 	return g.CommittedManager.Get(ctx, repo.StorageNamespace, commit.MetaRangeID, key)
 }
 
-func (g *Graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value) error {
+func (g *Graveler) Set(ctx context.Context, repositoryID RepositoryID, branchID BranchID, key Key, value Value, writeConditions ...WriteConditionOption) error {
 	_, err := g.branchLocker.Writer(ctx, repositoryID, branchID, func() (interface{}, error) {
 		branch, err := g.GetBranch(ctx, repositoryID, branchID)
 		if err != nil {
 			return nil, err
 		}
-		err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value)
+		writeCondition := &WriteCondition{}
+		for _, cond := range writeConditions {
+			cond(writeCondition)
+		}
+
+		if writeCondition.IfAbsent {
+			// Ensure the given key doesn't exist in the underlying commit first
+			// Since we're being protected by the branch locker, we're guaranteed the commit
+			// won't change before we finish the operation
+			_, err := g.Get(ctx, repositoryID, Ref(branch.CommitID), key)
+			if err == nil {
+				// we got a key here already!
+				return nil, ErrPreconditionFailed
+			}
+			if !errors.Is(err, ErrNotFound) {
+				// another error occurred!
+				return nil, err
+			}
+		}
+		err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value, !writeCondition.IfAbsent)
 		return nil, err
 	})
 	return err
@@ -935,7 +966,7 @@ func (g *Graveler) Delete(ctx context.Context, repositoryID RepositoryID, branch
 			return nil, ErrNotFound
 		}
 
-		return nil, g.StagingManager.Set(ctx, branch.StagingToken, key, nil)
+		return nil, g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
 	})
 	return err
 }

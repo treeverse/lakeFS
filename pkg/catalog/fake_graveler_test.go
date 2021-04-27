@@ -71,7 +71,7 @@ func (g *FakeGraveler) Get(_ context.Context, repositoryID graveler.RepositoryID
 	return v, nil
 }
 
-func (g *FakeGraveler) Set(_ context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key, value graveler.Value) error {
+func (g *FakeGraveler) Set(_ context.Context, repositoryID graveler.RepositoryID, branchID graveler.BranchID, key graveler.Key, value graveler.Value, _ ...graveler.WriteConditionOption) error {
 	if g.Err != nil {
 		return g.Err
 	}

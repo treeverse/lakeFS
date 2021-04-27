@@ -690,6 +690,117 @@ func uploadObjectHelper(t testing.TB, ctx context.Context, clt api.ClientWithRes
 	}, w.FormDataContentType(), &b)
 }
 
+func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
+	var buf bytes.Buffer
+	mpw := multipart.NewWriter(&buf)
+	w, _ := mpw.CreateFormFile("content", "bar")
+	_, _ = w.Write([]byte("hello world!"))
+	_ = mpw.Close()
+	return mpw.FormDataContentType(), &buf
+}
+
+func TestController_UploadObject(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t, "")
+	ctx := context.Background()
+
+	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+	testutil.Must(t, err)
+
+	t.Run("upload object", func(t *testing.T) {
+		// write
+		contentType, buf := writeMultipart("content", "bar", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path: "foo/bar",
+		}, contentType, buf)
+
+		testutil.Must(t, err)
+		if b.StatusCode() == 500 {
+			t.Fatalf("got 500 while uploading: %v", b.JSONDefault)
+		}
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+	})
+
+	t.Run("overwrite", func(t *testing.T) {
+		// write first
+		contentType, buf := writeMultipart("content", "baz1", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path: "foo/baz1",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+		// overwrite
+		contentType, buf = writeMultipart("content", "baz1", "something else!")
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path: "foo/baz1",
+		}, contentType, buf)
+
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+	})
+
+	t.Run("disable overwrite with if-none-match (uncommitted entry)", func(t *testing.T) {
+		// write first
+		contentType, buf := writeMultipart("content", "baz2", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path: "foo/baz2",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+		// overwrite
+		contentType, buf = writeMultipart("content", "baz2", "something else!")
+		all := "*"
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &api.UploadObjectParams{
+			Path:        "foo/baz2",
+			IfNoneMatch: &all,
+		}, contentType, buf)
+
+		testutil.Must(t, err)
+		if b.StatusCode() != 412 {
+			t.Fatalf("expected 412 for UploadObject, got %d", b.StatusCode())
+		}
+	})
+
+	t.Run("disable overwrite with if-none-match (committed entry)", func(t *testing.T) {
+		_, err := deps.catalog.CreateBranch(ctx, "my-new-repo", "another-branch", "main")
+		testutil.Must(t, err)
+
+		// write first
+		contentType, buf := writeMultipart("content", "baz3", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &api.UploadObjectParams{
+			Path: "foo/baz3",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+
+		// commit
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil)
+		testutil.Must(t, err)
+
+		// overwrite after commit
+		all := "*"
+		contentType, buf = writeMultipart("content", "baz3", "something else!")
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &api.UploadObjectParams{
+			Path:        "foo/baz3",
+			IfNoneMatch: &all,
+		}, contentType, buf)
+
+		testutil.Must(t, err)
+		if b.StatusCode() != 412 {
+			t.Fatalf("expected 412 for UploadObject, got %d", b.StatusCode())
+		}
+	})
+}
+
 func TestController_DeleteBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t, "")
 	ctx := context.Background()
