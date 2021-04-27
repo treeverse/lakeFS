@@ -120,7 +120,7 @@ jobs:
         uses: olafurpg/setup-scala@v10
 
       - name: Package Spark App
-        working-directory: spark/test/app
+        working-directory: test/spark/app
         run: sbt package
 
       - name: Configure AWS Credentials
