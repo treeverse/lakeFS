@@ -1,14 +1,15 @@
 package io.treeverse.clients
 
 import com.google.common.cache.CacheBuilder
+import org.apache.hadoop.io.SecureIOUtils.AlreadyExistsException
+import org.apache.http.HttpStatus
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import scalaj.http.Http
+import scalaj.http.{Http, MultiPart}
 
+import java.io.InputStream
 import java.net.URI
-import java.time.Duration
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.Callable
+import java.util.concurrent.{Callable, TimeUnit}
 
 class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
   private val storageNamespaceCache = CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.MINUTES).build[String, String]()
@@ -78,6 +79,20 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
       case JString(commitID) => commitID
       case _ =>
         throw new RuntimeException(s"expected string commit_id in ${resp.body}")
+    }
+  }
+
+  def uploadIfAbsent(repoName: String, branch: String, path: String, stream: InputStream, byteSize: Long): Unit = {
+    val uploadObjectURI = URI.create("%s/repositories/%s/branches/%s/objects?path=%s".format(apiUrl, repoName, branch, path)).normalize()
+    val resp = Http(uploadObjectURI.toString)
+      .auth(accessKey, secretKey)
+      .header("If-None-Match", "*")
+      .postMulti(new MultiPart("content", path, "application/octet-stream", stream, byteSize, _ => {})).asString
+    if (resp.code == HttpStatus.SC_PRECONDITION_FAILED) {
+      throw new AlreadyExistsException(s"put if absent failed: file already exists")
+    }
+    if (resp.isError) {
+      throw new RuntimeException(s"put if absent failed")
     }
   }
 }
