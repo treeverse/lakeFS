@@ -19,14 +19,14 @@ has_children: false
 
 ## Initializing session and client
 
-Initialize sagemaker session and s3 client with lakeFS as the endpoint:
+Initialize a Sagemaker session and an s3 client with lakeFS as the endpoint:
 ```python
 import sagemaker
 import boto3
 
-endpoint_url='<LAKEFS_S3_GATEWAY_ENDPOINT>'
-aws_access_key_id='<LAKEFS_ACCESS_KEY_ID>'
-aws_secret_access_key='<LAKEFS_SECRET_ACCESS_KEY>'
+endpoint_url = '<LAKEFS_S3_GATEWAY_ENDPOINT>'
+aws_access_key_id = '<LAKEFS_ACCESS_KEY_ID>'
+aws_secret_access_key = '<LAKEFS_SECRET_ACCESS_KEY>'
 repo = 'example-repo'
 
 sm = boto3.client('sagemaker',
@@ -70,6 +70,13 @@ We can use the integration with lakeFS to download a portion of the data we see 
 repo = 'example-repo'
 prefix = "/prefix-to-download"
 branch = 'main'
+localpath = './' + branch
 
-session.download_data(path='./'+branch, bucket=repo, key_prefix = branch + prefix)
+session.download_data(path=localpath, bucket=repo, key_prefix = branch + prefix)
 ```
+
+**Note:**
+Advanced AWS SageMaker features, like Autopilot jobs, are encapsulated and don't have the option to override the S3 endpoint.
+However, it is possible to [export](../reference/export.md) the required inputs from lakeFS to S3.
+<br/>If you're using SageMaker features that aren't supported by lakeFS, we'd love to [hear](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) from you.
+{: .note}
