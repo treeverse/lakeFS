@@ -654,7 +654,7 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 	}
 }
 
-func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry) error {
+func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)
 	ent := EntryFromCatalogEntry(entry)
@@ -671,7 +671,7 @@ func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch str
 	if err != nil {
 		return err
 	}
-	return c.Store.Set(ctx, repositoryID, branchID, key, *value)
+	return c.Store.Set(ctx, repositoryID, branchID, key, *value, writeConditions...)
 }
 
 func (c *Catalog) CreateEntries(ctx context.Context, repository string, branch string, entries []DBEntry) error {

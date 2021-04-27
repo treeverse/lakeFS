@@ -41,13 +41,27 @@ func (p *Manager) Get(ctx context.Context, st graveler.StagingToken, key gravele
 	return value, nil
 }
 
-func (p *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value) error {
+func (p *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, overwrite bool) error {
 	if value == nil {
 		value = new(graveler.Value)
 	} else if value.Identity == nil {
 		return graveler.ErrInvalidValue
 	}
 	_, err := p.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		if !overwrite {
+			res, err := tx.Exec(
+				`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
+						VALUES ($1, $2, $3, $4)
+						ON CONFLICT (staging_token, key) DO NOTHING`,
+				st, key, value.Identity, value.Data)
+			if err != nil {
+				return nil, err
+			}
+			if res.RowsAffected() == 0 {
+				return nil, graveler.ErrPreconditionFailed
+			}
+			return res, err
+		}
 		return tx.Exec(`INSERT INTO graveler_staging_kv (staging_token, key, identity, data)
 								VALUES ($1, $2, $3, $4)
 								ON CONFLICT (staging_token, key) DO UPDATE
