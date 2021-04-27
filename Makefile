@@ -14,10 +14,6 @@ CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
-<<<<<<< HEAD
-=======
-OPENAPI_GENERATOR:=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
->>>>>>> 32a6a90d... Set UID and GID on *all* docker runs
 
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0.dev
