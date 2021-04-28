@@ -7,7 +7,7 @@ UID_GID := $(shell id -u):$(shell id -g)
 
 # Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
-PROTOC=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
+PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/io/treeverse/"
 
