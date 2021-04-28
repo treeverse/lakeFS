@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
@@ -15,8 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"gopkg.in/dgrijalva/jwt-go.v3"
 )
-
-const JWTAuthorizationHeaderName = "X-JWT-Authorization"
 
 var (
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
@@ -72,10 +71,15 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 			switch provider {
 			case "jwt_token":
 				// validate jwt token from header
-				token := r.Header.Get(JWTAuthorizationHeaderName)
-				if token == "" {
+				authHeaderValue := r.Header.Get("Authorization")
+				if authHeaderValue == "" {
 					continue
 				}
+				parts := strings.SplitN(authHeaderValue, " ", 2)
+				if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+					continue
+				}
+				token := parts[1]
 				user, err = userByToken(ctx, logger, authService, token)
 			case "basic_auth":
 				// validate using basic auth

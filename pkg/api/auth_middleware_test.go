@@ -48,7 +48,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("valid jwt header", func(t *testing.T) {
 		ctx := context.Background()
 		apiToken := testGenerateApiToken(t, deps.authService, cred.AccessKeyID)
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", api.JWTAuthorizationHeaderName, apiToken)
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
 		}
@@ -68,7 +68,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("invalid jwt header", func(t *testing.T) {
 		ctx := context.Background()
 		apiToken := testGenerateApiToken(t, deps.authService, "AKIAIOSFODNN7EXAMPLE")
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", api.JWTAuthorizationHeaderName, apiToken)
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
 		}
