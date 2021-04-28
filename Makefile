@@ -7,6 +7,8 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
+CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/io/treeverse/"
+
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
 OPENAPI_GENERATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
@@ -199,6 +201,10 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
+
+publish-scala: ## sbt publish jars to nexus and s3 bucket
+	cd clients/spark && sbt publish
+	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

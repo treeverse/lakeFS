@@ -84,6 +84,7 @@ lazy val assemblySettings = Seq(
 
 // Don't publish root project
 root / publish / skip := true
+root / publishAll := false
 
 lazy val commonSettings = Seq(
   version := projectVersion
