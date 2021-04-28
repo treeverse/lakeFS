@@ -108,7 +108,7 @@ jobs:
     needs: deploy-image
     runs-on: ubuntu-20.04
     env:
-      TAG: ${{ needs.deploy-image.version.outputs.tag }}
+      TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
@@ -159,7 +159,7 @@ jobs:
     needs: deploy-image
     runs-on: ubuntu-20.04
     env:
-      TAG: ${{ needs.deploy-image.version.outputs.tag }}
+      TAG: ${{ needs.deploy-image.outputs.tag }}
       # Setting Account_ID as a secret as a way to avoid specifying it here
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
