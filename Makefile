@@ -7,13 +7,17 @@ UID_GID := $(shell id -u):$(shell id -g)
 
 # Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
-PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
+PROTOC=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/io/treeverse/"
 
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+<<<<<<< HEAD
+=======
+OPENAPI_GENERATOR:=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+>>>>>>> 32a6a90d... Set UID and GID on *all* docker runs
 
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0.dev
