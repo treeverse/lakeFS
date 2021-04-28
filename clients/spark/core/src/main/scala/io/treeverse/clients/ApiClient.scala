@@ -8,7 +8,7 @@ import org.json4s.native.JsonMethods._
 import scalaj.http.{Http, MultiPart}
 
 import java.io.InputStream
-import java.net.URI
+import java.net.{URI, URLEncoder}
 import java.util.concurrent.{Callable, TimeUnit}
 
 class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
@@ -83,13 +83,13 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
   }
 
   def uploadIfAbsent(repoName: String, branch: String, path: String, stream: InputStream, byteSize: Long): Unit = {
-    val uploadObjectURI = URI.create("%s/repositories/%s/branches/%s/objects?path=%s".format(apiUrl, repoName, branch, path)).normalize()
+    val uploadObjectURI = URI.create("%s/repositories/%s/branches/%s/objects?path=%s".format(apiUrl, repoName, branch, URLEncoder.encode(path, "UTF-8"))).normalize()
     val resp = Http(uploadObjectURI.toString)
       .auth(accessKey, secretKey)
       .header("If-None-Match", "*")
       .postMulti(new MultiPart("content", path, "application/octet-stream", stream, byteSize, _ => {})).asString
     if (resp.code == HttpStatus.SC_PRECONDITION_FAILED) {
-      throw new AlreadyExistsException(s"put if absent failed: file already exists")
+      throw new AlreadyExistsException(s"put if absent failed: object lakefs://%s/%s/%s already exists".format(repoName, branch, path))
     }
     if (resp.isError) {
       throw new RuntimeException(s"put if absent failed")
