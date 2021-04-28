@@ -1,4 +1,4 @@
-#!/bin/bash -e -x
+#!/bin/bash -ex
 #
 # run-test.sh - submit spark app after setup lakefs and upload dataset.
 #
