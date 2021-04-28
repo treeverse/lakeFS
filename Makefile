@@ -12,6 +12,8 @@ CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/io/treeverse/"
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
 OPENAPI_GENERATOR=$(DOCKER) run --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+OPENAPI_GENERATOR:=$(DOCKER) run --user $(shell id -u):$(shell id -g) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0.dev
 endif
