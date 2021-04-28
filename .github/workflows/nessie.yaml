@@ -32,6 +32,8 @@ jobs:
     needs: check-secrets
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
