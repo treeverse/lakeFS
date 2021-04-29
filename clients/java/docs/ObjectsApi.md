@@ -22,12 +22,12 @@ delete object
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -106,12 +106,12 @@ get object content
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -192,12 +192,12 @@ get object properties on underlying storage
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -277,12 +277,12 @@ list objects under a given prefix
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -368,12 +368,12 @@ stage an object\&quot;s metadata for the given branch
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -456,12 +456,12 @@ get object metadata
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -542,12 +542,12 @@ Name | Type | Description  | Notes
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ObjectsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {

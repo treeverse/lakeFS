@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * Diff
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-28T14:59:02.133Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:27:41.173Z[GMT]")
 public class Diff {
   /**
    * Gets or Sets type

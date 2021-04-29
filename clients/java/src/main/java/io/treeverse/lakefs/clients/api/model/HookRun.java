@@ -28,7 +28,7 @@ import org.threeten.bp.OffsetDateTime;
 /**
  * HookRun
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-28T14:59:02.133Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:27:41.173Z[GMT]")
 public class HookRun {
   public static final String SERIALIZED_NAME_HOOK_RUN_ID = "hook_run_id";
   @SerializedName(SERIALIZED_NAME_HOOK_RUN_ID)

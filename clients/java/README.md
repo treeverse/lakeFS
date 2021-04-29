@@ -2,7 +2,7 @@
 
 lakeFS API
 - API version: 0.1.0
-  - Build date: 2021-04-28T14:59:02.133Z[GMT]
+  - Build date: 2021-04-29T11:27:41.173Z[GMT]
 
 lakeFS HTTP API
 
@@ -38,7 +38,7 @@ Add this dependency to your project's POM:
 
 ```xml
 <dependency>
-  <groupId>org.openapitools</groupId>
+  <groupId>io.treeverse.lakefs.clients</groupId>
   <artifactId>openapi-java-client</artifactId>
   <version>0.1.0</version>
   <scope>compile</scope>
@@ -50,7 +50,7 @@ Add this dependency to your project's POM:
 Add this dependency to your project's build file:
 
 ```groovy
-compile "org.openapitools:openapi-java-client:0.1.0"
+compile "io.treeverse.lakefs.clients:openapi-java-client:0.1.0"
 ```
 
 ### Others
@@ -73,12 +73,12 @@ Please follow the [installation](#installation) instruction and execute the foll
 ```java
 
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ActionsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {

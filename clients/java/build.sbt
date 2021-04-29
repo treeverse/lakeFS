@@ -1,6 +1,6 @@
 lazy val root = (project in file(".")).
   settings(
-    organization := "org.openapitools",
+    organization := "io.treeverse.lakefs.clients",
     name := "openapi-java-client",
     version := "0.1.0",
     scalaVersion := "2.11.4",

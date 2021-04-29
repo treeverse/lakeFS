@@ -19,12 +19,12 @@ get a run
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ActionsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -102,12 +102,12 @@ get run hook output
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ActionsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -187,12 +187,12 @@ list runs
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ActionsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -276,12 +276,12 @@ list run hooks
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.ActionsApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {

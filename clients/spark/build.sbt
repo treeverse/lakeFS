@@ -33,7 +33,9 @@ def generateCoreProject(buildType: BuildType) =
       PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
-      libraryDependencies ++= Seq("org.rocksdb" % "rocksdbjni" % "6.6.4",
+      libraryDependencies ++= Seq(
+        "io.treeverse.lakefs.clients" % "api" % "0.1.0",
+        "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",

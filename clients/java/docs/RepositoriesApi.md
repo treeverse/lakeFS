@@ -19,12 +19,12 @@ create repository
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.RepositoriesApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.RepositoriesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -102,12 +102,12 @@ delete repository
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.RepositoriesApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.RepositoriesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -182,12 +182,12 @@ get repository
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.RepositoriesApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.RepositoriesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -263,12 +263,12 @@ list repositories
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.RepositoriesApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.RepositoriesApi;
 
 public class Example {
   public static void main(String[] args) {

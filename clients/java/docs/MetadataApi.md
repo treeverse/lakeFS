@@ -18,12 +18,12 @@ creates symlink files corresponding to the given directory
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.MetadataApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.MetadataApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -103,12 +103,12 @@ return URI to a meta-range file
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.MetadataApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.MetadataApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -186,12 +186,12 @@ return URI to a range file
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.ApiClient;
-import io.treeverse.lakefs.ApiException;
-import io.treeverse.lakefs.Configuration;
-import io.treeverse.lakefs.auth.*;
-import io.treeverse.lakefs.models.*;
-import io.treeverse.lakefs.clients.MetadataApi;
+import io.treeverse.lakefs.clients.api.ApiClient;
+import io.treeverse.lakefs.clients.api.ApiException;
+import io.treeverse.lakefs.clients.api.Configuration;
+import io.treeverse.lakefs.clients.api.auth.*;
+import io.treeverse.lakefs.clients.api.models.*;
+import io.treeverse.lakefs.clients.api.MetadataApi;
 
 public class Example {
   public static void main(String[] args) {
