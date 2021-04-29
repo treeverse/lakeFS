@@ -75,7 +75,7 @@ func checkSecurityRequirements(r *http.Request, securityRequirements openapi3.Se
 				if authHeaderValue == "" {
 					continue
 				}
-				parts := strings.SplitN(authHeaderValue, " ", 2)
+				parts := strings.Fields(authHeaderValue)
 				if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
 					continue
 				}
