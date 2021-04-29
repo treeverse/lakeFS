@@ -3604,6 +3604,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/StorageURI'
           description: meta-range URI
+          headers:
+            Location:
+              description: redirect to S3
+              explode: false
+              schema:
+                type: string
+              style: simple
         "401":
           content:
             application/json:

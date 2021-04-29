@@ -13,7 +13,7 @@
 
 package io.treeverse.lakefs.clients.api;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:27:41.173Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:59:40.597Z[GMT]")
 public class Configuration {
     private static ApiClient defaultApiClient = new ApiClient();
 

@@ -32,7 +32,7 @@ import java.util.Map;
  * information about uploaded object
  */
 @ApiModel(description = "information about uploaded object")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:27:41.173Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:59:40.597Z[GMT]")
 public class StagingMetadata {
   public static final String SERIALIZED_NAME_STAGING = "staging";
   @SerializedName(SERIALIZED_NAME_STAGING)

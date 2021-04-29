@@ -28,7 +28,7 @@ import java.io.IOException;
  * location for placing an object when staging it
  */
 @ApiModel(description = "location for placing an object when staging it")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:27:41.173Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-04-29T11:59:40.597Z[GMT]")
 public class StagingLocation {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)

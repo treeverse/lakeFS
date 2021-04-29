@@ -2,7 +2,7 @@
 
 lakeFS API
 - API version: 0.1.0
-  - Build date: 2021-04-29T11:27:41.173Z[GMT]
+  - Build date: 2021-04-29T11:59:40.597Z[GMT]
 
 lakeFS HTTP API
 
