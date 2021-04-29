@@ -46,11 +46,12 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     if (metaRangeResp.isError) {
       throw new RuntimeException(s"failed to get meta_range ${metaRangeID}: [${metaRangeResp.code}] ${metaRangeResp.body}")
     }
-    val location = metaRangeResp.header("Location") match {
-      case Some(l) => l
-      case None => throw new RuntimeException("missing Location header in response for meta_range %s".format(metaRangeID))
+    val metaRangeLocation = parse(metaRangeResp.body) \ "location" match {
+      case JString(metaRangeLocation) => metaRangeLocation
+      case _ => // TODO(ariels): Bad parse exception type
+        throw new RuntimeException(s"expected property location in ${metaRangeResp.body}")
     }
-    URI.create(getStorageNamespace(repoName) + "/" + location).normalize().toString
+    URI.create(getStorageNamespace(repoName) + "/" + metaRangeLocation).normalize().toString
   }
 
   def getRangeURL(repoName: String, rangeID: String): String = {
@@ -59,11 +60,12 @@ class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
     if (resp.isError) {
       throw new RuntimeException(s"failed to get range ${rangeID}: [${resp.code}] ${resp.body}")
     }
-    val location = resp.header("Location") match {
-      case Some(l) => l
-      case None => throw new RuntimeException("missing Location header in response for range %s".format(rangeID))
+    val rangeLocation = parse(resp.body) \ "location" match {
+      case JString(rangeLocation) => rangeLocation
+      case _ => // TODO(ariels): Bad parse exception type
+        throw new RuntimeException(s"expected property location in ${resp.body}")
     }
-    URI.create(getStorageNamespace(repoName) + "/" + resp.header("Location").get).normalize().toString
+    URI.create(getStorageNamespace(repoName) + "/" + rangeLocation).normalize().toString
   }
 
   def getBranchHEADCommit(repoName: String, branch: String): String = {
