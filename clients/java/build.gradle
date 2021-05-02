@@ -2,7 +2,7 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'java'
 
-group = 'io.treeverse.lakefs.clients'
+group = 'io.treeverse.lakefs'
 version = '0.1.0'
 
 buildscript {
@@ -87,7 +87,7 @@ if(hasProperty('target') && target == 'android') {
 
     install {
         repositories.mavenInstaller {
-            pom.artifactId = 'openapi-java-client'
+            pom.artifactId = 'api-client'
         }
     }
 

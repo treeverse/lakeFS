@@ -1,8 +1,8 @@
-# openapi-java-client
+# api-client
 
 lakeFS API
 - API version: 0.1.0
-  - Build date: 2021-04-29T11:59:40.597Z[GMT]
+  - Build date: 2021-05-02T11:17:14.862Z[GMT]
 
 lakeFS HTTP API
 
@@ -38,8 +38,8 @@ Add this dependency to your project's POM:
 
 ```xml
 <dependency>
-  <groupId>io.treeverse.lakefs.clients</groupId>
-  <artifactId>openapi-java-client</artifactId>
+  <groupId>io.treeverse.lakefs</groupId>
+  <artifactId>api-client</artifactId>
   <version>0.1.0</version>
   <scope>compile</scope>
 </dependency>
@@ -50,7 +50,7 @@ Add this dependency to your project's POM:
 Add this dependency to your project's build file:
 
 ```groovy
-compile "io.treeverse.lakefs.clients:openapi-java-client:0.1.0"
+compile "io.treeverse.lakefs:api-client:0.1.0"
 ```
 
 ### Others
@@ -63,7 +63,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/openapi-java-client-0.1.0.jar`
+* `target/api-client-0.1.0.jar`
 * `target/lib/*.jar`
 
 ## Getting Started
