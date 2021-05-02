@@ -62,12 +62,12 @@ def generateExamplesProject(buildType: BuildType) =
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
 lazy val spark3Type = new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7")
 
-lazy val core3 = generateCoreProject(spark3Type)
 lazy val core2 = generateCoreProject(spark2Type)
-lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
+lazy val core3 = generateCoreProject(spark3Type)
 lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
+lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 
-lazy val root = (project in file(".")).aggregate(core3, core2, examples3, examples2)
+lazy val root = (project in file(".")).aggregate(core2, core3, examples2, examples3)
 
 // Use an older JDK to be Spark compatible
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
