@@ -18,5 +18,5 @@ jobs:
           java-version: '15'
           distribution: 'adopt'
       - name: Run the Maven verify phase
-        working-directory: client/hadoopfs
+        working-directory: clients/hadoopfs
         run: mvn --batch-mode --update-snapshots verify
