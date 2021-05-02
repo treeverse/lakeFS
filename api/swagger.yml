@@ -20,9 +20,9 @@ components:
       type: http
       scheme: basic
     jwt_token:
-      type: apiKey
-      in: header
-      name: X-JWT-Authorization
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     cookie_auth:
       type: apiKey
       in: cookie

@@ -419,14 +419,13 @@ conf = lakefs_client.Configuration(
                     'cookie_auth',
                 ),
             }
-        if 'jwt_token' in self.api_key:
+        if self.access_token is not None:
             auth['jwt_token'] = {
-                'type': 'api_key',
+                'type': 'bearer',
                 'in': 'header',
-                'key': 'X-JWT-Authorization',
-                'value': self.get_api_key_with_prefix(
-                    'jwt_token',
-                ),
+                'format': 'JWT',
+                'key': 'Authorization',
+                'value': 'Bearer ' + self.access_token
             }
         return auth
 
