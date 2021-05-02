@@ -44,14 +44,10 @@ func compareColumns(columnA, columnB *FieldSchema) CompareResult {
 	if nameA > nameB {
 		return ItemGreater
 	}
-	if ColumnEqual(columnA, columnB) {
+	if columnA.Type == columnB.Type && columnA.Comment == columnB.Comment {
 		return ItemSame
 	}
 	return ItemSameKey
-}
-
-func ColumnEqual(column, otherColumn *FieldSchema) bool {
-	return column.Name == otherColumn.Name && column.Type == otherColumn.Type && column.Comment == otherColumn.Comment
 }
 
 func NewColumnCollection(columns []*FieldSchema) *ColumnCollection {

@@ -1,8 +1,6 @@
 package hive
 
 import (
-	"fmt"
-
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/hive_metastore"
 )
@@ -165,16 +163,16 @@ func PartitionsHiveToLocal(gluePartitions []*hive_metastore.Partition) []*metast
 }
 
 func DatabaseLocalToHive(db *metastore.Database) *hive_metastore.Database {
-	path := "file:/user/hive/warehouse/"               // TODO(Guys): configure
-	location := fmt.Sprintf("%s/%s.db", path, db.Name) // TODO(Guys): this is done because glue has empty location hive location is unknown the default schema for example is `file:/user/hive/warehouse/test.db` same should be done on glue, otherwise
+	privileges, _ := db.HivePrivileges.(*hive_metastore.PrincipalPrivilegeSet)
+	ownerType, _ := db.HiveOwnerType.(*hive_metastore.PrincipalType)
 	return &hive_metastore.Database{
 		Name:        db.Name,
 		Description: db.Description,
-		LocationUri: location,
+		LocationUri: db.LocationURI,
 		Parameters:  db.Parameters,
-		//Privileges:  db.Privileges,
-		OwnerName: db.OwnerName,
-		//OwnerType:   db.OwnerType,
+		Privileges:  privileges,
+		OwnerName:   db.OwnerName,
+		OwnerType:   ownerType,
 	}
 }
 

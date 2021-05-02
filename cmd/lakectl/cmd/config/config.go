@@ -19,12 +19,14 @@ type configuration struct {
 	Metastore struct {
 		Type string `mapstructure:"type"`
 		Hive struct {
-			URI string `mapstructure:"uri"`
+			URI            string `mapstructure:"uri"`
+			DBLocationtURI string `mapstructure:"db_location_uri"`
 		} `mapstructure:"hive"`
 		Glue struct {
 			// TODO(ariels): Refactor credentials to share with server side.
 			Profile         string `mapstructure:"profile"`
 			CredentialsFile string `mapstructure:"credentials_file"`
+			DBLocationtURI  string `mapstructure:"db_location_uri"`
 			Credentials     *struct {
 				AccessKeyID     string `mapstructure:"access_key_id"`
 				AccessSecretKey string `mapstructure:"access_secret_key"`
@@ -48,12 +50,25 @@ type Config struct {
 // have non-nil Err() if loading fails.
 func ReadConfig() (c *Config) {
 	c = &Config{}
+	setDefaults()
 	c.err = viper.ReadInConfig()
 	if c.err != nil {
 		return
 	}
 	c.err = viper.UnmarshalExact(&c.configuration)
 	return
+}
+
+const (
+	// Default flag keys
+	HiveDBLocationURIKey = "metastore.hive.db_location_uri"
+
+	// Defaults
+	HiveDBLocationURI = "file:/user/hive/warehouse/"
+)
+
+func setDefaults() {
+	viper.SetDefault(HiveDBLocationURIKey, HiveDBLocationURI)
 }
 
 func (c *Config) Err() error {
@@ -89,4 +104,11 @@ func (c *Config) GetMetastoreGlueCatalogID() string {
 }
 func (c *Config) GetMetastoreType() string {
 	return c.Metastore.Type
+}
+
+func (c *Config) GetHiveDBLocationURI() string {
+	return c.Metastore.Hive.DBLocationtURI
+}
+func (c *Config) GetGlueDBLocationURI() string {
+	return c.Metastore.Glue.DBLocationtURI
 }

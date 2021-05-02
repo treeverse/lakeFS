@@ -260,6 +260,7 @@ func SDGlueToLocal(sd *glue.StorageDescriptor) *metastore.StorageDescriptor {
 		Parameters:             aws.StringValueMap(sd.Parameters),
 		SkewedInfo:             skewedGlueToLocal(sd.SkewedInfo),
 		StoredAsSubDirectories: sd.StoredAsSubDirectories,
+		AWSSchemaReference:     sd.SchemaReference,
 	}
 }
 

@@ -121,7 +121,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 	copiedPartitions, err := clientTo.GetPartitions(ctx, toDBName, toTableName)
 	testutil.Must(t, err)
-	//compare partitions
+	// compare partitions
 
 	expectedPartitions := getNPartitions(toDBName, toTableName, expectedLocation, numOfPartitions)
 

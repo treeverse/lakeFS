@@ -21,6 +21,10 @@ type MSClient struct {
 	partitionMap map[string]*metastore.Partition
 }
 
+func (m *MSClient) GetDBLocation(dbName string) string {
+	return dbName
+}
+
 func (m *MSClient) NormalizeDBName(name string) string {
 	return name
 }
@@ -39,7 +43,7 @@ func NewMSClient(t *testing.T, initialTable map[string]*metastore.Table, initial
 	}
 }
 
-func (m *MSClient) GetTable(_ context.Context, dbname string, tableName string) (r *metastore.Table, err error) {
+func (m *MSClient) GetTable(_ context.Context, dbname string, tableName string) (*metastore.Table, error) {
 	m.t.Helper()
 	table := m.Tables[GetKey(dbname, tableName)]
 	if table == nil {
@@ -48,29 +52,29 @@ func (m *MSClient) GetTable(_ context.Context, dbname string, tableName string) 
 	return table, nil
 }
 
-func (m *MSClient) HasTable(_ context.Context, dbname string, tableName string) (hasTable bool, err error) {
-	_, hasTable = m.Tables[GetKey(dbname, tableName)]
-	return hasTable, err
+func (m *MSClient) HasTable(_ context.Context, dbname string, tableName string) (bool, error) {
+	_, hasTable := m.Tables[GetKey(dbname, tableName)]
+	return hasTable, nil
 }
 
-func (m *MSClient) GetPartitions(_ context.Context, dbName string, tableName string) (r []*metastore.Partition, err error) {
+func (m *MSClient) GetPartitions(_ context.Context, dbName string, tableName string) ([]*metastore.Partition, error) {
 	key := GetKey(dbName, tableName)
 	return GetByPrefix(m.partitionMap, key), nil
 }
 
-func (m *MSClient) GetPartition(_ context.Context, dbName string, tableName string, values []string) (r *metastore.Partition, err error) {
+func (m *MSClient) GetPartition(_ context.Context, dbName string, tableName string, values []string) (*metastore.Partition, error) {
 	return m.partitionMap[GetPartitionKey(dbName, tableName, values)], nil
 }
 
-func (m *MSClient) GetDatabase(_ context.Context, _ string) (r *metastore.Database, err error) {
+func (m *MSClient) GetDatabase(_ context.Context, _ string) (*metastore.Database, error) {
 	panic("implement me")
 }
 
-func (m *MSClient) GetDatabases(_ context.Context, _ string) (databases []*metastore.Database, err error) {
+func (m *MSClient) GetDatabases(_ context.Context, _ string) ([]*metastore.Database, error) {
 	panic("implement me")
 }
 
-func (m *MSClient) GetTables(_ context.Context, _ string, _ string) (tables []*metastore.Table, err error) {
+func (m *MSClient) GetTables(_ context.Context, _ string, _ string) ([]*metastore.Table, error) {
 	panic("implement me")
 }
 
@@ -91,8 +95,8 @@ func (m *MSClient) CreateTable(_ context.Context, table *metastore.Table) error 
 	return nil
 }
 
-func (m *MSClient) AlterTable(_ context.Context, dbname string, tableName string, newTable *metastore.Table) error {
-	key := GetKey(dbname, tableName)
+func (m *MSClient) AlterTable(_ context.Context, dbName string, tableName string, newTable *metastore.Table) error {
+	key := GetKey(dbName, tableName)
 	if m.Tables[key] == nil {
 		return fmt.Errorf("table %w - key %s", ErrNotFound, key) // TODO(Guys): consider using m.t.Fatal()
 	}
@@ -129,12 +133,12 @@ func (m *MSClient) AlterPartition(_ context.Context, dbName string, tableName st
 	return nil
 }
 
-func (m *MSClient) AddPartition(_ context.Context, tableName string, dbName string, partition *metastore.Partition) error {
-	key := GetPartitionKey(dbName, tableName, partition.Values)
+func (m *MSClient) AddPartition(_ context.Context, tableName string, dbName string, newPartition *metastore.Partition) error {
+	key := GetPartitionKey(dbName, tableName, newPartition.Values)
 	if m.partitionMap[key] != nil {
 		return fmt.Errorf("partition %w - key %s", ErrAlreadyExists, key)
 	}
-	m.partitionMap[key] = partition
+	m.partitionMap[key] = newPartition
 	return nil
 }
 

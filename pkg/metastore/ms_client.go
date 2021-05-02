@@ -18,15 +18,16 @@ type ReadClient interface {
 }
 
 type WriteClient interface {
-	CreateTable(ctx context.Context, tbl *Table) (err error)
-	AlterTable(ctx context.Context, dbName string, tableName string, newTable *Table) (err error)
-	AddPartitions(ctx context.Context, tableName string, dbName string, newParts []*Partition) (err error)
-	AlterPartitions(ctx context.Context, dbName string, tableName string, newPartitions []*Partition) (err error)
-	AlterPartition(ctx context.Context, dbName string, tableName string, values *Partition) (err error)
-	AddPartition(ctx context.Context, tableName string, dbName string, newPartition *Partition) (err error)
-	DropPartition(ctx context.Context, dbName string, tableName string, values []string) (err error)
-	CreateDatabaseIfNotExists(ctx context.Context, database *Database) (err error)
+	CreateTable(ctx context.Context, tbl *Table) error
+	AlterTable(ctx context.Context, dbName string, tableName string, newTable *Table) error
+	AddPartitions(ctx context.Context, tableName string, dbName string, newParts []*Partition) error
+	AlterPartitions(ctx context.Context, dbName string, tableName string, newPartitions []*Partition) error
+	AlterPartition(ctx context.Context, dbName string, tableName string, partition *Partition) error
+	AddPartition(ctx context.Context, tableName string, dbName string, newPartition *Partition) error
+	DropPartition(ctx context.Context, dbName string, tableName string, values []string) error
+	CreateDatabaseIfNotExists(ctx context.Context, database *Database) error
 	NormalizeDBName(name string) string // NormalizeDBName changes the db name to be a valid name for the client
+	GetDBLocation(dbName string) string // getDBLocation returns the expected locationURI of the database
 }
 
 type Client interface {
@@ -38,10 +39,10 @@ func CopyOrMerge(ctx context.Context, fromClient Client, toClient Client, fromDB
 	transformLocation := func(location string) (string, error) {
 		return ReplaceBranchName(location, toBranch)
 	}
-	return copyOrMerge(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
+	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
 }
 
-func copyOrMerge(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
+func copyOrMergeWithTransformLocation(ctx context.Context, fromClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
 	if len(partition) > 0 {
 		return CopyPartition(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
 	}
@@ -78,17 +79,17 @@ func CopyOrMergeFromValues(ctx context.Context, fromClient Client, fTable *Table
 		return err
 	}
 	partitions, err := fromClient.GetPartitions(ctx, fromDB, fromTable)
+	if err != nil {
+		return err
+	}
 	if !hasTable {
-		if err != nil {
-			return err
-		}
 		return Copy(ctx, fTable, partitions, toDB, toTable, serde, toClient, transformLocation)
 	}
 	partitionCollection := NewPartitionCollection(partitions)
 	return Merge(ctx, fTable, partitionCollection, toDB, toTable, serde, toClient, transformLocation)
 }
 
-func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, toBranch string) error {
+func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilter, tableFilter, toBranch string, continueOnError bool) error {
 	databases, err := fromClient.GetDatabases(ctx, schemaFilter)
 	if err != nil {
 		return err
@@ -96,7 +97,8 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 	for _, database := range databases {
 		fromDBName := database.Name
 		toDBName := toClient.NormalizeDBName(database.Name)
-		database.Name = toClient.NormalizeDBName(toDBName)
+		database.Name = toDBName
+		database.LocationURI = toClient.GetDBLocation(toDBName)
 		err = toClient.CreateDatabaseIfNotExists(ctx, database)
 		if err != nil {
 			return err
@@ -117,7 +119,10 @@ func CopyOrMergeAll(ctx context.Context, fromClient, toClient Client, schemaFilt
 			fmt.Printf("copy table %s.%s -> %s.%s\n", fromDBName, tableName, toDBName, tableName)
 			err = CopyOrMergeFromValues(ctx, fromClient, table, toClient, fromDBName, tableName, toDBName, tableName, tableName, transformLocation)
 			if err != nil {
-				return err
+				if !continueOnError {
+					return err
+				}
+				fmt.Println(err)
 			}
 		}
 	}
@@ -271,5 +276,5 @@ func CopyOrMergeToSymlink(ctx context.Context, client Client, fromDB, fromTable,
 	transformLocation := func(location string) (string, error) {
 		return GetSymlinkLocation(location, locationPrefix)
 	}
-	return copyOrMerge(ctx, client, client, fromDB, fromTable, toDB, toTable, "", nil, transformLocation)
+	return copyOrMergeWithTransformLocation(ctx, client, client, fromDB, fromTable, toDB, toTable, "", nil, transformLocation)
 }

@@ -31,13 +31,6 @@ var metastoreCopyCmd = &cobra.Command{
 		serde, _ := cmd.Flags().GetString("serde")
 		partition, _ := cmd.Flags().GetStringSlice("partition")
 
-		//msType := cfg.GetMetastoreType()
-		//if len(fromClientType) == 0 {
-		//	fromClientType = msType
-		//}
-		//if len(toClientType) == 0 {
-		//	toClientType = msType
-		//}
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
 		toClient, toClientDeferFunc := getMetastoreClient(toClientType, "")
@@ -68,7 +61,7 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 		if len(hiveAddress) == 0 {
 			hiveAddress = cfg.GetMetastoreHiveURI()
 		}
-		hiveClient, err := hive.NewMSClient(hiveAddress, false)
+		hiveClient, err := hive.NewMSClient(hiveAddress, false, cfg.GetHiveDBLocationURI())
 		if err != nil {
 			DieErr(err)
 		}
@@ -81,7 +74,7 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 		return hiveClient, deferFunc
 
 	case "glue":
-		client, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID())
+		client, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID(), cfg.GetGlueDBLocationURI())
 		if err != nil {
 			DieErr(err)
 		}
@@ -105,6 +98,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		schemaFilter, _ := cmd.Flags().GetString("schema-filter")
 		tableFilter, _ := cmd.Flags().GetString("table-filter")
 		branch, _ := cmd.Flags().GetString("branch")
+		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
 
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
@@ -116,7 +110,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		defer toDeferFunc()
 
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
-		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch)
+		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError)
 		if err != nil {
 			DieErr(err)
 		}
@@ -128,9 +122,11 @@ var metastoreDiffCmd = &cobra.Command{
 	Short: "show column and partition differences between two tables",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType, _ := cmd.Flags().GetString("from-client-type")
+		toAddress, _ := cmd.Flags().GetString("to-address")
 		fromDB, _ := cmd.Flags().GetString("from-schema")
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		toClientType, _ := cmd.Flags().GetString("to-client-type")
+		fromAddress, _ := cmd.Flags().GetString("from-address")
 		toDB, _ := cmd.Flags().GetString("to-schema")
 		toTable, _ := cmd.Flags().GetString("to-table")
 
@@ -141,9 +137,9 @@ var metastoreDiffCmd = &cobra.Command{
 		if len(toClientType) == 0 {
 			toClientType = msType
 		}
-		fromClient, fromClientDeferFunc := getMetastoreClient(msType, "")
+		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, fromAddress)
 		defer fromClientDeferFunc()
-		toClient, toClientDeferFunc := getMetastoreClient(msType, "")
+		toClient, toClientDeferFunc := getMetastoreClient(toClientType, toAddress)
 		defer toClientDeferFunc()
 
 		if len(toDB) == 0 {
@@ -197,7 +193,7 @@ var glueSymlinkCmd = &cobra.Command{
 		DieOnResponseError(res, err)
 		location := res.JSON201.Location
 
-		msClient, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID())
+		msClient, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID(), cfg.GetGlueDBLocationURI())
 		if err != nil {
 			DieErr(err)
 		}
@@ -214,8 +210,6 @@ func init() {
 	rootCmd.AddCommand(metastoreCmd)
 	metastoreCmd.AddCommand(metastoreCopyCmd)
 	_ = metastoreCopyCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
-	//_ = metastoreCopyCmd.Flags().String("type", "", "metastore type [hive, glue]")
-	//_ = viper.BindPFlag("metastore.type", metastoreCopyCmd.Flag("type"))
 	_ = metastoreCopyCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
 	_ = viper.BindPFlag("metastore.hive.uri", metastoreCopyCmd.Flag("metastore-uri"))
 	_ = metastoreCopyCmd.Flags().String("catalog-id", "", "Glue catalog ID")
@@ -234,30 +228,31 @@ func init() {
 
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
-	//_ = viper.BindPFlag("metastore.type", metastoreDiffCmd.Flag("type"))
 	_ = metastoreDiffCmd.Flags().String("metastore-uri", "", "Hive metastore URI")
 	_ = viper.BindPFlag("metastore.hive.URI", metastoreDiffCmd.Flag("metastore-uri"))
 	_ = metastoreDiffCmd.Flags().String("catalog-id", "", "Glue catalog ID")
 	_ = viper.BindPFlag("metastore.glue.catalog_id", metastoreDiffCmd.Flag("catalog-id"))
+	_ = metastoreDiffCmd.Flags().String("from-address", "", "source metastore address")
 	_ = metastoreDiffCmd.Flags().String("from-schema", "", "source schema name")
 	_ = metastoreDiffCmd.MarkFlagRequired("from-schema")
 	_ = metastoreDiffCmd.Flags().String("from-table", "", "source table name")
-	_ = metastoreDiffCmd.MarkFlagRequired("from-table")
 	_ = metastoreDiffCmd.Flags().String("to-client-type", "", "metastore type [hive, glue]")
+	_ = metastoreDiffCmd.Flags().String("to-address", "", "destination metastore address")
+	_ = metastoreDiffCmd.MarkFlagRequired("from-table")
 	_ = metastoreDiffCmd.Flags().String("to-schema", "", "destination schema name ")
 	_ = metastoreDiffCmd.Flags().String("to-table", "", "destination table name [default is from-table]")
 
 	metastoreCmd.AddCommand(metastoreCopyAllCmd)
 	_ = metastoreCopyAllCmd.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	_ = metastoreCopyAllCmd.Flags().String("from-address", "", "source metastore address")
-	//_ = metastoreCopyAllCmd.MarkFlagRequired("from-address")
 	_ = metastoreCopyAllCmd.Flags().String("to-client-type", "", "metastore type [hive, glue]")
 	_ = metastoreCopyAllCmd.Flags().String("to-address", "", "destination metastore address")
 	_ = metastoreCopyAllCmd.MarkFlagRequired("to-address")
-	_ = metastoreCopyAllCmd.Flags().String("schema-filter", "*", "filter for schemas to copy in metastore pattern")
-	_ = metastoreCopyAllCmd.Flags().String("table-filter", "*", "filter for tables to copy in metastore pattern")
+	_ = metastoreCopyAllCmd.Flags().String("schema-filter", ".*", "filter for schemas to copy in metastore pattern")
+	_ = metastoreCopyAllCmd.Flags().String("table-filter", ".*", "filter for tables to copy in metastore pattern")
 	_ = metastoreCopyAllCmd.Flags().String("branch", "", "lakeFS branch name")
 	_ = metastoreCopyAllCmd.MarkFlagRequired("branch")
+	_ = metastoreCopyAllCmd.Flags().String("continue-on-error", "", "prevent copy-all from failing when a single table fails")
 
 	metastoreCmd.AddCommand(glueSymlinkCmd)
 	_ = glueSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
