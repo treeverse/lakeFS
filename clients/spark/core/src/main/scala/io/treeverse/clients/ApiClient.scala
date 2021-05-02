@@ -12,7 +12,10 @@ import java.util.concurrent.Callable
 
 private object ApiClient {
   def translateS3(uri: URI): URI =
-    if (uri.getScheme == "s3") new URI("s3a", uri.getHost, uri.getPath, uri.getFragment) else uri
+    if (uri.getScheme == "s3") new URI(
+      "s3a", uri.getUserInfo, uri.getHost, uri.getPort, uri.getPath, uri.getQuery, uri.getFragment)
+    else
+      uri
 }
 
 class ApiClient(apiUrl: String, accessKey: String, secretKey: String) {
