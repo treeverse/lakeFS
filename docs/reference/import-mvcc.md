@@ -4,6 +4,7 @@ title: Importing data from S3 (MVCC)
 description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
 parent: Reference
 nav_exclude: true
+search_exclude: true
 has_children: false
 ---
 

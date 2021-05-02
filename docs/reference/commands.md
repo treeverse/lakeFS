@@ -53,9 +53,10 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 #### Options
 
 ```
-  -c, --config string   config file (default is $HOME/.lakectl.yaml)
-  -h, --help            help for lakectl
-      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
+      --base-uri string   base URI used for lakeFS address parse
+  -c, --config string     config file (default is $HOME/.lakectl.yaml)
+  -h, --help              help for lakectl
+      --no-color          don't use fancy output colors (default when not attached to an interactive terminal)
 ```
 
 
@@ -135,6 +136,25 @@ lakectl abuse random-read <source ref uri> [flags]
 
 
 
+### lakectl abuse random-write
+
+Generate random writes to the source branch
+
+```
+lakectl abuse random-write <source branch uri> [flags]
+```
+
+#### Options
+
+```
+      --amount int        amount of writes to do (default 1000000)
+  -h, --help              help for random-write
+      --parallelism int   amount of writes to do in parallel (default 100)
+      --prefix string     prefix to create paths under (default "abuse/")
+```
+
+
+
 ### lakectl actions
 
 Manage Actions commands
@@ -202,7 +222,7 @@ lakectl actions runs describe lakefs://<repository> <run_id>
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
+      --amount int     number of results to return. By default, all results are returned.
   -h, --help           help for describe
 ```
 
@@ -251,10 +271,36 @@ lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <c
 
 ```
       --after string    show results after this value (used for pagination)
-      --amount int      how many results to return, or '-1' for default (used for pagination) (default -1)
+      --amount int      number of results to return (default 100)
       --branch string   show results for specific branch
       --commit string   show results for specific commit ID
   -h, --help            help for list
+```
+
+
+
+### lakectl actions validate
+
+Validate action file
+
+#### Synopsis
+
+Tries to parse the input action file as lakeFS action file
+
+```
+lakectl actions validate [flags]
+```
+
+#### Examples
+
+```
+lakectl actions validate <path>
+```
+
+#### Options
+
+```
+  -h, --help   help for validate
 ```
 
 
@@ -1062,7 +1108,7 @@ lakectl branch list lakefs://<repository>
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
+      --amount int     number of results to return (default 100)
   -h, --help           help for list
 ```
 
@@ -1320,6 +1366,9 @@ lakectl docs [outfile] [flags]
 
 ### lakectl fs
 
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
 view and manipulate objects
 
 #### Options
@@ -1341,7 +1390,8 @@ lakectl fs cat <path uri> [flags]
 #### Options
 
 ```
-  -h, --help   help for cat
+  -d, --direct   read directly from backing store (faster but requires more credentials)
+  -h, --help     help for cat
 ```
 
 
@@ -1378,7 +1428,8 @@ lakectl fs ls <path uri> [flags]
 #### Options
 
 ```
-  -h, --help   help for ls
+  -h, --help        help for ls
+      --recursive   list all objects under the specified prefix
 ```
 
 
@@ -1416,6 +1467,7 @@ lakectl fs stage <path uri> [flags]
       --checksum string   Object MD5 checksum as a hexadecimal string
   -h, --help              help for stage
       --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
+      --meta strings      key value pairs in the form of key=value
       --size int          Object size in bytes
 ```
 
@@ -1448,6 +1500,7 @@ lakectl fs upload <path uri> [flags]
 #### Options
 
 ```
+  -d, --direct          write directly to backing store (faster but requires more credentials)
   -h, --help            help for upload
   -r, --recursive       recursively copy all files under local source
   -s, --source string   local file to upload, or "-" for stdin
@@ -1476,6 +1529,26 @@ lakectl help [command] [flags]
 
 
 
+### lakectl ingest
+
+Ingest objects from an external source into a lakeFS branch (without actually copying them)
+
+```
+lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [flags]
+```
+
+#### Options
+
+```
+      --dry-run       only print the paths to be ingested
+      --from string   prefix to read from (e.g. "s3://bucket/sub/path/")
+  -h, --help          help for ingest
+      --to string     lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+  -v, --verbose       print stats for each individual object staged
+```
+
+
+
 ### lakectl log
 
 show log of commits for the given branch
@@ -1488,7 +1561,7 @@ lakectl log <branch uri> [flags]
 
 ```
       --after string         show results after this value (used for pagination)
-      --amount int           how many results to return, or '-1' for default (used for pagination) (default -1)
+      --amount int           number of results to return. By default, all results are returned.
   -h, --help                 help for log
       --show-meta-range-id   also show meta range ID
 ```
@@ -1553,6 +1626,31 @@ lakectl metastore copy [flags]
       --to-schema string       destination schema name [default is from-branch]
       --to-table string        destination table name [default is  from-table] 
       --type string            metastore type [hive, glue]
+```
+
+
+
+### lakectl metastore copy-all
+
+copy from one metastore to another
+
+#### Synopsis
+
+copy or merge requested tables between hive metastores. the destination tables will point to the selected branch
+
+```
+lakectl metastore copy-all [flags]
+```
+
+#### Options
+
+```
+      --branch string          lakeFS branch name
+      --from-address string    source metastore address
+  -h, --help                   help for copy-all
+      --schema-filter string   filter for schemas to copy in metastore pattern (default "*")
+      --table-filter string    filter for tables to copy in metastore pattern (default "*")
+      --to-address string      destination metastore address
 ```
 
 
@@ -1780,7 +1878,7 @@ lakectl repo list [flags]
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
+      --amount int     number of results to return (default 100)
   -h, --help           help for list
 ```
 
@@ -1891,7 +1989,7 @@ lakectl tag list lakefs://<repository>
 
 ```
       --after string   show results after this value (used for pagination)
-      --amount int     how many results to return, or '-1' for default (used for pagination) (default -1)
+      --amount int     number of results to return (default 100)
   -h, --help           help for list
 ```
 
