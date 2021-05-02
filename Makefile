@@ -113,7 +113,15 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
 		-o /mnt/clients/python
 
-clients: client-python
+client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/$< \
+		-g java \
+		--invoker-package io.treeverse.lakefs.clients.api \
+		--additional-properties=groupId=io.treeverse.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://github.com/treeverse/lakeFS/tree/master/clients,apiPackage=io.treeverse.lakefs.clients.api,modelPackage=io.treeverse.lakefs.clients.api.model,mainPackage=io.treeverse.lakefs.clients.api,developerEmail=support@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='treeverse.org',developerOrganizationUrl='https://treeverse.org',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
+		-o /mnt/clients/java
+
+clients: client-python client-java
 
 package-python: client-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) ./build-package.sh
