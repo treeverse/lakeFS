@@ -1,6 +1,7 @@
 package graveler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
@@ -28,26 +29,28 @@ func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, l
 	}
 }
 
-func (d *uncommittedDiffIterator) valueExistsInCommitted(val ValueRecord) (bool, error) {
+func (d *uncommittedDiffIterator) getValueFromCommittedIfExists(val ValueRecord) (*Value, error) {
 	if d.metaRangeID == "" {
-		return false, nil
+		return nil, nil
 	}
-	_, err := d.committedManager.Get(d.ctx, d.storageNamespace, d.metaRangeID, val.Key)
+	value, err := d.committedManager.Get(d.ctx, d.storageNamespace, d.metaRangeID, val.Key)
 	if errors.Is(err, ErrNotFound) {
-		return false, nil
+		return nil, nil
 	}
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return true, nil
+	return value, nil
 }
 
-func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (DiffType, error) {
-	existsInCommitted, err := d.valueExistsInCommitted(val)
+// getDiffType returns the diffType between value with committed
+// Returns skip == true in case of no diff
+func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (diffType DiffType, skip bool, err error) {
+	committedVal, err := d.getValueFromCommittedIfExists(val)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
-
+	existsInCommitted := committedVal != nil
 	if val.Value == nil {
 		// tombstone
 		if !existsInCommitted {
@@ -55,32 +58,40 @@ func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (DiffType, error)
 				WithFields(logging.Fields{"meta_range_id": d.metaRangeID, "storage_namespace": d.storageNamespace, "key": val.Key}).
 				Warn("tombstone for a file that does not exist")
 		}
-		return DiffTypeRemoved, nil
+		return DiffTypeRemoved, false, nil
 	}
-	if existsInCommitted {
-		return DiffTypeChanged, nil
+	if !existsInCommitted {
+		return DiffTypeAdded, false, nil
 	}
-	return DiffTypeAdded, nil
+	if bytes.Equal(committedVal.Identity, val.Identity) {
+		return 0, true, nil
+	}
+	return DiffTypeChanged, false, nil
 }
 
 func (d *uncommittedDiffIterator) Next() bool {
-	if !d.list.Next() {
-		d.value = nil
-		return false
+	for {
+		if !d.list.Next() {
+			d.value = nil
+			return false
+		}
+		val := d.list.Value()
+		diffType, skip, err := d.getDiffType(*val)
+		if err != nil {
+			d.value = nil
+			d.err = err
+			return false
+		}
+		if skip {
+			continue
+		}
+		d.value = &Diff{
+			Type:  diffType,
+			Key:   val.Key,
+			Value: val.Value,
+		}
+		return true
 	}
-	val := d.list.Value()
-	diffType, err := d.getDiffType(*val)
-	if err != nil {
-		d.value = nil
-		d.err = err
-		return false
-	}
-	d.value = &Diff{
-		Type:  diffType,
-		Key:   val.Key,
-		Value: val.Value,
-	}
-	return true
 }
 
 func (d *uncommittedDiffIterator) SeekGE(id Key) {
