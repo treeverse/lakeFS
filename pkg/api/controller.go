@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -1791,11 +1792,11 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 
-	blockStoreType := c.BlockAdapter.BlockstoreType()
-	if qk.StorageType.String() != blockStoreType {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s",
-			qk.StorageType.String(),
-			blockStoreType,
+	// see what storage type this is and whether it fits our configuration
+	uriRegex := c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex
+	if match, err := regexp.MatchString(uriRegex, body.PhysicalAddress); err != nil || !match {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("physical address is not valid for block adapter: %s",
+			c.BlockAdapter.BlockstoreType(),
 		))
 		return
 	}
