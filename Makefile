@@ -9,7 +9,7 @@ UID_GID := $(shell id -u):$(shell id -g)
 PROTOC_IMAGE="treeverse/protoc:3.14.0"
 PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 
-CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/io/treeverse/"
+CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.1.0
@@ -205,8 +205,8 @@ proto: ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
 	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
 
-publish-scala: ## sbt publish jars to nexus and s3 bucket
-	cd clients/spark && sbt publishAll
+publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
+	cd clients/spark && sbt assembly && sbt s3Upload && sbt publish
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 help:  ## Show Help menu
