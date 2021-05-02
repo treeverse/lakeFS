@@ -34,7 +34,7 @@ def generateCoreProject(buildType: BuildType) =
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
-        "io.treeverse.lakefs.clients" % "api" % "0.1.0",
+        "io.treeverse.lakefs.clients" % "openapi-java-client" % "0.1.0",
         "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
