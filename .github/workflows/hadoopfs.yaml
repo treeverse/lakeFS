@@ -18,4 +18,4 @@ jobs:
           java-version: '15'
           distribution: 'adopt'
       - name: Run the Maven verify phase
-          run: mvn --batch-mode --update-snapshots verify
+        run: mvn --batch-mode --update-snapshots verify
