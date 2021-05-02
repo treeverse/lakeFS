@@ -20,7 +20,7 @@ diff references
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (jwt_token):
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
 import lakefs_client
@@ -51,11 +51,10 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure API key authorization: jwt_token
-configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['jwt_token'] = 'Bearer'
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -133,7 +132,7 @@ Dump repository refs (tags, commits, branches) to object store
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (jwt_token):
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
 import lakefs_client
@@ -164,11 +163,10 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure API key authorization: jwt_token
-configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['jwt_token'] = 'Bearer'
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -226,7 +224,7 @@ get commit log from ref
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (jwt_token):
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
 import lakefs_client
@@ -257,11 +255,10 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure API key authorization: jwt_token
-configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['jwt_token'] = 'Bearer'
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -333,7 +330,7 @@ merge references
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (jwt_token):
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
 import lakefs_client
@@ -365,11 +362,10 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure API key authorization: jwt_token
-configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['jwt_token'] = 'Bearer'
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -449,7 +445,7 @@ Restore repository refs (tags, commits, branches) from object store
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (jwt_token):
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
 import lakefs_client
@@ -480,11 +476,10 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure API key authorization: jwt_token
-configuration.api_key['jwt_token'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['jwt_token'] = 'Bearer'
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_client.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
