@@ -8,9 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"google.golang.org/api/iterator"
-
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 func GetGCSClient(ctx context.Context) (*storage.Client, error) {

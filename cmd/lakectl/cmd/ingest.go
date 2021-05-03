@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/store"
 	"github.com/treeverse/lakefs/pkg/api"
 )
@@ -14,9 +13,8 @@ Staged {{ .Objects | yellow }} external objects (total of {{ .Bytes | human_byte
 `
 
 var ingestCmd = &cobra.Command{
-	Use:    "ingest --from <object store URI> --to <lakeFS path URI> [--dry-run]",
-	Short:  "Ingest objects from an external source into a lakeFS branch (without actually copying them)",
-	Hidden: false,
+	Use:   "ingest --from <object store URI> --to <lakeFS path URI> [--dry-run]",
+	Short: "Ingest objects from an external source into a lakeFS branch (without actually copying them)",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		verbose := MustBool(cmd.Flags().GetBool("verbose"))
@@ -25,8 +23,10 @@ var ingestCmd = &cobra.Command{
 		to := MustString(cmd.Flags().GetString("to"))
 		lakefsURI := MustParsePathURI("to", to)
 
-		var staged int64
-		var stagedBytes int64
+		summary := struct {
+			Objects int64
+			Bytes   int64
+		}{}
 		client := getClient()
 		err := store.Walk(ctx, from, func(e store.ObjectStoreEntry) error {
 			if dryRun {
@@ -35,16 +35,18 @@ var ingestCmd = &cobra.Command{
 			}
 			key := e.RelativeKey
 			if lakefsURI.Path != nil && *lakefsURI.Path != "" {
+				path := *lakefsURI.Path
 				if strings.HasSuffix(*lakefsURI.Path, "/") {
-					key = strings.Join([]string{api.StringValue(lakefsURI.Path), key}, "")
+					key = path + key
 				} else {
-					key = strings.Join([]string{api.StringValue(lakefsURI.Path), key}, "/")
+					key = path + "/" + key
 				}
 			}
 			mtime := e.Mtime.Unix()
 			resp, err := client.StageObjectWithResponse(ctx,
 				lakefsURI.Repository,
-				lakefsURI.Ref, &api.StageObjectParams{
+				lakefsURI.Ref,
+				&api.StageObjectParams{
 					Path: key,
 				},
 				api.StageObjectJSONRequestBody{
@@ -58,28 +60,16 @@ var ingestCmd = &cobra.Command{
 			if verbose {
 				Write("Staged "+fsStatTemplate+"\n", resp.JSON201)
 			}
-			staged = staged + 1
-			stagedBytes = stagedBytes + api.Int64Value(resp.JSON201.SizeBytes)
+			summary.Objects += 1
+			summary.Bytes += api.Int64Value(resp.JSON201.SizeBytes)
 			return nil
 		})
 		if err != nil {
 			DieFmt("error walking object store: %v", err)
 		}
 
-		if err != nil {
-			DieErr(err)
-		}
-
 		// print summary
-		if staged > 0 {
-			Write(ingestSummaryTemplate, struct {
-				Objects int64
-				Bytes   int64
-			}{
-				Objects: staged,
-				Bytes:   stagedBytes,
-			})
-		}
+		Write(ingestSummaryTemplate, summary)
 	},
 }
 

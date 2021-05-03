@@ -13,16 +13,15 @@ import (
 )
 
 var (
-	ErrAzureURLparse          = errors.New("error parsing Azure storage URL")
-	ErrAzureCredentials       = errors.New("azure credentials error")
-	ErrAzureBlobMisconfigured = fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
+	ErrAzureInvalidURL  = errors.New("invalid Azure storage URL")
+	ErrAzureCredentials = errors.New("azure credentials error")
 )
 
 func GetAzureClient() (pipeline.Pipeline, error) {
 	// From the Azure portal, get your storage account name and key and set environment variables.
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
-		return nil, ErrAzureBlobMisconfigured
+		return nil, fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
 	}
 
 	// Create a default request pipeline using your storage account name and account key.
@@ -37,12 +36,12 @@ type AzureBlobWalker struct {
 	client pipeline.Pipeline
 }
 
+// extractAzurePrefix takes a URL that looks like this: https://storageaccount.blob.core.windows.net/container/prefix
+// and return the URL for the container and a prefix, if one exists
 func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
-	// take a URL that looks like this: https://storageaccount.blob.core.windows.net/container/prefix
-	// and return the URL for the container, and the URL for the prefix if any
 	path := strings.TrimLeft(storageURI.Path, "/")
 	if len(path) == 0 {
-		return nil, "", fmt.Errorf("%w: invalid storage URI: could not parse container: %s", ErrAzureURLparse, storageURI)
+		return nil, "", fmt.Errorf("%w: could not parse container URL: %s", ErrAzureInvalidURL, storageURI)
 	}
 	parts := strings.SplitN(path, "/", 2)
 	if len(parts) == 1 {

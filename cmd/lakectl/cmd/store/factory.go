@@ -13,12 +13,19 @@ var (
 )
 
 type ObjectStoreEntry struct {
-	FullKey     string
+	// FullKey represents the fully qualified path in the object store namespace for the given entry
+	FullKey string
+	// RelativeKey represents a path relative to prefix (or directory). If none specified, will be identical to FullKey
 	RelativeKey string
-	Address     string
-	ETag        string
-	Mtime       time.Time
-	Size        int64
+	// Address is a full URI for the entry, including the storage namespace (i.e. s3://bucket/path/to/key)
+	Address string
+	// ETag represents a hash of the entry's content. Generally as hex encoded MD5,
+	// but depends on the underlying object store
+	ETag string
+	// Mtime is the last-modified datetime of the entry
+	Mtime time.Time
+	// Size in bytes
+	Size int64
 }
 
 type Walker interface {
@@ -26,7 +33,8 @@ type Walker interface {
 }
 
 func (e ObjectStoreEntry) String() string {
-	return fmt.Sprintf("%s\t%s\t%s\t%d\t%s\n", e.Address, e.RelativeKey, e.ETag, e.Size, e.Mtime)
+	return fmt.Sprintf("ObjectStoreEntry: {Address:%s, RelativeKey:%s, ETag:%s, Size:%d, Mtime:%s}",
+		e.Address, e.RelativeKey, e.ETag, e.Size, e.Mtime)
 }
 
 func Walk(ctx context.Context, storageURI string, walkFn func(e ObjectStoreEntry) error) error {

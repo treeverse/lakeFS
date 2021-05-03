@@ -50,7 +50,7 @@ lakectl ingest \
 ```
 
 The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles, 
-environment variables and credential files [in the same way that the aws cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
+environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
 
 ### Running lakectl ingest with Azure Blob storage as the source
 
@@ -67,14 +67,13 @@ The `lakectl ingest` command currently supports storage accounts configured thro
 ### Running lakectl ingest with Google Cloud storage as the source
 
 ```shell
-export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/application_default_credentials.json"
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcs_credentials.json"  # Optional, will fallback to the default configured credentials
 lakectl ingest \
    --from gs://bucket/optional/prefix/ \
    --to lakefs://my-repo/ingest-branch/optional/path/
 ```
 
-The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment varialbe [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
-
+The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
 
 ## Very large buckets: Using lakeFS S3 inventory import tool
 
