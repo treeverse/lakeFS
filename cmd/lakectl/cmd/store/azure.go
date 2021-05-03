@@ -52,7 +52,6 @@ func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
 	// we have both prefix and storage container, rebuild URL
 	relativePath := url.URL{Path: "/" + parts[0]}
 	return storageURI.ResolveReference(&relativePath), parts[1], nil
-
 }
 
 func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
