@@ -15,7 +15,7 @@
     </scm>
     <parent>
         <groupId>io.treeverse.lakefs</groupId>
-        <artifactId>fake</artifactId>
+        <artifactId>lakefs-parent</artifactId>
         <version>0</version>
     </parent>
 
