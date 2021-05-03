@@ -30,11 +30,5 @@
             <artifactId>hadoop-common</artifactId>
             <version>3.2.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>3.2.0</version>
-        </dependency>
-        <!--    org.apache.hadoop-->
     </dependencies>
 </project>
