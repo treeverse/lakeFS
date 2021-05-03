@@ -2,9 +2,14 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
+)
+
+var (
+	ErrNoStorageAdapter = errors.New("no storage adapter found")
 )
 
 type ObjectStoreEntry struct {
@@ -28,7 +33,7 @@ func Walk(ctx context.Context, storageURI string, walkFn func(e ObjectStoreEntry
 	var walker Walker
 	uri, err := url.Parse(storageURI)
 	if err != nil {
-		return fmt.Errorf("could not parse storage URI %s: %v", uri, err)
+		return fmt.Errorf("could not parse storage URI %s: %w", uri, err)
 	}
 	switch uri.Scheme {
 	case "s3":
@@ -50,7 +55,7 @@ func Walk(ctx context.Context, storageURI string, walkFn func(e ObjectStoreEntry
 		}
 		walker = &AzureBlobWalker{client: svc}
 	default:
-		return fmt.Errorf("no matching object store adapter for scheme: %s", uri.Scheme)
+		return fmt.Errorf("%w: for scheme: %s", ErrNoStorageAdapter, uri.Scheme)
 	}
 	return walker.Walk(ctx, uri, walkFn)
 }

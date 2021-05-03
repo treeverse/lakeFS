@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	ErrAzureBlobMisconfigured = errors.New("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
+	AzureURLParseError        = errors.New("error parsing Azure storage URL")
+	ErrAzureCredentials       = errors.New("azure credentials error")
+	ErrAzureBlobMisconfigured = fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
 )
 
 func GetAzureClient() (pipeline.Pipeline, error) {
@@ -26,7 +28,7 @@ func GetAzureClient() (pipeline.Pipeline, error) {
 	// Create a default request pipeline using your storage account name and account key.
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid credentials with error: %s", err.Error())
+		return nil, fmt.Errorf("invalid credentials with error: %w", err)
 	}
 	return azblob.NewPipeline(credential, azblob.PipelineOptions{}), nil
 }
@@ -40,7 +42,7 @@ func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
 	// and return the URL for the container, and the URL for the prefix if any
 	path := strings.TrimLeft(storageURI.Path, "/")
 	if len(path) == 0 {
-		return nil, "", fmt.Errorf("invalid storage URI: could not parse container: %s", storageURI)
+		return nil, "", fmt.Errorf("%w: invalid storage URI: could not parse container: %s", AzureURLParseError, storageURI)
 	}
 	parts := strings.SplitN(path, "/", 2)
 	if len(parts) == 1 {
