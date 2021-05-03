@@ -7,7 +7,6 @@ import (
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
 func sp(s string) *string {
@@ -72,30 +71,30 @@ func TestNewUncommittedDiffIterator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// build commit map
-			committedMap := make(map[string]*graveler.Value)
+			// build commit list
+			committedRecords := make([]*graveler.ValueRecord, len(tt.CommittedKeys))
 			for i, key := range tt.CommittedKeys {
 				identity := tt.CommittedIdentities[i]
-				if identity == nil {
-					committedMap[key] = nil
-				} else {
-					committedMap[key] = &graveler.Value{
+				var val *graveler.Value
+				if identity != nil {
+					val = &graveler.Value{
 						Identity: []byte(*identity),
 						Data:     nil,
 					}
 				}
+				committedRecords[i] = &graveler.ValueRecord{
+					Key:   []byte(key),
+					Value: val,
+				}
 			}
+			fakeCommittedList := testutils.NewFakeValueIterator(committedRecords)
 			var metarangeID graveler.MetaRangeID
 			if len(tt.CommittedKeys) != 0 {
 				metarangeID = "meta_id"
 			}
-			fakeManager := &testutil.CommittedFake{
-				MetaRangeID: metarangeID,
-				ValuesByKey: committedMap,
-			}
 			stagingToken := graveler.StorageNamespace("staging-token")
 
-			// build uncommitted
+			// build uncommitted list
 			uncommittedRecords := make([]*graveler.ValueRecord, len(tt.UncommittedKeys))
 			for i, key := range tt.UncommittedKeys {
 				identity := tt.UncommittedIdentities[i]
@@ -112,7 +111,7 @@ func TestNewUncommittedDiffIterator(t *testing.T) {
 				}
 			}
 			fakeList := testutils.NewFakeValueIterator(uncommittedRecords)
-			diffIT := graveler.NewUncommittedDiffIterator(context.Background(), fakeManager, fakeList, stagingToken, metarangeID)
+			diffIT := graveler.NewUncommittedDiffIterator(context.Background(), fakeCommittedList, fakeList, stagingToken, metarangeID)
 
 			// diff results
 			diffRes := make([]graveler.DiffType, 0)
