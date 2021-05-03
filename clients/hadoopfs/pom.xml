@@ -28,7 +28,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.treeverse.lakefs</groupId>
+            <groupId>io.lakefs</groupId>
             <artifactId>api-client</artifactId>
             <version>0.1.0</version>
         </dependency>
