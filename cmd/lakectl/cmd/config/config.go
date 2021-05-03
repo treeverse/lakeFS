@@ -109,6 +109,7 @@ func (c *Config) GetMetastoreType() string {
 func (c *Config) GetHiveDBLocationURI() string {
 	return c.Metastore.Hive.DBLocationtURI
 }
+
 func (c *Config) GetGlueDBLocationURI() string {
 	return c.Metastore.Glue.DBLocationtURI
 }

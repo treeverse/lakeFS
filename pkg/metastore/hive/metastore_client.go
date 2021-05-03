@@ -37,8 +37,7 @@ type MSClient struct {
 }
 
 func (h *MSClient) GetDBLocation(dbName string) string {
-	baseLocation := strings.TrimRight(h.baseLocationURI, "/")
-	return fmt.Sprintf("%s/%s.db", baseLocation, dbName)
+	return fmt.Sprintf("%s/%s.db", h.baseLocationURI, dbName)
 }
 
 func (h *MSClient) NormalizeDBName(name string) string {
@@ -47,7 +46,7 @@ func (h *MSClient) NormalizeDBName(name string) string {
 
 func NewMSClient(addr string, secure bool, baseLocationURI string) (*MSClient, error) {
 	msClient := &MSClient{
-		baseLocationURI: baseLocationURI,
+		baseLocationURI: strings.TrimRight(baseLocationURI, "/"),
 	}
 	err := msClient.open(addr, secure)
 	if err != nil {

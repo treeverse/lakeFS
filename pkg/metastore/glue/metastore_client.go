@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -36,7 +37,7 @@ func NewMSClient(cfg *aws.Config, catalogID, baselLocationURI string) (metastore
 	return &MSClient{
 		client:          gl,
 		catalogID:       catalogID,
-		baseLocationURI: baselLocationURI,
+		baseLocationURI: strings.TrimRight(baselLocationURI, "/"),
 	}, nil
 }
 
