@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.treeverse.lakefs</groupId>
+    <groupId>io.lakefs</groupId>
     <artifactId>api-client</artifactId>
     <packaging>jar</packaging>
     <name>api-client</name>
@@ -25,9 +25,9 @@
     <developers>
         <developer>
             <name>Treeverse lakeFS dev</name>
-            <email>support@treeverse.io</email>
-            <organization>treeverse.org</organization>
-            <organizationUrl>https://treeverse.org</organizationUrl>
+            <email>services@treeverse.io</email>
+            <organization>lakefs.io</organization>
+            <organizationUrl>https://lakefs.io</organizationUrl>
         </developer>
     </developers>
 

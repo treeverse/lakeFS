@@ -20,12 +20,12 @@ diff references
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.RefsApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.RefsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -111,12 +111,12 @@ Dump repository refs (tags, commits, branches) to object store
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.RefsApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.RefsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -191,12 +191,12 @@ get commit log from ref
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.RefsApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.RefsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -276,12 +276,12 @@ merge references
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.RefsApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.RefsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -364,12 +364,12 @@ Restore repository refs (tags, commits, branches) from object store
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.RefsApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.RefsApi;
 
 public class Example {
   public static void main(String[] args) {

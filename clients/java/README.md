@@ -37,7 +37,7 @@ Add this dependency to your project's POM:
 
 ```xml
 <dependency>
-  <groupId>io.treeverse.lakefs</groupId>
+  <groupId>io.lakefs</groupId>
   <artifactId>api-client</artifactId>
   <version>0.1.0</version>
   <scope>compile</scope>
@@ -49,7 +49,7 @@ Add this dependency to your project's POM:
 Add this dependency to your project's build file:
 
 ```groovy
-compile "io.treeverse.lakefs:api-client:0.1.0"
+compile "io.lakefs:api-client:0.1.0"
 ```
 
 ### Others
@@ -72,12 +72,12 @@ Please follow the [installation](#installation) instruction and execute the foll
 ```java
 
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
