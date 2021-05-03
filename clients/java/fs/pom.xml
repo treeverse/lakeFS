@@ -2,7 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <version>1.0.0</version>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.lakefs</groupId>
+    <artifactId>hadoopfs</artifactId>
+    <packaging>jar</packaging>
+    <name>hadoopfs</name>
+    <version>0.1.0</version>
+    <url>https://github.com/treeverse/lakeFS/tree/master/clients/java</url>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -19,16 +25,28 @@
             </plugin>
         </plugins>
     </build>
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>io.lakefs</groupId>
-    <artifactId>hadoopfs</artifactId>
-    <packaging>jar</packaging>
 
     <dependencies>
+        <dependency>
+            <groupId>io.treeverse.lakefs</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>3.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
