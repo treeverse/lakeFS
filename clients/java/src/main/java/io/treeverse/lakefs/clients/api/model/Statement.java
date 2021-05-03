@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Statement
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-05-02T11:17:14.862Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class Statement {
   /**
    * Gets or Sets effect

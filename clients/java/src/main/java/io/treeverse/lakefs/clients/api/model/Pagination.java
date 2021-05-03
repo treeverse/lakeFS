@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * Pagination
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-05-02T11:17:14.862Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class Pagination {
   public static final String SERIALIZED_NAME_HAS_MORE = "has_more";
   @SerializedName(SERIALIZED_NAME_HAS_MORE)

@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * AccessKeyCredentials
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-05-02T11:17:14.862Z[GMT]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessKeyCredentials {
   public static final String SERIALIZED_NAME_ACCESS_KEY_ID = "access_key_id";
   @SerializedName(SERIALIZED_NAME_ACCESS_KEY_ID)

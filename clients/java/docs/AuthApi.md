@@ -68,11 +68,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -150,11 +148,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -232,11 +228,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -314,11 +308,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -395,11 +387,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     GroupCreation groupCreation = new GroupCreation(); // GroupCreation | 
@@ -476,11 +466,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     Policy policy = new Policy(); // Policy | 
@@ -557,11 +545,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     UserCreation userCreation = new UserCreation(); // UserCreation | 
@@ -638,11 +624,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -720,11 +704,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -800,11 +782,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -882,11 +862,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String policyId = "policyId_example"; // String | 
@@ -962,11 +940,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -1042,11 +1018,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -1124,11 +1098,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -1206,11 +1178,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -1289,11 +1259,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     try {
@@ -1363,11 +1331,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -1444,11 +1410,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String policyId = "policyId_example"; // String | 
@@ -1525,11 +1489,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -1606,11 +1568,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -1692,11 +1652,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String groupId = "groupId_example"; // String | 
@@ -1779,11 +1737,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -1863,11 +1819,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -1947,11 +1901,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -2034,11 +1986,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -2121,11 +2071,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String userId = "userId_example"; // String | 
@@ -2210,11 +2158,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String prefix = "prefix_example"; // String | return items prefixed with this value
@@ -2420,11 +2366,9 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure API key authorization: jwt_token
-    ApiKeyAuth jwt_token = (ApiKeyAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //jwt_token.setApiKeyPrefix("Token");
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
     String policyId = "policyId_example"; // String | 
