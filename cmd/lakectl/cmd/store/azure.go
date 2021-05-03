@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	AzureURLParseError        = errors.New("error parsing Azure storage URL")
+	ErrAzureURLparse          = errors.New("error parsing Azure storage URL")
 	ErrAzureCredentials       = errors.New("azure credentials error")
 	ErrAzureBlobMisconfigured = fmt.Errorf("%w: either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set", ErrAzureCredentials)
 )
@@ -42,7 +42,7 @@ func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
 	// and return the URL for the container, and the URL for the prefix if any
 	path := strings.TrimLeft(storageURI.Path, "/")
 	if len(path) == 0 {
-		return nil, "", fmt.Errorf("%w: invalid storage URI: could not parse container: %s", AzureURLParseError, storageURI)
+		return nil, "", fmt.Errorf("%w: invalid storage URI: could not parse container: %s", ErrAzureURLparse, storageURI)
 	}
 	parts := strings.SplitN(path, "/", 2)
 	if len(parts) == 1 {
