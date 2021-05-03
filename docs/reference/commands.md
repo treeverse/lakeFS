@@ -1468,6 +1468,7 @@ lakectl fs stage <path uri> [flags]
   -h, --help              help for stage
       --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
       --meta strings      key value pairs in the form of key=value
+      --mtime int         Object modified time (Unix Epoch in seconds). Defaults to current time.
       --size int          Object size in bytes
 ```
 

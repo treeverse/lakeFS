@@ -1801,7 +1801,12 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 
+	// take mtime from request, if any
 	writeTime := time.Now()
+	if body.Mtime != nil {
+		writeTime = time.Unix(*body.Mtime, 0)
+	}
+
 	entry := catalog.DBEntry{
 		CommonLevel:     false,
 		Path:            params.Path,

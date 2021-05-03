@@ -41,6 +41,7 @@ var ingestCmd = &cobra.Command{
 					key = strings.Join([]string{api.StringValue(lakefsURI.Path), key}, "/")
 				}
 			}
+			mtime := e.Mtime.Unix()
 			resp, err := client.StageObjectWithResponse(ctx,
 				lakefsURI.Repository,
 				lakefsURI.Ref, &api.StageObjectParams{
@@ -48,6 +49,7 @@ var ingestCmd = &cobra.Command{
 				},
 				api.StageObjectJSONRequestBody{
 					Checksum:        e.ETag,
+					Mtime:           &mtime,
 					PhysicalAddress: e.Address,
 					SizeBytes:       e.Size,
 				},
