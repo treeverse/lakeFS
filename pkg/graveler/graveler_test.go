@@ -236,15 +236,15 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 		},
 		{
 			name: "changed one",
-			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
-				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
+			r: graveler.NewGraveler(branchLocker, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("one")}}}), ValuesByKey: map[string]*graveler.Value{"foo/one": {Identity: []byte("one")}}},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{Identity: []byte("one_changed")}}})},
 				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}},
 			),
 			amount: 10,
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{{
 				Key:   graveler.Key("foo/one"),
 				Type:  graveler.DiffTypeChanged,
-				Value: &graveler.Value{},
+				Value: &graveler.Value{Identity: []byte("one_changed")},
 			}}),
 		},
 		{

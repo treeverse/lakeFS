@@ -25,15 +25,18 @@ def settingsToCompileIn(dir: String) = {
 }
 
 def generateCoreProject(buildType: BuildType) =
-  Project(s"${baseName}-client-${buildType.name}", file(s"target/core-${buildType.name}"))
+  Project(s"${baseName}-client-${buildType.name}", file(s"core"))
     .settings(
       sharedSettings,
+      s3UploadSettings,
       settingsToCompileIn("core"),
       scalaVersion := buildType.scalaVersion,
       PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
-      libraryDependencies ++= Seq("org.rocksdb" % "rocksdbjni" % "6.6.4",
+      libraryDependencies ++= Seq(
+        "io.treeverse.lakefs" % "api-client" % "0.1.0",
+        "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
@@ -43,17 +46,19 @@ def generateCoreProject(buildType: BuildType) =
         "org.json4s" %% "json4s-native" % "3.7.0-M8",
         "com.google.guava" % "guava" % "16.0.1",
         "com.google.guava" % "failureaccess" % "1.0.1",
-      )
-    )
+      ),
+      target := file(s"target/core-${buildType.name}/")
+    ).enablePlugins(S3Plugin)
 
 def generateExamplesProject(buildType: BuildType) =
-  Project(s"${baseName}-examples-${buildType.name}", file(s"target/examples-${buildType.name}"))
+  Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))
     .settings(
       sharedSettings,
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
       libraryDependencies += "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
       assembly / mainClass := Some("io.treeverse.examples.List"),
+      target := file(s"target/examples-${buildType.name}/")
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
@@ -79,12 +84,22 @@ lazy val assemblySettings = Seq(
       .inLibrary("com.google.guava" % "guava" % "30.1-jre", "com.google.guava" % "failureaccess" % "1.0.1")
       .inProject,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
+    ShadeRule.rename("org.rocksdb.**" -> "shadedrocksdb.@1").inAll,
   ),
+)
+
+// Upload assembly jars to S3
+lazy val s3UploadSettings = Seq(
+  s3Upload / mappings := Seq(
+    (assemblyOutputPath in assembly).value ->
+      s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
+  ),
+  s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
+  s3Upload / s3Progress  := true
 )
 
 // Don't publish root project
 root / publish / skip := true
-root / publishAll := false
 
 lazy val commonSettings = Seq(
   version := projectVersion
@@ -92,12 +107,6 @@ lazy val commonSettings = Seq(
 
 val nexus = "https://s01.oss.sonatype.org/"
 lazy val publishSettings = Seq(
-  publishResolvers := Seq(
-    if (isSnapshot.value)
-      MavenRepository("lakefs-snapshots", s"$nexus/content/repositories/snapshots")
-    else MavenRepository("lakefs-releases", s"$nexus/service/local/staging/deploy/maven2"),
-    MavenRepository("lakefs-s3-repo", "s3://treeverse-clients-us-east/"),
-  ),
   publishTo := {
     if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
     else Some("releases" at nexus + "service/local/staging/deploy/maven2")
