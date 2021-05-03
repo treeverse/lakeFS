@@ -18,11 +18,11 @@ check that the API server is up and running
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.HealthCheckApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.HealthCheckApi;
 
 public class Example {
   public static void main(String[] args) {

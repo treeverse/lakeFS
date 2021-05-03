@@ -19,12 +19,12 @@ retrieve the lakefs config
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.ConfigApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -92,11 +92,11 @@ setup lakeFS and create a first user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.ConfigApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ConfigApi;
 
 public class Example {
   public static void main(String[] args) {
