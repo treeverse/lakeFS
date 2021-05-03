@@ -27,11 +27,11 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>io.lakefs</groupId>
-            <artifactId>api-client</artifactId>
-            <version>0.1.0</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>io.lakefs</groupId>-->
+            <!--<artifactId>api-client</artifactId>-->
+            <!--<version>0.1.0</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
