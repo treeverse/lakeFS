@@ -75,7 +75,7 @@ const PathLink = ({repoId, reference, path, children, as = null}) => {
     const link = linkToPath(repoId, reference.id, path);
     if (as === null)
         return (<a href={link} download={true}>{children}</a>);
-    return React.createElement(as, {children: children, href: link, download: true});
+    return React.createElement(as, {href: link, download: true}, children);
 };
 
 const EntryRow = ({repo, reference, path, entry, onDelete, showActions}) => {

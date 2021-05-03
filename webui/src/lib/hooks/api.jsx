@@ -88,10 +88,6 @@ export const useAPI = (promise, deps = []) => {
             }
         }
         execute();
-    /* eslint-disable react-hooks/exhaustive-deps */
-    // ozkatz: We disable exhaustive-deps because we want to have the user pass its own list of deps -
-    //  exhaustive-deps will warn about anything that isn't an array literal.
     }, deps);
-    /* eslint-enable react-hooks/exhaustive-deps */
     return {...request};
 }

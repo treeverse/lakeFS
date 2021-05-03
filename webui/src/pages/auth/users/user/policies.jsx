@@ -50,7 +50,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                             size="sm"
                             variant="outline-danger"
                             modalVariant="danger"
-                            msg={<span>Are you sure you'd like to detach policy <strong>{policy.id}</strong>?</span>}
+                            msg={<span>Are you sure you{'\''}d like to detach policy <strong>{policy.id}</strong>?</span>}
                             onConfirm={() => {
                                 auth.detachPolicyFromUser(userId, policy.id)
                                     .catch(error => alert(error))

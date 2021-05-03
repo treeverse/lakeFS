@@ -11,7 +11,7 @@ function isModifiedEvent(event) {
 }
 
 const wrapComponent = (component) => {
-    return React.forwardRef(({ navigate, onClick, ...rest}, forwardedRef) => {
+    const linkWrapper = React.forwardRef(({ navigate, onClick, ...rest}, forwardedRef) => {
         const { target } = rest;
         const props = {
             ...rest,
@@ -37,6 +37,8 @@ const wrapComponent = (component) => {
         };
         return React.createElement(component, props);
     });
+    linkWrapper.displayName = "linkWrapper";
+    return linkWrapper;
 }
 
 export const Link = (props) => {

@@ -41,7 +41,7 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
                     <ConfirmationButton
                         variant="outline-danger"
                         size="sm"
-                        msg={<span>Are you sure you'd like to delete access key <code>{row.access_key_id}</code>?</span>}
+                        msg={<span>Are you sure you{'\''}d like to delete access key <code>{row.access_key_id}</code>?</span>}
                         onConfirm={() => {
                             auth.deleteCredentials(userId, row.access_key_id)
                                 .catch(err => setRevokeError(err))

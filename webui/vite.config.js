@@ -1,9 +1,16 @@
-import reactRefresh from '@vitejs/plugin-react-refresh'
+import reactRefresh from '@vitejs/plugin-react-refresh';
+import eslintPlugin from 'vite-plugin-eslint';
+
 
 // https://vitejs.dev/config/
 export default ({ command }) => {
   const baseConfig = {
-    plugins: [reactRefresh()],
+    plugins: [
+      reactRefresh(),
+      eslintPlugin({
+        include: ['src/**/*.jsx', 'src/**/*.js']
+      })
+    ],
     publicDir: './pub',
     build: {
       sourcemap: true

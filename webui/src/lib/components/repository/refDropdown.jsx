@@ -113,7 +113,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
                         <li className="list-group-item" key={branch}>
                             <Button variant="link" onClick={() => {
                                 selectRef({id: branch, type: 'branch'});
-                            }}><em>{branch}'s Workspace (uncommitted changes)</em></Button>
+                            }}><em>{branch}{'\''}s Workspace (uncommitted changes)</em></Button>
                         </li>
                     ) : (<span/>)}
                     {commits.map(commit => (

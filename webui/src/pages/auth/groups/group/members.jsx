@@ -54,7 +54,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                         buttonFn: user => <ConfirmationButton
                             size="sm"
                             variant="outline-danger"
-                            msg={<span>Are you sure you'd like to remove user <strong>{user.id}</strong> from group <strong>{groupId}</strong>?</span>}
+                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{user.id}</strong> from group <strong>{groupId}</strong>?</span>}
                             onConfirm={() => {
                                 auth.removeUserFromGroup(user.id, groupId)
                                     .catch(error => alert(error))

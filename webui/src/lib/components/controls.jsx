@@ -49,6 +49,7 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
     const onChange = debounce(props.onChange, (props.debounce !== undefined) ? props.debounce : defaultDebounceMs)
     return (<Form.Control ref={ref} {...{...props, onChange}}/>);
 });
+DebouncedFormControl.displayName = "DebouncedFormControl";
 
 export const Loading = () => {
     return (
@@ -242,9 +243,9 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
             <Button variant={variant} ref={target} onClick={(e) => {
                 setShow(false)
                 setCopied(true)
-                if (updater != null) updater()
+                if (updater !== null) updater()
                 setTimeout(() => {
-                    if (target.current != null) setCopied(false)
+                    if (target.current !== null) setCopied(false)
                 }, 1000);
                 copyTextToClipboard(text, onSuccess, onError);
             }}>
