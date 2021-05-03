@@ -1,3 +1,4 @@
+package io.lakefs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -11,7 +12,7 @@ import java.net.URI;
  * A dummy implementation of the core Lakefs Filesystem.
  * This class implements a {@link FileSystem} that can be registered to Spark and support limited write and read actions.
  */
-public class LakefsFileSystem extends FileSystem {
+public class FileSystem extends org.apache.hadoop.fs.FileSystem {
 
     @Override
     public URI getUri() {
