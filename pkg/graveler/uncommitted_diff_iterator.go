@@ -111,4 +111,7 @@ func (d *uncommittedDiffIterator) Err() error {
 
 func (d *uncommittedDiffIterator) Close() {
 	d.uncommittedList.Close()
+	if d.committedList != nil {
+		d.committedList.Close()
+	}
 }
