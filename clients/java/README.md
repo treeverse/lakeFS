@@ -39,7 +39,7 @@ Add this dependency to your project's POM:
 <dependency>
   <groupId>io.lakefs</groupId>
   <artifactId>api-client</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.0-SNAPSHOT</version>
   <scope>compile</scope>
 </dependency>
 ```
@@ -49,7 +49,7 @@ Add this dependency to your project's POM:
 Add this dependency to your project's build file:
 
 ```groovy
-compile "io.lakefs:api-client:0.1.0"
+compile "io.lakefs:api-client:0.1.0-SNAPSHOT"
 ```
 
 ### Others
@@ -62,7 +62,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/api-client-0.1.0.jar`
+* `target/api-client-0.1.0-SNAPSHOT.jar`
 * `target/lib/*.jar`
 
 ## Getting Started

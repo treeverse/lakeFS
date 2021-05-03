@@ -5,7 +5,7 @@
     <artifactId>api-client</artifactId>
     <packaging>jar</packaging>
     <name>api-client</name>
-    <version>0.1.0</version>
+    <version>0.1.0-SNAPSHOT</version>
     <url>https://github.com/treeverse/lakeFS/tree/master/clients</url>
     <description>lakeFS OpenAPI Java client</description>
     <scm>
@@ -14,7 +14,7 @@
         <url>https://github.com/treeverse/lakeFS</url>
     </scm>
     <parent>
-        <groupId>io.treeverse.lakefs</groupId>
+        <groupId>io.lakefs</groupId>
         <artifactId>lakefs-parent</artifactId>
         <version>0</version>
     </parent>

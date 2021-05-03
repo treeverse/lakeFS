@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <name>lakefs-parent</name>
-  <groupId>io.treeverse.lakefs</groupId>
+  <groupId>io.lakefs</groupId>
   <artifactId>lakefs-parent</artifactId>
   <version>0</version>
   <packaging>pom</packaging>
@@ -33,6 +33,27 @@
     <developerConnection>scm:git:ssh://git@github.com/treeverse/lakefs.git</developerConnection>
   </scm>
 
+  <profiles>			<!-- to deploy (signed), must run "gpg -Prelease deploy"-->
+    <profile>
+      <id>treeverse-signing</id>
+      <activation>
+	<activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+	<plugins>
+	  <plugin>
+	    <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+	    <version>1.5</version> <!-- must path java/pom.xml -->
+	    <configuration>
+	      <keyname>A670BB5ACA82B971772B6DEFDFFC0764F5A9A357</keyname>
+	    </configuration>
+	  </plugin>
+	</plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
@@ -57,19 +78,6 @@
           <serverId>ossrh</serverId>
           <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-	    <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

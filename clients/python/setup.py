@@ -12,7 +12,7 @@
 from setuptools import setup, find_packages  # noqa: H301
 
 NAME = "lakefs-client"
-VERSION = "0.1.0.dev"
+VERSION = "0.1.0-SNAPSHOT"
 # To install the library, run the following
 #
 # python setup.py install
