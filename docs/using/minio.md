@@ -9,7 +9,7 @@ has_children: false
 
 # Using lakeFS with MinIO
 
-[MinIO](https://min.io) is a high performance, distributed object storage system. You can use lakeFS to add git-like capabilities over MinIO.
+[MinIO](https://min.io) is a high performance, distributed object storage system. You can use lakeFS to add git-like capabilities over it.
 For learning purposes, it is recommended to follow our [step-by-step guide](https://lakefs.io/git-like-operations-over-minio-with-lakefs/) on how to deploy lakeFS locally over MinIO.
 
 If you already know how to install lakeFS, and want to configure it to use MinIO as the underlying storage, your lakeFS configuration should contain the following:
