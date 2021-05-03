@@ -1,10 +1,5 @@
 package io.lakefs;
 
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.RepositoriesApi;
-import io.treeverse.lakefs.clients.api.auth.HttpBasicAuth;
-import io.treeverse.lakefs.clients.api.model.RepositoryList;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -21,17 +16,6 @@ import java.net.URI;
  * This class implements a {@link FileSystem} that can be registered to Spark and support limited write and read actions.
  */
 public class FileSystem extends org.apache.hadoop.fs.FileSystem {
-
-    public RepositoryList doSomething() throws ApiException {
-        ApiClient defaultClient = io.treeverse.lakefs.clients.api.Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://localhost:8000/api/v1");
-        HttpBasicAuth basicAuth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-        basicAuth.setUsername("AKIAIOSFODNN7EXAMPLE");
-        basicAuth.setPassword("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
-        RepositoriesApi apiInstance = new RepositoriesApi(defaultClient);
-        RepositoryList result = apiInstance.listRepositories("", "", 100);
-        return result;
-    }
 
     @Override
     public URI getUri() {
