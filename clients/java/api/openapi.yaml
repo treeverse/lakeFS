@@ -4838,9 +4838,9 @@ components:
       scheme: basic
       type: http
     jwt_token:
-      in: header
-      name: X-JWT-Authorization
-      type: apiKey
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
     cookie_auth:
       in: cookie
       name: access_token
