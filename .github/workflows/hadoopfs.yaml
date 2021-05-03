@@ -19,7 +19,7 @@ jobs:
           distribution: 'adopt'
       - name: Build api client
         working-directory: clients/java
-        run: mvn --batch-mode --update-snapshots verify
+        run: mvn --batch-mode --update-snapshots install
       - name: Build hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --batch-mode --update-snapshots verify
