@@ -8,7 +8,7 @@ on:
   pull_request:
 jobs:
   lakefs-hadoopfs:
-    name: Compile
+    name: lakeFS hadoopFS
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
@@ -17,6 +17,9 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
-      - name: Run the Maven verify phase
+      - name: Build api client
+        working-directory: clients/java
+        run: mvn --batch-mode --update-snapshots verify
+      - name: Build hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --batch-mode --update-snapshots verify
