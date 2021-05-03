@@ -39,7 +39,7 @@ LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
 UI_DIR=webui
-UI_BUILD_DIR=$(UI_DIR)/build
+UI_BUILD_DIR=$(UI_DIR)/dist
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
@@ -201,7 +201,7 @@ ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
 ui-bundle: ui-build go-install ## Bundle static built UI app
-	$(GOBINPATH)/statik -ns webui -p webui -dest pkg -c -f -src=$(UI_BUILD_DIR)
+	$(GOBINPATH)/statik -src=$(UI_BUILD_DIR) -dest=pkg -p=webui -ns=webui -f
 
 gen-ui: ui-bundle
 
