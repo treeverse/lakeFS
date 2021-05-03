@@ -3,14 +3,13 @@ package graveler
 import (
 	"bytes"
 	"context"
-	"errors"
 
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type uncommittedDiffIterator struct {
-	committedManager CommittedManager
-	list             ValueIterator
+	committedList    ValueIterator
+	uncommittedList  ValueIterator
 	storageNamespace StorageNamespace
 	metaRangeID      MetaRangeID
 	value            *Diff
@@ -19,38 +18,40 @@ type uncommittedDiffIterator struct {
 }
 
 // NewUncommittedDiffIterator lists uncommitted changes as a diff. If `metaRangeID` is empty then there is no commit and it returns all objects as added
-func NewUncommittedDiffIterator(ctx context.Context, manager CommittedManager, list ValueIterator, sn StorageNamespace, metaRangeID MetaRangeID) DiffIterator {
+func NewUncommittedDiffIterator(ctx context.Context, committedList ValueIterator, uncommittedList ValueIterator, sn StorageNamespace, metaRangeID MetaRangeID) DiffIterator {
 	return &uncommittedDiffIterator{
 		ctx:              ctx,
-		committedManager: manager,
-		list:             list,
+		committedList:    committedList,
+		uncommittedList:  uncommittedList,
 		storageNamespace: sn,
 		metaRangeID:      metaRangeID,
 	}
 }
 
-func (d *uncommittedDiffIterator) getValueFromCommittedIfExists(val ValueRecord) (*Value, error) {
-	if d.metaRangeID == "" {
+// getIdentityFromCommittedIfExists Returns the identity of the value if the value exists in the committed list
+// Returns nil in case the value does not exist
+func (d *uncommittedDiffIterator) getIdentityFromCommittedIfExists(val ValueRecord) ([]byte, error) {
+	if d.committedList == nil {
 		return nil, nil
 	}
-	value, err := d.committedManager.Get(d.ctx, d.storageNamespace, d.metaRangeID, val.Key)
-	if errors.Is(err, ErrNotFound) {
-		return nil, nil
+	d.committedList.SeekGE(val.Key)
+	if d.committedList.Next() && bytes.Equal(d.committedList.Value().Key, val.Key) {
+		return d.committedList.Value().Identity, nil
 	}
-	if err != nil {
-		return nil, err
+	if d.committedList.Err() != nil {
+		return nil, d.committedList.Err()
 	}
-	return value, nil
+	return nil, nil
 }
 
 // getDiffType returns the diffType between value with committed
 // Returns skip == true in case of no diff
 func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (diffType DiffType, skip bool, err error) {
-	committedVal, err := d.getValueFromCommittedIfExists(val)
+	committedIdentity, err := d.getIdentityFromCommittedIfExists(val)
 	if err != nil {
 		return 0, false, err
 	}
-	existsInCommitted := committedVal != nil
+	existsInCommitted := committedIdentity != nil
 	if val.Value == nil {
 		// tombstone
 		if !existsInCommitted {
@@ -63,7 +64,7 @@ func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (diffType DiffTyp
 	if !existsInCommitted {
 		return DiffTypeAdded, false, nil
 	}
-	if bytes.Equal(committedVal.Identity, val.Identity) {
+	if bytes.Equal(committedIdentity, val.Identity) {
 		return 0, true, nil
 	}
 	return DiffTypeChanged, false, nil
@@ -71,11 +72,11 @@ func (d *uncommittedDiffIterator) getDiffType(val ValueRecord) (diffType DiffTyp
 
 func (d *uncommittedDiffIterator) Next() bool {
 	for {
-		if !d.list.Next() {
+		if !d.uncommittedList.Next() {
 			d.value = nil
 			return false
 		}
-		val := d.list.Value()
+		val := d.uncommittedList.Value()
 		diffType, skip, err := d.getDiffType(*val)
 		if err != nil {
 			d.value = nil
@@ -97,7 +98,7 @@ func (d *uncommittedDiffIterator) Next() bool {
 func (d *uncommittedDiffIterator) SeekGE(id Key) {
 	d.value = nil
 	d.err = nil
-	d.list.SeekGE(id)
+	d.uncommittedList.SeekGE(id)
 }
 
 func (d *uncommittedDiffIterator) Value() *Diff {
@@ -109,5 +110,5 @@ func (d *uncommittedDiffIterator) Err() error {
 }
 
 func (d *uncommittedDiffIterator) Close() {
-	d.list.Close()
+	d.uncommittedList.Close()
 }
