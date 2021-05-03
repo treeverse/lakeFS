@@ -45,12 +45,12 @@ add group membership
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -125,12 +125,12 @@ attach policy to group
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -205,12 +205,12 @@ attach policy to user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -285,12 +285,12 @@ create credentials
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -364,12 +364,12 @@ create group
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -443,12 +443,12 @@ create policy
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -522,12 +522,12 @@ create user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -601,12 +601,12 @@ delete credentials
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -681,12 +681,12 @@ delete group
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -759,12 +759,12 @@ delete group membership
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -839,12 +839,12 @@ delete policy
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -917,12 +917,12 @@ delete user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -995,12 +995,12 @@ detach policy from group
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1075,12 +1075,12 @@ detach policy from user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1155,12 +1155,12 @@ get credentials
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1236,12 +1236,12 @@ get current user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1308,12 +1308,12 @@ get group
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1387,12 +1387,12 @@ get policy
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1466,12 +1466,12 @@ get user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1545,12 +1545,12 @@ list group members
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1629,12 +1629,12 @@ list group policies
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1714,12 +1714,12 @@ list groups
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1796,12 +1796,12 @@ list policies
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1878,12 +1878,12 @@ list user credentials
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -1963,12 +1963,12 @@ list user groups
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -2048,12 +2048,12 @@ list user policies
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -2135,12 +2135,12 @@ list users
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -2217,11 +2217,11 @@ perform a login
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -2279,12 +2279,12 @@ logs out a cookie-authenticated user
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -2343,12 +2343,12 @@ update policy
 ### Example
 ```java
 // Import classes:
-import io.treeverse.lakefs.clients.api.ApiClient;
-import io.treeverse.lakefs.clients.api.ApiException;
-import io.treeverse.lakefs.clients.api.Configuration;
-import io.treeverse.lakefs.clients.api.auth.*;
-import io.treeverse.lakefs.clients.api.models.*;
-import io.treeverse.lakefs.clients.api.AuthApi;
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
 
 public class Example {
   public static void main(String[] args) {
