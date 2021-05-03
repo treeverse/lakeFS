@@ -13,6 +13,11 @@
         <developerConnection>scm:git:git@github.com:treeverse/lakeFS.git</developerConnection>
         <url>https://github.com/treeverse/lakeFS</url>
     </scm>
+    <parent>
+        <groupId>io.treeverse.lakefs</groupId>
+        <artifactId>fake</artifactId>
+        <version>0</version>
+    </parent>
 
     <licenses>
         <license>
