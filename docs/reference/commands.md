@@ -1616,17 +1616,18 @@ lakectl metastore copy [flags]
 #### Options
 
 ```
-      --catalog-id string      Glue catalog ID
-      --from-schema string     source schema name
-      --from-table string      source table name
-  -h, --help                   help for copy
-      --metastore-uri string   Hive metastore URI
-  -p, --partition strings      partition to copy
-      --serde string           serde to set copy to  [default is  to-table]
-      --to-branch string       lakeFS branch name
-      --to-schema string       destination schema name [default is from-branch]
-      --to-table string        destination table name [default is  from-table] 
-      --type string            metastore type [hive, glue]
+      --catalog-id string         Glue catalog ID
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+      --from-table string         source table name
+  -h, --help                      help for copy
+      --metastore-uri string      Hive metastore URI
+  -p, --partition strings         partition to copy
+      --serde string              serde to set copy to  [default is  to-table]
+      --to-branch string          lakeFS branch name
+      --to-client-type string     metastore type [hive, glue]
+      --to-schema string          destination schema name [default is from-branch]
+      --to-table string           destination table name [default is  from-table] 
 ```
 
 
@@ -1646,12 +1647,15 @@ lakectl metastore copy-all [flags]
 #### Options
 
 ```
-      --branch string          lakeFS branch name
-      --from-address string    source metastore address
-  -h, --help                   help for copy-all
-      --schema-filter string   filter for schemas to copy in metastore pattern (default "*")
-      --table-filter string    filter for tables to copy in metastore pattern (default "*")
-      --to-address string      destination metastore address
+      --branch string              lakeFS branch name
+      --continue-on-error string   prevent copy-all from failing when a single table fails
+      --from-address string        source metastore address
+      --from-client-type string    metastore type [hive, glue]
+  -h, --help                       help for copy-all
+      --schema-filter string       filter for schemas to copy in metastore pattern (default ".*")
+      --table-filter string        filter for tables to copy in metastore pattern (default ".*")
+      --to-address string          destination metastore address
+      --to-client-type string      metastore type [hive, glue]
 ```
 
 
@@ -1695,14 +1699,17 @@ lakectl metastore diff [flags]
 #### Options
 
 ```
-      --catalog-id string      Glue catalog ID
-      --from-schema string     source schema name
-      --from-table string      source table name
-  -h, --help                   help for diff
-      --metastore-uri string   Hive metastore URI
-      --to-schema string       destination schema name 
-      --to-table string        destination table name [default is from-table]
-      --type string            metastore type [hive, glue]
+      --catalog-id string         Glue catalog ID
+      --from-address string       source metastore address
+      --from-client-type string   metastore type [hive, glue]
+      --from-schema string        source schema name
+      --from-table string         source table name
+  -h, --help                      help for diff
+      --metastore-uri string      Hive metastore URI
+      --to-address string         destination metastore address
+      --to-client-type string     metastore type [hive, glue]
+      --to-schema string          destination schema name 
+      --to-table string           destination table name [default is from-table]
 ```
 
 

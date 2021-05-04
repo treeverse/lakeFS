@@ -311,7 +311,7 @@ func init() {
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
-	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time.")
+	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")

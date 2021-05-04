@@ -64,6 +64,9 @@ lakectl ingest \
 
 The `lakectl ingest` command currently supports storage accounts configured through environment variables as shown above.
 
+**Note:** Currently `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
+{: .note }
+
 ### Running lakectl ingest with Google Cloud storage as the source
 
 ```shell
