@@ -25,7 +25,7 @@ public class LakeFSFileSystemTest {
     @Test
     public void getUri() {
         URI u = fs.getUri();
-        Assert.assertEquals(u.toString(), "lakefs://main");
+        Assert.assertNull(u);
     }
 
     @Test(expected = UnsupportedOperationException.class)

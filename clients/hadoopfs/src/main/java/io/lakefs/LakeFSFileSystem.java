@@ -1,5 +1,6 @@
 package io.lakefs;
 
+import io.lakefs.clients.api.auth.HttpBasicAuth;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -12,15 +13,61 @@ import java.io.StringBufferInputStream;
 import java.net.URI;
 
 /**
- * A dummy implementation of the core Lakefs Filesystem.
+ * A dummy implementation of the core lakeFS Filesystem.
  * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
+ *
+ * Configure Spark to use lakeFS filesystem by property:
+ *   spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem.
+ *
+ * Configure the application or the filesystem application by properties:
+ *   fs.lakefs.endpoint=http://localhost:8000/api/v1
+ *   fs.lakefs.access.key=AKIAIOSFODNN7EXAMPLE
+ *   fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  */
 public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
+    public static final String SCHEME = "lakefs";
+    public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
+    public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
+    public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
+    private static final String BASIC_AUTH = "basic_auth";
+
+    private URI uri;
+    private Path workingDirectory = new Path("/");
+    private io.lakefs.clients.api.ApiClient apiClient;
+
+    public URI getUri() {
+        return uri;
+    }
 
     @Override
-    public URI getUri() {
-        return URI.create("lakefs://main");
+    public void initialize(URI name, Configuration conf) throws IOException {
+        super.initialize(name, conf);
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: " + name + " $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+
+        String host = name.getHost();
+        if (host == null) {
+            throw new IOException("Invalid repository specified");
+        }
+        setConf(conf);
+        this.uri = name;
+
+        // setup lakeFS api client
+        String endpoint = conf.get(FS_LAKEFS_ENDPOINT, "http://localhost:8000/api/v1");
+        String accessKey = conf.get(FS_LAKEFS_ACCESS_KEY);
+        if (accessKey == null) {
+            throw new IOException("Missing lakeFS access key");
+        }
+        String secretKey = conf.get(FS_LAKEFS_SECRET_KEY);
+        if (secretKey == null) {
+            throw new IOException("Missing lakeFS secret key");
+        }
+        this.apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
+        this.apiClient.setBasePath(endpoint);
+        HttpBasicAuth basicAuth = (HttpBasicAuth)this.apiClient.getAuthentication(BASIC_AUTH);
+        basicAuth.setUsername(accessKey);
+        basicAuth.setPassword(secretKey);
     }
+
 
     /**
      *{@inheritDoc}
@@ -71,13 +118,12 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
 
     @Override
     public void setWorkingDirectory(Path path) {
-        LOG.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ setWorkingDirectory $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
+        this.workingDirectory = path;
     }
 
     @Override
     public Path getWorkingDirectory() {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getWorkingDirectory $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return new Path("/workdir");
+        return this.workingDirectory;
     }
 
     @Override
@@ -93,21 +139,14 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
         return fStatus;
     }
 
-    @Override
-    public void initialize(URI name, Configuration conf) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        super.initialize(name, conf);
-    }
-
     /**
      * Return the protocol scheme for the FileSystem.
      *
-     * @return "lakefs"
+     * @return lakefs scheme
      */
     @Override
     public String getScheme() {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getScheme $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return "lakefs";
+        return SCHEME;
     }
 
     @Override
