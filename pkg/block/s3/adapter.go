@@ -26,6 +26,9 @@ const (
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 
+	// Chunks smaller than that are only allowed for the last chunk upload
+	minChunkSize = 8 * 1024
+
 	ExpireObjectS3Tag = "lakefs_expire_object"
 )
 
@@ -140,6 +143,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}
 	sdkRequest, _ := a.s3.UploadPartRequest(&uploadPartObject)
 	etag, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
+
 	if err != nil {
 		return "", err
 	}
