@@ -3,6 +3,7 @@ package s3_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -21,6 +22,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 		Input     []byte
 		ChunkSize int
 		Expected  []byte
+		Delay     bool
 	}{
 		{
 			Name:      "chunk5_data10",
@@ -58,6 +60,13 @@ func TestS3StreamingReader_Read(t *testing.T) {
 			ChunkSize: 5,
 			Expected:  mustReadFile(t, "testdata/chunk5_data0.output"),
 		},
+		{
+			Name:      "delayed_chunk5_data0",
+			Input:     mustReadFile(t, "testdata/chunk5_data0.input"),
+			ChunkSize: 5,
+			Expected:  mustReadFile(t, "testdata/chunk5_data0.output"),
+			Delay:     true,
+		},
 	}
 
 	for _, cas := range cases {
@@ -87,13 +96,23 @@ func TestS3StreamingReader_Read(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			r := ioutil.NopCloser(bytes.NewBuffer(cas.Input))
+			timeout := time.Second * 300
+			if cas.Delay {
+				r = ioutil.NopCloser(&delayReader{
+					r:    bytes.NewBuffer(cas.Input),
+					wait: 2 * time.Millisecond,
+				})
+				timeout = time.Millisecond
+			}
+
 			data := &s3a.StreamingReader{
-				Reader:       ioutil.NopCloser(bytes.NewBuffer(cas.Input)),
+				Reader:       r,
 				Size:         len(cas.Input),
 				StreamSigner: v4.NewStreamSigner("us-east-1", s3.ServiceName, sigSeed, keys),
 				Time:         sigTime,
 				ChunkSize:    cas.ChunkSize,
-				ChunkTimeout: time.Second * 300,
+				ChunkTimeout: timeout,
 			}
 
 			out, err := ioutil.ReadAll(data)
@@ -114,4 +133,14 @@ func mustReadFile(t *testing.T, path string) []byte {
 		t.Fatal(err)
 	}
 	return data
+}
+
+type delayReader struct {
+	r    io.Reader
+	wait time.Duration
+}
+
+func (d *delayReader) Read(p []byte) (n int, err error) {
+	time.Sleep(d.wait)
+	return d.r.Read(p)
 }
