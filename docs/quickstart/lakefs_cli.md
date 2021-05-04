@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Install lakeFS CLI
-parent: Quick Start
+parent: Quickstart
 nav_order: 40
 has_children: false
 ---
