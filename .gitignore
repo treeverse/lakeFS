@@ -80,3 +80,4 @@ terraform.rc
 /pkg/actions/mock/
 
 .eslintcache
+/clients/java/.openapi-generator/FILES
