@@ -13,9 +13,9 @@ import java.net.URI;
 
 /**
  * A dummy implementation of the core Lakefs Filesystem.
- * This class implements a {@link FileSystem} that can be registered to Spark and support limited write and read actions.
+ * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
  */
-public class FileSystem extends org.apache.hadoop.fs.FileSystem {
+public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
 
     @Override
     public URI getUri() {
@@ -48,8 +48,7 @@ public class FileSystem extends org.apache.hadoop.fs.FileSystem {
 
     @Override
     public FSDataOutputStream append(Path path, int i, Progressable progressable) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ append $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return null;
+        throw new UnsupportedOperationException("Append is not supported by LakeFSFileSystem");
     }
 
     @Override
