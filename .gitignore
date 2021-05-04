@@ -24,9 +24,6 @@
 
 ### IDEs and stuff ###
 *.iml
-!clients/hadoopfs/hadoopfs.iml
-*.iws
-*.ipr
 .idea/
 .vscode/
 
