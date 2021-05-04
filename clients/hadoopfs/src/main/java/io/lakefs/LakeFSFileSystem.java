@@ -1,9 +1,6 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.RepositoriesApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
-import io.lakefs.clients.api.model.Repository;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
