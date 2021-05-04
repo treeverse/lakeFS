@@ -44,6 +44,10 @@ public class ObjectStageCreation {
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
   private Long sizeBytes;
 
+  public static final String SERIALIZED_NAME_MTIME = "mtime";
+  @SerializedName(SERIALIZED_NAME_MTIME)
+  private Long mtime;
+
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
@@ -115,6 +119,29 @@ public class ObjectStageCreation {
   }
 
 
+  public ObjectStageCreation mtime(Long mtime) {
+    
+    this.mtime = mtime;
+    return this;
+  }
+
+   /**
+   * Unix Epoch in seconds
+   * @return mtime
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Unix Epoch in seconds")
+
+  public Long getMtime() {
+    return mtime;
+  }
+
+
+  public void setMtime(Long mtime) {
+    this.mtime = mtime;
+  }
+
+
   public ObjectStageCreation metadata(Map<String, String> metadata) {
     
     this.metadata = metadata;
@@ -158,12 +185,13 @@ public class ObjectStageCreation {
     return Objects.equals(this.physicalAddress, objectStageCreation.physicalAddress) &&
         Objects.equals(this.checksum, objectStageCreation.checksum) &&
         Objects.equals(this.sizeBytes, objectStageCreation.sizeBytes) &&
+        Objects.equals(this.mtime, objectStageCreation.mtime) &&
         Objects.equals(this.metadata, objectStageCreation.metadata);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, checksum, sizeBytes, metadata);
+    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata);
   }
 
   @Override
@@ -173,6 +201,7 @@ public class ObjectStageCreation {
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
+    sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("}");
     return sb.toString();

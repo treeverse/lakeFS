@@ -238,12 +238,19 @@ var fsStageCmd = &cobra.Command{
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
 		size, _ := cmd.Flags().GetInt64("size")
+		mtimeSeconds, _ := cmd.Flags().GetInt64("mtime")
 		location, _ := cmd.Flags().GetString("location")
 		checksum, _ := cmd.Flags().GetString("checksum")
 		meta, metaErr := getKV(cmd, "meta")
 
+		var mtime *int64
+		if mtimeSeconds != 0 {
+			mtime = &mtimeSeconds
+		}
+
 		obj := api.ObjectStageCreation{
 			Checksum:        checksum,
+			Mtime:           mtime,
 			PhysicalAddress: location,
 			SizeBytes:       size,
 		}
@@ -304,6 +311,7 @@ func init() {
 	fsStageCmd.Flags().String("location", "", "fully qualified storage location (i.e. \"s3://bucket/path/to/object\")")
 	fsStageCmd.Flags().Int64("size", 0, "Object size in bytes")
 	fsStageCmd.Flags().String("checksum", "", "Object MD5 checksum as a hexadecimal string")
+	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")

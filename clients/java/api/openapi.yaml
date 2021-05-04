@@ -3976,12 +3976,17 @@ components:
           key: metadata
         size_bytes: 0
         checksum: checksum
+        mtime: 6
       properties:
         physical_address:
           type: string
         checksum:
           type: string
         size_bytes:
+          format: int64
+          type: integer
+        mtime:
+          description: Unix Epoch in seconds
           format: int64
           type: integer
         metadata:

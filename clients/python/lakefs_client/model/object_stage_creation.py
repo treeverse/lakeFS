@@ -76,6 +76,7 @@ class ObjectStageCreation(ModelNormal):
             'physical_address': (str,),  # noqa: E501
             'checksum': (str,),  # noqa: E501
             'size_bytes': (int,),  # noqa: E501
+            'mtime': (int,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
         }
 
@@ -88,6 +89,7 @@ class ObjectStageCreation(ModelNormal):
         'physical_address': 'physical_address',  # noqa: E501
         'checksum': 'checksum',  # noqa: E501
         'size_bytes': 'size_bytes',  # noqa: E501
+        'mtime': 'mtime',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
     }
 
@@ -142,6 +144,7 @@ class ObjectStageCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            mtime (int): Unix Epoch in seconds. [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
         """
 
