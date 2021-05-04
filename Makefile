@@ -191,7 +191,11 @@ validate-client-python:
 	git diff --quiet -- clients/python/lakefs_client/model
 	git diff --quiet -- clients/python/.openapi-generator/FILES
 
-checks-validator: lint validate-fmt validate-proto validate-client-python ## Run all validation/linting steps
+validate-client-java:
+	git diff --quiet -- clients/java
+
+# Run all validation/linting steps
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
