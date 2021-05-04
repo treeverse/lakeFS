@@ -1,14 +1,15 @@
 ---
 layout: default
-title: Importing data from S3
+title: Importing data from existing Object Store 
 description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
 parent: Reference
 nav_order: 8
 has_children: false
 ---
 This page describes importing from versions >= v0.24.0. For ealier versions, see [mvcc import](import-mvcc.md)
+{: .note .pb-3 }
 
-# Importing data from S3
+# Importing data from existing Object Store
 {: .no_toc }
 
 ## Table of contents
@@ -28,8 +29,61 @@ Unfortunately, copying data is not always feasible for the following reasons:
 2. It requires you to stop making changes to the data before starting to copy.
 3. It requires you to switch to using the lakeFS endpoint in all places at once.
 
-## Using lakeFS import tool
-To solve this we offer an import tool that does not copy any data, allowing for a more gradual onboarding process.
+## Importing data from an object store without actually copying it
+
+The `lakectl` command supports ingesting objects from a source object store without actually copying the data itself.
+This is done by listing the source bucket (and optional prefix), and creating pointers to the returned objects in lakeFS.
+
+By doing this, it's possible to take even large sets of objects, and have them appear as objects in a lakeFS branch, as if they were written directly to it.
+
+For this to work, we'd need to ensure 2 things first:
+
+1. The user calling `lakectl ingest` must have permissions to list the object at the source object store
+1. The lakeFS installation must have read permissions to the objects being ingested
+
+### Running lakectl ingest with S3 as the source
+
+```shell
+lakectl ingest \
+  --from s3://bucket/optional/prefix/ \
+  --to lakefs://my-repo/ingest-branch/optional/path/
+```
+
+The `lakectl ingest` command will attempt to use the current user's existing credentials and will respect instance profiles, 
+environment variables and credential files [in the same way that the AWS cli does](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" }
+
+### Running lakectl ingest with Azure Blob storage as the source
+
+```shell
+export AZURE_STORAGE_ACCOUNT="storageAccountName"
+export AZURE_STORAGE_ACCESS_KEY="EXAMPLEroozoo2gaec9fooTieWah6Oshai5Sheofievohthapob0aidee5Shaekahw7loo1aishoonuuquahr3=="
+lakectl ingest \
+   --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
+   --to lakefs://my-repo/ingest-branch/optional/path/
+```
+
+The `lakectl ingest` command currently supports storage accounts configured through environment variables as shown above.
+
+**Note:** Currently `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
+{: .note }
+
+### Running lakectl ingest with Google Cloud storage as the source
+
+```shell
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcs_credentials.json"  # Optional, will fallback to the default configured credentials
+lakectl ingest \
+   --from gs://bucket/optional/prefix/ \
+   --to lakefs://my-repo/ingest-branch/optional/path/
+```
+
+The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
+
+## Very large buckets: Using lakeFS S3 inventory import tool
+
+Importing a very large amount of objects (> ~250M) might take some time using `lakectl ingest` as described above,
+since it has to paginate through all the objects in the source using API calls.
+
+For S3, we provide a utility as part of the `lakefs` binary, called `lakefs import`.
 
 The lakeFS import tool will use the [S3 Inventory](https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-inventory.html) feature to create lakeFS metadata.
 In case the repository is empty, the imported metadata will be committed directly to the main branch. In all other cases, it will be committed to a special branch, called `import-from-inventory`.

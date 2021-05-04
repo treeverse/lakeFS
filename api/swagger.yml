@@ -236,6 +236,10 @@ components:
         size_bytes:
           type: integer
           format: int64
+        mtime:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
         metadata:
           type: object
           additionalProperties:
