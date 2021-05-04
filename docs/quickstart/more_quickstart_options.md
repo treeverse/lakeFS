@@ -2,7 +2,7 @@
 layout: default
 title: More Quickstart Options
 description: Quickstart options. This section outlines additional quickstart options to deploying lakeFS.
-parent: Quick Start
+parent: Quickstart
 nav_order: 50
 has_children: false
 ---

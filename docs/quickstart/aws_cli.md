@@ -2,7 +2,7 @@
 layout: default
 title: Add Data
 description: In this section we will learn how to configure and use AWS CLI to manage data with the lakeFS Server.
-parent: Quick Start
+parent: Quickstart
 nav_order: 30
 has_children: false
 ---
