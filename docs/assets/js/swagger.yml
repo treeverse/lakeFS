@@ -20,9 +20,9 @@ components:
       type: http
       scheme: basic
     jwt_token:
-      type: apiKey
-      in: header
-      name: X-JWT-Authorization
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     cookie_auth:
       type: apiKey
       in: cookie
@@ -2747,6 +2747,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageURI"
+          headers:
+            Location:
+              schema:
+                type: string
+              description: redirect to S3
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
