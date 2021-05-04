@@ -48,8 +48,8 @@ func (s *StreamingReader) GetLastChunk() []byte {
 	return res
 }
 
-// ReadAllWithTimeout is taken from io.ReadAtLeast and adapted to support a timeout
-func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration) (n int, err error) {
+// ReadAllWithTimeout is taken from io.ReadAtLeast and adapted to support a timeout and a minimum read size
+func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration, minSize int) (n int, err error) {
 	desired := len(buf)
 
 	lg := logging.Default().WithFields(logging.Fields{
@@ -64,7 +64,7 @@ func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration) (n int, 
 		nn, err = r.Read(buf[n:])
 		n += nn
 
-		if time.Since(start) > timeout {
+		if time.Since(start) > timeout && n >= minChunkSize {
 			timedOut = true
 			break
 		}
@@ -85,7 +85,7 @@ var ErrReaderTimeout = errors.New("reader timeout")
 
 func (s *StreamingReader) readNextChunk() error {
 	buf := make([]byte, s.ChunkSize)
-	n, err := ReadAllWithTimeout(s.Reader, buf, s.ChunkTimeout)
+	n, err := ReadAllWithTimeout(s.Reader, buf, s.ChunkTimeout, minChunkSize)
 	s.totalRead += n
 	buf = buf[:n]
 	if err != nil && !isEOF(err) && !errors.Is(err, ErrReaderTimeout) {
