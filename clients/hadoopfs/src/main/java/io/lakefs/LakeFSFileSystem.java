@@ -13,13 +13,23 @@ import java.io.StringBufferInputStream;
 import java.net.URI;
 
 /**
- * A dummy implementation of the core Lakefs Filesystem.
+ * A dummy implementation of the core lakeFS Filesystem.
  * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
+ *
+ * Configure Spark to use lakeFS filesystem by property:
+ *   spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem.
+ *
+ * Configure the application or the filesystem application by properties:
+ *   fs.lakefs.endpoint=http://localhost:8000/api/v1
+ *   fs.lakefs.access.key=AKIAIOSFODNN7EXAMPLE
+ *   fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  */
 public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
+    public static final String SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
     public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
     public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
+    private static final String BASIC_AUTH = "basic_auth";
 
     private URI uri;
     private Path workingDirectory = new Path("/");
@@ -53,7 +63,7 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
         }
         this.apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
         this.apiClient.setBasePath(endpoint);
-        HttpBasicAuth basicAuth = (HttpBasicAuth)this.apiClient.getAuthentication("basic_auth");
+        HttpBasicAuth basicAuth = (HttpBasicAuth)this.apiClient.getAuthentication(BASIC_AUTH);
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
     }
@@ -132,11 +142,11 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
     /**
      * Return the protocol scheme for the FileSystem.
      *
-     * @return "lakefs"
+     * @return lakefs scheme
      */
     @Override
     public String getScheme() {
-        return "lakefs";
+        return SCHEME;
     }
 
     @Override
