@@ -1,5 +1,3 @@
-import React from "react";
-
 import { useHistory, useLocation, useParams, generatePath } from "react-router-dom"
 
 export const useQuery = () => {

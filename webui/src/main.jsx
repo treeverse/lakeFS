@@ -1,32 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {BrowserRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
 
 // styles
 import 'bootstrap/dist/css/bootstrap.css';
 import './styles/globals.css';
 
-// pages
-import Repositories from './pages/repositories';
-import Auth from './pages/auth';
-import Setup from './pages/setup';
+// main page
+import {IndexPage} from './pages';
 
-ReactDOM.render(
-    <Router>
-        <Switch>
-            <Route exact path="/">
-                <Redirect to="/repositories"/>
-            </Route>
-            <Route path="/repositories">
-                <Repositories/>
-            </Route>
-            <Route path="/auth">
-                <Auth/>
-            </Route>
-            <Route path="/setup">
-                <Setup/>
-            </Route>
-        </Switch>
-    </Router>,
-  document.getElementById('root')
-);
+
+ReactDOM.render(<IndexPage/>, document.getElementById('root'));

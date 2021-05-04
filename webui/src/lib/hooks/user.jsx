@@ -1,5 +1,3 @@
-import React from "react";
-
 import {useAPI} from "./api";
 import {auth} from "../api";
 
