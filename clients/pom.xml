@@ -22,8 +22,8 @@
     <developer>
       <name>Treeverse lakeFS dev</name>
       <email>support@treeverse.io</email>
-      <organization>treeverse.org</organization>
-      <organizationUrl>https://treeverse.org</organizationUrl>
+      <organization>lakefs.io</organization>
+      <organizationUrl>https://lakefs.io</organizationUrl>
     </developer>
   </developers>
 
@@ -33,7 +33,7 @@
     <developerConnection>scm:git:ssh://git@github.com/treeverse/lakefs.git</developerConnection>
   </scm>
 
-  <profiles>			<!-- to deploy (signed), must run "gpg -Prelease deploy"-->
+  <profiles>
     <profile>
       <id>treeverse-signing</id>
       <activation>
@@ -44,10 +44,19 @@
 	  <plugin>
 	    <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-	    <version>1.5</version> <!-- must path java/pom.xml -->
+	    <version>1.5</version> <!-- must match java/pom.xml -->
 	    <configuration>
 	      <keyname>A670BB5ACA82B971772B6DEFDFFC0764F5A9A357</keyname>
 	    </configuration>
+	    <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
 	  </plugin>
 	</plugins>
       </build>
