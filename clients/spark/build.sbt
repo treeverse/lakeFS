@@ -56,9 +56,14 @@ def generateExamplesProject(buildType: BuildType) =
       sharedSettings,
       settingsToCompileIn("examples"),
       scalaVersion := buildType.scalaVersion,
-      libraryDependencies += "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+      libraryDependencies ++= Seq("org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+        "software.amazon.awssdk" % "bom" % "2.15.15",
+        "software.amazon.awssdk" % "s3" % "2.15.15",
+        "com.amazonaws" % "aws-java-sdk" % "1.7.4", // should match hadoop-aws version(!)
+      ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
-      target := file(s"target/examples-${buildType.name}/")
+      target := file(s"target/examples-${buildType.name}/"),
+      run / fork := true, // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
 lazy val spark2Type = new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7")
@@ -70,10 +75,6 @@ lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 
 lazy val root = (project in file(".")).aggregate(core2, core3, examples2, examples3)
-
-// Use an older JDK to be Spark compatible
-javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
-scalacOptions ++= Seq("-release", "8", "-target:jvm-1.8")
 
 lazy val assemblySettings = Seq(
   assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
@@ -101,7 +102,10 @@ lazy val s3UploadSettings = Seq(
 root / publish / skip := true
 
 lazy val commonSettings = Seq(
-  version := projectVersion
+  version := projectVersion,
+  // Use an older JDK to be Spark compatible
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  scalacOptions += "-target:jvm-1.8"
 )
 
 val nexus = "https://s01.oss.sonatype.org/"
