@@ -162,7 +162,6 @@ public class LakeFSFileSystem extends FileSystem {
                 modificationTime = mtime * 1000; // convert to ms
             }
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
-            LOG.debug("[BABA] filePath=" + filePath);
             return new FileStatus(length, false, 0, 0, modificationTime, filePath);
         } catch (ApiException e) {
             throw new IOException("statObject", e);
@@ -267,6 +266,10 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     private static class Location {
+        private String repository;
+        private String ref;
+        private String path;
+        
         public String getRepository() {
             return repository;
         }
@@ -290,9 +293,5 @@ public class LakeFSFileSystem extends FileSystem {
         public void setPath(String path) {
             this.path = path;
         }
-
-        private String repository;
-        private String ref;
-        private String path;
     }
 }
