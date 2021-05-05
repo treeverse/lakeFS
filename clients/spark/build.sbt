@@ -35,7 +35,7 @@ def generateCoreProject(buildType: BuildType) =
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
       libraryDependencies ++= Seq(
-        "io.treeverse.lakefs" % "api-client" % "0.1.0",
+        "io.lakefs" % "api-client" % "0.40.3",
         "org.rocksdb" % "rocksdbjni" % "6.6.4",
         "commons-codec" % "commons-codec" % "1.15",
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
@@ -84,7 +84,6 @@ lazy val assemblySettings = Seq(
       .inLibrary("com.google.guava" % "guava" % "30.1-jre", "com.google.guava" % "failureaccess" % "1.0.1")
       .inProject,
     ShadeRule.rename("scala.collection.compat.**" -> "shadecompat.@1").inAll,
-    ShadeRule.rename("org.rocksdb.**" -> "shadedrocksdb.@1").inAll,
   ),
 )
 
