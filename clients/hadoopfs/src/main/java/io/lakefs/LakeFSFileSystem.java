@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.StringBufferInputStream;
 import java.net.URI;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +41,10 @@ public class LakeFSFileSystem extends FileSystem {
     public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
     public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
     private static final String BASIC_AUTH = "basic_auth";
+    private static final String SEPARATOR = "/";
 
     private URI uri;
-    private Path workingDirectory = new Path("/");
+    private Path workingDirectory = new Path(SEPARATOR);
     private io.lakefs.clients.api.ApiClient apiClient;
 
     public URI getUri() {
@@ -159,7 +161,7 @@ public class LakeFSFileSystem extends FileSystem {
             long modificationTime = 0;
             Long mtime = objectStat.getMtime();
             if (mtime != null) {
-                modificationTime = mtime * 1000; // convert to ms
+                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
             return new FileStatus(length, false, 0, 0, modificationTime, filePath);
@@ -242,6 +244,11 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
+    /**
+     * Returns Location with repository, ref and path used by lakeFS based on filesystem path
+     * @param path
+     * @return
+     */
     private Location pathToLocation(Path path) {
         if (!path.isAbsolute()) {
             path = new Path(this.workingDirectory, path);
@@ -254,8 +261,12 @@ public class LakeFSFileSystem extends FileSystem {
 
         Location loc = new Location();
         loc.setRepository(uri.getHost());
-        String s = uri.getPath().substring(1);
-        int i = s.indexOf("/");
+        // extract ref and rest of the path after removing the '/' prefix
+        String s = uri.getPath();
+        if (s.startsWith(SEPARATOR)) {
+            s = s.substring(1);
+        }
+        int i = s.indexOf(SEPARATOR);
         if (i == -1) {
             loc.setRef(s);
         } else {
