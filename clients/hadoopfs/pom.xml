@@ -62,7 +62,7 @@
         <dependency>
             <groupId>io.lakefs</groupId>
             <artifactId>api-client</artifactId>
-            <version>0.40.3-RC.0</version>
+            <version>0.40.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
