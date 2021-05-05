@@ -9,7 +9,7 @@ on:
         description: Tag/version to publish
 
 jobs:
-  pypi:
+  deploy:
     runs-on: ubuntu-20.04
     environment: Treeverse signing
     steps:
