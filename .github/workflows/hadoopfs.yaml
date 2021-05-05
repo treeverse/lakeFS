@@ -18,9 +18,6 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
-      - name: Build api client
-        working-directory: clients/java
-        run: mvn --batch-mode --update-snapshots install
       - name: Build hadoopfs
         working-directory: clients/hadoopfs
         run: mvn --batch-mode --update-snapshots verify
