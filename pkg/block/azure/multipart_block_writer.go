@@ -67,7 +67,10 @@ func CompleteMultipart(ctx context.Context, parts []*s3.CompletedPart, container
 	// extract staging blockIDs
 	metaBlockIDs := make([]string, len(parts))
 	for i, part := range parts {
-		base64Etag := base64.StdEncoding.EncodeToString([]byte(*part.ETag))
+		// add Quotations marks (") if missing, Etags sent by spark include Quotations marks, Etags sent aws cli don't include Quotations marks
+		etag := strings.Trim(*part.ETag, "\"")
+		etag = "\"" + etag + "\""
+		base64Etag := base64.StdEncoding.EncodeToString([]byte(etag))
 		metaBlockIDs[i] = base64Etag
 	}
 
