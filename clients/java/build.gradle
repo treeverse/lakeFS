@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'java'
 
 group = 'io.lakefs'
-version = '0.1.0'
+version = '0.1.0-SNAPSHOT'
 
 buildscript {
     repositories {
