@@ -76,10 +76,6 @@ lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 
 lazy val root = (project in file(".")).aggregate(core2, core3, examples2, examples3)
 
-// Use an older JDK to be Spark compatible
-javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
-scalacOptions ++= Seq("-release", "8", "-target:jvm-1.8")
-
 lazy val assemblySettings = Seq(
   assembly / assemblyMergeStrategy := (_ => MergeStrategy.first),
   assembly / assemblyShadeRules := Seq(
@@ -106,7 +102,10 @@ lazy val s3UploadSettings = Seq(
 root / publish / skip := true
 
 lazy val commonSettings = Seq(
-  version := projectVersion
+  version := projectVersion,
+  // Use an older JDK to be Spark compatible
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  scalacOptions += "-target:jvm-1.8"
 )
 
 val nexus = "https://s01.oss.sonatype.org/"

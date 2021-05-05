@@ -175,8 +175,8 @@ object S3AUser extends App {
           val tooMany = actual diff expected
           val tooFew = expected diff actual
           Seq(
-            if (tooMany.isEmpty) null else  s"""unexpected objects ${tooMany.mkString(", ")}""",
-            if (tooFew.isEmpty) null else s"""missing objects ${tooFew.mkString(", ")}""",
+            (if (tooMany.isEmpty) null else  s"""unexpected objects ${tooMany.mkString(", ")}"""),
+            (if (tooFew.isEmpty) null else s"""missing objects ${tooFew.mkString(", ")}""")
           ).filter(_ != null).mkString("; ")
         }
 
@@ -187,7 +187,7 @@ object S3AUser extends App {
         val mem = new KeyStore
         val compare = new CompareStore(fs, mem)
 
-        val s3 = S3Client.builder.build
+        val s3 = S3Client.builder().build()
         val objects = new ObjectStore(s3, bucket)
 
         val actions = Seq(
@@ -201,7 +201,7 @@ object S3AUser extends App {
           () => compare.delete("/abc"),
           () => failDownload("/abc", fs, mem),
           () => compare.download("/abc/g"),
-          () => checkObjectStore(mem, objects, prefix),
+          () => checkObjectStore(mem, objects, prefix)
         )
 
         // TODO(ariels): Compare current state on ObjectStore after each action.
