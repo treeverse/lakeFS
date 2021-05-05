@@ -1,6 +1,9 @@
 package io.lakefs;
 
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
+import io.lakefs.clients.api.model.ObjectStats;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -11,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringBufferInputStream;
 import java.net.URI;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,9 +144,29 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.toString());
-        FileStatus fStatus = new FileStatus(0, false, 1, 20, 1, path);
-        return fStatus;
+        Location loc = pathToLocation(path);
+        if (loc == null) {
+            throw new FileNotFoundException(path.toString());
+        }
+        try {
+            ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
+            ObjectStats objectStat = objectsApi.statObject(loc.getRepository(), loc.getRef(), loc.getPath());
+            long length = 0;
+            Long sizeBytes = objectStat.getSizeBytes();
+            if (sizeBytes != null) {
+                length = sizeBytes;
+            }
+            long modificationTime = 0;
+            Long mtime = objectStat.getMtime();
+            if (mtime != null) {
+                modificationTime = mtime * 1000; // convert to ms
+            }
+            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
+            LOG.debug("[BABA] filePath=" + filePath);
+            return new FileStatus(length, false, 0, 0, modificationTime, filePath);
+        } catch (ApiException e) {
+            throw new IOException("statObject", e);
+        }
     }
 
     /**
@@ -217,5 +241,58 @@ public class LakeFSFileSystem extends FileSystem {
             LOG.debug("--------------------------- seekToNewSource---------------------------");
             return false;
         }
+    }
+
+    private Location pathToLocation(Path path) {
+        if (!path.isAbsolute()) {
+            path = new Path(this.workingDirectory, path);
+        }
+
+        URI uri = path.toUri();
+        if (uri.getScheme() != null && uri.getPath().isEmpty()) {
+            return null;
+        }
+
+        Location loc = new Location();
+        loc.setRepository(uri.getHost());
+        String s = uri.getPath().substring(1);
+        int i = s.indexOf("/");
+        if (i == -1) {
+            loc.setRef(s);
+        } else {
+            loc.setRef(s.substring(0, i));
+            loc.setPath(s.substring(i+1));
+        }
+        return loc;
+    }
+
+    private static class Location {
+        public String getRepository() {
+            return repository;
+        }
+
+        public void setRepository(String repository) {
+            this.repository = repository;
+        }
+
+        public String getRef() {
+            return ref;
+        }
+
+        public void setRef(String ref) {
+            this.ref = ref;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        private String repository;
+        private String ref;
+        private String path;
     }
 }
