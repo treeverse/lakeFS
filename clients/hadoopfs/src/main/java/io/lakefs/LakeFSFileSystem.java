@@ -12,6 +12,9 @@ import java.io.InputStream;
 import java.io.StringBufferInputStream;
 import java.net.URI;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A dummy implementation of the core lakeFS Filesystem.
  * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
@@ -24,7 +27,10 @@ import java.net.URI;
  *   fs.lakefs.access.key=AKIAIOSFODNN7EXAMPLE
  *   fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  */
-public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
+public class LakeFSFileSystem extends FileSystem {
+
+    public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
+
     public static final String SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
     public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
@@ -42,7 +48,7 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
         super.initialize(name, conf);
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: " + name + " $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", name);
 
         String host = name.getHost();
         if (host == null) {
@@ -76,7 +82,7 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
      */
     @Override
     public FSDataInputStream open(Path path, int i) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Calling open method for: " + path.getName() + " $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Calling open method for: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.getName());
         String strToWrite = "abc";
         MyInputStream inputStream = new MyInputStream(strToWrite);
         return new FSDataInputStream(inputStream);
@@ -89,7 +95,7 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
     @Override
     public FSDataOutputStream create(Path path, FsPermission fsPermission, boolean b, int i, short i1, long l,
                                      Progressable progressable) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: " + path.toString() + " $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         return new FSDataOutputStream(System.out, null);
     }
 
@@ -112,7 +118,7 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
 
     @Override
     public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ List status is called for: " + path.toString() + " $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ List status is called for: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.toString());
         return new FileStatus[0];
     }
 
@@ -128,13 +134,13 @@ public class LakeFSFileSystem extends org.apache.hadoop.fs.FileSystem {
 
     @Override
     public boolean mkdirs(Path path, FsPermission fsPermission) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ mkdirs $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ mkdirs, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         return false;
     }
 
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: " + path.toString() + " $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.toString());
         FileStatus fStatus = new FileStatus(0, false, 1, 20, 1, path);
         return fStatus;
     }
