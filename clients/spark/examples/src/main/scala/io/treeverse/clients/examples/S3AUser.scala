@@ -133,9 +133,6 @@ object S3AUser extends App {
     System.setProperty(SDKGlobalConfiguration.ENABLE_S3_SIGV4_SYSTEM_PROPERTY, "true")
 
     val conf = new Configuration(true)
-    // conf.set("fs.s3a.aws.credentials.provider", """com.amazonaws.auth.profile.ProfileCredentialsProvider""")
-    //    conf.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.ProfileCredentialsProvider,org.apache.hadoop.fs.s3a.EnvironmentVariableCredentialsProvider")
-
     conf.set("fs.s3a.access.key", System.getenv("AWS_ACCESS_KEY_ID"))
     conf.set("fs.s3a.secret.key", System.getenv("AWS_SECRET_ACCESS_KEY"))
     conf.set("fs.s3a.custom.signers", "AWS4SignerType")
@@ -206,7 +203,7 @@ object S3AUser extends App {
 
         // TODO(ariels): Compare current state on ObjectStore after each action.
         actions.map(_()).zipWithIndex.filter({ case (res, _) => isNonemptyString(res) }).foreach({ case (err, idx) => {
-          Console.err.println(s"[${idx}] ${err}\n")
+          Console.err.println(s"[${idx}] ${err}")
           numFailures += 1
         }})
 
