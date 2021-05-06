@@ -73,6 +73,10 @@ var tagCreateCmd = &cobra.Command{
 		ctx := cmd.Context()
 		force, _ := cmd.Flags().GetBool("force")
 		if force {
+			// checking validity of the commitRef before deleting the old one
+			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitRef)
+			DieOnResponseError(res, err)
+
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && resp != nil && resp.JSON404 == nil {
 				DieOnResponseError(resp, err)
@@ -127,7 +131,7 @@ var tagShowCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	tagCreateCmd.Flags().BoolP("force", "f", false, "create the tag even if it exists")
+	tagCreateCmd.Flags().BoolP("force", "f", false, "override the tag if it exists")
 
 	rootCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tagCreateCmd, tagDeleteCmd, tagListCmd, tagShowCmd)
