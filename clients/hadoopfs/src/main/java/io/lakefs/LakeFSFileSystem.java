@@ -189,12 +189,6 @@ public class LakeFSFileSystem extends FileSystem {
         return res;
     }
 
-    @Override
-    public boolean exists(Path f) throws IOException {
-        return false;
-    }
-
-
     /**
      * An {@link InputStream} designated to serve as an input to the {@link FSDataInputStream} constructor. To be a
      * viable input for FSDataInputStream, this class must be an instance of {@link InputStream} (StringBufferInputStream
