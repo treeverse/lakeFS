@@ -71,6 +71,14 @@ var tagCreateCmd = &cobra.Command{
 		client := getClient()
 		commitRef := args[1]
 		ctx := cmd.Context()
+		force, _ := cmd.Flags().GetBool("force")
+		if force {
+			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
+			if err != nil && resp != nil && resp.JSON404 == nil {
+				DieOnResponseError(resp, err)
+			}
+		}
+
 		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, api.CreateTagJSONRequestBody{
 			Id:  tagURI.Ref,
 			Ref: commitRef,
@@ -119,8 +127,11 @@ var tagShowCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	tagCreateCmd.Flags().BoolP("force", "f", false, "create the tag even if it exists")
+
 	rootCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tagCreateCmd, tagDeleteCmd, tagListCmd, tagShowCmd)
+
 	flags := tagListCmd.Flags()
 	flags.Int("amount", defaultAmountArgumentValue, "number of results to return")
 	flags.String("after", "", "show results after this value (used for pagination)")

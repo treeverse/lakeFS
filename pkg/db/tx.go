@@ -18,6 +18,11 @@ const (
 	SerializationRetryStartInterval = time.Millisecond * 2
 )
 
+// Tx abstract the pg transaction.
+// It is expected to return errors of this package when applicable:
+// 1. ErrNotFound - when a specific row was queried
+// 2. ErrAlreadyExists - on conflicts when adding an entry
+// 3. ErrSerialization - on serialization errors
 type Tx interface {
 	Query(query string, args ...interface{}) (pgx.Rows, error)
 	Select(dest interface{}, query string, args ...interface{}) error
@@ -121,7 +126,7 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	if IsUniqueViolation(err) {
+	if isUniqueViolation(err) {
 		return nil, ErrAlreadyExists
 	}
 	if err != nil {

@@ -1504,9 +1504,7 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, model.ErrValidationError):
 		writeError(w, http.StatusBadRequest, err)
 
-	case errors.Is(err, graveler.ErrBranchExists),
-		errors.Is(err, graveler.ErrTagAlreadyExists),
-		errors.Is(err, graveler.ErrNotUnique):
+	case errors.Is(err, graveler.ErrNotUnique):
 		writeError(w, http.StatusConflict, err)
 
 	case errors.Is(err, catalog.ErrFeatureNotSupported):
