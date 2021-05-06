@@ -1,5 +1,6 @@
 package io.lakefs;
 
+import io.lakefs.clients.api.ApiClient;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
@@ -14,7 +15,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringBufferInputStream;
 import java.net.URI;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -35,21 +35,19 @@ import org.slf4j.LoggerFactory;
 public class LakeFSFileSystem extends FileSystem {
 
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
-
     public static final String SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
     public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
     public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
+
     private static final String BASIC_AUTH = "basic_auth";
     private static final String SEPARATOR = "/";
 
     private URI uri;
     private Path workingDirectory = new Path(SEPARATOR);
-    private io.lakefs.clients.api.ApiClient apiClient;
+    private ApiClient apiClient;
 
-    public URI getUri() {
-        return uri;
-    }
+    public URI getUri() { return uri; }
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
@@ -146,6 +144,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         Location loc = pathToLocation(path);
         if (loc == null) {
             throw new FileNotFoundException(path.toString());
@@ -245,9 +244,9 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * Returns Location with repository, ref and path used by lakeFS based on filesystem path
+     * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
      * @param path
-     * @return
+     * @return lakeFS Location with repository, ref and path
      */
     private Location pathToLocation(Path path) {
         if (!path.isAbsolute()) {
