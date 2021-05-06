@@ -1,6 +1,10 @@
 package io.lakefs;
 
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
+import io.lakefs.clients.api.model.ObjectStats;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -11,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringBufferInputStream;
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,20 +35,19 @@ import org.slf4j.LoggerFactory;
 public class LakeFSFileSystem extends FileSystem {
 
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
-
     public static final String SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
     public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
     public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
+
     private static final String BASIC_AUTH = "basic_auth";
+    private static final String SEPARATOR = "/";
 
     private URI uri;
-    private Path workingDirectory = new Path("/");
-    private io.lakefs.clients.api.ApiClient apiClient;
+    private Path workingDirectory = new Path(SEPARATOR);
+    private ApiClient apiClient;
 
-    public URI getUri() {
-        return uri;
-    }
+    public URI getUri() { return uri; }
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
@@ -140,9 +144,29 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.toString());
-        FileStatus fStatus = new FileStatus(0, false, 1, 20, 1, path);
-        return fStatus;
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
+        ObjectLocation loc = pathToObjectLocation(path);
+        if (loc == null) {
+            throw new FileNotFoundException(path.toString());
+        }
+        try {
+            ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
+            ObjectStats objectStat = objectsApi.statObject(loc.getRepository(), loc.getRef(), loc.getPath());
+            long length = 0;
+            Long sizeBytes = objectStat.getSizeBytes();
+            if (sizeBytes != null) {
+                length = sizeBytes;
+            }
+            long modificationTime = 0;
+            Long mtime = objectStat.getMtime();
+            if (mtime != null) {
+                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
+            }
+            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
+            return new FileStatus(length, false, 0, 0, modificationTime, filePath);
+        } catch (ApiException e) {
+            throw new IOException("statObject", e);
+        }
     }
 
     /**
@@ -216,6 +240,68 @@ public class LakeFSFileSystem extends FileSystem {
         public boolean seekToNewSource(long l) throws IOException {
             LOG.debug("--------------------------- seekToNewSource---------------------------");
             return false;
+        }
+    }
+
+    /**
+     * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
+     * @param path
+     * @return lakeFS Location with repository, ref and path
+     */
+    private ObjectLocation pathToObjectLocation(Path path) {
+        if (!path.isAbsolute()) {
+            path = new Path(this.workingDirectory, path);
+        }
+
+        URI uri = path.toUri();
+        if (uri.getScheme() != null && uri.getPath().isEmpty()) {
+            return null;
+        }
+
+        ObjectLocation loc = new ObjectLocation();
+        loc.setRepository(uri.getHost());
+        // extract ref and rest of the path after removing the '/' prefix
+        String s = uri.getPath();
+        if (s.startsWith(SEPARATOR)) {
+            s = s.substring(1);
+        }
+        int i = s.indexOf(SEPARATOR);
+        if (i == -1) {
+            loc.setRef(s);
+        } else {
+            loc.setRef(s.substring(0, i));
+            loc.setPath(s.substring(i+1));
+        }
+        return loc;
+    }
+
+    private static class ObjectLocation {
+        private String repository;
+        private String ref;
+        private String path;
+        
+        public String getRepository() {
+            return repository;
+        }
+
+        public void setRepository(String repository) {
+            this.repository = repository;
+        }
+
+        public String getRef() {
+            return ref;
+        }
+
+        public void setRef(String ref) {
+            this.ref = ref;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
         }
     }
 }
