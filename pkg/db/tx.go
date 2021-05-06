@@ -121,6 +121,9 @@ func (d *dbTx) Exec(query string, args ...interface{}) (pgconn.CommandTag, error
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
+	if IsUniqueViolation(err) {
+		return nil, ErrAlreadyExists
+	}
 	if err != nil {
 		dbErrorsCounter.WithLabelValues("exec").Inc()
 		log.WithError(err).Error("SQL query failed with error")

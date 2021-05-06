@@ -313,7 +313,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if resp == nil {
 			t.Fatal("CreateRepository missing response")
 		}
-		validationErrResp := resp.JSON400
+		validationErrResp := resp.JSON409
 		if validationErrResp == nil {
 			t.Fatalf("expected error creating duplicate repo")
 		}
@@ -667,6 +667,22 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		}
 		if resp.JSON404 == nil {
 			t.Fatal("CreateBranch expected not found")
+		}
+	})
+
+	t.Run("create branch conflict", func(t *testing.T) {
+		_, err := deps.catalog.CreateRepository(ctx, "repo6", onBlock(deps, "foo1"), "main")
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, "repo6", api.CreateBranchJSONRequestBody{
+			Name:   "main",
+			Source: "main",
+		})
+		if err != nil {
+			t.Fatal("CreateBranch failed with error:", err)
+		}
+		if resp.JSON409 == nil {
+			t.Fatal("CreateBranch expected conflict")
 		}
 	})
 }

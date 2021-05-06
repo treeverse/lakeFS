@@ -1069,12 +1069,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	ctx := r.Context()
 	c.LogAction(ctx, "create_repo")
 
-	_, err := c.Catalog.GetRepository(ctx, body.Name)
-	if err == nil {
-		writeError(w, http.StatusBadRequest, "repository already exists")
-		return
-	}
-
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
@@ -1087,12 +1081,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			body.Name,
 			body.StorageNamespace,
 			defaultBranch)
-		if err != nil {
-			c.Logger.
-				WithError(err).
-				WithField("storage_namespace", repo.StorageNamespace).
-				Warn("Could not access storage namespace")
-			writeError(w, http.StatusBadRequest, "error creating repository: could not access storage namespace")
+		if handleAPIError(w, err) {
 			return
 		}
 		response := Repository{
@@ -1105,7 +1094,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	err = ensureStorageNamespaceRW(ctx, c.BlockAdapter, body.StorageNamespace)
+	err := ensureStorageNamespaceRW(ctx, c.BlockAdapter, body.StorageNamespace)
 	if err != nil {
 		c.Logger.
 			WithError(err).
@@ -1117,7 +1106,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("error creating repository: %s", err))
+		handleAPIError(w, fmt.Errorf("error creating repository: %w", err))
 		return
 	}
 
@@ -1514,6 +1503,11 @@ func handleAPIError(w http.ResponseWriter, err error) bool {
 		errors.Is(err, permissions.ErrInvalidAction),
 		errors.Is(err, model.ErrValidationError):
 		writeError(w, http.StatusBadRequest, err)
+
+	case errors.Is(err, graveler.ErrBranchExists),
+		errors.Is(err, graveler.ErrTagAlreadyExists),
+		errors.Is(err, graveler.ErrNotUnique):
+		writeError(w, http.StatusConflict, err)
 
 	case errors.Is(err, catalog.ErrFeatureNotSupported):
 		writeError(w, http.StatusNotImplemented, err)

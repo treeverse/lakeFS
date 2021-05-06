@@ -89,6 +89,7 @@ Name | Type | Description  | Notes
 **201** | repository |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteRepository"></a>
