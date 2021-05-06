@@ -78,7 +78,7 @@ var tagCreateCmd = &cobra.Command{
 			DieOnResponseError(res, err)
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
-			if err != nil && resp != nil && resp.JSON404 == nil {
+			if err != nil && (resp == nil || resp.JSON404 == nil) {
 				DieOnResponseError(resp, err)
 			}
 		}
