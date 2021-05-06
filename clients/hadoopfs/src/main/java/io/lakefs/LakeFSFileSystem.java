@@ -8,11 +8,26 @@ import io.lakefs.clients.api.model.ObjectStats;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
+import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
+import org.apache.hadoop.fs.s3a.Constants;
 import org.apache.hadoop.util.Progressable;
+
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import io.lakefs.clients.api.ApiClient;
 import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.api.model.StagingMetadata;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -51,6 +66,7 @@ public class LakeFSFileSystem extends FileSystem {
     private URI uri;
     private Path workingDirectory = new Path(SEPARATOR);
     private ApiClient apiClient;
+    private AmazonS3 s3Client;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
 	switch (uri.getScheme()) {
@@ -92,8 +108,49 @@ public class LakeFSFileSystem extends FileSystem {
 	HttpBasicAuth basicAuth = (HttpBasicAuth)this.apiClient.getAuthentication(BASIC_AUTH);
 	basicAuth.setUsername(accessKey);
 	basicAuth.setPassword(secretKey);
+
+	s3Client = createS3ClientFromConf(conf);
     }
 
+    /**
+     * @return an Amazon S3 client configured much like S3A configure theirs.
+     */
+    static private AmazonS3 createS3ClientFromConf(Configuration conf) {
+	String accessKey = conf.get(Constants.ACCESS_KEY, null);
+	String secretKey = conf.get(Constants.SECRET_KEY, null);
+	AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
+	    new BasicAWSCredentialsProvider(accessKey, secretKey),
+	    new InstanceProfileCredentialsProvider(),
+	    new AnonymousAWSCredentialsProvider());
+
+	ClientConfiguration awsConf = new ClientConfiguration();
+	awsConf.setMaxConnections(conf.getInt(Constants.MAXIMUM_CONNECTIONS,
+					      Constants.DEFAULT_MAXIMUM_CONNECTIONS));
+	boolean secureConnections = conf.getBoolean(Constants.SECURE_CONNECTIONS,
+						    Constants.DEFAULT_SECURE_CONNECTIONS);
+	awsConf.setProtocol(secureConnections ?	 Protocol.HTTPS : Protocol.HTTP);
+	awsConf.setMaxErrorRetry(conf.getInt(Constants.MAX_ERROR_RETRIES,
+	  Constants.DEFAULT_MAX_ERROR_RETRIES));
+	awsConf.setConnectionTimeout(conf.getInt(Constants.ESTABLISH_TIMEOUT,
+	    Constants.DEFAULT_ESTABLISH_TIMEOUT));
+	awsConf.setSocketTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
+			Constants.DEFAULT_SOCKET_TIMEOUT));
+
+	// TODO(ariels): Also copy proxy configuration?
+
+	AmazonS3 s3 = new AmazonS3Client(credentials, awsConf);
+	String endPoint = conf.getTrimmed(Constants.ENDPOINT,"");
+	if (!endPoint.isEmpty()) {
+		try {
+			s3.setEndpoint(endPoint);
+		} catch (IllegalArgumentException e) {
+			String msg = "Incorrect endpoint: " + e.getMessage();
+			LOG.error(msg);
+			throw new IllegalArgumentException(msg, e);
+		}
+	}
+	return s3;
+    }
 
     /**
      *{@inheritDoc}
@@ -125,10 +182,33 @@ public class LakeFSFileSystem extends FileSystem {
      * Called on a file write Spark/Hadoop action. This method writes the content of the file in path into stdout.
      */
     @Override
-    public FSDataOutputStream create(Path path, FsPermission fsPermission, boolean b, int i, short i1, long l,
-				     Progressable progressable) throws IOException {
-	LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-	return new FSDataOutputStream(System.out, null);
+    public FSDataOutputStream create(Path path, FsPermission permission, boolean overwrite,
+				     int bufferSize, short unusedReplication, long unusedBlockSize,
+				     Progressable progress) throws IOException {
+	try {
+	    LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
+
+	    // BUG(ariels): overwrite ignored.
+
+	    StagingApi staging = new StagingApi(apiClient);
+	    ObjectLocation objLoc = pathToObjectLocation(path);
+	    StagingLocation loc = staging.getPhysicalAddress(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath());
+	    URI physicalUri = translateUri(new URI(loc.getPhysicalAddress()));
+
+	    Path physicalPath = new Path(physicalUri.toString());
+	    FileSystem physicalFs = physicalPath.getFileSystem(conf);
+
+	    // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
+	    return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, loc, objLoc,
+								      physicalUri,
+								      // FSDataOutputStream is a kind of OutputStream(!)
+								      physicalFs.create(physicalPath, false, bufferSize, progress)),
+					  null);
+	}  catch (io.lakefs.clients.api.ApiException e) {
+	    throw new RuntimeException("API exception: " + e.getResponseBody());
+	} catch (java.net.URISyntaxException e) {
+	    throw new RuntimeException(e);
+	}
     }
 
     @Override
@@ -235,10 +315,7 @@ public class LakeFSFileSystem extends FileSystem {
 	ObjectLocation loc = new ObjectLocation();
 	loc.setRepository(uri.getHost());
 	// extract ref and rest of the path after removing the '/' prefix
-	String s = uri.getPath();
-	if (s.startsWith(SEPARATOR)) {
-	    s = s.substring(1);
-	}
+	String s = trimLeadingSlash(uri.getPath());
 	int i = s.indexOf(SEPARATOR);
 	if (i == -1) {
 	    loc.setRef(s);
@@ -247,6 +324,13 @@ public class LakeFSFileSystem extends FileSystem {
 	    loc.setPath(s.substring(i+1));
 	}
 	return loc;
+    }
+
+    private static String trimLeadingSlash(String s) {
+	if (s.startsWith(SEPARATOR)) {
+	    return s.substring(1);
+	}
+	return s;
     }
 
     private static class ObjectLocation {
@@ -282,5 +366,67 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public boolean exists(Path f) throws IOException {
 	return false;
+    }
+
+    /**
+     * Wraps a FSDataOutputStream to link file on staging when done writing
+     */
+    static private class LinkOnCloseOutputStream extends java.io.OutputStream {
+	private AmazonS3 s3Client;
+	private StagingApi staging;
+	private StagingLocation loc;
+	private ObjectLocation objLoc;
+	private URI physicalUri;
+	private java.io.OutputStream out;
+
+	LinkOnCloseOutputStream(AmazonS3 s3Client, StagingApi staging, StagingLocation loc, ObjectLocation objLoc, URI physicalUri, java.io.OutputStream out) {
+	    this.s3Client = s3Client;
+	    this.staging = staging;
+	    this.loc = loc;
+	    this.objLoc = objLoc;
+	    this.physicalUri = physicalUri;
+	    this.out = out;
+	}
+
+	@Override
+	public void flush() throws IOException {
+	    out.flush();
+	}
+
+	@Override
+	public void write(byte[] b) throws IOException {
+	    out.write(b);
+	}
+
+	@Override
+	public void write(byte[] b, int off, int len) throws IOException {
+	    out.write(b, off, len);
+	}
+
+	@Override
+	public void write(int b) throws IOException {
+	    out.write(b);
+	}
+
+	@Override
+	public void close() throws IOException {
+	    out.close();
+	    // Now the object is on the underlying store, find its parameters (sadly lost by
+	    // the underlying Hadoop FileSystem) so we can link it on lakeFS.
+	    String bucket = physicalUri.getHost();
+	    String key = trimLeadingSlash(physicalUri.getPath());
+	    ObjectMetadata res = s3Client.getObjectMetadata(bucket, key);
+
+	    // TODO(ariels): Can we add metadata here?
+	    StagingMetadata metadata = new StagingMetadata().staging(loc)
+		.checksum(res.getETag())
+		.sizeBytes(res.getContentLength());
+
+	    try {
+		staging.linkPhysicalAddress(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath(), metadata);
+	    } catch (io.lakefs.clients.api.ApiException e) {
+		throw new IOException("link lakeFS path to physical address", e);
+	    }
+	}
     }
 }
