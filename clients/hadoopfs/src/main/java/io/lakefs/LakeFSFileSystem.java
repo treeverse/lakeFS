@@ -114,7 +114,7 @@ public class LakeFSFileSystem extends FileSystem {
 	    FileSystem physicalFs = physicalPath.getFileSystem(conf);
 	    return physicalFs.open(physicalPath, bufSize);
 	} catch (io.lakefs.clients.api.ApiException e) {
-	    throw new RuntimeException("API exception: " + e.getResponseBody());
+	    throw new RuntimeException("lakeFS API exception", e);
 	} catch (java.net.URISyntaxException e) {
 	    throw new RuntimeException(e);
 	}
