@@ -145,7 +145,7 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-        Location loc = pathToLocation(path);
+        ObjectLocation loc = pathToObjectLocation(path);
         if (loc == null) {
             throw new FileNotFoundException(path.toString());
         }
@@ -248,7 +248,7 @@ public class LakeFSFileSystem extends FileSystem {
      * @param path
      * @return lakeFS Location with repository, ref and path
      */
-    private Location pathToLocation(Path path) {
+    private ObjectLocation pathToObjectLocation(Path path) {
         if (!path.isAbsolute()) {
             path = new Path(this.workingDirectory, path);
         }
@@ -258,7 +258,7 @@ public class LakeFSFileSystem extends FileSystem {
             return null;
         }
 
-        Location loc = new Location();
+        ObjectLocation loc = new ObjectLocation();
         loc.setRepository(uri.getHost());
         // extract ref and rest of the path after removing the '/' prefix
         String s = uri.getPath();
@@ -275,7 +275,7 @@ public class LakeFSFileSystem extends FileSystem {
         return loc;
     }
 
-    private static class Location {
+    private static class ObjectLocation {
         private String repository;
         private String ref;
         private String path;
