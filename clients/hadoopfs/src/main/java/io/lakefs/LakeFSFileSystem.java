@@ -52,28 +52,6 @@ public class LakeFSFileSystem extends FileSystem {
     private Path workingDirectory = new Path(SEPARATOR);
     private ApiClient apiClient;
 
-    private static class ParsedPath {
-	ParsedPath(String repo, String ref, String path) {
-	    this.repo = repo;
-	    this.ref = ref;
-	    this.path = path;
-	}
-	public String repo;
-	public String ref;
-	public String path;
-    }
-
-    private ParsedPath parsePath(Path path) {
-	if (!path.isAbsolute()) path = new Path(workingDirectory, path);
-
-	URI pathUri = path.toUri();
-	String[] parts = pathUri.getPath().split("/", 3);
-	if (!parts[0].equals("")) {
-	    throw new RuntimeException("path does not start with / (" + String.join(" [/] ", parts) + ")");
-	}
-	return new ParsedPath(pathUri.getAuthority(), parts[1], parts[2]);
-    }
-
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
 	switch (uri.getScheme()) {
 	case "s3":
@@ -128,8 +106,8 @@ public class LakeFSFileSystem extends FileSystem {
 	    LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 
 	    ObjectsApi objects = new ObjectsApi(apiClient);
-	    ParsedPath pp = parsePath(path);
-	    ObjectStats stats = objects.statObject(pp.repo, pp.ref, pp.path);
+	    ObjectLocation objLoc = pathToObjectLocation(path);
+	    ObjectStats stats = objects.statObject(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath());
 	    URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
 
 	    Path physicalPath = new Path(physicalUri.toString());
