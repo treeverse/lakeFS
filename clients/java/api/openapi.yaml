@@ -1488,6 +1488,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         default:
           content:
             application/json:
@@ -1769,6 +1775,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         default:
           content:
             application/json:
@@ -1977,6 +1989,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         default:
           content:
             application/json:
@@ -3775,6 +3793,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Resource Not Found
+    Conflict:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Resource Conflicts With Target
     PreconditionFailed:
       content:
         application/json:

@@ -90,6 +90,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteTag"></a>
