@@ -15,12 +15,12 @@ const (
 	Separator = "/"
 
 	rePath      = "(?P<path>.*)"
-	reReference = `(?P<ref>\w[-\w]*)`
+	reReference = `(?P<ref>\w[-\w]*[~^0-9]*)`
 )
 
 var (
 	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("^/?%s/%s", reReference, rePath))
-	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("^/?%s", reReference))
+	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("^/?%s$", reReference))
 
 	ErrPathMalformed = errors.New("encoded path is malformed")
 )
