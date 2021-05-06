@@ -11,7 +11,7 @@ func IsSerializationError(err error) bool {
 	return isPGCode(err, pgerrcode.SerializationFailure)
 }
 
-func IsUniqueViolation(err error) bool {
+func isUniqueViolation(err error) bool {
 	return isPGCode(err, pgerrcode.UniqueViolation)
 }
 

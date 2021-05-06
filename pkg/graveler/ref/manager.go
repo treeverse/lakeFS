@@ -86,7 +86,11 @@ func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.Re
 				INSERT INTO graveler_branches (repository_id, id, staging_token, commit_id)
 				VALUES ($1, $2, $3, $4)`,
 			repositoryID, repository.DefaultBranchID, token, commitID)
+
 		if err != nil {
+			if errors.Is(err, db.ErrAlreadyExists) {
+				return nil, graveler.ErrNotUnique
+			}
 			return nil, err
 		}
 
