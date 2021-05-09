@@ -424,12 +424,12 @@ public class LakeFSFileSystem extends FileSystem {
 	    // the underlying Hadoop FileSystem) so we can link it on lakeFS.
 	    String bucket = physicalUri.getHost();
 	    String key = trimLeadingSlash(physicalUri.getPath());
-	    ObjectMetadata res = s3Client.getObjectMetadata(bucket, key);
+	    ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucket, key);
 
 	    // TODO(ariels): Can we add metadata here?
 	    StagingMetadata metadata = new StagingMetadata().staging(stagingLoc)
-		.checksum(res.getETag())
-		.sizeBytes(res.getContentLength());
+		.checksum(objectMetadata.getETag())
+		.sizeBytes(objectMetadata.getContentLength());
 
 	    try {
 		staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
