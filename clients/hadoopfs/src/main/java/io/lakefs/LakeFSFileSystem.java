@@ -215,9 +215,23 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Override
-    public boolean delete(Path path, boolean b) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ delete $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return false;
+    public boolean delete(Path path, boolean recursive) throws IOException {
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Delete path {} - recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$",
+                path, recursive);
+
+        ObjectLocation loc = pathToObjectLocation(path);
+        if (loc == null) {
+            throw new FileNotFoundException(path.toString());
+        }
+
+        ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
+        try {
+            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
+        } catch (ApiException e) {
+            throw new IOException("deleteObject", e);
+        }
+        LOG.debug("Successfully deleted {}", path.toString());
+        return true;
     }
 
     @Override
