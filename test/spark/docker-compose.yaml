@@ -50,6 +50,8 @@ services:
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
+      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker-1: &spark_worker
     image: docker.io/bitnami/spark:3
     environment:
@@ -66,13 +68,27 @@ services:
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
+      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker-2:
     <<: *spark_worker
   spark-submit:
-    <<: *spark_worker
+    image: docker.io/bitnami/spark:3
     profiles: ["command"]
     volumes:
       - ./:/local
+    env_file:
+      - tester.env
+    environment:
+      - input
+      - output
+      - s3input
+      - s3output
+    extra_hosts:
+      - "s3.docker.lakefs.io:10.5.0.55"
+      - "example.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test.s3.docker.lakefs.io:10.5.0.55"
+      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
 
 networks:
   default:
