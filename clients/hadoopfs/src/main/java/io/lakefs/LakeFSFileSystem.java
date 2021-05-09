@@ -219,16 +219,18 @@ public class LakeFSFileSystem extends FileSystem {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Delete path {} - recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$",
                 path, recursive);
 
-        ObjectLocation loc = pathToObjectLocation(path);
-        if (loc == null) {
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        if (objectLoc == null) {
             throw new FileNotFoundException(path.toString());
         }
 
         ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
         try {
-            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
+            objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
         } catch (ApiException e) {
-            throw new IOException("deleteObject", e);
+            LOG.error("Could not delete path: {} because of {} error code:{} response body {}", path, e.toString(),
+                    e.getCode(), e.getResponseBody());
+            return false;
         }
         LOG.debug("Successfully deleted {}", path.toString());
         return true;
