@@ -74,13 +74,6 @@ jobs:
         run: |
           make gen
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
       - name: Extract version
         shell: bash
         run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
@@ -89,21 +82,21 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Build and push to Amazon ECR
+        # TODO(ariels): review & fork this?
+        uses: mr-smithers-excellent/build-push-action@v5
+        with:
+          image: lakefs/lakefs
+          registry: ${{ steps.login-ecr.outputs.registry }}
+          tags: ${{ steps.version.outputs.tag }}
+          dockerfile: Dockerfile
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_LAKEFS: lakefs
-        run: |
-          set +e
-          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
-          if [ $? -eq 0 ]; then
-            echo "Image exists"
-          else
-            echo "Image doesn't exist"
-            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
-          fi
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   spark:
     name: Test lakeFS with Spark
