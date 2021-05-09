@@ -1,28 +1,37 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.auth.HttpBasicAuth;
-import io.lakefs.clients.api.model.ObjectStats;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.util.Progressable;
-
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.model.ObjectStats;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringBufferInputStream;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
+import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
+import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.auth.HttpBasicAuth;
+import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.StagingLocation;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
@@ -37,7 +46,6 @@ import org.slf4j.LoggerFactory;
  *   fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  */
 public class LakeFSFileSystem extends FileSystem {
-
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
     public static final String SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
@@ -45,21 +53,21 @@ public class LakeFSFileSystem extends FileSystem {
     public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
 
     private static final String BASIC_AUTH = "basic_auth";
-    private static final String SEPARATOR = "/";
 
     private Configuration conf;
     private URI uri;
-    private Path workingDirectory = new Path(SEPARATOR);
+    private Path workingDirectory = new Path(Constants.SEPARATOR);
     private ApiClient apiClient;
+    private AmazonS3 s3Client;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
-	switch (uri.getScheme()) {
-	case "s3":
-	    return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
-			   uri.getFragment());
-	default:
-	    throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
-	}
+        switch (uri.getScheme()) {
+        case "s3":
+            return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
+                           uri.getFragment());
+        default:
+            throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
+        }
     }
 
     public URI getUri() { return uri; }
@@ -67,7 +75,7 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
         super.initialize(name, conf);
-	this.conf = conf;
+        this.conf = conf;
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", name);
 
         String host = name.getHost();
@@ -92,8 +100,49 @@ public class LakeFSFileSystem extends FileSystem {
         HttpBasicAuth basicAuth = (HttpBasicAuth)this.apiClient.getAuthentication(BASIC_AUTH);
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
+
+        s3Client = createS3ClientFromConf(conf);
     }
 
+    /**
+     * @return an Amazon S3 client configured much like S3A configure theirs.
+     */
+    static private AmazonS3 createS3ClientFromConf(Configuration conf) {
+        String accessKey = conf.get(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, null);
+        String secretKey = conf.get(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, null);
+        AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
+            new BasicAWSCredentialsProvider(accessKey, secretKey),
+            new InstanceProfileCredentialsProvider(),
+            new AnonymousAWSCredentialsProvider());
+
+        ClientConfiguration awsConf = new ClientConfiguration();
+        awsConf.setMaxConnections(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAXIMUM_CONNECTIONS,
+                                              org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAXIMUM_CONNECTIONS));
+        boolean secureConnections = conf.getBoolean(org.apache.hadoop.fs.s3a.Constants.SECURE_CONNECTIONS,
+                                                    org.apache.hadoop.fs.s3a.Constants.DEFAULT_SECURE_CONNECTIONS);
+        awsConf.setProtocol(secureConnections ?  Protocol.HTTPS : Protocol.HTTP);
+        awsConf.setMaxErrorRetry(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAX_ERROR_RETRIES,
+          org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAX_ERROR_RETRIES));
+        awsConf.setConnectionTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.ESTABLISH_TIMEOUT,
+            org.apache.hadoop.fs.s3a.Constants.DEFAULT_ESTABLISH_TIMEOUT));
+        awsConf.setSocketTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.SOCKET_TIMEOUT,
+                        org.apache.hadoop.fs.s3a.Constants.DEFAULT_SOCKET_TIMEOUT));
+
+        // TODO(ariels): Also copy proxy configuration?
+
+        AmazonS3 s3 = new AmazonS3Client(credentials, awsConf);
+        String endPoint = conf.getTrimmed(org.apache.hadoop.fs.s3a.Constants.ENDPOINT,"");
+        if (!endPoint.isEmpty()) {
+                try {
+                        s3.setEndpoint(endPoint);
+                } catch (IllegalArgumentException e) {
+                        String msg = "Incorrect endpoint: " + e.getMessage();
+                        LOG.error(msg);
+                        throw new IllegalArgumentException(msg, e);
+                }
+        }
+        return s3;
+    }
 
     /**
      *{@inheritDoc}
@@ -102,22 +151,22 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
-	try {
-	    LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+        try {
+            LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 
-	    ObjectsApi objects = new ObjectsApi(apiClient);
-	    ObjectLocation objLoc = pathToObjectLocation(path);
-	    ObjectStats stats = objects.statObject(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath());
-	    URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
+            ObjectsApi objects = new ObjectsApi(apiClient);
+            ObjectLocation objectLoc = pathToObjectLocation(path);
+            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
 
-	    Path physicalPath = new Path(physicalUri.toString());
-	    FileSystem physicalFs = physicalPath.getFileSystem(conf);
-	    return physicalFs.open(physicalPath, bufSize);
-	} catch (io.lakefs.clients.api.ApiException e) {
-	    throw new RuntimeException("lakeFS API exception", e);
-	} catch (java.net.URISyntaxException e) {
-	    throw new RuntimeException(e);
-	}
+            Path physicalPath = new Path(physicalUri.toString());
+            FileSystem physicalFs = physicalPath.getFileSystem(conf);
+            return physicalFs.open(physicalPath, bufSize);
+        } catch (io.lakefs.clients.api.ApiException e) {
+            throw new RuntimeException("lakeFS API exception", e);
+        } catch (java.net.URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -125,10 +174,33 @@ public class LakeFSFileSystem extends FileSystem {
      * Called on a file write Spark/Hadoop action. This method writes the content of the file in path into stdout.
      */
     @Override
-    public FSDataOutputStream create(Path path, FsPermission fsPermission, boolean b, int i, short i1, long l,
-                                     Progressable progressable) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-        return new FSDataOutputStream(System.out, null);
+    public FSDataOutputStream create(Path path, FsPermission permission, boolean overwrite,
+                                     int bufferSize, short unusedReplication, long unusedBlockSize,
+                                     Progressable progress) throws IOException {
+        try {
+            LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
+
+            // BUG(ariels): overwrite ignored.
+
+            StagingApi staging = new StagingApi(apiClient);
+            ObjectLocation objectLoc = pathToObjectLocation(path);
+            StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            URI physicalUri = translateUri(new URI(stagingLoc.getPhysicalAddress()));
+
+            Path physicalPath = new Path(physicalUri.toString());
+            FileSystem physicalFs = physicalPath.getFileSystem(conf);
+
+            // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
+            return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, stagingLoc, objectLoc,
+                                                                      physicalUri,
+                                                                      // FSDataOutputStream is a kind of OutputStream(!)
+                                                                      physicalFs.create(physicalPath, false, bufferSize, progress)),
+                                          null);
+        }  catch (io.lakefs.clients.api.ApiException e) {
+            throw new RuntimeException("API exception: " + e.getResponseBody());
+        } catch (java.net.URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -173,13 +245,13 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-        ObjectLocation loc = pathToObjectLocation(path);
-        if (loc == null) {
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        if (objectLoc == null) {
             throw new FileNotFoundException(path.toString());
         }
         try {
             ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
-            ObjectStats objectStat = objectsApi.statObject(loc.getRepository(), loc.getRef(), loc.getPath());
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             long length = 0;
             Long sizeBytes = objectStat.getSizeBytes();
             if (sizeBytes != null) {
@@ -217,12 +289,17 @@ public class LakeFSFileSystem extends FileSystem {
         return res;
     }
 
+    @Override
+    public boolean exists(Path f) throws IOException {
+        return false;
+    }
+
     /**
      * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
      * @param path
      * @return lakeFS Location with repository, ref and path
      */
-    private ObjectLocation pathToObjectLocation(Path path) {
+    public ObjectLocation pathToObjectLocation(Path path) {
         if (!path.isAbsolute()) {
             path = new Path(this.workingDirectory, path);
         }
@@ -235,11 +312,8 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectLocation loc = new ObjectLocation();
         loc.setRepository(uri.getHost());
         // extract ref and rest of the path after removing the '/' prefix
-        String s = uri.getPath();
-        if (s.startsWith(SEPARATOR)) {
-            s = s.substring(1);
-        }
-        int i = s.indexOf(SEPARATOR);
+        String s = ObjectLocation.trimLeadingSlash(uri.getPath());
+        int i = s.indexOf(Constants.SEPARATOR);
         if (i == -1) {
             loc.setRef(s);
         } else {
@@ -247,35 +321,5 @@ public class LakeFSFileSystem extends FileSystem {
             loc.setPath(s.substring(i+1));
         }
         return loc;
-    }
-
-    private static class ObjectLocation {
-        private String repository;
-        private String ref;
-        private String path;
-        
-        public String getRepository() {
-            return repository;
-        }
-
-        public void setRepository(String repository) {
-            this.repository = repository;
-        }
-
-        public String getRef() {
-            return ref;
-        }
-
-        public void setRef(String ref) {
-            this.ref = ref;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public void setPath(String path) {
-            this.path = path;
-        }
     }
 }
