@@ -1,44 +1,37 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.auth.HttpBasicAuth;
-import io.lakefs.clients.api.model.ObjectStats;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
-import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
-import org.apache.hadoop.fs.s3a.Constants;
-import org.apache.hadoop.util.Progressable;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.clients.api.model.StagingMetadata;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringBufferInputStream;
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
+import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
+import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.auth.HttpBasicAuth;
+import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.StagingLocation;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
@@ -53,7 +46,6 @@ import org.slf4j.LoggerFactory;
  *   fs.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  */
 public class LakeFSFileSystem extends FileSystem {
-
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
     public static final String SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT = "fs.lakefs.endpoint";
@@ -61,11 +53,10 @@ public class LakeFSFileSystem extends FileSystem {
     public static final String FS_LAKEFS_SECRET_KEY = "fs.lakefs.secret.key";
 
     private static final String BASIC_AUTH = "basic_auth";
-    private static final String SEPARATOR = "/";
 
     private Configuration conf;
     private URI uri;
-    private Path workingDirectory = new Path(SEPARATOR);
+    private Path workingDirectory = new Path(Constants.SEPARATOR);
     private ApiClient apiClient;
     private AmazonS3 s3Client;
 
@@ -117,30 +108,30 @@ public class LakeFSFileSystem extends FileSystem {
      * @return an Amazon S3 client configured much like S3A configure theirs.
      */
     static private AmazonS3 createS3ClientFromConf(Configuration conf) {
-	String accessKey = conf.get(Constants.ACCESS_KEY, null);
-	String secretKey = conf.get(Constants.SECRET_KEY, null);
+	String accessKey = conf.get(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, null);
+	String secretKey = conf.get(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, null);
 	AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
 	    new BasicAWSCredentialsProvider(accessKey, secretKey),
 	    new InstanceProfileCredentialsProvider(),
 	    new AnonymousAWSCredentialsProvider());
 
 	ClientConfiguration awsConf = new ClientConfiguration();
-	awsConf.setMaxConnections(conf.getInt(Constants.MAXIMUM_CONNECTIONS,
-					      Constants.DEFAULT_MAXIMUM_CONNECTIONS));
-	boolean secureConnections = conf.getBoolean(Constants.SECURE_CONNECTIONS,
-						    Constants.DEFAULT_SECURE_CONNECTIONS);
+	awsConf.setMaxConnections(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAXIMUM_CONNECTIONS,
+					      org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAXIMUM_CONNECTIONS));
+	boolean secureConnections = conf.getBoolean(org.apache.hadoop.fs.s3a.Constants.SECURE_CONNECTIONS,
+						    org.apache.hadoop.fs.s3a.Constants.DEFAULT_SECURE_CONNECTIONS);
 	awsConf.setProtocol(secureConnections ?	 Protocol.HTTPS : Protocol.HTTP);
-	awsConf.setMaxErrorRetry(conf.getInt(Constants.MAX_ERROR_RETRIES,
-	  Constants.DEFAULT_MAX_ERROR_RETRIES));
-	awsConf.setConnectionTimeout(conf.getInt(Constants.ESTABLISH_TIMEOUT,
-	    Constants.DEFAULT_ESTABLISH_TIMEOUT));
-	awsConf.setSocketTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
-			Constants.DEFAULT_SOCKET_TIMEOUT));
+	awsConf.setMaxErrorRetry(conf.getInt(org.apache.hadoop.fs.s3a.Constants.MAX_ERROR_RETRIES,
+	  org.apache.hadoop.fs.s3a.Constants.DEFAULT_MAX_ERROR_RETRIES));
+	awsConf.setConnectionTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.ESTABLISH_TIMEOUT,
+	    org.apache.hadoop.fs.s3a.Constants.DEFAULT_ESTABLISH_TIMEOUT));
+	awsConf.setSocketTimeout(conf.getInt(org.apache.hadoop.fs.s3a.Constants.SOCKET_TIMEOUT,
+			org.apache.hadoop.fs.s3a.Constants.DEFAULT_SOCKET_TIMEOUT));
 
 	// TODO(ariels): Also copy proxy configuration?
 
 	AmazonS3 s3 = new AmazonS3Client(credentials, awsConf);
-	String endPoint = conf.getTrimmed(Constants.ENDPOINT,"");
+	String endPoint = conf.getTrimmed(org.apache.hadoop.fs.s3a.Constants.ENDPOINT,"");
 	if (!endPoint.isEmpty()) {
 		try {
 			s3.setEndpoint(endPoint);
@@ -298,12 +289,17 @@ public class LakeFSFileSystem extends FileSystem {
 	return res;
     }
 
+    @Override
+    public boolean exists(Path f) throws IOException {
+	return false;
+    }
+
     /**
      * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
      * @param path
      * @return lakeFS Location with repository, ref and path
      */
-    private ObjectLocation pathToObjectLocation(Path path) {
+    public ObjectLocation pathToObjectLocation(Path path) {
 	if (!path.isAbsolute()) {
 	    path = new Path(this.workingDirectory, path);
 	}
@@ -316,8 +312,8 @@ public class LakeFSFileSystem extends FileSystem {
 	ObjectLocation loc = new ObjectLocation();
 	loc.setRepository(uri.getHost());
 	// extract ref and rest of the path after removing the '/' prefix
-	String s = trimLeadingSlash(uri.getPath());
-	int i = s.indexOf(SEPARATOR);
+	String s = ObjectLocation.trimLeadingSlash(uri.getPath());
+	int i = s.indexOf(Constants.SEPARATOR);
 	if (i == -1) {
 	    loc.setRef(s);
 	} else {
@@ -325,117 +321,5 @@ public class LakeFSFileSystem extends FileSystem {
 	    loc.setPath(s.substring(i+1));
 	}
 	return loc;
-    }
-
-    private static String trimLeadingSlash(String s) {
-	if (s.startsWith(SEPARATOR)) {
-	    return s.substring(1);
-	}
-	return s;
-    }
-
-    private static class ObjectLocation {
-	private String repository;
-	private String ref;
-	private String path;
-
-	public String getRepository() {
-	    return repository;
-	}
-
-	public void setRepository(String repository) {
-	    this.repository = repository;
-	}
-
-	public String getRef() {
-	    return ref;
-	}
-
-	public void setRef(String ref) {
-	    this.ref = ref;
-	}
-
-	public String getPath() {
-	    return path;
-	}
-
-	public void setPath(String path) {
-	    this.path = path;
-	}
-    }
-
-    @Override
-    public boolean exists(Path f) throws IOException {
-	return false;
-    }
-
-    /**
-     * Wraps a FSDataOutputStream to link file on staging when done writing
-     */
-    static private class LinkOnCloseOutputStream extends OutputStream {
-	private AmazonS3 s3Client;
-	private StagingApi staging;
-	private StagingLocation stagingLoc;
-	private ObjectLocation objectLoc;
-	private URI physicalUri;
-	private OutputStream out;
-
-	/**
-	 * @param s3Client client used to access data on S3.
-	 * @param staging client used to access metadata on lakeFS.
-	 * @param stagingLoc physical location of object data on S3.
-	 * @param objectLoc location of object on lakeFS.
-	 * @param physicalUri translated physical location of object data for underlying FileSystem.
-	 * @param out stream on underlying filesystem to wrap.
-	 */
-	LinkOnCloseOutputStream(AmazonS3 s3Client, StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, OutputStream out) {
-	    this.s3Client = s3Client;
-	    this.staging = staging;
-	    this.stagingLoc = stagingLoc;
-	    this.objectLoc = objectLoc;
-	    this.physicalUri = physicalUri;
-	    this.out = out;
-	}
-
-	@Override
-	public void flush() throws IOException {
-	    out.flush();
-	}
-
-	@Override
-	public void write(byte[] b) throws IOException {
-	    out.write(b);
-	}
-
-	@Override
-	public void write(byte[] b, int off, int len) throws IOException {
-	    out.write(b, off, len);
-	}
-
-	@Override
-	public void write(int b) throws IOException {
-	    out.write(b);
-	}
-
-	@Override
-	public void close() throws IOException {
-	    out.close();
-	    // Now the object is on the underlying store, find its parameters (sadly lost by
-	    // the underlying Hadoop FileSystem) so we can link it on lakeFS.
-	    String bucket = physicalUri.getHost();
-	    String key = trimLeadingSlash(physicalUri.getPath());
-	    ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucket, key);
-
-	    // TODO(ariels): Can we add metadata here?
-	    StagingMetadata metadata = new StagingMetadata().staging(stagingLoc)
-		.checksum(objectMetadata.getETag())
-		.sizeBytes(objectMetadata.getContentLength());
-
-	    try {
-		staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
-	    } catch (io.lakefs.clients.api.ApiException e) {
-		throw new IOException("link lakeFS path to physical address", e);
-	    }
-	}
     }
 }
