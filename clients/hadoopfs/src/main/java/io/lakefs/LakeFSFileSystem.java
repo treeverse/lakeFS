@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
 import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,9 +227,12 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
         } catch (ApiException e) {
-            LOG.error("Could not delete path: {} because of {} error code:{} response body {}", path, e.toString(),
-                    e.getCode(), e.getResponseBody());
-            return false;
+            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
+                return false;
+            }
+            throw new IOException("deleteObject", e);
         }
         LOG.debug("Successfully deleted {}", path.toString());
         return true;
