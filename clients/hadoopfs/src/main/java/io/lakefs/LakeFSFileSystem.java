@@ -32,6 +32,7 @@ import io.lakefs.clients.api.model.StagingMetadata;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringBufferInputStream;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -163,8 +164,8 @@ public class LakeFSFileSystem extends FileSystem {
 	    LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 
 	    ObjectsApi objects = new ObjectsApi(apiClient);
-	    ObjectLocation objLoc = pathToObjectLocation(path);
-	    ObjectStats stats = objects.statObject(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath());
+	    ObjectLocation objectLoc = pathToObjectLocation(path);
+	    ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
 	    URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
 
 	    Path physicalPath = new Path(physicalUri.toString());
@@ -191,15 +192,15 @@ public class LakeFSFileSystem extends FileSystem {
 	    // BUG(ariels): overwrite ignored.
 
 	    StagingApi staging = new StagingApi(apiClient);
-	    ObjectLocation objLoc = pathToObjectLocation(path);
-	    StagingLocation loc = staging.getPhysicalAddress(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath());
-	    URI physicalUri = translateUri(new URI(loc.getPhysicalAddress()));
+	    ObjectLocation objectLoc = pathToObjectLocation(path);
+	    StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+	    URI physicalUri = translateUri(new URI(stagingLoc.getPhysicalAddress()));
 
 	    Path physicalPath = new Path(physicalUri.toString());
 	    FileSystem physicalFs = physicalPath.getFileSystem(conf);
 
 	    // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
-	    return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, loc, objLoc,
+	    return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, stagingLoc, objectLoc,
 								      physicalUri,
 								      // FSDataOutputStream is a kind of OutputStream(!)
 								      physicalFs.create(physicalPath, false, bufferSize, progress)),
@@ -253,13 +254,13 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
 	LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-	ObjectLocation loc = pathToObjectLocation(path);
-	if (loc == null) {
+	ObjectLocation stagingLoc = pathToObjectLocation(path);
+	if (stagingLoc == null) {
 	    throw new FileNotFoundException(path.toString());
 	}
 	try {
 	    ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
-	    ObjectStats objectStat = objectsApi.statObject(loc.getRepository(), loc.getRef(), loc.getPath());
+	    ObjectStats objectStat = objectsApi.statObject(stagingLoc.getRepository(), stagingLoc.getRef(), stagingLoc.getPath());
 	    long length = 0;
 	    Long sizeBytes = objectStat.getSizeBytes();
 	    if (sizeBytes != null) {
@@ -371,19 +372,19 @@ public class LakeFSFileSystem extends FileSystem {
     /**
      * Wraps a FSDataOutputStream to link file on staging when done writing
      */
-    static private class LinkOnCloseOutputStream extends java.io.OutputStream {
+    static private class LinkOnCloseOutputStream extends OutputStream {
 	private AmazonS3 s3Client;
 	private StagingApi staging;
-	private StagingLocation loc;
-	private ObjectLocation objLoc;
+	private StagingLocation stagingLoc;
+	private ObjectLocation objectLoc;
 	private URI physicalUri;
-	private java.io.OutputStream out;
+	private OutputStream out;
 
-	LinkOnCloseOutputStream(AmazonS3 s3Client, StagingApi staging, StagingLocation loc, ObjectLocation objLoc, URI physicalUri, java.io.OutputStream out) {
+	LinkOnCloseOutputStream(AmazonS3 s3Client, StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, OutputStream out) {
 	    this.s3Client = s3Client;
 	    this.staging = staging;
-	    this.loc = loc;
-	    this.objLoc = objLoc;
+	    this.stagingLoc = stagingLoc;
+	    this.objectLoc = objectLoc;
 	    this.physicalUri = physicalUri;
 	    this.out = out;
 	}
@@ -418,12 +419,12 @@ public class LakeFSFileSystem extends FileSystem {
 	    ObjectMetadata res = s3Client.getObjectMetadata(bucket, key);
 
 	    // TODO(ariels): Can we add metadata here?
-	    StagingMetadata metadata = new StagingMetadata().staging(loc)
+	    StagingMetadata metadata = new StagingMetadata().staging(stagingLoc)
 		.checksum(res.getETag())
 		.sizeBytes(res.getContentLength());
 
 	    try {
-		staging.linkPhysicalAddress(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath(), metadata);
+		staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
 	    } catch (io.lakefs.clients.api.ApiException e) {
 		throw new IOException("link lakeFS path to physical address", e);
 	    }
