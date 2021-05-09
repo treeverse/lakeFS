@@ -31,52 +31,52 @@ class LinkOnCloseOutputStream extends OutputStream {
      * @param out stream on underlying filesystem to wrap.
      */
     LinkOnCloseOutputStream(AmazonS3 s3Client, StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, OutputStream out) {
-	this.s3Client = s3Client;
-	this.staging = staging;
-	this.stagingLoc = stagingLoc;
-	this.objectLoc = objectLoc;
-	this.physicalUri = physicalUri;
-	this.out = out;
+        this.s3Client = s3Client;
+        this.staging = staging;
+        this.stagingLoc = stagingLoc;
+        this.objectLoc = objectLoc;
+        this.physicalUri = physicalUri;
+        this.out = out;
     }
 
     @Override
     public void flush() throws IOException {
-	out.flush();
+        out.flush();
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-	out.write(b);
+        out.write(b);
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-	out.write(b, off, len);
+        out.write(b, off, len);
     }
 
     @Override
     public void write(int b) throws IOException {
-	out.write(b);
+        out.write(b);
     }
 
     @Override
     public void close() throws IOException {
-	out.close();
-	// Now the object is on the underlying store, find its parameters (sadly lost by
-	// the underlying Hadoop FileSystem) so we can link it on lakeFS.
-	String bucket = physicalUri.getHost();
-	String key = ObjectLocation.trimLeadingSlash(physicalUri.getPath());
-	ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucket, key);
+        out.close();
+        // Now the object is on the underlying store, find its parameters (sadly lost by
+        // the underlying Hadoop FileSystem) so we can link it on lakeFS.
+        String bucket = physicalUri.getHost();
+        String key = ObjectLocation.trimLeadingSlash(physicalUri.getPath());
+        ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucket, key);
 
-	// TODO(ariels): Can we add metadata here?
-	StagingMetadata metadata = new StagingMetadata().staging(stagingLoc)
-	    .checksum(objectMetadata.getETag())
-	    .sizeBytes(objectMetadata.getContentLength());
+        // TODO(ariels): Can we add metadata here?
+        StagingMetadata metadata = new StagingMetadata().staging(stagingLoc)
+            .checksum(objectMetadata.getETag())
+            .sizeBytes(objectMetadata.getContentLength());
 
-	try {
-	    staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
-	} catch (io.lakefs.clients.api.ApiException e) {
-	    throw new IOException("link lakeFS path to physical address", e);
-	}
+        try {
+            staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
+        } catch (io.lakefs.clients.api.ApiException e) {
+            throw new IOException("link lakeFS path to physical address", e);
+        }
     }
 }

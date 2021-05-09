@@ -8,33 +8,33 @@ class ObjectLocation {
     private String path;
 
     public String getRepository() {
-	return repository;
+        return repository;
     }
 
     public void setRepository(String repository) {
-	this.repository = repository;
+        this.repository = repository;
     }
 
     public String getRef() {
-	return ref;
+        return ref;
     }
 
     public void setRef(String ref) {
-	this.ref = ref;
+        this.ref = ref;
     }
 
     public String getPath() {
-	return path;
+        return path;
     }
 
     public void setPath(String path) {
-	this.path = path;
+        this.path = path;
     }
 
     static String trimLeadingSlash(String s) {
-	if (s.startsWith(Constants.SEPARATOR)) {
-	    return s.substring(1);
-	}
-	return s;
+        if (s.startsWith(Constants.SEPARATOR)) {
+            return s.substring(1);
+        }
+        return s;
     }
 }
