@@ -33,6 +33,8 @@ import io.lakefs.clients.api.auth.HttpBasicAuth;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
 
+import javax.annotation.Nonnull;
+
 /**
  * A dummy implementation of the core lakeFS Filesystem.
  * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
@@ -220,10 +222,6 @@ public class LakeFSFileSystem extends FileSystem {
                 path, recursive);
 
         ObjectLocation objectLoc = pathToObjectLocation(path);
-        if (objectLoc == null) {
-            throw new FileNotFoundException(path.toString());
-        }
-
         ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
         try {
             objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
@@ -315,15 +313,13 @@ public class LakeFSFileSystem extends FileSystem {
      * @param path
      * @return lakeFS Location with repository, ref and path
      */
+    @Nonnull
     public ObjectLocation pathToObjectLocation(Path path) {
         if (!path.isAbsolute()) {
             path = new Path(this.workingDirectory, path);
         }
 
         URI uri = path.toUri();
-        if (uri.getScheme() != null && uri.getPath().isEmpty()) {
-            return null;
-        }
 
         ObjectLocation loc = new ObjectLocation();
         loc.setRepository(uri.getHost());
