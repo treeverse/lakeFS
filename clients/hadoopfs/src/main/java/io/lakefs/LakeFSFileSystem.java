@@ -10,6 +10,10 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.model.ObjectStats;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,15 +47,27 @@ public class LakeFSFileSystem extends FileSystem {
     private static final String BASIC_AUTH = "basic_auth";
     private static final String SEPARATOR = "/";
 
+    private Configuration conf;
     private URI uri;
     private Path workingDirectory = new Path(SEPARATOR);
     private ApiClient apiClient;
+
+    private URI translateUri(URI uri) throws java.net.URISyntaxException {
+	switch (uri.getScheme()) {
+	case "s3":
+	    return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
+			   uri.getFragment());
+	default:
+	    throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
+	}
+    }
 
     public URI getUri() { return uri; }
 
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
         super.initialize(name, conf);
+	this.conf = conf;
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ initialize: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", name);
 
         String host = name.getHost();
@@ -85,11 +101,23 @@ public class LakeFSFileSystem extends FileSystem {
      * regardless of the given file path.
      */
     @Override
-    public FSDataInputStream open(Path path, int i) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Calling open method for: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$", path.getName());
-        String strToWrite = "abc";
-        MyInputStream inputStream = new MyInputStream(strToWrite);
-        return new FSDataInputStream(inputStream);
+    public FSDataInputStream open(Path path, int bufSize) throws IOException {
+	try {
+	    LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ open(" + path.getName() + ") $$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+
+	    ObjectsApi objects = new ObjectsApi(apiClient);
+	    ObjectLocation objLoc = pathToObjectLocation(path);
+	    ObjectStats stats = objects.statObject(objLoc.getRepository(), objLoc.getRef(), objLoc.getPath());
+	    URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
+
+	    Path physicalPath = new Path(physicalUri.toString());
+	    FileSystem physicalFs = physicalPath.getFileSystem(conf);
+	    return physicalFs.open(physicalPath, bufSize);
+	} catch (io.lakefs.clients.api.ApiException e) {
+	    throw new RuntimeException("lakeFS API exception", e);
+	} catch (java.net.URISyntaxException e) {
+	    throw new RuntimeException(e);
+	}
     }
 
     /**
@@ -187,54 +215,6 @@ public class LakeFSFileSystem extends FileSystem {
         FileStatus[] res = new FileStatus[1];
         res[0] = fStatus;
         return res;
-    }
-
-    /**
-     * An {@link InputStream} designated to serve as an input to the {@link FSDataInputStream} constructor. To be a
-     * viable input for FSDataInputStream, this class must be an instance of {@link InputStream} (StringBufferInputStream
-     * inherits it), and it must implement the interfaces {@link Seekable} and {@link PositionedReadable}.
-     *
-     * The read logic is implemented in {@link StringBufferInputStream#read()}.
-     */
-    private class MyInputStream extends StringBufferInputStream implements Seekable,PositionedReadable {
-
-        public MyInputStream(String input) {
-            super(input);
-            LOG.debug("--------------------------- ctor ---------------------------");
-        }
-
-        @Override
-        public int read(long l, byte[] bytes, int i, int i1) throws IOException {
-            LOG.debug("--------------------------- read1 ---------------------------");
-            return 1;
-        }
-
-        @Override
-        public void readFully(long l, byte[] bytes, int i, int i1) throws IOException {
-            LOG.debug("--------------------------- readFully1---------------------------");
-        }
-
-        @Override
-        public void readFully(long l, byte[] bytes) throws IOException {
-            LOG.debug("--------------------------- readFully2 ---------------------------");
-        }
-
-        @Override
-        public void seek(long l) throws IOException {
-            LOG.debug("--------------------------- seek ---------------------------");
-        }
-
-        @Override
-        public long getPos() throws IOException {
-            LOG.debug("--------------------------- getPos---------------------------");
-            return 0;
-        }
-
-        @Override
-        public boolean seekToNewSource(long l) throws IOException {
-            LOG.debug("--------------------------- seekToNewSource---------------------------");
-            return false;
-        }
     }
 
     /**
