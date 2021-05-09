@@ -380,6 +380,14 @@ public class LakeFSFileSystem extends FileSystem {
 	private URI physicalUri;
 	private OutputStream out;
 
+	/**
+	 * @param s3Client client used to access data on S3.
+	 * @param staging client used to access metadata on lakeFS.
+	 * @param stagingLoc physical location of object data on S3.
+	 * @param objectLoc location of object on lakeFS.
+	 * @param physicalUri translated physical location of object data for underlying FileSystem.
+	 * @param out stream on underlying filesystem to wrap.
+	 */
 	LinkOnCloseOutputStream(AmazonS3 s3Client, StagingApi staging, StagingLocation stagingLoc, ObjectLocation objectLoc, URI physicalUri, OutputStream out) {
 	    this.s3Client = s3Client;
 	    this.staging = staging;
