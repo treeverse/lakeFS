@@ -245,13 +245,13 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FileStatus getFileStatus(Path path) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
-        ObjectLocation stagingLoc = pathToObjectLocation(path);
-        if (stagingLoc == null) {
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        if (objectLoc == null) {
             throw new FileNotFoundException(path.toString());
         }
         try {
             ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
-            ObjectStats objectStat = objectsApi.statObject(stagingLoc.getRepository(), stagingLoc.getRef(), stagingLoc.getPath());
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             long length = 0;
             Long sizeBytes = objectStat.getSizeBytes();
             if (sizeBytes != null) {
