@@ -14,10 +14,6 @@ STORAGE_NAMESPACE=${STORAGE_NAMESPACE:-local://}
 export input="lakefs://${REPO}/main/sonnets.txt"
 export output="lakefs://${REPO}/main/sonnets-wordcount.csv"
 
-docker-compose exec -T lakefs /app/wait-for localhost:8000
-
-docker-compose exec -T lakefs sh -c 'lakefs setup --user-name tester --access-key-id ${TESTER_ACCESS_KEY_ID} --secret-access-key ${TESTER_SECRET_ACCESS_KEY}'
-
 docker-compose exec -T lakefs lakectl repo create "lakefs://${REPO}" ${STORAGE_NAMESPACE} -d main
 
 docker-compose exec -T lakefs lakectl fs upload -s /local/app/data-sets/sonnets.txt "lakefs://${REPO}/main/sonnets.txt"

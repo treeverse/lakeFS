@@ -144,6 +144,10 @@ jobs:
         working-directory: test/spark
         run: docker-compose up -d
 
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
       - name: Test lakeFS S3 with Spark
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
