@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
 import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,8 @@ import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.auth.HttpBasicAuth;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
+
+import javax.annotation.Nonnull;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
@@ -215,9 +218,24 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Override
-    public boolean delete(Path path, boolean b) throws IOException {
-        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ delete $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ");
-        return false;
+    public boolean delete(Path path, boolean recursive) throws IOException {
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Delete path {} - recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$",
+                path, recursive);
+
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
+        try {
+            objectsApi.deleteObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+        } catch (ApiException e) {
+            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/7f93349ee74da5f35276b7535781714501ab2457/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L2741
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                LOG.error("Could not delete: {}, reason: {}", path, e.getResponseBody());
+                return false;
+            }
+            throw new IOException("deleteObject", e);
+        }
+        LOG.debug("Successfully deleted {}", path.toString());
+        return true;
     }
 
     @Override
@@ -299,15 +317,13 @@ public class LakeFSFileSystem extends FileSystem {
      * @param path
      * @return lakeFS Location with repository, ref and path
      */
+    @Nonnull
     public ObjectLocation pathToObjectLocation(Path path) {
         if (!path.isAbsolute()) {
             path = new Path(this.workingDirectory, path);
         }
 
         URI uri = path.toUri();
-        if (uri.getScheme() != null && uri.getPath().isEmpty()) {
-            return null;
-        }
 
         ObjectLocation loc = new ObjectLocation();
         loc.setRepository(uri.getHost());
