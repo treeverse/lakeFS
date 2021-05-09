@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Community
-description: lakeFS community. Join the community on the lakeFS slack channel and feel free to ask questions and get help.
+description: lakeFS community. Join the community at the lakeFS slack workspace and feel free to ask questions and get help.
 nav_order: 50
 has_children: false
 ---
@@ -12,7 +12,7 @@ We're excited to hear from you!
 
 ### Get in touch with the lakeFS team
 
-Join our public [Slack space](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw). We’re extremely responsive and you can expect a fast reply.
+Join our public [Slack space](https://lakefs.io/slack). We’re extremely responsive and you can expect a fast reply.
 
 ### Contribute
 
@@ -20,7 +20,4 @@ Whether it’s a bug report, new feature, correction, or additional documentatio
 
 ### Ask a question
 
-If you have any questions or need technical support, feel free to message us in the [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw) #help channel. 
-
-
-
+If you have any questions or need technical support, feel free to message us in the [Slack](https://lakefs.io/slack) #help channel. 
