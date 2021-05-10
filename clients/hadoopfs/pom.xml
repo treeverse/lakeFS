@@ -34,11 +34,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.lakefs.LakeFSFileSystem</mainClass>
-                                </transformer>
-                            </transformers>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -51,6 +46,20 @@
                                     </excludes>
                                 </filter>
                             </filters>
+			    <relocations>
+			      <relocation>
+				  <pattern>org.apache.httpcomponents</pattern>
+				  <shadedPattern>io.lakefs.shaded.apache.httpcomponents</shadedPattern>
+			      </relocation>
+			      <relocation>
+				<pattern>okio</pattern>
+				<shadedPattern>io.lakefs.shaded.okio</shadedPattern>
+			      </relocation>
+			      <relocation>
+				<pattern>okhttp3</pattern>
+				<shadedPattern>io.lakefs.shaded.okhttp3</shadedPattern>
+			      </relocation>
+			    </relocations>
                         </configuration>
                     </execution>
                 </executions>
@@ -64,21 +73,41 @@
             <artifactId>api-client</artifactId>
             <version>0.40.3</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>3.2.0</version>
+            <version>2.7.7</version>
         </dependency>
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>2.7.7</version>
         </dependency>
+
+	<dependency>
+	  <groupId>com.amazonaws</groupId>
+	  <artifactId>aws-java-sdk</artifactId>
+	  <version>1.7.4</version><!-- should match hadoop-aws version(!) -->
+	</dependency>
+	<dependency>		<!-- needed for aws-java-sdk in tests(!) -->
+	  <groupId>org.apache.httpcomponents</groupId>
+	  <artifactId>httpclient</artifactId>
+	  <version>4.2</version>
+	</dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.1</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+	    <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

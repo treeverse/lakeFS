@@ -235,7 +235,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <ClippyIcon/>
                 show={show || isHovered}
                 target={target.current}>
                 {props => {
-                    updater = props.scheduleUpdate
+                    updater = props.popper && props.popper.scheduleUpdate;
                     props.show = undefined
                     return (<Tooltip {...props}>{tooltip}</Tooltip>)
                 }}
