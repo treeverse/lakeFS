@@ -134,7 +134,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Run lakeFS S3
+      - name: Start lakeFS S3 and Spark workers
         env:
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
@@ -169,6 +169,8 @@ jobs:
         env:
           JARS: clients/hadoopfs/
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark-client
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
           USE_DIRECT_ACCESS: "true"
           REPO: thick-client-test
         working-directory: test/spark
