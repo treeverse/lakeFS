@@ -65,14 +65,14 @@ func TestResolvePath(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid branch",
-			args:    args{encodedPath: "-invalid"},
-			wantErr: true,
+			name: "ref with tilde",
+			args: args{encodedPath: "main~1"},
+			want: ResolvedPath{Ref: "main~1"},
 		},
 		{
-			name:    "invalid branch",
-			args:    args{encodedPath: "-invalid"},
-			wantErr: true,
+			name: "ref with tilde and multiple separators",
+			args: args{encodedPath: "main~1//a/b"},
+			want: ResolvedPath{Ref: "main~1", Path: "/a/b", WithPath: true},
 		},
 	}
 	for _, tt := range tests {
