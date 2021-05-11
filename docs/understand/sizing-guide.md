@@ -299,7 +299,7 @@ Data being managed by lakeFS is both structured, tabular data;
 as well as unstructured sensor and image data used for training. 
 Assuming a team of 20-50 researchers, with a dataset size of 500 TiB across 20M objects.
 
-**Environment:** lakeFS will be deployed on [Kubernetes](../deploying-aws/install.md#kubernetes-with-helm) 
+**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/install.md#kubernetes-with-helm) 
 managed by [AWS EKS](https://aws.amazon.com/eks/){: target="_blank" } 
 with PostgreSQL on [AWS RDS Aurora](https://aws.amazon.com/rds/aurora/postgresql-features/){: target="_blank" }
 
@@ -328,7 +328,7 @@ Airflow DAGs start by creating a branch for isolation and for CI/CD.
 Data being managed by lakeFS is structured, tabular data. Total dataset size is 10 PiB,  spanning across 500M objects. 
 Expected throughput is 10k reads/second + 2k writes per second across 100 concurrent branches.
 
-**Environment:** lakeFS will be deployed on [Kubernetes](../deploying-aws/install.md#kubernetes-with-helm) 
+**Environment:** lakeFS will be deployed on [Kubernetes](../deploy/install.md#kubernetes-with-helm) 
 managed by [AWS EKS](https://aws.amazon.com/eks/){: target="_blank" } 
 with PostgreSQL on [AWS RDS](https://aws.amazon.com/rds/aurora/postgresql-features/){: target="_blank" }
 

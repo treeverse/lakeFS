@@ -94,7 +94,7 @@ A way to ensure certain branches (i.e. main) are only merged to, and are not bei
 main ensures schema never breaks and all partitions are complete and tested)
 
 ### Webhook Support integration: Metastore registration
-Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](https://docs.lakefs.io/using/glue_hive_metastore.html#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
+Using webhooks, we can automatically register or update collections in a Hive/Glue metastore, using [Symlink Generation](../integrations/glue_hive_metastore.md#create-symlink), this will also allow systems that don’t natively integrate with lakeFS to consume data produced using lakeFS.
 
 ### Webhook Support integration: Metadata validation
 Provide a basic wrapper around something like [pyArrow](https://pypi.org/project/pyarrow/) that validates Parquet or ORC files for common schema problems such as backwards incompatibility.

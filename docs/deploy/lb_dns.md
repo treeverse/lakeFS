@@ -1,11 +1,3 @@
----
-layout: default
-title: Load Balancing and DNS
-description: Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.
-parent: Deploy lakeFS
-nav_order: 25
-has_children: false
----
 #  Load Balancing and DNS
 
 This page covers how to point your Load Balancer to lakeFS, and how to set the DNS records.
@@ -38,4 +30,4 @@ For an AWS load balancer with Route53 DNS, create a simple record, and choose *A
 For other DNS providers, refer to the documentation on how to add CNAME records.
 
 You can now move on to the [Setup](setup.md) page.
-c
+__

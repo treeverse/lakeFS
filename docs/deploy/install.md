@@ -1,12 +1,3 @@
----
-layout: default
-title: Installing lakeFS
-description: Installing lakeFS is easy. This section covers common deployment options for installing lakeFS.
-parent: Deploy lakeFS
-nav_order: 20
-has_children: false
----
-
 # Installing lakeFS
 {: .no_toc }
 

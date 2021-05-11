@@ -3,7 +3,7 @@ layout: default
 title: Setup
 description: This section outlines how to setup your environment once lakeFS is configured and running
 parent: Deploy lakeFS
-nav_order: 27
+nav_order: 60
 has_children: false
 ---
 
@@ -24,7 +24,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
     
    ![Create Repository](../assets/img/create_repo_s3.png)
 
-   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](bucket.md).
+   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](../storage/index.md).
    
    
 # Next steps
@@ -32,4 +32,4 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
 After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](../reference/import.md) to bring your data without copying it.
 Alternatively, if you wish to copy existing data from an S3 bucket to lakeFS, use [DistCp](../integrations/distcp.md) or [Rclone](../integrations/rclone.md).
 
-Check out the usage guides under [using lakeFS with...](https://docs.lakefs.io/using/) for other options.
+Check out the usage guides under [Integartions](../integrations/index.md) for other options.
