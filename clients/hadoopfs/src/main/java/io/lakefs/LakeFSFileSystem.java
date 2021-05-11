@@ -364,12 +364,22 @@ public class LakeFSFileSystem extends FileSystem {
         private List<ObjectStats> chunk;
         private int pos;
 
+        /**
+         * Returns iterator for files under path.
+         * When recursive is set, the iterator will list all files under the target path (delimiter is ignored).
+         * Parameter amount controls the limit for each request for listing.
+         *
+         * @param path the location to list
+         * @param recursive boolean for recursive listing
+         * @param amount buffer size to fetch listing
+         */
         public ListingIterator(Path path, boolean recursive, int amount) {
             this.uri = path.toUri();
             this.chunk = Collections.emptyList();
             this.objectLocation = pathToObjectLocation(path);
             String locationPath = this.objectLocation.getPath();
-            if (locationPath.length() > 0 && !locationPath.endsWith(URI_SEPARATOR)) {
+            // we assume that 'path' is a directory by default
+            if (!locationPath.isEmpty() && !locationPath.endsWith(URI_SEPARATOR)) {
                 this.objectLocation.setPath(locationPath + URI_SEPARATOR);
             }
             this.delimiter = recursive ? "" : URI_SEPARATOR;
@@ -402,16 +412,16 @@ public class LakeFSFileSystem extends FileSystem {
                         if (!pagination.getHasMore()) {
                             last = true;
                         }
-                    } else if (chunk.size() == 0) {
+                    } else if (chunk.isEmpty()) {
                         last = true;
                     }
                 } catch (ApiException e) {
                     throw new IOException("listObjects", e);
                 }
                 // filter objects
-                chunk = chunk.stream().filter(x -> x.getPathType() == ObjectStats.PathTypeEnum.OBJECT).collect(Collectors.toList());
+                chunk = chunk.stream().filter(stat -> stat.getPathType() == ObjectStats.PathTypeEnum.OBJECT).collect(Collectors.toList());
                 // loop until we have something or last chunk
-            } while (chunk.size() > 0 && !last);
+            } while (!chunk.isEmpty() && !last);
         }
 
         @Override
