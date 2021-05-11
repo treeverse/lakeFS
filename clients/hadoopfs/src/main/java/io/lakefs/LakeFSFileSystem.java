@@ -13,15 +13,12 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 import org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider;
 import org.apache.hadoop.util.Progressable;
+
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +68,10 @@ public class LakeFSFileSystem extends FileSystem {
         default:
             throw new RuntimeException(String.format("unsupported URI scheme %s", uri.getScheme()));
         }
+    }
+
+    public ApiClient getApiClient() {
+        return apiClient;
     }
 
     public URI getUri() { return uri; }
@@ -172,6 +173,14 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
+
+    @Override
+    public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
+        LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ listFiles path: {}, recursive {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", f.toString(), recursive);
+        ObjectLocation objectLoc = pathToObjectLocation(f);
+        return new ListingIterator(this, objectLoc, recursive);
+    }
+
     /**
      *{@inheritDoc}
      * Called on a file write Spark/Hadoop action. This method writes the content of the file in path into stdout.
@@ -264,27 +273,30 @@ public class LakeFSFileSystem extends FileSystem {
     public FileStatus getFileStatus(Path path) throws IOException {
         LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ getFileStatus, path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
         ObjectLocation objectLoc = pathToObjectLocation(path);
-        if (objectLoc == null) {
-            throw new FileNotFoundException(path.toString());
-        }
         try {
             ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            long length = 0;
-            Long sizeBytes = objectStat.getSizeBytes();
-            if (sizeBytes != null) {
-                length = sizeBytes;
-            }
-            long modificationTime = 0;
-            Long mtime = objectStat.getMtime();
-            if (mtime != null) {
-                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
-            }
-            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
-            return new FileStatus(length, false, 0, 0, modificationTime, filePath);
+            return convertObjectStatsToFileStatus(objectStat);
         } catch (ApiException e) {
             throw new IOException("statObject", e);
         }
+    }
+
+    @Nonnull
+    static FileStatus convertObjectStatsToFileStatus(ObjectStats objectStat) {
+        long length = 0;
+        Long sizeBytes = objectStat.getSizeBytes();
+        if (sizeBytes != null) {
+            length = sizeBytes;
+        }
+        long modificationTime = 0;
+        Long mtime = objectStat.getMtime();
+        if (mtime != null) {
+            modificationTime = TimeUnit.SECONDS.toMillis(mtime);
+        }
+        Path filePath = new Path(objectStat.getPath());
+        boolean isdir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
+        return new FileStatus(length, isdir, 0, 0, modificationTime, filePath);
     }
 
     /**
@@ -314,7 +326,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Returns Location with repository, ref and path used by lakeFS based on filesystem path.
-     * @param path
+     * @param path to extract information from.
      * @return lakeFS Location with repository, ref and path
      */
     @Nonnull

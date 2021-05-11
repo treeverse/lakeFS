@@ -1,6 +1,9 @@
 package io.lakefs;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,8 +21,8 @@ public class LakeFSFileSystemTest {
     public void setUp() throws Exception {
         fs = new LakeFSFileSystem();
         Configuration conf = new Configuration(false);
-        conf.set(LakeFSFileSystem.FS_LAKEFS_ACCESS_KEY, "key");
-        conf.set(LakeFSFileSystem.FS_LAKEFS_SECRET_KEY, "secret");
+        conf.set(LakeFSFileSystem.FS_LAKEFS_ACCESS_KEY, "AKIAIOSFODNN7EXAMPLE");
+        conf.set(LakeFSFileSystem.FS_LAKEFS_SECRET_KEY, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
         conf.set(LakeFSFileSystem.FS_LAKEFS_ENDPOINT, "http://localhost:8000/api/v1");
         URI name = new URI("lakefs://repo/master/file.txt");
         fs.initialize(name, conf);
@@ -34,10 +37,6 @@ public class LakeFSFileSystemTest {
     public void getUri() throws URISyntaxException, IOException {
         URI u = fs.getUri();
         Assert.assertNotNull(u);
-    }
-
-    @Test
-    public void testGetFileStatus() {
     }
 
     @Test(expected = UnsupportedOperationException.class)
