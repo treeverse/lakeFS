@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Introduction
+title: Branching Model
 description: When creating a new branch in lakeFS, we are actually creating a consistent snapshot of the entire repository
-parent: Branching Model
+parent: Guides
 has_children: false
 nav_order: 1
 ---

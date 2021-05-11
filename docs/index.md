@@ -21,7 +21,7 @@ lakeFS supports AWS S3, Azure Blob Storage and Google Cloud Storage (GCS) as its
 
 ## Why you need lakeFS and what it can do
 
-lakeFS provides a [Git-like branching and committing model](branching/model.md) that scales to exabytes of data by utilizing S3, GCS, or Azure Blob for storage.
+lakeFS provides a [Git-like branching and committing model](guides/branching-model.md) that scales to exabytes of data by utilizing S3, GCS, or Azure Blob for storage.
 
 This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
 
@@ -66,6 +66,6 @@ Official Docker images are available at [https://hub.docker.com/r/treeverse/lake
 
 ## Next steps
 
-Read about the [branching model](branching/model.md) of lakeFS or run it locally and see how it works for yourself!
+Read about the [branching model](guides/branching-model.md) of lakeFS or run it locally and see how it works for yourself!
 
 Check out the [Quick Start Guide](quickstart/index.md)
