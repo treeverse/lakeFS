@@ -2,7 +2,7 @@
 layout: default
 title: Installing lakeFS
 description: Installing lakeFS is easy. This section covers common deployment options for installing lakeFS.
-parent: Production Deployment
+parent: Deploy lakeFS
 nav_order: 20
 has_children: false
 ---
@@ -135,7 +135,7 @@ Once your installation is running, move on to [Load Balancing and DNS](./lb_dns.
 ## AWS EC2 / Google Compute Engine / Azure Virtual Machine
 Run lakeFS directly on a cloud instance:
 
-1. [Download the binary for your operating system](../downloads.md)
+1. [Download the binary for your operating system](../index.md#downloads)
 2. `lakefs` is a single binary, you can run it directly, but preferably run it as a service using systemd or your operating system's facilities.
 
    ```bash

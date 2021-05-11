@@ -2,7 +2,7 @@
 layout: default
 title: Setup
 description: This section outlines how to setup your environment once lakeFS is configured and running
-parent: Production Deployment
+parent: Deploy lakeFS
 nav_order: 27
 has_children: false
 ---

@@ -2,7 +2,7 @@
 layout: default
 title: Creating the database
 description: Creating the database. Before installing lakeFS, you need to have a PostgreSQL database.
-parent: Production Deployment
+parent: Deploy lakeFS
 nav_order: 10
 has_children: false
 ---

@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Importing data from existing Object Store 
+title: Importing data into lakeFS 
 description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
 parent: Reference
 nav_order: 8
@@ -9,7 +9,7 @@ has_children: false
 This page describes importing from versions >= v0.24.0. For ealier versions, see [mvcc import](import-mvcc.md)
 {: .note .pb-3 }
 
-# Importing data from existing Object Store
+# Importing data into lakeFS
 {: .no_toc }
 
 ## Table of contents

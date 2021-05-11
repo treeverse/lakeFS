@@ -2,7 +2,7 @@
 layout: default
 title: Upgrade lakeFS
 description: Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image or downloading the latest version
-parent: Production Deployment
+parent: Reference
 nav_order: 50
 has_children: false
 ---

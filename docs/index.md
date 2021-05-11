@@ -53,6 +53,15 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 [Learn more](https://github.com/treeverse/lakeFS/blob/master/docs/branching/recommendations.md#continuous-deployment){:id="user-content-learn-more-dep"}
 
 
+## Downloads
+
+### Binary Releases
+
+Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
+
+### Docker Images
+
+Official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="_blank" }
 
 
 ## Next steps

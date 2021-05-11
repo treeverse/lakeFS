@@ -2,7 +2,7 @@
 layout: default
 title: Configuring the Storage
 description: Providing the data storage layer for our installation. 
-parent: Production Deployment
+parent: Deploy lakeFS
 nav_order: 15
 has_children: false
 ---

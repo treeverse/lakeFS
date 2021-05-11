@@ -49,7 +49,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 1. Download the lakeFS binary for your operating system:
 
-   [Download lakefs](../downloads.md){: .btn .btn-green target="_blank"}
+   [Download lakefs](../index.md#downloads){: .btn .btn-green target="_blank"}
 
 1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
