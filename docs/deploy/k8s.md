@@ -20,7 +20,7 @@ This section assumes you already have a PostgreSQL database accessible from your
 1. TOC
 {:toc}
 
-{% include_relative installation-methods/prerequisites.md %}
+{% include_relative includes/prerequisites.md %}
 
 ## Installing on Kuberneets
 
@@ -34,13 +34,13 @@ To install lakeFS with Helm:
      <li><a href="#helm-tabs-3">Azure Blob</a></li>
    </ul>
    <div markdown="1" id="helm-tabs-1">      
-   {% include_relative installation-methods/aws-helm-values.md %}
+   {% include_relative includes/aws-helm-values.md %}
    </div>
    <div markdown="1" id="helm-tabs-2">
-   {% include_relative installation-methods/gcp-helm-values.md %}
+   {% include_relative includes/gcp-helm-values.md %}
    </div>
    <div markdown="1" id="helm-tabs-3">
-   {% include_relative installation-methods/azure-helm-values.md %}
+   {% include_relative includes/azure-helm-values.md %}
    </div>
    </div>
 

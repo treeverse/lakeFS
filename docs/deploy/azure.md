@@ -15,7 +15,7 @@ nav_order: 20
 1. TOC
 {:toc}
 
-{% include_relative installation-methods/prerequisites.md %}
+{% include_relative includes/prerequisites.md %}
 
 ## Creating the Database on Azure Database
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
