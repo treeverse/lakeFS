@@ -56,6 +56,8 @@ import static io.lakefs.Constants.*;
 public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
 
+    public static final long DEFAULT_BLOCK_SIZE = 32 * 1024 * 1024;
+
     private static final String BASIC_AUTH = "basic_auth";
 
     private Configuration conf;
@@ -64,6 +66,8 @@ public class LakeFSFileSystem extends FileSystem {
     private ApiClient apiClient;
     private AmazonS3 s3Client;
     private int listAmount;
+
+    private FileSystem fsForConfig;
 
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
@@ -109,6 +113,21 @@ public class LakeFSFileSystem extends FileSystem {
         s3Client = createS3ClientFromConf(conf);
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
+
+        Path path = new Path(name);
+
+        // TODO(ariels): Retrieve base filesystem configuration for URI from new API.  Needed
+        //     when this fs is contructed in order to create a new file, which cannot be Stat'ed
+        try {
+            ObjectsApi objects = new ObjectsApi(apiClient);
+            ObjectLocation objectLoc = pathToObjectLocation(path);
+            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
+            Path physicalPath = new Path(physicalUri.toString());
+            fsForConfig = physicalPath.getFileSystem(conf);
+        } catch (Exception e) {
+            LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
+        }
     }
 
     /**
@@ -151,11 +170,22 @@ public class LakeFSFileSystem extends FileSystem {
         return s3;
     }
 
-    /**
-     *{@inheritDoc}
-     * Called on a file read Spark action. This method returns a FSDataInputStream with a static string,
-     * regardless of the given file path.
-     */
+    @Override
+    public long getDefaultBlockSize(Path path) {
+        if (fsForConfig != null) {
+            return fsForConfig.getDefaultBlockSize(path);
+        }
+        return DEFAULT_BLOCK_SIZE;
+    }
+
+    @Override
+    public long getDefaultBlockSize() {
+        if (fsForConfig != null) {
+            return fsForConfig.getDefaultBlockSize();
+        }
+        return DEFAULT_BLOCK_SIZE;
+    }
+
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
         try {
@@ -290,12 +320,10 @@ public class LakeFSFileSystem extends FileSystem {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
-
             URI physicalUri = translateUri(new URI(objectStat.getPhysicalAddress()));
             Path physicalPath = new Path(physicalUri.toString());
             FileSystem physicalFS = physicalPath.getFileSystem(conf);
             long blockSize = physicalFS.getDefaultBlockSize(physicalPath);
-
             return new FileStatus(length, false, 0, blockSize, modificationTime, filePath);
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
