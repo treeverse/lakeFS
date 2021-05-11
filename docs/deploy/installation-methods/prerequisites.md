@@ -1,4 +1,9 @@
-## Preqrequisites
+---
+layout: default
+nav_exclude: true
+---
+
+## Prerequisites
 
 {: .no_toc }
 A production-suitable lakeFS installation will require three DNS records **pointing at your lakeFS server**.

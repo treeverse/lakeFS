@@ -13,7 +13,7 @@ nav_order: 20
 {: .no_toc .text-delta }
 
 1. TOC
-   {:toc}
+{:toc}
 
 {% include_relative installation-methods/prerequisites.md %}
 
