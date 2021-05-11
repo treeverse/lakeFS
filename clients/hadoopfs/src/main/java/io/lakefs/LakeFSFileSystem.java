@@ -214,7 +214,7 @@ public class LakeFSFileSystem extends FileSystem {
         }  catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
-            throw new IOException("uri", e);
+            throw new IOException("underlying storage uri", e);
         }
     }
 
@@ -303,7 +303,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
             throw new IOException("statObject", e);
         } catch (java.net.URISyntaxException e) {
-            throw new IOException("uri", e);
+            throw new IOException("underlying storage uri", e);
         }
     }
 
@@ -354,8 +354,18 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Override
-    public boolean exists(Path f) throws IOException {
-        return false;
+    public boolean exists(Path path) throws IOException {
+        ObjectsApi objects = new ObjectsApi(apiClient);
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        try {
+            objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            return true;
+        } catch (io.lakefs.clients.api.ApiException e) {
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                return false;
+            }
+            throw new IOException("lakefs", e);
+        }
     }
 
     /**
