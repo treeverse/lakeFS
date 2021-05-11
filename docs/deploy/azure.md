@@ -70,3 +70,8 @@ As mentioned above, you should create 3 DNS records for lakeFS:
 1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
 
 Depending on your DNS provider, refer to the documentation on how to add CNAME records.
+
+## Next Steps
+You can now move on to the [Setup](../guides/setup.md) page.
+
+{% include_relative includes/why-dns.md %}

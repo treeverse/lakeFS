@@ -9,4 +9,5 @@ has_children: true
 # Deploy lakeFS
 
 This section will guide you through setting up lakeFS on your cloud provider.
+If you just want to try out lakeFS locally, see [Quickstart](../quickstart/index.md).
 

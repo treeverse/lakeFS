@@ -11,6 +11,8 @@ nav_order: 40
 {: .no_toc }
 
 ## Database
+{: .no_toc }
+
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 This section assumes you already have a PostgreSQL database accessible from your Kubernetes cluster.
 
@@ -76,4 +78,7 @@ As mentioned above, you should create 3 DNS records for lakeFS:
 
 All records should point to your Load Balancer, preferably with a short TTL value.
 
+## Next Steps
+You can now move on to the [Setup](../guides/setup.md) page.
 
+{% include_relative includes/why-dns.md %}

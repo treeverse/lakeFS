@@ -4,7 +4,7 @@ title: Branching Model
 description: When creating a new branch in lakeFS, we are actually creating a consistent snapshot of the entire repository
 parent: Guides
 has_children: false
-nav_order: 1
+nav_order: 2
 ---
 
 # Branching Model
