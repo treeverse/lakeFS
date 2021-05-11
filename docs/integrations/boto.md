@@ -2,7 +2,7 @@
 layout: default
 title: Boto (Python)
 description: This section covers how you can start using lakeFS with Boto (Python), the AWS SDK for Python.
-parent: Using lakeFS with...
+parent: Integrations
 nav_order: 45
 has_children: false
 ---

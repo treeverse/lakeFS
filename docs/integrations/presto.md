@@ -2,7 +2,7 @@
 layout: default
 title: Presto
 description: This section covers how you can start using lakeFS with Presto, is an open source, distributed SQL query engin.
-parent: Using lakeFS with...
+parent: Integrations
 nav_order: 40
 has_children: false
 ---

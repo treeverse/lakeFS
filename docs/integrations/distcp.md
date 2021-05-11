@@ -2,7 +2,7 @@
 layout: default
 title: Copying Data with DistCp
 description: Apache Hadoop DistCp is a tool used for large inter/intra-cluster copying. You can easily use it with your lakeFS repositories.
-parent: Using lakeFS with...
+parent: Integrations
 nav_order: 5
 has_children: false
 ---

@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Overview
-parent: Architecture
+title: Architecture
+parent: Understanding lakeFS
 description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.
-nav_order: 1
+nav_order: 10
 has_children: false
 ---
 # Architecture Overview
@@ -44,7 +44,7 @@ The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:
 
 The S3 Storage Adapter is the component in charge of communication with the underlying S3 bucket. It is logically decoupled from the S3 Gateway to allow for future compatibility with other types of underlying storage such as HDFS or S3-Compatible storage providers.
 
-See the [roadmap](../roadmap.md) for information on future plans for storage compatibility. 
+See the [roadmap](roadmap.md) for information on future plans for storage compatibility. 
 
 ### Metadata Index
 

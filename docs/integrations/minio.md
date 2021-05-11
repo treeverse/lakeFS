@@ -2,7 +2,7 @@
 layout: default
 title: MinIO
 description: This section covers how to use MinIO as the underlying storage for lakeFS.
-parent: Using lakeFS with...
+parent: Integrations
 nav_order: 47
 has_children: false
 ---

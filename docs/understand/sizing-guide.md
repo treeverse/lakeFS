@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Sizing Guide
-parent: Architecture
+parent: Understanding lakeFS
 description: Sizing guide for deploying lakeFS
-nav_order: 3
+nav_order: 30
 has_children: false
 ---
 # Sizing guide
@@ -29,7 +29,7 @@ For high throughput, additional CPUs help scale requests across different cores.
 "Expensive" operations such as large diff or commit operations can take advantage of multiple cores. 
 
 ### Network
-If using the data APIs such as the [S3 Gateway](overview.md#s3-gateway), 
+If using the data APIs such as the [S3 Gateway](architecture.md#s3-gateway), 
 lakeFS will require enough network bandwidth to support the planned concurrent network upload/download operations.
 For most cloud providers, more powerful machines (i.e. more expensive and usually with more CPU cores) also provide increased network bandwidth.
 
@@ -282,7 +282,7 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 `api_request_duration_seconds` - Histogram of latency per operation type
 
-`gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](overview.md#s3-gateway) operation
+`gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](architecture.md#s3-gateway) operation
 
 `go_sql_stats_*` - Important client-side metrics collected from the PostgreSQL driver. 
 See [The full reference here](https://github.com/dlmiddlecote/sqlstats#exposed-metrics){: target="_blank" }.

@@ -1,8 +1,9 @@
 ---
 layout: default
 title: Licensing
+parent: Understanding lakeFS
 description: lakeFS is an open source project under the Apache 2.0 license. As a commercial organization, we intend to use an open core model.
-nav_order: 65
+nav_order: 50
 has_children: false
 ---
 
@@ -19,7 +20,7 @@ We believe small organizations should be able to use cutting edge technologies f
 
 As a commercial organization, we intend to use an open core model.
 
-![Open Core Model](assets/img/open_core.png)
+![Open Core Model](../assets/img/open_core.png)
 
 ***What is our commitment to open source?***
 

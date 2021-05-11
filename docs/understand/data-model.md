@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Data Model
-parent: Architecture
+parent: Understanding lakeFS
 description: lakeFS Data Model explained
-nav_order: 2
+nav_order: 20
 has_children: false
 ---
 # Data Model
@@ -99,7 +99,7 @@ Luckily, this is also much smaller data, compared to the committed dataset.
 
 References and uncommitted data are currently stored on PostgreSQL for its strong consistency and transactional guarantees.
 
-[In the future](../roadmap.md#lakefs-on-the-rocks-milestone-3---remove-postgresql) we plan on eliminating the need for an RDBMS by embedding [Raft](https://raft.github.io/){: target="_blank" } to replicate these writes across a cluster of machines, with the data itself being stored in RocksDB. To make operations easier, the replicated RocksDB database will be periodically snapshotted to the underlying object store.
+[In the future](roadmap.md#lakefs-on-the-rocks-milestone-3---remove-postgresql) we plan on eliminating the need for an RDBMS by embedding [Raft](https://raft.github.io/){: target="_blank" } to replicate these writes across a cluster of machines, with the data itself being stored in RocksDB. To make operations easier, the replicated RocksDB database will be periodically snapshotted to the underlying object store.
 
 For extremely large installations ( >= millions of read/write operations per second), it will be possible to utilize [multi-Raft](https://pingcap.com/blog/2017-08-15-multi-raft/){: target="_blank" } to shard references across a wider fleet of machines.
 

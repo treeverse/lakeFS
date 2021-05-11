@@ -2,7 +2,7 @@
 layout: default
 title: Amazon Athena
 description: This section covers how you can start using lakeFS with Amazon Athena, a serverless, interactive query service in Amazon S3
-parent: Using lakeFS with...
+parent: Integrations
 nav_order: 50
 has_children: false
 ---

@@ -2,7 +2,7 @@
 layout: default
 title: Copying data with Rclone
 description: Rclone is a command line program to sync files and directories between cloud providers. Start copying data using rclone. 
-parent: Using lakeFS with...
+parent: Integrations
 nav_order: 10
 has_children: false
 ---
