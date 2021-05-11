@@ -433,6 +433,7 @@ public class LakeFSFileSystem extends FileSystem {
             FileStatus fileStatus = convertObjectStatsToFileStatus(objectStats);
             // make path absolute
             fileStatus.setPath(fileStatus.getPath().makeQualified(this.uri, workingDirectory));
+            // currently do not pass locations of the file blocks - until we understand if it is required in order to work
             return new LocatedFileStatus(fileStatus, null);
         }
     }
