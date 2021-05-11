@@ -200,7 +200,7 @@ public class LakeFSFileSystem extends FileSystem {
             FileSystem physicalFs = physicalPath.getFileSystem(conf);
             return physicalFs.open(physicalPath, bufSize);
         } catch (ApiException e) {
-            throw new RuntimeException("lakeFS API exception", e);
+            throw new IOException("lakeFS API", e);
         } catch (java.net.URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -388,7 +388,7 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             return true;
-        } catch (io.lakefs.clients.api.ApiException e) {
+        } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
                 return false;
             }
