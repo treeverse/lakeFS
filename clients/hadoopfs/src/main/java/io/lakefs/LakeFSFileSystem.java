@@ -283,7 +283,7 @@ public class LakeFSFileSystem extends FileSystem {
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
             return new FileStatus(length, false, 0, 0, modificationTime, filePath);
         } catch (ApiException e) {
-            if (e.getCode() == 404) {
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
                 throw new FileNotFoundException(path + " not found");
             }
             throw new IOException("statObject", e);
