@@ -18,9 +18,9 @@ public class LakeFSFileSystemTest {
     public void setUp() throws Exception {
         fs = new LakeFSFileSystem();
         Configuration conf = new Configuration(false);
-        conf.set(LakeFSFileSystem.FS_LAKEFS_ACCESS_KEY, "key");
-        conf.set(LakeFSFileSystem.FS_LAKEFS_SECRET_KEY, "secret");
-        conf.set(LakeFSFileSystem.FS_LAKEFS_ENDPOINT, "http://localhost:8000/api/v1");
+        conf.set(Constants.FS_LAKEFS_ACCESS_KEY, "key");
+        conf.set(Constants.FS_LAKEFS_SECRET_KEY, "secret");
+        conf.set(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
         URI name = new URI("lakefs://repo/master/file.txt");
         fs.initialize(name, conf);
     }
