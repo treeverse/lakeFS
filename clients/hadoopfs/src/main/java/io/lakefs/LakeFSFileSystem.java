@@ -18,6 +18,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import io.lakefs.clients.api.model.ObjectStatsList;
 import io.lakefs.clients.api.model.Pagination;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -55,8 +56,6 @@ import static io.lakefs.Constants.*;
  */
 public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
-
-    public static final long DEFAULT_BLOCK_SIZE = 32 * 1024 * 1024;
 
     private static final String BASIC_AUTH = "basic_auth";
 
@@ -175,7 +174,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (fsForConfig != null) {
             return fsForConfig.getDefaultBlockSize(path);
         }
-        return DEFAULT_BLOCK_SIZE;
+        return Constants.DEFAULT_BLOCK_SIZE;
     }
 
     @Override
@@ -183,7 +182,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (fsForConfig != null) {
             return fsForConfig.getDefaultBlockSize();
         }
-        return DEFAULT_BLOCK_SIZE;
+        return Constants.DEFAULT_BLOCK_SIZE;
     }
 
     @Override
