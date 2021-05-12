@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import com.amazonaws.ClientConfiguration;
@@ -129,6 +130,21 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
+    @FunctionalInterface
+    private interface BiFunctionWithIOException<U, V, R> {
+        R apply(U u, V v) throws IOException;
+    }
+
+    /**
+     * @return FileSystem suitable for the translated physical address
+     */
+    protected<R> R withFileSystemAndTranslatedPhysicalPath(String physicalAddress, BiFunctionWithIOException<FileSystem, Path, R> f) throws java.net.URISyntaxException, IOException {
+        URI uri = translateUri(new URI(physicalAddress));
+        Path path = new Path(uri.toString());
+        FileSystem fs = path.getFileSystem(conf);
+        return f.apply(fs, path);
+    }
+
     /**
      * @return an Amazon S3 client configured much like S3A configure theirs.
      */
@@ -193,15 +209,11 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objects = new ObjectsApi(apiClient);
             ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
-
-            Path physicalPath = new Path(physicalUri.toString());
-            FileSystem physicalFs = physicalPath.getFileSystem(conf);
-            return physicalFs.open(physicalPath, bufSize);
+            return withFileSystemAndTranslatedPhysicalPath(stats.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.open(p, bufSize));
         } catch (ApiException e) {
             throw new IOException("lakeFS API", e);
         } catch (java.net.URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new IOException("open physical", e);
         }
     }
 
@@ -309,6 +321,8 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             long length = 0;
+
+
             Long sizeBytes = objectStat.getSizeBytes();
             if (sizeBytes != null) {
                 length = sizeBytes;
@@ -319,10 +333,7 @@ public class LakeFSFileSystem extends FileSystem {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
-            URI physicalUri = translateUri(new URI(objectStat.getPhysicalAddress()));
-            Path physicalPath = new Path(physicalUri.toString());
-            FileSystem physicalFS = physicalPath.getFileSystem(conf);
-            long blockSize = physicalFS.getDefaultBlockSize(physicalPath);
+            long blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.getDefaultBlockSize(p));
             return new FileStatus(length, false, 0, blockSize, modificationTime, filePath);
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
