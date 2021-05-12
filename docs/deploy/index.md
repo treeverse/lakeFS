@@ -8,5 +8,5 @@ has_children: true
 
 # Deploy lakeFS
 
-This page contains a collection of practical step-by-step instructions to help you set up lakeFS on your prefered cloud provider.
+This page contains a collection of practical step-by-step instructions to help you set up lakeFS on your prefered cloud environemnt.
 
