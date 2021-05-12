@@ -2,7 +2,7 @@
 layout: default
 title: On GCP
 parent: Deploy lakeFS
-description:
+description: This guide will help you deploy your production lakeFS environment on GCP
 nav_order: 30
 ---
 
