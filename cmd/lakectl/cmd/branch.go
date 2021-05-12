@@ -150,7 +150,7 @@ var branchResetCmd = &cobra.Command{
 				Type: "common_prefix",
 			}
 		case len(object) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncomitted changes for object: %s", object)
+			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes for object: %s", object)
 			reset = api.ResetCreation{
 				Path: &object,
 				Type: "object",
