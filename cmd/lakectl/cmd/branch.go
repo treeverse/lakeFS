@@ -123,19 +123,14 @@ var branchResetCmd = &cobra.Command{
 	Use:   "reset <branch uri> [flags]",
 	Short: "reset changes to specified commit, or reset uncommitted changes - all changes, or by path",
 	Long: `reset changes.  There are four different ways to reset changes:
-  1. reset to previous commit, set HEAD of branch to given commit - reset lakefs://myrepo/main --commit commitId
-  2. reset all uncommitted changes - reset lakefs://myrepo/main 
-  3. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
-  4. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path`,
+  1. reset all uncommitted changes - reset lakefs://myrepo/main 
+  2. reset uncommitted changes under specific path -	reset lakefs://myrepo/main --prefix path
+  3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRefURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
-		commitID, err := cmd.Flags().GetString("commit")
-		if err != nil {
-			DieErr(err)
-		}
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {
 			DieErr(err)
@@ -148,20 +143,14 @@ var branchResetCmd = &cobra.Command{
 		var reset api.ResetCreation
 		var confirmationMsg string
 		switch {
-		case len(commitID) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes to commit: %s", commitID)
-			reset = api.ResetCreation{
-				Commit: &commitID,
-				Type:   "commit",
-			}
 		case len(prefix) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes from path: %s to last commit", prefix)
+			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes from path: %s", prefix)
 			reset = api.ResetCreation{
 				Path: &prefix,
 				Type: "common_prefix",
 			}
 		case len(object) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all changes for object: %s to last commit", object)
+			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncomitted changes for object: %s to last commit", object)
 			reset = api.ResetCreation{
 				Path: &object,
 				Type: "object",
@@ -214,7 +203,6 @@ func init() {
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
 
-	branchResetCmd.Flags().String("commit", "", "commit ID to reset branch to")
 	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")
 
