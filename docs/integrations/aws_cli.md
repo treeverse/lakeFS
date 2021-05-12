@@ -1,7 +1,7 @@
 ---
 layout: default
 title: AWS CLI
-description: This section covers how to use the file commands (CLI) for S3 to access lakeFS
+description: This section covers how to use the AWS CLI for AWS S3 to access lakeFS.
 parent: Integrations
 nav_order: 15
 has_children: false
