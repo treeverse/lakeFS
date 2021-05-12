@@ -2,7 +2,7 @@
 layout: default
 title: Continuous Data Deployment
 parent: Example Use-Cases
-description:
+description: lakeFS helps you continuously validate expectations and assumptions from the data itself.
 nav_order: 45
 ---
 
