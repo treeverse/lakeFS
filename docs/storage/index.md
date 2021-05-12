@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Prepare Your Storage
-description:
+description: A production installation of lakeFS will usually use your cloud provider's object storage as the underlying storage layer
 nav_order: 8
 has_children: true
 ---
