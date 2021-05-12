@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Branching Model
-description: When creating a new branch in lakeFS, we are actually creating a consistent snapshot of the entire repository
+description: This page explains how lakeFS uses a Git-like branching model at its core.
 parent: Guides
 has_children: false
 nav_order: 1
