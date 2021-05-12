@@ -1536,8 +1536,6 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 
 	var err error
 	switch body.Type {
-	case "commit":
-		err = c.Catalog.RollbackCommit(ctx, repository, branch, StringValue(body.Commit))
 	case "common_prefix":
 		err = c.Catalog.ResetEntries(ctx, repository, branch, StringValue(body.Path))
 	case "reset":

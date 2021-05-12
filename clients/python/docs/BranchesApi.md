@@ -560,7 +560,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     reset_creation = ResetCreation(
         type="object",
-        commit="commit_example",
         path="path_example",
     ) # ResetCreation | 
 
