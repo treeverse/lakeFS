@@ -56,7 +56,6 @@ class ResetCreation(ModelNormal):
         ('type',): {
             'OBJECT': "object",
             'COMMON_PREFIX': "common_prefix",
-            'COMMIT': "commit",
             'RESET': "reset",
         },
     }
@@ -80,7 +79,6 @@ class ResetCreation(ModelNormal):
         """
         return {
             'type': (str,),  # noqa: E501
-            'commit': (str,),  # noqa: E501
             'path': (str,),  # noqa: E501
         }
 
@@ -91,7 +89,6 @@ class ResetCreation(ModelNormal):
 
     attribute_map = {
         'type': 'type',  # noqa: E501
-        'commit': 'commit',  # noqa: E501
         'path': 'path',  # noqa: E501
     }
 
@@ -144,7 +141,6 @@ class ResetCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            commit (str): [optional]  # noqa: E501
             path (str): [optional]  # noqa: E501
         """
 

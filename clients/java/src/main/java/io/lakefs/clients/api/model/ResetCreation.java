@@ -38,8 +38,6 @@ public class ResetCreation {
     
     COMMON_PREFIX("common_prefix"),
     
-    COMMIT("commit"),
-    
     RESET("reset");
 
     private String value;
@@ -84,10 +82,6 @@ public class ResetCreation {
   @SerializedName(SERIALIZED_NAME_TYPE)
   private TypeEnum type;
 
-  public static final String SERIALIZED_NAME_COMMIT = "commit";
-  @SerializedName(SERIALIZED_NAME_COMMIT)
-  private String commit;
-
   public static final String SERIALIZED_NAME_PATH = "path";
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
@@ -112,29 +106,6 @@ public class ResetCreation {
 
   public void setType(TypeEnum type) {
     this.type = type;
-  }
-
-
-  public ResetCreation commit(String commit) {
-    
-    this.commit = commit;
-    return this;
-  }
-
-   /**
-   * Get commit
-   * @return commit
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-
-  public String getCommit() {
-    return commit;
-  }
-
-
-  public void setCommit(String commit) {
-    this.commit = commit;
   }
 
 
@@ -171,13 +142,12 @@ public class ResetCreation {
     }
     ResetCreation resetCreation = (ResetCreation) o;
     return Objects.equals(this.type, resetCreation.type) &&
-        Objects.equals(this.commit, resetCreation.commit) &&
         Objects.equals(this.path, resetCreation.path);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, commit, path);
+    return Objects.hash(type, path);
   }
 
   @Override
@@ -185,7 +155,6 @@ public class ResetCreation {
     StringBuilder sb = new StringBuilder();
     sb.append("class ResetCreation {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    commit: ").append(toIndentedString(commit)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("}");
     return sb.toString();

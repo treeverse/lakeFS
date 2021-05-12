@@ -93,8 +93,6 @@ type Interface interface {
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
 
-	// RollbackCommit sets the branch to point at the given commit, losing all later commits.
-	RollbackCommit(ctx context.Context, repository, branch string, reference string) error
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
 

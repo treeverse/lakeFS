@@ -317,9 +317,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ object, common_prefix, commit, reset ]
-        commit:
-          type: string
+          enum: [ object, common_prefix, reset ]
         path:
           type: string
 
