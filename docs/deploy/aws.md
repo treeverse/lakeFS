@@ -33,23 +33,25 @@ If you already have a database, take note of the connection string and skip to t
 
 ## Install lakeFS on EC2
 1. Save the following configuration file as `config.yaml`:
-```yaml
----
-database:
-  connection_string: "[DATABASE_CONNECTION_STRING]"
-auth:
-  encrypt:
-    # replace this with a randomly-generated string:
-    secret_key: "[ENCRYPTION_SECRET_KEY]"
-blockstore:
-  type: s3
-  s3:
-    region: us-east-1
-gateways:
-  s3:
-      # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-     domain_name: [S3_GATEWAY_DOMAIN]
-```
+
+   ```yaml
+   ---
+   database:
+     connection_string: "[DATABASE_CONNECTION_STRING]"
+   auth:
+     encrypt:
+       # replace this with a randomly-generated string:
+       secret_key: "[ENCRYPTION_SECRET_KEY]"
+   blockstore:
+     type: s3
+     s3:
+       region: us-east-1
+   gateways:
+     s3:
+        # replace this with the host you will use for the lakeFS S3-compatible endpoint:
+        domain_name: [S3_GATEWAY_DOMAIN]
+   ```
+
 1. [Download the binary](../index.md#downloads) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
    ```bash

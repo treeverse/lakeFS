@@ -31,26 +31,28 @@ If you already have a database, take note of the connection string and skip to t
 
 ## Install lakeFS on Azure VM
 1. Save the following configuration file as `config.yaml`:
-```yaml
----
-database:
-  connection_string: "[DATABASE_CONNECTION_STRING]"
-auth:
-  encrypt:
-    # replace this with a randomly-generated string:
-    secret_key: "[ENCRYPTION_SECRET_KEY]"
-blockstore:
-  type: azure
-  azure:
-    auth_method: msi # msi for active directory, access-key for access key 
-      # In case you chose to authenticate via access key unmark the following rows and insert the values from the previous step 
-      # storage_account: [your storage account]
-      # storage_access_key: [your access key]
-gateways:
-  s3:
-      # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-     domain_name: [S3_GATEWAY_DOMAIN]
-```
+
+   ```yaml
+   ---
+   database:
+     connection_string: "[DATABASE_CONNECTION_STRING]"
+   auth:
+     encrypt:
+       # replace this with a randomly-generated string:
+       secret_key: "[ENCRYPTION_SECRET_KEY]"
+   blockstore:
+     type: azure
+     azure:
+       auth_method: msi # msi for active directory, access-key for access key 
+         # In case you chose to authenticate via access key unmark the following rows and insert the values from the previous step 
+         # storage_account: [your storage account]
+         # storage_access_key: [your access key]
+   gateways:
+     s3:
+         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
+        domain_name: [S3_GATEWAY_DOMAIN]
+   ```
+   
 1. [Download the binary](../index.md#downloads) to the Azure Virtual Machine.
 1. Run the `lakefs` binary on the machine:
    ```bash

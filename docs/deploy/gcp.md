@@ -36,24 +36,26 @@ You can now proceed to [Configuring the Storage](bucket.md).
 
 ## Install lakeFS on GCE
 1. Save the following configuration file as `config.yaml`:
-```yaml
----
-database:
-  connection_string: "[DATABASE_CONNECTION_STRING]"
-auth:
-  encrypt:
-    # replace this with a randomly-generated string:
-    secret_key: "[ENCRYPTION_SECRET_KEY]"
-blockstore:
-  type: gs
-   # Uncomment the following lines to give lakeFS access to your buckets using a service account:
-   # gs:
-   #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
-gateways:
-  s3:
-      # replace this with the host you will use for the lakeFS S3-compatible endpoint:
-     domain_name: [S3_GATEWAY_DOMAIN]
-```
+
+   ```yaml
+   ---
+   database:
+     connection_string: "[DATABASE_CONNECTION_STRING]"
+   auth:
+     encrypt:
+       # replace this with a randomly-generated string:
+       secret_key: "[ENCRYPTION_SECRET_KEY]"
+   blockstore:
+     type: gs
+      # Uncomment the following lines to give lakeFS access to your buckets using a service account:
+      # gs:
+      #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
+   gateways:
+     s3:
+         # replace this with the host you will use for the lakeFS S3-compatible endpoint:
+        domain_name: [S3_GATEWAY_DOMAIN]
+   ```
+   
 1. [Download the binary](../index.md#downloads) to the GCE instance.
 1. Run the `lakefs` binary on the GCE machine:
    ```bash
