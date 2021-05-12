@@ -2,7 +2,7 @@
 layout: default
 title: Data Model
 parent: Understanding lakeFS
-description: lakeFS Data Model explained
+description: This page explains the lakeFS Data Model
 nav_order: 20
 has_children: false
 ---
