@@ -936,11 +936,6 @@ func (c *Catalog) Revert(ctx context.Context, repository string, branch string, 
 	return err
 }
 
-func (c *Catalog) RollbackCommit(_ context.Context, _ string, _ string, _ string) error {
-	c.log.Debug("rollback to commit is not supported in rocks implementation")
-	return ErrFeatureNotSupported
-}
-
 func (c *Catalog) Diff(ctx context.Context, repository string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	left := graveler.Ref(leftReference)
