@@ -2,7 +2,7 @@
 layout: default
 title: On Kubernetes
 parent: Deploy lakeFS
-description:
+description: This guide will help you deploy your production lakeFS environment on Kubernetes using a helm chart
 nav_order: 40
 ---
 
