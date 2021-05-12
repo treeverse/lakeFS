@@ -2,7 +2,7 @@
 layout: default
 title: On Azure
 parent: Deploy lakeFS
-description:
+description:  This guide will help you deploy your production lakeFS environment on Azure 
 nav_order: 20
 ---
 
