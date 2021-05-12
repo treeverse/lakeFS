@@ -12,6 +12,6 @@ A production installation of lakeFS will usually use your cloud provider's objec
 You can choose to create a new bucket/container (recommended), or use an existing one with a path prefix.
 The path under the existing bucket/container should be empty.
 
-After you have a bucket/container configured, proceed to [Deploying lakeFS](../deploy/index.md).
+Once you have a bucket/container configured, proceed to [Deploying lakeFS](../deploy/index.md).
 
 Choose your storage provider to configure your storage.
