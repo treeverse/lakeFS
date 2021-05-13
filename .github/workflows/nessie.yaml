@@ -134,7 +134,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Run lakeFS S3
+      - name: Start lakeFS S3 and Spark workers
         env:
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
@@ -144,13 +144,41 @@ jobs:
         working-directory: test/spark
         run: docker-compose up -d
 
+      - name: Setup lakeFS for tests
+        working-directory: test/spark
+        run: ./setup-test.sh
+
       - name: Test lakeFS S3 with Spark
         env:
           STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark
+          REPO: gateway-test
         working-directory: test/spark
         run: ./run-test.sh
 
-      - name: lakeFS Logs on S3 failure
+      - name: lakeFS Logs on Spark with gateway failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
+
+      - name: Build Spark direct-access client
+        working-directory: clients/hadoopfs
+        run: mvn -Djar.finalName=client --batch-mode --update-snapshots package
+
+      - name: Test lakeFS S3 with Spark thick client
+        continue-on-error: true # Still working on this client!
+        timeout-minutes: 2
+        env:
+          JARS: clients/hadoopfs/
+          STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}-spark-client
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          USE_DIRECT_ACCESS: "true"
+          REPO: thick-client-test
+        working-directory: test/spark
+        run: ./run-test.sh
+
+      - name: lakeFS Logs on Spark with client failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
