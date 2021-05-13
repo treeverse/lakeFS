@@ -40,8 +40,12 @@ var (
 	//   `--base-uri lakefs://repo1 /main/file.md` will resolve to path `lakefs://repo1/main/file.md`
 	baseURI string
 
+	// logLevel logging level (default is off)
 	logLevel string
+	// logFormat logging format
 	logFormat string
+	// logOutput logging output file
+	logOutput string
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -52,12 +56,9 @@ var rootCmd = &cobra.Command{
 
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if logLevel != "" {
-			logging.SetLevel(logLevel)
-		}
-		if logFormat != "" {
-			logging.SetOutputFormat(logFormat)
-		}
+		logging.SetLevel(logLevel)
+		logging.SetOutputFormat(logFormat)
+		logging.SetOutput(logOutput)
 		if noColorRequested {
 			DisableColors()
 		}
@@ -142,8 +143,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
 	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "", "set logging level")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
+	rootCmd.PersistentFlags().StringVarP(&logOutput, "log-output", "", "", "set logging output file")
 }
 
 // initConfig reads in config file and ENV variables if set.
