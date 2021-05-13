@@ -160,7 +160,7 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 			verifyResult(t, base, getter, cas.Expected, cas.NoVisitExpected)
 
 			// flip right and left and expect the same result
-			base =  ref.FindLowestCommonAncestor(
+			base = ref.FindLowestCommonAncestor(
 				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Right]), caddr(getter.kv[cas.Left]))
 			verifyResult(t, base, getter, cas.Expected, cas.NoVisitExpected)
 		})
