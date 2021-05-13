@@ -5,9 +5,16 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/glue"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 func (m *Table) Update(db, table, serde string, transformLocation func(location string) (string, error)) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":    db,
+		"table": table,
+		"serde": serde,
+	})
 	if m.Sd == nil {
 		m.Sd = &StorageDescriptor{}
 	}
@@ -21,10 +28,20 @@ func (m *Table) Update(db, table, serde string, transformLocation func(location 
 	if m.Sd.Location != "" {
 		m.Sd.Location, err = transformLocation(m.Sd.Location)
 	}
-	return err
+	if err != nil {
+		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update table")
+		return err
+	}
+	log.WithError(err).WithField("table", spew.Sdump(*m)).Debug("Update table")
+	return nil
 }
 
 func (m *Partition) Update(db, table, serde string, transformLocation func(location string) (string, error)) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":    db,
+		"table": table,
+		"serde": serde,
+	})
 	if m.Sd == nil {
 		m.Sd = &StorageDescriptor{}
 	}
@@ -38,7 +55,12 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 	if m.Sd.Location != "" {
 		m.Sd.Location, err = transformLocation(m.Sd.Location)
 	}
-	return err
+	if err != nil {
+		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update partition")
+		return err
+	}
+	log.WithError(err).WithField("partition", spew.Sdump(*m)).Debug("Update partition")
+	return nil
 }
 
 type Database struct {

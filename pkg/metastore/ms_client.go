@@ -3,6 +3,7 @@ package metastore
 import (
 	"context"
 	"fmt"
+
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -39,9 +40,9 @@ func CopyOrMerge(ctx context.Context, fromClient Client, toClient Client, fromDB
 	transformLocation := func(location string) (string, error) {
 		result, err := ReplaceBranchName(location, toBranch)
 		logging.Default().WithError(err).WithFields(logging.Fields{
-			"location": location,
+			"location":  location,
 			"to_branch": toBranch,
-			"result": result,
+			"result":    result,
 		}).Debug("transform location")
 		return result, err
 	}
@@ -155,6 +156,12 @@ func Copy(ctx context.Context, fromTable *Table, partitions []*Partition, toDB, 
 }
 
 func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, toTable, serde string, toClient Client, transformLocation func(location string) (string, error)) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"to_db":    toDB,
+		"to_table": toTable,
+		"serde":    serde,
+	})
+	log.Debug("Merge")
 	err := table.Update(toDB, toTable, serde, transformLocation)
 	if err != nil {
 		return err
@@ -213,11 +220,11 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 
 func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
 	log := logging.Default().WithFields(logging.Fields{
-		"from_db": fromDB,
+		"from_db":    fromDB,
 		"from_table": fromTable,
-		"to_db": toDB,
-		"to_table": toTable,
-		"serde": serde,
+		"to_db":      toDB,
+		"to_table":   toTable,
+		"serde":      serde,
 		"partitions": len(partition),
 	})
 	log.Debug("Copy partition")
