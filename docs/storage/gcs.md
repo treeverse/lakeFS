@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Google Cloud Storage
-description:
+description: This guide explains how to configure Google Cloud Storage as the underlying storage layer.
 parent: Prepare Your Storage
 nav_order: 30
 has_children: false

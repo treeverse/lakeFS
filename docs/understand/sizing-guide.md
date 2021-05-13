@@ -2,7 +2,7 @@
 layout: default
 title: Sizing Guide
 parent: Understanding lakeFS
-description: Sizing guide for deploying lakeFS
+description: This page provides a detailed sizing guide for deploying lakeFS
 nav_order: 30
 has_children: false
 ---

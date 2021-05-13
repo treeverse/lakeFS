@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Glue ETL 
-description: This section covers how you can start using lakeFS with AWS Glue ETL, a fully managed extract, transform, and load service that makes it easy for customers to prepare and load their data for analytics.
+description: This section covers how you can start using lakeFS with AWS Glue ETL.
 parent: Integrations
 nav_order: 66
 has_children: false

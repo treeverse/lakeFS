@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Databricks
-description: Interact with your lakeFS data from Databricks
+description: This section explains how to interact with your lakeFS data from Databricks
 parent: Integrations
 nav_order: 60
 has_children: false
