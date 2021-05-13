@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/logging"
+
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
