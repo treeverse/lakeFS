@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
+
+	"github.com/treeverse/lakefs/pkg/logging"
+
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/hive_metastore"
@@ -96,26 +100,52 @@ func (h *MSClient) CreateTable(ctx context.Context, tbl *metastore.Table) error 
 }
 
 func (h *MSClient) HasTable(ctx context.Context, dbname string, tableName string) (bool, error) {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":    dbname,
+		"table": tableName,
+	})
 	table, err := h.GetTable(ctx, dbname, tableName)
 	var noSuchObjectErr *hive_metastore.NoSuchObjectException
 	if err != nil && !errors.As(err, &noSuchObjectErr) {
+		log.WithError(err).Error("HasTable")
 		return false, err
 	}
-	return table != nil, nil
+	result := table != nil
+	log.WithField("result", result).Debug("HasTable")
+	return result, nil
 }
 
 func (h *MSClient) GetTable(ctx context.Context, dbname string, tableName string) (*metastore.Table, error) {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":    dbname,
+		"table": tableName,
+	})
 	tb, err := h.Client.GetTable(ctx, dbname, tableName)
 	if err != nil {
+		log.WithError(err).Error("GetTable")
 		return nil, err
 	}
-	return TableHiveToLocal(tb), nil
+
+	tbl := TableHiveToLocal(tb)
+	log.WithField("table", tbl).Debug("GetTable")
+	return tbl, nil
 }
 
 func (h *MSClient) AlterTable(ctx context.Context, dbName string, tableName string, newTable *metastore.Table) error {
 	newHiveTable := TableLocalToHive(newTable)
-
-	return h.Client.AlterTable(ctx, dbName, tableName, newHiveTable)
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+		"table":      spew.Sdump(newTable),
+		"hive_table": spew.Sdump(newHiveTable),
+	})
+	err := h.Client.AlterTable(ctx, dbName, tableName, newHiveTable)
+	if err != nil {
+		log.WithError(err).Error("AlterTable")
+		return err
+	}
+	log.Debug("AlterTable")
+	return nil
 }
 
 func (h *MSClient) AddPartitions(ctx context.Context, _ string, _ string, newParts []*metastore.Partition) error {
@@ -125,56 +155,125 @@ func (h *MSClient) AddPartitions(ctx context.Context, _ string, _ string, newPar
 }
 
 func (h *MSClient) GetPartitions(ctx context.Context, dbName string, tableName string) ([]*metastore.Partition, error) {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+	})
 	partitions, err := h.Client.GetPartitions(ctx, dbName, tableName, -1)
 	if err != nil {
+		log.WithError(err).Error("GetPartitions")
 		return nil, err
 	}
-	return PartitionsHiveToLocal(partitions), nil
+	result := PartitionsHiveToLocal(partitions)
+	log.WithField("partitions", spew.Sdump(result)).Debug("GetPartitions")
+	return result, nil
 }
 
 func (h *MSClient) GetPartition(ctx context.Context, dbName string, tableName string, values []string) (*metastore.Partition, error) {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+	})
 	partition, err := h.Client.GetPartition(ctx, dbName, tableName, values)
 	if err != nil {
+		log.WithError(err).Error("GetPartition")
 		return nil, err
 	}
-	return PartitionHiveToLocal(partition), nil
+	result := PartitionHiveToLocal(partition)
+	log.WithField("partition", spew.Sdump(result)).Debug("GetPartition")
+	return result, nil
 }
 
 func (h *MSClient) AlterPartitions(ctx context.Context, dbName string, tableName string, newPartitions []*metastore.Partition) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+	})
 	partitions := PartitionsLocalToHive(newPartitions)
-	return h.Client.AlterPartitions(ctx, dbName, tableName, partitions)
+	err := h.Client.AlterPartitions(ctx, dbName, tableName, partitions)
+	if err != nil {
+		log.WithError(err).Error("AlterPartitions")
+		return err
+	}
+	log.WithField("partitions", spew.Sdump(partitions)).Debug("AlterPartitions")
+	return nil
 }
 
 func (h *MSClient) AlterPartition(ctx context.Context, dbName string, tableName string, partition *metastore.Partition) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+	})
 	hivePartition := PartitionLocalToHive(partition)
-	return h.Client.AlterPartition(ctx, dbName, tableName, hivePartition)
+	err := h.Client.AlterPartition(ctx, dbName, tableName, hivePartition)
+	if err != nil {
+		log.WithError(err).Error("AlterPartition")
+		return err
+	}
+	log.WithField("partition", spew.Sdump(hivePartition)).Debug("AlterPartition")
+	return nil
 }
 
-func (h *MSClient) AddPartition(ctx context.Context, _ string, _ string, newPartition *metastore.Partition) error {
+func (h *MSClient) AddPartition(ctx context.Context, dbName string, tableName string, newPartition *metastore.Partition) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+	})
 	hivePartition := PartitionLocalToHive(newPartition)
 	_, err := h.Client.AddPartition(ctx, hivePartition)
-	return err
+	if err != nil {
+		log.WithError(err).Error("AddPartition")
+		return err
+	}
+	log.WithField("partition", spew.Sdump(hivePartition)).Debug("AddPartition")
+	return nil
 }
 
 func (h *MSClient) DropPartition(ctx context.Context, dbName string, tableName string, values []string) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"db":         dbName,
+		"table_name": tableName,
+		"values":     values,
+	})
 	_, err := h.Client.DropPartition(ctx, dbName, tableName, values, false)
-	return err
+	if err != nil {
+		log.WithError(err).Error("DropPartition")
+		return err
+	}
+	log.Debug("DropPartition")
+	return nil
 }
 
 func (h *MSClient) GetDatabase(ctx context.Context, name string) (*metastore.Database, error) {
+	log := logging.Default().WithFields(logging.Fields{
+		"name": name,
+	})
 	db, err := h.Client.GetDatabase(ctx, name)
 	if err != nil {
+		log.WithError(err).Error("GetDatabase")
 		return nil, err
 	}
-	return DatabaseHiveToLocal(db), nil
+	local := DatabaseHiveToLocal(db)
+	log.WithField("database", local).Debug("GetDatabase")
+	return local, nil
 }
 
 func (h *MSClient) GetDatabases(ctx context.Context, pattern string) ([]*metastore.Database, error) {
+	log := logging.Default().WithFields(logging.Fields{
+		"pattern": pattern,
+	})
 	databaseNames, err := h.Client.GetDatabases(ctx, pattern)
 	if err != nil {
+		log.WithError(err).Error("GetDatabases")
 		return nil, err
 	}
-	return h.getDatabasesFromNames(ctx, databaseNames)
+	result, err := h.getDatabasesFromNames(ctx, databaseNames)
+	if err != nil {
+		log.WithError(err).WithField("names", databaseNames).Error("getDatabasesFromNames")
+		return nil, err
+	}
+	log.WithField("databases", spew.Sdump(result)).Debug("GetDatabases")
+	return result, nil
 }
 
 func (h *MSClient) getDatabasesFromNames(ctx context.Context, names []string) ([]*metastore.Database, error) {

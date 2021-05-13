@@ -3,8 +3,8 @@ package metastore
 import (
 	"context"
 	"fmt"
-
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type ReadClient interface {
@@ -37,7 +37,13 @@ type Client interface {
 
 func CopyOrMerge(ctx context.Context, fromClient Client, toClient Client, fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
 	transformLocation := func(location string) (string, error) {
-		return ReplaceBranchName(location, toBranch)
+		result, err := ReplaceBranchName(location, toBranch)
+		logging.Default().WithError(err).WithFields(logging.Fields{
+			"location": location,
+			"to_branch": toBranch,
+			"result": result,
+		}).Debug("transform location")
+		return result, err
 	}
 	return copyOrMergeWithTransformLocation(ctx, fromClient, toClient, fromDB, fromTable, toDB, toTable, serde, partition, transformLocation)
 }
@@ -206,6 +212,15 @@ func Merge(ctx context.Context, table *Table, partitionIter Collection, toDB, to
 }
 
 func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, fromDB, fromTable, toDB, toTable, serde string, partition []string, transformLocation func(location string) (string, error)) error {
+	log := logging.Default().WithFields(logging.Fields{
+		"from_db": fromDB,
+		"from_table": fromTable,
+		"to_db": toDB,
+		"to_table": toTable,
+		"serde": serde,
+		"partitions": len(partition),
+	})
+	log.Debug("Copy partition")
 	p1, err := fromClient.GetPartition(ctx, fromDB, fromTable, partition)
 	if err != nil {
 		return err
@@ -219,8 +234,10 @@ func CopyPartition(ctx context.Context, fromClient ReadClient, toClient Client, 
 		return err
 	}
 	if p2 == nil {
+		log.Debug("Destination not found - add partition")
 		err = toClient.AddPartition(ctx, "", "", p1)
 	} else {
+		log.Debug("Destination found - alter partition")
 		err = toClient.AlterPartition(ctx, toDB, toTable, p1)
 	}
 	return err
