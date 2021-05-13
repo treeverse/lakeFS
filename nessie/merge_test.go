@@ -1,7 +1,9 @@
 package nessie
 
 import (
+	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"net/http"
 	"testing"
 
@@ -34,17 +36,30 @@ func TestMergeAndList(t *testing.T) {
 	ref := string(createBranchResp.Body)
 	logger.WithField("branchRef", ref).Info("Branch created")
 
+	objs := doMergeAndListIteration(t, logger, ctx, repo, branch, checksums, 1)
+	for _, obj := range objs {
+		_, ok := checksums[obj.Checksum]
+		require.True(t, ok, "file doesn't exist in main but should, obj: %s", obj)
+	}
+	objs = doMergeAndListIteration(t, logger, ctx, repo, branch, checksums, 2)
+	for _, obj := range objs {
+		_, ok := checksums[obj.Checksum]
+		require.True(t, ok, "file doesn't exist in main but should, obj: %s", obj)
+	}
+}
+
+func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Context, repo string, branch string, checksums map[string]string, iteration int) []api.ObjectStats {
 	const addedFiles = 10
 	for i := 0; i < addedFiles; i++ {
 		p := fmt.Sprintf("%d.txt", i)
-		logger.WithField("path", p).Info("Upload content to branch")
+		logger.WithField("iteration", iteration).WithField("path", p).Info("Upload content to branch")
 		checksum, content := uploadFileRandomData(ctx, t, repo, branch, p, false)
 		checksums[checksum] = content
 	}
 	const totalFiles = addedFiles + 1
 
-	logger.Info("Commit uploaded files")
-	commitResp, err = client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
+	logger.WithField("iteration", iteration).Info("Commit uploaded files")
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, api.CommitJSONRequestBody{
 		Message: fmt.Sprintf("Adding %d files", addedFiles),
 	})
 	require.NoError(t, err, "failed to commit changes")
@@ -53,7 +68,7 @@ func TestMergeAndList(t *testing.T) {
 	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err, "failed to merge branches")
 	require.Equal(t, http.StatusOK, mergeRes.StatusCode())
-	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
+	logger.WithField("iteration", iteration).WithField("mergeResult", mergeRes).Info("Merged successfully")
 
 	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
 	require.NoError(t, err, "failed to list objects")
@@ -64,10 +79,6 @@ func TestMergeAndList(t *testing.T) {
 	require.False(t, pagin.HasMore, "pagination shouldn't have more items")
 	require.Len(t, objs, totalFiles)
 	require.Equal(t, totalFiles, pagin.Results)
-	logger.WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
-
-	for _, obj := range objs {
-		_, ok := checksums[obj.Checksum]
-		require.True(t, ok, "file exists in main but shouldn't, obj: %s", obj)
-	}
+	logger.WithField("iteration", iteration).WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
+	return objs
 }
