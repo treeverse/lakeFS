@@ -45,7 +45,6 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 		Right           graveler.CommitID
 		Getter          func() *MockCommitGetter
 		Expected        graveler.CommitID
-		NoVisitExpected []graveler.CommitID
 	}{
 		{
 			Name:  "root_match",
@@ -81,7 +80,6 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 				})
 			},
 			Expected:        "c2",
-			NoVisitExpected: []graveler.CommitID{"c0"},
 		},
 		{
 			Name:  "criss_cross",
@@ -100,7 +98,6 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 				})
 			},
 			Expected:        "c1",
-			NoVisitExpected: []graveler.CommitID{"c0"},
 		},
 		{
 			Name:  "contained",
@@ -157,17 +154,18 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 			getter := cas.Getter()
 			base := ref.FindLowestCommonAncestor(
 				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Left]), caddr(getter.kv[cas.Right]))
-			verifyResult(t, base, getter, cas.Expected, cas.NoVisitExpected)
+			verifyResult(t, base, getter, cas.Expected)
 
 			// flip right and left and expect the same result
-			base = ref.FindLowestCommonAncestor(
+			base =  ref.FindLowestCommonAncestor(
 				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Right]), caddr(getter.kv[cas.Left]))
-			verifyResult(t, base, getter, cas.Expected, cas.NoVisitExpected)
+			verifyResult(t, base, getter, cas.Expected)
+
 		})
 	}
 }
 
-func verifyResult(t *testing.T, base *graveler.Commit, getter *MockCommitGetter, expected graveler.CommitID, noVisitExpected []graveler.CommitID) {
+func verifyResult(t *testing.T, base *graveler.Commit, getter *MockCommitGetter, expected graveler.CommitID) {
 	var addr graveler.CommitID
 	if base != nil {
 		addr = caddr(base)
@@ -181,12 +179,5 @@ func verifyResult(t *testing.T, base *graveler.Commit, getter *MockCommitGetter,
 			}
 		}
 		t.Fatalf("expected %v (%v) got %v (%v)", expected, caddr(getter.kv[expected]), key, addr)
-	}
-
-	//check efficiency i.e check that we didn't iterate over unnecessary nodes
-	for _, addr := range noVisitExpected {
-		if getter.visited[addr] != nil {
-			t.Fatalf("commit %s should not be visited", addr)
-		}
 	}
 }
