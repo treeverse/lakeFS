@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Hooks
-parent: Example Use-Cases
+parent: Guides
 description: lakeFS allows the configuration of hooks to trigger when predefined events occur
-nav_order: 55
+nav_order: 2
 has_children: false
 ---
 

@@ -15,6 +15,7 @@ nav_order: 40
 
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 This section assumes you already have a PostgreSQL database accessible from your Kubernetes cluster.
+Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds), [Azure](./azure.md#creating-the-database-on-azure-database) and [GCP](./gcp.md#creating-the-database-on-gcp-sql).
 
 ## Table of contents
 {: .no_toc .text-delta }
