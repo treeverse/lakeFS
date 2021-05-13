@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
-
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/hive_metastore"
 )
