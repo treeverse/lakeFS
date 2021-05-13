@@ -171,6 +171,7 @@ func (h *MSClient) GetPartition(ctx context.Context, dbName string, tableName st
 	log := logging.Default().WithFields(logging.Fields{
 		"db":         dbName,
 		"table_name": tableName,
+		"values":     values,
 	})
 	partition, err := h.Client.GetPartition(ctx, dbName, tableName, values)
 	if err != nil {
@@ -183,47 +184,50 @@ func (h *MSClient) GetPartition(ctx context.Context, dbName string, tableName st
 }
 
 func (h *MSClient) AlterPartitions(ctx context.Context, dbName string, tableName string, newPartitions []*metastore.Partition) error {
+	partitions := PartitionsLocalToHive(newPartitions)
 	log := logging.Default().WithFields(logging.Fields{
 		"db":         dbName,
 		"table_name": tableName,
+		"partitions": spew.Sdump(partitions),
 	})
-	partitions := PartitionsLocalToHive(newPartitions)
 	err := h.Client.AlterPartitions(ctx, dbName, tableName, partitions)
 	if err != nil {
 		log.WithError(err).Error("AlterPartitions")
 		return err
 	}
-	log.WithField("partitions", spew.Sdump(partitions)).Debug("AlterPartitions")
+	log.Debug("AlterPartitions")
 	return nil
 }
 
 func (h *MSClient) AlterPartition(ctx context.Context, dbName string, tableName string, partition *metastore.Partition) error {
+	hivePartition := PartitionLocalToHive(partition)
 	log := logging.Default().WithFields(logging.Fields{
 		"db":         dbName,
 		"table_name": tableName,
+		"partition":  spew.Sdump(hivePartition),
 	})
-	hivePartition := PartitionLocalToHive(partition)
 	err := h.Client.AlterPartition(ctx, dbName, tableName, hivePartition)
 	if err != nil {
 		log.WithError(err).Error("AlterPartition")
 		return err
 	}
-	log.WithField("partition", spew.Sdump(hivePartition)).Debug("AlterPartition")
+	log.Debug("AlterPartition")
 	return nil
 }
 
 func (h *MSClient) AddPartition(ctx context.Context, dbName string, tableName string, newPartition *metastore.Partition) error {
+	hivePartition := PartitionLocalToHive(newPartition)
 	log := logging.Default().WithFields(logging.Fields{
 		"db":         dbName,
 		"table_name": tableName,
+		"partition":  spew.Sdump(hivePartition),
 	})
-	hivePartition := PartitionLocalToHive(newPartition)
 	_, err := h.Client.AddPartition(ctx, hivePartition)
 	if err != nil {
 		log.WithError(err).Error("AddPartition")
 		return err
 	}
-	log.WithField("partition", spew.Sdump(hivePartition)).Debug("AddPartition")
+	log.Debug("AddPartition")
 	return nil
 }
 
