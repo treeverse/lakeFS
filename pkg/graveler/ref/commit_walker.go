@@ -68,34 +68,33 @@ func (w *CommitWalker) Err() error {
 	return w.err
 }
 
-func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, left, right graveler.CommitID) (*graveler.Commit, error) {
-	discoveredSet := make(map[string]struct{})
+func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, left, right graveler.CommitID) *graveler.Commit {
 	iterLeft := NewCommitWalker(ctx, getter, repositoryID, left)
+	reds := make(map[string]bool)
+	for iterLeft.Next() {
+		addr := addressProvider.ContentAddress(iterLeft.Value())
+		reds[addr] = true
+	}
 	iterRight := NewCommitWalker(ctx, getter, repositoryID, right)
-	for {
-		commit, err := findLowestCommonAncestorNextIter(addressProvider, discoveredSet, iterLeft)
-		if commit != nil || err != nil {
-			return commit, err
-		}
-		commit, err = findLowestCommonAncestorNextIter(addressProvider, discoveredSet, iterRight)
-		if commit != nil || err != nil {
-			return commit, err
-		}
-		if iterLeft.Value() == nil && iterRight.Value() == nil {
-			break
-		}
-	}
-	return nil, nil
-}
-
-func findLowestCommonAncestorNextIter(addressProvider ident.AddressProvider, discoveredSet map[string]struct{}, iter *CommitWalker) (*graveler.Commit, error) {
-	if iter.Next() {
-		commit := iter.Value()
+	blacks := make(map[string]*graveler.Commit)
+	for iterRight.Next() {
+		commit := iterRight.Value()
 		addr := addressProvider.ContentAddress(commit)
-		if _, wasDiscovered := discoveredSet[addr]; wasDiscovered {
-			return commit, nil
+		if reds[addr] {
+			blacks[addr] = commit
 		}
-		discoveredSet[addr] = struct{}{}
 	}
-	return nil, iter.Err()
+	degrees := make(map[string]int)
+	for _, commit := range blacks {
+		for _, parent := range commit.Parents {
+			degrees[parent.String()]++
+		}
+	}
+	for _, commit := range blacks {
+		addr := addressProvider.ContentAddress(commit)
+		if degrees[addr] == 0 {
+			return blacks[addr]
+		}
+	}
+	return nil
 }

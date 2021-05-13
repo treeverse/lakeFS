@@ -135,36 +135,58 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 			},
 			Expected: "",
 		},
+		{
+			Name:  "already_merged",
+			Left:  "c3",
+			Right: "c4",
+			Getter: func() *MockCommitGetter {
+				c0 := &graveler.Commit{Message: "0", Parents: []graveler.CommitID{}}
+				c2 := &graveler.Commit{Message: "2", Parents: []graveler.CommitID{caddr(c0)}}
+				c1 := &graveler.Commit{Message: "1", Parents: []graveler.CommitID{caddr(c0), caddr(c2)}}
+				c3 := &graveler.Commit{Message: "3", Parents: []graveler.CommitID{caddr(c1)}}
+				c4 := &graveler.Commit{Message: "5", Parents: []graveler.CommitID{caddr(c2)}}
+				return newReader(map[graveler.CommitID]*graveler.Commit{
+					"c0": c0, "c1": c1, "c2": c2, "c3": c3, "c4": c4,
+				})
+			},
+			Expected: "c2",
+		},
 	}
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
-			base, err := ref.FindLowestCommonAncestor(
+			base := ref.FindLowestCommonAncestor(
 				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Left]), caddr(getter.kv[cas.Right]))
-			if err != nil {
-				t.Fatal(err)
-			}
-			var addr graveler.CommitID
-			if base != nil {
-				addr = caddr(base)
-			}
-			if addr != caddr(getter.kv[cas.Expected]) {
-				key := "unknown"
-				for k, v := range getter.kv {
-					if addr == caddr(v) {
-						key = string(k)
-						break
-					}
-				}
-				t.Fatalf("expected %v (%v) got %v (%v)", cas.Expected, caddr(getter.kv[cas.Expected]), key, addr)
-			}
+			verifyResult(t, base, getter, cas.Expected, cas.NoVisitExpected)
 
-			//check efficiency i.e check that we didn't iterate over unnecessary nodes
-			for _, addr := range cas.NoVisitExpected {
-				if getter.visited[addr] != nil {
-					t.Fatalf("commit %s should not be visited", addr)
-				}
-			}
+			// flip right and left and expect the same result
+			base =  ref.FindLowestCommonAncestor(
+				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Right]), caddr(getter.kv[cas.Left]))
+			verifyResult(t, base, getter, cas.Expected, cas.NoVisitExpected)
 		})
+	}
+}
+
+func verifyResult(t *testing.T, base *graveler.Commit, getter *MockCommitGetter, expected graveler.CommitID, noVisitExpected []graveler.CommitID) {
+	var addr graveler.CommitID
+	if base != nil {
+		addr = caddr(base)
+	}
+	if addr != caddr(getter.kv[expected]) {
+		key := "unknown"
+		for k, v := range getter.kv {
+			if addr == caddr(v) {
+				key = string(k)
+				break
+			}
+		}
+		t.Fatalf("expected %v (%v) got %v (%v)", expected, caddr(getter.kv[expected]), key, addr)
+	}
+
+	//check efficiency i.e check that we didn't iterate over unnecessary nodes
+	for _, addr := range noVisitExpected {
+		if getter.visited[addr] != nil {
+			t.Fatalf("commit %s should not be visited", addr)
+		}
 	}
 }
