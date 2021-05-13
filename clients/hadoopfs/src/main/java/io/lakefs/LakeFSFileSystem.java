@@ -169,7 +169,7 @@ public class LakeFSFileSystem extends FileSystem {
             Path physicalPath = new Path(physicalUri.toString());
             FileSystem physicalFs = physicalPath.getFileSystem(conf);
             return physicalFs.open(physicalPath, bufSize);
-        } catch (io.lakefs.clients.api.ApiException e) {
+        } catch (ApiException e) {
             throw new RuntimeException("lakeFS API exception", e);
         } catch (java.net.URISyntaxException e) {
             throw new RuntimeException(e);
@@ -190,7 +190,7 @@ public class LakeFSFileSystem extends FileSystem {
      */
     @Override
     public FSDataOutputStream create(Path path, FsPermission permission, boolean overwrite,
-                                     int bufferSize, short unusedReplication, long unusedBlockSize,
+                                     int bufferSize, short replication, long blockSize,
                                      Progressable progress) throws IOException {
         try {
             LOG.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ create path: {} $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", path.toString());
@@ -209,12 +209,12 @@ public class LakeFSFileSystem extends FileSystem {
             return new FSDataOutputStream(new LinkOnCloseOutputStream(s3Client, staging, stagingLoc, objectLoc,
                                                                       physicalUri,
                                                                       // FSDataOutputStream is a kind of OutputStream(!)
-                                                                      physicalFs.create(physicalPath, false, bufferSize, progress)),
+                                                                      physicalFs.create(physicalPath, false, bufferSize, replication, blockSize, progress)),
                                           null);
         }  catch (io.lakefs.clients.api.ApiException e) {
-            throw new RuntimeException("API exception: " + e.getResponseBody());
+            throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new IOException("uri", e);
         }
     }
 
@@ -279,30 +279,58 @@ public class LakeFSFileSystem extends FileSystem {
         try {
             ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            return convertObjectStatsToFileStatus(objectStat);
+            long length = 0;
+            Long sizeBytes = objectStat.getSizeBytes();
+            if (sizeBytes != null) {
+                length = sizeBytes;
+            }
+            long modificationTime = 0;
+            Long mtime = objectStat.getMtime();
+            if (mtime != null) {
+                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
+            }
+            Path filePath = path.makeQualified(this.uri, this.workingDirectory);
+
+            URI physicalUri = translateUri(new URI(objectStat.getPhysicalAddress()));
+            Path physicalPath = new Path(physicalUri.toString());
+            FileSystem physicalFS = physicalPath.getFileSystem(conf);
+            long blockSize = physicalFS.getDefaultBlockSize(physicalPath);
+
+            return new FileStatus(length, false, 0, blockSize, modificationTime, filePath);
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
                 throw new FileNotFoundException(path + " not found");
             }
             throw new IOException("statObject", e);
+        } catch (java.net.URISyntaxException e) {
+            throw new IOException("uri", e);
         }
     }
 
     @Nonnull
-    static FileStatus convertObjectStatsToFileStatus(ObjectStats objectStat) {
-        long length = 0;
-        Long sizeBytes = objectStat.getSizeBytes();
-        if (sizeBytes != null) {
-            length = sizeBytes;
+    private FileStatus convertObjectStatsToFileStatus(ObjectStats objectStat) throws IOException {
+        try {
+            long length = 0;
+            Long sizeBytes = objectStat.getSizeBytes();
+            if (sizeBytes != null) {
+                length = sizeBytes;
+            }
+            long modificationTime = 0;
+            Long mtime = objectStat.getMtime();
+            if (mtime != null) {
+                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
+            }
+            Path filePath = new Path(objectStat.getPath()).makeQualified(this.uri, this.workingDirectory);
+
+            URI physicalUri = translateUri(new URI(objectStat.getPhysicalAddress()));
+            Path physicalPath =new Path(physicalUri.toString());
+            FileSystem physicalFS = physicalPath.getFileSystem(conf);
+            long blockSize = physicalFS.getDefaultBlockSize(physicalPath);
+            boolean isdir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
+            return new FileStatus(length, isdir, 0, blockSize, modificationTime, filePath);
+        } catch (java.net.URISyntaxException e) {
+            throw new IOException("uri", e);
         }
-        long modificationTime = 0;
-        Long mtime = objectStat.getMtime();
-        if (mtime != null) {
-            modificationTime = TimeUnit.SECONDS.toMillis(mtime);
-        }
-        Path filePath = new Path(objectStat.getPath());
-        boolean isdir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
-        return new FileStatus(length, isdir, 0, 0, modificationTime, filePath);
     }
 
     /**
