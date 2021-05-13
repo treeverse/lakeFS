@@ -9,10 +9,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/batch"
-
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
+	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/db"
@@ -654,6 +654,9 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 	}
 }
 
+func (c *Catalog) GenerateName() (string, error) {
+	return nanoid.New()
+}
 func (c *Catalog) CreateEntry(ctx context.Context, repository string, branch string, entry DBEntry, writeConditions ...graveler.WriteConditionOption) error {
 	repositoryID := graveler.RepositoryID(repository)
 	branchID := graveler.BranchID(branch)

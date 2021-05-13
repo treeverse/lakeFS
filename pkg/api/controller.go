@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -140,7 +139,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	// Generate a name.
-	name, err := nanoid.New()
+	name, err := c.Catalog.GenerateName()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -1708,7 +1707,12 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	defer func() { _ = file.Close() }()
-	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
+	physicalAddress, err := c.Catalog.GenerateName()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, physicalAddress, file, handler.Size, block.PutOpts{StorageClass: params.StorageClass})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return

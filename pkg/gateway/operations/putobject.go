@@ -8,11 +8,10 @@ import (
 	"strings"
 	"time"
 
-	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
-
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	ghttp "github.com/treeverse/lakefs/pkg/gateway/http"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -74,11 +73,22 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 		return // operation already failed
 	}
 	ent.CreationDate = time.Now()
-	ent.Path = o.Path
-	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, *ent)
+	address, err := o.Catalog.GenerateName()
 	if err != nil {
-		o.Log(req).WithError(err).Error("could not write copy destination")
-		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	sourceObjectPointer := block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}
+	destinationObjectPointer := block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: address}
+
+	err = o.BlockStore.Copy(req.Context(), sourceObjectPointer, destinationObjectPointer)
+	if err != nil {
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	err = o.finishUpload(req, ent.Checksum, address, ent.Size, true)
+	if err != nil {
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 
@@ -217,7 +227,13 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object")
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, req.Body, req.ContentLength, opts)
+	physicalAddress, err := o.Catalog.GenerateName()
+	if err != nil {
+		o.Log(req).WithError(err).Error("failed generating a name for physical address")
+		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, physicalAddress, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
 		_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
