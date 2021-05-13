@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import com.amazonaws.ClientConfiguration;
@@ -18,6 +19,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import io.lakefs.clients.api.model.ObjectStatsList;
 import io.lakefs.clients.api.model.Pagination;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -65,6 +67,8 @@ public class LakeFSFileSystem extends FileSystem {
     private AmazonS3 s3Client;
     private int listAmount;
 
+    private FileSystem fsForConfig;
+
     private URI translateUri(URI uri) throws java.net.URISyntaxException {
         switch (uri.getScheme()) {
         case "s3":
@@ -109,6 +113,36 @@ public class LakeFSFileSystem extends FileSystem {
         s3Client = createS3ClientFromConf(conf);
 
         listAmount = conf.getInt(FS_LAKEFS_LIST_AMOUNT_KEY, DEFAULT_LIST_AMOUNT);
+
+        Path path = new Path(name);
+
+        // TODO(ariels): Retrieve base filesystem configuration for URI from new API.  Needed
+        //     when this fs is contructed in order to create a new file, which cannot be Stat'ed
+        try {
+            ObjectsApi objects = new ObjectsApi(apiClient);
+            ObjectLocation objectLoc = pathToObjectLocation(path);
+            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
+            Path physicalPath = new Path(physicalUri.toString());
+            fsForConfig = physicalPath.getFileSystem(conf);
+        } catch (Exception e) {
+            LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
+        }
+    }
+
+    @FunctionalInterface
+    private interface BiFunctionWithIOException<U, V, R> {
+        R apply(U u, V v) throws IOException;
+    }
+
+    /**
+     * @return FileSystem suitable for the translated physical address
+     */
+    protected<R> R withFileSystemAndTranslatedPhysicalPath(String physicalAddress, BiFunctionWithIOException<FileSystem, Path, R> f) throws java.net.URISyntaxException, IOException {
+        URI uri = translateUri(new URI(physicalAddress));
+        Path path = new Path(uri.toString());
+        FileSystem fs = path.getFileSystem(conf);
+        return f.apply(fs, path);
     }
 
     /**
@@ -151,11 +185,22 @@ public class LakeFSFileSystem extends FileSystem {
         return s3;
     }
 
-    /**
-     *{@inheritDoc}
-     * Called on a file read Spark action. This method returns a FSDataInputStream with a static string,
-     * regardless of the given file path.
-     */
+    @Override
+    public long getDefaultBlockSize(Path path) {
+        if (fsForConfig != null) {
+            return fsForConfig.getDefaultBlockSize(path);
+        }
+        return Constants.DEFAULT_BLOCK_SIZE;
+    }
+
+    @Override
+    public long getDefaultBlockSize() {
+        if (fsForConfig != null) {
+            return fsForConfig.getDefaultBlockSize();
+        }
+        return Constants.DEFAULT_BLOCK_SIZE;
+    }
+
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
         try {
@@ -164,15 +209,11 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objects = new ObjectsApi(apiClient);
             ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-            URI physicalUri = translateUri(new URI(stats.getPhysicalAddress()));
-
-            Path physicalPath = new Path(physicalUri.toString());
-            FileSystem physicalFs = physicalPath.getFileSystem(conf);
-            return physicalFs.open(physicalPath, bufSize);
+            return withFileSystemAndTranslatedPhysicalPath(stats.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.open(p, bufSize));
         } catch (ApiException e) {
-            throw new RuntimeException("lakeFS API exception", e);
+            throw new IOException("lakeFS API", e);
         } catch (java.net.URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new IOException("open physical", e);
         }
     }
 
@@ -214,7 +255,7 @@ public class LakeFSFileSystem extends FileSystem {
         }  catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         } catch (java.net.URISyntaxException e) {
-            throw new IOException("uri", e);
+            throw new IOException("underlying storage uri", e);
         }
     }
 
@@ -280,6 +321,8 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objectsApi = new ObjectsApi(this.apiClient);
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
             long length = 0;
+
+
             Long sizeBytes = objectStat.getSizeBytes();
             if (sizeBytes != null) {
                 length = sizeBytes;
@@ -290,12 +333,7 @@ public class LakeFSFileSystem extends FileSystem {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
             Path filePath = path.makeQualified(this.uri, this.workingDirectory);
-
-            URI physicalUri = translateUri(new URI(objectStat.getPhysicalAddress()));
-            Path physicalPath = new Path(physicalUri.toString());
-            FileSystem physicalFS = physicalPath.getFileSystem(conf);
-            long blockSize = physicalFS.getDefaultBlockSize(physicalPath);
-
+            long blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), (FileSystem fs, Path p) -> fs.getDefaultBlockSize(p));
             return new FileStatus(length, false, 0, blockSize, modificationTime, filePath);
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
@@ -303,7 +341,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
             throw new IOException("statObject", e);
         } catch (java.net.URISyntaxException e) {
-            throw new IOException("uri", e);
+            throw new IOException("underlying storage uri", e);
         }
     }
 
@@ -354,8 +392,18 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Override
-    public boolean exists(Path f) throws IOException {
-        return false;
+    public boolean exists(Path path) throws IOException {
+        ObjectsApi objects = new ObjectsApi(apiClient);
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        try {
+            objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
+            return true;
+        } catch (ApiException e) {
+            if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+                return false;
+            }
+            throw new IOException("lakefs", e);
+        }
     }
 
     /**
