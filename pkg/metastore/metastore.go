@@ -9,6 +9,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+const ParametersPathKey = "path"
+
 func (m *Table) Update(db, table, serde string, transformLocation func(location string) (string, error)) error {
 	log := logging.Default().WithFields(logging.Fields{
 		"db":    db,
@@ -24,6 +26,11 @@ func (m *Table) Update(db, table, serde string, transformLocation func(location 
 	m.DBName = db
 	m.TableName = table
 	m.Sd.SerdeInfo.Name = serde
+	if v, ok := m.Parameters[ParametersPathKey]; ok {
+		if newPath, err := transformLocation(v); err != nil {
+			m.Parameters[ParametersPathKey] = newPath
+		}
+	}
 	var err error
 	if m.Sd.Location != "" {
 		m.Sd.Location, err = transformLocation(m.Sd.Location)
@@ -51,6 +58,11 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 	m.DBName = db
 	m.TableName = table
 	m.Sd.SerdeInfo.Name = serde
+	if v, ok := m.Parameters[ParametersPathKey]; ok {
+		if newPath, err := transformLocation(v); err != nil {
+			m.Parameters[ParametersPathKey] = newPath
+		}
+	}
 	var err error
 	if m.Sd.Location != "" {
 		m.Sd.Location, err = transformLocation(m.Sd.Location)
