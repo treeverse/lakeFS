@@ -5,6 +5,7 @@ parent: Guides
 description: lakeFS allows the configuration of hooks to trigger when predefined events occur
 nav_order: 2
 has_children: false
+redirect_from: ../hooks.html
 ---
 
 # Configurable Hooks

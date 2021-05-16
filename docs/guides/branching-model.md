@@ -5,6 +5,9 @@ description: This page explains how lakeFS uses a Git-like branching model at it
 parent: Guides
 has_children: false
 nav_order: 3
+redirect_from:
+    - ../branching/
+    - ../branching/model.html
 ---
 
 # Branching Model

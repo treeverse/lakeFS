@@ -5,6 +5,7 @@ description: This section covers how to use the AWS CLI for AWS S3 to access lak
 parent: Integrations
 nav_order: 15
 has_children: false
+redirect_from: ../using/aws_cli.html
 ---
 
 # Using lakeFS with AWS CLI

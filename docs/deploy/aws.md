@@ -4,6 +4,11 @@ title: On AWS
 parent: Deploy lakeFS
 description: 
 nav_order: 10
+redirect_from:
+   - ../deploying-aws/index.html
+   - ../deploying-aws/install.html
+   - ../deploying-aws/db.html
+   - ../deploying-aws/lb_dns.html
 ---
 
 # Deploy lakeFS on AWS

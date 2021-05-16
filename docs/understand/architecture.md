@@ -5,6 +5,9 @@ parent: Understanding lakeFS
 description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.
 nav_order: 10
 has_children: false
+redirect_from:
+    - architecture/index.html
+    - architecture/overview.html
 ---
 # Architecture Overview
 {: .no_toc }

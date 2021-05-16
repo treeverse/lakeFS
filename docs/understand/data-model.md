@@ -5,6 +5,7 @@ parent: Understanding lakeFS
 description: This page explains the lakeFS Data Model
 nav_order: 20
 has_children: false
+redirect_from: ../architecture/data-model.html
 ---
 # Data Model
 {: .no_toc }

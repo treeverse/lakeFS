@@ -5,6 +5,7 @@ description: This section covers how to use MinIO as the underlying storage for 
 parent: Integrations
 nav_order: 47
 has_children: false
+redirect_from: ../using/minio.html
 ---
 
 # Using lakeFS with MinIO

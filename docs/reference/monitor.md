@@ -5,6 +5,7 @@ description: Users looking to monitor their lakeFS instances can point Prometheu
 parent: Reference
 nav_order: 30
 has_children: false
+redirect_from: ../deploying-aws/monitor.md
 ---
 
 # Monitoring using Prometheus

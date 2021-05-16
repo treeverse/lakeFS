@@ -5,6 +5,7 @@ description: Rclone is a command line program to sync files and directories betw
 parent: Integrations
 nav_order: 10
 has_children: false
+redirect_from: ../using/rclone.html
 ---
 # Copying data with rclone
 {: .no_toc }

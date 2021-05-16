@@ -5,6 +5,7 @@ parent: Understanding lakeFS
 description: New features and improvements are lined up next for lakeFS. We would love you to be part of building lakeFS’s roadmap.
 nav_order: 40
 has_children: false
+redirect_from: ../roadmap.html
 ---
 
 # Roadmap

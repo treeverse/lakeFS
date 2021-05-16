@@ -5,6 +5,7 @@ description: This section covers how you can start using lakeFS with Presto, is 
 parent: Integrations
 nav_order: 40
 has_children: false
+redirect_from: ../using/presto.html
 ---
 
 # Using lakeFS with Presto

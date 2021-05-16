@@ -5,6 +5,7 @@ description: This section covers how you can start using lakeFS with MapReduce, 
 parent: Integrations
 nav_order: 75
 has_children: false
+redirect_from: ../using/mapreduce.html
 ---
 
 # Using lakeFS with MapReduce

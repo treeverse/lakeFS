@@ -5,6 +5,7 @@ description: This section covers how you can start using lakeFS with AWS Glue ET
 parent: Integrations
 nav_order: 66
 has_children: false
+redirect_from: ../using/glue_etl.html
 ---
 
 # Using lakeFS with Glue ETL

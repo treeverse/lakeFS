@@ -5,6 +5,7 @@ description: Upgrading lakeFS from a previous version usually just requires re-d
 parent: Reference
 nav_order: 50
 has_children: false
+redirect_from: ../deploying-aws/upgrade.html
 ---
 
 # Upgrading lakeFS

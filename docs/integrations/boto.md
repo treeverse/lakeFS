@@ -5,6 +5,7 @@ description: This section covers how you can start using lakeFS with Boto (Pytho
 parent: Integrations
 nav_order: 45
 has_children: false
+redirect_from: ../using/boto.html
 ---
 
 # Using lakeFS with Boto (Python)

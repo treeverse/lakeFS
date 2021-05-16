@@ -5,6 +5,7 @@ description: The simplest way to migrate away from lakeFS is to copy data from a
 parent: Reference
 nav_order: 40
 has_children: false
+redirect_from: ../deploying-aws/offboarding.html
 ---
 
 # Migrating away from lakeFS

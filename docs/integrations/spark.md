@@ -5,6 +5,7 @@ description: Accessing data in lakeFS from Apache Spark is the same as accessing
 parent: Integrations
 nav_order: 20
 has_children: false
+redirect_from: ../using/spark.html
 ---
 
 # Using lakeFS with Spark

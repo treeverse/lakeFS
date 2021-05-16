@@ -5,6 +5,7 @@ description: This section covers how you can start using lakeFS with Amazon EMR,
 parent: Integrations
 nav_order: 35
 has_children: false
+redirect_from: ../using/emr.html
 ---
 
 # Using lakeFS with EMR

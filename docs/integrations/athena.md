@@ -5,6 +5,7 @@ description: This section covers how you can start querying data from lakeFS usi
 parent: Integrations
 nav_order: 50
 has_children: false
+redirect_from: ../using/athena.html
 ---
 
 # Using lakeFS with Amazon Athena

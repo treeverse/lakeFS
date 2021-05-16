@@ -5,6 +5,7 @@ description: When working with Glue or Hive metastore, each table can point only
 parent: Integrations
 nav_order: 65
 has_children: false
+redirect_from: ../using/glue_hive_metastore.html
 ---
 
 # Glue / Hive metastore 

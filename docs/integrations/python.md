@@ -5,6 +5,7 @@ description: The lakeFS API is OpenAPI 3.0 compliant, allowing the generation of
 parent: Integrations
 nav_order: 30
 has_children: false
+redirect_from: ../using/python.html
 ---
 
 # Calling the lakeFS API from Python

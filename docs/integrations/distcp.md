@@ -5,6 +5,7 @@ description: Apache Hadoop DistCp is a tool used for large inter/intra-cluster c
 parent: Integrations
 nav_order: 5
 has_children: false
+redirect_from: ../using/distcp.html
 ---
 
 # Copying Data to/from lakeFS with DistCp

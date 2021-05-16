@@ -5,6 +5,8 @@ parent: Understanding lakeFS
 description: This page provides a detailed sizing guide for deploying lakeFS
 nav_order: 30
 has_children: false
+redirect_from:
+    - ../architecture/sizing-guide.html
 ---
 # Sizing guide
 {: .no_toc }

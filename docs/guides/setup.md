@@ -5,6 +5,8 @@ description: This section outlines how to setup your environment once lakeFS is 
 parent: Guides
 nav_order: 1
 has_children: false
+redirect_from:
+   - ../deploying-aws/setup.html
 ---
 
 # Setup
@@ -29,7 +31,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
    
 # Next steps
 
-After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](../reference/import.md) to bring your data without copying it.
+After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](import.md) to bring your data without copying it.
 Alternatively, if you wish to copy existing data from an S3 bucket to lakeFS, use [DistCp](../integrations/distcp.md) or [Rclone](../integrations/rclone.md).
 
 Check out the usage guides under [Integrations](../integrations/index.md) for other options.

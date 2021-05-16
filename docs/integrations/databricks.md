@@ -5,6 +5,7 @@ description: This section explains how to interact with your lakeFS data from Da
 parent: Integrations
 nav_order: 60
 has_children: false
+redirect_from: ../using/databricks.html
 ---
 
 # Using lakeFS with Databricks

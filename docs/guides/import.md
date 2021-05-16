@@ -2,9 +2,10 @@
 layout: default
 title: Importing data into lakeFS 
 description: In order to import existing data to lakeFS, you may choose to copy it using S3 CLI or using tools like Apache DistCp.
-parent: Reference
+parent: Guides
 nav_order: 8
 has_children: false
+redirect_from: ../reference/import.html
 ---
 This page describes importing from versions >= v0.24.0. For ealier versions, see [mvcc import](import-mvcc.md)
 {: .note .pb-3 }
