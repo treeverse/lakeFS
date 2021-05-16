@@ -40,11 +40,11 @@ func caddr(commit *graveler.Commit) graveler.CommitID {
 
 func TestFindLowestCommonAncestor(t *testing.T) {
 	cases := []struct {
-		Name            string
-		Left            graveler.CommitID
-		Right           graveler.CommitID
-		Getter          func() *MockCommitGetter
-		Expected        graveler.CommitID
+		Name     string
+		Left     graveler.CommitID
+		Right    graveler.CommitID
+		Getter   func() *MockCommitGetter
+		Expected graveler.CommitID
 	}{
 		{
 			Name:  "root_match",
@@ -79,7 +79,7 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 					"c0": c0, "c1": c1, "c2": c2, "c3": c3, "c4": c4,
 				})
 			},
-			Expected:        "c2",
+			Expected: "c2",
 		},
 		{
 			Name:  "criss_cross",
@@ -97,7 +97,7 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 					"c0": c0, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6,
 				})
 			},
-			Expected:        "c1",
+			Expected: "c1",
 		},
 		{
 			Name:  "contained",
@@ -157,9 +157,8 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 				c2 := &graveler.Commit{Message: "2", Parents: []graveler.CommitID{caddr(c1)}}
 				c3 := &graveler.Commit{Message: "3", Parents: []graveler.CommitID{caddr(c2)}}
 				c4 := &graveler.Commit{Message: "4", Parents: []graveler.CommitID{caddr(c3)}}
-				x :=  &graveler.Commit{Message: "x", Parents: []graveler.CommitID{caddr(c4), caddr(c1)}}
-				y :=  &graveler.Commit{Message: "y", Parents: []graveler.CommitID{caddr(c2)}}
-
+				x := &graveler.Commit{Message: "x", Parents: []graveler.CommitID{caddr(c4), caddr(c1)}}
+				y := &graveler.Commit{Message: "y", Parents: []graveler.CommitID{caddr(c2)}}
 				return newReader(map[graveler.CommitID]*graveler.Commit{
 					"c1": c1, "c2": c2, "c3": c3, "c4": c4, "x": x, "y": y,
 				})
@@ -175,7 +174,7 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 			verifyResult(t, base, getter, cas.Expected)
 
 			// flip right and left and expect the same result
-			base =  ref.FindLowestCommonAncestor(
+			base = ref.FindLowestCommonAncestor(
 				context.Background(), getter, ident.NewHexAddressProvider(), "", caddr(getter.kv[cas.Right]), caddr(getter.kv[cas.Left]))
 			verifyResult(t, base, getter, cas.Expected)
 
