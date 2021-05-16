@@ -26,11 +26,12 @@ func (m *Table) Update(db, table, serde string, transformLocation func(location 
 	m.DBName = db
 	m.TableName = table
 	m.Sd.SerdeInfo.Name = serde
-	if v, ok := m.Parameters[ParametersPathKey]; ok {
-		if newPath, err := transformLocation(v); err != nil {
-			m.Parameters[ParametersPathKey] = newPath
+	if v, ok := m.Sd.SerdeInfo.Parameters[ParametersPathKey]; ok {
+		if newPath, err := transformLocation(v); err == nil {
+			m.Sd.SerdeInfo.Parameters[ParametersPathKey] = newPath
 		}
 	}
+
 	var err error
 	if m.Sd.Location != "" {
 		m.Sd.Location, err = transformLocation(m.Sd.Location)
@@ -39,6 +40,7 @@ func (m *Table) Update(db, table, serde string, transformLocation func(location 
 		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update table")
 		return err
 	}
+
 	log.WithError(err).WithField("table", spew.Sdump(*m)).Debug("Update table")
 	return nil
 }
@@ -58,11 +60,12 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 	m.DBName = db
 	m.TableName = table
 	m.Sd.SerdeInfo.Name = serde
-	if v, ok := m.Parameters[ParametersPathKey]; ok {
-		if newPath, err := transformLocation(v); err != nil {
-			m.Parameters[ParametersPathKey] = newPath
+	if v, ok := m.Sd.SerdeInfo.Parameters[ParametersPathKey]; ok {
+		if newPath, err := transformLocation(v); err == nil {
+			m.Sd.SerdeInfo.Parameters[ParametersPathKey] = newPath
 		}
 	}
+
 	var err error
 	if m.Sd.Location != "" {
 		m.Sd.Location, err = transformLocation(m.Sd.Location)
@@ -71,6 +74,7 @@ func (m *Partition) Update(db, table, serde string, transformLocation func(locat
 		log.WithError(err).WithField("table", spew.Sdump(*m)).Error("Update partition")
 		return err
 	}
+
 	log.WithError(err).WithField("partition", spew.Sdump(*m)).Debug("Update partition")
 	return nil
 }
