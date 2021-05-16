@@ -1,7 +1,5 @@
 package io.lakefs;
 
-import org.apache.hadoop.fs.Path;
-
 class ObjectLocation {
     private String repository;
     private String ref;
@@ -32,7 +30,7 @@ class ObjectLocation {
     }
 
     static String trimLeadingSlash(String s) {
-        if (s.startsWith(Constants.SEPARATOR)) {
+        if (s.startsWith(Constants.URI_SEPARATOR)) {
             return s.substring(1);
         }
         return s;

@@ -62,38 +62,42 @@ func SetLevel(level string) {
 	case "panic":
 		defaultLogger.SetLevel(logrus.PanicLevel)
 	case "null", "none":
+		defaultLogger.SetLevel(logrus.PanicLevel)
 		defaultLogger.SetOutput(ioutil.Discard)
 	}
 }
 
 func SetOutput(output string) {
+	if output == "" {
+		return
+	}
 	if output == "-" {
 		defaultLogger.SetOutput(os.Stdout)
-	} else {
-		filename := output
-		handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			panic(fmt.Errorf("could not open log file: %w", err))
-		}
-		defaultLogger.SetOutput(handle)
-		// setup signal handler to reopen logfile on SIGHUP
-		sigChannel := make(chan os.Signal, 1)
-		signal.Notify(sigChannel, syscall.SIGHUP)
-		go func() {
-			for {
-				<-sigChannel
-				defaultLogger.Info("SIGHUP received, rotating log file")
-				defaultLogger.SetOutput(ioutil.Discard)
-				_ = handle.Close()
-				handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
-				if err != nil {
-					panic(fmt.Errorf("could not open log file: %w", err))
-				}
-				defaultLogger.SetOutput(handle)
-				defaultLogger.Info("log file was rotated successfully")
-			}
-		}()
+		return
 	}
+
+	handle, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		panic(fmt.Errorf("could not open log file: %w", err))
+	}
+	defaultLogger.SetOutput(handle)
+	// setup signal handler to reopen logfile on SIGHUP
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGHUP)
+	go func(filename string) {
+		for {
+			<-sigChannel
+			defaultLogger.Info("SIGHUP received, rotating log file")
+			defaultLogger.SetOutput(ioutil.Discard)
+			_ = handle.Close()
+			handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
+			if err != nil {
+				panic(fmt.Errorf("could not open log file: %w", err))
+			}
+			defaultLogger.SetOutput(handle)
+			defaultLogger.Info("log file was rotated successfully")
+		}
+	}(output)
 }
 
 func SetOutputFormat(format string) {

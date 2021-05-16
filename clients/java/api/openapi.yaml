@@ -4119,17 +4119,13 @@ components:
     ResetCreation:
       example:
         path: path
-        commit: commit
         type: object
       properties:
         type:
           enum:
           - object
           - common_prefix
-          - commit
           - reset
-          type: string
-        commit:
           type: string
         path:
           type: string
