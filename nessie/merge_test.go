@@ -3,12 +3,12 @@ package nessie
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 func TestMergeAndList(t *testing.T) {
