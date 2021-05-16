@@ -87,8 +87,6 @@ For an AWS load balancer with Route53 DNS, create a simple record, and choose *A
 
 For other DNS providers, refer to the documentation on how to add CNAME records.
 
-You can now move on to the [Setup](../guides/setup.md) page.
-
 ## Next Steps
 You can now move on to the [Setup](../guides/setup.md) page.
 
