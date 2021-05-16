@@ -70,30 +70,35 @@ func (w *CommitWalker) Err() error {
 
 func FindLowestCommonAncestor(ctx context.Context, getter CommitGetter, addressProvider ident.AddressProvider, repositoryID graveler.RepositoryID, left, right graveler.CommitID) *graveler.Commit {
 	iterLeft := NewCommitWalker(ctx, getter, repositoryID, left)
-	reds := make(map[string]bool)
+	// find the set of all ancestors of the left commit:
+	leftAncestors := make(map[string]bool)
 	for iterLeft.Next() {
 		addr := addressProvider.ContentAddress(iterLeft.Value())
-		reds[addr] = true
+		leftAncestors[addr] = true
 	}
 	iterRight := NewCommitWalker(ctx, getter, repositoryID, right)
-	blacks := make(map[string]*graveler.Commit)
+	// find the set of all common ancestors:
+	commonAncestors := make(map[string]*graveler.Commit)
 	for iterRight.Next() {
 		commit := iterRight.Value()
 		addr := addressProvider.ContentAddress(commit)
-		if reds[addr] {
-			blacks[addr] = commit
+		if leftAncestors[addr] {
+			commonAncestors[addr] = commit
 		}
 	}
-	degrees := make(map[string]int)
-	for _, commit := range blacks {
+	// on the subgraph containing only the common ancestors
+	// count the number of children for each node
+	children := make(map[string]int)
+	for _, commit := range commonAncestors {
 		for _, parent := range commit.Parents {
-			degrees[parent.String()]++
+			children[parent.String()]++
 		}
 	}
-	for _, commit := range blacks {
+	// the nodes with 0 children in the common graph qualify as lowest common ancestors
+	for _, commit := range commonAncestors {
 		addr := addressProvider.ContentAddress(commit)
-		if degrees[addr] == 0 {
-			return blacks[addr]
+		if children[addr] == 0 {
+			return commonAncestors[addr]
 		}
 	}
 	return nil
