@@ -20,7 +20,7 @@ has_children: false
 
 `lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
 
-[Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
+[Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
 
 
 ### Configuring credentials and API endpoint
@@ -1468,7 +1468,7 @@ lakectl fs stage <path uri> [flags]
   -h, --help              help for stage
       --location string   fully qualified storage location (i.e. "s3://bucket/path/to/object")
       --meta strings      key value pairs in the form of key=value
-      --mtime int         Object modified time (Unix Epoch in seconds). Defaults to current time.
+      --mtime int         Object modified time (Unix Epoch in seconds). Defaults to current time
       --size int          Object size in bytes
 ```
 
@@ -1937,7 +1937,8 @@ lakectl tag create <tag uri> <commit ref> [flags]
 #### Options
 
 ```
-  -h, --help   help for create
+  -f, --force   override the tag if it exists
+  -h, --help    help for create
 ```
 
 

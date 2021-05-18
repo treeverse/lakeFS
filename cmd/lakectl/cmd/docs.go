@@ -32,7 +32,7 @@ has_children: false
 
 ` + "`" + `lakectl` + "`" + ` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
 
-[Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
+[Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
 
 
 ### Configuring credentials and API endpoint
