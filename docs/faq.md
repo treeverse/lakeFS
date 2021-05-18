@@ -9,10 +9,10 @@ has_children: false
 # FAQ
 
 ### 1. What open source license are you using?
-lakeFS is completely free and open source and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0){:target="_blank"} License.
+lakeFS is completely free and open source and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License.
 
 ### 2. The project is backed by a commercial company. What is your commitment to open source?
-Since it is important to us to align expectations, we have gathered our thoughts on the subject [here](https://docs.lakefs.io/understand/licensing.html){:target="_blank"}.
+Since it is important to us to align expectations, we have gathered our thoughts on the subject [here](https://docs.lakefs.io/understand/licensing.html).
 
 ### 3. How do I get support for my lakeFS installation?
 We are extremely responsive on our slack channel, and we make sure to prioritize and with the community the issues most urgent for it. For SLA based support, please contact us at [support@treeverse.io](mailto:support@treeverse.io).
