@@ -16,7 +16,7 @@ has_children: false
 
   1. Download the CLI binary:
 
-     [Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
+     [Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
   
   
   1. It's recommended that you place it somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet).
@@ -64,4 +64,4 @@ has_children: false
 
 ### Next steps
 
-Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploying-aws/index.md).
+Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](../deploy/index.md).
