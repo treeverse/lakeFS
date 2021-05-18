@@ -20,9 +20,6 @@ Thank you for your interest in contributing to our project. We are excited to bu
 ### 4. How do I get support for my lakeFS installation?
 We are extremely responsive on our slack channel, and we make sure to prioritize and with the community the issues most urgent for it. For SLA based support, please contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
-### 5. Can I get lakeFS as SAAS?
-We’d be happy to speak and learn more about your requirements. Email us at [support@treeverse.io](mailto:support@treeverse.io).
-
 ### 6. Do you collect data from your active installations?
 We collect anonymous usage statistics in order to understand the patterns of use and to detect product gaps we may have so we can fix them.
 
@@ -35,8 +32,8 @@ The data we gather is limited to the following:
 1. Metadata regarding the database used (version, installed extensions and parameters such as DB Timezone and work memory)
 1. Periodic aggregated action counters (e.g. how many "get_object" operations occurred).
 
-### 7. What is the difference between lakeFS / Delta Lake /  Hudi / Iceberg?
-We support different use-cases. Delta Lake, Hudi and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using git-like operations.  Read our [blog](https://lakefs.io/data-versioning/) for a more detailed comparison. 
+### 7. How is lakeFS different from Delta Lake / Hudi / Iceberg?
+Delta Lake, Hudi and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using git-like operations. Read our [blog](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/) for a more detailed comparison. 
 
 ### 8. What inspired your logo?
 The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a species of salamander, also known as the Mexican Lake Monster or the Peter Pan of the animal kingdom. It's a magical creature, living in a lake, just like us :-).
