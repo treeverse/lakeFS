@@ -15,6 +15,15 @@ lakeFS requires a PostgreSQL database to synchronize actions on your repositorie
 This section assumes you already have a PostgreSQL database accessible from where you intend to install lakeFS.
 Instructions for creating the database can be found on the deployment instructions for [AWS](./aws.md#creating-the-database-on-aws-rds), [Azure](./azure.md#creating-the-database-on-azure-database) and [GCP](./gcp.md#creating-the-database-on-gcp-sql).
 
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC 
+{:toc}
+
+{% include_relative includes/prerequisites.md %}
+
+## Installing on Docker
 To deploy using Docker, create a yaml configuration file.
 Here is a minimal example, but you can see the [reference](../reference/configuration.md#example-aws-deployment) for the full list of configurations.
 <div class="tabs">
@@ -24,13 +33,13 @@ Here is a minimal example, but you can see the [reference](../reference/configur
   <li><a href="#docker-tabs-3">Microsoft Azure</a></li>
 </ul>
 <div markdown="1" id="docker-tabs-1">      
-{% include_relative installation-methods/aws-docker-config.md %}
+{% include_relative includes/aws-docker-config.md %}
 </div>
 <div markdown="1" id="docker-tabs-2">
-{% include_relative installation-methods/gcp-docker-config.md %}
+{% include_relative includes/gcp-docker-config.md %}
 </div>
 <div markdown="1" id="docker-tabs-3">
-{% include_relative installation-methods/azure-docker-config.md %}
+{% include_relative includes/azure-docker-config.md %}
 </div>
 </div>
 
@@ -44,4 +53,18 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-Once your installation is running, move on to [Load Balancing and DNS](./lb_dns.md).
+## Load balancing
+You should have a load balancer direct requests to the lakeFS server.
+By default, lakeFS operates on port 8000, and exposes a `/_health` endpoint which you can use for health checks.
+
+## DNS
+As mentioned above, you should create 3 DNS records for lakeFS:
+1. One record for the lakeFS API: `lakefs.example.com`
+1. Two records for the S3-compatible API: `s3.lakefs.example.com` and `*.s3.lakefs.example.com`.
+
+All records should point to your Load Balancer, preferably with a short TTL value.
+
+## Next Steps
+You can now move on to the [Setup](../guides/setup.md) page.
+
+{% include_relative includes/why-dns.md %}
