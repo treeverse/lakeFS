@@ -8,6 +8,7 @@ nav_order: 30
 
 # Deploy lakeFS on GCP
 {: .no_toc }
+Expected deployment time: 25min
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -34,7 +35,9 @@ For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy
 
 You can now proceed to [Configuring the Storage](bucket.md).
 
-## Install lakeFS on GCE
+## Installation Options
+
+### On Google Compute Engine
 1. Save the following configuration file as `config.yaml`:
 
    ```yaml
@@ -62,6 +65,26 @@ You can now proceed to [Configuring the Storage](bucket.md).
    lakefs --config config.yaml run
    ```
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
+
+### On Google Cloud Run
+To support container-based environments like Google Cloud Run, lakeFS can be configured using environment variables. Here is a `docker run`
+command to demonstrate starting lakeFS using Docker:
+
+```sh
+docker run \
+  --name lakefs \
+  -p 8000:8000 \
+  -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+  -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
+  -e LAKEFS_BLOCKSTORE_TYPE="gs" \
+  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="[S3_GATEWAY_DOMAIN]" \
+  treeverse/lakefs:latest run
+```
+
+See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+
+### On GKE
+See [Kubernetes Deployment](./k8s.md).
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  

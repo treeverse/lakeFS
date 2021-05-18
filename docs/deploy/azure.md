@@ -8,6 +8,7 @@ nav_order: 20
 
 # Deploy lakeFS on Azure
 {: .no_toc }
+Expected deployment time: 25min
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -29,7 +30,9 @@ If you already have a database, take note of the connection string and skip to t
    ![Azure postgres Connection String](../assets/img/azure_postgres_conn.png)
 1. Make sure your Access control roles allow you to connect to the database instance.
 
-## Install lakeFS on Azure VM
+## Installation Options
+
+### On Azure VM
 1. Save the following configuration file as `config.yaml`:
 
    ```yaml
@@ -61,6 +64,27 @@ If you already have a database, take note of the connection string and skip to t
    **Note:** it is preferable to run the binary as a service using systemd or your operating system's facilities.
 1. To support Azure AD authentication go to `Identity` tab and switch `Status` toggle to on, then add the `Storage Blob Data Contributor' role on the container you created.
 
+### On Azure Container instances
+To support container-based environments like Azure Container Instances, lakeFS can be configured using environment variables. Here is a `docker run`
+command to demonstrate starting lakeFS using Docker:
+
+```sh
+docker run \
+  --name lakefs \
+  -p 8000:8000 \
+  -e LAKEFS_DATABASE_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+  -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
+  -e LAKEFS_BLOCKSTORE_TYPE="azure" \
+  -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT="[YOUR_STORAGE_ACCOUNT]" \
+  -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY="[YOUR_ACCESS_KEY]" \
+  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="[S3_GATEWAY_DOMAIN]" \
+  treeverse/lakefs:latest run
+```
+
+See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+
+### On AKS
+See [Kubernetes Deployment](./k8s.md).
 
 ## Load balancing
 Depending on how you chose to install lakeFS, you should have a load balancer direct requests to the lakeFS server.  
