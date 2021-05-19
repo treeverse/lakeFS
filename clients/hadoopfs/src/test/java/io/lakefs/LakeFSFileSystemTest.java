@@ -4,30 +4,37 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 public class LakeFSFileSystemTest {
+    protected final LakeFSFileSystem fs = new LakeFSFileSystem();
 
-    private LakeFSFileSystem fs;
+    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-05-16T05-32-34Z");
+    protected static final String S3_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE";
+    protected static final String S3_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+    @Rule
+    public final GenericContainer s3 = new GenericContainer(MINIO).
+        withCommand("minio", "server", "/data").
+        withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
+        withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
+        withExposedPorts(9000);
 
     @Before
     public void setUp() throws Exception {
-        fs = new LakeFSFileSystem();
         Configuration conf = new Configuration(false);
         conf.set(io.lakefs.Constants.FS_LAKEFS_ACCESS_KEY, "<lakefs key>");
         conf.set(io.lakefs.Constants.FS_LAKEFS_SECRET_KEY, "<lakefs secret>");
         conf.set(io.lakefs.Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
         URI name = new URI("lakefs://repo/master/file.txt");
         fs.initialize(name, conf);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        fs = null;
     }
 
     @Test
