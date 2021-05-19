@@ -183,6 +183,7 @@ type Commit struct {
 	CreationDate time.Time     `db:"creation_date"`
 	Parents      CommitParents `db:"parents"`
 	Metadata     Metadata      `db:"metadata"`
+	Generation   int           `db:"generation"`
 }
 
 func NewCommit() Commit {
@@ -1048,13 +1049,16 @@ func (g *Graveler) Commit(ctx context.Context, repositoryID RepositoryID, branch
 		}
 
 		var branchMetaRangeID MetaRangeID
+		var parentGeneration int
 		if branch.CommitID != "" {
 			commit, err := g.RefManager.GetCommit(ctx, repositoryID, branch.CommitID)
 			if err != nil {
 				return "", fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = commit.MetaRangeID
+			parentGeneration = commit.Generation
 		}
+		commit.Generation = parentGeneration + 1
 		changes, err := g.StagingManager.List(ctx, branch.StagingToken)
 		if err != nil {
 			return "", fmt.Errorf("staging list: %w", err)
@@ -1354,6 +1358,7 @@ func (g *Graveler) Revert(ctx context.Context, repositoryID RepositoryID, branch
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{branch.CommitID}
 		commit.Metadata = commitParams.Metadata
+		commit.Generation = branchCommit.Generation + 1
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, commit)
 		if err != nil {
 			return "", fmt.Errorf("add commit: %w", err)
@@ -1412,6 +1417,10 @@ func (g *Graveler) Merge(ctx context.Context, repositoryID RepositoryID, destina
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		commit.Generation = fromCommit.Generation + 1
+		if toCommit.Generation > fromCommit.Generation {
+			commit.Generation = toCommit.Generation + 1
+		}
 		commit.Metadata = commitParams.Metadata
 		preRunID = NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
@@ -1571,6 +1580,7 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID Reposito
 }
 
 func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
+	// TODO add generations here
 	repo, err := g.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
