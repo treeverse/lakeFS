@@ -32,9 +32,7 @@ public class LakeFSFileSystemTest {
         Configuration conf = new Configuration(false);
         conf.set(io.lakefs.Constants.FS_LAKEFS_ACCESS_KEY, "<lakefs key>");
         conf.set(io.lakefs.Constants.FS_LAKEFS_SECRET_KEY, "<lakefs secret>");
-        conf.set(io.lakefs.Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
-        URI name = new URI("lakefs://repo/master/file.txt");
-        fs.initialize(name, conf);
+        fs.initialize(new URI("lakefs://repo/main/file.txt"), conf);
     }
 
     @Test
