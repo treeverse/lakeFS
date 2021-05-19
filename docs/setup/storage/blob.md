@@ -1,11 +1,13 @@
 ---
 layout: default
 title: Azure Blob Storage
-description: 	This guide explains how to configure Azure Blob Storage as the underlying storage layer.
+description: This guide explains how to configure Azure Blob Storage as the underlying storage layer.
 parent: Prepare Your Storage
+grand_parent: Setup lakeFS
 nav_order: 30
 has_children: false
 ---
+
 # Prepare Your Blob Storage Container
 
 [Create a container in Azure portal](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal#create-a-container):
@@ -27,4 +29,4 @@ First go to the container you created in step 1.
 * Go to the `Role assignments` tab
 * Add the `Storage Blob Data Contributor` role to the Installation running lakeFS.
 
-You can now proceed to [Installing lakeFS](../deploy/azure.md).
+You are now ready to [create your first lakeFS repository](../create-repo.md).

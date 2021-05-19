@@ -2,9 +2,9 @@
 layout: default
 title: Branching Model
 description: This page explains how lakeFS uses a Git-like branching model at its core.
-parent: Guides
+parent: Understanding lakeFS
 has_children: false
-nav_order: 3
+nav_order: 25
 redirect_from:
     - ../branching/
     - ../branching/model.html

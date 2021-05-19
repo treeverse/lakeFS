@@ -7,4 +7,4 @@ A good convention for those will be, assuming you already own the domain `exampl
 * `s3.lakefs.example.com` - **this is the S3 Gateway Domain**
 * `*.s3.lakefs.example.com`
 
-The second record, the *S3 Gateway Domain*, is used in lakeFS configuration to differentiate between the S3 Gateway API and the OpenAPI Server. For more info, see [Why do I need these three DNS records?](#why-do-i-need-the-three-dns-records)
+The second record, the *S3 Gateway Domain*, needs to be specified in the lakeFS configuration (see the `S3_GATEWAY_DOMAIN` placeholder below). This will allow lakeFS to route requests to the S3-compatible API. For more info, see [Why do I need these three DNS records?](#why-do-i-need-the-three-dns-records)

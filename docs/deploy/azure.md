@@ -98,6 +98,6 @@ As mentioned above, you should create 3 DNS records for lakeFS:
 Depending on your DNS provider, refer to the documentation on how to add CNAME records.
 
 ## Next Steps
-You can now move on to the [Setup](../guides/setup.md) page.
+Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
 
 {% include_relative includes/why-dns.md %}
