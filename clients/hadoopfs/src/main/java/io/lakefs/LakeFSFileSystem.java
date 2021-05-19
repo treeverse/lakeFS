@@ -321,7 +321,7 @@ public class LakeFSFileSystem extends FileSystem {
 
         ObjectsApi objectsApi = lfsClient.getObjects();
         if (recursive) {
-            ListingIterator iterator = new ListingIterator(path, recursive, listAmount);
+            ListingIterator iterator = new ListingIterator(path, true, listAmount);
             while (iterator.hasNext()) {
                 LocatedFileStatus fileStatus = iterator.next();
                 try {
