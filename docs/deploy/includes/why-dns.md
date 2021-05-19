@@ -1,7 +1,7 @@
 ## Why do I need the three DNS records?
 {: .no_toc }
 
-Multiple DNS records are needed to access the two different lakeFS APIs (covered in more detail in the [Architecture](../architecture/overview.md) section):
+Multiple DNS records are needed to access the two different lakeFS APIs (covered in more detail in the [Architecture](../../understand/architecture.html) section):
 
 1. **The lakeFS OpenAPI**: used by the `lakectl` CLI tool. Exposes git-like operations (branching, diffing, merging etc.).
 1. **An S3-compatible API**: read and write your data in any tool that can communicate with S3. Examples include: AWS CLI, Boto, Presto and Spark.

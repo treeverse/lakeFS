@@ -33,8 +33,6 @@ If you already have a database, take note of the connection string and skip to t
 Depending on the chosen lakeFS installation method, you will need to make sure lakeFS can access your database.
 For example, if you install lakeFS on GKE, you need to deploy the SQL Auth Proxy from [this Helm chart](https://github.com/rimusz/charts/blob/master/stable/gcloud-sqlproxy/README.md), or as [a sidecar container in your lakeFS pod](https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine).
 
-You can now proceed to [Configuring the Storage](bucket.md).
-
 ## Installation Options
 
 ### On Google Compute Engine
@@ -98,6 +96,6 @@ As mentioned above, you should create 3 DNS records for lakeFS:
 Depending on your DNS provider, refer to the documentation on how to add CNAME records.
 
 ## Next Steps
-You can now move on to the [Setup](../guides/setup.md) page.
+Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
 
 {% include_relative includes/why-dns.md %}

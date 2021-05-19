@@ -1,15 +1,15 @@
 ---
 layout: default
-title: Setup
+title: Create a Repository
 description: This section outlines how to setup your environment once lakeFS is configured and running
-parent: Guides
-nav_order: 1
+parent: Setup lakeFS
+nav_order: 10
 has_children: false
 redirect_from:
    - ../deploying-aws/setup.html
 ---
 
-# Setup
+# Create a Repository
 
 Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOINT>/setup` (e.g. [https://lakefs.example.com](https://lakefs.example.com){: target="_blank" }).
 
@@ -26,7 +26,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
     
    ![Create Repository](../assets/img/create_repo_s3.png)
 
-   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](../storage/index.md).
+   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](./storage/index.md).
    
    
 # Next steps
