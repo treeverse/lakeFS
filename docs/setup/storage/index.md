@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Prepare Your Storage
- description: This section explains how to configure the underlying storage layer.
+description: This section explains how to configure the underlying storage layer.
 parent: Setup lakeFS
 nav_order: 1
 has_children: true
