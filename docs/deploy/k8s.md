@@ -1,6 +1,6 @@
 ---
 layout: default
-title: On Kubernetes
+title: With Kubernetes
 parent: Deploy lakeFS
 description: This guide will help you deploy your production lakeFS environment on Kubernetes using a helm chart
 nav_order: 40
@@ -25,7 +25,7 @@ Instructions for creating the database can be found on the deployment instructio
 
 {% include_relative includes/prerequisites.md %}
 
-## Installing on Kuberneets
+## Installing on Kubernetes
 
 lakeFS can be easily installed on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 To install lakeFS with Helm:
@@ -80,6 +80,6 @@ As mentioned above, you should create 3 DNS records for lakeFS:
 All records should point to your Load Balancer, preferably with a short TTL value.
 
 ## Next Steps
-You can now move on to the [Setup](../guides/setup.md) page.
+Your next step is to [prepare your storage](../setup/storage/index.md). If you already have a storage bucket/container, you are ready to [create your first lakeFS repository](../setup/create-repo.md).
 
 {% include_relative includes/why-dns.md %}

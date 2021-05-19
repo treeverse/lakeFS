@@ -378,6 +378,15 @@ body {
 						font-size: 14px !important;
 						letter-spacing: 0.05px;
 					}
+					.nav-list,
+					.aux-nav-list {
+						a.nav-list-link,
+						a.aux-nav-list-item {
+							margin-left: 30px;
+							color: $warm-grey-two;
+							font-size: 12px !important;
+						}
+					}
 				}
 			}
 		}
