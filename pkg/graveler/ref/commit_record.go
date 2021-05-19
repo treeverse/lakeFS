@@ -15,6 +15,7 @@ type commitRecord struct {
 	CreationDate time.Time              `db:"creation_date"`
 	Parents      []string               `db:"parents"`
 	Metadata     map[string]string      `db:"metadata"`
+	Generation   int                    `db:"generation"`
 }
 
 func (c *commitRecord) toGravelerCommit() *graveler.Commit {
@@ -30,6 +31,7 @@ func (c *commitRecord) toGravelerCommit() *graveler.Commit {
 		CreationDate: c.CreationDate,
 		Parents:      parents,
 		Metadata:     c.Metadata,
+		Generation:   c.Generation,
 	}
 }
 
