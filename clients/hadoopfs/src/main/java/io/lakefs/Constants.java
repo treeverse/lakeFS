@@ -2,7 +2,7 @@ package io.lakefs;
 
 import org.apache.commons.io.FileUtils;
 
-public class Constants {
+class Constants {
     public static final String URI_SCHEME = "lakefs";
     public static final String FS_LAKEFS_ENDPOINT_KEY = "fs.lakefs.endpoint";
     public static final String FS_LAKEFS_ACCESS_KEY = "fs.lakefs.access.key";
