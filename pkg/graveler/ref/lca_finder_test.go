@@ -2,11 +2,13 @@ package ref_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/ident"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type MockCommitGetter struct {
@@ -191,6 +193,31 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 			},
 			Expected: []string{"c2"},
 		},
+		{
+			Name: "merges in history (from git core tests)",
+			// E---D---C---B---A
+			// \"-_         \   \
+			//  \  `---------G   \
+			//   \                \
+			//    F----------------H
+			Left:  "g",
+			Right: "h",
+
+			Getter: func() *MockCommitGetter {
+				e := &graveler.Commit{Message: "1", Parents: []graveler.CommitID{}}
+				d := &graveler.Commit{Message: "2", Parents: []graveler.CommitID{caddr(e)}}
+				f := &graveler.Commit{Message: "3", Parents: []graveler.CommitID{caddr(e)}}
+				c := &graveler.Commit{Message: "4", Parents: []graveler.CommitID{caddr(d)}}
+				b := &graveler.Commit{Message: "5", Parents: []graveler.CommitID{caddr(c)}}
+				a := &graveler.Commit{Message: "6", Parents: []graveler.CommitID{caddr(b)}}
+				g := &graveler.Commit{Message: "7", Parents: []graveler.CommitID{caddr(b), caddr(e)}}
+				h := &graveler.Commit{Message: "8", Parents: []graveler.CommitID{caddr(a), caddr(f)}}
+				return newReader(map[string]*graveler.Commit{
+					"e": e, "d": d, "f": f, "c": c, "b": b, "a": a, "g": g, "h": h,
+				})
+			},
+			Expected: []string{"b"},
+		},
 	}
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
@@ -214,6 +241,55 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 	}
 }
 
+func TestGrid(t *testing.T) {
+	// Construct the following grid, taken from https://github.com/git/git/blob/master/t/t6600-test-reach.sh
+	//             (10,10)
+	//            /       \
+	//         (10,9)    (9,10)
+	//        /     \   /      \
+	//    (10,8)    (9,9)      (8,10)
+	//   /     \    /   \      /    \
+	//         ( continued...)
+	//   \     /    \   /      \    /
+	//    (3,1)     (2,2)      (1,3)
+	//        \     /    \     /
+	//         (2,1)      (2,1)
+	//              \    /
+	//              (1,1)
+	grid := make([][]*graveler.Commit, 10)
+	kv := make(map[string]*graveler.Commit)
+	for i := 0; i < 10; i++ {
+		grid[i] = make([]*graveler.Commit, 10)
+		for j := 0; j < 10; j++ {
+			parents := make([]graveler.CommitID, 0, 2)
+			if i > 0 {
+				parents = append(parents, caddr(grid[i-1][j]))
+			}
+			if j > 0 {
+				parents = append(parents, caddr(grid[i][j-1]))
+			}
+			grid[i][j] = &graveler.Commit{Message: fmt.Sprintf("%d-%d", i, j), Parents: parents}
+			kv[fmt.Sprintf("%d-%d", i, j)] = grid[i][j]
+		}
+	}
+	getter := newReader(kv)
+	c, err := ref.FindLowestCommonAncestor(context.Background(), getter, "", caddr(grid[7][4]), caddr(grid[5][6]))
+	testutil.Must(t, err)
+	verifyResult(t, c, getter, []string{"5-4"})
+
+	c, err = ref.FindLowestCommonAncestor(context.Background(), getter, "", caddr(grid[1][2]), caddr(grid[2][1]))
+	testutil.Must(t, err)
+	verifyResult(t, c, getter, []string{"1-1"})
+
+	c, err = ref.FindLowestCommonAncestor(context.Background(), getter, "", caddr(grid[0][9]), caddr(grid[9][0]))
+	testutil.Must(t, err)
+	verifyResult(t, c, getter, []string{"0-0"})
+
+	c, err = ref.FindLowestCommonAncestor(context.Background(), getter, "", caddr(grid[6][9]), caddr(grid[9][6]))
+	testutil.Must(t, err)
+	verifyResult(t, c, getter, []string{"6-65"})
+}
+
 func verifyResult(t *testing.T, base *graveler.Commit, getter *MockCommitGetter, expected []string) {
 	var addr graveler.CommitID
 	if base == nil {
@@ -223,9 +299,9 @@ func verifyResult(t *testing.T, base *graveler.Commit, getter *MockCommitGetter,
 		return
 	}
 	addr = caddr(base)
-	expectedCommitIDs := make([]string, 0, len(expected))
+	expectedCommitIDs := make([]graveler.CommitID, 0, len(expected))
 	for _, expectedKey := range expected {
-		expectedCommitIDs = append(expectedCommitIDs, expectedKey)
+		expectedCommitIDs = append(expectedCommitIDs, caddr(getter.byHumanID[expectedKey]))
 		if caddr(getter.byHumanID[expectedKey]) == addr {
 			return
 		}
