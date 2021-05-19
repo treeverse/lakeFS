@@ -1,5 +1,5 @@
 BEGIN;
     ALTER TABLE graveler_commits
-        DROP COLUMN generation INT;
+        DROP COLUMN generation;
 COMMIT;
 
