@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Data Development Environment
-parent: Example Use-Cases
+parent: Use-Cases
 description: lakeFS enables a safe development environment on your data lake without the need to copy or mock data
 nav_order: 25
 ---
