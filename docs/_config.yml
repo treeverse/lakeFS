@@ -20,7 +20,7 @@ aux_links:
   'Github':
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
-    - 'https://www.lakefs.io/blog'
+    - 'https://lakefs.io/blog/'
 
 buttons:
   'Get Started':
@@ -41,7 +41,7 @@ footer_links:
   'Github':
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
-    - 'https://www.lakefs.io/blog'
+    - 'https://lakefs.io/blog/'
   'Contact':
     - 'https://lakefs.io/contact-us/'
 
