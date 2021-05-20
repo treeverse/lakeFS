@@ -407,12 +407,12 @@ public class LakeFSFileSystem extends FileSystem {
                 modificationTime = TimeUnit.SECONDS.toMillis(mtime);
             }
             Path filePath = new Path(ObjectLocation.formatPath(repository, ref, objectStat.getPath()));
-            boolean isdir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
+            boolean isDir = objectStat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
             long blockSize = 0;
-            if (!isdir) {
+            if (!isDir) {
                 blockSize = withFileSystemAndTranslatedPhysicalPath(objectStat.getPhysicalAddress(), FileSystem::getDefaultBlockSize);
             }
-            return new FileStatus(length, isdir, 0, blockSize, modificationTime, filePath);
+            return new FileStatus(length, isDir, 0, blockSize, modificationTime, filePath);
         } catch (java.net.URISyntaxException e) {
             throw new IOException("uri", e);
         }

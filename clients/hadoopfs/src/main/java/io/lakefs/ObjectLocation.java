@@ -6,7 +6,7 @@ class ObjectLocation {
     private String path;
 
     public static String formatPath(String repository, String ref, String path) {
-        return Constants.URI_SCHEME + "://" + repository + "/" + ref + "/" + path;
+        return String.format("%s://%s/%s/%s", Constants.URI_SCHEME,repository, ref, path);
     }
 
     public String getRepository() {
