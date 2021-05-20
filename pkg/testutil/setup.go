@@ -38,8 +38,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
-	viper.SetDefault("access_key_id", "AKIAJ4LYHECNCPEFMFNQ")
-	viper.SetDefault("secret_access_key", "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")
+	viper.SetDefault("access_key_id", "")
+	viper.SetDefault("secret_access_key", "")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s/%s", params.StorageNS, xid.New().String()))
 
 	viper.AddConfigPath(".")
