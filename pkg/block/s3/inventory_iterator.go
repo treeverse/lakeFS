@@ -53,6 +53,7 @@ func (it *InventoryIterator) Next() bool {
 		if val != nil {
 			// validate element order
 			if it.shouldSort && it.val != nil && val.Key < it.val.Key {
+				it.logger.Debugf("%s < %s", val.Key, it.val.Key)
 				it.err = ErrInventoryNotSorted
 				return false
 			}
