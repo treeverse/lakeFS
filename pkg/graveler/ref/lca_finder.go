@@ -45,8 +45,8 @@ func NewLCAFinder(ctx context.Context, getter CommitGetter, repositoryID gravele
 		})
 	}
 	discovered := make(map[graveler.CommitID]discoveredFlags)
-	discovered[leftID] = discoveredFlags{fromLeft: true}
-	discovered[rightID] = discoveredFlags{fromRight: true}
+	discovered[leftID] = discovered[rightID].or(true, false)
+	discovered[rightID] = discovered[rightID].or(false, true)
 	return &LCAFinder{
 		getter:       getter,
 		ctx:          ctx,

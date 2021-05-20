@@ -204,6 +204,20 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 			},
 			Expected: []string{"b"},
 		},
+		{
+			Name:  "same_node",
+			Left:  "c2",
+			Right: "c2",
+			Getter: func() *MockCommitGetter {
+				c0 := &graveler.Commit{Message: "c0", Parents: []graveler.CommitID{}}
+				c1 := &graveler.Commit{Message: "c1", Parents: []graveler.CommitID{"c0"}}
+				c2 := &graveler.Commit{Message: "c2", Parents: []graveler.CommitID{"c0"}}
+				return newReader(map[graveler.CommitID]*graveler.Commit{
+					"c0": c0, "c1": c1, "c2": c2,
+				})
+			},
+			Expected: []string{"c2"},
+		},
 	}
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
