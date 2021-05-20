@@ -2,6 +2,8 @@ package ref
 
 import "github.com/treeverse/lakefs/pkg/graveler"
 
+// CommitsPriorityQueue implements heap.Interface such that the commit with the oldest creation date is at the root
+// of the heap.
 type CommitsPriorityQueue struct {
 	queue []*graveler.CommitRecord
 }
@@ -38,6 +40,8 @@ func (c *CommitsPriorityQueue) Pop() interface{} {
 	return item
 }
 
+// CommitsGenerationPriorityQueue implements heap.Interface such that the commit with the greatest Generation value is
+// at the root of the heap.
 type CommitsGenerationPriorityQueue struct {
 	*CommitsPriorityQueue
 }
