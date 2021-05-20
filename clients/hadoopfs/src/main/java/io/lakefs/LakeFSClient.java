@@ -18,7 +18,6 @@ public class LakeFSClient {
     private final StagingApi staging;
 
     public LakeFSClient(Configuration conf) throws IOException {
-        // extract key/secret to access lakeFS
         String accessKey = conf.get(Constants.FS_LAKEFS_ACCESS_KEY);
         if (accessKey == null) {
             throw new IOException("Missing lakeFS access key");
@@ -27,17 +26,15 @@ public class LakeFSClient {
         if (secretKey == null) {
             throw new IOException("Missing lakeFS secret key");
         }
-        // create api client
+
         ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
         String endpoint = conf.get(Constants.FS_LAKEFS_ENDPOINT_KEY, "http://localhost:8000/api/v1");
         apiClient.setBasePath(endpoint);
 
-        // credentials
         HttpBasicAuth basicAuth = (HttpBasicAuth) apiClient.getAuthentication(BASIC_AUTH);
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
 
-        // API instances
         this.objects = new ObjectsApi(apiClient);
         this.staging = new StagingApi(apiClient);
     }
