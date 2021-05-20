@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Continuous Data Integration
-parent: Example Use-Cases
+parent: Use-Cases
 description: lakeFS enables to continuously test newly ingested data to ensure data quality requirements are met
 nav_order: 35
 ---
