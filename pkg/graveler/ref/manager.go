@@ -72,6 +72,7 @@ func createBareRepository(tx db.Tx, repositoryID graveler.RepositoryID, reposito
 func (m *Manager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository, token graveler.StagingToken) error {
 	firstCommit := graveler.NewCommit()
 	firstCommit.Message = graveler.FirstCommitMsg
+	firstCommit.Generation = 1
 	commitID := m.addressProvider.ContentAddress(firstCommit)
 
 	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
@@ -390,4 +391,22 @@ func (m *Manager) ListCommits(ctx context.Context, repositoryID graveler.Reposit
 		return nil, err
 	}
 	return NewOrderedCommitIterator(ctx, m.db, repositoryID, IteratorPrefetchSize)
+}
+
+func (m *Manager) FillGenerations(ctx context.Context, repositoryID graveler.RepositoryID) error {
+	_, err := m.db.Transact(ctx, func(tx db.Tx) (interface{}, error) {
+		return tx.Exec(`WITH RECURSIVE cte AS
+								(
+									SELECT id, 1 AS generation,creation_date
+									FROM graveler_commits
+									WHERE repository_id = $1 AND parents IS NULL OR array_length(parents,1) = 0
+									UNION ALL
+									SELECT c.id, cte.generation+1 AS generation,c.creation_date
+									FROM graveler_commits c INNER JOIN cte
+									ON cte.id = ANY(c.parents) WHERE repository_id = $1
+								)
+								UPDATE graveler_commits u SET generation = cte.generation FROM cte WHERE u.id = cte.id;`,
+			repositoryID)
+	})
+	return err
 }

@@ -529,6 +529,8 @@ type RefManager interface {
 
 	// ListCommits returns an iterator over all known commits, ordered by their commit ID
 	ListCommits(ctx context.Context, repositoryID RepositoryID) (CommitIterator, error)
+
+	FillGenerations(ctx context.Context, repositoryID RepositoryID) error
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -1580,7 +1582,6 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repositoryID Reposito
 }
 
 func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, metaRangeID MetaRangeID) error {
-	// TODO add generations here
 	repo, err := g.GetRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -1590,6 +1591,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 		return err
 	}
 	defer iter.Close()
+	missingGenerations := false
 	for iter.Next() {
 		rawValue := iter.Value()
 		commit := &CommitData{}
@@ -1600,6 +1602,9 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 		parents := make(CommitParents, len(commit.GetParents()))
 		for i, p := range commit.GetParents() {
 			parents[i] = CommitID(p)
+		}
+		if commit.GetGeneration() == 0 {
+			missingGenerations = true
 		}
 		commitID, err := g.RefManager.AddCommit(ctx, repositoryID, Commit{
 			Version:      CommitVersion(commit.Version),
@@ -1620,6 +1625,10 @@ func (g *Graveler) LoadCommits(ctx context.Context, repositoryID RepositoryID, m
 	}
 	if iter.Err() != nil {
 		return iter.Err()
+	}
+	if missingGenerations {
+		g.log.Debug("computing the generation field for loaded commits")
+		return g.RefManager.FillGenerations(ctx, repositoryID)
 	}
 	return nil
 }
