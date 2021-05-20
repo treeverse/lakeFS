@@ -52,7 +52,7 @@ func newReader(kv map[graveler.CommitID]*graveler.Commit) *MockCommitGetter {
 
 }
 
-func TestFindLowestCommonAncestor(t *testing.T) {
+func TestFindMergeBase(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Left     graveler.CommitID
@@ -222,14 +222,14 @@ func TestFindLowestCommonAncestor(t *testing.T) {
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
-			base, err := ref.FindLowestCommonAncestor(context.Background(), getter, "", cas.Left, cas.Right)
+			base, err := ref.FindMergeBase(context.Background(), getter, "", cas.Left, cas.Right)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
 			verifyResult(t, base, cas.Expected)
 
 			// flip right and left and expect the same result
-			base, err = ref.FindLowestCommonAncestor(
+			base, err = ref.FindMergeBase(
 				context.Background(), getter, "", cas.Right, cas.Left)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
@@ -272,19 +272,19 @@ func TestGrid(t *testing.T) {
 		}
 	}
 	getter := newReader(kv)
-	c, err := ref.FindLowestCommonAncestor(context.Background(), getter, "", "7-4", "5-6")
+	c, err := ref.FindMergeBase(context.Background(), getter, "", "7-4", "5-6")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"5-4"})
 
-	c, err = ref.FindLowestCommonAncestor(context.Background(), getter, "", "1-2", "2-1")
+	c, err = ref.FindMergeBase(context.Background(), getter, "", "1-2", "2-1")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"1-1"})
 
-	c, err = ref.FindLowestCommonAncestor(context.Background(), getter, "", "0-9", "9-0")
+	c, err = ref.FindMergeBase(context.Background(), getter, "", "0-9", "9-0")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"0-0"})
 
-	c, err = ref.FindLowestCommonAncestor(context.Background(), getter, "", "6-9", "9-6")
+	c, err = ref.FindMergeBase(context.Background(), getter, "", "6-9", "9-6")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"6-6"})
 }
