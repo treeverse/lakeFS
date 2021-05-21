@@ -2,6 +2,10 @@ on:
   push:
     branches:
       - docs/version-poc
+  workflow_dispatch:
+    inputs: 
+      tag:
+        description: Tag/version to publish
 
 jobs:
   mv-docs:
@@ -11,12 +15,22 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v2
 
+      - name: Extract version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "::set-output name=tag::$(echo ${{ github.event.inputs.tag }} | sed s/^v//)"
+          else
+            echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//)"
+          fi
+        id: version
+
       - name: Copy
         uses: andstor/copycat-action@v3
         with:
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
           src_path: docs/
-          dst_path: 1.0.0/
+          dst_path: ${{ steps.version.outputs.tag }}/
           dst_owner: treeverse
           dst_repo_name: docs-poc
 
