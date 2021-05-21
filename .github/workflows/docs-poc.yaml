@@ -1,0 +1,23 @@
+on:
+  push:
+    branches:
+      - docs/version-poc
+
+jobs:
+  mv-docs:
+    name: copy-docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+
+      - name: Copy
+        uses: andstor/copycat-action@v3
+        with:
+          personal_token: ${{ secrets.GITHUB_TOKEN }}
+          src_path: docs/
+          dst_path: 1.0.0/
+          dst_owner: treeverse
+          dst_repo_name: docs-poc
+
+      
